@@ -14,7 +14,6 @@ namespace CBP
 		NiPoint3 npCogOffset;
 		NiPoint3 npGravityCorrection;
 		NiPoint3 npZero;
-		NiPoint3 npGravityBias;
 
 	public:
 		float stiffness = 0.5f;

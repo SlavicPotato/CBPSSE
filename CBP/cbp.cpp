@@ -8,7 +8,8 @@ namespace CBP
     static auto BSTaskPool_Enter1 = IAL::Addr(35565, 0x6B8);
     static auto BSTaskPool_Enter2 = IAL::Addr(35582, 0x1C);
 
-    static BSTaskPoolProc_T SKSE_BSTaskPoolProc_O;
+    static BSTaskPoolProc_T SKSE_BSTaskPoolProc1_O;
+    static BSTaskPoolProc_T SKSE_BSTaskPoolProc2_O;
 
     static UpdateTask g_updateTask;
     static ConfigReloadTask g_confReloadTask;
@@ -17,20 +18,33 @@ namespace CBP
 
     static bool isHooked = false;
 
-    static void TaskInterface_Hook(BSTaskPool* taskpool)
+    static void TaskInterface1_Hook(BSTaskPool* taskpool)
     {
-        SKSE_BSTaskPoolProc_O(taskpool);
+        SKSE_BSTaskPoolProc1_O(taskpool);
 
         g_updateTask.Run();
     }
 
-    static bool HookTrampoline()
+    static void TaskInterface2_Hook(BSTaskPool* taskpool)
+    {
+        SKSE_BSTaskPoolProc2_O(taskpool);
+
+        g_updateTask.Run();
+    }
+
+    static bool Hook()
+    {
+        return Hook::Call5(BSTaskPool_Enter1, uintptr_t(TaskInterface1_Hook), SKSE_BSTaskPoolProc1_O) &&
+            Hook::Call5(BSTaskPool_Enter2, uintptr_t(TaskInterface2_Hook), SKSE_BSTaskPoolProc2_O);
+    }
+
+    /*static bool HookTrampoline()
     {
         uintptr_t dst1, dst2;
 
         // get trampoline dest addrs
-        if (!GetTrampolineDst<0xE8>(BSTaskPool_Enter1, dst1) ||
-            !GetTrampolineDst<0xE8>(BSTaskPool_Enter2, dst2))
+        if (!Hook::GetTrampolineDst<0xE8>(BSTaskPool_Enter1, dst1) ||
+            !Hook::GetTrampolineDst<0xE8>(BSTaskPool_Enter2, dst2))
         {
             return false;
         }
@@ -40,29 +54,26 @@ namespace CBP
             return false;
         }
 
-        SKSE_BSTaskPoolProc_O = BSTaskPoolProc_T(dst1);
+        SKSE_BSTaskPoolProc1_O = reinterpret_cast<BSTaskPoolProc_T>(dst1);
 
-        auto ht = uintptr_t(TaskInterface_Hook);
+        auto ht = uintptr_t(TaskInterface1_Hook);
 
         // assume we'll succeed
-        WriteTrampolineDst<0xE8>(BSTaskPool_Enter1, ht);
-        WriteTrampolineDst<0xE8>(BSTaskPool_Enter2, ht);
+        Hook::WriteTrampolineDst<0xE8>(BSTaskPool_Enter1, ht);
+        Hook::WriteTrampolineDst<0xE8>(BSTaskPool_Enter2, ht);
 
         FlushInstructionCache(GetCurrentProcess(), NULL, 0);
 
         return true;
-    }
+    }*/
 
     static void MainInit_Hook()
     {
-        if (!HookTrampoline())
-        {
-            _FATALERROR("HookTrampoline failed");
+        if (!(isHooked = Hook())) {
+            _FATALERROR("Hook failed");
         }
         else {
-            _MESSAGE("BSTaskPool hook redirected");
-
-            isHooked = true;
+            _MESSAGE("BSTaskPool procs hooked");
 
             if (static_cast<int>(config["Tuning"]["reloadOnChange"]) > 0) {
                 ConfigObserver::GetSingleton()->Start();
@@ -98,7 +109,7 @@ namespace CBP
     bool Initialize()
     {
         if (!CBPLoadConfig()) {
-            _FATALERROR("Couldn't load CBP config");
+            _FATALERROR("Couldn't load %s", PLUGIN_CBP_CONFIG);
             return false;
         }
 
@@ -112,7 +123,7 @@ namespace CBP
     EventResult ObjectLoadedEventHandler::ReceiveEvent(TESObjectLoadedEvent* evn, SKSE::EventDispatcherEx<TESObjectLoadedEvent>* dispatcher)
     {
         if (evn) {
-            TESForm* form = SKSE::LookupFormByID(evn->formId);
+            auto form = SKSE::LookupFormByID(evn->formId);
             if (form->formType == Actor::kTypeID)
             {
                 auto actor = IRTTI::Cast<Actor>(form, RTTI::TESForm, RTTI::Actor);
@@ -139,7 +150,7 @@ namespace CBP
         return kEvent_Continue;
     }
 
-    static __forceinline bool isActorValid(Actor* actor)
+    __forceinline static bool isActorValid(Actor* actor)
     {
         if (actor == NULL || actor->loadedState == NULL ||
             actor->loadedState->node == NULL ||
@@ -163,7 +174,7 @@ namespace CBP
         //auto s = PerfCounter::Query();
 
         // still need this since TESObjectLoadedEvent doesn't seem to give us all the actors
-        for (int i = 0; i < cell->refData.maxSize; i++) {
+        for (UInt32 i = 0; i < cell->refData.maxSize; i++) {
             auto ref = cell->refData.refArray[i];
             if (ref.unk08 == NULL || ref.ref == NULL) {
                 continue;
@@ -279,20 +290,23 @@ namespace CBP
 
     ConfigObserver::ConfigObserver() :
         conf(PLUGIN_CBP_CONFIG),
-        dir(PLUGIN_BASE_PATH),
-        observerHandle(NULL)
+        dir(PLUGIN_BASE_PATH)
     {
         lastT.QuadPart = 0;
     }
 
     bool ConfigObserver::Start()
     {
+        if (_thread != nullptr) {
+            return false;
+        }
+
         ULARGE_INTEGER t;
         if (GetTimestamp(&t)) {
             lastT = t;
         }
 
-        observerHandle = FindFirstChangeNotification(
+        observerHandle = ::FindFirstChangeNotification(
             dir,
             FALSE,
             FILE_NOTIFY_CHANGE_LAST_WRITE);
@@ -313,7 +327,7 @@ namespace CBP
             return;
         }
 
-        FindCloseChangeNotification(observerHandle);
+        ::FindCloseChangeNotification(observerHandle);
 
         _thread->join();
         delete _thread;
@@ -323,21 +337,21 @@ namespace CBP
 
     void ConfigObserver::Worker()
     {
-        Message("Starting");
-
         DWORD dwWaitStatus;
+
+        Message("Starting");
 
         while (TRUE)
         {
-            dwWaitStatus = WaitForSingleObject(observerHandle, INFINITE);
+            dwWaitStatus = ::WaitForSingleObject(observerHandle, INFINITE);
 
             if (dwWaitStatus == WAIT_OBJECT_0)
             {
                 Sleep(200);
 
                 QueueReloadOnChange();
-                if (FindNextChangeNotification(observerHandle) == FALSE) {
-                    _ERROR("%s: FindNextChangeNotification failed", __FUNCTION__);
+                if (::FindNextChangeNotification(observerHandle) == FALSE) {
+                    Error("FindNextChangeNotification failed");
                     break;
                 }
             }
@@ -346,12 +360,12 @@ namespace CBP
             }
         }
 
-        FindCloseChangeNotification(observerHandle);
+        ::FindCloseChangeNotification(observerHandle);
     }
 
     bool ConfigObserver::GetTimestamp(ULARGE_INTEGER* ul)
     {
-        HANDLE fh = CreateFile(
+        HANDLE fh = ::CreateFile(
             conf,
             GENERIC_READ,
             FILE_SHARE_WRITE | FILE_SHARE_READ,
@@ -367,7 +381,7 @@ namespace CBP
         FILETIME ft;
         bool ret;
 
-        if (GetFileTime(fh, NULL, NULL, &ft))
+        if (::GetFileTime(fh, NULL, NULL, &ft))
         {
             ul->HighPart = ft.dwHighDateTime;
             ul->LowPart = ft.dwLowDateTime;
@@ -378,7 +392,7 @@ namespace CBP
             ret = false;
         }
 
-        if (!CloseHandle(fh)) {
+        if (!::CloseHandle(fh)) {
             Warning("Couldn't close handle");
         }
 

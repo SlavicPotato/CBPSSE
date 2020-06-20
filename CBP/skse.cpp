@@ -2,11 +2,11 @@
 
 namespace SKSE
 {
-    static auto l_skyrimVM = IAL::Addr<SkyrimVM**>(514315);
-
-    _GetEventDispatcherListEx GetEventDispatcherList = IAL::Addr< _GetEventDispatcherListEx>(14108);
+    _GetEventDispatcherListEx GetEventDispatcherList = IAL::Addr<_GetEventDispatcherListEx>(14108);
     PlayerCharacter** g_thePlayer = IAL::Addr<PlayerCharacter**>(517014);
     _LookupFormByID LookupFormByID = IAL::Addr<_LookupFormByID>(14461);
+
+    static auto l_skyrimVM = IAL::Addr<SkyrimVM**>(514315);
 
     PluginHandle g_pluginHandle = kPluginHandle_Invalid;
 
@@ -40,7 +40,7 @@ namespace SKSE
 
     bool Query(const SKSEInterface* skse, PluginInfo* info)
     {
-        gLog.OpenRelative(CSIDL_MYDOCUMENTS, "\\My Games\\Skyrim Special Edition\\SKSE\\cbpex.log");
+        gLog.OpenRelative(CSIDL_MYDOCUMENTS, PLUGIN_LOG_PATH);
         gLog.SetPrintLevel(IDebugLog::kLevel_Warning);
         gLog.SetLogLevel(IDebugLog::kLevel_DebugMessage);
 
@@ -57,17 +57,17 @@ namespace SKSE
             return false;
         }
 
-        if (skse->runtimeVersion < RUNTIME_VERSION_1_5_23)
+        if (skse->runtimeVersion < MIN_SKSE_VERSION)
         {
             _FATALERROR("Unsupported runtime version %d.%d.%d.%d, expected >= %d.%d.%d.%d",
                 GET_EXE_VERSION_MAJOR(skse->runtimeVersion),
                 GET_EXE_VERSION_MINOR(skse->runtimeVersion),
                 GET_EXE_VERSION_BUILD(skse->runtimeVersion),
                 GET_EXE_VERSION_SUB(skse->runtimeVersion),
-                GET_EXE_VERSION_MAJOR(RUNTIME_VERSION_1_5_23),
-                GET_EXE_VERSION_MINOR(RUNTIME_VERSION_1_5_23),
-                GET_EXE_VERSION_BUILD(RUNTIME_VERSION_1_5_23),
-                GET_EXE_VERSION_SUB(RUNTIME_VERSION_1_5_23));
+                GET_EXE_VERSION_MAJOR(MIN_SKSE_VERSION),
+                GET_EXE_VERSION_MINOR(MIN_SKSE_VERSION),
+                GET_EXE_VERSION_BUILD(MIN_SKSE_VERSION),
+                GET_EXE_VERSION_SUB(MIN_SKSE_VERSION));
             return false;
         }
 
@@ -94,7 +94,6 @@ namespace SKSE
             _FATALERROR("Messaging interface too old (%d expected %d)", g_messaging->interfaceVersion, 2);
             return false;
         }
-
 
         g_taskInterface = (SKSETaskInterface*)skse->QueryInterface(kInterface_Task);
         if (g_taskInterface == NULL) {

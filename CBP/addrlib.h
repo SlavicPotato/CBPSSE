@@ -11,7 +11,7 @@ public:
     }
 
     static float GetLoadTime() {
-        return PerfCounter::delta<float>(
+        return PerfCounter::delta(
             m_Instance.tLoadStart, m_Instance.tLoadEnd);
     }
 

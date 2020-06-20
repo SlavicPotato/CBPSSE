@@ -24,6 +24,7 @@
 
 #include "common.h"
 #include "patching.h"
+#include "hook.h"
 #include "tlib.h"
 #include "logging.h"
 #include "addrlib.h"
