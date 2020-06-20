@@ -37,6 +37,7 @@ namespace CBP
 
         //zOffset = solveQuad(stiffness2, stiffness, -gravityBias);
 
+        diffMult = 1.0f / timeTick;
         npCogOffset = NiPoint3(0.0f, cogOffset, 0.0f);
         npGravityCorrection = NiPoint3(0.0f, 0.0f, gravityCorrection);
     }
@@ -87,7 +88,7 @@ namespace CBP
         }
         else {
 
-            diff *= 1.0f / timeTick;
+            diff *= diffMult;
             NiPoint3 posDelta(0.0f, 0.0f, 0.0f);
 
             // Compute the "Spring" Force

@@ -212,15 +212,16 @@ namespace CBP
 
 #ifdef _MEASURE_PERF
         auto e = PerfCounter::Query();
-
         ee += PerfCounter::delta_us(s, e);
         c++;
+        a += actors.size();
 
         if (e - ss > 50000000LL) {
             ss = e;
-            Debug("Perf: %lld us (%zu actors)", ee / c, actors.size());
+            Debug("Perf: %lld us (%zu actors)", ee / c, a / c);
             ee = 0;
             c = 0;
+            a = 0;
         }
 #endif
     }
@@ -232,7 +233,7 @@ namespace CBP
             //_DMESSAGE("Adding %llX (%s)", handle, CALL_MEMBER_FN(actor, GetReferenceName)());
 
             auto obj = SimObj();
-            obj.bind(actor, femaleBones, config);
+            obj.bind(actor, config);
 
             actors.emplace(handle, obj);
         }
@@ -254,7 +255,7 @@ namespace CBP
 
     AddRemoveActorTask* AddRemoveActorTask::Create(CBPUpdateActorAction action, SKSE::ObjectHandle handle)
     {
-        auto* cmd = s_addRemoveActorTaskPool.Allocate();
+        auto cmd = s_addRemoveActorTaskPool.Allocate();
         if (cmd != NULL) {
             cmd->m_action = action;
             cmd->m_handle = handle;
@@ -289,7 +290,8 @@ namespace CBP
 
     ConfigObserver::ConfigObserver() :
         conf(PLUGIN_CBP_CONFIG),
-        dir(PLUGIN_BASE_PATH)
+        dir(PLUGIN_BASE_PATH),
+        _thread(nullptr)
     {
         lastT.QuadPart = 0;
     }
@@ -347,8 +349,8 @@ namespace CBP
             if (dwWaitStatus == WAIT_OBJECT_0)
             {
                 Sleep(200);
-
                 QueueReloadOnChange();
+
                 if (::FindNextChangeNotification(observerHandle) == FALSE) {
                     Error("FindNextChangeNotification failed");
                     break;
@@ -380,15 +382,10 @@ namespace CBP
         FILETIME ft;
         bool ret;
 
-        if (::GetFileTime(fh, NULL, NULL, &ft))
+        if ((ret = ::GetFileTime(fh, NULL, NULL, &ft)))
         {
             ul->HighPart = ft.dwHighDateTime;
             ul->LowPart = ft.dwLowDateTime;
-
-            ret = true;
-        }
-        else {
-            ret = false;
         }
 
         if (!::CloseHandle(fh)) {

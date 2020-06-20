@@ -50,6 +50,7 @@ namespace CBP
         long long ss;
         long long ee = 0;
         long long c = 0;
+        size_t a;
         long long s = PerfCounter::Query();
 #endif
     };
