@@ -33,12 +33,10 @@ namespace CBP
     };
 
     class UpdateTask :
-        public TaskDelegateStatic,
         ILog
     {
     public:
-
-        virtual void Run();
+        void Run();
 
         void AddActor(Actor* actor, SKSE::ObjectHandle handle);
         void RemoveActor(SKSE::ObjectHandle handle);
@@ -46,18 +44,18 @@ namespace CBP
 
         FN_NAMEPROC("UpdateTask")
     private:
-        //TESObjectCELL* curCell = nullptr;
         std::unordered_map<SKSE::ObjectHandle, SimObj> actors;
 
-        /*long long ss;
+#ifdef _MEASURE_PERF
+        long long ss;
         long long ee = 0;
         long long c = 0;
-        long long s = PerfCounter::Query();*/
+        long long s = PerfCounter::Query();
+#endif
     };
 
     class AddRemoveActorTask :
-        public TaskDelegate,
-        ILog
+        public TaskDelegate
     {
     public:
         enum CBPUpdateActorAction : uint32_t
@@ -70,16 +68,13 @@ namespace CBP
         virtual void Dispose();
 
         static AddRemoveActorTask* Create(CBPUpdateActorAction action, SKSE::ObjectHandle handle);
-
-        FN_NAMEPROC("AddRemoveActorTask")
     private:
         CBPUpdateActorAction m_action;
         SKSE::ObjectHandle m_handle;
     };
 
     class ConfigReloadTask :
-        public TaskDelegateStatic,
-        ILog
+        public TaskDelegateStatic
     {
     public:
         virtual void Run();

@@ -104,5 +104,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="exports.def" />
+    <None Include="..\README.md" />
   </ItemGroup>
 </Project>

@@ -3,11 +3,10 @@
 namespace CBP
 {
     static auto MainInitHook_Target = IAL::Addr(35548, 0xFE);
-    static auto MainInitHook_O = IAL::Addr<_MainInitHook>(67816);
-
     static auto BSTaskPool_Enter1 = IAL::Addr(35565, 0x6B8);
     static auto BSTaskPool_Enter2 = IAL::Addr(35582, 0x1C);
 
+    static _MainInitHook MainInitHook_O;
     static BSTaskPoolProc_T SKSE_BSTaskPoolProc1_O;
     static BSTaskPoolProc_T SKSE_BSTaskPoolProc2_O;
 
@@ -21,21 +20,13 @@ namespace CBP
     static void TaskInterface1_Hook(BSTaskPool* taskpool)
     {
         SKSE_BSTaskPoolProc1_O(taskpool);
-
         g_updateTask.Run();
     }
 
     static void TaskInterface2_Hook(BSTaskPool* taskpool)
     {
         SKSE_BSTaskPoolProc2_O(taskpool);
-
         g_updateTask.Run();
-    }
-
-    static bool Hook()
-    {
-        return Hook::Call5(BSTaskPool_Enter1, uintptr_t(TaskInterface1_Hook), SKSE_BSTaskPoolProc1_O) &&
-            Hook::Call5(BSTaskPool_Enter2, uintptr_t(TaskInterface2_Hook), SKSE_BSTaskPoolProc2_O);
     }
 
     /*static bool HookTrampoline()
@@ -69,7 +60,10 @@ namespace CBP
 
     static void MainInit_Hook()
     {
-        if (!(isHooked = Hook())) {
+        isHooked = Hook::Call5(BSTaskPool_Enter1, uintptr_t(TaskInterface1_Hook), SKSE_BSTaskPoolProc1_O) &&
+            Hook::Call5(BSTaskPool_Enter2, uintptr_t(TaskInterface2_Hook), SKSE_BSTaskPoolProc2_O);
+
+        if (!isHooked) {
             _FATALERROR("Hook failed");
         }
         else {
@@ -113,7 +107,11 @@ namespace CBP
             return false;
         }
 
-        g_branchTrampoline.Write5Call(MainInitHook_Target, uintptr_t(MainInit_Hook));
+        // delay hooking BSTaskPool until SKSE installs it's hooks
+        if (!Hook::Call5(MainInitHook_Target, uintptr_t(MainInit_Hook), MainInitHook_O)) {
+            _FATALERROR("MainInit hook failed");
+            return false;
+        }
 
         SKSE::g_messaging->RegisterListener(SKSE::g_pluginHandle, "SKSE", MessageHandler);
 
@@ -140,13 +138,11 @@ namespace CBP
                         if (cmd != NULL) {
                             SKSE::g_taskInterface->AddTask(cmd);
                         }
-                        else {
-                            _WARNING("[%s] s_addRemoveActorTaskPool out of memory", __FUNCTION__);
-                        }
                     }
                 }
             }
         }
+
         return kEvent_Continue;
     }
 
@@ -171,7 +167,9 @@ namespace CBP
         if (!cell)
             return;
 
-        //auto s = PerfCounter::Query();
+#ifdef _MEASURE_PERF
+        auto s = PerfCounter::Query();
+#endif
 
         // still need this since TESObjectLoadedEvent doesn't seem to give us all the actors
         for (UInt32 i = 0; i < cell->refData.maxSize; i++) {
@@ -212,8 +210,8 @@ namespace CBP
             }
         }
 
-
-        /*auto e = PerfCounter::Query();
+#ifdef _MEASURE_PERF
+        auto e = PerfCounter::Query();
 
         ee += PerfCounter::delta_us(s, e);
         c++;
@@ -223,8 +221,8 @@ namespace CBP
             Debug("Perf: %lld us (%zu actors)", ee / c, actors.size());
             ee = 0;
             c = 0;
-        }*/
-
+        }
+#endif
     }
 
     void UpdateTask::AddActor(Actor* actor, SKSE::ObjectHandle handle)
@@ -250,6 +248,8 @@ namespace CBP
         for (auto& a : actors) {
             a.second.updateConfig(config);
         }
+
+        Message("Configuration updated");
     }
 
     AddRemoveActorTask* AddRemoveActorTask::Create(CBPUpdateActorAction action, SKSE::ObjectHandle handle)
@@ -284,7 +284,6 @@ namespace CBP
     {
         if (CBPLoadConfig()) {
             g_updateTask.UpdateConfig();
-            Message("Config reloaded");
         }
     }
 
