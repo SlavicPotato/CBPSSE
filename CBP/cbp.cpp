@@ -148,8 +148,10 @@ namespace CBP
 #endif
 
         // still need this since TESObjectLoadedEvent doesn't seem to give us all the actors
-        for (UInt32 i = 0; i < cell->refData.maxSize; i++) {
-            auto ref = cell->refData.refArray[i];
+        for (UInt32 i = 0; i < cell->refData.maxSize; i++) 
+        {
+            auto &ref = cell->refData.refArray[i];
+
             if (ref.unk08 == NULL || ref.ref == NULL) {
                 continue;
             }
