@@ -6,7 +6,7 @@ namespace CBP
 {
 	class Thing {
 	private:
-		SKSE::BSFixedString boneName;
+		BSFixedString boneName;
 		NiPoint3 oldWorldPos;
 		NiPoint3 velocity;
 		long long time;
@@ -33,7 +33,7 @@ namespace CBP
 		float rotational = 0.1;
 		float timeScale = 1.0f;
 
-		Thing(NiAVObject* obj, SKSE::BSFixedString& name);
+		Thing(NiAVObject* obj, BSFixedString& name);
 
 		void updateConfig(configEntry_t& centry);
 		

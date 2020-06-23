@@ -2,20 +2,15 @@
 
 namespace SKSE
 {
-    _GetEventDispatcherListEx GetEventDispatcherList = IAL::Addr<_GetEventDispatcherListEx>(14108);
-    PlayerCharacter** g_thePlayer = IAL::Addr<PlayerCharacter**>(517014);
-    _LookupFormByID LookupFormByID = IAL::Addr<_LookupFormByID>(14461);
-
-    static auto l_skyrimVM = IAL::Addr<SkyrimVM**>(514315);
-
     PluginHandle g_pluginHandle = kPluginHandle_Invalid;
 
     SKSETaskInterface* g_taskInterface;
     SKSEMessagingInterface* g_messaging;
+    SKSEPapyrusInterface* g_papyrus;
 
     bool GetHandle(void* src, UInt32 typeID, ObjectHandle& out)
     {
-        auto policy = (*l_skyrimVM)->GetClassRegistry()->GetHandlePolicy();
+        auto policy = (*g_skyrimVM)->GetClassRegistry()->GetHandlePolicy();
         auto handle = policy->Create(typeID, src);
 
         if (handle == policy->GetInvalidHandle()) {
@@ -29,7 +24,7 @@ namespace SKSE
 
     void* ResolveObject(UInt64 handle, UInt32 typeID)
     {
-        auto policy = (*l_skyrimVM)->GetClassRegistry()->GetHandlePolicy();
+        auto policy = (*g_skyrimVM)->GetClassRegistry()->GetHandlePolicy();
 
         if (handle == policy->GetInvalidHandle()) {
             return NULL;
@@ -106,17 +101,19 @@ namespace SKSE
             return false;
         }
 
+        g_papyrus = (SKSEPapyrusInterface*)skse->QueryInterface(kInterface_Papyrus);
+        if (!g_papyrus)
+        {
+            _FATALERROR("Couldn't get papyrus interface,");
+            return false;
+        }
+        if (g_papyrus->interfaceVersion < 1)
+        {
+            _FATALERROR("Papyrus interface too old (%d expected %d)", g_papyrus->interfaceVersion, 1);
+            return false;
+        }
+        
         return true;
-    }
-
-    StringCache::Ref::Ref()
-    {
-        CALL_MEMBER_FN(this, ctor)("");
-    }
-
-    StringCache::Ref::Ref(const char* buf)
-    {
-        CALL_MEMBER_FN(this, ctor)(buf);
     }
 
 }

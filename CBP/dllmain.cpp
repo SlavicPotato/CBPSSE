@@ -19,6 +19,7 @@ static bool Initialize(const SKSEInterface* skse)
     return true;
 }
 
+
 extern "C"
 {
     bool SKSEPlugin_Query(const SKSEInterface* skse, PluginInfo* info)
@@ -37,7 +38,7 @@ extern "C"
 
         bool ret = Initialize(skse);
 
-        IAL::Unload();
+        IAL::Release();
 
         return ret;
     }

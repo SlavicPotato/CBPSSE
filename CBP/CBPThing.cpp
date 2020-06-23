@@ -4,7 +4,7 @@
 
 namespace CBP
 {
-    Thing::Thing(NiAVObject* obj, SKSE::BSFixedString& name)
+    Thing::Thing(NiAVObject* obj, BSFixedString& name)
         : boneName(name)
     {
         time = PerfCounter::Query();
@@ -21,19 +21,19 @@ namespace CBP
         if (timeTick < 1.0f)
             timeTick = 1.0f;
 
-        linearX = centry["linearX"];
-        linearY = centry["linearY"];
-        linearZ = centry["linearZ"];
+        linearX = centry["linearx"];
+        linearY = centry["lineary"];
+        linearZ = centry["linearz"];
         rotational = centry["rotational"];
 
-        if (centry.find("timeScale") != centry.end())
-            timeScale = centry["timeScale"];
+        if (centry.find("timescale") != centry.end())
+            timeScale = centry["timescale"];
         else
             timeScale = 1.0f;
 
-        gravityBias = centry["gravityBias"];
-        gravityCorrection = centry["gravityCorrection"];
-        cogOffset = centry["cogOffset"];
+        gravityBias = centry["gravitybias"];
+        gravityCorrection = centry["gravitycorrection"];
+        cogOffset = centry["cogoffset"];
 
         //zOffset = solveQuad(stiffness2, stiffness, -gravityBias);
 

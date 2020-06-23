@@ -29,34 +29,10 @@ namespace CBP
         g_updateTask.Run();
     }
 
-    /*static bool HookTrampoline()
+    static void QueueConfigReload()
     {
-        uintptr_t dst1, dst2;
-
-        // get trampoline dest addrs
-        if (!Hook::GetTrampolineDst<0xE8>(BSTaskPool_Enter1, dst1) ||
-            !Hook::GetTrampolineDst<0xE8>(BSTaskPool_Enter2, dst2))
-        {
-            return false;
-        }
-
-        // make sure both point to the same address
-        if (dst1 != dst2) {
-            return false;
-        }
-
-        SKSE_BSTaskPoolProc1_O = reinterpret_cast<BSTaskPoolProc_T>(dst1);
-
-        auto ht = uintptr_t(TaskInterface1_Hook);
-
-        // assume we'll succeed
-        Hook::WriteTrampolineDst<0xE8>(BSTaskPool_Enter1, ht);
-        Hook::WriteTrampolineDst<0xE8>(BSTaskPool_Enter2, ht);
-
-        FlushInstructionCache(GetCurrentProcess(), NULL, 0);
-
-        return true;
-    }*/
+        SKSE::g_taskInterface->AddTask(&g_confReloadTask);
+    }
 
     static void MainInit_Hook()
     {
@@ -71,7 +47,7 @@ namespace CBP
         else {
             _MESSAGE("BSTaskPool procs hooked");
 
-            if (static_cast<int>(config["Tuning"]["reloadOnChange"]) > 0) {
+            if (static_cast<int>(config["tuning"]["reloadonchange"]) > 0) {
                 ConfigObserver::GetSingleton()->Start();
             }
         }
@@ -79,7 +55,7 @@ namespace CBP
         MainInitHook_O();
     }
 
-    void MessageHandler(SKSEMessagingInterface::Message* message)
+    static void MessageHandler(SKSEMessagingInterface::Message* message)
     {
         if (!isHooked) {
             return;
@@ -89,7 +65,7 @@ namespace CBP
         {
         case SKSEMessagingInterface::kMessage_InputLoaded:
         {
-            SKSE::GetEventDispatcherList()->objectLoadedDispatcher.AddEventSink(
+            GetEventDispatcherList()->objectLoadedDispatcher.AddEventSink(
                 ObjectLoadedEventHandler::GetSingleton());
             _DMESSAGE("ObjectLoaded event sink added");
         }
@@ -97,9 +73,17 @@ namespace CBP
         }
     }
 
-    static void QueueConfigReload()
+    static void PP_ReloadConfig(StaticFunctionTag* base)
     {
-        SKSE::g_taskInterface->AddTask(&g_confReloadTask);
+        QueueConfigReload();
+    }
+
+    static bool PP_RegisterFuncs(VMClassRegistry* registry)
+    {
+        registry->RegisterFunction(
+            new NativeFunction0<StaticFunctionTag, void>("ReloadConfig", "CBP", PP_ReloadConfig, registry));
+
+        return true;
     }
 
     bool Initialize()
@@ -114,19 +98,20 @@ namespace CBP
             _FATALERROR("MainInit hook failed");
             return false;
         }
-
+        
         SKSE::g_messaging->RegisterListener(SKSE::g_pluginHandle, "SKSE", MessageHandler);
+        //SKSE::g_papyrus->Register(PP_RegisterFuncs);
 
         return true;
     }
 
-    EventResult ObjectLoadedEventHandler::ReceiveEvent(TESObjectLoadedEvent* evn, SKSE::EventDispatcherEx<TESObjectLoadedEvent>* dispatcher)
+    EventResult ObjectLoadedEventHandler::ReceiveEvent(TESObjectLoadedEvent* evn, EventDispatcher<TESObjectLoadedEvent>* dispatcher)
     {
         if (evn) {
-            auto form = SKSE::LookupFormByID(evn->formId);
+            auto form = LookupFormByID(evn->formId);
             if (form->formType == Actor::kTypeID)
             {
-                auto actor = IRTTI::Cast<Actor>(form, RTTI::TESForm, RTTI::Actor);
+                auto actor = DYNAMIC_CAST(form, TESForm, Actor);
                 if (actor != NULL)
                 {
                     SKSE::ObjectHandle handle;
@@ -161,7 +146,7 @@ namespace CBP
 
     void UpdateTask::Run()
     {
-        auto player = *SKSE::g_thePlayer;
+        auto player = *g_thePlayer;
         if (!player || !player->loadedState)
             return;
 
@@ -184,7 +169,7 @@ namespace CBP
                 continue;
             }
 
-            auto actor = IRTTI::Cast<Actor>(ref.ref, RTTI::TESObjectREFR, RTTI::Actor);
+            auto actor = DYNAMIC_CAST(ref.ref, TESObjectREFR, Actor);
             if (!isActorValid(actor)) {
                 continue;
             }

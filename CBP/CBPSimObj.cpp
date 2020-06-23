@@ -13,9 +13,9 @@ namespace CBP
     constexpr char* bellyName = "HDT Belly";
 
     static std::unordered_map<const char*, std::string> configMap = {
-        {leftBreastName, "Breast"}, {rightBreastName, "Breast"},
-        {leftButtName, "Butt"}, {rightButtName, "Butt"},
-        {bellyName, "Belly"} };
+        {leftBreastName, "breast"}, {rightBreastName, "breast"},
+        {leftButtName, "butt"}, {rightButtName, "butt"},
+        {bellyName, "belly"} };
 
     static std::vector<const char*> femaleBones = { leftBreastName, rightBreastName, leftButtName, rightButtName, bellyName };
 
@@ -30,7 +30,7 @@ namespace CBP
 
         things.clear();
         for (auto& b : femaleBones) {
-            SKSE::BSFixedString cs(b);
+            BSFixedString cs(b);
             auto bone = actor->loadedState->node->GetObjectByName(&cs.data);
             if (bone != NULL) {
                 things.emplace(b, Thing(bone, cs));

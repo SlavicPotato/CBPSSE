@@ -29,7 +29,13 @@ namespace CBP
 					char* tok2 = strtok_s(NULL, " ", &next_tok);
 
 					if (tok0 && tok1 && tok2) {
-						config[std::string(tok0)][std::string(tok1)] = atof(tok2);
+						std::string sect(tok0);
+						std::string key(tok1);
+
+						transform(sect.begin(), sect.end(), sect.begin(), ::tolower);
+						transform(key.begin(), key.end(), key.begin(), ::tolower);
+
+						config[sect][key] = atof(tok2);
 					}
 				}
 			}

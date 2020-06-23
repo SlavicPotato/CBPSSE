@@ -27,18 +27,6 @@
     <ClInclude Include="CBPThing.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="tlib.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="addrlib.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="versiondb.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="rtti.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="common.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -74,9 +62,6 @@
     <ClCompile Include="pch.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="tlib.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="CBPconfig.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -84,12 +69,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="CBPThing.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="addrlib.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="rtti.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="cbp.cpp">

@@ -2,6 +2,8 @@
 
 #include "CBPSimObj.h"
 
+//#define _MEASURE_PERF
+
 namespace CBP
 {
     typedef void (*_MainInitHook)(void);
@@ -16,10 +18,10 @@ namespace CBP
     };
 
     class ObjectLoadedEventHandler :
-        public SKSE::BSTEventSinkEx <TESObjectLoadedEvent>
+        public BSTEventSink <TESObjectLoadedEvent>
     {
     protected:
-        virtual EventResult		ReceiveEvent(TESObjectLoadedEvent* evn, SKSE::EventDispatcherEx<TESObjectLoadedEvent>* dispatcher) override;
+        virtual EventResult		ReceiveEvent(TESObjectLoadedEvent* evn, EventDispatcher<TESObjectLoadedEvent>* dispatcher) override;
 
     public:
         static ObjectLoadedEventHandler* GetSingleton() {
