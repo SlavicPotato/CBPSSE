@@ -15,7 +15,7 @@ namespace CBP
 
     static IThreadSafeBasicMemPool<AddRemoveActorTask, 8192> s_addRemoveActorTaskPool;
 
-   
+
     static bool isHooked = false;
 
     static void TaskInterface1_Hook(BSTaskPool* taskpool)

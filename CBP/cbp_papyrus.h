@@ -2,10 +2,6 @@
 
 namespace CBP
 {
-    constexpr UInt32 CFG_SECTID_BREAST = 0x00000001;
-    constexpr UInt32 CFG_SECTID_BUTT = 0x00000002;
-    constexpr UInt32 CFG_SECTID_BELLY = 0x00000003;
-
     class ConfigUpdateTask :
         public TaskDelegate
     {

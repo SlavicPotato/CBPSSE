@@ -57,7 +57,7 @@ namespace CBP
         transform(key.begin(), key.end(), key.begin(), ::tolower);
 
         if (!IsConfigOption(sect, key)) {
-            return false;
+            return NULL;
         }
 
         auto cmd = s_configUpdateTaskPool.Allocate();
