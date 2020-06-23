@@ -102,11 +102,11 @@ namespace SKSE
         }
 
         g_papyrus = (SKSEPapyrusInterface*)skse->QueryInterface(kInterface_Papyrus);
-        if (!g_papyrus)
-        {
-            _FATALERROR("Couldn't get papyrus interface,");
+        if (g_papyrus == NULL) {
+            _FATALERROR("Couldn't get papyrus interface.");
             return false;
         }
+
         if (g_papyrus->interfaceVersion < 1)
         {
             _FATALERROR("Papyrus interface too old (%d expected %d)", g_papyrus->interfaceVersion, 1);

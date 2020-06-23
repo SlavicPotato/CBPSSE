@@ -214,6 +214,8 @@
     <ClInclude Include="CBPconfig.h" />
     <ClInclude Include="CBPSimObj.h" />
     <ClInclude Include="CBPThing.h" />
+    <ClInclude Include="cbp_configobs.h" />
+    <ClInclude Include="cbp_papyrus.h" />
     <ClInclude Include="common.h" />
     <ClInclude Include="hook.h" />
     <ClInclude Include="plugin.h" />
@@ -229,6 +231,8 @@
     <ClCompile Include="CBPconfig.cpp" />
     <ClCompile Include="CBPSimObj.cpp" />
     <ClCompile Include="CBPThing.cpp" />
+    <ClCompile Include="cbp_configobs.cpp" />
+    <ClCompile Include="cbp_papyrus.cpp" />
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="logging.cpp" />
     <ClCompile Include="pch.cpp">

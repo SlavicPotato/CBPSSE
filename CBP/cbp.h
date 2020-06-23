@@ -6,6 +6,7 @@
 
 namespace CBP
 {
+
     typedef void (*_MainInitHook)(void);
     typedef void(*BSTaskPoolProc_T)(BSTaskPool*);
 
@@ -83,35 +84,9 @@ namespace CBP
         virtual void Run();
     };
 
-    class ConfigObserver :
-        ILog
-    {
-    public:
-
-        bool Start();
-        void Shutdown();
-
-        static ConfigObserver* GetSingleton() {
-            static ConfigObserver observer;
-            return &observer;
-        }
-
-        FN_NAMEPROC("ConfigObserver")
-    private:
-        ConfigObserver();
-
-        void QueueReloadOnChange();
-        bool GetTimestamp(ULARGE_INTEGER* ul);
-        void Worker();
-
-        TCHAR* conf, * dir;
-        ULARGE_INTEGER lastT;
-
-        std::thread* _thread;
-        HANDLE observerHandle;
-    };
-
     extern bool Initialize();
     extern void MessageHandler(SKSEMessagingInterface::Message* message);
 
+    void QueueConfigReload();
+    extern UpdateTask g_updateTask;
 }

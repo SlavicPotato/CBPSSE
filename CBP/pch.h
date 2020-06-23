@@ -1,8 +1,10 @@
 #ifndef PCH_H
 #define PCH_H
 
+#include <set>
 #include <unordered_map>
 #include <sstream>
+#include <fstream>
 #include <thread>
 #include <algorithm>
 
@@ -32,5 +34,7 @@
 #include "logging.h"
 #include "skse.h"
 #include "cbp.h"
+#include "cbp_papyrus.h"
+#include "cbp_configobs.h"
 
 #endif //PCH_H

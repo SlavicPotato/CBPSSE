@@ -54,6 +54,12 @@
     <ClInclude Include="hook.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="cbp_papyrus.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="cbp_configobs.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp">
@@ -78,6 +84,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="logging.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="cbp_papyrus.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="cbp_configobs.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
