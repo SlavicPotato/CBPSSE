@@ -101,7 +101,7 @@ namespace CBP
         if (!fs.is_open()) {
             return false;
         }
-        
+
         typedef std::vector<std::pair<std::string, float>> configEntryS_t;
         typedef std::pair<std::string, configEntryS_t> configEntryPairS_t;
         typedef std::vector<configEntryPairS_t> configS_t;
