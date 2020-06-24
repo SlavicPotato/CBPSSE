@@ -208,7 +208,7 @@ namespace CBP
     {
         if (actors.find(handle) == actors.end())
         {
-            //_DMESSAGE("Adding %llX (%s)", handle, CALL_MEMBER_FN(actor, GetReferenceName)());
+            //Debug("Adding %llX (%s)", handle, CALL_MEMBER_FN(actor, GetReferenceName)());
 
             auto obj = SimObj();
             obj.bind(actor, config);
@@ -219,6 +219,7 @@ namespace CBP
 
     void UpdateTask::RemoveActor(SKSE::ObjectHandle handle)
     {
+        //Debug("Removing actor 0x%llX", handle);
         actors.erase(handle);
     }
 
