@@ -67,7 +67,6 @@ namespace CBP
         {
             auto list = GetEventDispatcherList();
             list->objectLoadedDispatcher.AddEventSink(ObjectLoadedEventHandler::GetSingleton());
-            list->unk1B8.AddEventSink(CellAttachDetachEventHandler::GetSingleton());
             list->unk210.AddEventSink(CellLoadedEventHandler::GetSingleton());
 
             _DMESSAGE("Event sinks added");
@@ -139,22 +138,6 @@ namespace CBP
         return kEvent_Continue;
     }
 
-    auto CellAttachDetachEventHandler::ReceiveEvent(TESCellAttachDetachEvent* evn, EventDispatcher<TESCellAttachDetachEvent>* dispatcher)
-        ->EventResult
-    {
-        if (evn != NULL && evn->reference != NULL)
-        {
-            if (evn->reference->formType == Actor::kTypeID) 
-            {
-                DispatchActorTask(
-                    DYNAMIC_CAST(evn->reference, TESObjectREFR, Actor),
-                    UpdateActionTask::kActionAdd);
-            }
-        }
-
-        return kEvent_Continue;
-    }
-
     auto CellLoadedEventHandler::ReceiveEvent(TESCellFullyLoadedEvent* evn, EventDispatcher<TESCellFullyLoadedEvent>* dispatcher)
         -> EventResult
     {
@@ -195,7 +178,7 @@ namespace CBP
             auto actor = SKSE::ResolveObject<Actor>(it->first, Actor::kTypeID);
 
             if (!isActorValid(actor)) {
-                //Debug("Actor 0x%llX no longer valid", it->first);
+                //Debug("Actor 0x%llX (%s) no longer valid", it->first, actor ? CALL_MEMBER_FN(actor, GetReferenceName)() : NULL);
                 it = actors.erase(it);
             }
             else {
@@ -256,12 +239,11 @@ namespace CBP
     {
         if (actors.find(handle) == actors.end())
         {
-            //Debug("Adding %llX (%s)", handle, CALL_MEMBER_FN(actor, GetReferenceName)());
-
             auto obj = SimObj();
             obj.bind(actor, config);
 
             if (obj.hasBone()) {
+                //Debug("Adding %llX (%s)", handle, CALL_MEMBER_FN(actor, GetReferenceName)());
                 actors.emplace(handle, obj);
             }
         }

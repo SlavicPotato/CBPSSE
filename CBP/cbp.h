@@ -22,7 +22,7 @@ namespace CBP
         public BSTEventSink <TESObjectLoadedEvent>
     {
     protected:
-        virtual EventResult		ReceiveEvent(TESObjectLoadedEvent* evn, EventDispatcher<TESObjectLoadedEvent>* dispatcher) override;
+        virtual EventResult	ReceiveEvent(TESObjectLoadedEvent* evn, EventDispatcher<TESObjectLoadedEvent>* dispatcher) override;
 
     public:
         static ObjectLoadedEventHandler* GetSingleton() {
@@ -31,23 +31,11 @@ namespace CBP
         }
     };
 
-    class CellAttachDetachEventHandler :
-        public BSTEventSink <TESCellAttachDetachEvent>
-    {
-    protected:
-        virtual EventResult		ReceiveEvent(TESCellAttachDetachEvent* evn, EventDispatcher<TESCellAttachDetachEvent>* dispatcher) override;
-    public:
-        static CellAttachDetachEventHandler* GetSingleton() {
-            static CellAttachDetachEventHandler handler;
-            return &handler;
-        }
-    };
-
     class CellLoadedEventHandler :
         public BSTEventSink <TESCellFullyLoadedEvent>
     {
     protected:
-        virtual EventResult		ReceiveEvent(TESCellFullyLoadedEvent* evn, EventDispatcher<TESCellFullyLoadedEvent>* dispatcher) override;
+        virtual EventResult	ReceiveEvent(TESCellFullyLoadedEvent* evn, EventDispatcher<TESCellFullyLoadedEvent>* dispatcher) override;
     public:
         static CellLoadedEventHandler* GetSingleton() {
             static CellLoadedEventHandler handler;
