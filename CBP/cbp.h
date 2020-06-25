@@ -31,6 +31,19 @@ namespace CBP
         }
     };
 
+    class CellAttachDetachEventHandler :
+        public BSTEventSink <TESCellAttachDetachEvent>
+    {
+    protected:
+        virtual EventResult		ReceiveEvent(TESCellAttachDetachEvent* evn, EventDispatcher<TESCellAttachDetachEvent>* dispatcher) override;
+    public:
+        static CellAttachDetachEventHandler* GetSingleton() {
+            static CellAttachDetachEventHandler handler;
+            return &handler;
+        }
+    };
+
+
     struct CBPActorEntry {
         SKSE::ObjectHandle handle;
     };
@@ -49,6 +62,9 @@ namespace CBP
     private:
         std::unordered_map<SKSE::ObjectHandle, SimObj> actors;
 
+        TESObjectCELL* curCell = NULL;
+        long long lastCellScan = PerfCounter::Query();
+
 #ifdef _MEASURE_PERF
         long long ss;
         long long ee = 0;
@@ -62,7 +78,7 @@ namespace CBP
         public TaskDelegate
     {
     public:
-        enum CBPUpdateActorAction : uint32_t
+        enum UpdateActorAction : uint32_t
         {
             kActionAdd,
             kActionRemove
@@ -71,9 +87,9 @@ namespace CBP
         virtual void Run();
         virtual void Dispose();
 
-        static AddRemoveActorTask* Create(CBPUpdateActorAction action, SKSE::ObjectHandle handle);
+        static AddRemoveActorTask* Create(UpdateActorAction action, SKSE::ObjectHandle handle);
     private:
-        CBPUpdateActorAction m_action;
+        UpdateActorAction m_action;
         SKSE::ObjectHandle m_handle;
     };
 

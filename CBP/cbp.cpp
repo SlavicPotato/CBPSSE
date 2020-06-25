@@ -15,7 +15,6 @@ namespace CBP
 
     static IThreadSafeBasicMemPool<AddRemoveActorTask, 8192> s_addRemoveActorTaskPool;
 
-
     static bool isHooked = false;
 
     static void TaskInterface1_Hook(BSTaskPool* taskpool)
@@ -66,9 +65,13 @@ namespace CBP
         {
         case SKSEMessagingInterface::kMessage_InputLoaded:
         {
-            GetEventDispatcherList()->objectLoadedDispatcher.AddEventSink(
+            auto list = GetEventDispatcherList();
+            list->objectLoadedDispatcher.AddEventSink(
                 ObjectLoadedEventHandler::GetSingleton());
-            _DMESSAGE("ObjectLoaded event sink added");
+            list->unk1B8.AddEventSink(
+                CellAttachDetachEventHandler::GetSingleton());
+
+            _DMESSAGE("Event sinks added");
         }
         break;
         }
@@ -94,34 +97,6 @@ namespace CBP
         return true;
     }
 
-    EventResult ObjectLoadedEventHandler::ReceiveEvent(TESObjectLoadedEvent* evn, EventDispatcher<TESObjectLoadedEvent>* dispatcher)
-    {
-        if (evn) {
-            auto form = LookupFormByID(evn->formId);
-            if (form->formType == Actor::kTypeID)
-            {
-                auto actor = DYNAMIC_CAST(form, TESForm, Actor);
-                if (actor != NULL)
-                {
-                    SKSE::ObjectHandle handle;
-                    if (SKSE::GetHandle(actor, actor->formType, handle))
-                    {
-                        auto action = evn->loaded ?
-                            AddRemoveActorTask::kActionAdd :
-                            AddRemoveActorTask::kActionRemove;
-
-                        auto cmd = AddRemoveActorTask::Create(action, handle);
-                        if (cmd != NULL) {
-                            SKSE::g_taskInterface->AddTask(cmd);
-                        }
-                    }
-                }
-            }
-        }
-
-        return kEvent_Continue;
-    }
-
     __forceinline static bool isActorValid(Actor* actor)
     {
         if (actor == NULL || actor->loadedState == NULL ||
@@ -131,6 +106,54 @@ namespace CBP
             return false;
         }
         return true;
+    }
+
+    static void DispatchActorTask(Actor* actor, AddRemoveActorTask::UpdateActorAction action)
+    {
+        if (actor != NULL) {
+            SKSE::ObjectHandle handle;
+            if (SKSE::GetHandle(actor, actor->formType, handle))
+            {
+                auto cmd = AddRemoveActorTask::Create(action, handle);
+                if (cmd != NULL) {
+                    SKSE::g_taskInterface->AddTask(cmd);
+                }
+            }
+        }
+    }
+
+    auto ObjectLoadedEventHandler::ReceiveEvent(TESObjectLoadedEvent* evn, EventDispatcher<TESObjectLoadedEvent>* dispatcher)
+        -> EventResult
+    {
+        if (evn != NULL) {
+            auto form = LookupFormByID(evn->formId);
+            if (form->formType == Actor::kTypeID)
+            {
+                DispatchActorTask(
+                    DYNAMIC_CAST(form, TESForm, Actor),
+                    evn->loaded ?
+                    AddRemoveActorTask::kActionAdd :
+                    AddRemoveActorTask::kActionRemove);
+            }
+        }
+
+        return kEvent_Continue;
+    }
+
+    auto CellAttachDetachEventHandler::ReceiveEvent(TESCellAttachDetachEvent* evn, EventDispatcher<TESCellAttachDetachEvent>* dispatcher)
+        ->EventResult
+    {
+        if (evn != NULL && evn->reference != NULL)
+        {
+            if (evn->reference->formType == Actor::kTypeID) 
+            {
+                DispatchActorTask(
+                    DYNAMIC_CAST(evn->reference, TESObjectREFR, Actor),
+                    AddRemoveActorTask::kActionAdd);
+            }
+        }
+
+        return kEvent_Continue;
     }
 
     void UpdateTask::Run()
@@ -148,9 +171,9 @@ namespace CBP
 #endif
 
         // still need this since TESObjectLoadedEvent doesn't seem to give us all the actors
-        for (UInt32 i = 0; i < cell->refData.maxSize; i++) 
+        for (UInt32 i = 0; i < cell->refData.maxSize; i++)
         {
-            auto &ref = cell->refData.refArray[i];
+            auto& ref = cell->refData.refArray[i];
 
             if (ref.unk08 == NULL || ref.ref == NULL) {
                 continue;
@@ -179,7 +202,7 @@ namespace CBP
             auto actor = SKSE::ResolveObject<Actor>(it->first, Actor::kTypeID);
 
             if (!isActorValid(actor)) {
-                //Debug("Actor 0x%llX no longer valid", it->first);
+                Debug("Actor 0x%llX no longer valid", it->first);
                 it = actors.erase(it);
             }
             else {
@@ -208,7 +231,7 @@ namespace CBP
     {
         if (actors.find(handle) == actors.end())
         {
-            //Debug("Adding %llX (%s)", handle, CALL_MEMBER_FN(actor, GetReferenceName)());
+            Debug("Adding %llX (%s)", handle, CALL_MEMBER_FN(actor, GetReferenceName)());
 
             auto obj = SimObj();
             obj.bind(actor, config);
@@ -219,7 +242,7 @@ namespace CBP
 
     void UpdateTask::RemoveActor(SKSE::ObjectHandle handle)
     {
-        //Debug("Removing actor 0x%llX", handle);
+        Debug("Removing actor 0x%llX", handle);
         actors.erase(handle);
     }
 
@@ -232,7 +255,7 @@ namespace CBP
         //Message("Configuration updated");
     }
 
-    AddRemoveActorTask* AddRemoveActorTask::Create(CBPUpdateActorAction action, SKSE::ObjectHandle handle)
+    AddRemoveActorTask* AddRemoveActorTask::Create(UpdateActorAction action, SKSE::ObjectHandle handle)
     {
         auto cmd = s_addRemoveActorTaskPool.Allocate();
         if (cmd != NULL) {
