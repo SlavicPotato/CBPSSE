@@ -14,12 +14,10 @@ namespace CBP
 		//bool actorValid(Actor *actor);
 		void update(Actor* actor);
 		void updateConfig(config_t& config);
-		bool __inline isBound() { return bound; }
-		//bool __inline noBones() { return no_bones; }
+		bool hasBone();
 
 	private:
 		//Actor* tmp;
-		bool bound = false;
 		
 		std::unordered_map<const char*, Thing> things;
 	};

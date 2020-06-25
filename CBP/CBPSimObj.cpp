@@ -26,8 +26,6 @@ namespace CBP
 
     void SimObj::bind(Actor* actor, config_t& config)
     {
-        bound = true;
-
         things.clear();
         for (auto& b : femaleBones) {
             BSFixedString cs(b);
@@ -38,6 +36,11 @@ namespace CBP
         }
 
         updateConfig(config);
+    }
+
+    bool SimObj::hasBone() 
+    { 
+        return things.size() > 0; 
     }
 
     void SimObj::update(Actor* actor) {

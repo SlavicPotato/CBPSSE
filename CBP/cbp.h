@@ -43,6 +43,37 @@ namespace CBP
         }
     };
 
+    class CellLoadedEventHandler :
+        public BSTEventSink <TESCellFullyLoadedEvent>
+    {
+    protected:
+        virtual EventResult		ReceiveEvent(TESCellFullyLoadedEvent* evn, EventDispatcher<TESCellFullyLoadedEvent>* dispatcher) override;
+    public:
+        static CellLoadedEventHandler* GetSingleton() {
+            static CellLoadedEventHandler handler;
+            return &handler;
+        }
+    };
+
+    class UpdateActionTask :
+        public TaskDelegate
+    {
+    public:
+        enum UpdateActorAction : uint32_t
+        {
+            kActionAdd,
+            kActionRemove,
+            kActionCellScan
+        };
+
+        virtual void Run();
+        virtual void Dispose();
+
+        static UpdateActionTask* Create(UpdateActorAction action, SKSE::ObjectHandle handle);
+    private:
+        UpdateActorAction m_action;
+        SKSE::ObjectHandle m_handle;
+    };
 
     struct CBPActorEntry {
         SKSE::ObjectHandle handle;
@@ -54,16 +85,22 @@ namespace CBP
     public:
         void Run();
 
+        void CellScan(TESObjectCELL* cell);
         void AddActor(Actor* actor, SKSE::ObjectHandle handle);
         void RemoveActor(SKSE::ObjectHandle handle);
         void UpdateConfig();
 
+        void AddTask(TaskDelegate* task);
+
         FN_NAMEPROC("UpdateTask")
     private:
-        std::unordered_map<SKSE::ObjectHandle, SimObj> actors;
+        bool IsTaskQueueEmpty();
+        void ProcessTasks();
 
-        TESObjectCELL* curCell = NULL;
-        long long lastCellScan = PerfCounter::Query();
+        std::unordered_map<SKSE::ObjectHandle, SimObj> actors;
+        std::queue<TaskDelegate*> taskQueue;
+
+        ICriticalSection taskQueueLock;
 
 #ifdef _MEASURE_PERF
         long long ss;
@@ -72,25 +109,6 @@ namespace CBP
         size_t a;
         long long s = PerfCounter::Query();
 #endif
-    };
-
-    class AddRemoveActorTask :
-        public TaskDelegate
-    {
-    public:
-        enum UpdateActorAction : uint32_t
-        {
-            kActionAdd,
-            kActionRemove
-        };
-
-        virtual void Run();
-        virtual void Dispose();
-
-        static AddRemoveActorTask* Create(UpdateActorAction action, SKSE::ObjectHandle handle);
-    private:
-        UpdateActorAction m_action;
-        SKSE::ObjectHandle m_handle;
     };
 
     class ConfigReloadTask :

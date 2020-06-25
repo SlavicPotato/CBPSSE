@@ -6,6 +6,7 @@
 #include <sstream>
 #include <fstream>
 #include <thread>
+#include <queue>
 #include <algorithm>
 
 #include <ShlObj.h>

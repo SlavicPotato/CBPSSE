@@ -13,7 +13,7 @@ namespace CBP
     UpdateTask g_updateTask;
     static ConfigReloadTask g_confReloadTask;
 
-    static IThreadSafeBasicMemPool<AddRemoveActorTask, 8192> s_addRemoveActorTaskPool;
+    static IThreadSafeBasicMemPool<UpdateActionTask, 8192> s_addRemoveActorTaskPool;
 
     static bool isHooked = false;
 
@@ -66,10 +66,9 @@ namespace CBP
         case SKSEMessagingInterface::kMessage_InputLoaded:
         {
             auto list = GetEventDispatcherList();
-            list->objectLoadedDispatcher.AddEventSink(
-                ObjectLoadedEventHandler::GetSingleton());
-            list->unk1B8.AddEventSink(
-                CellAttachDetachEventHandler::GetSingleton());
+            list->objectLoadedDispatcher.AddEventSink(ObjectLoadedEventHandler::GetSingleton());
+            list->unk1B8.AddEventSink(CellAttachDetachEventHandler::GetSingleton());
+            list->unk210.AddEventSink(CellLoadedEventHandler::GetSingleton());
 
             _DMESSAGE("Event sinks added");
         }
@@ -108,15 +107,15 @@ namespace CBP
         return true;
     }
 
-    static void DispatchActorTask(Actor* actor, AddRemoveActorTask::UpdateActorAction action)
+    static void DispatchActorTask(Actor* actor, UpdateActionTask::UpdateActorAction action)
     {
         if (actor != NULL) {
             SKSE::ObjectHandle handle;
             if (SKSE::GetHandle(actor, actor->formType, handle))
             {
-                auto cmd = AddRemoveActorTask::Create(action, handle);
+                auto cmd = UpdateActionTask::Create(action, handle);
                 if (cmd != NULL) {
-                    SKSE::g_taskInterface->AddTask(cmd);
+                    g_updateTask.AddTask(cmd);
                 }
             }
         }
@@ -127,13 +126,13 @@ namespace CBP
     {
         if (evn != NULL) {
             auto form = LookupFormByID(evn->formId);
-            if (form->formType == Actor::kTypeID)
+            if (form != NULL && form->formType == Actor::kTypeID)
             {
                 DispatchActorTask(
                     DYNAMIC_CAST(form, TESForm, Actor),
                     evn->loaded ?
-                    AddRemoveActorTask::kActionAdd :
-                    AddRemoveActorTask::kActionRemove);
+                    UpdateActionTask::kActionAdd :
+                    UpdateActionTask::kActionRemove);
             }
         }
 
@@ -149,7 +148,24 @@ namespace CBP
             {
                 DispatchActorTask(
                     DYNAMIC_CAST(evn->reference, TESObjectREFR, Actor),
-                    AddRemoveActorTask::kActionAdd);
+                    UpdateActionTask::kActionAdd);
+            }
+        }
+
+        return kEvent_Continue;
+    }
+
+    auto CellLoadedEventHandler::ReceiveEvent(TESCellFullyLoadedEvent* evn, EventDispatcher<TESCellFullyLoadedEvent>* dispatcher)
+        -> EventResult
+    {
+        if (evn != NULL && evn->cell != NULL) {
+            SKSE::ObjectHandle handle;
+            if (SKSE::GetHandle(evn->cell, evn->cell->formType, handle))
+            {
+                auto cmd = UpdateActionTask::Create(UpdateActionTask::kActionCellScan, handle);
+                if (cmd != NULL) {
+                    g_updateTask.AddTask(cmd);
+                }
             }
         }
 
@@ -170,7 +186,45 @@ namespace CBP
         auto s = PerfCounter::Query();
 #endif
 
-        // still need this since TESObjectLoadedEvent doesn't seem to give us all the actors
+        ProcessTasks();
+
+        auto it = actors.begin();
+        while (it != actors.end())
+        {
+            auto actor = SKSE::ResolveObject<Actor>(it->first, Actor::kTypeID);
+
+            if (!isActorValid(actor)) {
+                //Debug("Actor 0x%llX no longer valid", it->first);
+                it = actors.erase(it);
+            }
+            else {
+                if (actor->parentCell != NULL && actor->parentCell->cellState == TESObjectCELL::kAttached) {
+                    it->second.update(actor);
+                }
+                ++it;
+            }
+        }
+
+#ifdef _MEASURE_PERF
+        auto e = PerfCounter::Query();
+        ee += PerfCounter::delta_us(s, e);
+        c++;
+        a += actors.size();
+
+        if (e - ss > 50000000LL) {
+            ss = e;
+            Debug("Perf: %lld us (%zu actors)", ee / c, a / c);
+            ee = 0;
+            c = 0;
+            a = 0;
+        }
+#endif
+    }
+
+    void UpdateTask::CellScan(TESObjectCELL* cell)
+    {
+        //Debug("Cell scan: %.8X", cell->formID);
+
         for (UInt32 i = 0; i < cell->refData.maxSize; i++)
         {
             auto& ref = cell->refData.refArray[i];
@@ -195,54 +249,27 @@ namespace CBP
 
             AddActor(actor, handle);
         }
-
-        auto it = actors.begin();
-        while (it != actors.end())
-        {
-            auto actor = SKSE::ResolveObject<Actor>(it->first, Actor::kTypeID);
-
-            if (!isActorValid(actor)) {
-                Debug("Actor 0x%llX no longer valid", it->first);
-                it = actors.erase(it);
-            }
-            else {
-                it->second.update(actor);
-                ++it;
-            }
-        }
-
-#ifdef _MEASURE_PERF
-        auto e = PerfCounter::Query();
-        ee += PerfCounter::delta_us(s, e);
-        c++;
-        a += actors.size();
-
-        if (e - ss > 50000000LL) {
-            ss = e;
-            Debug("Perf: %lld us (%zu actors)", ee / c, a / c);
-            ee = 0;
-            c = 0;
-            a = 0;
-        }
-#endif
     }
 
     void UpdateTask::AddActor(Actor* actor, SKSE::ObjectHandle handle)
     {
         if (actors.find(handle) == actors.end())
         {
-            Debug("Adding %llX (%s)", handle, CALL_MEMBER_FN(actor, GetReferenceName)());
+            //Debug("Adding %llX (%s)", handle, CALL_MEMBER_FN(actor, GetReferenceName)());
 
             auto obj = SimObj();
             obj.bind(actor, config);
 
-            actors.emplace(handle, obj);
+            if (obj.hasBone()) {
+                actors.emplace(handle, obj);
+            }
         }
     }
 
     void UpdateTask::RemoveActor(SKSE::ObjectHandle handle)
     {
-        Debug("Removing actor 0x%llX", handle);
+        //auto actor = SKSE::ResolveObject<Actor>(handle, Actor::kTypeID);
+        //Debug("Removing 0x%llX (%s)", handle, actor ? CALL_MEMBER_FN(actor, GetReferenceName)() : NULL);
         actors.erase(handle);
     }
 
@@ -255,7 +282,36 @@ namespace CBP
         //Message("Configuration updated");
     }
 
-    AddRemoveActorTask* AddRemoveActorTask::Create(UpdateActorAction action, SKSE::ObjectHandle handle)
+    void UpdateTask::AddTask(TaskDelegate* task)
+    {
+        taskQueueLock.Enter();
+        taskQueue.push(task);
+        taskQueueLock.Leave();
+    }
+
+    bool UpdateTask::IsTaskQueueEmpty()
+    {
+        taskQueueLock.Enter();
+        bool r = taskQueue.size() == 0;
+        taskQueueLock.Leave();
+        return r;
+    }
+
+    void UpdateTask::ProcessTasks()
+    {
+        while (!IsTaskQueueEmpty()) 
+        {
+            taskQueueLock.Enter();
+            auto task = taskQueue.front();
+            taskQueue.pop();
+            taskQueueLock.Leave();
+
+            task->Run();
+            task->Dispose();
+        }
+    }
+
+    UpdateActionTask* UpdateActionTask::Create(UpdateActorAction action, SKSE::ObjectHandle handle)
     {
         auto cmd = s_addRemoveActorTaskPool.Allocate();
         if (cmd != NULL) {
@@ -265,20 +321,36 @@ namespace CBP
         return cmd;
     }
 
-    void AddRemoveActorTask::Run()
+    void UpdateActionTask::Run()
     {
-        if (m_action == kActionAdd) {
+        switch (m_action)
+        {
+        case kActionAdd:
+        {
             auto actor = SKSE::ResolveObject<Actor>(m_handle, Actor::kTypeID);
             if (isActorValid(actor)) {
                 g_updateTask.AddActor(actor, m_handle);
             }
         }
-        else if (m_action == kActionRemove) {
+        break;
+        case kActionRemove:
+        {
+            /*auto actor = ISKSE::ResolveObject<Actor>(m_handle, Actor::kTypeID);
+            _DMESSAGE("Removing %llX (%s)", m_handle, actor ? CALL_MEMBER_FN(actor, GetReferenceName)() : "NULL");*/
             g_updateTask.RemoveActor(m_handle);
+        }
+        break;
+        case kActionCellScan:
+        {
+            auto cell = SKSE::ResolveObject <TESObjectCELL>(m_handle, TESObjectCELL::kTypeID);
+            if (cell != NULL && cell->cellState == TESObjectCELL::kAttached) {
+                g_updateTask.CellScan(cell);
+            }
+        }
         }
     }
 
-    void AddRemoveActorTask::Dispose()
+    void UpdateActionTask::Dispose()
     {
         s_addRemoveActorTaskPool.Free(this);
     }
