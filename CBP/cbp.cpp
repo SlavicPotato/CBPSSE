@@ -186,6 +186,7 @@ namespace CBP
         auto s = PerfCounter::Query();
 #endif
 
+        // Process our tasks only when the player is loaded and attached to a cell
         ProcessTasks();
 
         auto it = actors.begin();
@@ -342,8 +343,8 @@ namespace CBP
         break;
         case kActionCellScan:
         {
-            auto cell = SKSE::ResolveObject <TESObjectCELL>(m_handle, TESObjectCELL::kTypeID);
-            if (cell != NULL && cell->cellState == TESObjectCELL::kAttached) {
+            auto cell = SKSE::ResolveObject<TESObjectCELL>(m_handle, TESObjectCELL::kTypeID);
+            if (cell != NULL) {
                 g_updateTask.CellScan(cell);
             }
         }
