@@ -19,6 +19,7 @@
 #include "skse64/PluginAPI.h"
 
 #include "ext/ICommon.h"
+#include "ext/IHook.h"
 #include "skse64/NiNodes.h"
 #include "skse64/NiTypes.h"
 #include "skse64/NiObjects.h"
