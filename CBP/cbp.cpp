@@ -67,8 +67,9 @@ namespace CBP
         case SKSEMessagingInterface::kMessage_InputLoaded:
         {
             auto list = GetEventDispatcherList();
-            list->objectLoadedDispatcher.AddEventSink(ObjectLoadedEventHandler::GetSingleton());
-            list->unk210.AddEventSink(CellLoadedEventHandler::GetSingleton());
+
+            list->objectLoadedDispatcher.AddEventSink(EventHandler::GetSingleton());
+            list->unk210.AddEventSink(EventHandler::GetSingleton());
 
             _DMESSAGE("Event sinks added");
         }
@@ -123,7 +124,7 @@ namespace CBP
         }
     }
 
-    auto ObjectLoadedEventHandler::ReceiveEvent(TESObjectLoadedEvent* evn, EventDispatcher<TESObjectLoadedEvent>* dispatcher)
+    auto EventHandler::ReceiveEvent(TESObjectLoadedEvent* evn, EventDispatcher<TESObjectLoadedEvent>* dispatcher)
         -> EventResult
     {
         if (evn != NULL) {
@@ -141,7 +142,7 @@ namespace CBP
         return kEvent_Continue;
     }
 
-    auto CellLoadedEventHandler::ReceiveEvent(TESCellFullyLoadedEvent* evn, EventDispatcher<TESCellFullyLoadedEvent>* dispatcher)
+    auto EventHandler::ReceiveEvent(TESCellFullyLoadedEvent* evn, EventDispatcher<TESCellFullyLoadedEvent>* dispatcher)
         -> EventResult
     {
         if (evn != NULL && evn->cell != NULL) {

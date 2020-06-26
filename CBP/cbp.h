@@ -6,7 +6,6 @@
 
 namespace CBP
 {
-
     typedef void (*_MainInitHook)(void);
     typedef void(*BSTaskPoolProc_T)(BSTaskPool*);
 
@@ -18,27 +17,16 @@ namespace CBP
         virtual void Dispose() {};
     };
 
-    class ObjectLoadedEventHandler :
-        public BSTEventSink <TESObjectLoadedEvent>
-    {
-    protected:
-        virtual EventResult	ReceiveEvent(TESObjectLoadedEvent* evn, EventDispatcher<TESObjectLoadedEvent>* dispatcher) override;
-
-    public:
-        static ObjectLoadedEventHandler* GetSingleton() {
-            static ObjectLoadedEventHandler handler;
-            return &handler;
-        }
-    };
-
-    class CellLoadedEventHandler :
+    class EventHandler :
+        public BSTEventSink <TESObjectLoadedEvent>,
         public BSTEventSink <TESCellFullyLoadedEvent>
     {
     protected:
+        virtual EventResult	ReceiveEvent(TESObjectLoadedEvent* evn, EventDispatcher<TESObjectLoadedEvent>* dispatcher) override;
         virtual EventResult	ReceiveEvent(TESCellFullyLoadedEvent* evn, EventDispatcher<TESCellFullyLoadedEvent>* dispatcher) override;
     public:
-        static CellLoadedEventHandler* GetSingleton() {
-            static CellLoadedEventHandler handler;
+        static EventHandler* GetSingleton() {
+            static EventHandler handler;
             return &handler;
         }
     };
