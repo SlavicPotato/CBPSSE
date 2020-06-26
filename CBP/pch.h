@@ -31,7 +31,6 @@
 #include "plugin.h"
 #include "common.h"
 #include "patching.h"
-#include "hook.h"
 #include "logging.h"
 #include "skse.h"
 #include "cbp.h"

@@ -67,16 +67,16 @@ namespace CBP
         case SKSEMessagingInterface::kMessage_InputLoaded:
         {
             auto list = GetEventDispatcherList();
+            auto handler = EventHandler::GetSingleton();
 
-            list->objectLoadedDispatcher.AddEventSink(EventHandler::GetSingleton());
-            list->unk210.AddEventSink(EventHandler::GetSingleton());
+            list->objectLoadedDispatcher.AddEventSink(handler);
+            list->unk210.AddEventSink(handler);
 
             _DMESSAGE("Event sinks added");
         }
         break;
         }
     }
-
 
     bool Initialize()
     {

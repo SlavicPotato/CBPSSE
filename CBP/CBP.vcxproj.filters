@@ -51,9 +51,6 @@
     <ClInclude Include="plugin.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="hook.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="cbp_papyrus.h">
       <Filter>Header Files</Filter>
     </ClInclude>
