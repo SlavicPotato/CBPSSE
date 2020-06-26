@@ -259,7 +259,7 @@ namespace CBP
             obj.bind(actor, config);
 
             if (obj.hasBone()) {
-                Debug("Adding %llX (%s)", handle, CALL_MEMBER_FN(actor, GetReferenceName)());
+                //Debug("Adding %llX (%s)", handle, CALL_MEMBER_FN(actor, GetReferenceName)());
                 actors.emplace(handle, obj);
             }
         }
