@@ -11,6 +11,7 @@ namespace CBP
     static BSTaskPoolProc_T SKSE_BSTaskPoolProc2_O;
 
     UpdateTask g_updateTask;
+
     static ConfigReloadTask g_confReloadTask;
 
     static IThreadSafeBasicMemPool<UpdateActionTask, 8192> s_addRemoveActorTaskPool;
@@ -282,7 +283,7 @@ namespace CBP
 
     void UpdateTask::ProcessTasks()
     {
-        while (!IsTaskQueueEmpty()) 
+        while (!IsTaskQueueEmpty())
         {
             taskQueueLock.Enter();
             auto task = taskQueue.front();
