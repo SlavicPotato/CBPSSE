@@ -26,11 +26,16 @@ namespace CBP
         "reloadonchange"
     };
 
+    static vKey_t keysMisc = {
+        "femaleonly"
+    };
+
     static vSection_t validSections = {
         {"breast", keysPhysics},
         {"belly", keysPhysics},
         {"butt", keysPhysics},
-        {"tuning", keysTuning}
+        {"tuning", keysTuning},
+        {"misc", keysMisc}
     };
 
     bool IsConfigOption(std::string& sect, std::string& key)

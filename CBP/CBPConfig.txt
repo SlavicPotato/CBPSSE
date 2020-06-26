@@ -75,3 +75,5 @@ Belly.gravityCorrection 0.0
 # END Belly
 
 Tuning.reloadOnChange 1
+
+Misc.femaleOnly 1

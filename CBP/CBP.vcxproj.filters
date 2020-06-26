@@ -97,4 +97,7 @@
     <None Include="exports.def" />
     <None Include="..\README.md" />
   </ItemGroup>
+  <ItemGroup>
+    <Text Include="CBPConfig.txt" />
+  </ItemGroup>
 </Project>

@@ -90,6 +90,8 @@ namespace CBP
 
         ICriticalSection taskQueueLock;
 
+        bool female_only;
+
 #ifdef _MEASURE_PERF
         long long ss;
         long long ee = 0;

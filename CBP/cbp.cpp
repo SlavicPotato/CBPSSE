@@ -93,6 +93,8 @@ namespace CBP
         SKSE::g_messaging->RegisterListener(SKSE::g_pluginHandle, "SKSE", MessageHandler);
         SKSE::g_papyrus->Register(CBP::RegisterFuncs);
 
+        g_updateTask.UpdateConfig();
+
         return true;
     }
 
@@ -240,11 +242,24 @@ namespace CBP
     {
         if (actors.find(handle) == actors.end())
         {
+            if (actor->race != NULL) {
+                if (actor->race->data.raceFlags & TESRace::kRace_Child) {                    
+                    return;
+                }
+            }
+
+            if (female_only) {
+                auto npc = DYNAMIC_CAST(actor->baseForm, TESForm, TESNPC);
+                if (npc != NULL && CALL_MEMBER_FN(npc, GetSex)() == 0) {
+                    return;
+                }
+            }
+
             auto obj = SimObj();
             obj.bind(actor, config);
 
             if (obj.hasBone()) {
-                //Debug("Adding %llX (%s)", handle, CALL_MEMBER_FN(actor, GetReferenceName)());
+                Debug("Adding %llX (%s)", handle, CALL_MEMBER_FN(actor, GetReferenceName)());
                 actors.emplace(handle, obj);
             }
         }
@@ -259,6 +274,8 @@ namespace CBP
 
     void UpdateTask::UpdateConfig()
     {
+        female_only = static_cast<bool>(config["misc"]["femaleonly"]);
+
         for (auto& a : actors) {
             a.second.updateConfig(config);
         }
