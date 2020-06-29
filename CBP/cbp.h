@@ -2,7 +2,7 @@
 
 #include "CBPSimObj.h"
 
-#define _MEASURE_PERF
+//#define _MEASURE_PERF
 
 namespace CBP
 {
