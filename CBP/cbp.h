@@ -2,7 +2,7 @@
 
 #include "CBPSimObj.h"
 
-//#define _MEASURE_PERF
+#define _MEASURE_PERF
 
 namespace CBP
 {
@@ -19,11 +19,11 @@ namespace CBP
 
     class EventHandler :
         public BSTEventSink <TESObjectLoadedEvent>,
-        public BSTEventSink <TESCellFullyLoadedEvent>
+        public BSTEventSink <TESInitScriptEvent>
     {
     protected:
         virtual EventResult	ReceiveEvent(TESObjectLoadedEvent* evn, EventDispatcher<TESObjectLoadedEvent>* dispatcher) override;
-        virtual EventResult	ReceiveEvent(TESCellFullyLoadedEvent* evn, EventDispatcher<TESCellFullyLoadedEvent>* dispatcher) override;
+        virtual EventResult	ReceiveEvent(TESInitScriptEvent* evn, EventDispatcher<TESInitScriptEvent>* dispatcher) override;
     public:
         static EventHandler* GetSingleton() {
             static EventHandler handler;
@@ -31,22 +31,14 @@ namespace CBP
         }
     };
 
-    class UpdateActionTask :
-        public TaskDelegate
+    struct UpdateActionTask
     {
-    public:
-        enum UpdateActorAction : uint32_t
-        {
+        enum UpdateActorAction : uint32_t {
             kActionAdd,
-            kActionRemove,
-            kActionCellScan
+            kActionRemove
+            //kActionCellScan
         };
 
-        virtual void Run();
-        virtual void Dispose();
-
-        static UpdateActionTask* Create(UpdateActorAction action, SKSE::ObjectHandle handle);
-    private:
         UpdateActorAction m_action;
         SKSE::ObjectHandle m_handle;
     };
@@ -61,12 +53,13 @@ namespace CBP
     public:
         void Run();
 
-        void CellScan(TESObjectCELL* cell);
         void AddActor(Actor* actor, SKSE::ObjectHandle handle);
         void RemoveActor(SKSE::ObjectHandle handle);
         void UpdateConfig();
 
-        void AddTask(TaskDelegate* task);
+        void AddTask(UpdateActionTask& task);
+
+        bool female_only;
 
         FN_NAMEPROC("UpdateTask")
     private:
@@ -74,11 +67,10 @@ namespace CBP
         void ProcessTasks();
 
         std::unordered_map<SKSE::ObjectHandle, SimObj> actors;
-        std::queue<TaskDelegate*> taskQueue;
+        std::queue<UpdateActionTask> taskQueue;
 
         ICriticalSection taskQueueLock;
 
-        bool female_only;
 
 #ifdef _MEASURE_PERF
         long long ss;
