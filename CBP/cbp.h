@@ -43,10 +43,6 @@ namespace CBP
         SKSE::ObjectHandle m_handle;
     };
 
-    struct CBPActorEntry {
-        SKSE::ObjectHandle handle;
-    };
-
     class UpdateTask :
         ILog
     {
@@ -59,8 +55,6 @@ namespace CBP
 
         void AddTask(UpdateActionTask& task);
 
-        bool female_only;
-
         FN_NAMEPROC("UpdateTask")
     private:
         bool IsTaskQueueEmpty();
@@ -71,6 +65,7 @@ namespace CBP
 
         ICriticalSection taskQueueLock;
 
+        bool female_only;
 
 #ifdef _MEASURE_PERF
         long long ss;
