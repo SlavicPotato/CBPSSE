@@ -14,8 +14,6 @@ namespace CBP
 
     static ConfigReloadTask g_confReloadTask;
 
-    static IThreadSafeBasicMemPool<UpdateActionTask, 8192> s_addRemoveActorTaskPool;
-
     static bool isHooked = false;
 
     static void TaskInterface1_Hook(BSTaskPool* taskpool)
@@ -66,18 +64,13 @@ namespace CBP
         {
         case SKSEMessagingInterface::kMessage_InputLoaded:
         {
-            auto list = GetEventDispatcherList();
-            auto handler = EventHandler::GetSingleton();
-
-            list->objectLoadedDispatcher.AddEventSink(handler);
-
+            GetEventDispatcherList()->objectLoadedDispatcher.AddEventSink(EventHandler::GetSingleton());
             _DMESSAGE("Object loaded event sink added");
         }
         break;
         case SKSEMessagingInterface::kMessage_DataLoaded:
         {
             GetEventDispatcherList()->initScriptDispatcher.AddEventSink(EventHandler::GetSingleton());
-
             _DMESSAGE("Init script event sink added");
         }
         break;
@@ -245,8 +238,8 @@ namespace CBP
 
     void UpdateTask::RemoveActor(SKSE::ObjectHandle handle)
     {
-        auto actor = SKSE::ResolveObject<Actor>(handle, Actor::kTypeID);
-        //Debug("Removing 0x%llX (%s)", handle, actor ? CALL_MEMBER_FN(actor, GetReferenceName)() : NULL);
+        /*auto actor = SKSE::ResolveObject<Actor>(handle, Actor::kTypeID);
+        Debug("Removing 0x%llX (%s)", handle, actor ? CALL_MEMBER_FN(actor, GetReferenceName)() : NULL);*/
         actors.erase(handle);
     }
 
@@ -294,24 +287,16 @@ namespace CBP
                 if (isActorValid(actor)) {
                     g_updateTask.AddActor(actor, task.m_handle);
                 }
-                /*else {
-                    _DMESSAGE("Not valid for add %llX (%s) %d %d", m_handle, actor ? CALL_MEMBER_FN(actor, GetReferenceName)() : "NULL",
-                        actor && actor->loadedState ? 1 : 0, actor && actor->loadedState && actor->loadedState->node ? 1 : 0);
-                }*/
             }
             break;
             case UpdateActionTask::kActionRemove:
             {
-                /*auto actor = SKSE::ResolveObject<Actor>(task.m_handle, Actor::kTypeID);
-                _DMESSAGE("Removing %llX (%s)", task.m_handle, actor ? CALL_MEMBER_FN(actor, GetReferenceName)() : "NULL");*/
                 g_updateTask.RemoveActor(task.m_handle);
             }
             break;
             }
         }
     }
-
-    
 
     void ConfigReloadTask::Run()
     {
