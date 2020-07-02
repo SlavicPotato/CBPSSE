@@ -49,7 +49,7 @@ namespace CBP
     public:
         void Run();
 
-        void AddActor(Actor* actor, SKSE::ObjectHandle handle);
+        void AddActor(SKSE::ObjectHandle handle);
         void RemoveActor(SKSE::ObjectHandle handle);
         void UpdateConfig();
 

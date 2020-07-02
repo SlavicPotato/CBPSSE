@@ -2,6 +2,8 @@
 
 namespace SKSE
 {
+    constexpr size_t MAX_TRAMPOLINE_BRANCH = 128;
+
     PluginHandle g_pluginHandle = kPluginHandle_Invalid;
 
     SKSETaskInterface* g_taskInterface;
@@ -73,7 +75,13 @@ namespace SKSE
 
     bool Initialize(const SKSEInterface* skse)
     {
-        if (!g_branchTrampoline.Create(128))
+        auto alignTo = Hook::GetAllocGranularity();
+        ASSERT(alignTo > 0);
+
+        auto r = MAX_TRAMPOLINE_BRANCH % alignTo;
+        size_t branchTrampolineSize = r ? MAX_TRAMPOLINE_BRANCH + (alignTo - r) : MAX_TRAMPOLINE_BRANCH;
+
+        if (!g_branchTrampoline.Create(branchTrampolineSize))
         {
             _FATALERROR("Couldn't create branch trampoline.");
             return false;

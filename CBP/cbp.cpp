@@ -162,11 +162,7 @@ namespace CBP
     void UpdateTask::Run()
     {
         auto player = *g_thePlayer;
-        if (!player || !player->loadedState)
-            return;
-
-        auto cell = player->parentCell;
-        if (!cell)
+        if (!player || !player->loadedState || !player->parentCell)
             return;
 
 #ifdef _MEASURE_PERF
@@ -209,12 +205,17 @@ namespace CBP
 #endif
     }
 
-    void UpdateTask::AddActor(Actor* actor, SKSE::ObjectHandle handle)
+    void UpdateTask::AddActor(SKSE::ObjectHandle handle)
     {
+        auto actor = SKSE::ResolveObject<Actor>(handle, Actor::kTypeID);
+        if (!isActorValid(actor)) {
+            return;
+        }
+
         if (actors.find(handle) == actors.end())
         {
             if (actor->race != NULL) {
-                if (actor->race->data.raceFlags & TESRace::kRace_Child) {                    
+                if (actor->race->data.raceFlags & TESRace::kRace_Child) {
                     return;
                 }
             }
@@ -283,10 +284,7 @@ namespace CBP
             {
             case UpdateActionTask::kActionAdd:
             {
-                auto actor = SKSE::ResolveObject<Actor>(task.m_handle, Actor::kTypeID);
-                if (isActorValid(actor)) {
-                    g_updateTask.AddActor(actor, task.m_handle);
-                }
+                g_updateTask.AddActor(task.m_handle);
             }
             break;
             case UpdateActionTask::kActionRemove:
