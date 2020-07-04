@@ -2,6 +2,11 @@
 
 static bool Initialize(const SKSEInterface* skse)
 {
+    if (!IAL::IsLoaded()) {
+        _FATALERROR("Could not load the address library");
+        return false;
+    }
+
     if (IAL::HasBadQuery()) {
         _FATALERROR("One or more addresses could not be retrieved from the database");
         return false;

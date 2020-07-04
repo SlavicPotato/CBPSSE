@@ -75,18 +75,6 @@ namespace SKSE
 
     bool Initialize(const SKSEInterface* skse)
     {
-        auto alignTo = Hook::GetAllocGranularity();
-        ASSERT(alignTo > 0);
-
-        auto r = MAX_TRAMPOLINE_BRANCH % alignTo;
-        size_t branchTrampolineSize = r ? MAX_TRAMPOLINE_BRANCH + (alignTo - r) : MAX_TRAMPOLINE_BRANCH;
-
-        if (!g_branchTrampoline.Create(branchTrampolineSize))
-        {
-            _FATALERROR("Couldn't create branch trampoline.");
-            return false;
-        }
-
         g_messaging = (SKSEMessagingInterface*)skse->QueryInterface(kInterface_Messaging);
         if (g_messaging == NULL) {
             _FATALERROR("Could not get messaging interface");
@@ -120,7 +108,13 @@ namespace SKSE
             _FATALERROR("Papyrus interface too old (%d expected %d)", g_papyrus->interfaceVersion, 1);
             return false;
         }
-        
+
+        if (!g_branchTrampoline.Create(Hook::GetAlignedTrampolineSize(MAX_TRAMPOLINE_BRANCH)))
+        {
+            _FATALERROR("Could not create branch trampoline.");
+            return false;
+        }
+
         return true;
     }
 
