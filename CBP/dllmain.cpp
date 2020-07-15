@@ -32,7 +32,7 @@ extern "C"
 
     bool SKSEPlugin_Load(const SKSEInterface* skse)
     {
-        _MESSAGE("Initializing %s version %s (runtime %d.%d.%d.%d)",
+        _MESSAGE("Initializing %s version %s (runtime %u.%u.%u.%u)",
             PLUGIN_NAME, PLUGIN_VERSION_VERSTRING,
             GET_EXE_VERSION_MAJOR(skse->runtimeVersion),
             GET_EXE_VERSION_MINOR(skse->runtimeVersion),

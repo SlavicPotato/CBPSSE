@@ -77,7 +77,7 @@ namespace CBP
         NiPoint3 target = obj->m_parent->m_worldTransform * npCogOffset;
 
         NiPoint3 diff = target - oldWorldPos;
-        diff += obj->m_parent->m_worldTransform.rot * npGravityCorrection;
+        diff += npGravityCorrection;
 
         if (fabs(diff.x) > 100.0f || fabs(diff.y) > 100.0f || fabs(diff.z) > 100.0f) {
             //logger.error("transform reset\n");
