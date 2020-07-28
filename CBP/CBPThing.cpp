@@ -37,16 +37,22 @@ namespace CBP
 
         //zOffset = solveQuad(stiffness2, stiffness, -gravityBias);
 
+        timeTick = roundf(timeTick);
+        if (timeTick < 1.0f)
+            timeTick = 1.0f;
+        
+        numSteps = static_cast<int>(timeTick);
+
         diffMult = 1.0f / timeTick;
         npCogOffset = NiPoint3(0.0f, cogOffset, 0.0f);
         npGravityCorrection = NiPoint3(0.0f, 0.0f, gravityCorrection);
     }
 
-    static __inline
-        float clamp(float val, float min, float max) 
+    __forceinline static
+        float clamp(float val, float min, float max)
     {
         if (val < min) return min;
-        else if (val > max) return max;
+        if (val > max) return max;
         return val;
     }
 
@@ -73,58 +79,57 @@ namespace CBP
         if (obj == NULL)
             return;
 
-        //Offset to move Center of Mass make rotaional motion more significant  
         NiPoint3 target = obj->m_parent->m_worldTransform * npCogOffset;
 
         NiPoint3 diff = target - oldWorldPos;
-        diff += npGravityCorrection;
 
-        if (fabs(diff.x) > 100.0f || fabs(diff.y) > 100.0f || fabs(diff.z) > 100.0f) {
-            //logger.error("transform reset\n");
+        if (fabs(diff.x) > 100.0f || fabs(diff.y) > 100.0f || fabs(diff.z) > 100.0f)
+        {
             obj->m_localTransform.pos = npZero;
             oldWorldPos = target;
             velocity = npZero;
             time = PerfCounter::Query();
         }
-        else {
-
+        else
+        {
             diff *= diffMult;
-            NiPoint3 posDelta(0.0f, 0.0f, 0.0f);
+            //NiPoint3 posDelta(0.0f, 0.0f, 0.0f);
 
             // Compute the "Spring" Force
             NiPoint3 diff2(diff.x * diff.x * sgn(diff.x), diff.y * diff.y * sgn(diff.y), diff.z * diff.z * sgn(diff.z));
-            NiPoint3 force = (diff * stiffness) + (diff2 * stiffness2);
-            force.z -= gravityBias;
+            NiPoint3 springForce = (diff * stiffness) + (diff2 * stiffness2);
+
+            springForce.z -= gravityBias;
 
             auto timeStep = deltaT * timeScale;
-            auto step = deltaTms / timeTick;
+            auto dampingBias = ((timeStep * timeStep) * 3.0f) * 100.0f;
+            auto force = springForce * timeStep;
+            auto dampingForce = (damping + dampingBias) * timeStep;
+
+            int c = numSteps;
+            auto newPos = oldWorldPos;
 
             do {
-                // Assume mass is 1, so Accelleration is Force, can vary mass by changinf force
-                //velocity = (velocity + (force * timeStep)) * (1 - (damping * timeStep));
-                velocity = (velocity + (force * timeStep)) - (velocity * (damping * timeStep));
+                // Assume mass is 1, so Accelleration is Force, can vary mass by changing springForce
+                //velocity = (velocity + (springForce * timeStep)) * (1.0f - (conf.damping * timeStep));
 
-                // New position accounting for time
-                posDelta += (velocity * timeStep);
-                deltaTms -= step;
-            } while (deltaTms >= step);
+                velocity += force - (velocity * dampingForce);
+                newPos += velocity * timeStep;
 
-            auto newPos = oldWorldPos + posDelta;
+                c--;
+            } while (c > 0);
+
+            //auto newPos = oldWorldPos + posDelta;
             // clamp the difference to stop the breast severely lagging at low framerates
             diff = newPos - target;
             diff.x = clamp(diff.x, -maxOffset, maxOffset);
             diff.y = clamp(diff.y, -maxOffset, maxOffset);
-            diff.z = clamp(diff.z - gravityCorrection, -maxOffset, maxOffset) + gravityCorrection;
-
-            oldWorldPos = diff + target;
+            diff.z = clamp(diff.z, -maxOffset, maxOffset);
 
             // move the bones based on the supplied weightings
             // Convert the world translations into local coordinates
             auto invRot = obj->m_parent->m_worldTransform.rot.Transpose();
             auto ldiff = invRot * diff;
-
-            // remove component along bone - might want something closer to worldY
-            //ldiff.y = 0;
 
             oldWorldPos = (obj->m_parent->m_worldTransform.rot * ldiff) + target;
 
@@ -132,8 +137,9 @@ namespace CBP
             obj->m_localTransform.pos.y = ldiff.y * linearY;
             obj->m_localTransform.pos.z = ldiff.z * linearZ;
 
-            auto rdiff = ldiff * rotational;
-            obj->m_localTransform.rot.SetEulerAngles(0.0f, 0.0f, rdiff.z);
+            obj->m_localTransform.pos += invRot * npGravityCorrection;
+
+            obj->m_localTransform.rot.SetEulerAngles(0.0f, 0.0f, ldiff.z * rotational);
         }
     }
 }

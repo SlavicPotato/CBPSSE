@@ -2,64 +2,16 @@
 
 namespace CBP
 {
-    static auto MainInitHook_Target = IAL::Addr(35548, 0xFE);
-    static auto BSTaskPool_Enter1 = IAL::Addr(35565, 0x6B8);
-    static auto BSTaskPool_Enter2 = IAL::Addr(35582, 0x1C);
-
-    static _MainInitHook MainInitHook_O;
-    static BSTaskPoolProc_T SKSE_BSTaskPoolProc1_O;
-    static BSTaskPoolProc_T SKSE_BSTaskPoolProc2_O;
-
     UpdateTask g_updateTask;
-
     static ConfigReloadTask g_confReloadTask;
-
-    static bool isHooked = false;
-
-    static void TaskInterface1_Hook(BSTaskPool* taskpool)
-    {
-        SKSE_BSTaskPoolProc1_O(taskpool);
-        g_updateTask.Run();
-    }
-
-    static void TaskInterface2_Hook(BSTaskPool* taskpool)
-    {
-        SKSE_BSTaskPoolProc2_O(taskpool);
-        g_updateTask.Run();
-    }
 
     void QueueConfigReload()
     {
-        SKSE::g_taskInterface->AddTask(&g_confReloadTask);
-    }
-
-    static void MainInit_Hook()
-    {
-        isHooked = Hook::Call5(BSTaskPool_Enter1, uintptr_t(TaskInterface1_Hook), SKSE_BSTaskPoolProc1_O) &&
-            Hook::Call5(BSTaskPool_Enter2, uintptr_t(TaskInterface2_Hook), SKSE_BSTaskPoolProc2_O);
-
-        FlushInstructionCache(GetCurrentProcess(), NULL, 0);
-
-        if (!isHooked) {
-            _FATALERROR("Hook failed");
-        }
-        else {
-            _MESSAGE("BSTaskPool procs hooked");
-
-            if (static_cast<int>(config["tuning"]["reloadonchange"]) > 0) {
-                ConfigObserver::GetSingleton()->Start();
-            }
-        }
-
-        MainInitHook_O();
+        ITask::AddTask(&g_confReloadTask);
     }
 
     static void MessageHandler(SKSEMessagingInterface::Message* message)
     {
-        if (!isHooked) {
-            return;
-        }
-
         switch (message->type)
         {
         case SKSEMessagingInterface::kMessage_InputLoaded:
@@ -72,6 +24,10 @@ namespace CBP
         {
             GetEventDispatcherList()->initScriptDispatcher.AddEventSink(EventHandler::GetSingleton());
             _DMESSAGE("Init script event sink added");
+
+            if (static_cast<int>(config["tuning"]["reloadonchange"]) > 0) {
+                ConfigObserver::GetSingleton()->Start();
+            }
         }
         break;
         }
@@ -84,11 +40,12 @@ namespace CBP
             return false;
         }
 
-        // delay hooking BSTaskPool until SKSE installs its hooks
-        if (!Hook::Call5(MainInitHook_Target, uintptr_t(MainInit_Hook), MainInitHook_O)) {
-            _FATALERROR("MainInit hook failed");
+        if (!ITask::Initialize()) {
+            _FATALERROR("Couldn't intitialize task interface");
             return false;
         }
+
+        ITask::AddTaskFixed(std::addressof(g_updateTask));
 
         SKSE::g_messaging->RegisterListener(SKSE::g_pluginHandle, "SKSE", MessageHandler);
         SKSE::g_papyrus->Register(CBP::RegisterFuncs);

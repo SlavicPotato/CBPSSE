@@ -11,15 +11,13 @@
 
 #include <ShlObj.h>
 
-#include "common/ICriticalSection.h"
-#include "common/IMemPool.h"
-#include "skse64_common/skse_version.h"
-#include "skse64_common/BranchTrampoline.h"
-
-#include "skse64/PluginAPI.h"
-
 #include "ext/ICommon.h"
 #include "ext/IHook.h"
+#include "common/IMemPool.h"
+#include "common/ICriticalSection.h"
+#include "skse64_common/skse_version.h"
+#include "skse64_common/BranchTrampoline.h"
+#include "skse64/PluginAPI.h"
 #include "skse64/NiNodes.h"
 #include "skse64/NiTypes.h"
 #include "skse64/NiObjects.h"
@@ -34,6 +32,7 @@
 #include "patching.h"
 #include "logging.h"
 #include "skse.h"
+#include "tasks.h"
 #include "cbp.h"
 #include "cbp_papyrus.h"
 #include "cbp_configobs.h"

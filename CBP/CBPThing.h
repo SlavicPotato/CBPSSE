@@ -16,6 +16,7 @@ namespace CBP
 		NiPoint3 npZero;
 
 		float diffMult;
+		int numSteps;
 
 	public:
 		float stiffness = 0.5f;

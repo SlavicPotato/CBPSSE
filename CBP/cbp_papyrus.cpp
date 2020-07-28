@@ -23,7 +23,7 @@ namespace CBP
     {
         auto cmd = ConfigUpdateTask::Create(sect, key, val);
         if (cmd != NULL) {
-            SKSE::g_taskInterface->AddTask(cmd);
+            ITask::AddTask(cmd);
             return true;
         }
         return false;
@@ -31,7 +31,7 @@ namespace CBP
 
     static void PP_CommitConfig(StaticFunctionTag* base)
     {
-        SKSE::g_taskInterface->AddTask(&g_confCommitTask);
+        ITask::AddTask(&g_confCommitTask);
     }
 
     bool RegisterFuncs(VMClassRegistry* registry)

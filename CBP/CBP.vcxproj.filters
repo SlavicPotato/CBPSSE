@@ -57,6 +57,9 @@
     <ClInclude Include="cbp_configobs.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="tasks.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp">
@@ -87,6 +90,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="cbp_configobs.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="tasks.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

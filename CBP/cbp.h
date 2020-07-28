@@ -6,7 +6,7 @@
 
 namespace CBP
 {
-    typedef void (*_MainInitHook)(void);
+    typedef void (*RTEnterFunc_t)(void);
     typedef void(*BSTaskPoolProc_T)(BSTaskPool*);
 
     class TaskDelegateStatic
@@ -44,10 +44,11 @@ namespace CBP
     };
 
     class UpdateTask :
+        public TaskDelegateFixed,
         ILog
     {
     public:
-        void Run();
+        virtual void Run();
 
         void AddActor(SKSE::ObjectHandle handle);
         void RemoveActor(SKSE::ObjectHandle handle);
