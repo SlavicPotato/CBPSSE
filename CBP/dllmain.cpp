@@ -16,9 +16,11 @@ static bool Initialize(const SKSEInterface* skse)
         return false;
     }
 
-    if (!CBP::Initialize()) {
+    if (!CBP::IEvents::Initialize()) {
         return false;
     }
+
+    CBP::DCBP::Initialize();
 
     return true;
 }

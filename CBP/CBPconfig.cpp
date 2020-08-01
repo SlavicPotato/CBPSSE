@@ -1,141 +1,311 @@
 #include "pch.h"
 
-#include "CBPconfig.h"
-
 namespace CBP
 {
-    config_t config;
+    configComponents_t IConfig::thingGlobalConfig;
+    configComponents_t IConfig::thingGlobalConfigDefaults;
+    actorConfHolder_t IConfig::actorConfHolder;
+    raceConfHolder_t IConfig::raceConfHolder;
+    configGlobal_t IConfig::globalConfig;
+    IConfig::vKey_t IConfig::validSimComponents;
+    boneMap_t IConfig::boneMap;
 
-    static vKey_t keysPhysics = {
-        "stiffness",
-        "stiffness2",
-        "damping",
-        "maxoffset",
-        "timetick",
-        "linearx",
-        "lineary",
-        "linearz",
-        "rotational",
-        "timescale",
-        "gravitybias",
-        "gravitycorrection",
-        "cogoffset"
+    IConfig::IConfigLog IConfig::log;
+
+    componentValueToOffsetMap_t configComponent_t::componentValueToOffsetMap = {
+        {"stiffness", offsetof(configComponent_t, stiffness)},
+        {"stiffness2", offsetof(configComponent_t, stiffness2)},
+        {"damping", offsetof(configComponent_t, damping)},
+        {"maxoffset", offsetof(configComponent_t, maxOffset)},
+        {"timetick", offsetof(configComponent_t, timeTick)},
+        {"linearx", offsetof(configComponent_t, linearX)},
+        {"lineary", offsetof(configComponent_t, linearY)},
+        {"linearz", offsetof(configComponent_t, linearZ)},
+        {"rotationalx", offsetof(configComponent_t, rotationalX)},
+        {"rotationaly", offsetof(configComponent_t, rotationalY)},
+        {"rotationalz", offsetof(configComponent_t, rotationalZ)},
+        {"timescale", offsetof(configComponent_t, timeScale)},
+        {"gravitybias", offsetof(configComponent_t, gravityBias)},
+        {"gravitycorrection", offsetof(configComponent_t, gravityCorrection)},
+        {"cogoffset", offsetof(configComponent_t, cogOffset)},
     };
 
-    static vKey_t keysTuning = {
-        "reloadonchange"
+    static IConfig::vKey_t validSections = {
+        {"breast"},
+        {"belly"},
+        {"butt"}
     };
 
-    static vKey_t keysMisc = {
-        "femaleonly"
-    };
-
-    static vSection_t validSections = {
-        {"breast", keysPhysics},
-        {"belly", keysPhysics},
-        {"butt", keysPhysics},
-        {"tuning", keysTuning},
-        {"misc", keysMisc}
-    };
-
-    bool IsConfigOption(std::string& sect, std::string& key)
-    {
-        auto it1 = validSections.find(sect);
-        if (it1 != validSections.end()) {
-            auto it2 = it1->second.find(key);
-            if (it2 != it1->second.end()) {
-                return true;
+    static const configComponents_t defaultConfig = {
+        {"breast", {
+            10.0f,
+            10.0f,
+            0.94f,
+            20.0f,
+            5.0f,
+            40.0f,
+            3.0f,
+            3.0f,
+            0.5f,
+            0.1f,
+            0.25f,
+            0.0f,
+            0.0f,
+            0.025f,
+            1.0f
             }
+       },
+       {"belly", {
+            5.0f,
+            5.0f,
+            1.0f,
+            4.0f,
+            0.0f,
+            0.0f,
+            0.0f,
+            3.0f,
+            0.3f,
+            0.02f,
+            0.3f,
+            0.0f,
+            0.0f,
+            0.0f,
+            1.0f
+            }
+       },
+       {"butt", {
+            4.5,
+            9.5f,
+            0.95f,
+            10.0f,
+            10.0f,
+            40.0f,
+            3.0f,
+            3.0f,
+            0.2f,
+            0.1f,
+            0.4f,
+            0.0f,
+            0.0f,
+            0.0f,
+            1.0f
+            }
+       }
+    };
+
+    const boneMap_t IConfig::defaultBonesFemale = {
+        {"NPC L Breast", "breast"}, 
+        {"NPC R Breast", "breast"},
+        {"NPC L Butt", "butt"}, 
+        {"NPC R Butt", "butt"},
+        {"HDT Belly", "belly"} 
+    };
+
+    void IConfig::LoadBones()
+    {
+        try
+        {
+            std::ifstream fs(PLUGIN_BASE_PATH "CBPBones.json", std::ifstream::in | std::ifstream::binary);
+            if (!fs.is_open()) 
+                throw std::system_error(errno, std::system_category(), PLUGIN_BASE_PATH "CBPBones.json");
+
+            Json::Value root;
+            fs >> root;
+
+            for (Json::Value::iterator it1 = root.begin(); it1 != root.end(); ++it1)
+            {
+                if (!it1->isArray()) {
+                    continue;
+                }
+
+                auto k = it1.key();
+                if (!k.isString()) {
+                    continue;
+                }
+
+                std::string simComponent = k.asString();
+                if (simComponent.size() == 0) {
+                    continue;
+                }
+
+                for (auto& v : *it1)
+                {
+                    if (!v.isString()) {
+                        continue;
+                    }
+
+                    std::string k = v.asString();
+                    if (k.size() == 0) {
+                        continue;
+                    }
+
+                    boneMap.insert_or_assign(k, simComponent);
+                }
+            }
+
+            return;
+        }
+        catch (const std::system_error& e) {
+            log.Error("%s: %s", __FUNCTION__, e.what());
+        }
+        catch (const std::exception& e)
+        {
+            log.Error("%s: %s", __FUNCTION__, e.what());
+        }
+
+        boneMap.clear();
+    }
+
+    bool IConfig::CompatLoadOldConf()
+    {
+        try
+        {
+            std::ifstream ifs(PLUGIN_CBP_CONFIG, std::ifstream::in);
+
+            if (!ifs.is_open())
+                throw std::system_error(errno, std::system_category());
+
+            std::string line;
+            while (std::getline(ifs, line))
+            {
+                if (line.size() < 2 || line[0] == '#')
+                    continue;
+
+                auto str = line.data();
+
+                char* next_tok = nullptr;
+
+                char* tok0 = strtok_s(str, ".", &next_tok);
+                char* tok1 = strtok_s(nullptr, " ", &next_tok);
+                char* tok2 = strtok_s(nullptr, " ", &next_tok);
+
+                if (tok0 && tok1 && tok2) {
+                    std::string sect(tok0);
+                    std::string key(tok1);
+
+                    transform(sect.begin(), sect.end(), sect.begin(), ::tolower);
+                    transform(key.begin(), key.end(), key.begin(), ::tolower);
+
+                    if (!validSimComponents.contains(sect))
+                        continue;
+
+                    static const std::string rot("rotational");
+
+                    if (key == rot) {
+                        thingGlobalConfig[sect].Set("rotationalz", atof(tok2));
+                    }
+                    else
+                        thingGlobalConfig[sect].Set(key, atof(tok2));
+
+                }
+            }
+
+            return true;
+        }
+        catch (const std::system_error& e) {
+            log.Error("%s: %s", __FUNCTION__, e.what());
+        }
+        catch (const std::exception& e) {
+            log.Error("%s: %s", __FUNCTION__, e.what());
         }
 
         return false;
     }
 
-    bool LoadConfig()
+    bool IConfig::LoadConfig()
     {
-        char buffer[1024];
-        FILE* fh;
+        LoadBones();
 
-        if (fopen_s(&fh, PLUGIN_CBP_CONFIG, "r") != 0) {
-            _ERROR("Failed to open config");
-            return false;
-        }
+        if (boneMap.size() == 0)
+            boneMap = defaultBonesFemale;
 
-        config.clear();
+        for (const auto& v : boneMap)
+            validSimComponents.insert(v.second);
 
-        do {
-            auto str = fgets(buffer, 1023, fh);
-            //logger.error("str %s\n", str);
-            if (str && strlen(str) > 1) {
-                if (str[0] != '#') {
-                    char* next_tok = nullptr;
+        thingGlobalConfig = defaultConfig;
 
-                    char* tok0 = strtok_s(str, ".", &next_tok);
-                    char* tok1 = strtok_s(NULL, " ", &next_tok);
-                    char* tok2 = strtok_s(NULL, " ", &next_tok);
+        for (const auto& v : validSimComponents)
+            thingGlobalConfig.emplace(v, configComponent_t());
 
-                    if (tok0 && tok1 && tok2) {
-                        std::string sect(tok0);
-                        std::string key(tok1);
+        bool res = CompatLoadOldConf();
 
-                        transform(sect.begin(), sect.end(), sect.begin(), ::tolower);
-                        transform(key.begin(), key.end(), key.begin(), ::tolower);
+        thingGlobalConfigDefaults = thingGlobalConfig;
 
-                        if (!IsConfigOption(sect, key)) {
-                            continue;
-                        }
-
-                        config[sect][key] = atof(tok2);
-                    }
-                }
-            }
-        } while (!feof(fh));
-
-        fclose(fh);
-
-        return true;
+        return res;
     }
 
-    bool SaveConfig()
+    void IConfig::SetActorConf(SKSE::ObjectHandle a_handle, const configComponents_t& a_conf)
     {
-        if (!config.size()) {
-            return false;
-        }
-
-        std::ofstream fs(PLUGIN_CBP_CONFIG, std::ios::trunc);
-        if (!fs.is_open()) {
-            return false;
-        }
-
-        typedef std::vector<std::pair<std::string, float>> configEntryS_t;
-        typedef std::pair<std::string, configEntryS_t> configEntryPairS_t;
-        typedef std::vector<configEntryPairS_t> configS_t;
-
-        configS_t tmp;
-
-        for (const auto& it1 : config) {
-            auto ce = configEntryS_t();
-
-            for (const auto& it2 : it1.second) {
-                ce.push_back(it2);
-            }
-
-            std::sort(ce.begin(), ce.end(), [=](auto& a, auto& b) {
-                return a.first < b.first; });
-
-            tmp.push_back(configEntryPairS_t(it1.first, ce));
-        }
-
-        std::sort(tmp.begin(), tmp.end(), [=](auto& a, auto& b) {
-            return a.first < b.first; });
-
-        for (const auto& it1 : tmp) {
-            for (const auto& it2 : it1.second) {
-                fs << it1.first << "." << it2.first << " " << it2.second << std::endl;
-            }
-            fs << std::endl;
-        }
-
-        return true;
+        actorConfHolder.insert_or_assign(a_handle, a_conf);
     }
+    
+    void IConfig::SetActorConf(SKSE::ObjectHandle a_handle, configComponents_t&& a_conf)
+    {
+        actorConfHolder.emplace(a_handle, std::forward<configComponents_t>(a_conf));
+    }
+
+    configComponents_t& IConfig::GetOrCreateActorConf(SKSE::ObjectHandle a_handle)
+    {
+        auto ita = actorConfHolder.find(a_handle);
+        if (ita != actorConfHolder.end())
+            return ita->second;
+
+        auto& rm = IData::GetActorRaceMap();
+        auto itm = rm.find(a_handle);
+        if (itm != rm.end()) {
+            auto itr = raceConfHolder.find(itm->second);
+            if (itr != raceConfHolder.end())
+                return (actorConfHolder[a_handle] = itr->second);
+        }
+
+        return (actorConfHolder[a_handle] = thingGlobalConfig);
+    }
+
+    const configComponents_t& IConfig::GetActorConf(SKSE::ObjectHandle handle)
+    {
+        auto ita = actorConfHolder.find(handle);
+        if (ita != actorConfHolder.end())
+            return ita->second;
+
+        auto& rm = IData::GetActorRaceMap();
+        auto itm = rm.find(handle);
+        if (itm != rm.end()) {
+            auto itr = raceConfHolder.find(itm->second);
+            if (itr != raceConfHolder.end())
+                return itr->second;
+        }
+
+        return thingGlobalConfig;
+    }
+
+    configComponents_t& IConfig::GetOrCreateRaceConf(SKSE::FormID a_formid)
+    {
+        auto it = raceConfHolder.find(a_formid);
+        if (it != raceConfHolder.end()) {
+            return it->second;
+        }
+
+        return (raceConfHolder[a_formid] = thingGlobalConfig);
+    }
+
+    const configComponents_t& IConfig::GetRaceConf(SKSE::FormID a_formid)
+    {
+        auto it = raceConfHolder.find(a_formid);
+        if (it != raceConfHolder.end()) {
+            return it->second;
+        }
+
+        return thingGlobalConfig;
+    }
+
+    void IConfig::SetRaceConf(SKSE::FormID a_handle, const configComponents_t& a_conf)
+    {
+        raceConfHolder.insert_or_assign(a_handle, a_conf);
+    }
+    
+    void IConfig::SetRaceConf(SKSE::FormID a_handle, configComponents_t&& a_conf)
+    {
+        raceConfHolder.emplace(a_handle, std::forward<configComponents_t>(a_conf));
+    }
+
 }

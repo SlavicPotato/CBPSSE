@@ -1,45 +1,51 @@
 #pragma once
 
-#include "CBPconfig.h"
-
 namespace CBP
 {
-	class Thing {
-	private:
-		BSFixedString boneName;
-		NiPoint3 oldWorldPos;
-		NiPoint3 velocity;
-		long long time;
 
-		NiPoint3 npCogOffset;
-		NiPoint3 npGravityCorrection;
-		NiPoint3 npZero;
+    class SimComponent
+    {
+        struct Force
+        {
+            uint32_t steps;
+            NiPoint3 force;
+        };
 
-		float diffMult;
-		int numSteps;
+    private:
+        BSFixedString boneName;
+        NiPoint3 oldWorldPos;
+        NiPoint3 velocity;
+        long long time;
 
-	public:
-		float stiffness = 0.5f;
-		float stiffness2 = 0.0f;
-		float damping = 0.2f;
-		float maxOffset = 5.0f;
-		float cogOffset = 0.0f;
-		float gravityBias = 0.0f;
-		float gravityCorrection = 0.0f;
-		//float zOffset = 0.0f;	// Computed based on GravityBias value
-		float timeTick = 4.0f;
-		float linearX = 0;
-		float linearY = 0;
-		float linearZ = 0;
-		float rotational = 0.1;
-		float timeScale = 1.0f;
+        NiPoint3 npCogOffset;
+        NiPoint3 npGravityCorrection;
+        NiPoint3 npZero;
 
-		Thing(NiAVObject* obj, BSFixedString& name);
+        configComponent_t conf;
 
-		void updateConfig(configEntry_t& centry);
-		
-		void update(Actor* actor);
-		void reset();
+        float diffMult;
+        int numSteps;
 
-	};
+        std::queue<Force> m_applyForceQueue;
+
+        std::string m_configBoneName;
+    public:
+        SimComponent(
+            NiAVObject* obj,
+            const BSFixedString& name,
+            const std::string& a_configBoneName,
+            const configComponent_t& config
+        ) noexcept;
+
+        void updateConfig(const configComponent_t& centry) noexcept;
+
+        void update(Actor* actor);
+        void reset(Actor* actor);
+
+        void applyForce(uint32_t a_steps, const NiPoint3& a_force);
+
+        inline const std::string& GetConfigBoneName() const {
+            return m_configBoneName;
+        }
+    };
 }

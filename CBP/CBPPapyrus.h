@@ -6,21 +6,18 @@ namespace CBP
         public TaskDelegate
     {
     public:
+        ConfigUpdateTask();
+
         virtual void Run();
         virtual void Dispose();
 
-        static ConfigUpdateTask* Create(BSFixedString &sect, BSFixedString& key, float val);
+        static ConfigUpdateTask* Create(const BSFixedString& sect, const BSFixedString& key, float val);
+        static ConfigUpdateTask* Create(SKSE::ObjectHandle handle, const BSFixedString& sect, const BSFixedString& key, float val);
     private:
         std::string m_sect;
         std::string m_key;
         float m_val;
-    };
-
-    class ConfigCommitTask :
-        public TaskDelegateStatic
-    {
-    public:
-        virtual void Run();
+        SKSE::ObjectHandle m_handle;
     };
 
     bool RegisterFuncs(VMClassRegistry* registry);

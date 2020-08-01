@@ -9,6 +9,7 @@ namespace SKSE
     SKSETaskInterface* g_taskInterface;
     SKSEMessagingInterface* g_messaging;
     SKSEPapyrusInterface* g_papyrus;
+    SKSESerializationInterface* g_serialization;
 
     bool GetHandle(void* src, UInt32 typeID, ObjectHandle& out)
     {
@@ -109,6 +110,20 @@ namespace SKSE
             return false;
         }
 
+        g_serialization = (SKSESerializationInterface*)skse->QueryInterface(kInterface_Serialization);
+        if (g_serialization == nullptr)
+        {
+            _FATALERROR("Could not get get serialization interface");
+            return false;
+        }
+
+        if (g_serialization->version < SKSESerializationInterface::kVersion)
+        {
+            _FATALERROR("Serialization interface too old (%d expected %d)", g_serialization->version, SKSESerializationInterface::kVersion);
+            return false;
+        }
+
+
         if (!g_branchTrampoline.Create(Hook::GetAlignedTrampolineSize(MAX_TRAMPOLINE_BRANCH)))
         {
             _FATALERROR("Could not create branch trampoline.");
@@ -118,4 +133,75 @@ namespace SKSE
         return true;
     }
 
+    // adapted from skee64
+    bool ResolveHandle(SKSESerializationInterface* intfc, UInt64 a_handle, UInt64* a_newHandle)
+    {
+        UInt32 modID = (a_handle & 0xFF000000) >> 24;
+
+        // Do this until the light mod ResolveHandle bug is fixed in skse
+        if (modID == 0xFE)
+        {
+            UInt32 newFormID;
+            if (!intfc->ResolveFormId(a_handle & 0xFFFFFFFF, &newFormID)) {
+                return false;
+            }
+
+            *a_newHandle = static_cast<UInt64>(newFormID) | (a_handle & 0xFFFFFFFF00000000);
+        }
+        else if (modID != 0xFF) {
+            if (!intfc->ResolveHandle(a_handle, a_newHandle)) {
+                return false;
+            }
+        }
+        else {
+            auto formCheck = LookupFormByID(a_handle & 0xFFFFFFFF);
+            if (!formCheck) {
+                return false;
+            }
+
+            auto refr = DYNAMIC_CAST(formCheck, TESForm, TESObjectREFR);
+            if (!refr || (refr && (refr->flags & TESForm::kFlagIsDeleted))) {
+                return false;
+            }
+
+            *a_newHandle = a_handle;
+        }
+
+        return true;
+    }
+
+    bool ResolveRaceForm(SKSESerializationInterface* intfc, UInt32 a_formid, UInt32* a_newFormid)
+    {
+        UInt32 tmp;
+
+        if (((a_formid & 0xFF000000) >> 24) != 0xFF) {
+            if (!intfc->ResolveFormId(a_formid, &tmp)) {
+                *a_newFormid = tmp;
+                return false;
+            }
+        }
+        else {
+            tmp = a_formid;
+        }
+
+        auto formCheck = LookupFormByID(tmp);
+        if (!formCheck) {
+            return false;
+        }
+
+        auto refr = DYNAMIC_CAST(formCheck, TESForm, TESRace);
+        if (!refr || (refr && (refr->flags & TESForm::kFlagIsDeleted))) {
+            return false;
+        }
+
+        *a_newFormid = tmp;
+
+        return true;
+    }
+
+    ProcessLists* ProcessLists::GetSingleton()
+    {
+        static RelocAddr<ProcessLists**> singleton(0x1ebead0);
+        return *singleton;
+    }
 }

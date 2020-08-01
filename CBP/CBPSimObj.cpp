@@ -1,59 +1,55 @@
 #include "pch.h"
 
-#include "CBPSimObj.h"
-
 namespace CBP
 {
-    // Note we don't ref count the nodes becasue it's ignored when the Actor is deleted, and calling Release after that can corrupt memory
-
-    constexpr char* leftBreastName = "NPC L Breast";
-    constexpr char* rightBreastName = "NPC R Breast";
-    constexpr char* leftButtName = "NPC L Butt";
-    constexpr char* rightButtName = "NPC R Butt";
-    constexpr char* bellyName = "HDT Belly";
-
-    static std::unordered_map<const char*, std::string> configMap = {
-        {leftBreastName, "breast"}, {rightBreastName, "breast"},
-        {leftButtName, "butt"}, {rightButtName, "butt"},
-        {bellyName, "belly"} };
-
-    static std::vector<const char*> femaleBones = { leftBreastName, rightBreastName, leftButtName, rightButtName, bellyName };
-
-    SimObj::SimObj()
-        : things(5)
+    SimObject::SimObject(Actor* a_actor, const configComponents_t& a_config, const boneMap_t& a_boneMap)
+        : m_things(5)
     {
+        bind(a_actor, a_config, a_boneMap);
     }
 
-    void SimObj::bind(Actor* actor, config_t& config)
+    void SimObject::bind(Actor* a_actor, const configComponents_t& a_config, const boneMap_t& a_boneMap)
     {
-        things.clear();
-        for (auto& b : femaleBones) {
-            BSFixedString cs(b);
-            auto bone = actor->loadedState->node->GetObjectByName(&cs.data);
-            if (bone != NULL) {
-                things.emplace(b, Thing(bone, cs));
+        for (const auto& b : a_boneMap) {
+            BSFixedString cs(b.first.c_str());
+            auto bone = a_actor->loadedState->node->GetObjectByName(&cs.data);
+            if (bone != nullptr) {
+                //_DMESSAGE("Bone %.8X (%s) | %s", a_actor->formID, CALL_MEMBER_FN(a_actor, GetReferenceName)(), b.first.c_str());
+                auto it = a_config.find(b.second);
+                if (it != a_config.end()) {
+                    m_things.emplace(b.first, SimComponent(bone, cs, it->first, it->second));
+                }
             }
         }
-
-        updateConfig(config);
     }
 
-    bool SimObj::hasBone() 
-    { 
-        return things.size() > 0; 
+    void SimObject::reset(Actor* a_actor)
+    {
+        for (auto& p : m_things)
+            p.second.reset(a_actor);
     }
 
-    void SimObj::update(Actor* actor) {
-        for (auto& t : things) {
-            t.second.update(actor);
+    void SimObject::update(Actor* a_actor) {
+        for (auto& p : m_things) {
+            p.second.update(a_actor);
         }
     }
 
-    void SimObj::updateConfig(config_t& config) {
-        for (auto& t : things) {
-            auto& section = configMap[t.first];
-            auto& centry = config[section];
-            t.second.updateConfig(centry);
+    void SimObject::updateConfig(const configComponents_t& a_config) {
+        for (auto& p : m_things) {
+            auto it = a_config.find(p.second.GetConfigBoneName());
+            if (it == a_config.end())
+                continue;
+
+            p.second.updateConfig(it->second);
+        }
+    }
+
+    void SimObject::applyForce(uint32_t a_steps, const std::string& a_component, const NiPoint3& a_force)
+    {
+        for (auto& p : m_things) {
+            if (p.second.GetConfigBoneName() == a_component)
+                p.second.applyForce(a_steps, a_force);
         }
     }
 }

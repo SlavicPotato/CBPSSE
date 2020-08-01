@@ -13,6 +13,18 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Source Files\Drivers">
+      <UniqueIdentifier>{9c0afcca-8f41-4aac-8193-873fdddbdf55}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Drivers">
+      <UniqueIdentifier>{d4624453-7199-4a6b-9602-f9f9c687edba}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\ImGui">
+      <UniqueIdentifier>{9ed46fec-9340-4943-9765-2bb06114b0d3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\ImGui">
+      <UniqueIdentifier>{eb757f9f-e482-40ec-b4dd-0e262f08c179}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">
@@ -33,9 +45,6 @@
     <ClInclude Include="patching.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="cbp.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="skse.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -51,11 +60,47 @@
     <ClInclude Include="plugin.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="cbp_papyrus.h">
+    <ClInclude Include="CBPData.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="cbp_configobs.h">
+    <ClInclude Include="CBPPapyrus.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CBPProfile.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CBPSerialization.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CBPUI.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="gui.h">
+      <Filter>Header Files\Drivers</Filter>
+    </ClInclude>
+    <ClInclude Include="input.h">
+      <Filter>Header Files\Drivers</Filter>
+    </ClInclude>
+    <ClInclude Include="events.h">
+      <Filter>Header Files\Drivers</Filter>
+    </ClInclude>
+    <ClInclude Include="imgui_impl_dx11.h">
+      <Filter>Header Files\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="imgui_impl_win32.h">
+      <Filter>Header Files\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="game.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="cbp.h">
+      <Filter>Header Files\Drivers</Filter>
+    </ClInclude>
+    <ClInclude Include="config.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="tasks.h">
+      <Filter>Header Files\Drivers</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -74,23 +119,53 @@
     <ClCompile Include="CBPThing.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="cbp.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="skse.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="logging.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="cbp_papyrus.cpp">
+    <ClCompile Include="CBPData.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="cbp_configobs.cpp">
+    <ClCompile Include="CBPPapyrus.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CBPProfile.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CBPSerialization.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CBPUI.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="gui.cpp">
+      <Filter>Source Files\Drivers</Filter>
+    </ClCompile>
+    <ClCompile Include="input.cpp">
+      <Filter>Source Files\Drivers</Filter>
+    </ClCompile>
+    <ClCompile Include="events.cpp">
+      <Filter>Source Files\Drivers</Filter>
+    </ClCompile>
+    <ClCompile Include="imgui_impl_dx11.cpp">
+      <Filter>Source Files\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="imgui_impl_win32.cpp">
+      <Filter>Source Files\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="game.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="cbp.cpp">
+      <Filter>Source Files\Drivers</Filter>
+    </ClCompile>
+    <ClCompile Include="config.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="tasks.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\Drivers</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

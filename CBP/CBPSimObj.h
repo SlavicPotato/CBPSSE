@@ -1,24 +1,23 @@
 #pragma once
 
-#include "CBPThing.h"
-#include "CBPconfig.h"
-
 namespace CBP
 {
-	class SimObj {
+    class SimObject
+    {
+    public:
+        SimObject(Actor* actor, const configComponents_t& config, const boneMap_t& a_boneMap);
+        void update(Actor* actor);
+        void updateConfig(const configComponents_t& config);
+        void reset(Actor* a_actor);
+        bool hasBone() { return m_things.size() != 0; }
 
-	public:
+        void applyForce(uint32_t a_steps, const std::string& a_component, const NiPoint3& a_force);
 
-		SimObj();
-		void bind(Actor* actor, config_t& config);
-		//bool actorValid(Actor *actor);
-		void update(Actor* actor);
-		void updateConfig(config_t& config);
-		bool hasBone();
+    private:
+        void bind(Actor* a_actor, const configComponents_t& a_config, const boneMap_t& a_boneMap);
 
-	private:
-		//Actor* tmp;
-		
-		std::unordered_map<const char*, Thing> things;
-	};
+        std::unordered_map<std::string, SimComponent> m_things;
+    };
+
+    typedef std::unordered_map<SKSE::ObjectHandle, SimObject> simActorList_t;
 }
