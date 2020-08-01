@@ -33,17 +33,6 @@ namespace CBP
         npGravityCorrection = NiPoint3(0, 0, conf.gravityCorrection);
     }
 
-    inline static float clamp(float val, float min, float max)
-    {
-        if (val < min) return min;
-        if (val > max) return max;
-        return val;
-    }
-
-    inline static int sgn(float val) {
-        return (0.0f < val) - (val < 0.0f);
-    }
-
     void SimComponent::reset(Actor* actor) 
     {
         auto obj = actor->loadedState->node->GetObjectByName(&boneName.data);
@@ -54,6 +43,17 @@ namespace CBP
         oldWorldPos = obj->m_worldTransform.pos;
         velocity = npZero;
         time = PerfCounter::Query();
+        m_applyForceQueue.swap(decltype(m_applyForceQueue)());
+    }
+
+    inline static float clamp(float val, float min, float max)  {
+        if (val < min) return min;
+        if (val > max) return max;
+        return val;
+    }
+
+    inline static int sgn(float val) {
+        return (0.0f < val) - (val < 0.0f);
     }
 
     void SimComponent::update(Actor* actor)
