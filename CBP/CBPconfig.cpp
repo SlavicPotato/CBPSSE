@@ -112,6 +112,12 @@ namespace CBP
             Json::Value root;
             ifs >> root;
 
+            if (root.empty())
+                return true;
+
+            if (!root.isObject())
+                throw std::exception("Unexpected data");
+
             for (Json::Value::iterator it1 = root.begin(); it1 != root.end(); ++it1)
             {
                 if (!it1->isArray())
@@ -239,7 +245,7 @@ namespace CBP
 
     void IConfig::SetActorConf(SKSE::ObjectHandle a_handle, configComponents_t&& a_conf)
     {
-        actorConfHolder.emplace(a_handle, std::forward<configComponents_t>(a_conf));
+        actorConfHolder.insert_or_assign(a_handle, std::forward<configComponents_t>(a_conf));
     }
 
     configComponents_t& IConfig::GetOrCreateActorConf(SKSE::ObjectHandle a_handle)
@@ -303,7 +309,7 @@ namespace CBP
 
     void IConfig::SetRaceConf(SKSE::FormID a_handle, configComponents_t&& a_conf)
     {
-        raceConfHolder.emplace(a_handle, std::forward<configComponents_t>(a_conf));
+        raceConfHolder.insert_or_assign(a_handle, std::forward<configComponents_t>(a_conf));
     }
 
 }
