@@ -135,6 +135,7 @@ namespace CBP
         auto& io = ImGui::GetIO();
 
         ImGui::SetNextWindowPos(ImVec2(min(420.0f, io.DisplaySize.x - 40.0f), 20.0f), ImGuiCond_FirstUseEver);
+        ImGui::SetNextWindowSize(ImVec2(380.0f, io.DisplaySize.y), ImGuiCond_FirstUseEver);
 
         ImVec2 sizeMin(min(300.0f, io.DisplaySize.x - 40.0f), min(200.0f, io.DisplaySize.y - 40.0f));
         ImVec2 sizeMax(min(400.0f, io.DisplaySize.x), max(io.DisplaySize.y - 40.0f, sizeMin.y));
@@ -338,6 +339,7 @@ namespace CBP
         auto& io = ImGui::GetIO();
 
         ImGui::SetNextWindowPos(ImVec2(min(820.0f, io.DisplaySize.x - 40.0f), 20.0f), ImGuiCond_FirstUseEver);
+        ImGui::SetNextWindowSize(ImVec2(380.0f, io.DisplaySize.y), ImGuiCond_FirstUseEver);
 
         ImVec2 sizeMin(min(300.0f, io.DisplaySize.x - 40.0f), min(200.0f, io.DisplaySize.y - 40.0f));
         ImVec2 sizeMax(min(400.0f, io.DisplaySize.x), max(io.DisplaySize.y - 40.0f, sizeMin.y));
@@ -724,6 +726,7 @@ namespace CBP
         }
 
         ImGui::SetNextWindowPos(ImVec2(20.0f, 20.0f), ImGuiCond_FirstUseEver);
+        ImGui::SetNextWindowSize(ImVec2(380.0f, io.DisplaySize.y), ImGuiCond_FirstUseEver);
 
         ImVec2 sizeMin(min(300.0f, io.DisplaySize.x - 40.0f), min(200.0f, io.DisplaySize.y - 40.0f));
         ImVec2 sizeMax(min(400.0f, io.DisplaySize.x), max(io.DisplaySize.y - 40.0f, sizeMin.y));

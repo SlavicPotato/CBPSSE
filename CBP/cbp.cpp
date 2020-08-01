@@ -111,7 +111,6 @@ namespace CBP
 
     void DCBP::LoadConfig()
     {
-        conf.enabled = GetConfigValue(SECTION_CBP, CKEY_CBPENABLED, true);
         conf.ui_enabled = GetConfigValue(SECTION_CBP, CKEY_UIENABLED, true);
     }
 
@@ -119,27 +118,21 @@ namespace CBP
     {
         m_Instance.LoadConfig();
 
-        if (m_Instance.conf.enabled)
+        DTasks::AddTaskFixed(&m_Instance.m_updateTask);
+
+        IEvents::RegisterForEvent(Event::OnMessage, MessageHandler);
+        IEvents::RegisterForEvent(Event::OnRevert, RevertHandler);
+        IEvents::RegisterForEvent(Event::OnGameLoad, LoadGameHandler);
+        IEvents::RegisterForEvent(Event::OnGameSave, SaveGameHandler);
+        IEvents::RegisterForEvent(Event::OnConfigLoad, OnConfigLoad);
+
+        SKSE::g_papyrus->Register(RegisterFuncs);
+
+        if (m_Instance.conf.ui_enabled)
         {
             ASSERT(CBP::DUI::Initialize());
-            ASSERT(CBP::DTasks::Initialize());
-
             CBP::DInput::Initialize();
-
-            DTasks::AddTaskFixed(&m_Instance.m_updateTask);
-
-            IEvents::RegisterForEvent(Event::OnMessage, MessageHandler);
-            IEvents::RegisterForEvent(Event::OnRevert, RevertHandler);
-            IEvents::RegisterForEvent(Event::OnGameLoad, LoadGameHandler);
-            IEvents::RegisterForEvent(Event::OnGameSave, SaveGameHandler);
-            IEvents::RegisterForEvent(Event::OnConfigLoad, OnConfigLoad);
-
-            SKSE::g_papyrus->Register(RegisterFuncs);
-
-            if (m_Instance.conf.ui_enabled)
-            {
-                DInput::RegisterForKeyEvents(&m_Instance.inputEventHandler);
-            }
+            DInput::RegisterForKeyEvents(&m_Instance.inputEventHandler);
         }
     }
 

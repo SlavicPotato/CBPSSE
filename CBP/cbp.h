@@ -132,10 +132,6 @@ namespace CBP
         static void DispatchActorTask(SKSE::ObjectHandle handle, CBPUpdateActionTask::CBPUpdateActorAction action);
         static const CBP::simActorList_t& GetSimActorList();
 
-        inline static uint8_t GetLoadInstance() {
-            return m_Instance.m_loadInstance;
-        };
-
         static void UpdateConfigOnAllActors();
         static void ResetActors();
         static void ApplyForce(SKSE::ObjectHandle a_handle, uint32_t a_steps, const std::string& a_component, const NiPoint3& a_force);

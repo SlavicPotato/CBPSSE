@@ -16,10 +16,16 @@ static bool Initialize(const SKSEInterface* skse)
         return false;
     }
 
-    if (!CBP::IEvents::Initialize()) {
+    if (!CBP::DTasks::Initialize()) {
+        _FATALERROR("Couldn't initialize task interface");
         return false;
     }
 
+    if (IConfigINI::Load() != 0) {
+        _WARNING("Couldn't load %s", PLUGIN_INI_FILE);
+    }
+
+    CBP::IEvents::Initialize();
     CBP::DCBP::Initialize();
 
     return true;

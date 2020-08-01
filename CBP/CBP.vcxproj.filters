@@ -25,18 +25,15 @@
     <Filter Include="Header Files\ImGui">
       <UniqueIdentifier>{eb757f9f-e482-40ec-b4dd-0e262f08c179}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\CBP">
+      <UniqueIdentifier>{afa68cd6-ee50-4a97-8635-fdcc34173daf}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\CBP">
+      <UniqueIdentifier>{03f08e8e-3171-42b4-b15b-97e84bbc3653}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="CBPconfig.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="CBPSimObj.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="CBPThing.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="common.h">
@@ -58,21 +55,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="plugin.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="CBPData.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="CBPPapyrus.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="CBPProfile.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="CBPSerialization.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="CBPUI.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="gui.h">
@@ -102,6 +84,30 @@
     <ClInclude Include="tasks.h">
       <Filter>Header Files\Drivers</Filter>
     </ClInclude>
+    <ClInclude Include="CBPUI.h">
+      <Filter>Header Files\CBP</Filter>
+    </ClInclude>
+    <ClInclude Include="CBPconfig.h">
+      <Filter>Header Files\CBP</Filter>
+    </ClInclude>
+    <ClInclude Include="CBPData.h">
+      <Filter>Header Files\CBP</Filter>
+    </ClInclude>
+    <ClInclude Include="CBPPapyrus.h">
+      <Filter>Header Files\CBP</Filter>
+    </ClInclude>
+    <ClInclude Include="CBPProfile.h">
+      <Filter>Header Files\CBP</Filter>
+    </ClInclude>
+    <ClInclude Include="CBPSerialization.h">
+      <Filter>Header Files\CBP</Filter>
+    </ClInclude>
+    <ClInclude Include="CBPSimObj.h">
+      <Filter>Header Files\CBP</Filter>
+    </ClInclude>
+    <ClInclude Include="CBPThing.h">
+      <Filter>Header Files\CBP</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp">
@@ -110,34 +116,10 @@
     <ClCompile Include="pch.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="CBPconfig.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="CBPSimObj.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="CBPThing.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="skse.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="logging.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="CBPData.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="CBPPapyrus.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="CBPProfile.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="CBPSerialization.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="CBPUI.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="gui.cpp">
@@ -166,6 +148,30 @@
     </ClCompile>
     <ClCompile Include="tasks.cpp">
       <Filter>Source Files\Drivers</Filter>
+    </ClCompile>
+    <ClCompile Include="CBPUI.cpp">
+      <Filter>Source Files\CBP</Filter>
+    </ClCompile>
+    <ClCompile Include="CBPconfig.cpp">
+      <Filter>Source Files\CBP</Filter>
+    </ClCompile>
+    <ClCompile Include="CBPData.cpp">
+      <Filter>Source Files\CBP</Filter>
+    </ClCompile>
+    <ClCompile Include="CBPPapyrus.cpp">
+      <Filter>Source Files\CBP</Filter>
+    </ClCompile>
+    <ClCompile Include="CBPProfile.cpp">
+      <Filter>Source Files\CBP</Filter>
+    </ClCompile>
+    <ClCompile Include="CBPSerialization.cpp">
+      <Filter>Source Files\CBP</Filter>
+    </ClCompile>
+    <ClCompile Include="CBPSimObj.cpp">
+      <Filter>Source Files\CBP</Filter>
+    </ClCompile>
+    <ClCompile Include="CBPThing.cpp">
+      <Filter>Source Files\CBP</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
