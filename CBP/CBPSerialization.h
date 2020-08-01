@@ -22,7 +22,7 @@ namespace CBP
 
         FN_NAMEPROC("Serialization")
     private:
-        void ReadJsonData(const std::filesystem::path& a_path, Json::Value& a_out);
+        [[nodiscard]] bool ReadJsonData(const std::filesystem::path& a_path, Json::Value& a_out);
         void WriteJsonData(const std::filesystem::path& a_path, const Json::Value& a_root);
 
         template <typename T>

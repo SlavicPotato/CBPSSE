@@ -11,7 +11,8 @@ namespace CBP
         try
         {
             Json::Value root;
-            ReadJsonData(PLUGIN_CBP_GLOBAL_DATA, root);
+            if (!ReadJsonData(PLUGIN_CBP_GLOBAL_DATA, root))
+                return;
 
             if (root.empty())
                 return;
@@ -177,7 +178,8 @@ namespace CBP
 
             Json::Value root;
 
-            ReadJsonData(PLUGIN_CBP_ACTOR_DATA, root);
+            if (!ReadJsonData(PLUGIN_CBP_ACTOR_DATA, root))
+                return;
 
             if (root.empty())
                 return;
@@ -242,7 +244,8 @@ namespace CBP
 
             Json::Value root;
 
-            ReadJsonData(PLUGIN_CBP_RACE_DATA, root);
+            if (!ReadJsonData(PLUGIN_CBP_RACE_DATA, root))
+                return;
 
             if (root.empty())
                 return;
@@ -380,16 +383,20 @@ namespace CBP
         }
     }
 
-    void Serialization::ReadJsonData(const fs::path& a_path, Json::Value& a_root)
+    bool Serialization::ReadJsonData(const fs::path& a_path, Json::Value& a_root)
     {
-        std::ifstream fs;
+        if (!fs::exists(a_path) || !fs::is_regular_file(a_path))
+            return false;
 
-        fs.open(a_path, std::ifstream::in | std::ifstream::binary);
-        if (!fs.is_open()) {
+        std::ifstream ifs;
+
+        ifs.open(a_path, std::ifstream::in | std::ifstream::binary);
+        if (!ifs.is_open())
             throw std::exception("Could not open file for reading");
-        }
 
-        fs >> a_root;
+        ifs >> a_root;
+
+        return true;
     }
 
     void Serialization::WriteJsonData(const fs::path& a_path, const Json::Value& a_root)
@@ -397,21 +404,19 @@ namespace CBP
         auto base = a_path.parent_path();
 
         if (!fs::exists(base)) {
-            if (!fs::create_directories(base)) {
+            if (!fs::create_directories(base))
                 throw std::exception("Couldn't create profile directory");
-            }
         }
-        else if (!fs::is_directory(base)) {
+        else if (!fs::is_directory(base))
             throw std::exception("Root path is not a directory");
-        }
 
-        std::ofstream fs;
-        fs.open(a_path, std::ofstream::out | std::ofstream::binary | std::ofstream::trunc);
-        if (!fs.is_open()) {
+        std::ofstream ofs;
+        ofs.open(a_path, std::ofstream::out | std::ofstream::binary | std::ofstream::trunc);
+        if (!ofs.is_open()) {
             throw std::exception("Could not open file for writing");
         }
 
-        fs << a_root << std::endl;
+        ofs << a_root << std::endl;
     }
 
 }
