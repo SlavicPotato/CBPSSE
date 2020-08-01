@@ -31,6 +31,9 @@
     <Filter Include="Header Files\CBP">
       <UniqueIdentifier>{03f08e8e-3171-42b4-b15b-97e84bbc3653}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Config">
+      <UniqueIdentifier>{77f7833a-054b-45e2-b002-c7f66bd8d4aa}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">
@@ -179,6 +182,8 @@
     <None Include="..\README.md" />
   </ItemGroup>
   <ItemGroup>
-    <Text Include="CBPConfig.txt" />
+    <Text Include="Config\CBPConfig.txt">
+      <Filter>Config</Filter>
+    </Text>
   </ItemGroup>
 </Project>

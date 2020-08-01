@@ -517,7 +517,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="CBPConfig.txt" />
+    <Text Include="Config\CBPConfig.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
