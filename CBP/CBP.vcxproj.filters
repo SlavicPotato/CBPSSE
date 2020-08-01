@@ -180,6 +180,9 @@
   <ItemGroup>
     <None Include="exports.def" />
     <None Include="..\README.md" />
+    <None Include="Config\CBPNodes.json">
+      <Filter>Config</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Text Include="Config\CBPConfig.txt">

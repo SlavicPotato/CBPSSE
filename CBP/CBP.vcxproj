@@ -500,6 +500,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="..\README.md" />
+    <None Include="Config\CBPNodes.json" />
     <None Include="exports.def" />
   </ItemGroup>
   <ItemGroup>
