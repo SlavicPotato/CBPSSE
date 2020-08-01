@@ -69,12 +69,11 @@ namespace CBP
     {
         auto newTime = PerfCounter::Query();
         auto deltaT = PerfCounter::delta(time, newTime);
-        if (deltaT > 0.066f) {
-            deltaT = 0.066f;
-        }
-        auto deltaTms = deltaT * 1000.0f;
         time = newTime;
 
+        if (deltaT > 0.066f)
+            deltaT = 0.066f;
+        
         auto obj = actor->loadedState->node->GetObjectByName(&boneName.data);
         if (obj == NULL)
             return;
