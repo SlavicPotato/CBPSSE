@@ -69,7 +69,7 @@ namespace CBP
         if (obj == nullptr)
             return;
 
-        //Offset to move Center of Mass make rotaional motion more significant  
+        //Offset to move Center of Mass make rotational motion more significant  
         NiPoint3 target = obj->m_parent->m_worldTransform * npCogOffset;
 
         NiPoint3 diff = target - oldWorldPos;
@@ -80,6 +80,7 @@ namespace CBP
             oldWorldPos = target;
             velocity = npZero;
             time = PerfCounter::Query();
+            m_applyForceQueue.swap(decltype(m_applyForceQueue)());
         }
         else
         {

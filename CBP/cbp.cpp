@@ -149,12 +149,7 @@ namespace CBP
         {
         case SKSEMessagingInterface::kMessage_InputLoaded:
         {
-            if (!CBP::IConfig::LoadConfig()) {
-                m_Instance.Warning("Couldn't load default values from %s", PLUGIN_CBP_CONFIG);
-            }
-            else {
-                m_Instance.Message("Enabled and config loaded");
-            }
+            CBP::IConfig::LoadConfig();
 
             auto& pm = CBP::GenericProfileManager::GetSingleton();
             pm.Load(PLUGIN_CBP_PROFILE_PATH);

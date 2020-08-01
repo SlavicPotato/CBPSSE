@@ -94,19 +94,19 @@ namespace CBP
     };
 
     const nodeMap_t IConfig::defaultNodeMap = {
-        {"NPC L Breast", "breast"}, 
+        {"NPC L Breast", "breast"},
         {"NPC R Breast", "breast"},
-        {"NPC L Butt", "butt"}, 
+        {"NPC L Butt", "butt"},
         {"NPC R Butt", "butt"},
-        {"HDT Belly", "belly"} 
+        {"HDT Belly", "belly"}
     };
 
-    void IConfig::LoadNodes()
+    bool IConfig::LoadNodes(nodeMap_t& a_out)
     {
         try
         {
             std::ifstream ifs(PLUGIN_BASE_PATH "CBPNodes.json", std::ifstream::in | std::ifstream::binary);
-            if (!ifs.is_open()) 
+            if (!ifs.is_open())
                 throw std::system_error(errno, std::system_category(), PLUGIN_BASE_PATH "CBPNodes.json");
 
             Json::Value root;
@@ -114,36 +114,32 @@ namespace CBP
 
             for (Json::Value::iterator it1 = root.begin(); it1 != root.end(); ++it1)
             {
-                if (!it1->isArray()) {
+                if (!it1->isArray())
                     continue;
-                }
 
                 auto k = it1.key();
-                if (!k.isString()) {
+                if (!k.isString())
                     continue;
-                }
 
                 std::string simComponent = k.asString();
-                if (simComponent.size() == 0) {
+                if (simComponent.size() == 0)
                     continue;
-                }
+
 
                 for (auto& v : *it1)
                 {
-                    if (!v.isString()) {
+                    if (!v.isString())
                         continue;
-                    }
 
                     std::string k = v.asString();
-                    if (k.size() == 0) {
+                    if (k.size() == 0)
                         continue;
-                    }
 
-                    nodeMap.insert_or_assign(k, simComponent);
+                    a_out.insert_or_assign(k, simComponent);
                 }
             }
 
-            return;
+            return true;
         }
         catch (const std::system_error& e) {
             log.Error("%s: %s", __FUNCTION__, e.what());
@@ -153,10 +149,10 @@ namespace CBP
             log.Error("%s: %s", __FUNCTION__, e.what());
         }
 
-        nodeMap.clear();
+        return false;
     }
 
-    bool IConfig::CompatLoadOldConf()
+    bool IConfig::CompatLoadOldConf(configComponents_t& a_out)
     {
         try
         {
@@ -184,18 +180,18 @@ namespace CBP
                     std::string key(tok1);
 
                     transform(sect.begin(), sect.end(), sect.begin(), ::tolower);
-                    transform(key.begin(), key.end(), key.begin(), ::tolower);
 
-                    if (!validSimComponents.contains(sect))
+                    if (!a_out.contains(sect))
                         continue;
+
+                    transform(key.begin(), key.end(), key.begin(), ::tolower);
 
                     static const std::string rot("rotational");
 
-                    if (key == rot) {
-                        thingGlobalConfig[sect].Set("rotationalz", atof(tok2));
-                    }
+                    if (key == rot)
+                        a_out.at(sect).Set("rotationalz", atof(tok2));
                     else
-                        thingGlobalConfig[sect].Set(key, atof(tok2));
+                        a_out.at(sect).Set(key, atof(tok2));
 
                 }
             }
@@ -212,11 +208,12 @@ namespace CBP
         return false;
     }
 
-    bool IConfig::LoadConfig()
+    void IConfig::LoadConfig()
     {
-        LoadNodes();
-
-        if (nodeMap.size() == 0)
+        nodeMap_t nm;
+        if (LoadNodes(nm))
+            nodeMap = std::move(nm);
+        else
             nodeMap = defaultNodeMap;
 
         for (const auto& v : nodeMap)
@@ -225,20 +222,21 @@ namespace CBP
         thingGlobalConfig = defaultConfig;
 
         for (const auto& v : validSimComponents)
-            thingGlobalConfig.emplace(v, configComponent_t());
+            if (!thingGlobalConfig.contains(v))
+                thingGlobalConfig.emplace(v, configComponent_t());
 
-        bool res = CompatLoadOldConf();
+        configComponents_t cc(thingGlobalConfig);
+        if (CompatLoadOldConf(cc))
+            thingGlobalConfig = std::move(cc);
 
         thingGlobalConfigDefaults = thingGlobalConfig;
-
-        return res;
     }
 
     void IConfig::SetActorConf(SKSE::ObjectHandle a_handle, const configComponents_t& a_conf)
     {
         actorConfHolder.insert_or_assign(a_handle, a_conf);
     }
-    
+
     void IConfig::SetActorConf(SKSE::ObjectHandle a_handle, configComponents_t&& a_conf)
     {
         actorConfHolder.emplace(a_handle, std::forward<configComponents_t>(a_conf));
@@ -302,7 +300,7 @@ namespace CBP
     {
         raceConfHolder.insert_or_assign(a_handle, a_conf);
     }
-    
+
     void IConfig::SetRaceConf(SKSE::FormID a_handle, configComponents_t&& a_conf)
     {
         raceConfHolder.emplace(a_handle, std::forward<configComponents_t>(a_conf));

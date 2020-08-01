@@ -110,7 +110,8 @@ namespace CBP
     public:
         typedef std::set<std::string> vKey_t;
 
-        [[nodiscard]] static bool LoadConfig();
+        static void LoadConfig();
+
         // Not guaranteed to be actual actor conf storage
         [[nodiscard]] static const configComponents_t& GetActorConf(SKSE::ObjectHandle handle);
         [[nodiscard]] static configComponents_t& GetOrCreateActorConf(SKSE::ObjectHandle handle);
@@ -196,8 +197,8 @@ namespace CBP
 
     private:
 
-        static void LoadNodes();
-        [[nodiscard]] static bool CompatLoadOldConf();
+        static bool LoadNodes(nodeMap_t &a_out);
+        [[nodiscard]] static bool CompatLoadOldConf(configComponents_t& a_out);
 
         static configComponents_t thingGlobalConfig;
         static configComponents_t thingGlobalConfigDefaults;
