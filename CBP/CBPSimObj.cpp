@@ -2,15 +2,15 @@
 
 namespace CBP
 {
-    SimObject::SimObject(Actor* a_actor, const configComponents_t& a_config, const boneMap_t& a_boneMap)
+    SimObject::SimObject(Actor* a_actor, const configComponents_t& a_config, const nodeMap_t& a_nodeMap)
         : m_things(5)
     {
-        bind(a_actor, a_config, a_boneMap);
+        bind(a_actor, a_config, a_nodeMap);
     }
 
-    void SimObject::bind(Actor* a_actor, const configComponents_t& a_config, const boneMap_t& a_boneMap)
+    void SimObject::bind(Actor* a_actor, const configComponents_t& a_config, const nodeMap_t& a_nodeMap)
     {
-        for (const auto& b : a_boneMap) {
+        for (const auto& b : a_nodeMap) {
             BSFixedString cs(b.first.c_str());
             auto bone = a_actor->loadedState->node->GetObjectByName(&cs.data);
             if (bone != nullptr) {

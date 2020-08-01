@@ -94,7 +94,7 @@ namespace CBP
     typedef configComponents_t::value_type configComponentsValue_t;
     typedef std::map<SKSE::ObjectHandle, configComponents_t> actorConfHolder_t;
     typedef std::map<SKSE::FormID, configComponents_t> raceConfHolder_t;
-    typedef std::unordered_map<std::string, std::string> boneMap_t;
+    typedef std::unordered_map<std::string, std::string> nodeMap_t;
 
     class IConfig
     {
@@ -183,7 +183,7 @@ namespace CBP
         }
 
         [[nodiscard]] inline static auto &GetBoneMap() {
-            return boneMap;
+            return nodeMap;
         }
 
         [[nodiscard]] inline static auto& GetValidSimComponents() {
@@ -196,7 +196,7 @@ namespace CBP
 
     private:
 
-        static void LoadBones();
+        static void LoadNodes();
         [[nodiscard]] static bool CompatLoadOldConf();
 
         static configComponents_t thingGlobalConfig;
@@ -206,8 +206,8 @@ namespace CBP
         static configGlobal_t globalConfig;
         static vKey_t validSimComponents;
 
-        static boneMap_t boneMap;
-        static const boneMap_t defaultBonesFemale;
+        static nodeMap_t nodeMap;
+        static const nodeMap_t defaultNodeMap;
 
         static IConfigLog log;
     };

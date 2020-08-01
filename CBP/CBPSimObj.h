@@ -5,7 +5,7 @@ namespace CBP
     class SimObject
     {
     public:
-        SimObject(Actor* actor, const configComponents_t& config, const boneMap_t& a_boneMap);
+        SimObject(Actor* actor, const configComponents_t& config, const nodeMap_t& a_nodeMap);
         void update(Actor* actor);
         void updateConfig(const configComponents_t& config);
         void reset(Actor* a_actor);
@@ -14,7 +14,7 @@ namespace CBP
         void applyForce(uint32_t a_steps, const std::string& a_component, const NiPoint3& a_force);
 
     private:
-        void bind(Actor* a_actor, const configComponents_t& a_config, const boneMap_t& a_boneMap);
+        void bind(Actor* a_actor, const configComponents_t& a_config, const nodeMap_t& a_nodeMap);
 
         std::unordered_map<std::string, SimComponent> m_things;
     };

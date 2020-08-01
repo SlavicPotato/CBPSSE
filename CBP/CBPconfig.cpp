@@ -8,7 +8,7 @@ namespace CBP
     raceConfHolder_t IConfig::raceConfHolder;
     configGlobal_t IConfig::globalConfig;
     IConfig::vKey_t IConfig::validSimComponents;
-    boneMap_t IConfig::boneMap;
+    nodeMap_t IConfig::nodeMap;
 
     IConfig::IConfigLog IConfig::log;
 
@@ -93,7 +93,7 @@ namespace CBP
        }
     };
 
-    const boneMap_t IConfig::defaultBonesFemale = {
+    const nodeMap_t IConfig::defaultNodeMap = {
         {"NPC L Breast", "breast"}, 
         {"NPC R Breast", "breast"},
         {"NPC L Butt", "butt"}, 
@@ -101,16 +101,16 @@ namespace CBP
         {"HDT Belly", "belly"} 
     };
 
-    void IConfig::LoadBones()
+    void IConfig::LoadNodes()
     {
         try
         {
-            std::ifstream fs(PLUGIN_BASE_PATH "CBPBones.json", std::ifstream::in | std::ifstream::binary);
-            if (!fs.is_open()) 
-                throw std::system_error(errno, std::system_category(), PLUGIN_BASE_PATH "CBPBones.json");
+            std::ifstream ifs(PLUGIN_BASE_PATH "CBPNodes.json", std::ifstream::in | std::ifstream::binary);
+            if (!ifs.is_open()) 
+                throw std::system_error(errno, std::system_category(), PLUGIN_BASE_PATH "CBPNodes.json");
 
             Json::Value root;
-            fs >> root;
+            ifs >> root;
 
             for (Json::Value::iterator it1 = root.begin(); it1 != root.end(); ++it1)
             {
@@ -139,7 +139,7 @@ namespace CBP
                         continue;
                     }
 
-                    boneMap.insert_or_assign(k, simComponent);
+                    nodeMap.insert_or_assign(k, simComponent);
                 }
             }
 
@@ -153,7 +153,7 @@ namespace CBP
             log.Error("%s: %s", __FUNCTION__, e.what());
         }
 
-        boneMap.clear();
+        nodeMap.clear();
     }
 
     bool IConfig::CompatLoadOldConf()
@@ -214,12 +214,12 @@ namespace CBP
 
     bool IConfig::LoadConfig()
     {
-        LoadBones();
+        LoadNodes();
 
-        if (boneMap.size() == 0)
-            boneMap = defaultBonesFemale;
+        if (nodeMap.size() == 0)
+            nodeMap = defaultNodeMap;
 
-        for (const auto& v : boneMap)
+        for (const auto& v : nodeMap)
             validSimComponents.insert(v.second);
 
         thingGlobalConfig = defaultConfig;
