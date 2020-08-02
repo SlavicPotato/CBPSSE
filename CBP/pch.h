@@ -54,7 +54,6 @@
 
 #include "plugin.h"
 #include "common.h"
-#include "patching.h"
 #include "logging.h"
 #include "skse.h"
 #include "game.h"
