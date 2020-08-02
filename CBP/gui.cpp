@@ -14,7 +14,7 @@ namespace CBP
         if (!Hook::CheckDst5<0xE8>(m_Instance.CreateD3D11) ||
             !Hook::CheckDst5<0xE8>(m_Instance.UnkPresent))
         {
-            m_Instance.Error("Unable to hook, invalid targets");
+            m_Instance.Error("Unable to hook, one or more invalid targets");
             return false;
         }
 

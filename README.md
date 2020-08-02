@@ -10,5 +10,5 @@ Modified version of [CBP Physics for Skyrim SE](https://github.com/cbpphysics/CB
 * Version independent (requires [Address Library for SKSE Plugins](https://www.nexusmods.com/skyrimspecialedition/mods/32444))
 
 ## Build deps
-* [SKSE64](http://skse.silverlock.org)
 * [sse-build-resources](https://github.com/SlavicPotato/sse-build-resources)
+* [ImGui](https://github.com/ocornut/imgui)

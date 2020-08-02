@@ -142,6 +142,11 @@ namespace CBP
                 m_Instance.Message("UI enabled");
             }
         }
+
+        IConfig::LoadConfig();
+
+        auto& pm = GenericProfileManager::GetSingleton();
+        pm.Load(PLUGIN_CBP_PROFILE_PATH);
     }
 
     void DCBP::MessageHandler(Event, void* args)
@@ -152,11 +157,6 @@ namespace CBP
         {
         case SKSEMessagingInterface::kMessage_InputLoaded:
         {
-            IConfig::LoadConfig();
-
-            auto& pm = GenericProfileManager::GetSingleton();
-            pm.Load(PLUGIN_CBP_PROFILE_PATH);
-
             GetEventDispatcherList()->objectLoadedDispatcher.AddEventSink(EventHandler::GetSingleton());
             m_Instance.Debug("Object loaded event sink added");
         }
