@@ -207,19 +207,19 @@ namespace CBP
                             state.selected = std::move(name);
                         }
                         else {
-                            state.last_exception = pm.GetLastException();
+                            state.lastException = pm.GetLastException();
                             ImGui::OpenPopup("Add Error");
                         }
                     }
                     else {
-                        state.last_exception = pm.GetLastException();
+                        state.lastException = pm.GetLastException();
                         ImGui::OpenPopup("Create Error");
                     }
                 }
             }
 
-            UICommon::MessageDialog("Create Error", "Could not create the profile\n\n%s", state.last_exception.what());
-            UICommon::MessageDialog("Add Error", "Could not add the profile\n\n%s", state.last_exception.what());
+            UICommon::MessageDialog("Create Error", "Could not create the profile\n\n%s", state.lastException.what());
+            UICommon::MessageDialog("Add Error", "Could not add the profile\n\n%s", state.lastException.what());
 
             if (state.selected)
             {
@@ -230,7 +230,7 @@ namespace CBP
                 if (ImGui::Button("Save")) {
                     if (!profile.Save()) {
                         ImGui::OpenPopup("Save");
-                        state.last_exception = profile.GetLastException();
+                        state.lastException = profile.GetLastException();
                     }
                 }
 
@@ -254,7 +254,7 @@ namespace CBP
                         state.selected.Clear();
                     }
                     else {
-                        state.last_exception = pm.GetLastException();
+                        state.lastException = pm.GetLastException();
                         ImGui::OpenPopup("Delete failed");
                     }
                 }
@@ -268,14 +268,14 @@ namespace CBP
                         state.selected = newName;
                     }
                     else {
-                        state.last_exception = pm.GetLastException();
+                        state.lastException = pm.GetLastException();
                         ImGui::OpenPopup("Rename failed");
                     }
                 }
                 else {
 
                     UICommon::MessageDialog("Save", "Saving profile '%s' to '%s' failed\n\n%s",
-                        profile.Name().c_str(), profile.Path().string().c_str(), state.last_exception.what());
+                        profile.Name().c_str(), profile.Path().string().c_str(), state.lastException.what());
 
                     ImGui::Separator();
 
@@ -283,9 +283,9 @@ namespace CBP
                 }
 
                 UICommon::MessageDialog("Delete failed",
-                    "Could not delete the profile\n\n%s", state.last_exception.what());
+                    "Could not delete the profile\n\n%s", state.lastException.what());
                 UICommon::MessageDialog("Rename failed",
-                    "Could not rename the profile\n\n%s", state.last_exception.what());
+                    "Could not rename the profile\n\n%s", state.lastException.what());
             }
 
             ImGui::PopItemWidth();
@@ -759,7 +759,7 @@ namespace CBP
                     if (ImGui::MenuItem("Save globals"))
                         if (!DCBP::SaveGlobals()) {
                             saveGlobalsFailed = true;
-                            state.last_exception = DCBP::GetLastSerializationException();
+                            state.lastException = DCBP::GetLastSerializationException();
                         }
 
                     ImGui::Separator();
@@ -889,8 +889,8 @@ namespace CBP
                 m_scGlobal.DrawSimComponents(0, IConfig::GetThingGlobalConfig());
             }
 
-            UICommon::MessageDialog("Settings save failed", "Error occured while trying to save settings\n\n%s", state.last_exception.what());
-            UICommon::MessageDialog("Save failed", "Saving actor data failed\n\n%s", state.last_exception.what());
+            UICommon::MessageDialog("Settings save failed", "Error occured while trying to save settings\n\n%s", state.lastException.what());
+            UICommon::MessageDialog("Save failed", "Saving actor data failed\n\n%s", state.lastException.what());
 
             ImGui::PopItemWidth();
             ImGui::PopID();

@@ -172,7 +172,7 @@ namespace CBP
             UISelectedItem<std::string> selected;
             char new_input[60];
             char ren_input[60];
-            std::exception last_exception;
+            std::exception lastException;
         } state;
     };
 
@@ -229,7 +229,7 @@ namespace CBP
         inline void MarkChanged() { m_changed = true; }
 
         struct {
-            std::exception last_exception;
+            std::exception lastException;
         } state;
 
         SKSE::FormID m_currentRace;
@@ -323,7 +323,7 @@ namespace CBP
                 bool race;
             } windows;
 
-            std::exception last_exception;
+            std::exception lastException;
         } state;
 
         UIProfileEditor m_profile;

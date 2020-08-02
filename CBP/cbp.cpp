@@ -489,13 +489,7 @@ namespace CBP
     }
 
     static UInt32 controlDisableFlags =
-        USER_EVENT_FLAG::kMovement |
-        USER_EVENT_FLAG::kLooking |
-        USER_EVENT_FLAG::kPOVSwitch |
-        USER_EVENT_FLAG::kMenu |
-        USER_EVENT_FLAG::kFighting |
-        USER_EVENT_FLAG::kWheelZoom |
-        USER_EVENT_FLAG::kActivate;
+        USER_EVENT_FLAG::kAll;
 
     static UInt8 byChargenDisableFlags =
         PlayerCharacter::kDisableSaving |
