@@ -5,6 +5,13 @@ namespace CBP
     IData::raceList_t IData::raceList;
     IData::actorRaceMap_t IData::actorRaceMap;
 
+    std::unordered_set<SKSE::FormID> IData::ignoredRaces = {
+        0x0002C65C,
+        0x00108272,
+        0x0002C659,
+        0x0002C65B,
+        0x0002C65A
+    };
 
     void IData::UpdateActorRaceMap(SKSE::ObjectHandle a_handle, Actor* a_actor)
     {
@@ -44,6 +51,9 @@ namespace CBP
                 continue;
 
             if (race->data.raceFlags & TESRace::kRace_Child)
+                continue;
+
+            if (IsIgnoredRace(race->formID))
                 continue;
 
             const char* fullName = race->fullName.GetName();

@@ -297,9 +297,13 @@ namespace CBP
         if (m_actors.contains(a_handle))
             return;
 
-        if (actor->race != nullptr)
+        if (actor->race != nullptr) {
             if (actor->race->data.raceFlags & TESRace::kRace_Child)
                 return;
+
+            if (IData::IsIgnoredRace(actor->race->formID))
+                return;
+        }
 
         auto& globalConfig = IConfig::GetGlobalConfig();
 

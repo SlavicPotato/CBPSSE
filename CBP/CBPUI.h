@@ -117,7 +117,7 @@ namespace CBP
     protected:
         UIApplyForce() = default;
 
-        void DrawForceSelector(T* a_data, configGlobalForce_t& a_forceData);
+        void DrawForceSelector(T* a_data, configForceMap_t& a_forceData);
 
         virtual void ApplyForce(
             T* a_data, 

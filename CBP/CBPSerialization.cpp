@@ -6,7 +6,7 @@ namespace CBP
 
     void Serialization::LoadGlobals()
     {
-        auto& globalConfig = CBP::IConfig::GetGlobalConfig();
+        auto& globalConfig = IConfig::GetGlobalConfig();
 
         try
         {
@@ -40,21 +40,53 @@ namespace CBP
                 globalConfig.ui.showKey = static_cast<UInt32>(ui.get("showKey", DIK_END).asUInt());
                 globalConfig.ui.lastActor = static_cast<SKSE::ObjectHandle>(ui.get("lastActor", 0).asUInt64());
 
-                if (ui.isMember("forceActor")) {
-                    const auto& forceActor = ui["forceActor"];
+                if (ui.isMember("force")) {
+                    const auto& force = ui["force"];
 
-                    globalConfig.ui.forceActor.force.x = forceActor.get("x", 0.0f).asFloat();
-                    globalConfig.ui.forceActor.force.y = forceActor.get("y", 0.0f).asFloat();
-                    globalConfig.ui.forceActor.force.z = forceActor.get("z", 0.0f).asFloat();
-                    globalConfig.ui.forceActor.steps = max(forceActor.get("steps", 1).asInt(), 1);
-                    globalConfig.ui.forceActor.selected = forceActor.get("selected", "").asString();
+                    if (force.isObject()) {
+
+                        for (auto it = force.begin(); it != force.end(); ++it)
+                        {
+                            if (!it->isObject())
+                                continue;
+
+                            auto k = it.key();
+                            if (!k.isString())
+                                continue;
+
+                            std::string key(k.asString());
+                            transform(key.begin(), key.end(), key.begin(), ::tolower);
+
+                            if (!IConfig::IsValidSimComponent(key))
+                                continue;
+
+                            auto& e = globalConfig.ui.forceActor[key];
+
+                            e.force.x = it->get("x", 0.0f).asFloat();
+                            e.force.y = it->get("y", 0.0f).asFloat();
+                            e.force.z = it->get("z", 0.0f).asFloat();
+                            e.steps = max(it->get("steps", 1).asInt(), 1);
+                        }
+                    }
+                }
+
+                if (ui.isMember("forceSelected"))
+                {
+                    auto& forceSelected = ui["forceSelected"];
+                    if (forceSelected.isString())
+                    {
+                        std::string v(ui.get("forceSelected", "").asString());
+                        transform(v.begin(), v.end(), v.begin(), ::tolower);
+
+                        globalConfig.ui.forceActorSelected = std::move(v);
+                    }
                 }
 
             }
         }
         catch (const std::exception& e)
         {
-            CBP::IConfig::ResetGlobalConfig();
+            IConfig::ResetGlobalConfig();
             Error("%s: %s", __FUNCTION__, e.what());
         }
     }
@@ -63,7 +95,7 @@ namespace CBP
     {
         try
         {
-            auto& globalConfig = CBP::IConfig::GetGlobalConfig();
+            auto& globalConfig = IConfig::GetGlobalConfig();
 
             Json::Value root;
 
@@ -82,12 +114,19 @@ namespace CBP
             ui["showKey"] = static_cast<uint32_t>(globalConfig.ui.showKey);
             ui["lastActor"] = static_cast<uint64_t>(globalConfig.ui.lastActor);
 
-            auto& forceActor = ui["forceActor"];
-            forceActor["x"] = globalConfig.ui.forceActor.force.x;
-            forceActor["y"] = globalConfig.ui.forceActor.force.y;
-            forceActor["z"] = globalConfig.ui.forceActor.force.z;
-            forceActor["steps"] = max(globalConfig.ui.forceActor.steps, 1);
-            forceActor["selected"] = globalConfig.ui.forceActor.selected;
+            auto& force = ui["force"];
+
+            for (const auto& e : globalConfig.ui.forceActor) 
+            {
+                auto& fe = force[e.first];
+
+                fe["x"] = e.second.force.x;
+                fe["y"] = e.second.force.y;
+                fe["z"] = e.second.force.z;
+                fe["steps"] = max(e.second.steps, 1);
+            }
+
+            ui["forceSelected"] = globalConfig.ui.forceActorSelected;
 
             WriteJsonData(PLUGIN_CBP_GLOBAL_DATA, root);
 

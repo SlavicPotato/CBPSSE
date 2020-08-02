@@ -1,8 +1,10 @@
 #ifndef PCH_H
 #define PCH_H
 
-#include <set>
+#include <map>
 #include <unordered_map>
+#include <set>
+#include <unordered_set>
 #include <sstream>
 #include <fstream>
 #include <filesystem>

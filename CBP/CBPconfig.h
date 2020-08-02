@@ -2,12 +2,14 @@
 
 namespace CBP
 {
-    struct configGlobalForce_t
+    struct configForce_t
     {
         NiPoint3 force{ 0.0f, 0.0f, 0.0f };
         int steps = 1;
         std::string selected;
     };
+
+    typedef std::unordered_map<std::string, configForce_t> configForceMap_t;
 
     struct configGlobal_t
     {
@@ -27,10 +29,10 @@ namespace CBP
             UInt32 showKey = DIK_END;
 
             SKSE::ObjectHandle lastActor = 0;
-            configGlobalForce_t forceActor;
+            configForceMap_t forceActor;
+            std::string forceActorSelected;
         } ui;
     };
-
 
     typedef std::unordered_map<std::string, ptrdiff_t> componentValueToOffsetMap_t;
 
@@ -108,7 +110,7 @@ namespace CBP
 
 
     public:
-        typedef std::set<std::string> vKey_t;
+        typedef std::unordered_set<std::string> vKey_t;
 
         static void LoadConfig();
 

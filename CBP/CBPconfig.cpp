@@ -136,9 +136,11 @@ namespace CBP
                     if (!v.isString())
                         continue;
 
-                    std::string k = v.asString();
+                    std::string k(v.asString());
                     if (k.size() == 0)
                         continue;
+
+                    transform(k.begin(), k.end(), k.begin(), ::tolower);
 
                     a_out.insert_or_assign(k, simComponent);
                 }

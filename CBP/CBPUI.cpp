@@ -596,7 +596,7 @@ namespace CBP
     }
 
     template<typename T>
-    void UIApplyForce<T>::DrawForceSelector(T* a_data, configGlobalForce_t& a_forceData)
+    void UIApplyForce<T>::DrawForceSelector(T* a_data, configForceMap_t& a_forceData)
     {
         ImGui::PushID(static_cast<const void*>(std::addressof(m_forceState)));
 
@@ -610,8 +610,8 @@ namespace CBP
                 curSelName = m_forceState.selected.Get().c_str();
             }
             else {
-                if (globalConfig.ui.forceActor.selected.size()) {
-                    auto it = data.find(globalConfig.ui.forceActor.selected);
+                if (globalConfig.ui.forceActorSelected.size()) {
+                    auto it = data.find(globalConfig.ui.forceActorSelected);
                     if (it != data.end()) {
                         m_forceState.selected.Set(it->first);
                         curSelName = it->first.c_str();
@@ -641,7 +641,7 @@ namespace CBP
 
                     if (ImGui::Selectable(e.first.c_str(), selected)) {
                         m_forceState.selected.Set(
-                            globalConfig.ui.forceActor.selected = e.first);
+                            globalConfig.ui.forceActorSelected = e.first);
                         DCBP::SaveGlobals();
                     }
 
@@ -652,20 +652,30 @@ namespace CBP
 
             ImGui::SameLine(ImGui::GetWindowContentRegionMax().x - 43.0f);
             if (ImGui::Button("Apply"))
-                if (m_forceState.selected.Has())
-                    ApplyForce(a_data, a_forceData.steps, m_forceState.selected.Get(), a_forceData.force);
-                
+                for (const auto& e : globalConfig.ui.forceActor)
+                    ApplyForce(a_data, e.second.steps, e.first, e.second.force);
 
-            ImGui::Spacing();
+            if (m_forceState.selected.Has())
+            {
+                auto& k = m_forceState.selected.Get();
+                auto& e = a_forceData[k];
 
-            ImGui::SliderFloat("X", std::addressof(a_forceData.force.x), FORCE_MIN, FORCE_MAX);
-            ImGui::SliderFloat("Y", std::addressof(a_forceData.force.y), FORCE_MIN, FORCE_MAX);
-            ImGui::SliderFloat("Z", std::addressof(a_forceData.force.z), FORCE_MIN, FORCE_MAX);
+                ImGui::Spacing();
 
-            ImGui::Spacing();
+                ImGui::SliderFloat("X", std::addressof(e.force.x), FORCE_MIN, FORCE_MAX);
 
-            if (ImGui::SliderInt("Steps", std::addressof(a_forceData.steps), 1, 1000))
-                a_forceData.steps = max(a_forceData.steps, 1);
+                ImGui::SameLine(ImGui::GetWindowContentRegionMax().x - 43.0f);
+                if (ImGui::Button("Reset"))
+                    e = configForce_t();
+
+                ImGui::SliderFloat("Y", std::addressof(e.force.y), FORCE_MIN, FORCE_MAX);
+                ImGui::SliderFloat("Z", std::addressof(e.force.z), FORCE_MIN, FORCE_MAX);
+
+                ImGui::Spacing();
+
+                if (ImGui::SliderInt("Steps", std::addressof(e.steps), 1, 150))
+                    e.steps = max(e.steps, 1);
+            }
         }
 
         ImGui::PopID();
