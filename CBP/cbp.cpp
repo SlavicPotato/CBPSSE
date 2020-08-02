@@ -8,11 +8,9 @@ namespace CBP
     DCBP DCBP::m_Instance;
 
     constexpr char* SECTION_CBP = "CBP";
-    constexpr char* CKEY_CBPENABLED = "Enabled";
-    constexpr char* CKEY_CBPARELOAD = "AutoReload";
     constexpr char* CKEY_CBPFEMALEONLY = "FemaleOnly";
     constexpr char* CKEY_COMBOKEY = "ComboKey";
-    constexpr char* CKEY_STATSKEY = "ToggleKey";
+    constexpr char* CKEY_SHOWKEY = "ToggleKey";
     constexpr char* CKEY_UIENABLED = "UIEnabled";
 
     inline static bool isActorValid(Actor* actor)
@@ -112,6 +110,14 @@ namespace CBP
     void DCBP::LoadConfig()
     {
         conf.ui_enabled = GetConfigValue(SECTION_CBP, CKEY_UIENABLED, true);
+
+        auto& globalConfig = CBP::IConfig::GetGlobalConfig();
+
+        globalConfig.general.femaleOnly = GetConfigValue(SECTION_CBP, CKEY_CBPFEMALEONLY, true);
+        globalConfig.ui.comboKey = ConfigGetComboKey(GetConfigValue(SECTION_CBP, CKEY_COMBOKEY, 1));
+        globalConfig.ui.showKey = std::clamp<UInt32>(
+            GetConfigValue<UInt32>(SECTION_CBP, CKEY_SHOWKEY, DIK_INSERT),
+            0, InputMap::kMacro_NumKeyboardKeys - 1);
     }
 
     void DCBP::Initialize()
@@ -124,21 +130,15 @@ namespace CBP
         IEvents::RegisterForEvent(Event::OnRevert, RevertHandler);
         IEvents::RegisterForEvent(Event::OnGameLoad, LoadGameHandler);
         IEvents::RegisterForEvent(Event::OnGameSave, SaveGameHandler);
-        IEvents::RegisterForEvent(Event::OnConfigLoad, OnConfigLoad);
 
         SKSE::g_papyrus->Register(RegisterFuncs);
 
         if (m_Instance.conf.ui_enabled)
         {
-            ASSERT(CBP::DUI::Initialize());
-            CBP::DInput::Initialize();
+            ASSERT(DUI::Initialize());
+            DInput::Initialize();
             DInput::RegisterForKeyEvents(&m_Instance.inputEventHandler);
         }
-    }
-
-    void DCBP::OnConfigLoad(Event, void*)
-    {
-        
     }
 
     void DCBP::MessageHandler(Event, void* args)
@@ -149,9 +149,9 @@ namespace CBP
         {
         case SKSEMessagingInterface::kMessage_InputLoaded:
         {
-            CBP::IConfig::LoadConfig();
+            IConfig::LoadConfig();
 
-            auto& pm = CBP::GenericProfileManager::GetSingleton();
+            auto& pm = GenericProfileManager::GetSingleton();
             pm.Load(PLUGIN_CBP_PROFILE_PATH);
 
             GetEventDispatcherList()->objectLoadedDispatcher.AddEventSink(EventHandler::GetSingleton());

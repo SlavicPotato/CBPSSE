@@ -118,12 +118,12 @@ namespace CBP
             if (!root.isObject())
                 throw std::exception("Unexpected data");
 
-            for (Json::Value::iterator it1 = root.begin(); it1 != root.end(); ++it1)
+            for (auto it = root.begin(); it != root.end(); ++it)
             {
-                if (!it1->isArray())
+                if (!it->isArray())
                     continue;
 
-                auto k = it1.key();
+                auto k = it.key();
                 if (!k.isString())
                     continue;
 
@@ -131,8 +131,7 @@ namespace CBP
                 if (simComponent.size() == 0)
                     continue;
 
-
-                for (auto& v : *it1)
+                for (auto& v : *it)
                 {
                     if (!v.isString())
                         continue;

@@ -181,7 +181,7 @@ namespace CBP
 
             m_conf = IConfig::GetThingGlobalConfigDefaults();
 
-            for (Json::Value::iterator it1 = conf.begin(); it1 != conf.end(); ++it1)
+            for (auto it1 = conf.begin(); it1 != conf.end(); ++it1)
             {
                 if (!it1->isObject()) {
                     continue;
@@ -197,7 +197,7 @@ namespace CBP
 
                 configComponent_t tmp;
 
-                for (Json::Value::iterator it2 = it1->begin(); it2 != it1->end(); ++it2)
+                for (auto it2 = it1->begin(); it2 != it1->end(); ++it2)
                 {
                     if (!it2->isNumeric())
                         continue;

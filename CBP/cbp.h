@@ -161,7 +161,6 @@ namespace CBP
 
         bool ProcessUICallbackImpl();
 
-        static void OnConfigLoad(Event m_code, void* args);
         static void MessageHandler(Event m_code, void* args);
 
         static void RevertHandler(Event m_code, void* args);

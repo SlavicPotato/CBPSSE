@@ -3,13 +3,7 @@
 namespace CBP
 {
 	enum Event {
-		OnConfigLoad = 1,
-		OnD3D11PreCreate,
-		OnD3D11PostCreate,
-		OnD3D11PostPostCreate,
-		OnCreateWindowEx,
-		OnMenuEvent,
-		OnMessage,
+		OnMessage = 0,
 		OnGameSave,
 		OnGameLoad,
 		OnFormDelete,
