@@ -135,9 +135,12 @@ namespace CBP
 
         if (m_Instance.conf.ui_enabled)
         {
-            ASSERT(DUI::Initialize());
-            DInput::Initialize();
-            DInput::RegisterForKeyEvents(&m_Instance.inputEventHandler);
+            if (DUI::Initialize()) {
+                DInput::Initialize();
+                DInput::RegisterForKeyEvents(&m_Instance.inputEventHandler);
+
+                m_Instance.Message("UI enabled");
+            }
         }
     }
 

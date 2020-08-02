@@ -11,26 +11,22 @@ namespace CBP
 
     bool DUI::Initialize()
     {
-        if (!Hook::Call5(m_Instance.CreateD3D11,
+        if (!Hook::CheckDst5<0xE8>(m_Instance.CreateD3D11) ||
+            !Hook::CheckDst5<0xE8>(m_Instance.UnkPresent))
+        {
+            m_Instance.Error("Unable to hook, invalid targets");
+            return false;
+        }
+
+        ASSERT(Hook::Call5(m_Instance.CreateD3D11,
             reinterpret_cast<uintptr_t>(CreateD3D11_Hook),
-            m_Instance.CreateD3D11_O))
-        {
-            m_Instance.Error("CreateD3D11 hook failed");
-            return false;
-        }
+            m_Instance.CreateD3D11_O));
 
-        if (!Hook::Call5(m_Instance.UnkPresent,
+        ASSERT(Hook::Call5(m_Instance.UnkPresent,
             reinterpret_cast<uintptr_t>(Present_Pre),
-            m_Instance.UnkPresent_O))
-        {
-            m_Instance.Error("Present_Pre hook failed");
-            return false;
-        }
-
-        //Hook::Call5(RelocAddr<uintptr_t>(0x5B15B6), uintptr_t(tt), tt_o);
+            m_Instance.UnkPresent_O));
 
         DInput::RegisterForKeyEvents(&m_Instance.inputEventHandler);
-
 
         return true;
     }
