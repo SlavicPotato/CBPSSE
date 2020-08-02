@@ -227,6 +227,9 @@ namespace CBP
             io.MouseWheel += b.m_fval;
             break;
         case kKeyboard:
+            if (b.m_uval >= sizeof(io.KeysDown))
+                break;
+
             if (m_event == KeyEvent::KeyDown) {
                 io.KeysDown[b.m_uval] = true;
                 if (m_k != 0) {
@@ -249,10 +252,6 @@ namespace CBP
         if (m_Instance.m_drawCallbacks.size() == 0) {
             m_Instance.ResetImGuiIO();
         }
-    }
-
-    bool DUI::HasCallback(uint32_t id) {
-        return m_Instance.m_drawCallbacks.contains(id);
     }
 
     void DUI::ResetImGuiIO()

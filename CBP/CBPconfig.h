@@ -199,7 +199,7 @@ namespace CBP
 
     private:
 
-        static bool LoadNodes(nodeMap_t &a_out);
+        static bool LoadNodeMap(nodeMap_t &a_out);
         [[nodiscard]] static bool CompatLoadOldConf(configComponents_t& a_out);
 
         static configComponents_t thingGlobalConfig;

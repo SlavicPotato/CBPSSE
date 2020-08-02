@@ -101,7 +101,7 @@ namespace CBP
         {"HDT Belly", "belly"}
     };
 
-    bool IConfig::LoadNodes(nodeMap_t& a_out)
+    bool IConfig::LoadNodeMap(nodeMap_t& a_out)
     {
         try
         {
@@ -218,7 +218,7 @@ namespace CBP
     void IConfig::LoadConfig()
     {
         nodeMap_t nm;
-        if (LoadNodes(nm))
+        if (LoadNodeMap(nm))
             nodeMap = std::move(nm);
         else
             nodeMap = defaultNodeMap;

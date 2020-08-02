@@ -65,9 +65,12 @@ namespace CBP
 
         static void AddCallback(uint32_t id, uiDrawCallback_t f);
         static void RemoveCallback(uint32_t id);
-        static bool HasCallback(uint32_t id);
 
-        inline static const auto& GetBufferSize() {
+        inline static bool HasCallback(uint32_t id) {
+            return m_Instance.m_drawCallbacks.contains(id);
+        }
+
+        inline static const UIRect& GetBufferSize(){
             return m_Instance.info.bufferSize;
         }
 

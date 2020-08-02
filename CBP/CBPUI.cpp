@@ -151,8 +151,8 @@ namespace CBP
 
             const char* curSelName = nullptr;
             if (state.selected.Has()) {
-                if (data.contains(state.selected.Get())) {
-                    curSelName = state.selected.Get().c_str();
+                if (data.contains(*state.selected)) {
+                    curSelName = (*state.selected).c_str();
                 }
                 else {
                     state.selected.Clear();
@@ -160,8 +160,8 @@ namespace CBP
             }
             else {
                 if (data.size()) {
-                    state.selected.Set(data.begin()->first);
-                    curSelName = state.selected.Get().c_str();
+                    state.selected = data.begin()->first;
+                    curSelName = (*state.selected).c_str();
                 }
             }
 
@@ -172,12 +172,12 @@ namespace CBP
                 for (const auto& e : data)
                 {
                     ImGui::PushID(reinterpret_cast<const void*>(std::addressof(e)));
-                    bool selected = e.first == state.selected.Get();
+                    bool selected = e.first == *state.selected;
                     if (selected)
                         ImGui::SetItemDefaultFocus();
 
                     if (ImGui::Selectable(e.second.Name().c_str(), selected)) {
-                        state.selected.Set(e.first);
+                        state.selected = e.first;
                     }
                     ImGui::PopID();
                 }
@@ -204,7 +204,7 @@ namespace CBP
                     {
                         std::string name(profile.Name());
                         if (pm.AddProfile(std::move(profile))) {
-                            state.selected.Set(std::move(name));
+                            state.selected = std::move(name);
                         }
                         else {
                             state.last_exception = pm.GetLastException();
@@ -223,7 +223,7 @@ namespace CBP
 
             if (state.selected.Has())
             {
-                auto& profile = data.at(state.selected.Get());
+                auto& profile = data.at(*state.selected);
 
                 ImGui::Spacing();
 
@@ -242,7 +242,7 @@ namespace CBP
                 ImGui::SameLine();
                 if (ImGui::Button("Rename")) {
                     ImGui::OpenPopup("Rename");
-                    _snprintf_s(state.ren_input, _TRUNCATE, "%s", state.selected.Get().c_str());
+                    _snprintf_s(state.ren_input, _TRUNCATE, "%s", (*state.selected).c_str());
                 }
 
                 if (UICommon::ConfirmDialog(
@@ -250,7 +250,7 @@ namespace CBP
                     "Are you sure you want to delete profile '%s'?\n\n", curSelName))
                 {
                     auto& pm = GenericProfileManager::GetSingleton();
-                    if (pm.DeleteProfile(state.selected.Get())) {
+                    if (pm.DeleteProfile(*state.selected)) {
                         state.selected.Clear();
                     }
                     else {
@@ -264,8 +264,8 @@ namespace CBP
                     auto& pm = GenericProfileManager::GetSingleton();
                     std::string newName(state.ren_input);
 
-                    if (pm.RenameProfile(state.selected.Get(), newName)) {
-                        state.selected.Set(newName);
+                    if (pm.RenameProfile(*state.selected, newName)) {
+                        state.selected = newName;
                     }
                     else {
                         state.last_exception = pm.GetLastException();
@@ -524,8 +524,8 @@ namespace CBP
 
         const char* curSelName = nullptr;
         if (m_selectedProfile.Has()) {
-            if (data.contains(m_selectedProfile.Get())) {
-                curSelName = m_selectedProfile.Get().c_str();
+            if (data.contains(*m_selectedProfile)) {
+                curSelName = (*m_selectedProfile).c_str();
             }
             else {
                 m_selectedProfile.Clear();
@@ -539,13 +539,13 @@ namespace CBP
                 ImGui::PushID(reinterpret_cast<const void*>(std::addressof(e)));
 
                 bool selected = m_selectedProfile.Has() &&
-                    e.first == m_selectedProfile.Get();
+                    e.first == *m_selectedProfile;
 
                 if (selected)
                     ImGui::SetItemDefaultFocus();
 
                 if (ImGui::Selectable(e.second.Name().c_str(), selected)) {
-                    m_selectedProfile.Set(e.first);
+                    m_selectedProfile = e.first;
                 }
 
                 ImGui::PopID();
@@ -555,7 +555,7 @@ namespace CBP
 
         if (m_selectedProfile.Has())
         {
-            auto& profile = data.at(m_selectedProfile.Get());
+            auto& profile = data.at(*m_selectedProfile);
 
             ImGui::SameLine(ImGui::GetWindowContentRegionMax().x - 43.0f);
             if (ImGui::Button("Apply")) {
@@ -607,13 +607,13 @@ namespace CBP
 
             const char* curSelName = nullptr;
             if (m_forceState.selected.Has()) {
-                curSelName = m_forceState.selected.Get().c_str();
+                curSelName = (*m_forceState.selected).c_str();
             }
             else {
                 if (globalConfig.ui.forceActorSelected.size()) {
                     auto it = data.find(globalConfig.ui.forceActorSelected);
                     if (it != data.end()) {
-                        m_forceState.selected.Set(it->first);
+                        m_forceState.selected = it->first;
                         curSelName = it->first.c_str();
                     }
                 }
@@ -621,7 +621,7 @@ namespace CBP
                 if (!m_forceState.selected.Has()) {
                     auto it = data.begin();
                     if (it != data.end()) {
-                        m_forceState.selected.Set(it->first);
+                        m_forceState.selected = it->first;
                         curSelName = it->first.c_str();
                     }
                 }
@@ -634,13 +634,13 @@ namespace CBP
                     ImGui::PushID(reinterpret_cast<const void*>(std::addressof(e)));
 
                     bool selected = m_forceState.selected.Has() &&
-                        e.first == m_forceState.selected.Get();
+                        e.first == *m_forceState.selected;
 
                     if (selected)
                         ImGui::SetItemDefaultFocus();
 
                     if (ImGui::Selectable(e.first.c_str(), selected)) {
-                        m_forceState.selected.Set(
+                        m_forceState.selected = (
                             globalConfig.ui.forceActorSelected = e.first);
                         DCBP::SaveGlobals();
                     }
@@ -657,8 +657,7 @@ namespace CBP
 
             if (m_forceState.selected.Has())
             {
-                auto& k = m_forceState.selected.Get();
-                auto& e = a_forceData[k];
+                auto& e = a_forceData[*m_forceState.selected];
 
                 ImGui::Spacing();
 

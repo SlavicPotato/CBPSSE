@@ -176,7 +176,6 @@ namespace SKSE
 
         if (((a_formid & 0xFF000000) >> 24) != 0xFF) {
             if (!intfc->ResolveFormId(a_formid, &tmp)) {
-                *a_newFormid = tmp;
                 return false;
             }
         }

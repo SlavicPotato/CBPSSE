@@ -206,7 +206,7 @@ namespace CBP
                     if (!k.isString())
                         continue;
 
-                    std::string valName = k.asString();
+                    std::string valName(k.asString());
                     transform(valName.begin(), valName.end(), valName.begin(), ::tolower);
 
                     tmp.Set(valName, it2->asFloat());

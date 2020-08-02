@@ -19,7 +19,7 @@ namespace CBP
         }
 
         KVStorage(keyVec_t&& a_in) :
-            m_vec(a_in)
+            m_vec(std::forward<keyVec_t>(a_in))
         {
             _init();
         }
@@ -48,16 +48,27 @@ namespace CBP
     class UISelectedItem
     {
     public:
-        UISelectedItem() noexcept : m_isSelected(false) {}
+        UISelectedItem() noexcept : 
+            m_isSelected(false) {}
 
-        inline void Set(const T& a_name) noexcept {
+        inline void Set(const T& a_rhs) {
             m_isSelected = true;
-            m_selected = a_name;
+            m_selected = a_rhs;
         }
-        
-        inline void Set(T&& a_name) noexcept {
+
+        inline void Set(T&& a_rhs) {
             m_isSelected = true;
-            m_selected = std::forward<T>(a_name);
+            m_selected = std::forward<T>(a_rhs);
+        }
+
+        inline T& operator=(const T& a_rhs) {
+            m_isSelected = true;
+            return (m_selected = a_rhs);
+        }
+
+        inline T& operator=(T&& a_rhs) {
+            m_isSelected = true;
+            return (m_selected = std::forward<T>(a_rhs));
         }
 
         inline void Clear() noexcept {
@@ -65,6 +76,10 @@ namespace CBP
         }
 
         [[nodiscard]] inline const T& Get() const noexcept {
+            return m_selected;
+        }
+
+        [[nodiscard]] inline const T& operator*() const noexcept {
             return m_selected;
         }
 

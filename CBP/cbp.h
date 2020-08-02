@@ -91,11 +91,10 @@ namespace CBP
         };
 
         class ToggleUITask :
-            public TaskDelegate
+            public TaskDelegateStatic
         {
         public:
             virtual void Run();
-            virtual void Dispose() {};
         };
 
         class ApplyForceTask :
