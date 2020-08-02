@@ -13,7 +13,7 @@ namespace CBP
     constexpr char* CKEY_SHOWKEY = "ToggleKey";
     constexpr char* CKEY_UIENABLED = "UIEnabled";
 
-    inline static bool isActorValid(Actor* actor)
+    inline static bool ActorValid(const Actor* actor)
     {
         if (actor == nullptr || actor->loadedState == nullptr ||
             actor->loadedState->node == nullptr ||
@@ -24,7 +24,7 @@ namespace CBP
         return true;
     }
 
-    void DCBP::DispatchActorTask(Actor* actor, CBPUpdateActionTask::CBPUpdateActorAction action)
+    void DCBP::DispatchActorTask(Actor* actor, UTTask::UTTAction action)
     {
         if (actor != nullptr) {
             ObjectHandle handle;
@@ -33,7 +33,7 @@ namespace CBP
         }
     }
 
-    void DCBP::DispatchActorTask(ObjectHandle handle, CBPUpdateActionTask::CBPUpdateActorAction action)
+    void DCBP::DispatchActorTask(ObjectHandle handle, UTTask::UTTAction action)
     {
         m_Instance.m_updateTask.AddTask({ action, handle });
     }
@@ -41,13 +41,13 @@ namespace CBP
     void DCBP::UpdateConfigOnAllActors()
     {
         m_Instance.m_updateTask.AddTask({
-            CBPUpdateActionTask::kActionUpdateConfigAll });
+            UTTask::kActionUpdateConfigAll });
     }
 
     void DCBP::ResetActors()
     {
         m_Instance.m_updateTask.AddTask({
-            CBPUpdateActionTask::kActionReset });
+            UTTask::kActionReset });
     }
 
     void DCBP::ApplyForce(
@@ -57,7 +57,7 @@ namespace CBP
         const NiPoint3& a_force)
     {
         DTasks::AddTask(
-            new CBPApplyForceTask(
+            new ApplyForceTask(
                 a_handle,
                 a_steps,
                 a_component,
@@ -69,7 +69,7 @@ namespace CBP
     void DCBP::UIQueueUpdateCurrentActor() {
         if (m_Instance.conf.ui_enabled)
             m_Instance.m_updateTask.AddTask({
-                CBPUpdateActionTask::kActionUIUpdateCurrentActor });
+                UTTask::kActionUIUpdateCurrentActor });
     }
 
     uint32_t DCBP::ConfigGetComboKey(int32_t param)
@@ -96,11 +96,6 @@ namespace CBP
         }
     }
 
-    const CBP::simActorList_t& DCBP::GetSimActorList()
-    {
-        return m_Instance.m_updateTask.GetSimActorList();
-    }
-
     DCBP::DCBP() :
         m_loadInstance(0),
         uiState({ false })
@@ -117,7 +112,7 @@ namespace CBP
         globalConfig.ui.comboKey = ConfigGetComboKey(GetConfigValue(SECTION_CBP, CKEY_COMBOKEY, 1));
         globalConfig.ui.showKey = std::clamp<UInt32>(
             GetConfigValue<UInt32>(SECTION_CBP, CKEY_SHOWKEY, DIK_INSERT),
-            0, InputMap::kMacro_NumKeyboardKeys - 1);
+            1, InputMap::kMacro_NumKeyboardKeys - 1);
     }
 
     void DCBP::Initialize()
@@ -216,8 +211,8 @@ namespace CBP
                 DispatchActorTask(
                     DYNAMIC_CAST(form, TESForm, Actor),
                     evn->loaded ?
-                    CBPUpdateActionTask::kActionAdd :
-                    CBPUpdateActionTask::kActionRemove);
+                    UTTask::kActionAdd :
+                    UTTask::kActionRemove);
             }
         }
 
@@ -231,14 +226,14 @@ namespace CBP
             if (evn->reference->formType == Actor::kTypeID) {
                 DispatchActorTask(
                     DYNAMIC_CAST(evn->reference, TESObjectREFR, Actor),
-                    CBPUpdateActionTask::kActionAdd);
+                    UTTask::kActionAdd);
             }
         }
 
         return kEvent_Continue;
     }
 
-    void CBPUpdateTask::Run()
+    void UpdateTask::Run()
     {
         auto player = *g_thePlayer;
         if (!player || !player->loadedState || !player->parentCell)
@@ -252,19 +247,21 @@ namespace CBP
         // Process our tasks only when the player is loaded and attached to a cell
         ProcessTasks();
 
-        auto it = actors.begin();
-        while (it != actors.end())
+        auto it = m_actors.begin();
+        while (it != m_actors.end())
         {
             auto actor = SKSE::ResolveObject<Actor>(it->first, Actor::kTypeID);
 
-            if (!isActorValid(actor)) {
+            if (!ActorValid(actor)) {
 #ifdef _CBP_SHOW_STATS
                 Debug("Actor 0x%llX (%s) no longer valid", it->first, actor ? CALL_MEMBER_FN(actor, GetReferenceName)() : nullptr);
 #endif
-                it = actors.erase(it);
+                it = m_actors.erase(it);
             }
             else {
-                if (actor->parentCell != nullptr && actor->parentCell->cellState == TESObjectCELL::kAttached) {
+                if (actor->parentCell != nullptr && 
+                    actor->parentCell->cellState == TESObjectCELL::kAttached) 
+                {
                     it->second.update(actor);
 #ifdef _CBP_MEASURE_PERF
                     n++;
@@ -290,103 +287,102 @@ namespace CBP
 #endif
     }
 
-    void CBPUpdateTask::AddActor(ObjectHandle a_handle)
+    void UpdateTask::AddActor(ObjectHandle a_handle)
     {
         auto actor = SKSE::ResolveObject<Actor>(a_handle, Actor::kTypeID);
-        if (!isActorValid(actor)) {
+        if (!ActorValid(actor)) {
             return;
         }
 
-        if (!actors.contains(a_handle))
+        if (m_actors.contains(a_handle))
+            return;
+
+        if (actor->race != nullptr)
+            if (actor->race->data.raceFlags & TESRace::kRace_Child)
+                return;
+
+        auto& globalConfig = IConfig::GetGlobalConfig();
+
+        if (globalConfig.general.femaleOnly) {
+            auto npc = DYNAMIC_CAST(actor->baseForm, TESForm, TESNPC);
+            if (npc != nullptr && CALL_MEMBER_FN(npc, GetSex)() == 0)
+                return;
+        }
+
+        IData::UpdateActorRaceMap(a_handle, actor);
+
+        auto obj = SimObject(
+            actor, IConfig::GetActorConf(a_handle),
+            IConfig::GetBoneMap()
+        );
+
+        if (obj.hasBone())
         {
-            if (actor->race != nullptr) {
-                if (actor->race->data.raceFlags & TESRace::kRace_Child)
-                    return;
-            }
-
-            auto& globalConfig = CBP::IConfig::GetGlobalConfig();
-
-            if (globalConfig.general.femaleOnly) {
-                auto npc = DYNAMIC_CAST(actor->baseForm, TESForm, TESNPC);
-                if (npc != nullptr && CALL_MEMBER_FN(npc, GetSex)() == 0)
-                    return;
-            }
-
-            CBP::IData::UpdateActorRaceMap(a_handle, actor);
-
-            auto obj = CBP::SimObject(
-                actor, CBP::IConfig::GetActorConf(a_handle),
-                CBP::IConfig::GetBoneMap()
-            );
-
-            if (obj.hasBone())
-            {
 #ifdef _CBP_SHOW_STATS
-                Debug("Adding %.16llX (%s)", a_handle, CALL_MEMBER_FN(actor, GetReferenceName)());
+            Debug("Adding %.16llX (%s)", a_handle, CALL_MEMBER_FN(actor, GetReferenceName)());
 #endif
-                actors.emplace(a_handle, std::move(obj));
-            }
+            m_actors.emplace(a_handle, std::move(obj));
         }
     }
 
-    void CBPUpdateTask::RemoveActor(ObjectHandle handle)
+    void UpdateTask::RemoveActor(ObjectHandle handle)
     {
 #ifdef _CBP_SHOW_STATS
-        if (actors.find(handle) != actors.end()) {
+        if (m_actors.find(handle) != m_actors.end()) {
             auto actor = ISKSE::ResolveObject<Actor>(handle, Actor::kTypeID);
             _DMESSAGE("Removing %llX (%s)", handle, actor ? CALL_MEMBER_FN(actor, GetReferenceName)() : "nullptr");
         }
 #endif
-        actors.erase(handle);
+        m_actors.erase(handle);
     }
 
-    void CBPUpdateTask::UpdateConfigOnAllActors()
+    void UpdateTask::UpdateConfigOnAllActors()
     {
-        for (auto& a : actors)
+        for (auto& a : m_actors)
             a.second.updateConfig(CBP::IConfig::GetActorConf(a.first));
     }
 
-    void CBPUpdateTask::UpdateConfig(ObjectHandle handle)
+    void UpdateTask::UpdateConfig(ObjectHandle handle)
     {
-        auto it = actors.find(handle);
-        if (it != actors.end())
+        auto it = m_actors.find(handle);
+        if (it != m_actors.end())
             it->second.updateConfig(CBP::IConfig::GetActorConf(it->first));
     }
 
-    void CBPUpdateTask::ApplyForce(
+    void UpdateTask::ApplyForce(
         ObjectHandle a_handle,
         uint32_t a_steps,
         const std::string& a_component,
         const NiPoint3& a_force)
     {
         if (a_handle) {
-            auto it = actors.find(a_handle);
-            if (it != actors.end())
+            auto it = m_actors.find(a_handle);
+            if (it != m_actors.end())
                 it->second.applyForce(a_steps, a_component, a_force);
         }
         else {
-            for (auto& e : actors)
+            for (auto& e : m_actors)
                 e.second.applyForce(a_steps, a_component, a_force);
         }
     }
 
-    void CBPUpdateTask::ClearActors()
+    void UpdateTask::ClearActors()
     {
-        for (auto& e : actors)
+        for (auto& e : m_actors)
         {
             auto actor = SKSE::ResolveObject<Actor>(e.first, Actor::kTypeID);
-            if (isActorValid(actor))
+            if (ActorValid(actor))
                 e.second.reset(actor);
         }
 
-        actors.clear();
+        m_actors.clear();
     }
 
-    void CBPUpdateTask::Reset()
+    void UpdateTask::Reset()
     {
-        std::vector<ObjectHandle> handles;
+        handleList_t handles;
 
-        for (const auto& e : actors)
+        for (const auto& e : m_actors)
             handles.push_back(e.first);
 
         GatherActors(handles);
@@ -396,21 +392,21 @@ namespace CBP
             AddActor(e);
     }
 
-    void CBPUpdateTask::AddTask(const CBPUpdateActionTask& task)
+    void UpdateTask::AddTask(const UTTask& task)
     {
         m_taskLock.Enter();
         m_taskQueue.push(task);
         m_taskLock.Leave();
     }
 
-    void CBPUpdateTask::AddTask(CBPUpdateActionTask&& task)
+    void UpdateTask::AddTask(UTTask&& task)
     {
         m_taskLock.Enter();
-        m_taskQueue.push(std::forward<CBPUpdateActionTask>(task));
+        m_taskQueue.push(std::forward<UTTask>(task));
         m_taskLock.Leave();
     }
 
-    bool CBPUpdateTask::IsTaskQueueEmpty()
+    bool UpdateTask::IsTaskQueueEmpty()
     {
         m_taskLock.Enter();
         bool r = m_taskQueue.size() == 0;
@@ -418,7 +414,7 @@ namespace CBP
         return r;
     }
 
-    void CBPUpdateTask::ProcessTasks()
+    void UpdateTask::ProcessTasks()
     {
         while (!IsTaskQueueEmpty())
         {
@@ -429,41 +425,33 @@ namespace CBP
 
             switch (task.m_action)
             {
-            case CBPUpdateActionTask::kActionAdd:
+            case UTTask::kActionAdd:
                 AddActor(task.m_handle);
                 break;
-            case CBPUpdateActionTask::kActionRemove:
+            case UTTask::kActionRemove:
                 RemoveActor(task.m_handle);
                 break;
-            case CBPUpdateActionTask::kActionDelete:
-#ifdef _CBP_SHOW_STATS
-                if (CBP::actorConfHolder.contains(task.m_handle)) {
-                    Message("Erasing data: %llX", task.m_handle);
-                }
-#endif
-                CBP::IConfig::EraseActorConf(task.m_handle);
-                break;
-            case CBPUpdateActionTask::kActionUpdateConfig:
+            case UTTask::kActionUpdateConfig:
                 UpdateConfig(task.m_handle);
                 break;
-            case CBPUpdateActionTask::kActionUpdateConfigAll:
+            case UTTask::kActionUpdateConfigAll:
                 UpdateConfigOnAllActors();
                 break;
-            case CBPUpdateActionTask::kActionReset:
+            case UTTask::kActionReset:
                 Reset();
                 break;
-            case CBPUpdateActionTask::kActionUIUpdateCurrentActor:
+            case UTTask::kActionUIUpdateCurrentActor:
                 DCBP::UIQueueUpdateCurrentActorA();
                 break;
             }
         }
     }
 
-    void CBPUpdateTask::GatherActors(std::vector<ObjectHandle>& a_out)
+    void UpdateTask::GatherActors(handleList_t& a_out)
     {
         auto player = *g_thePlayer;
 
-        if (isActorValid(player)) {
+        if (ActorValid(player)) {
             ObjectHandle handle;
             if (SKSE::GetHandle(player, player->formType, handle))
                 a_out.push_back(handle);
@@ -485,7 +473,7 @@ namespace CBP
                 continue;
 
             auto actor = DYNAMIC_CAST(ref, TESObjectREFR, Actor);
-            if (!isActorValid(actor))
+            if (!ActorValid(actor))
                 continue;
 
             ObjectHandle handle;
@@ -650,22 +638,22 @@ namespace CBP
         }
     }
 
-    DCBP::CBPApplyForceTask::CBPApplyForceTask(
+    DCBP::ApplyForceTask::ApplyForceTask(
         ObjectHandle a_handle,
         uint32_t a_steps,
         const std::string& a_component,
         const NiPoint3& a_force)
         :
         m_handle(a_handle),
-        steps(a_steps),
+        m_steps(a_steps),
         m_component(a_component),
-        force(a_force)
+        m_force(a_force)
     {
     }
 
-    void DCBP::CBPApplyForceTask::Run()
+    void DCBP::ApplyForceTask::Run()
     {
-        m_Instance.m_updateTask.ApplyForce(m_handle, steps, m_component, force);
+        m_Instance.m_updateTask.ApplyForce(m_handle, m_steps, m_component, m_force);
     }
 
 }

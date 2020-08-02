@@ -82,7 +82,7 @@ namespace CBP
             a_pair.second. ## n = std::clamp(a_pair.second. ## n, vmin, vmax); \
         auto& actorConf = IConfig::GetOrCreateActorConf(a_handle); \
         actorConf.at(a_pair.first). ## n = a_pair.second. ## n; \
-        DCBP::DispatchActorTask(a_handle, CBPUpdateActionTask::kActionUpdateConfig); \
+        DCBP::DispatchActorTask(a_handle, UTTask::kActionUpdateConfig); \
     } \
     ImGui::SameLine(); UICommon::HelpMarker(thingHelpText.at(STR(n))); \
 
@@ -852,7 +852,7 @@ namespace CBP
             {
                 if (m_currentActor) {
                     ResetAllActorValues(m_currentActor);
-                    DCBP::DispatchActorTask(m_currentActor, CBPUpdateActionTask::kActionUpdateConfig);
+                    DCBP::DispatchActorTask(m_currentActor, UTTask::kActionUpdateConfig);
                 }
                 else {
                     IConfig::ResetThingGlobalConfig();
@@ -983,7 +983,7 @@ namespace CBP
         }
         else {
             IConfig::SetActorConf(a_data->first, a_data->second.second = a_profile.Data());
-            DCBP::DispatchActorTask(a_data->first, CBPUpdateActionTask::kActionUpdateConfig);
+            DCBP::DispatchActorTask(a_data->first, UTTask::kActionUpdateConfig);
         }
     }
 

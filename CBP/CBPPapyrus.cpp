@@ -125,7 +125,7 @@ namespace CBP
             if (itt->second.Set(m_key, m_val))
             {
                 DCBP::DispatchActorTask(
-                    m_handle, CBPUpdateActionTask::kActionUpdateConfig);
+                    m_handle, UTTask::kActionUpdateConfig);
                 DCBP::UIQueueUpdateCurrentActor();
             }
         }

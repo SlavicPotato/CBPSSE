@@ -5,32 +5,27 @@
 
 namespace CBP
 {
-    struct DCBPConfig {
-        bool enabled;
-        bool ui_enabled;
-        bool auto_reload;
-    };
-
-    struct CBPUpdateActionTask
+   
+    struct UTTask
     {
-        enum CBPUpdateActorAction : uint32_t {
+        enum UTTAction : uint32_t {
             kActionAdd,
             kActionRemove,
-            kActionDelete,
             kActionUpdateConfig,
             kActionUpdateConfigAll,
             kActionReset,
             kActionUIUpdateCurrentActor
         };
 
-        CBPUpdateActorAction m_action;
+        UTTAction m_action;
         SKSE::ObjectHandle m_handle;
     };
 
-    class CBPUpdateTask :
+    class UpdateTask :
         public TaskDelegateFixed,
         protected ILog
     {
+        typedef std::vector<SKSE::ObjectHandle> handleList_t;
     public:
         virtual void Run();
 
@@ -42,21 +37,21 @@ namespace CBP
         void ClearActors();
         void Reset();
 
-        void AddTask(const CBPUpdateActionTask& task);
-        void AddTask(CBPUpdateActionTask&& task);
+        void AddTask(const UTTask& task);
+        void AddTask(UTTask&& task);
 
         inline const CBP::simActorList_t& GetSimActorList() {
-            return actors;
+            return m_actors;
         };
 
-        FN_NAMEPROC("CBPUpdateTask")
+        FN_NAMEPROC("UpdateTask")
     private:
         bool IsTaskQueueEmpty();
         void ProcessTasks();
-        void GatherActors(std::vector<SKSE::ObjectHandle>& a_out);
+        void GatherActors(handleList_t& a_out);
 
-        CBP::simActorList_t actors;
-        std::queue<CBPUpdateActionTask> m_taskQueue;
+        CBP::simActorList_t m_actors;
+        std::queue<UTTask> m_taskQueue;
 
         ICriticalSection m_taskLock;
 
@@ -103,11 +98,11 @@ namespace CBP
             virtual void Dispose() {};
         };
 
-        class CBPApplyForceTask :
+        class ApplyForceTask :
             public TaskDelegate
         {
         public:
-            CBPApplyForceTask(
+            ApplyForceTask(
                 SKSE::ObjectHandle a_handle,
                 uint32_t a_steps,
                 const std::string& a_component,
@@ -120,17 +115,20 @@ namespace CBP
             }
         private:
             SKSE::ObjectHandle m_handle;
-            uint32_t steps;
+            uint32_t m_steps;
             std::string m_component;
-            NiPoint3 force;
+            NiPoint3 m_force;
         };
 
     public:
         static void Initialize();
 
-        static void DispatchActorTask(Actor* actor, CBPUpdateActionTask::CBPUpdateActorAction action);
-        static void DispatchActorTask(SKSE::ObjectHandle handle, CBPUpdateActionTask::CBPUpdateActorAction action);
-        static const CBP::simActorList_t& GetSimActorList();
+        static void DispatchActorTask(Actor* actor, UTTask::UTTAction action);
+        static void DispatchActorTask(SKSE::ObjectHandle handle, UTTask::UTTAction action);
+
+        [[nodiscard]] inline static const auto& GetSimActorList() {
+            return m_Instance.m_updateTask.GetSimActorList();
+        }
 
         static void UpdateConfigOnAllActors();
         static void ResetActors();
@@ -145,7 +143,7 @@ namespace CBP
         }
 
         static void UIQueueUpdateCurrentActor();
-        static void UIQueueUpdateCurrentActorA() {
+        inline static void UIQueueUpdateCurrentActorA() {
             m_Instance.m_uiContext.QueueUpdateCurrentActor();
         }
 
@@ -175,7 +173,11 @@ namespace CBP
         void DisableUI();
         bool RunEnableChecks();
 
-        DCBPConfig conf;
+        struct
+        {
+            bool ui_enabled;
+            bool auto_reload;
+        } conf;
 
         KeyPressHandler inputEventHandler;
 
@@ -190,7 +192,7 @@ namespace CBP
         //UInt32 m_savedEnabledControls;
 
         Serialization m_serialization;
-        CBPUpdateTask m_updateTask;
+        UpdateTask m_updateTask;
 
         static DCBP m_Instance;
     };
