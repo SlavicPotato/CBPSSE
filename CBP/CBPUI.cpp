@@ -150,7 +150,7 @@ namespace CBP
             auto& data = GenericProfileManager::GetSingleton().Data();
 
             const char* curSelName = nullptr;
-            if (state.selected.Has()) {
+            if (state.selected) {
                 if (data.contains(*state.selected)) {
                     curSelName = (*state.selected).c_str();
                 }
@@ -221,7 +221,7 @@ namespace CBP
             UICommon::MessageDialog("Create Error", "Could not create the profile\n\n%s", state.last_exception.what());
             UICommon::MessageDialog("Add Error", "Could not add the profile\n\n%s", state.last_exception.what());
 
-            if (state.selected.Has())
+            if (state.selected)
             {
                 auto& profile = data.at(*state.selected);
 
@@ -523,7 +523,7 @@ namespace CBP
         ImGui::PushID(std::addressof(pm));
 
         const char* curSelName = nullptr;
-        if (m_selectedProfile.Has()) {
+        if (m_selectedProfile) {
             if (data.contains(*m_selectedProfile)) {
                 curSelName = (*m_selectedProfile).c_str();
             }
@@ -538,7 +538,7 @@ namespace CBP
             {
                 ImGui::PushID(reinterpret_cast<const void*>(std::addressof(e)));
 
-                bool selected = m_selectedProfile.Has() &&
+                bool selected = m_selectedProfile &&
                     e.first == *m_selectedProfile;
 
                 if (selected)
@@ -553,7 +553,7 @@ namespace CBP
             ImGui::EndCombo();
         }
 
-        if (m_selectedProfile.Has())
+        if (m_selectedProfile)
         {
             auto& profile = data.at(*m_selectedProfile);
 
@@ -606,7 +606,7 @@ namespace CBP
             auto& globalConfig = IConfig::GetGlobalConfig();
 
             const char* curSelName = nullptr;
-            if (m_forceState.selected.Has()) {
+            if (m_forceState.selected) {
                 curSelName = (*m_forceState.selected).c_str();
             }
             else {
@@ -618,7 +618,7 @@ namespace CBP
                     }
                 }
 
-                if (!m_forceState.selected.Has()) {
+                if (!m_forceState.selected) {
                     auto it = data.begin();
                     if (it != data.end()) {
                         m_forceState.selected = it->first;
@@ -633,7 +633,7 @@ namespace CBP
                 {
                     ImGui::PushID(reinterpret_cast<const void*>(std::addressof(e)));
 
-                    bool selected = m_forceState.selected.Has() &&
+                    bool selected = m_forceState.selected &&
                         e.first == *m_forceState.selected;
 
                     if (selected)
@@ -655,7 +655,7 @@ namespace CBP
                 for (const auto& e : globalConfig.ui.forceActor)
                     ApplyForce(a_data, e.second.steps, e.first, e.second.force);
 
-            if (m_forceState.selected.Has())
+            if (m_forceState.selected)
             {
                 auto& e = a_forceData[*m_forceState.selected];
 
@@ -946,7 +946,21 @@ namespace CBP
         const keyDesc_t& a_dmap,
         UInt32& a_out)
     {
-        const char* curSelName = a_dmap.at(a_out);
+        std::string tmp;
+        const char* curSelName;
+
+        auto it = a_dmap->find(a_out);
+        if (it != a_dmap->end())
+            curSelName = it->second;
+        else {
+            std::stringstream stream;
+            stream << "0x"
+                << std::uppercase
+                << std::setfill('0') << std::setw(2)
+                << std::hex << a_out;
+            tmp = std::move(stream.str());
+            curSelName = tmp.c_str();
+        }
 
         if (ImGui::BeginCombo(a_desc, curSelName, ImGuiComboFlags_HeightLarge))
         {

@@ -5,11 +5,11 @@ namespace CBP
     template <typename K, typename V>
     class KVStorage
     {
-        typedef std::vector<std::pair<K, V>> keyVec_t;
+        typedef std::unordered_map<K, V> keyMap_t;
+        typedef std::vector<typename keyMap_t::value_type> keyVec_t;
 
         using iterator = typename keyVec_t::iterator;
         using const_iterator = typename keyVec_t::const_iterator;
-
     public:
 
         KVStorage(const keyVec_t& a_in) :
@@ -24,12 +24,19 @@ namespace CBP
             _init();
         }
 
-        [[nodiscard]] inline iterator begin() noexcept { return m_vec.begin(); }
-        [[nodiscard]] inline const_iterator begin() const noexcept { return m_vec.begin(); }
-        [[nodiscard]] inline iterator end() noexcept { return m_vec.end(); }
-        [[nodiscard]] inline const_iterator end() const noexcept { return m_vec.end(); }
-        [[nodiscard]] inline const char* const& at(const UInt32& a_key) const { return m_map.at(a_key); }
-        [[nodiscard]] inline const char*& at(const UInt32& a_key) { return m_map.at(a_key); }
+        iterator begin() = delete;
+        iterator end() = delete;
+
+        [[nodiscard]] inline const_iterator begin() const noexcept {
+            return m_vec.begin();
+        }
+        [[nodiscard]] inline const_iterator end() const noexcept {
+            return m_vec.end();
+        }
+
+        [[nodiscard]] inline const keyMap_t* operator->() const {
+            return std::addressof(m_map);
+        }
 
     private:
         inline void _init() {
@@ -37,38 +44,37 @@ namespace CBP
                 m_map.emplace(p);
         }
 
-        std::unordered_map<K, V> m_map;
+        keyMap_t m_map;
         keyVec_t m_vec;
     };
 
     typedef KVStorage<UInt32, const char*> keyDesc_t;
 
-
     template <class T>
     class UISelectedItem
     {
     public:
-        UISelectedItem() noexcept : 
+        UISelectedItem() noexcept :
             m_isSelected(false) {}
 
         inline void Set(const T& a_rhs) {
             m_isSelected = true;
-            m_selected = a_rhs;
+            m_item = a_rhs;
         }
 
         inline void Set(T&& a_rhs) {
             m_isSelected = true;
-            m_selected = std::forward<T>(a_rhs);
+            m_item = std::forward<T>(a_rhs);
         }
 
         inline T& operator=(const T& a_rhs) {
             m_isSelected = true;
-            return (m_selected = a_rhs);
+            return (m_item = a_rhs);
         }
 
         inline T& operator=(T&& a_rhs) {
             m_isSelected = true;
-            return (m_selected = std::forward<T>(a_rhs));
+            return (m_item = std::forward<T>(a_rhs));
         }
 
         inline void Clear() noexcept {
@@ -76,18 +82,23 @@ namespace CBP
         }
 
         [[nodiscard]] inline const T& Get() const noexcept {
-            return m_selected;
+            return m_item;
         }
 
         [[nodiscard]] inline const T& operator*() const noexcept {
-            return m_selected;
+            return m_item;
         }
 
         [[nodiscard]] inline bool Has() const noexcept {
             return m_isSelected;
         }
+
+        [[nodiscard]] inline explicit operator bool() const noexcept {
+            return m_isSelected;
+        }
+
     private:
-        T m_selected;
+        T m_item;
         bool m_isSelected;
     };
 
@@ -135,9 +146,9 @@ namespace CBP
         void DrawForceSelector(T* a_data, configForceMap_t& a_forceData);
 
         virtual void ApplyForce(
-            T* a_data, 
-            uint32_t a_steps, 
-            const std::string& a_component, 
+            T* a_data,
+            uint32_t a_steps,
+            const std::string& a_component,
             const NiPoint3& a_force) = 0;
 
     private:
@@ -286,7 +297,7 @@ namespace CBP
         [[nodiscard]] virtual const configComponents_t& GetComponentData(const actorListValue_t* a_data) const;
 
         virtual void ApplyForce(
-            actorListValue_t* a_data, 
+            actorListValue_t* a_data,
             uint32_t a_steps,
             const std::string& a_component,
             const NiPoint3& a_force);
