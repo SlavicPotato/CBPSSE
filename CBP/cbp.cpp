@@ -301,10 +301,12 @@ namespace CBP
             }
         }
 
-        while (numSteps) {
-            world->update(globalConf.phys.timeStep);
-            numSteps--;
-        };
+        if (globalConf.phys.collisions) {
+            while (numSteps) {
+                world->update(globalConf.phys.timeStep);
+                numSteps--;
+            };
+        }
 
 #ifdef _CBP_MEASURE_PERF
         auto e = PerfCounter::Query();
