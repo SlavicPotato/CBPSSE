@@ -129,8 +129,11 @@ namespace CBP
                 simComponent["rotationalZ"] = v.second.rotationalZ;
                 simComponent["stiffness"] = v.second.stiffness;
                 simComponent["stiffness2"] = v.second.stiffness2;
-                simComponent["timeScale"] = v.second.timeScale;
-                simComponent["timeTick"] = v.second.timeTick;
+                simComponent["colsphererad"] = v.second.colSphereRad;
+                simComponent["colsphereoffsetx"] = v.second.colSphereOffsetX;
+                simComponent["colsphereoffsety"] = v.second.colSphereOffsetY;
+                simComponent["colsphereoffsetz"] = v.second.colSphereOffsetZ;
+                simComponent["mass"] = v.second.mass;
             }
 
             root["id"] = m_id;
@@ -179,18 +182,16 @@ namespace CBP
                 throw std::exception("Bad data: not an object");
             }
 
-            m_conf = IConfig::GetThingGlobalConfigDefaults();
+            m_conf.clear();
 
             for (auto it1 = conf.begin(); it1 != conf.end(); ++it1)
             {
-                if (!it1->isObject()) {
-                    continue;
-                }
+                if (!it1->isObject())
+                    continue;                
 
                 auto k = it1.key();
-                if (!k.isString()) {
-                    continue;
-                }
+                if (!k.isString()) 
+                    continue;                
 
                 std::string simComponentName = k.asString();
                 transform(simComponentName.begin(), simComponentName.end(), simComponentName.begin(), ::tolower);
@@ -227,7 +228,7 @@ namespace CBP
         }
         catch (const std::exception& e)
         {
-            m_conf = IConfig::GetThingGlobalConfigDefaults();
+            m_conf.clear();
             m_lastExcept = e;
             return false;
         }
@@ -500,11 +501,6 @@ namespace CBP
             m_lastExcept = e;
             return false;
         }
-    }
-
-    void ProfileManager::IDToString(uint64_t a_id, std::string& out)
-    {
-
     }
 
     void ProfileManager::MarkChanged(const std::string& a_key)

@@ -23,10 +23,16 @@ namespace CBP
 
     class UpdateTask :
         public TaskDelegateFixed,
-        protected ILog
+        ILog
     {
         typedef std::vector<SKSE::ObjectHandle> handleList_t;
     public:
+        UpdateTask() :
+            m_lTime(PerfCounter::Query()),
+            m_timeAccum(0.0f)
+        {
+        }
+
         virtual void Run();
 
         void AddActor(SKSE::ObjectHandle handle);
@@ -40,7 +46,7 @@ namespace CBP
         void AddTask(const UTTask& task);
         void AddTask(UTTask&& task);
 
-        inline const CBP::simActorList_t& GetSimActorList() {
+        inline const auto& GetSimActorList() {
             return m_actors;
         };
 
@@ -50,10 +56,14 @@ namespace CBP
         void ProcessTasks();
         void GatherActors(handleList_t& a_out);
 
-        CBP::simActorList_t m_actors;
+        simActorList_t m_actors;
         std::queue<UTTask> m_taskQueue;
 
         ICriticalSection m_taskLock;
+
+
+        float m_timeAccum;
+        long long m_lTime;
 
 #ifdef _CBP_MEASURE_PERF
         long long ss;
@@ -150,6 +160,15 @@ namespace CBP
             return m_Instance.m_updateTask;
         }
 
+        [[nodiscard]] inline static auto GetWorld() {
+            return m_Instance.m_world;
+        }
+
+        [[nodiscard]] inline static auto& GetPhysicsCommon() {
+            return m_Instance.m_physicsCommon;
+        }
+
+
         FN_NAMEPROC("CBP")
     private:
         DCBP();
@@ -192,6 +211,10 @@ namespace CBP
 
         Serialization m_serialization;
         UpdateTask m_updateTask;
+
+        r3d::PhysicsWorld* m_world;
+        r3d::PhysicsCommon m_physicsCommon;
+
 
         static DCBP m_Instance;
     };

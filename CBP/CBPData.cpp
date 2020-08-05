@@ -13,9 +13,9 @@ namespace CBP
         0x0002C65A
     };
 
-    void IData::UpdateActorRaceMap(SKSE::ObjectHandle a_handle, Actor* a_actor)
+    void IData::UpdateActorRaceMap(SKSE::ObjectHandle a_handle, const Actor* a_actor)
     {
-        if (!a_actor->race)
+        if (a_actor->race == nullptr)
             return;
 
         actorRaceMap.emplace(a_handle, a_actor->race->formID);
@@ -27,7 +27,7 @@ namespace CBP
         if (actor == nullptr)
             return;
 
-        if (!actor->race)
+        if (actor->race == nullptr)
             return;
 
         actorRaceMap.emplace(a_handle, actor->race->formID);

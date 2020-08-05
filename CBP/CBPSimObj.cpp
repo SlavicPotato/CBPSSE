@@ -2,22 +2,21 @@
 
 namespace CBP
 {
-    SimObject::SimObject(Actor* a_actor, const configComponents_t& a_config, const nodeMap_t& a_nodeMap)
+    SimObject::SimObject(Actor* a_actor, const configComponents_t& a_config, const nodeMap_t& a_boneMap)
         : m_things(5)
     {
-        bind(a_actor, a_config, a_nodeMap);
+        bind(a_actor, a_config, a_boneMap);
     }
 
-    void SimObject::bind(Actor* a_actor, const configComponents_t& a_config, const nodeMap_t& a_nodeMap)
+    void SimObject::bind(Actor* a_actor, const configComponents_t& a_config, const nodeMap_t& a_boneMap)
     {
-        for (const auto& b : a_nodeMap) {
+        for (const auto& b : a_boneMap) {
             BSFixedString cs(b.first.c_str());
             auto bone = a_actor->loadedState->node->GetObjectByName(&cs.data);
             if (bone != nullptr) {
-                //_DMESSAGE("Bone %.8X (%s) | %s", a_actor->formID, CALL_MEMBER_FN(a_actor, GetReferenceName)(), b.first.c_str());
                 auto it = a_config.find(b.second);
                 if (it != a_config.end()) {
-                    m_things.emplace(b.first, SimComponent(bone, cs, it->first, it->second));
+                    m_things.try_emplace(b.first, bone, cs, it->first, it->second);                    
                 }
             }
         }
@@ -37,7 +36,7 @@ namespace CBP
 
     void SimObject::updateConfig(const configComponents_t& a_config) {
         for (auto& p : m_things) {
-            auto it = a_config.find(p.second.GetConfigBoneName());
+            auto it = a_config.find(p.second.GetConfigGroupName());
             if (it == a_config.end())
                 continue;
 
@@ -45,11 +44,17 @@ namespace CBP
         }
     }
 
-    void SimObject::applyForce(uint32_t a_steps, const std::string& a_component, const NiPoint3& a_force)
+    void SimObject::ApplyForce(uint32_t a_steps, const std::string& a_component, const NiPoint3& a_force)
     {
         for (auto& p : m_things) {
-            if (p.second.GetConfigBoneName() == a_component)
-                p.second.applyForce(a_steps, a_force);
+            if (p.second.GetConfigGroupName() == a_component)
+                p.second.ApplyForce(a_steps, a_force);
+        }
+    }
+
+    void SimObject::Release() {
+        for (auto& p : m_things) {
+            p.second.Release();
         }
     }
 }

@@ -6,7 +6,6 @@ namespace CBP
     {
         NiPoint3 force{ 0.0f, 0.0f, 0.0f };
         int steps = 1;
-        std::string selected;
     };
 
     typedef std::unordered_map<std::string, configForce_t> configForceMap_t;
@@ -17,6 +16,12 @@ namespace CBP
         {
             bool femaleOnly = true;
         } general;
+
+        struct
+        {
+            float timeStep = 1.0f / 60.0f;
+            float timeScale = 1.0f;
+        } phys;
 
         struct
         {
@@ -70,27 +75,38 @@ namespace CBP
             return true;
         }
 
+        [[nodiscard]] inline float& operator[](const std::string& a_key)
+        {
+            auto addr = reinterpret_cast<uintptr_t>(this) +
+                componentValueToOffsetMap.at(a_key);
+
+            return *reinterpret_cast<float*>(addr);
+        }
+
         float stiffness = 10.0f;
         float stiffness2 = 10.0f;
         float damping = 0.95f;
-        float maxOffset = 10.0f;
+        float maxOffset = 20.0f;
         float cogOffset = 5.0f;
         float gravityBias = 0.0f;
         float gravityCorrection = 0.0f;
-        float timeTick = 3.0f;
         float linearX = 0.5f;
         float linearY = 0.1f;
         float linearZ = 0.25f;
         float rotationalX = 0.0f;
         float rotationalY = 0.0f;
         float rotationalZ = 0.0f;
-        float timeScale = 1.0f;
+        float colSphereRad = 1.0f;
+        float colSphereOffsetX = 0.0f;
+        float colSphereOffsetY = 0.0f;
+        float colSphereOffsetZ = 0.0f;
+        float mass = 350.0f;
 
     private:
         static componentValueToOffsetMap_t componentValueToOffsetMap;
     };
 
-    static_assert(sizeof(configComponent_t) == 0x3C);
+    static_assert(sizeof(configComponent_t) == 0x3C + 0xC);
 
     typedef std::map<std::string, configComponent_t> configComponents_t;
     typedef configComponents_t::value_type configComponentsValue_t;
@@ -100,7 +116,6 @@ namespace CBP
 
     class IConfig
     {
-
         class IConfigLog
             : public ILog
         {
@@ -108,12 +123,10 @@ namespace CBP
             FN_NAMEPROC("IConfig");
         };
 
-
     public:
         typedef std::unordered_set<std::string> vKey_t;
 
         static void LoadConfig();
-
         // Not guaranteed to be actual actor conf storage
         [[nodiscard]] static const configComponents_t& GetActorConf(SKSE::ObjectHandle handle);
         [[nodiscard]] static configComponents_t& GetOrCreateActorConf(SKSE::ObjectHandle handle);
@@ -133,27 +146,33 @@ namespace CBP
             raceConfHolder.erase(handle);
         }
 
-        [[nodiscard]] inline static auto &GetThingGlobalConfig() {
+        static void CopyComponents(const configComponents_t& a_lhs, configComponents_t& a_rhs);
+
+        [[nodiscard]] inline static auto& GetThingGlobalConfig() {
             return thingGlobalConfig;
         }
 
-        inline static void SetThingGlobalConfig(const configComponents_t& a_rhs) {
-            thingGlobalConfig = a_rhs;
-        }
-        
-        inline static void SetThingGlobalConfig(configComponents_t&& a_rhs) {
-            thingGlobalConfig = std::forward<configComponents_t>(a_rhs);
+        inline static void SetThingGlobalConfig(const configComponents_t& a_lhs) {
+            thingGlobalConfig = a_lhs;
         }
 
-        [[nodiscard]] inline static const auto &GetThingGlobalConfigDefaults() {
+        inline static void CopyToThingGlobalConfig(const configComponents_t& a_lhs) {
+            CopyComponents(a_lhs, thingGlobalConfig);
+        }
+
+        inline static void SetThingGlobalConfig(configComponents_t&& a_lhs) {
+            thingGlobalConfig = std::forward<configComponents_t>(a_lhs);
+        }
+
+        [[nodiscard]] inline static const auto& GetThingGlobalConfigDefaults() {
             return thingGlobalConfigDefaults;
         }
 
-        [[nodiscard]] inline static auto &GetActorConfHolder() {
+        [[nodiscard]] inline static auto& GetActorConfHolder() {
             return actorConfHolder;
         }
 
-        [[nodiscard]] inline static auto &GetRaceConfHolder() {
+        [[nodiscard]] inline static auto& GetRaceConfHolder() {
             return raceConfHolder;
         }
 
@@ -165,16 +184,16 @@ namespace CBP
             raceConfHolder.clear();
         }
 
-        [[nodiscard]] inline static auto &GetGlobalConfig() {
+        [[nodiscard]] inline static auto& GetGlobalConfig() {
             return globalConfig;
         }
 
-        inline static void SetGlobalConfig(const configGlobal_t& a_rhs) {
-            globalConfig = a_rhs;
+        inline static void SetGlobalConfig(const configGlobal_t& a_lhs) {
+            globalConfig = a_lhs;
         }
-        
-        inline static void SetGlobalConfig(configGlobal_t&& a_rhs) {
-            globalConfig = std::forward<configGlobal_t>(a_rhs);
+
+        inline static void SetGlobalConfig(configGlobal_t&& a_lhs) {
+            globalConfig = std::forward<configGlobal_t>(a_lhs);
         }
 
         inline static void ResetGlobalConfig() {
@@ -185,21 +204,21 @@ namespace CBP
             thingGlobalConfig = thingGlobalConfigDefaults;;
         }
 
-        [[nodiscard]] inline static auto &GetBoneMap() {
+        [[nodiscard]] inline static auto& GetBoneMap() {
             return nodeMap;
         }
 
         [[nodiscard]] inline static auto& GetValidSimComponents() {
             return validSimComponents;
         }
-        
-        [[nodiscard]] inline static auto IsValidSimComponent(const std::string &a_key) {
+
+        [[nodiscard]] inline static auto IsValidSimComponent(const std::string& a_key) {
             return validSimComponents.contains(a_key);
         }
 
     private:
 
-        static bool LoadNodeMap(nodeMap_t &a_out);
+        static bool LoadNodeMap(nodeMap_t& a_out);
         [[nodiscard]] static bool CompatLoadOldConf(configComponents_t& a_out);
 
         static configComponents_t thingGlobalConfig;

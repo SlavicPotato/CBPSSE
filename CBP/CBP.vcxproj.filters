@@ -111,6 +111,9 @@
     <ClInclude Include="CBPThing.h">
       <Filter>Header Files\CBP</Filter>
     </ClInclude>
+    <ClInclude Include="CBPCollision.h">
+      <Filter>Header Files\CBP</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp">
@@ -174,6 +177,9 @@
       <Filter>Source Files\CBP</Filter>
     </ClCompile>
     <ClCompile Include="CBPThing.cpp">
+      <Filter>Source Files\CBP</Filter>
+    </ClCompile>
+    <ClCompile Include="CBPCollision.cpp">
       <Filter>Source Files\CBP</Filter>
     </ClCompile>
   </ItemGroup>

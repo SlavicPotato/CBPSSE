@@ -10,14 +10,19 @@ namespace CBP
         {"linearX", "Scale of the side to side motion"},
         {"linearY", "Scale of the front to back motion"},
         {"linearZ", "Scale of the up and down motion"},
-        {"maxOffset", "Maximum amount the bone is allowed to move from target"},
+        {"maxOffset", ""},
         {"rotationalX", "Scale of the bones rotation around the X axis"},
         {"rotationalY", "Scale of the bones rotation around the Y axis"},
         {"rotationalZ", "Scale of the bones rotation around the Z axis"},
         {"stiffness", "Linear spring stiffness"},
         {"stiffness2", "Quadratic spring stiffness"},
         {"timeScale", "Time scale"},
-        {"timeTick", "Time Quanta for the physics in ms 4 means that a 16ms frame would be broken down into 4 4ms steps"},
+        {"timeStep", "Update rate in Hz"},
+        {"colSphereRad", ""},
+        {"colSphereOffsetX", ""},
+        {"colSphereOffsetY", ""},
+        {"colSphereOffsetZ", ""},
+        {"mass", ""}
     };
 
     static const keyDesc_t comboKeyDesc({
@@ -127,8 +132,11 @@ namespace CBP
     m(rotationalZ, 0.0f, 1.0f); \
     m(stiffness, 0.0f, 100.0f); \
     m(stiffness2, 0.0f, 100.0f); \
-    m(timeScale, 0.01f, 10.0f); \
-    m(timeTick, 1.0f, 16.0f, "%0.f"); 
+    m(colSphereRad, 0.0f, 100.0f); \
+    m(colSphereOffsetX, -50.0f, 50.0f); \
+    m(colSphereOffsetY, -50.0f, 50.0f); \
+    m(colSphereOffsetZ, -50.0f, 50.0f); \
+    m(mass, 1.0f, 1000.0f);
 
     void UIProfileEditor::Draw(bool* a_active)
     {
@@ -200,7 +208,7 @@ namespace CBP
 
                     auto& pm = GenericProfileManager::GetSingleton();
 
-                    if (pm.CreateProfile(state.new_input, profile)) 
+                    if (pm.CreateProfile(state.new_input, profile))
                     {
                         std::string name(profile.Name());
                         if (pm.AddProfile(std::move(profile))) {
@@ -300,7 +308,7 @@ namespace CBP
         ADD_SIM_COMPONENT_SLIDERS(ADD_PROFILE_SIM_COMPONENT_SLIDER);
     }
 
-    UIRaceEditor::UIRaceEditor() :
+    UIRaceEditor::UIRaceEditor() noexcept :
         m_currentRace(0),
         m_nextUpdateRaceList(true),
         m_changed(false)
@@ -499,7 +507,8 @@ namespace CBP
 
     void UIRaceEditor::ApplyProfile(raceListValue_t* a_data, const Profile& m_profile)
     {
-        IConfig::SetRaceConf(a_data->first, a_data->second.second = m_profile.Data());
+        IConfig::CopyComponents(m_profile.Data(), a_data->second.second);
+        IConfig::SetRaceConf(a_data->first, a_data->second.second);
         MarkChanged();
         DCBP::UpdateConfigOnAllActors();
     }
@@ -600,7 +609,7 @@ namespace CBP
     {
         ImGui::PushID(static_cast<const void*>(std::addressof(m_forceState)));
 
-        if (ImGui::CollapsingHeader("Force"))
+        if (ImGui::CollapsingHeader("Force", ImGuiTreeNodeFlags_DefaultOpen))
         {
             auto& data = GetComponentData(a_data);
             auto& globalConfig = IConfig::GetGlobalConfig();
@@ -680,7 +689,7 @@ namespace CBP
         ImGui::PopID();
     }
 
-    UIContext::UIContext() :
+    UIContext::UIContext() noexcept :
         m_nextUpdateActorList(true),
         m_nextUpdateCurrentActor(false),
         m_activeLoadInstance(0),
@@ -935,6 +944,16 @@ namespace CBP
             if (ImGui::Checkbox("Female actors only", &globalConfig.general.femaleOnly))
                 DCBP::ResetActors();
 
+            ImGui::Spacing();
+            ImGui::Separator();
+            ImGui::Spacing();
+
+            float timeStep = 1.0f / globalConfig.phys.timeStep;
+            if (ImGui::SliderFloat("timeStep", &timeStep, 30.0f, 240.0f, "%.0f"))
+                globalConfig.phys.timeStep = 1.0f / timeStep;
+
+            ImGui::SliderFloat("timeScale", &globalConfig.phys.timeScale, 0.01f, 20.0f);
+
             ImGui::PopID();
         }
 
@@ -953,7 +972,7 @@ namespace CBP
         if (it != a_dmap->end())
             curSelName = it->second;
         else {
-            std::stringstream stream;
+            std::ostringstream stream;
             stream << "0x"
                 << std::uppercase
                 << std::setfill('0') << std::setw(2)
@@ -980,6 +999,7 @@ namespace CBP
 
                 ImGui::PopID();
             }
+
             ImGui::EndCombo();
         }
     }
@@ -1000,12 +1020,15 @@ namespace CBP
 
     void UIContext::ApplyProfile(actorListValue_t* a_data, const Profile& a_profile)
     {
+        auto& profileData = a_profile.Data();
+
         if (!a_data) {
-            IConfig::SetThingGlobalConfig(a_profile.Data());
+            IConfig::CopyToThingGlobalConfig(profileData);
             DCBP::UpdateConfigOnAllActors();
         }
         else {
-            IConfig::SetActorConf(a_data->first, a_data->second.second = a_profile.Data());
+            IConfig::CopyComponents(profileData, a_data->second.second);
+            IConfig::SetActorConf(a_data->first, a_data->second.second);
             DCBP::DispatchActorTask(a_data->first, UTTask::kActionUpdateConfig);
         }
     }

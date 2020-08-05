@@ -27,6 +27,14 @@ namespace CBP
                 globalConfig.general.femaleOnly = general.get("femaleOnly", true).asBool();
             }
 
+            if (root.isMember("physics"))
+            {
+                const auto& phys = root["physics"];
+
+                globalConfig.phys.timeStep = phys.get("timeStep", 1.0f / 60.0f).asFloat();
+                globalConfig.phys.timeScale = phys.get("timeScale", 1.0f).asFloat();
+            }
+
             if (root.isMember("ui"))
             {
                 const auto& ui = root["ui"];
@@ -70,10 +78,10 @@ namespace CBP
                     }
                 }
 
-                if (ui.isMember("forceSelected"))
+                if (ui.isMember("forceSelected")) 
                 {
                     auto& forceSelected = ui["forceSelected"];
-                    if (forceSelected.isString())
+                    if (forceSelected.isString()) 
                     {
                         std::string v(ui.get("forceSelected", "").asString());
                         transform(v.begin(), v.end(), v.begin(), ::tolower);
@@ -81,7 +89,6 @@ namespace CBP
                         globalConfig.ui.forceActorSelected = std::move(v);
                     }
                 }
-
             }
         }
         catch (const std::exception& e)
@@ -102,6 +109,11 @@ namespace CBP
             auto& general = root["general"];
 
             general["femaleOnly"] = globalConfig.general.femaleOnly;
+
+            auto& phys = root["physics"];
+
+            phys["timeStep"] = globalConfig.phys.timeStep;
+            phys["timeScale"] = globalConfig.phys.timeScale;
 
             auto& ui = root["ui"];
 
@@ -162,13 +174,13 @@ namespace CBP
         for (auto it1 = conf.begin(); it1 != conf.end(); ++it1)
         {
             if (!it1->isObject()) {
-                Error("0x%llX: Bad sim component data, expected object");
+                Error("0x%llX: Bad sim component data, expected object", a_outHandle);
                 return false;
             }
 
             auto k = it1.key();
             if (!k.isString()) {
-                Error("0x%llX: Bad sim component name, expected string");
+                Error("0x%llX: Bad sim component name, expected string", a_outHandle);
                 return false;
             }
 
@@ -185,13 +197,13 @@ namespace CBP
             for (auto it2 = it1->begin(); it2 != it1->end(); ++it2)
             {
                 if (!it2->isNumeric()) {
-                    Error("0x%llX: (%s) Bad value, expected number", simComponentName.c_str());
+                    Error("0x%llX: (%s) Bad value, expected number", a_outHandle ,simComponentName.c_str());
                     return false;
                 }
 
                 auto k = it2.key();
                 if (!k.isString()) {
-                    Error("0x%llX: (%s) Bad key, expected string", simComponentName.c_str());
+                    Error("0x%llX: (%s) Bad key, expected string", a_outHandle, simComponentName.c_str());
                     return false;
                 }
 
@@ -199,7 +211,7 @@ namespace CBP
                 transform(valName.begin(), valName.end(), valName.begin(), ::tolower);
 
                 if (!tmp.Set(valName, it2->asFloat()))
-                    Warning("0x%llX: (%s) Unknown value: %s", simComponentName.c_str(), valName.c_str());
+                    Warning("0x%llX: (%s) Unknown value: %s", a_outHandle, simComponentName.c_str(), valName.c_str());
             }
 
             a_outData.insert_or_assign(simComponentName, std::move(tmp));
@@ -364,8 +376,11 @@ namespace CBP
             simComponent["rotationalZ"] = v.second.rotationalZ;
             simComponent["stiffness"] = v.second.stiffness;
             simComponent["stiffness2"] = v.second.stiffness2;
-            simComponent["timeScale"] = v.second.timeScale;
-            simComponent["timeTick"] = v.second.timeTick;
+            simComponent["colSphereRad"] = v.second.colSphereRad;
+            simComponent["colSphereOffsetX"] = v.second.colSphereOffsetX;
+            simComponent["colSphereOffsetY"] = v.second.colSphereOffsetY;
+            simComponent["colSphereOffsetZ"] = v.second.colSphereOffsetZ;
+            simComponent["mass"] = v.second.mass;
         }
 
         SetHandle(a_out["handle"], a_handle);

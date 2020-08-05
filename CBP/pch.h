@@ -18,6 +18,8 @@
 #include <d3d11.h>
 #include <dxgi1_5.h>
 
+#include <reactphysics3d/reactphysics3d.h>
+
 #include "json/json.h"
 
 #define DIRECTINPUT_VERSION 0x0800
@@ -52,6 +54,11 @@
 
 #include "INIReader.h"
 
+#define max(a,b) (((a) > (b)) ? (a) : (b))
+#define min(a,b) (((a) < (b)) ? (a) : (b))
+
+namespace r3d = reactphysics3d;
+
 #include "plugin.h"
 #include "common.h"
 #include "logging.h"
@@ -67,6 +74,7 @@
 #include "CBPProfile.h"
 #include "CBPThing.h"
 #include "CBPSimObj.h"
+#include "CBPCollision.h"
 #include "CBPUI.h"
 #include "CBPPapyrus.h"
 #include "CBPSerialization.h"

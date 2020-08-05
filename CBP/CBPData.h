@@ -15,7 +15,7 @@ namespace CBP
         typedef std::unordered_map<SKSE::ObjectHandle, SKSE::FormID> actorRaceMap_t;
     public:
         [[nodiscard]] static bool PopulateRaceList();
-        static void UpdateActorRaceMap(SKSE::ObjectHandle a_handle, Actor* a_actor);
+        static void UpdateActorRaceMap(SKSE::ObjectHandle a_handle, const Actor* a_actor);
         static void UpdateActorRaceMap(SKSE::ObjectHandle a_handle);
 
         [[nodiscard]] inline static const auto& GetRaceListEntry(SKSE::FormID a_formid) {

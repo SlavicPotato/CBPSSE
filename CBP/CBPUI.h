@@ -57,6 +57,8 @@ namespace CBP
         UISelectedItem() noexcept :
             m_isSelected(false) {}
 
+        virtual ~UISelectedItem() = default;
+
         inline void Set(const T& a_rhs) {
             m_isSelected = true;
             m_item = a_rhs;
@@ -106,6 +108,9 @@ namespace CBP
     class UISimComponent
     {
     public:
+        UISimComponent() = default;
+        virtual ~UISimComponent() = default;
+
         void DrawSimComponents(T m_handle, configComponents_t& data);
 
         virtual void AddSimComponentSlider(T m_handle, configComponentsValue_t& a_data) = 0;
@@ -124,6 +129,7 @@ namespace CBP
     {
     protected:
         UIProfileSelector() = default;
+        virtual ~UIProfileSelector() = default;
 
         void DrawProfileSelector(T* a_data);
 
@@ -138,10 +144,11 @@ namespace CBP
     class UIApplyForce :
         UIComponentBase<T>
     {
-        static constexpr float FORCE_MIN = -2000.0f;
-        static constexpr float FORCE_MAX = 2000.0f;
+        static constexpr float FORCE_MIN = -1000.0f;
+        static constexpr float FORCE_MAX = 1000.0f;
     protected:
         UIApplyForce() = default;
+        virtual ~UIApplyForce() = default;
 
         void DrawForceSelector(T* a_data, configForceMap_t& a_forceData);
 
@@ -161,7 +168,6 @@ namespace CBP
         UISimComponent<int>
     {
     public:
-        UIProfileEditor() = default;
 
         void Draw(bool* a_active);
     private:
@@ -178,7 +184,6 @@ namespace CBP
 
     class UIOptions
     {
-
     public:
         void Draw(bool* a_active);
 
@@ -200,7 +205,7 @@ namespace CBP
         using raceListValue_t = raceList_t::value_type;
     public:
 
-        UIRaceEditor();
+        UIRaceEditor() noexcept;
 
         void Draw(bool* a_active);
         void Reset();
@@ -268,7 +273,7 @@ namespace CBP
 
     public:
 
-        UIContext();
+        UIContext() noexcept;
 
         void Reset(uint32_t a_loadInstance);
         void Draw(bool* a_active);

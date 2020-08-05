@@ -138,6 +138,9 @@ namespace CBP
             }
         }
 
+        m_Instance.m_world = m_Instance.m_physicsCommon.createPhysicsWorld();
+        m_Instance.m_world->setEventListener(std::addressof(CBP::ICollision::GetSingleton()));
+
         IConfig::LoadConfig();
 
         auto& pm = GenericProfileManager::GetSingleton();
@@ -239,13 +242,36 @@ namespace CBP
         if (!player || !player->loadedState || !player->parentCell)
             return;
 
-#ifdef _CBP_MEASURE_PERF
-        auto s = PerfCounter::Query();
-        size_t n = 0;
-#endif
-
         // Process our tasks only when the player is loaded and attached to a cell
         ProcessTasks();
+
+        auto& globalConf = IConfig::GetGlobalConfig();
+
+        auto newTime = PerfCounter::Query();
+        auto deltaT = PerfCounter::delta(m_lTime, newTime);
+        m_lTime = newTime;
+
+        if (deltaT > 1.0f)
+            deltaT = 1.0f;
+
+        m_timeAccum += deltaT * globalConf.phys.timeScale;
+
+        uint32_t numSteps = 0;
+        while (m_timeAccum >= globalConf.phys.timeStep)
+        {
+            numSteps++;
+            m_timeAccum -= globalConf.phys.timeStep;
+        }
+
+        if (numSteps == 0)
+            return;
+
+        auto world = DCBP::GetWorld();
+
+#ifdef _CBP_MEASURE_PERF
+        auto s = SDT::PerfCounter::Query();
+        size_t n = 0;
+#endif
 
         auto it = m_actors.begin();
         while (it != m_actors.end())
@@ -256,28 +282,34 @@ namespace CBP
 #ifdef _CBP_SHOW_STATS
                 Debug("Actor 0x%llX (%s) no longer valid", it->first, actor ? CALL_MEMBER_FN(actor, GetReferenceName)() : nullptr);
 #endif
+                it->second.Release();
                 it = m_actors.erase(it);
             }
             else {
-                if (actor->parentCell != nullptr && 
-                    actor->parentCell->cellState == TESObjectCELL::kAttached) 
+                if (actor->parentCell != nullptr &&
+                    actor->parentCell->cellState == TESObjectCELL::kAttached)
                 {
-                    it->second.update(actor);
+                    uint32_t i = numSteps;
+                    while (i) {
+                        it->second.update(actor);
+                        world->update(globalConf.phys.timeStep);
+                        i--;
+                    };
 #ifdef _CBP_MEASURE_PERF
                     n++;
 #endif
                 }
                 ++it;
-            }
+    }
         }
 
 #ifdef _CBP_MEASURE_PERF
-        auto e = PerfCounter::Query();
-        ee += PerfCounter::DeltaT_us(s, e);
+        auto e = SDT::PerfCounter::Query();
+        ee += SDT::PerfCounter::DeltaT_us(s, e);
         c++;
         a += n;
 
-        if (PerfCounter::DeltaT_us(ss, e) > 5000000LL) {
+        if (SDT::PerfCounter::DeltaT_us(ss, e) > 5000000LL) {
             ss = e;
             Debug("Perf: %lld us (%zu actors)", ee / c, a / c);
             ee = 0;
@@ -287,14 +319,13 @@ namespace CBP
 #endif
     }
 
-    void UpdateTask::AddActor(ObjectHandle a_handle)
+    void UpdateTask::AddActor(SKSE::ObjectHandle a_handle)
     {
-        auto actor = SKSE::ResolveObject<Actor>(a_handle, Actor::kTypeID);
-        if (!ActorValid(actor)) {
-            return;
-        }
-
         if (m_actors.contains(a_handle))
+            return;
+
+        auto actor = SKSE::ResolveObject<Actor>(a_handle, Actor::kTypeID);
+        if (!ActorValid(actor))
             return;
 
         if (actor->race != nullptr) {
@@ -329,15 +360,18 @@ namespace CBP
         }
     }
 
-    void UpdateTask::RemoveActor(ObjectHandle handle)
+    void UpdateTask::RemoveActor(SKSE::ObjectHandle handle)
     {
+        auto it = m_actors.find(handle);
+        if (it != m_actors.end())
+        {
 #ifdef _CBP_SHOW_STATS
-        if (m_actors.find(handle) != m_actors.end()) {
-            auto actor = ISKSE::ResolveObject<Actor>(handle, Actor::kTypeID);
+            auto actor = SKSE::ResolveObject<Actor>(handle, Actor::kTypeID);
             _DMESSAGE("Removing %llX (%s)", handle, actor ? CALL_MEMBER_FN(actor, GetReferenceName)() : "nullptr");
-        }
 #endif
-        m_actors.erase(handle);
+            it->second.Release();
+            m_actors.erase(it);
+        }
     }
 
     void UpdateTask::UpdateConfigOnAllActors()
@@ -346,7 +380,7 @@ namespace CBP
             a.second.updateConfig(CBP::IConfig::GetActorConf(a.first));
     }
 
-    void UpdateTask::UpdateConfig(ObjectHandle handle)
+    void UpdateTask::UpdateConfig(SKSE::ObjectHandle handle)
     {
         auto it = m_actors.find(handle);
         if (it != m_actors.end())
@@ -354,7 +388,7 @@ namespace CBP
     }
 
     void UpdateTask::ApplyForce(
-        ObjectHandle a_handle,
+        SKSE::ObjectHandle a_handle,
         uint32_t a_steps,
         const std::string& a_component,
         const NiPoint3& a_force)
@@ -362,11 +396,11 @@ namespace CBP
         if (a_handle) {
             auto it = m_actors.find(a_handle);
             if (it != m_actors.end())
-                it->second.applyForce(a_steps, a_component, a_force);
+                it->second.ApplyForce(a_steps, a_component, a_force);
         }
         else {
             for (auto& e : m_actors)
-                e.second.applyForce(a_steps, a_component, a_force);
+                e.second.ApplyForce(a_steps, a_component, a_force);
         }
     }
 
@@ -375,8 +409,10 @@ namespace CBP
         for (auto& e : m_actors)
         {
             auto actor = SKSE::ResolveObject<Actor>(e.first, Actor::kTypeID);
-            if (ActorValid(actor))
+            if (ActorValid(actor)) {
                 e.second.reset(actor);
+            }
+            e.second.Release();
         }
 
         m_actors.clear();
@@ -406,7 +442,7 @@ namespace CBP
     void UpdateTask::AddTask(UTTask&& task)
     {
         m_taskLock.Enter();
-        m_taskQueue.push(std::forward<UTTask>(task));
+        m_taskQueue.emplace(std::forward<UTTask>(task));
         m_taskLock.Leave();
     }
 
@@ -456,12 +492,12 @@ namespace CBP
         auto player = *g_thePlayer;
 
         if (ActorValid(player)) {
-            ObjectHandle handle;
+            SKSE::ObjectHandle handle;
             if (SKSE::GetHandle(player, player->formType, handle))
                 a_out.push_back(handle);
         }
 
-        auto pl = ProcessLists::GetSingleton();
+        auto pl = SKSE::ProcessLists::GetSingleton();
         if (pl == nullptr)
             return;
 
@@ -480,7 +516,7 @@ namespace CBP
             if (!ActorValid(actor))
                 continue;
 
-            ObjectHandle handle;
+            SKSE::ObjectHandle handle;
             if (!SKSE::GetHandle(actor, actor->formType, handle))
                 continue;
 

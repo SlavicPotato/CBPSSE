@@ -17,23 +17,20 @@ namespace CBP
         {"stiffness2", offsetof(configComponent_t, stiffness2)},
         {"damping", offsetof(configComponent_t, damping)},
         {"maxoffset", offsetof(configComponent_t, maxOffset)},
-        {"timetick", offsetof(configComponent_t, timeTick)},
         {"linearx", offsetof(configComponent_t, linearX)},
         {"lineary", offsetof(configComponent_t, linearY)},
         {"linearz", offsetof(configComponent_t, linearZ)},
         {"rotationalx", offsetof(configComponent_t, rotationalX)},
         {"rotationaly", offsetof(configComponent_t, rotationalY)},
         {"rotationalz", offsetof(configComponent_t, rotationalZ)},
-        {"timescale", offsetof(configComponent_t, timeScale)},
         {"gravitybias", offsetof(configComponent_t, gravityBias)},
         {"gravitycorrection", offsetof(configComponent_t, gravityCorrection)},
         {"cogoffset", offsetof(configComponent_t, cogOffset)},
-    };
-
-    static IConfig::vKey_t validSections = {
-        {"breast"},
-        {"belly"},
-        {"butt"}
+        {"colsphererad", offsetof(configComponent_t, colSphereRad)},
+        {"colsphereoffsetx", offsetof(configComponent_t, colSphereOffsetX)},
+        {"colsphereoffsety", offsetof(configComponent_t, colSphereOffsetY)},
+        {"colsphereoffsetz", offsetof(configComponent_t, colSphereOffsetZ)},
+        {"mass", offsetof(configComponent_t, mass)},
     };
 
     static const configComponents_t defaultConfig = {
@@ -45,14 +42,17 @@ namespace CBP
             5.0f,
             40.0f,
             3.0f,
-            3.0f,
             0.5f,
             0.1f,
             0.25f,
             0.0f,
             0.0f,
             0.025f,
-            1.0f
+            5.0f,
+            0.0f,
+            0.0f,
+            0.0f,
+            350.0f
             }
        },
        {"belly", {
@@ -63,14 +63,17 @@ namespace CBP
             0.0f,
             0.0f,
             0.0f,
-            3.0f,
             0.3f,
             0.02f,
             0.3f,
             0.0f,
             0.0f,
             0.0f,
-            1.0f
+            0.001f,
+            0.0f,
+            0.0f,
+            0.0f,
+            350.0f
             }
        },
        {"butt", {
@@ -81,14 +84,17 @@ namespace CBP
             10.0f,
             40.0f,
             3.0f,
-            3.0f,
             0.2f,
             0.1f,
             0.4f,
             0.0f,
             0.0f,
             0.0f,
-            1.0f
+            1.0f,
+            0.0f,
+            0.0f,
+            0.0f,
+            350.0f
             }
        }
     };
@@ -199,7 +205,6 @@ namespace CBP
                         a_out.at(sect).Set("rotationalz", atof(tok2));
                     else
                         a_out.at(sect).Set(key, atof(tok2));
-
                 }
             }
 
@@ -226,7 +231,7 @@ namespace CBP
         for (const auto& v : nodeMap)
             validSimComponents.insert(v.second);
 
-        thingGlobalConfig = defaultConfig;
+        //thingGlobalConfig = defaultConfig;
 
         for (const auto& v : validSimComponents)
             if (!thingGlobalConfig.contains(v))
@@ -311,6 +316,13 @@ namespace CBP
     void IConfig::SetRaceConf(SKSE::FormID a_handle, configComponents_t&& a_conf)
     {
         raceConfHolder.insert_or_assign(a_handle, std::forward<configComponents_t>(a_conf));
+    }
+
+    void IConfig::CopyComponents(const configComponents_t& a_lhs, configComponents_t& a_rhs)
+    {
+        for (const auto& e : a_lhs)
+            if (a_rhs.contains(e.first))
+                a_rhs.insert_or_assign(e.first, e.second);
     }
 
 }

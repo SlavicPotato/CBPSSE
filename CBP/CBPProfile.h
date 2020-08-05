@@ -56,13 +56,13 @@ namespace CBP
 
         ProfileManager() = delete;
 
-        ProfileManager(ProfileManager&) = delete;
-        ProfileManager(const ProfileManager&&) = delete;
-        ProfileManager& operator=(ProfileManager&) = delete;
-        void operator=(const ProfileManager&&) = delete;
+        ProfileManager(const ProfileManager&) = delete;
+        ProfileManager(ProfileManager&&) = delete;
+        ProfileManager& operator=(const ProfileManager&) = delete;
+        void operator=(ProfileManager&&) = delete;
 
         virtual bool Load(const std::string& a_path);
-        [[nodiscard]] virtual bool CreateProfile(const std::string &a_name, Profile& a_out);
+        [[nodiscard]] virtual bool CreateProfile(const std::string& a_name, Profile& a_out);
 
         [[nodiscard]] virtual bool AddProfile(const Profile& a_in);
         [[nodiscard]] virtual bool AddProfile(Profile&& a_in);
@@ -77,7 +77,6 @@ namespace CBP
         [[nodiscard]] inline const std::exception& GetLastException() const noexcept { return m_lastExcept; }
         [[nodiscard]] inline bool IsInitialized() const noexcept { return m_isInitialized; }
 
-        void IDToString(uint64_t a_id, std::string& out);
         void MarkChanged(const std::string& a_key);
 
         FN_NAMEPROC("CBP::ProfileManager");
