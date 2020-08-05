@@ -289,19 +289,10 @@ namespace CBP
                     actor->parentCell->cellState == TESObjectCELL::kAttached)
                 {
                     uint32_t i = numSteps;
-                    if (globalConf.phys.collisions) {
-                        while (i) {
-                            it->second.update(actor);
-                            world->update(globalConf.phys.timeStep);
-                            i--;
-                        };
-                    }
-                    else {
-                        while (i) {
-                            it->second.update(actor);
-                            i--;
-                        }
-                    }
+                    while (i) {
+                        it->second.update(actor);
+                        i--;
+                    };
 #ifdef _CBP_MEASURE_PERF
                     n++;
 #endif
@@ -309,6 +300,11 @@ namespace CBP
                 ++it;
             }
         }
+
+        while (numSteps) {
+            world->update(globalConf.phys.timeStep);
+            numSteps--;
+        };
 
 #ifdef _CBP_MEASURE_PERF
         auto e = PerfCounter::Query();

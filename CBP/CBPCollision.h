@@ -35,8 +35,6 @@ namespace CBP
             r3d::Vector3& vbf
         );
 
-        std::unordered_map<reactphysics3d::uint32, SimComponent&> m_idMap;
-
         static ICollision m_Instance;
     };
 }

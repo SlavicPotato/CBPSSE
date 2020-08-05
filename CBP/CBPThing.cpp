@@ -17,9 +17,7 @@ namespace CBP
         m_body = world->createCollisionBody(r3d::Transform::identity());
         m_sphereShape = physicsCommon.createSphereShape(a_sc.conf.colSphereRad);
         m_collider = m_body->addCollider(m_sphereShape, r3d::Transform::identity());
-
-        auto& ic = ICollision::GetSingleton();
-        ic.RegisterCollider(a_sc, m_collider);
+        m_collider->setUserData(std::addressof(a_sc));
 
         m_created = true;
     }
@@ -28,9 +26,6 @@ namespace CBP
     {
         if (!m_created)
             return;
-
-        auto& ic = ICollision::GetSingleton();
-        ic.UnregisterCollider(m_collider);
 
         auto world = DCBP::GetWorld();
         auto& physicsCommon = DCBP::GetPhysicsCommon();
@@ -54,7 +49,7 @@ namespace CBP
             rot.data[2][0], rot.data[2][1], rot.data[2][2]
         );
 
-        auto pos = (rot * a_obj->m_localTransform.pos) +
+        auto pos = (a_obj->m_parent->m_worldTransform * a_obj->m_localTransform.pos) +
             (a_obj->m_parent->m_worldTransform * m_sphereOffset);
 
         m_body->setTransform(reactphysics3d::Transform(
