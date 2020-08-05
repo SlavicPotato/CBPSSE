@@ -8,12 +8,12 @@ namespace CBP
 
     void ICollision::RegisterCollider(SimComponent& a_sc, reactphysics3d::Collider* a_collider)
     {
-        m_idMap.emplace(a_collider->getEntity().id, a_sc);
+        m_idMap.emplace(a_collider->getEntity().getIndex(), a_sc);
     }
 
     void ICollision::UnregisterCollider(reactphysics3d::Collider* a_collider)
     {
-        m_idMap.erase(a_collider->getEntity().id);
+        m_idMap.erase(a_collider->getEntity().getIndex());
     }
 
     void ICollision::onContact(const CollisionCallback::CallbackData& callbackData)
@@ -27,8 +27,8 @@ namespace CBP
             auto col1 = contactPair.getCollider1();
             auto col2 = contactPair.getCollider2();
 
-            auto& sc1 = m_idMap.at(col1->getEntity().id);
-            auto& sc2 = m_idMap.at(col2->getEntity().id);
+            auto& sc1 = m_idMap.at(col1->getEntity().getIndex());
+            auto& sc2 = m_idMap.at(col2->getEntity().getIndex());
 
             switch (contactPair.getEventType()) {
             case EventType::ContactStart:
