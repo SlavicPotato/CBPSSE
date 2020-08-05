@@ -12,3 +12,5 @@ Modified version of [CBP Physics for Skyrim SE](https://github.com/cbpphysics/CB
 ## Build deps
 * [sse-build-resources](https://github.com/SlavicPotato/sse-build-resources)
 * [ImGui](https://github.com/ocornut/imgui)
+* [JsonCpp](https://github.com/open-source-parsers/jsoncpp)
+* [reactphysics3d](https://github.com/DanielChappuis/reactphysics3d)
