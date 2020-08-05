@@ -24,8 +24,6 @@ namespace CBP
         {
             auto contactPair = callbackData.getContactPair(p);
 
-            //auto& globalConf = IConfig::GetGlobalConfig();
-
             auto col1 = contactPair.getCollider1();
             auto col2 = contactPair.getCollider2();
 
@@ -36,8 +34,6 @@ namespace CBP
             auto& conf2 = sc2.GetConfig();
 
             float dampingMul = 1.0f;
-
-            ASSERT(contactPair.getNbContactPoints() < 2);
 
             for (r3d::uint c = 0; c < contactPair.getNbContactPoints(); c++)
             {
@@ -66,42 +62,8 @@ namespace CBP
                     vbf
                 );
 
-               /* _DMESSAGE("A (%s): %u,%u | %f %f: %d ye %f | %f %f %f | %f %f %f",
-                    sc1.boneName.c_str(),
-                    col1->getEntity().id,
-                    col2->getEntity().id,
-                    r3d::Vector3(v1.x, v1.y, v1.z).length(),
-                    (r3d::Vector3(v1.x, v1.y, v1.z) - r3d::Vector3(v2.x, v2.y, v2.z)).length(),
-                    contactPair.getEventType(),
-                    contactPoint.getPenetrationDepth(),
-                    v1.x,
-                    v1.y,
-                    v1.z,
-                    vaf.x,
-                    vaf.y,
-                    vaf.z
-                );
-
-                _DMESSAGE("B (%s): %u,%u | %f %f: %d ye %f | %f %f %f | %f %f %f",
-                    sc2.boneName.c_str(),
-                    col1->getEntity().id,
-                    col2->getEntity().id,
-                    r3d::Vector3(v2.x, v2.y, v2.z).length(),
-                    (r3d::Vector3(v1.x, v1.y, v1.z) - r3d::Vector3(v2.x, v2.y, v2.z)).length(),
-                    contactPair.getEventType(),
-                    contactPoint.getPenetrationDepth(),
-                    v2.x,
-                    v2.y,
-                    v2.z,
-                    vbf.x,
-                    vbf.y,
-                    vbf.z
-                );*/
-
-
                 sc1.SetVelocity(vaf);
                 sc2.SetVelocity(vbf);
-
             }
 
             switch (contactPair.getEventType()) {
@@ -137,10 +99,6 @@ namespace CBP
         auto Bmod = globalConf.phys.timeStep * (1.0f + depth);
         auto Ba = (normal * depth) * Bmod;
         auto Bb = (normal * -depth) * Bmod;
-
-        /*_DMESSAGE(">> %f %f %f", d.x, d.y, d.z);
-        _DMESSAGE(">> %f %f %f", Ba.x, Ba.y, Ba.z);
-        _DMESSAGE("");*/
 
         vaf = vai - (Ja * (1.0f / max(ma / globalConf.phys.timeStep, 1.0f)) + Ba);
         vbf = vbi - (Jb * (1.0f / max(mb / globalConf.phys.timeStep, 1.0f)) + Bb);
