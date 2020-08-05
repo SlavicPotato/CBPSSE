@@ -133,6 +133,8 @@ namespace CBP
                 simComponent["colsphereoffsetx"] = v.second.colSphereOffsetX;
                 simComponent["colsphereoffsety"] = v.second.colSphereOffsetY;
                 simComponent["colsphereoffsetz"] = v.second.colSphereOffsetZ;
+                simComponent["coldampingcoef"] = v.second.colDampingCoef;
+                simComponent["colstiffnesscoef"] = v.second.colStiffnessCoef;
                 simComponent["mass"] = v.second.mass;
             }
 

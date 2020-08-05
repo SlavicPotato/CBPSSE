@@ -21,6 +21,8 @@ namespace CBP
         {
             float timeStep = 1.0f / 60.0f;
             float timeScale = 1.0f;
+
+            bool collisions = true;
         } phys;
 
         struct
@@ -100,13 +102,15 @@ namespace CBP
         float colSphereOffsetX = 0.0f;
         float colSphereOffsetY = 0.0f;
         float colSphereOffsetZ = 0.0f;
-        float mass = 350.0f;
+        float colDampingCoef = 0.6f;
+        float colStiffnessCoef = 0.1f;
+        float mass = 50.0f;
 
     private:
         static componentValueToOffsetMap_t componentValueToOffsetMap;
     };
 
-    static_assert(sizeof(configComponent_t) == 0x3C + 0xC);
+    static_assert(sizeof(configComponent_t) == 0x50);
 
     typedef std::map<std::string, configComponent_t> configComponents_t;
     typedef configComponents_t::value_type configComponentsValue_t;

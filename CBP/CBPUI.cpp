@@ -10,7 +10,7 @@ namespace CBP
         {"linearX", "Scale of the side to side motion"},
         {"linearY", "Scale of the front to back motion"},
         {"linearZ", "Scale of the up and down motion"},
-        {"maxOffset", ""},
+        {"maxOffset", "Maximum amount the bone is allowed to move from target"},
         {"rotationalX", "Scale of the bones rotation around the X axis"},
         {"rotationalY", "Scale of the bones rotation around the Y axis"},
         {"rotationalZ", "Scale of the bones rotation around the Z axis"},
@@ -18,11 +18,13 @@ namespace CBP
         {"stiffness2", "Quadratic spring stiffness"},
         {"timeScale", "Time scale"},
         {"timeStep", "Update rate in Hz"},
-        {"colSphereRad", ""},
-        {"colSphereOffsetX", ""},
-        {"colSphereOffsetY", ""},
-        {"colSphereOffsetZ", ""},
-        {"mass", ""}
+        {"colSphereRad", "Collision sphere radius (set to 0 to disable collisions)"},
+        {"colSphereOffsetX", "Collision sphere X offset"},
+        {"colSphereOffsetY", "Collision sphere Y offset"},
+        {"colSphereOffsetZ", "Collision sphere Z offset"},
+        {"colDampingCoef", ""},
+        {"colStiffnessCoef", ""},
+        {"mass", "Only used for collisions"}
     };
 
     static const keyDesc_t comboKeyDesc({
@@ -136,6 +138,8 @@ namespace CBP
     m(colSphereOffsetX, -50.0f, 50.0f); \
     m(colSphereOffsetY, -50.0f, 50.0f); \
     m(colSphereOffsetZ, -50.0f, 50.0f); \
+    m(colDampingCoef, 0.0f, 1.0f); \
+    m(colStiffnessCoef, 0.0f, 1.0f); \
     m(mass, 1.0f, 1000.0f);
 
     void UIProfileEditor::Draw(bool* a_active)
@@ -670,14 +674,14 @@ namespace CBP
 
                 ImGui::Spacing();
 
-                ImGui::SliderFloat("X", std::addressof(e.force.x), FORCE_MIN, FORCE_MAX);
+                ImGui::SliderFloat("X", std::addressof(e.force.x), FORCE_MIN, FORCE_MAX, "%.0f");
 
                 ImGui::SameLine(ImGui::GetWindowContentRegionMax().x - 43.0f);
                 if (ImGui::Button("Reset"))
                     e = configForce_t();
 
-                ImGui::SliderFloat("Y", std::addressof(e.force.y), FORCE_MIN, FORCE_MAX);
-                ImGui::SliderFloat("Z", std::addressof(e.force.z), FORCE_MIN, FORCE_MAX);
+                ImGui::SliderFloat("Y", std::addressof(e.force.y), FORCE_MIN, FORCE_MAX, "%.0f");
+                ImGui::SliderFloat("Z", std::addressof(e.force.z), FORCE_MIN, FORCE_MAX, "%.0f");
 
                 ImGui::Spacing();
 
@@ -934,25 +938,36 @@ namespace CBP
 
             ImGui::Spacing();
 
-            DrawKeyOptions("Combo key", comboKeyDesc, globalConfig.ui.comboKey);
-            DrawKeyOptions("Key", keyDesc, globalConfig.ui.showKey);
+            if (ImGui::CollapsingHeader("Controls", ImGuiTreeNodeFlags_DefaultOpen))
+            {
+                ImGui::Spacing();
+
+                DrawKeyOptions("Combo key", comboKeyDesc, globalConfig.ui.comboKey);
+                DrawKeyOptions("Key", keyDesc, globalConfig.ui.showKey);
+            }
 
             ImGui::Spacing();
             ImGui::Separator();
             ImGui::Spacing();
 
-            if (ImGui::Checkbox("Female actors only", &globalConfig.general.femaleOnly))
-                DCBP::ResetActors();
+            if (ImGui::CollapsingHeader("Simulation", ImGuiTreeNodeFlags_DefaultOpen))
+            {
+                ImGui::Spacing();
 
-            ImGui::Spacing();
-            ImGui::Separator();
-            ImGui::Spacing();
+                if (ImGui::Checkbox("Female actors only", &globalConfig.general.femaleOnly))
+                    DCBP::ResetActors();
 
-            float timeStep = 1.0f / globalConfig.phys.timeStep;
-            if (ImGui::SliderFloat("timeStep", &timeStep, 30.0f, 240.0f, "%.0f"))
-                globalConfig.phys.timeStep = 1.0f / timeStep;
+                ImGui::Checkbox("Enable collisions", &globalConfig.phys.collisions);
 
-            ImGui::SliderFloat("timeScale", &globalConfig.phys.timeScale, 0.01f, 20.0f);
+                ImGui::Spacing();
+
+                float timeStep = 1.0f / globalConfig.phys.timeStep;
+                if (ImGui::SliderFloat("timeStep", &timeStep, 30.0f, 240.0f, "%.0f"))
+                    globalConfig.phys.timeStep = 1.0f / std::clamp(timeStep, 30.0f, 240.0f);
+
+                if (ImGui::SliderFloat("timeScale", &globalConfig.phys.timeScale, 0.01f, 20.0f))
+                    globalConfig.phys.timeScale = std::clamp(globalConfig.phys.timeScale, 0.01f, 20.0f);
+            }
 
             ImGui::PopID();
         }

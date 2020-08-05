@@ -106,7 +106,7 @@ namespace CBP
         auto& globalConf = IConfig::GetGlobalConfig();
         dampingForce = conf.damping * globalConf.phys.timeStep;
 
-        conf.mass /= 100.0f;
+        conf.mass /= 10.0f;
     }
 
     void SimComponent::reset(Actor* actor)
@@ -144,7 +144,7 @@ namespace CBP
 
         // Compute the "Spring" Force
         NiPoint3 diff2(diff.x * diff.x * sgn(diff.x), diff.y * diff.y * sgn(diff.y), diff.z * diff.z * sgn(diff.z));
-        NiPoint3 force = (diff * conf.stiffness) + (diff2 * conf.stiffness2);
+        NiPoint3 force = (diff * (conf.stiffness * stiffnesMul)) + (diff2 * (conf.stiffness2 * stiffnes2Mul));
         force.z -= conf.gravityBias;
 
         if (m_applyForceQueue.size())

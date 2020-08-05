@@ -30,6 +30,8 @@ namespace CBP
         {"colsphereoffsetx", offsetof(configComponent_t, colSphereOffsetX)},
         {"colsphereoffsety", offsetof(configComponent_t, colSphereOffsetY)},
         {"colsphereoffsetz", offsetof(configComponent_t, colSphereOffsetZ)},
+        {"coldampingcoef", offsetof(configComponent_t, colDampingCoef)},
+        {"colstiffnesscoef", offsetof(configComponent_t, colStiffnessCoef)},
         {"mass", offsetof(configComponent_t, mass)},
     };
 
@@ -52,7 +54,9 @@ namespace CBP
             0.0f,
             0.0f,
             0.0f,
-            350.0f
+            0.6f,
+            0.1f,
+            50.0f
             }
        },
        {"belly", {
@@ -73,7 +77,9 @@ namespace CBP
             0.0f,
             0.0f,
             0.0f,
-            350.0f
+            0.6f,
+            0.1f,
+            50.0f
             }
        },
        {"butt", {
@@ -94,7 +100,9 @@ namespace CBP
             0.0f,
             0.0f,
             0.0f,
-            350.0f
+            0.6f,
+            0.1f,
+            50.0f
             }
        }
     };

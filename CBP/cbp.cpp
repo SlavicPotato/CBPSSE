@@ -2,7 +2,6 @@
 
 namespace CBP
 {
-    using namespace SKSE;
     namespace fs = std::filesystem;
 
     DCBP DCBP::m_Instance;
@@ -27,13 +26,13 @@ namespace CBP
     void DCBP::DispatchActorTask(Actor* actor, UTTask::UTTAction action)
     {
         if (actor != nullptr) {
-            ObjectHandle handle;
-            if (GetHandle(actor, actor->formType, handle))
+            SKSE::ObjectHandle handle;
+            if (SKSE::GetHandle(actor, actor->formType, handle))
                 m_Instance.m_updateTask.AddTask({ action, handle });
         }
     }
 
-    void DCBP::DispatchActorTask(ObjectHandle handle, UTTask::UTTAction action)
+    void DCBP::DispatchActorTask(SKSE::ObjectHandle handle, UTTask::UTTAction action)
     {
         m_Instance.m_updateTask.AddTask({ action, handle });
     }
@@ -51,7 +50,7 @@ namespace CBP
     }
 
     void DCBP::ApplyForce(
-        ObjectHandle a_handle,
+        SKSE::ObjectHandle a_handle,
         uint32_t a_steps,
         const std::string& a_component,
         const NiPoint3& a_force)
@@ -269,7 +268,7 @@ namespace CBP
         auto world = DCBP::GetWorld();
 
 #ifdef _CBP_MEASURE_PERF
-        auto s = SDT::PerfCounter::Query();
+        auto s = PerfCounter::Query();
         size_t n = 0;
 #endif
 
@@ -290,26 +289,34 @@ namespace CBP
                     actor->parentCell->cellState == TESObjectCELL::kAttached)
                 {
                     uint32_t i = numSteps;
-                    while (i) {
-                        it->second.update(actor);
-                        world->update(globalConf.phys.timeStep);
-                        i--;
-                    };
+                    if (globalConf.phys.collisions) {
+                        while (i) {
+                            it->second.update(actor);
+                            world->update(globalConf.phys.timeStep);
+                            i--;
+                        };
+                    }
+                    else {
+                        while (i) {
+                            it->second.update(actor);
+                            i--;
+                        }
+                    }
 #ifdef _CBP_MEASURE_PERF
                     n++;
 #endif
                 }
                 ++it;
-    }
+            }
         }
 
 #ifdef _CBP_MEASURE_PERF
-        auto e = SDT::PerfCounter::Query();
-        ee += SDT::PerfCounter::DeltaT_us(s, e);
+        auto e = PerfCounter::Query();
+        ee += PerfCounter::DeltaT_us(s, e);
         c++;
         a += n;
 
-        if (SDT::PerfCounter::DeltaT_us(ss, e) > 5000000LL) {
+        if (PerfCounter::DeltaT_us(ss, e) > 5000000LL) {
             ss = e;
             Debug("Perf: %lld us (%zu actors)", ee / c, a / c);
             ee = 0;
@@ -673,7 +680,7 @@ namespace CBP
     }
 
     DCBP::ApplyForceTask::ApplyForceTask(
-        ObjectHandle a_handle,
+        SKSE::ObjectHandle a_handle,
         uint32_t a_steps,
         const std::string& a_component,
         const NiPoint3& a_force)

@@ -84,15 +84,15 @@ namespace CBP
         void ApplyForce(uint32_t a_steps, const NiPoint3& a_force);
 
         inline void SetVelocity(const r3d::Vector3& a_vel) {  
-            velocity.x = std::clamp(a_vel.x, -1000000.0f, 1000000.0f);
-            velocity.y = std::clamp(a_vel.y, -1000000.0f, 1000000.0f);
-            velocity.z = std::clamp(a_vel.z, -1000000.0f, 1000000.0f);
+            velocity.x = std::clamp(a_vel.x, -100000.0f, 100000.0f);
+            velocity.y = std::clamp(a_vel.y, -100000.0f, 100000.0f);
+            velocity.z = std::clamp(a_vel.z, -100000.0f, 100000.0f);
         }
 
         inline void SetVelocity(const NiPoint3& a_vel) {
-            velocity.x = std::clamp(a_vel.x, -1000000.0f, 1000000.0f);
-            velocity.y = std::clamp(a_vel.y, -1000000.0f, 1000000.0f);
-            velocity.z = std::clamp(a_vel.z, -1000000.0f, 1000000.0f);
+            velocity.x = std::clamp(a_vel.x, -100000.0f, 100000.0f);
+            velocity.y = std::clamp(a_vel.y, -100000.0f, 100000.0f);
+            velocity.z = std::clamp(a_vel.z, -100000.0f, 100000.0f);
         }
 
         [[nodiscard]] inline const auto& GetVelocity() {
@@ -108,5 +108,7 @@ namespace CBP
         }
 
         float dampingMul = 1.0f;
+        float stiffnesMul = 1.0f;
+        float stiffnes2Mul = 1.0f;
     };
 }

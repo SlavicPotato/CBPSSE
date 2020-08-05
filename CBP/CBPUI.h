@@ -144,8 +144,8 @@ namespace CBP
     class UIApplyForce :
         UIComponentBase<T>
     {
-        static constexpr float FORCE_MIN = -1000.0f;
-        static constexpr float FORCE_MAX = 1000.0f;
+        static constexpr float FORCE_MIN = -10000.0f;
+        static constexpr float FORCE_MAX = 10000.0f;
     protected:
         UIApplyForce() = default;
         virtual ~UIApplyForce() = default;

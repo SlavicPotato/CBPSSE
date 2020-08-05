@@ -33,6 +33,7 @@ namespace CBP
 
                 globalConfig.phys.timeStep = phys.get("timeStep", 1.0f / 60.0f).asFloat();
                 globalConfig.phys.timeScale = phys.get("timeScale", 1.0f).asFloat();
+                globalConfig.phys.collisions = phys.get("collisions", true).asBool();
             }
 
             if (root.isMember("ui"))
@@ -114,6 +115,7 @@ namespace CBP
 
             phys["timeStep"] = globalConfig.phys.timeStep;
             phys["timeScale"] = globalConfig.phys.timeScale;
+            phys["collisions"] = globalConfig.phys.collisions;
 
             auto& ui = root["ui"];
 
@@ -380,6 +382,8 @@ namespace CBP
             simComponent["colSphereOffsetX"] = v.second.colSphereOffsetX;
             simComponent["colSphereOffsetY"] = v.second.colSphereOffsetY;
             simComponent["colSphereOffsetZ"] = v.second.colSphereOffsetZ;
+            simComponent["colDampingCoef"] = v.second.colDampingCoef;
+            simComponent["colStiffnessCoef"] = v.second.colStiffnessCoef;
             simComponent["mass"] = v.second.mass;
         }
 

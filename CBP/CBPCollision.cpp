@@ -30,49 +30,56 @@ namespace CBP
             auto& sc1 = m_idMap.at(col1->getEntity().id);
             auto& sc2 = m_idMap.at(col2->getEntity().id);
 
-            auto& conf1 = sc1.GetConfig();
-            auto& conf2 = sc2.GetConfig();
-
-            float dampingMul = 1.0f;
-
-            for (r3d::uint c = 0; c < contactPair.getNbContactPoints(); c++)
-            {
-                auto contactPoint = contactPair.getContactPoint(c);
-
-                auto worldPoint1 = col1->getLocalToWorldTransform() * contactPoint.getLocalPointOnCollider1();
-                auto worldPoint2 = col2->getLocalToWorldTransform() * contactPoint.getLocalPointOnCollider2();
-
-                auto depth = contactPoint.getPenetrationDepth();
-
-                dampingMul = max(depth, dampingMul);
-
-                auto& v1 = sc1.GetVelocity();
-                auto& v2 = sc2.GetVelocity();
-
-                r3d::Vector3 vaf, vbf;
-
-                ResolveCollision(
-                    conf1.mass,
-                    conf2.mass,
-                    depth,
-                    contactPoint.getWorldNormal(),
-                    r3d::Vector3(v1.x, v1.y, v1.z),
-                    r3d::Vector3(v2.x, v2.y, v2.z),
-                    vaf,
-                    vbf
-                );
-
-                sc1.SetVelocity(vaf);
-                sc2.SetVelocity(vbf);
-            }
-
             switch (contactPair.getEventType()) {
             case EventType::ContactStart:
             case EventType::ContactStay:
-                sc2.dampingMul = sc1.dampingMul = min(dampingMul, 100.0f);
-                break;
+            {
+                auto& conf1 = sc1.GetConfig();
+                auto& conf2 = sc2.GetConfig();
+
+                float dampingMul = 1.0f;
+
+                for (r3d::uint c = 0; c < contactPair.getNbContactPoints(); c++)
+                {
+                    auto contactPoint = contactPair.getContactPoint(c);
+
+                    auto depth = contactPoint.getPenetrationDepth();
+
+                    dampingMul = max(depth, dampingMul);
+
+                    auto& v1 = sc1.GetVelocity();
+                    auto& v2 = sc2.GetVelocity();
+
+                    r3d::Vector3 vaf, vbf;
+
+                    ResolveCollision(
+                        conf1.mass,
+                        conf2.mass,
+                        depth,
+                        contactPoint.getWorldNormal(),
+                        r3d::Vector3(v1.x, v1.y, v1.z),
+                        r3d::Vector3(v2.x, v2.y, v2.z),
+                        vaf,
+                        vbf
+                    );
+
+                    sc1.SetVelocity(vaf);
+                    sc2.SetVelocity(vbf);
+                }
+
+                sc1.stiffnes2Mul = sc1.stiffnesMul =
+                    1.0f / max(dampingMul * conf1.colStiffnessCoef, 1.0f);
+                sc2.stiffnes2Mul = sc2.stiffnesMul =
+                    1.0f / max(dampingMul * conf2.colStiffnessCoef, 1.0f);
+
+                sc1.dampingMul = std::clamp(dampingMul * conf1.colDampingCoef, 1.0f, 15.0f);
+                sc2.dampingMul = std::clamp(dampingMul * conf2.colDampingCoef, 1.0f, 15.0f);
+            }
+            break;
             case EventType::ContactExit:
                 sc2.dampingMul = sc1.dampingMul = 1.0f;
+                sc1.stiffnes2Mul = sc1.stiffnesMul = 1.0f;
+                sc2.stiffnes2Mul = sc2.stiffnesMul = 1.0f;
                 break;
             }
 
@@ -92,7 +99,7 @@ namespace CBP
     {
         auto& globalConf = IConfig::GetGlobalConfig();
 
-        float Jmod = (vbi - vai).length() * depth;
+        float Jmod = (vai - vbi).length() * depth;
         auto Ja = (normal * Jmod);
         auto Jb = (normal * -Jmod);
 
@@ -100,7 +107,7 @@ namespace CBP
         auto Ba = (normal * depth) * Bmod;
         auto Bb = (normal * -depth) * Bmod;
 
-        vaf = vai - (Ja * (1.0f / max(ma / globalConf.phys.timeStep, 1.0f)) + Ba);
-        vbf = vbi - (Jb * (1.0f / max(mb / globalConf.phys.timeStep, 1.0f)) + Bb);
+        vaf = vai - (Ja * (1.0f / (max(ma / globalConf.phys.timeStep, 1.0f))) + Ba);
+        vbf = vbi - (Jb * (1.0f / (max(mb / globalConf.phys.timeStep, 1.0f))) + Bb);
     }
 }

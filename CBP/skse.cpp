@@ -198,9 +198,10 @@ namespace SKSE
         return true;
     }
 
+    static auto s_processLists = IAL::Addr< ProcessLists**>(514167);
+
     ProcessLists* ProcessLists::GetSingleton()
     {
-        static RelocAddr<ProcessLists**> singleton(0x1ebead0);
-        return *singleton;
+        return *s_processLists;
     }
 }
