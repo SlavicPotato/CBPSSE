@@ -8,7 +8,7 @@ Modified version of [CBP Physics for Skyrim SE](https://github.com/cbpphysics/CB
 * Track actors via events, no polling (cell/process lists scanning)
 * Version independent (requires [Address Library for SKSE Plugins](https://www.nexusmods.com/skyrimspecialedition/mods/32444))
 * Simulate any valid node
-* Per actor/race configuration via in-game UI (ImGUI)
+* Per actor/race configuration via [in-game UI](https://i.imgur.com/qFOTDmH.png) (ImGUI)
 * Collisions (reactphysics3d)
 
 ## Build deps
