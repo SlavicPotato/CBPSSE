@@ -575,7 +575,6 @@ namespace CBP
         }
 
         m_uiContext.Reset(m_loadInstance);
-        DUI::AddCallback(1, UICallback);
     }
 
     void DCBP::DisableUI()
@@ -602,7 +601,7 @@ namespace CBP
         }
     }
 
-    bool DCBP::RunEnableChecks()
+    bool DCBP::RunEnableUIChecks()
     {
         if (DUI::HasCallback(1))
             return false;
@@ -672,11 +671,14 @@ namespace CBP
     {
         if (m_Instance.uiState.show) {
             m_Instance.uiState.show = false;
+            m_Instance.DisableUI();
+            DUI::RemoveCallback(1);
         }
         else {
-            if (m_Instance.RunEnableChecks()) {
+            if (m_Instance.RunEnableUIChecks()) {
                 m_Instance.uiState.show = true;
                 m_Instance.EnableUI();
+                DUI::AddCallback(1, UICallback);
             }
         }
     }

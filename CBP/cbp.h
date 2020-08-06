@@ -189,7 +189,7 @@ namespace CBP
 
         void EnableUI();
         void DisableUI();
-        bool RunEnableChecks();
+        bool RunEnableUIChecks();
 
         struct
         {
