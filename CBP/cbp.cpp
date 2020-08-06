@@ -110,7 +110,7 @@ namespace CBP
         globalConfig.general.femaleOnly = GetConfigValue(SECTION_CBP, CKEY_CBPFEMALEONLY, true);
         globalConfig.ui.comboKey = ConfigGetComboKey(GetConfigValue(SECTION_CBP, CKEY_COMBOKEY, 1));
         globalConfig.ui.showKey = std::clamp<UInt32>(
-            GetConfigValue<UInt32>(SECTION_CBP, CKEY_SHOWKEY, DIK_INSERT),
+            GetConfigValue<UInt32>(SECTION_CBP, CKEY_SHOWKEY, DIK_END),
             1, InputMap::kMacro_NumKeyboardKeys - 1);
     }
 
