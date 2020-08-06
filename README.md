@@ -16,3 +16,6 @@ Modified version of [CBP Physics for Skyrim SE](https://github.com/cbpphysics/CB
 * [ImGui](https://github.com/ocornut/imgui)
 * [JsonCpp](https://github.com/open-source-parsers/jsoncpp)
 * [reactphysics3d](https://github.com/DanielChappuis/reactphysics3d)
+
+#
+The old version is [here](https://github.com/SlavicPotato/CBPSSE/tree/old)
