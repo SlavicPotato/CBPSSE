@@ -12,4 +12,4 @@ Function UpdateAllActors() native global
 Bool Function SetGlobalConfig(String section, String key, Float value) native global
 
 ; Set and apply config value to actor
-Bool Function SetActorConfig(String section, String key, Float value) native global
+Bool Function SetActorConfig(Actor actor, String section, String key, Float value) native global
