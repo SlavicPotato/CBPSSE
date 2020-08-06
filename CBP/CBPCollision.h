@@ -11,9 +11,6 @@ namespace CBP
             return m_Instance;
         }
 
-        void RegisterCollider(SimComponent& a_sc, reactphysics3d::Collider*);
-        void UnregisterCollider(reactphysics3d::Collider*);
-
         ICollision(const ICollision&) = delete;
         ICollision(ICollision&&) = delete;
         ICollision& operator=(const ICollision&) = delete;

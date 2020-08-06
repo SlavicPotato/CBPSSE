@@ -89,6 +89,7 @@ namespace CBP
             a_pair.second. ## n = std::clamp(a_pair.second. ## n, vmin, vmax); \
         auto& actorConf = IConfig::GetOrCreateActorConf(a_handle); \
         actorConf.at(a_pair.first). ## n = a_pair.second. ## n; \
+        Propagate(a_data, std::addressof(actorConf), a_pair.first, STR(n), a_pair.second. ## n); \
         DCBP::DispatchActorTask(a_handle, UTTask::kActionUpdateConfig); \
     } \
     ImGui::SameLine(); UICommon::HelpMarker(thingHelpText.at(STR(n))); \
@@ -100,6 +101,7 @@ namespace CBP
             a_pair.second. ## n = std::clamp(a_pair.second. ## n, vmin, vmax); \
         auto& raceConf = IConfig::GetOrCreateRaceConf(a_formid); \
         raceConf.at(a_pair.first). ## n = a_pair.second. ## n; \
+        Propagate(a_data, std::addressof(raceConf), a_pair.first, STR(n), a_pair.second. ## n); \
         MarkChanged(); \
         DCBP::UpdateConfigOnAllActors(); \
     } \
@@ -109,6 +111,7 @@ namespace CBP
     if (ImGui::SliderFloat(STR(n), std::addressof(a_pair.second. ## n), vmin, vmax, __VA_ARGS__)) { \
         if (IConfig::GetGlobalConfig().ui.clampValuesMain) \
             a_pair.second. ## n = std::clamp(a_pair.second. ## n, vmin, vmax); \
+        Propagate(a_data, nullptr, a_pair.first, STR(n), a_pair.second. ## n); \
         DCBP::UpdateConfigOnAllActors(); \
     } \
     ImGui::SameLine(); UICommon::HelpMarker(thingHelpText.at(STR(n))); \
@@ -117,6 +120,7 @@ namespace CBP
     if (ImGui::SliderFloat(STR(n), std::addressof(a_pair.second. ## n), vmin, vmax, __VA_ARGS__)) { \
         if (IConfig::GetGlobalConfig().ui.clampValuesMain) \
             a_pair.second. ## n = std::clamp(a_pair.second. ## n, vmin, vmax); \
+        Propagate(a_data, nullptr, a_pair.first, STR(n), a_pair.second. ## n); \
     } \
     ImGui::SameLine(); UICommon::HelpMarker(thingHelpText.at(STR(n))); \
 
@@ -307,7 +311,10 @@ namespace CBP
         ImGui::End();
     }
 
-    void UIProfileEditor::AddSimComponentSlider(int, configComponentsValue_t& a_pair)
+    void UIProfileEditor::AddSimComponentSlider(
+        int,
+        configComponents_t& a_data,
+        configComponentsValue_t& a_pair)
     {
         ADD_SIM_COMPONENT_SLIDERS(ADD_PROFILE_SIM_COMPONENT_SLIDER);
     }
@@ -522,7 +529,10 @@ namespace CBP
         return a_data->second.second;
     }
 
-    void UIRaceEditor::AddSimComponentSlider(SKSE::FormID a_formid, configComponentsValue_t& a_pair)
+    void UIRaceEditor::AddSimComponentSlider(
+        SKSE::FormID a_formid,
+        configComponents_t& a_data,
+        configComponentsValue_t& a_pair)
     {
         ADD_SIM_COMPONENT_SLIDERS(ADD_RACE_SIM_COMPONENT_SLIDER);
     }
@@ -611,9 +621,14 @@ namespace CBP
     template<typename T>
     void UIApplyForce<T>::DrawForceSelector(T* a_data, configForceMap_t& a_forceData)
     {
+        auto& globalConfig = IConfig::GetGlobalConfig();
+
         ImGui::PushID(static_cast<const void*>(std::addressof(m_forceState)));
 
-        if (ImGui::CollapsingHeader("Force", ImGuiTreeNodeFlags_DefaultOpen))
+        bool* cs = globalConfig.GetColStateAddr("Main#Force");
+        *cs = ImGui::CollapsingHeader("Force", *cs ? ImGuiTreeNodeFlags_DefaultOpen : 0);
+
+        if (*cs)
         {
             auto& data = GetComponentData(a_data);
             auto& globalConfig = IConfig::GetGlobalConfig();
@@ -1021,6 +1036,7 @@ namespace CBP
 
     void UIContext::UISimComponentActor::AddSimComponentSlider(
         SKSE::ObjectHandle a_handle,
+        configComponents_t& a_data,
         configComponentsValue_t& a_pair)
     {
         ADD_SIM_COMPONENT_SLIDERS(ADD_ACTOR_SIM_COMPONENT_SLIDER);
@@ -1028,6 +1044,7 @@ namespace CBP
 
     void UIContext::UISimComponentGlobal::AddSimComponentSlider(
         SKSE::ObjectHandle m_handle,
+        configComponents_t& a_data,
         configComponentsValue_t& a_pair)
     {
         ADD_SIM_COMPONENT_SLIDERS(ADD_GLOBAL_SIM_COMPONENT_SLIDER);
@@ -1171,7 +1188,7 @@ namespace CBP
         const NiPoint3& a_force)
     {
         SKSE::ObjectHandle handle;
-        if (a_data)
+        if (a_data != nullptr)
             handle = a_data->first;
         else
             handle = 0;
@@ -1179,30 +1196,104 @@ namespace CBP
         DCBP::ApplyForce(handle, a_steps, a_component, a_force);
     }
 
-    template <class T>
-    void UISimComponent<T>::DrawSimComponents(T a_handle, configComponents_t& data)
+    template <class T, int ID>
+    void UISimComponent<T, ID>::Propagate(
+        configComponents_t& a_dl,
+        configComponents_t* a_dg,
+        const std::string& a_comp,
+        std::string a_key,
+        float a_val)
     {
-        for (auto& p : data)
+        auto& globalConfig = IConfig::GetGlobalConfig();
+        auto& mirrorTo = globalConfig.ui.mirror[ID];
+
+        auto it = mirrorTo.find(a_comp);
+        if (it == mirrorTo.end())
+            return;
+
+        transform(a_key.begin(), a_key.end(), a_key.begin(), ::tolower);
+
+        for (auto& e : it->second) {
+            if (!e.second)
+                continue;
+
+            auto it1 = a_dl.find(e.first);
+            if (it1 != a_dl.end())
+                it1->second.Set(a_key, a_val);
+
+            if (a_dg != nullptr) {
+                auto it2 = a_dg->find(e.first);
+                if (it2 != a_dg->end())
+                    it2->second.Set(a_key, a_val);
+            }
+        }
+    }
+
+    template <class T, int ID>
+    void UISimComponent<T, ID>::DrawSimComponents(T a_handle, configComponents_t& a_data)
+    {
+        auto& globalConfig = IConfig::GetGlobalConfig();
+
+        for (auto& p : a_data)
         {
             auto headerName = p.first;
             if (headerName.size() > 0) {
                 headerName[0] = std::toupper(headerName[0]);
             }
 
+            bool* cs = globalConfig.GetColStateAddr(GetCSID(p.first));
 
-            if (ImGui::CollapsingHeader(headerName.c_str(), ImGuiTreeNodeFlags_DefaultOpen))
+            *cs = ImGui::CollapsingHeader(headerName.c_str(), 
+                *cs ? ImGuiTreeNodeFlags_DefaultOpen : 0);
+
+            if (*cs)
             {
-                //ImGui::Spacing();
+                ImGui::PushID(static_cast<const void*>(std::addressof(p.second)));
 
-                ImGui::PushID(static_cast<const void*>(std::addressof(p)));
+                auto wcm = ImGui::GetWindowContentRegionMax();
 
-                AddSimComponentSlider(a_handle, p);
+                if (ImGui::Button("Mirroring >"))
+                    ImGui::OpenPopup("mirror_popup");
+
+                if (ImGui::BeginPopup("mirror_popup"))
+                {
+                    auto& mirrorTo = globalConfig.ui.mirror[ID];
+
+                    auto c = mirrorTo.try_emplace(p.first);
+                    auto& d = c.first->second;
+
+                    for (const auto& e : a_data)
+                    {
+                        if (e.first == p.first)
+                            continue;
+
+                        auto headerName = e.first;
+                        if (headerName.size() > 0) {
+                            headerName[0] = std::toupper(headerName[0]);
+                        }
+
+                        auto i = d.try_emplace(e.first, false);
+                        ImGui::MenuItem(headerName.c_str(), nullptr, std::addressof(i.first->second));
+                    }
+
+                    if (d.size()) {
+                        ImGui::Separator();
+
+                        if (ImGui::MenuItem("Clear", nullptr))
+                            mirrorTo.erase(p.first);
+                    }
+
+                    ImGui::EndPopup();
+                }
 
                 ImGui::PopID();
 
-                //ImGui::Spacing();
+                ImGui::PushID(static_cast<const void*>(std::addressof(p)));
+
+                AddSimComponentSlider(a_handle, a_data, p);
+
+                ImGui::PopID();
             }
         }
     }
-
 }

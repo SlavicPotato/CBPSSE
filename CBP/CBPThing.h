@@ -83,7 +83,7 @@ namespace CBP
     public:
         BSFixedString boneName;
         SimComponent(
-            NiAVObject* obj,
+            NiAVObject* m_obj,
             const BSFixedString& name,
             const std::string& a_configBoneName,
             const configComponent_t& config
@@ -142,6 +142,6 @@ namespace CBP
         float stiffnesMul = 1.0f;
         float stiffnes2Mul = 1.0f;
 
-        NiAVObject* obj;
+        NiAVObject* m_obj;
     };
 }

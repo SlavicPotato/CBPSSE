@@ -8,7 +8,9 @@ namespace CBP
         int steps = 1;
     };
 
+    typedef std::unordered_map<std::string, std::map<std::string, bool>> configMirrorMap_t;
     typedef std::unordered_map<std::string, configForce_t> configForceMap_t;
+    typedef std::unordered_map<std::string, bool> collapsibleStates_t;
 
     struct configGlobal_t
     {
@@ -37,8 +39,18 @@ namespace CBP
 
             SKSE::ObjectHandle lastActor = 0;
             configForceMap_t forceActor;
+            std::unordered_map<int, configMirrorMap_t> mirror;
+            collapsibleStates_t colStates;
             std::string forceActorSelected;
         } ui;
+
+        inline bool& GetColState(const std::string& a_key) {
+            return ui.colStates[a_key];
+        }
+
+        inline constexpr bool* GetColStateAddr(const std::string& a_key) {
+            return std::addressof(ui.colStates[a_key]);
+        }
     };
 
     typedef std::unordered_map<std::string, ptrdiff_t> componentValueToOffsetMap_t;

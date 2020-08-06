@@ -104,16 +104,44 @@ namespace CBP
         bool m_isSelected;
     };
 
-    template <class T>
+    enum UISimComponentID : int {
+        kProfileEditor = 0,
+        kRaceEditor,
+        kActor,
+        kGlobal
+    };
+
+    template <class T, int ID>
     class UISimComponent
     {
     public:
         UISimComponent() = default;
         virtual ~UISimComponent() = default;
 
-        void DrawSimComponents(T m_handle, configComponents_t& data);
+        void DrawSimComponents(
+            T a_handle,
+            configComponents_t& a_data);
 
-        virtual void AddSimComponentSlider(T m_handle, configComponentsValue_t& a_data) = 0;
+        virtual void AddSimComponentSlider(
+            T m_handle,
+            configComponents_t& a_data,
+            configComponentsValue_t& a_pair) = 0;
+
+    protected:
+        void Propagate(
+            configComponents_t& a_dl,
+            configComponents_t* a_dg,
+            const std::string& a_comp,
+            std::string a_key,
+            float a_val);
+
+        [[nodiscard]] inline std::string GetCSID(
+            const std::string &a_name)
+        {
+            std::ostringstream ss;
+            ss << "UISC#" << ID << "#" << a_name;
+            return ss.str();
+        }
     };
 
     template <class T>
@@ -133,7 +161,9 @@ namespace CBP
 
         void DrawProfileSelector(T* a_data);
 
-        virtual void ApplyProfile(T* a_data, const Profile& a_profile) = 0;
+        virtual void ApplyProfile(
+            T* a_data,
+            const Profile& a_profile) = 0;
 
     private:
         UISelectedItem<std::string> m_selectedProfile;
@@ -165,14 +195,17 @@ namespace CBP
     };
 
     class UIProfileEditor :
-        UISimComponent<int>
+        UISimComponent<int, UISimComponentID::kProfileEditor>
     {
     public:
 
         void Draw(bool* a_active);
     private:
 
-        virtual void AddSimComponentSlider(int, configComponentsValue_t& a_pair);
+        virtual void AddSimComponentSlider(
+            int,
+            configComponents_t& a_data,
+            configComponentsValue_t& a_pair);
 
         struct {
             UISelectedItem<std::string> selected;
@@ -200,7 +233,7 @@ namespace CBP
 
     class UIRaceEditor :
         UIProfileSelector<raceList_t::value_type>,
-        UISimComponent<SKSE::FormID>
+        UISimComponent<SKSE::FormID, UISimComponentID::kRaceEditor>
     {
         using raceListValue_t = raceList_t::value_type;
     public:
@@ -229,7 +262,7 @@ namespace CBP
         virtual void ApplyProfile(raceListValue_t* a_data, const Profile& m_profile);
         [[nodiscard]] virtual const configComponents_t& GetComponentData(const raceListValue_t* a_data) const;
 
-        virtual void AddSimComponentSlider(SKSE::FormID m_handle, configComponentsValue_t& a_pair);
+        virtual void AddSimComponentSlider(SKSE::FormID m_handle, configComponents_t& a_data, configComponentsValue_t& a_pair);
 
         inline void MarkChanged() { m_changed = true; }
 
@@ -254,20 +287,22 @@ namespace CBP
         using actorListValue_t = actorList_t::value_type;
 
         class UISimComponentActor :
-            public UISimComponent<SKSE::ObjectHandle>
+            public UISimComponent<SKSE::ObjectHandle, UISimComponentID::kActor>
         {
         public:
             virtual void AddSimComponentSlider(
                 SKSE::ObjectHandle m_handle,
+                configComponents_t& a_data,
                 configComponentsValue_t& a_pair);
         };
 
         class UISimComponentGlobal :
-            public UISimComponent<SKSE::ObjectHandle>
+            public UISimComponent<SKSE::ObjectHandle, UISimComponentID::kGlobal>
         {
         public:
             virtual void AddSimComponentSlider(
                 SKSE::ObjectHandle m_handle,
+                configComponents_t& a_data,
                 configComponentsValue_t& a_pair);
         };
 

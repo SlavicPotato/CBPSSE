@@ -18,7 +18,7 @@ namespace CBP
 
             auto col1 = contactPair.getCollider1();
             auto col2 = contactPair.getCollider2();
-
+            
             auto sc1 = static_cast<SimComponent*>(col1->getUserData());
             auto sc2 = static_cast<SimComponent*>(col2->getUserData());
 
@@ -69,9 +69,8 @@ namespace CBP
             }
             break;
             case EventType::ContactExit:
-                sc2->dampingMul = sc1->dampingMul = 1.0f;
-                sc1->stiffnes2Mul = sc1->stiffnesMul = 1.0f;
-                sc2->stiffnes2Mul = sc2->stiffnesMul = 1.0f;
+                sc1->ResetOverrides();
+                sc2->ResetOverrides();
                 break;
             }
 

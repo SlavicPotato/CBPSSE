@@ -48,7 +48,7 @@ namespace CBP
             return;
 
         auto& globalConfig = IConfig::GetGlobalConfig();
-        auto nodeScale = m_parent.obj->m_worldTransform.scale;
+        auto nodeScale = m_parent.m_obj->m_worldTransform.scale;
 
         if (!m_active) {
             if (globalConfig.phys.collisions &&
@@ -71,14 +71,14 @@ namespace CBP
             }
         }
 
-        auto& rot = m_parent.obj->m_parent->m_worldTransform.rot;
+        auto& rot = m_parent.m_obj->m_parent->m_worldTransform.rot;
 
         m_mat[0][0] = rot.data[0][0]; m_mat[0][1] = rot.data[0][1]; m_mat[0][2] = rot.data[0][2];
         m_mat[1][0] = rot.data[1][0]; m_mat[1][1] = rot.data[1][1]; m_mat[1][2] = rot.data[1][2];
         m_mat[2][0] = rot.data[2][0]; m_mat[2][1] = rot.data[2][1]; m_mat[2][2] = rot.data[2][2];
 
-        auto pos = (m_parent.obj->m_parent->m_worldTransform * m_parent.obj->m_localTransform.pos) +
-            (m_parent.obj->m_parent->m_worldTransform * m_sphereOffset);
+        auto pos = (m_parent.m_obj->m_parent->m_worldTransform * m_parent.m_obj->m_localTransform.pos) +
+            (m_parent.m_obj->m_parent->m_worldTransform * m_sphereOffset);
 
         m_pos.x = pos.x; m_pos.y = pos.y; m_pos.z = pos.z;
 
@@ -102,7 +102,7 @@ namespace CBP
         velocity(NiPoint3(0.0f, 0.0f, 0.0f)),
         npZero(NiPoint3(0.0f, 0.0f, 0.0f)),
         colData(*this),
-        obj(a_obj)
+        m_obj(a_obj)
     {
         updateConfig(a_config);
         colData.Update();
@@ -144,26 +144,26 @@ namespace CBP
 
     void SimComponent::reset(Actor* actor)
     {
-        auto obj = actor->loadedState->node->GetObjectByName(&boneName.data);
-        if (obj == nullptr)
+        auto m_obj = actor->loadedState->node->GetObjectByName(&boneName.data);
+        if (m_obj == nullptr)
             return;
 
-        obj->m_localTransform.pos = npZero;
-        oldWorldPos = obj->m_worldTransform.pos;
+        m_obj->m_localTransform.pos = npZero;
+        oldWorldPos = m_obj->m_worldTransform.pos;
         velocity = npZero;
         m_applyForceQueue.swap(decltype(m_applyForceQueue)());
     }
 
     void SimComponent::update(Actor* actor)
     {
-        obj = actor->loadedState->node->GetObjectByName(&boneName.data);
-        if (obj == nullptr)
+        m_obj = actor->loadedState->node->GetObjectByName(&boneName.data);
+        if (m_obj == nullptr)
             return;
 
         auto& globalConf = IConfig::GetGlobalConfig();
 
         //Offset to move Center of Mass make rotaional motion more significant  
-        auto target = obj->m_parent->m_worldTransform * npCogOffset;
+        auto target = m_obj->m_parent->m_worldTransform * npCogOffset;
 
         NiPoint3 diff(target - oldWorldPos);
 
@@ -184,8 +184,8 @@ namespace CBP
         {
             auto& current = m_applyForceQueue.front();
 
-            auto vD = obj->m_parent->m_worldTransform * current.force;
-            auto vP = obj->m_parent->m_worldTransform * obj->m_localTransform.pos;
+            auto vD = m_obj->m_parent->m_worldTransform * current.force;
+            auto vP = m_obj->m_parent->m_worldTransform * m_obj->m_localTransform.pos;
 
             force += (vD - vP) / globalConf.phys.timeStep;
 
@@ -205,18 +205,18 @@ namespace CBP
         diff.y = std::clamp(diff.y, -conf.maxOffset, conf.maxOffset);
         diff.z = std::clamp(diff.z, -conf.maxOffset, conf.maxOffset);
 
-        auto invRot = obj->m_parent->m_worldTransform.rot.Transpose();
+        auto invRot = m_obj->m_parent->m_worldTransform.rot.Transpose();
         auto ldiff = invRot * diff;
 
-        oldWorldPos = (obj->m_parent->m_worldTransform.rot * ldiff) + target;
+        oldWorldPos = (m_obj->m_parent->m_worldTransform.rot * ldiff) + target;
 
-        obj->m_localTransform.pos.x = ldiff.x * conf.linearX;
-        obj->m_localTransform.pos.y = ldiff.y * conf.linearY;
-        obj->m_localTransform.pos.z = ldiff.z * conf.linearZ;
+        m_obj->m_localTransform.pos.x = ldiff.x * conf.linearX;
+        m_obj->m_localTransform.pos.y = ldiff.y * conf.linearY;
+        m_obj->m_localTransform.pos.z = ldiff.z * conf.linearZ;
 
-        obj->m_localTransform.pos += invRot * npGravityCorrection;
+        m_obj->m_localTransform.pos += invRot * npGravityCorrection;
 
-        obj->m_localTransform.rot.SetEulerAngles(
+        m_obj->m_localTransform.rot.SetEulerAngles(
             ldiff.x * conf.rotationalX,
             ldiff.y * conf.rotationalY,
             ldiff.z * conf.rotationalZ);

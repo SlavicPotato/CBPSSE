@@ -60,8 +60,6 @@ namespace CBP
                                 continue;
 
                             auto k = it.key();
-                            if (!k.isString())
-                                continue;
 
                             std::string key(k.asString());
                             transform(key.begin(), key.end(), key.begin(), ::tolower);
@@ -74,7 +72,7 @@ namespace CBP
                             e.force.x = it->get("x", 0.0f).asFloat();
                             e.force.y = it->get("y", 0.0f).asFloat();
                             e.force.z = it->get("z", 0.0f).asFloat();
-                            e.steps = max(it->get("steps", 0).asInt(), 1);
+                            e.steps = max(it->get("steps", 0).asInt(), 0);
                         }
                     }
                 }
@@ -88,6 +86,74 @@ namespace CBP
                         transform(v.begin(), v.end(), v.begin(), ::tolower);
 
                         globalConfig.ui.forceActorSelected = std::move(v);
+                    }
+                }
+
+                if (ui.isMember("mirror"))
+                {
+                    auto& mirror = ui["mirror"];
+
+                    if (mirror.isObject()) {
+
+                        for (auto it1 = mirror.begin(); it1 != mirror.end(); ++it1)
+                        {
+                            if (!it1->isObject())
+                                continue;
+
+                            int ki;
+                            try {
+                                ki = std::stoi(it1.key().asString());
+                            }
+                            catch (...) {
+                                continue;
+                            }
+
+                            auto& mm = globalConfig.ui.mirror[ki];
+
+                            for (auto it2 = it1->begin(); it2 != it1->end(); ++it2)
+                            {
+                                if (!it2->isObject())
+                                    continue;
+
+                                std::string k(it2.key().asString());
+
+                                if (!IConfig::IsValidSimComponent(k))
+                                    continue;
+
+                                auto& me = mm[k];
+
+                                for (auto it3 = it2->begin(); it3 != it2->end(); ++it3)
+                                {
+                                    if (!it3->isBool())
+                                        continue;
+
+                                    k = it3.key().asString();
+
+                                    if (!IConfig::IsValidSimComponent(k))
+                                        continue;
+
+                                    me[k] = it3->asBool();
+
+                                    //_DMESSAGE(":: %d : %s : %s : %d", ki, k.c_str(), kb.c_str(), it3->asBool());
+                                }
+                            }
+                        }
+                    }
+                }
+            
+                if (ui.isMember("colStates")) {
+                    auto& colStates = ui["colStates"];
+
+                    if (colStates.isObject()) {
+                        for (auto it = colStates.begin(); it != colStates.end(); ++it)
+                        {
+                            if (!it->isBool())
+                                continue;
+
+                            std::string k(it.key().asString());
+
+                            globalConfig.ui.colStates[k] = it->asBool();
+                        }
                     }
                 }
             }
@@ -141,6 +207,27 @@ namespace CBP
             }
 
             ui["forceSelected"] = globalConfig.ui.forceActorSelected;
+
+            auto& mirror = ui["mirror"];
+            for (const auto& e : globalConfig.ui.mirror) 
+            { 
+                auto& je = mirror[std::to_string(e.first)];
+
+                for (const auto& k : e.second) 
+                {
+                    auto& ke = je[k.first];
+
+                    for (const auto& l : k.second) {
+                        ke[l.first] = l.second;
+                    }
+                }
+            }
+
+            auto& colStates = ui["colStates"];
+            for (const auto& e : globalConfig.ui.colStates)
+            {
+                colStates[e.first] = e.second;
+            }
 
             WriteJsonData(PLUGIN_CBP_GLOBAL_DATA, root);
 
