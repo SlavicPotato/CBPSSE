@@ -1,5 +1,3 @@
-belly.timetick 3
-belly.timescale 1
 belly.stiffness2 5
 belly.stiffness 5
 belly.rotationalx 0
@@ -14,8 +12,6 @@ belly.gravitybias 0
 belly.damping 1
 belly.cogoffset 0
 
-breast.timetick 3
-breast.timescale 1
 breast.stiffness2 10
 breast.stiffness 10
 breast.rotationalx 0.025
@@ -30,8 +26,6 @@ breast.gravitybias 40
 breast.damping 0.94
 breast.cogoffset 5
 
-butt.timetick 3
-butt.timescale 1
 butt.stiffness2 9.5
 butt.stiffness 4.5
 butt.rotationalx 0
