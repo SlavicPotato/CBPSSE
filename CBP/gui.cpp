@@ -104,7 +104,7 @@ namespace CBP
 
         m_Instance.info.bufferSize.width = static_cast<float>(sd.BufferDesc.Width);
         m_Instance.info.bufferSize.height = static_cast<float>(sd.BufferDesc.Height);
-        m_Instance.g_WindowHandle = sd.OutputWindow;
+        m_Instance.m_WindowHandle = sd.OutputWindow;
 
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
@@ -260,7 +260,7 @@ namespace CBP
         switch (m_eventType) {
         case kMouseButton:
             io.MouseDown[b.m_uval] = (m_event == KeyEvent::KeyDown ? true : false);
-            /*if (!ImGui::IsAnyMouseDown() && ::GetCapture() == m_Instance.g_WindowHandle)
+            /*if (!ImGui::IsAnyMouseDown() && ::GetCapture() == m_Instance.m_WindowHandle)
                 ::ReleaseCapture();*/
             break;
         case kMouseWheel:

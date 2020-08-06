@@ -12,6 +12,8 @@ namespace CBP
         ILog
     {
         typedef bool (*uiDrawCallback_t)(void);
+        typedef void (*createD3D11_t)(void);
+        typedef void (*unkPresent)(uint32_t p1);
 
         class KeyPressHandler : public KeyEventHandler
         {
@@ -114,14 +116,11 @@ namespace CBP
         KeyPressHandler inputEventHandler;
 
         bool m_isRunning;
-        HWND g_WindowHandle;
+        HWND m_WindowHandle;
 
         TaskQueueUnsafe m_keyEvents;
 
-        typedef void (*createD3D11_t)(void);
         static inline auto CreateD3D11 = IAL::Addr(75595, 0x9);
-
-        typedef void (*unkPresent)(uint32_t p1);
         static inline auto UnkPresent = IAL::Addr(75461, 0x9);
 
         createD3D11_t CreateD3D11_O;

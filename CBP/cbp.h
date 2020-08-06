@@ -5,7 +5,7 @@
 
 namespace CBP
 {
-   
+
     struct UTTask
     {
         enum UTTAction : uint32_t {
@@ -168,7 +168,6 @@ namespace CBP
             return m_Instance.m_physicsCommon;
         }
 
-
         FN_NAMEPROC("CBP")
     private:
         DCBP();
@@ -207,14 +206,11 @@ namespace CBP
             bool show;
         } uiState;
 
-        //UInt32 m_savedEnabledControls;
-
         Serialization m_serialization;
         UpdateTask m_updateTask;
 
         r3d::PhysicsWorld* m_world;
         r3d::PhysicsCommon m_physicsCommon;
-
 
         static DCBP m_Instance;
     };
