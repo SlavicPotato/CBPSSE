@@ -542,7 +542,11 @@ namespace CBP
             uiState.show = false;
         }
         else {
-            m_uiContext.Draw(&uiState.show);
+            auto mm = MenuManager::GetSingleton();
+            if (mm && mm->InPausedMenu())
+                uiState.show = false;            
+            else
+                m_uiContext.Draw(&uiState.show);
         }
 
         if (!uiState.show) {

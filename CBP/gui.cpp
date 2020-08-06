@@ -44,12 +44,6 @@ namespace CBP
             return;
         }
 
-        auto mm = MenuManager::GetSingleton();
-        if (mm && mm->InPausedMenu()) {
-            m_isRunning = false;
-            return;
-        }
-
         m_isRunning = true;
 
         ImGui_ImplDX11_NewFrame();

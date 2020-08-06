@@ -13,15 +13,17 @@ namespace CBP
         class ColliderData
         {
         public:
-            ColliderData() :
+            ColliderData(SimComponent& a_parent) :
                 m_created(false),
+                m_active(true),
                 m_nodeScale(1.0f),
-                m_radius(1.0f)
+                m_radius(1.0f),
+                m_parent(a_parent)
             {}
 
-            void Create(SimComponent& a_sc);
-            void Destroy();
-            void Update(NiAVObject* a_obj);
+            bool Create();
+            bool Destroy();
+            void Update();
 
             inline void SetRadius(r3d::decimal a_val) {
                 m_radius = a_val;
@@ -29,7 +31,8 @@ namespace CBP
             }
 
             inline void UpdateRadius() {
-                m_sphereShape->setRadius(m_radius * m_nodeScale);
+                if (m_nodeScale > 0.0f)
+                    m_sphereShape->setRadius(m_radius * m_nodeScale);
             }
 
             inline void SetSphereOffset(const NiPoint3& a_offset) {
@@ -41,6 +44,7 @@ namespace CBP
                 m_sphereOffset.y = a_y;
                 m_sphereOffset.z = a_z;
             }
+
         private:
             r3d::CollisionBody* m_body;
             r3d::SphereShape* m_sphereShape;
@@ -53,6 +57,9 @@ namespace CBP
             r3d::Vector3 m_pos;
 
             bool m_created;
+            bool m_active;
+
+            SimComponent& m_parent;
         };
 
     private:
@@ -125,8 +132,16 @@ namespace CBP
             return m_configGroupName;
         }
 
+        inline void ResetOverrides() {
+            dampingMul = 1.0f;
+            stiffnes2Mul = 1.0f;
+            stiffnesMul = 1.0f;
+        }
+
         float dampingMul = 1.0f;
         float stiffnesMul = 1.0f;
         float stiffnes2Mul = 1.0f;
+
+        NiAVObject* obj;
     };
 }

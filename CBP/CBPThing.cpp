@@ -6,26 +6,29 @@ namespace CBP
         return (0.0f < val) - (val < 0.0f);
     }
 
-    void SimComponent::ColliderData::Create(SimComponent& a_sc)
+    bool SimComponent::ColliderData::Create()
     {
         if (m_created)
-            return;
+            return false;
 
         auto world = DCBP::GetWorld();
         auto& physicsCommon = DCBP::GetPhysicsCommon();
 
         m_body = world->createCollisionBody(r3d::Transform::identity());
-        m_sphereShape = physicsCommon.createSphereShape(a_sc.conf.colSphereRad);
+        m_sphereShape = physicsCommon.createSphereShape(m_parent.conf.colSphereRad);
         m_collider = m_body->addCollider(m_sphereShape, r3d::Transform::identity());
-        m_collider->setUserData(std::addressof(a_sc));
+        m_collider->setUserData(std::addressof(m_parent));
 
         m_created = true;
+        m_active = true;
+
+        return true;
     }
 
-    void SimComponent::ColliderData::Destroy()
+    bool SimComponent::ColliderData::Destroy()
     {
         if (!m_created)
-            return;
+            return false;
 
         auto world = DCBP::GetWorld();
         auto& physicsCommon = DCBP::GetPhysicsCommon();
@@ -35,33 +38,51 @@ namespace CBP
         world->destroyCollisionBody(m_body);
 
         m_created = false;
+
+        return true;
     }
 
-    void SimComponent::ColliderData::Update(NiAVObject* a_obj)
+    void SimComponent::ColliderData::Update()
     {
-        if (!IConfig::GetGlobalConfig().phys.collisions)
-            return;
-
         if (!m_created)
             return;
 
-        auto& rot = a_obj->m_parent->m_worldTransform.rot;
+        auto& globalConfig = IConfig::GetGlobalConfig();
+        auto nodeScale = m_parent.obj->m_worldTransform.scale;
+
+        if (!m_active) {
+            if (globalConfig.phys.collisions &&
+                nodeScale > 0.0f)
+            {
+                m_active = true;
+                m_body->setIsActive(true);
+            }
+            else
+                return;
+        }
+        else {
+            if (!globalConfig.phys.collisions ||
+                nodeScale <= 0.0f)
+            {
+                m_active = false;
+                m_body->setIsActive(false);
+                m_parent.ResetOverrides();
+                return;
+            }
+        }
+
+        auto& rot = m_parent.obj->m_parent->m_worldTransform.rot;
 
         m_mat[0][0] = rot.data[0][0]; m_mat[0][1] = rot.data[0][1]; m_mat[0][2] = rot.data[0][2];
         m_mat[1][0] = rot.data[1][0]; m_mat[1][1] = rot.data[1][1]; m_mat[1][2] = rot.data[1][2];
         m_mat[2][0] = rot.data[2][0]; m_mat[2][1] = rot.data[2][1]; m_mat[2][2] = rot.data[2][2];
 
-        auto pos = (a_obj->m_parent->m_worldTransform * a_obj->m_localTransform.pos) +
-            (a_obj->m_parent->m_worldTransform * m_sphereOffset);
+        auto pos = (m_parent.obj->m_parent->m_worldTransform * m_parent.obj->m_localTransform.pos) +
+            (m_parent.obj->m_parent->m_worldTransform * m_sphereOffset);
 
         m_pos.x = pos.x; m_pos.y = pos.y; m_pos.z = pos.z;
 
         m_body->setTransform(r3d::Transform(m_pos, m_mat));
-
-        auto nodeScale = a_obj->m_worldTransform.scale;
-        if (nodeScale == 0.0f) {
-            nodeScale = 0.001f;
-        }
 
         if (nodeScale != m_nodeScale) {
             m_nodeScale = nodeScale;
@@ -79,10 +100,12 @@ namespace CBP
         m_configGroupName(a_configGroupName),
         oldWorldPos(a_obj->m_worldTransform.pos),
         velocity(NiPoint3(0.0f, 0.0f, 0.0f)),
-        npZero(NiPoint3(0.0f, 0.0f, 0.0f))
+        npZero(NiPoint3(0.0f, 0.0f, 0.0f)),
+        colData(*this),
+        obj(a_obj)
     {
         updateConfig(a_config);
-        colData.Update(a_obj);
+        colData.Update();
     }
 
     void SimComponent::Release()
@@ -95,7 +118,9 @@ namespace CBP
         conf = a_config;
 
         if (a_config.colSphereRad > 0.0f) {
-            colData.Create(*this);
+            if (colData.Create())
+                ResetOverrides();
+
             colData.SetRadius(conf.colSphereRad);
             colData.SetSphereOffset(
                 conf.colSphereOffsetX,
@@ -103,8 +128,10 @@ namespace CBP
                 conf.colSphereOffsetZ
             );
         }
-        else
-            colData.Destroy();
+        else {
+            if (colData.Destroy())
+                ResetOverrides();
+        }
 
         npCogOffset = NiPoint3(0.0f, conf.cogOffset, 0.0f);
         npGravityCorrection = NiPoint3(0.0f, 0.0f, conf.gravityCorrection);
@@ -129,7 +156,7 @@ namespace CBP
 
     void SimComponent::update(Actor* actor)
     {
-        auto obj = actor->loadedState->node->GetObjectByName(&boneName.data);
+        obj = actor->loadedState->node->GetObjectByName(&boneName.data);
         if (obj == nullptr)
             return;
 
@@ -194,7 +221,7 @@ namespace CBP
             ldiff.y * conf.rotationalY,
             ldiff.z * conf.rotationalZ);
 
-        colData.Update(obj);
+        colData.Update();
     }
 
     void SimComponent::ApplyForce(uint32_t a_steps, const NiPoint3& a_force)
