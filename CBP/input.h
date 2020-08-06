@@ -5,7 +5,8 @@ namespace CBP
     enum KeyEvent
     {
         KeyDown = 0,
-        KeyUp = 1
+        KeyUp = 1,
+        None
     };
 
     typedef void (*KeyEventCallback)(KeyEvent, UInt32);

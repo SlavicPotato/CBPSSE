@@ -29,10 +29,12 @@ namespace CBP
                 kMouseButton = 0,
                 kMouseWheel,
                 kKeyboard,
+                kResetIO
             };
 
             KeyEventTask(KeyEvent a_event, KeyEventType a_eventType, UINT a_val, WCHAR a_k = 0);
             KeyEventTask(KeyEvent a_event, KeyEventType a_eventType, float a_val);
+            KeyEventTask(KeyEventType a_eventType);
 
             virtual void Run();
             virtual void Dispose() {
@@ -76,6 +78,11 @@ namespace CBP
 
         void ResetImGuiIO();
 
+        inline void QueueResetIO()
+        {
+            m_nextResetIO = true;
+        }
+
         FN_NAMEPROC("UI")
     private:
         DUI();
@@ -84,6 +91,14 @@ namespace CBP
         static void CreateD3D11_Hook();
 
         void Present_Pre_Impl();
+
+        static LRESULT CALLBACK WndProc_Hook(
+            HWND hWnd,
+            UINT uMsg,
+            WPARAM wParam,
+            LPARAM lParam);
+
+        WNDPROC pfnWndProc;
 
         struct
         {
@@ -94,7 +109,7 @@ namespace CBP
             UIRect bufferSize;
         } info;
 
-        std::map<uint32_t, uiDrawCallback_t> m_drawCallbacks;
+        std::map<uint32_t, const uiDrawCallback_t> m_drawCallbacks;
 
         KeyPressHandler inputEventHandler;
 
@@ -102,7 +117,6 @@ namespace CBP
         HWND g_WindowHandle;
 
         TaskQueueUnsafe m_keyEvents;
-
 
         typedef void (*createD3D11_t)(void);
         static inline auto CreateD3D11 = IAL::Addr(75595, 0x9);
@@ -112,6 +126,8 @@ namespace CBP
 
         createD3D11_t CreateD3D11_O;
         unkPresent UnkPresent_O;
+
+        std::atomic<bool> m_nextResetIO;
 
         static DUI m_Instance;
     };

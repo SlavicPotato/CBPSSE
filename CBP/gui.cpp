@@ -5,7 +5,8 @@ namespace CBP
     DUI DUI::m_Instance;
 
     DUI::DUI() :
-        m_isRunning(false)
+        m_isRunning(false),
+        m_nextResetIO(false)
     {
     }
 
@@ -44,7 +45,14 @@ namespace CBP
             return;
         }
 
+        if (m_nextResetIO) {
+            m_nextResetIO = false;
+            ResetImGuiIO();
+        }
+
         m_isRunning = true;
+
+        m_keyEvents.ProcessTasks();
 
         ImGui_ImplDX11_NewFrame();
         ImGui_ImplWin32_NewFrame();
@@ -68,8 +76,6 @@ namespace CBP
 
         ImGui::Render();
         ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
-
-        m_keyEvents.ProcessTasks();
 
         if (m_drawCallbacks.size() == 0) {
             ResetImGuiIO();
@@ -117,6 +123,35 @@ namespace CBP
 
         ImGui_ImplWin32_Init(sd.OutputWindow);
         ImGui_ImplDX11_Init(rm->forwarder, rm->context);
+
+        m_Instance.pfnWndProc = reinterpret_cast<WNDPROC>(
+            ::SetWindowLongPtrA(
+                sd.OutputWindow,
+                GWLP_WNDPROC,
+                reinterpret_cast<LONG_PTR>(WndProc_Hook))
+            );
+
+        if (!m_Instance.pfnWndProc)
+            m_Instance.Error(
+                "[0x%llX] SetWindowLongPtrA failed", sd.OutputWindow);
+    }
+
+    LRESULT CALLBACK DUI::WndProc_Hook(
+        HWND hWnd,
+        UINT uMsg,
+        WPARAM wParam,
+        LPARAM lParam)
+    {
+        LRESULT lr = ::CallWindowProcA(m_Instance.pfnWndProc, hWnd, uMsg, wParam, lParam);
+
+        switch (uMsg)
+        {
+        case WM_KILLFOCUS:
+            m_Instance.m_nextResetIO = true;
+            break;
+        }
+
+        return lr;
     }
 
     void DUI::KeyPressHandler::ReceiveEvent(KeyEvent ev, UInt32 keyCode)
@@ -207,6 +242,13 @@ namespace CBP
         b.m_fval = a_val;
     }
 
+    DUI::KeyEventTask::KeyEventTask(
+        KeyEventType a_eventType) :
+        m_event(KeyEvent::None),
+        m_eventType(a_eventType)
+    {
+    }
+
     void DUI::KeyEventTask::Run()
     {
         auto& io = ImGui::GetIO();
@@ -233,6 +275,9 @@ namespace CBP
             else {
                 io.KeysDown[b.m_uval] = false;
             }
+            break;
+        case kResetIO:
+            m_Instance.ResetImGuiIO();
             break;
         }
     }
