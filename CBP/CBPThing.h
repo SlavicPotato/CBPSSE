@@ -10,22 +10,29 @@ namespace CBP
             NiPoint3 force;
         };
 
-        class ColliderData 
+        class ColliderData
         {
         public:
             ColliderData() :
-                m_created(false)
+                m_created(false),
+                m_nodeScale(1.0f),
+                m_radius(1.0f)
             {}
 
             void Create(SimComponent& a_sc);
             void Destroy();
-            void Update(NiAVObject *a_obj);
+            void Update(NiAVObject* a_obj);
 
             inline void SetRadius(r3d::decimal a_val) {
-                m_sphereShape->setRadius(a_val);
+                m_radius = a_val;
+                UpdateRadius();
             }
 
-            inline void SetSphereOffset(const NiPoint3 &a_offset) {
+            inline void UpdateRadius() {
+                m_sphereShape->setRadius(m_radius * m_nodeScale);
+            }
+
+            inline void SetSphereOffset(const NiPoint3& a_offset) {
                 m_sphereOffset = a_offset;
             }
 
@@ -39,6 +46,11 @@ namespace CBP
             r3d::SphereShape* m_sphereShape;
             r3d::Collider* m_collider;
             NiPoint3 m_sphereOffset;
+            float m_nodeScale;
+            float m_radius;
+
+            r3d::Matrix3x3 m_mat;
+            r3d::Vector3 m_pos;
 
             bool m_created;
         };
@@ -52,7 +64,7 @@ namespace CBP
         float dampingForce;
         NiPoint3 oldWorldPos;
         NiPoint3 velocity;
-        
+
         ColliderData colData;
 
         std::queue<Force> m_applyForceQueue;
@@ -83,10 +95,16 @@ namespace CBP
 
         void ApplyForce(uint32_t a_steps, const NiPoint3& a_force);
 
-        inline void SetVelocity(const r3d::Vector3& a_vel) {  
+        inline void SetVelocity(const r3d::Vector3& a_vel) {
             velocity.x = std::clamp(a_vel.x, -100000.0f, 100000.0f);
             velocity.y = std::clamp(a_vel.y, -100000.0f, 100000.0f);
             velocity.z = std::clamp(a_vel.z, -100000.0f, 100000.0f);
+        }
+
+        inline void SetVelocity2(const r3d::Vector3& a_vel) {
+            velocity.x = a_vel.x;
+            velocity.y = a_vel.y;
+            velocity.z = a_vel.z;
         }
 
         inline void SetVelocity(const NiPoint3& a_vel) {

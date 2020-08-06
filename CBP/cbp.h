@@ -25,7 +25,7 @@ namespace CBP
         public TaskDelegateFixed,
         ILog
     {
-        typedef std::vector<SKSE::ObjectHandle> handleList_t;
+        typedef std::unordered_set<SKSE::ObjectHandle> handleSet_t;
     public:
         UpdateTask() :
             m_lTime(PerfCounter::Query()),
@@ -54,7 +54,7 @@ namespace CBP
     private:
         bool IsTaskQueueEmpty();
         void ProcessTasks();
-        void GatherActors(handleList_t& a_out);
+        void GatherActors(handleSet_t& a_out);
 
         simActorList_t m_actors;
         std::queue<UTTask> m_taskQueue;

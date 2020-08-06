@@ -685,8 +685,8 @@ namespace CBP
 
                 ImGui::Spacing();
 
-                if (ImGui::SliderInt("Steps", std::addressof(e.steps), 1, 150))
-                    e.steps = max(e.steps, 1);
+                if (ImGui::SliderInt("Steps", std::addressof(e.steps), 0, 100))
+                    e.steps = max(e.steps, 0);
             }
         }
 
@@ -782,10 +782,10 @@ namespace CBP
                     ImGui::EndMenu();
                 }
 
-                if (ImGui::BeginMenu("Main"))
+                if (ImGui::BeginMenu("Tools"))
                 {
-                    ImGui::MenuItem("Race Editor", nullptr, &state.windows.race);
-                    ImGui::MenuItem("Profile Editor", nullptr, &state.windows.profile);
+                    ImGui::MenuItem("Race editor", nullptr, &state.windows.race);
+                    ImGui::MenuItem("Profile editor", nullptr, &state.windows.profile);
 
                     ImGui::Separator();
                     ImGui::MenuItem("Options", nullptr, &state.windows.options);

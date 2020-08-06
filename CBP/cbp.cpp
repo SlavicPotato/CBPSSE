@@ -425,10 +425,10 @@ namespace CBP
 
     void UpdateTask::Reset()
     {
-        handleList_t handles;
+        handleSet_t handles;
 
         for (const auto& e : m_actors)
-            handles.push_back(e.first);
+            handles.emplace(e.first);
 
         GatherActors(handles);
 
@@ -492,14 +492,14 @@ namespace CBP
         }
     }
 
-    void UpdateTask::GatherActors(handleList_t& a_out)
+    void UpdateTask::GatherActors(handleSet_t& a_out)
     {
         auto player = *g_thePlayer;
 
         if (ActorValid(player)) {
             SKSE::ObjectHandle handle;
             if (SKSE::GetHandle(player, player->formType, handle))
-                a_out.push_back(handle);
+                a_out.emplace(handle);
         }
 
         auto pl = SKSE::ProcessLists::GetSingleton();
@@ -525,7 +525,7 @@ namespace CBP
             if (!SKSE::GetHandle(actor, actor->formType, handle))
                 continue;
 
-            a_out.push_back(handle);
+            a_out.emplace(handle);
         }
     }
 

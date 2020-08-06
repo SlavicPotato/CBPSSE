@@ -39,23 +39,34 @@ namespace CBP
 
     void SimComponent::ColliderData::Update(NiAVObject* a_obj)
     {
+        if (!IConfig::GetGlobalConfig().phys.collisions)
+            return;
+
         if (!m_created)
             return;
 
         auto& rot = a_obj->m_parent->m_worldTransform.rot;
-        r3d::Matrix3x3 mat(
-            rot.data[0][0], rot.data[0][1], rot.data[0][2],
-            rot.data[1][0], rot.data[1][1], rot.data[1][2],
-            rot.data[2][0], rot.data[2][1], rot.data[2][2]
-        );
+
+        m_mat[0][0] = rot.data[0][0]; m_mat[0][1] = rot.data[0][1]; m_mat[0][2] = rot.data[0][2];
+        m_mat[1][0] = rot.data[1][0]; m_mat[1][1] = rot.data[1][1]; m_mat[1][2] = rot.data[1][2];
+        m_mat[2][0] = rot.data[2][0]; m_mat[2][1] = rot.data[2][1]; m_mat[2][2] = rot.data[2][2];
 
         auto pos = (a_obj->m_parent->m_worldTransform * a_obj->m_localTransform.pos) +
             (a_obj->m_parent->m_worldTransform * m_sphereOffset);
 
-        m_body->setTransform(reactphysics3d::Transform(
-            r3d::Vector3(pos.x, pos.y, pos.z),
-            mat
-        ));
+        m_pos.x = pos.x; m_pos.y = pos.y; m_pos.z = pos.z;
+
+        m_body->setTransform(r3d::Transform(m_pos, m_mat));
+
+        auto nodeScale = a_obj->m_worldTransform.scale;
+        if (nodeScale == 0.0f) {
+            nodeScale = 0.001f;
+        }
+
+        if (nodeScale != m_nodeScale) {
+            m_nodeScale = nodeScale;
+            UpdateRadius();
+        }
     }
 
     SimComponent::SimComponent(
@@ -71,6 +82,7 @@ namespace CBP
         npZero(NiPoint3(0.0f, 0.0f, 0.0f))
     {
         updateConfig(a_config);
+        colData.Update(a_obj);
     }
 
     void SimComponent::Release()
@@ -93,7 +105,6 @@ namespace CBP
         }
         else
             colData.Destroy();
-
 
         npCogOffset = NiPoint3(0.0f, conf.cogOffset, 0.0f);
         npGravityCorrection = NiPoint3(0.0f, 0.0f, conf.gravityCorrection);
@@ -146,7 +157,10 @@ namespace CBP
         {
             auto& current = m_applyForceQueue.front();
 
-            force += obj->m_parent->m_worldTransform.rot * (current.force / globalConf.phys.timeStep);
+            auto vD = obj->m_parent->m_worldTransform * current.force;
+            auto vP = obj->m_parent->m_worldTransform * obj->m_localTransform.pos;
+
+            force += (vD - vP) / globalConf.phys.timeStep;
 
             current.steps--;
 
