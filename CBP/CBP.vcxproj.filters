@@ -34,6 +34,9 @@
     <Filter Include="Config">
       <UniqueIdentifier>{77f7833a-054b-45e2-b002-c7f66bd8d4aa}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Scripts">
+      <UniqueIdentifier>{9771a003-fdd2-47f6-9146-e435901816a4}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">
@@ -188,6 +191,9 @@
     <None Include="..\README.md" />
     <None Include="Config\CBPNodes.json">
       <Filter>Config</Filter>
+    </None>
+    <None Include="..\scripts\CBP.psc">
+      <Filter>Scripts</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>

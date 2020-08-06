@@ -1,16 +1,15 @@
 Scriptname CBP Hidden
 
 Int Function GetScriptVersion() global
-	return 1
+	return 2
 EndFunction
 
 Int Function GetVersion() native global
 
-; Load and apply configuration from file
-Function Reload() native global
+Function UpdateAllActors() native global
 
-; Set and apply a config value
-Bool Function Update(String section, String key, Float value) native global
+; Set and apply config value globally
+Bool Function SetGlobalConfig(String section, String key, Float value) native global
 
-; Save the current config values to file
-Function Save() native global
+; Set and apply config value to actor
+Bool Function SetActorConfig(String section, String key, Float value) native global
