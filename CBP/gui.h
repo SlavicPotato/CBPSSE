@@ -78,9 +78,9 @@ namespace CBP
 
         void ResetImGuiIO();
 
-        inline void QueueResetIO()
+        inline static void QueueResetIO()
         {
-            m_nextResetIO = true;
+            m_Instance.m_nextResetIO = true;
         }
 
         FN_NAMEPROC("UI")

@@ -147,7 +147,7 @@ namespace CBP
         switch (uMsg)
         {
         case WM_KILLFOCUS:
-            m_Instance.m_nextResetIO = true;
+            QueueResetIO();
             break;
         }
 
@@ -195,6 +195,9 @@ namespace CBP
                     break;
                 case DIK_DOWN:
                     vkCode = VK_DOWN;
+                    break;
+                case DIK_DELETE:
+                    vkCode = VK_DELETE;
                     break;
                 default:
                     vkCode = MapVirtualKeyW(keyCode, MAPVK_VSC_TO_VK);
