@@ -156,9 +156,8 @@ namespace CBP
 
     void DUI::KeyPressHandler::ReceiveEvent(KeyEvent ev, UInt32 keyCode)
     {
-        if (!m_Instance.m_isRunning) {
-            return;
-        }
+        if (!m_Instance.m_isRunning)
+            return;        
 
         switch (keyCode)
         {
@@ -173,12 +172,12 @@ namespace CBP
             break;
         case InputMap::kMacro_MouseWheelOffset:
             m_Instance.m_keyEvents.AddTask(new KeyEventTask(ev, KeyEventTask::kMouseWheel, 1.0f));
-            return;
+            break;
         case InputMap::kMacro_MouseWheelOffset + 1:
             m_Instance.m_keyEvents.AddTask(new KeyEventTask(ev, KeyEventTask::kMouseWheel, -1.0f));
             return;
         default:
-            if (keyCode < 256)
+            if (keyCode < InputMap::kMacro_NumKeyboardKeys)
             {
                 UINT vkCode;
 
@@ -225,6 +224,8 @@ namespace CBP
                     )
                 );
             }
+
+            break;
         }
     }
 
@@ -266,17 +267,17 @@ namespace CBP
             io.MouseWheel += b.m_fval;
             break;
         case kKeyboard:
-            if (b.m_uval >= sizeof(io.KeysDown))
-                break;
+            if (m_event == KeyEvent::KeyDown)
+            {
+                if (b.m_uval < sizeof(io.KeysDown))
+                    io.KeysDown[b.m_uval] = true;
 
-            if (m_event == KeyEvent::KeyDown) {
-                io.KeysDown[b.m_uval] = true;
-                if (m_k != 0) {
+                if (m_k != 0)
                     io.AddInputCharacterUTF16(m_k);
-                }
             }
             else {
-                io.KeysDown[b.m_uval] = false;
+                if (b.m_uval < sizeof(io.KeysDown))
+                    io.KeysDown[b.m_uval] = false;
             }
             break;
         case kResetIO:
