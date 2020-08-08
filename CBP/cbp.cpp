@@ -300,16 +300,18 @@ namespace CBP
         size_t n = 0;
 #endif
 
-        DCBP::Lock();
-
-        auto& globalConf = IConfig::GetGlobalConfig();
-
         auto newTime = PerfCounter::Query();
         auto deltaT = PerfCounter::delta(m_lTime, newTime);
         m_lTime = newTime;
 
-        if (deltaT > 1.0f)
-            deltaT = 1.0f;
+        if (deltaT > 1.0f) {
+            PhysicsReset();
+            return;
+        }
+
+        DCBP::Lock();
+
+        auto& globalConf = IConfig::GetGlobalConfig();
 
         m_timeAccum += deltaT * globalConf.phys.timeScale;
 

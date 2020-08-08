@@ -83,6 +83,11 @@ namespace CBP
 
         nodeConfig_t m_nodeConfig;
 
+        uint64_t m_groupId;
+        uint32_t m_parentId;
+
+        NiAVObject* m_obj;
+
     public:
         BSFixedString boneName;
         SimComponent(
@@ -168,10 +173,5 @@ namespace CBP
         float dampingMul = 1.0f;
         float stiffnesMul = 1.0f;
         float stiffnes2Mul = 1.0f;
-
-        uint64_t m_groupId;
-        uint32_t m_parentId;
-
-        NiAVObject* m_obj;
     };
 }

@@ -223,7 +223,6 @@ namespace CBP
         } conf;
 
         KeyPressHandler inputEventHandler;
-
         UIContext m_uiContext;
         uint32_t m_loadInstance;
         ToggleUITask m_taskToggle;
