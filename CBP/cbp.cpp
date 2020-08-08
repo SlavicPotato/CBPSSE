@@ -523,7 +523,6 @@ namespace CBP
         m_taskLock.Leave();
     }
 
-
     void UpdateTask::AddTask(UTTask::UTTAction a_action)
     {
         m_taskLock.Enter();

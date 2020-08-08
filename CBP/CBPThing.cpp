@@ -232,7 +232,6 @@ namespace CBP
     {
         m_obj = actor->loadedState->node->GetObjectByName(&boneName.data);
         if (m_obj == nullptr) {
-            _DMESSAGE("m_obj gone");
             return;
         }
         
