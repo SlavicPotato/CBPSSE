@@ -292,6 +292,8 @@ namespace CBP
         if (!player || !player->loadedState || !player->parentCell)
             return;
 
+        DCBP::Lock();
+
         // Process our tasks only when the player is loaded and attached to a cell
         ProcessTasks();
 
@@ -306,10 +308,9 @@ namespace CBP
 
         if (deltaT > 1.0f) {
             PhysicsReset();
+            DCBP::Unlock();
             return;
         }
-
-        DCBP::Lock();
 
         auto& globalConf = IConfig::GetGlobalConfig();
 
