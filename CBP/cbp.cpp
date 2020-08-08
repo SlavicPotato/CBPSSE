@@ -700,24 +700,21 @@ namespace CBP
 
     bool DCBP::RunEnableUIChecks()
     {
-        if (DUI::HasCallback(1))
-            return false;
-
         auto mm = MenuManager::GetSingleton();
         if (mm && mm->InPausedMenu()) {
-            Game::Debug::Notification("Not available while in menu");
+            Game::Debug::Notification("CBP UI not available while in menu");
             return false;
         }
 
         auto player = *g_thePlayer;
         if (player) {
             if (player->IsInCombat()) {
-                Game::Debug::Notification("Not available while in combat");
+                Game::Debug::Notification("CBP UI not available while in combat");
                 return false;
             }
 
             if (player->byCharGenFlag & PlayerCharacter::ByCharGenFlag::kAll) {
-                Game::Debug::Notification("Currently unavailable");
+                Game::Debug::Notification("CBP UI currently unavailable");
                 return false;
             }
         }
