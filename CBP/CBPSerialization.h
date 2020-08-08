@@ -16,6 +16,12 @@ namespace CBP
         void LoadRaceProfiles(SKSESerializationInterface* intfc);
         void SaveRaceProfiles();
 
+        void LoadCollisionGroups();
+        bool SaveCollisionGroups();
+
+        void LoadNodeConfig();
+        bool SaveNodeConfig();
+
         [[nodiscard]] inline const std::exception& GetLastException() const {
             return lastException;
         }

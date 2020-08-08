@@ -28,25 +28,37 @@ namespace CBP
         if (actor != nullptr) {
             SKSE::ObjectHandle handle;
             if (SKSE::GetHandle(actor, actor->formType, handle))
-                m_Instance.m_updateTask.AddTask({ action, handle });
+                m_Instance.m_updateTask.AddTask(action, handle);
         }
     }
 
     void DCBP::DispatchActorTask(SKSE::ObjectHandle handle, UTTask::UTTAction action)
     {
-        m_Instance.m_updateTask.AddTask({ action, handle });
+        m_Instance.m_updateTask.AddTask(action, handle);
     }
 
     void DCBP::UpdateConfigOnAllActors()
     {
-        m_Instance.m_updateTask.AddTask({
-            UTTask::kActionUpdateConfigAll });
+        m_Instance.m_updateTask.AddTask(
+            UTTask::kActionUpdateConfigAll);
+    }
+
+    void DCBP::UpdateGroupInfoOnAllActors()
+    {
+        m_Instance.m_updateTask.AddTask(
+            CBP::UTTask::kActionUpdateGroupInfoAll);
+    }
+
+    void DCBP::ResetPhysics()
+    {
+        m_Instance.m_updateTask.AddTask(
+            UTTask::kActionPhysicsReset);
     }
 
     void DCBP::ResetActors()
     {
-        m_Instance.m_updateTask.AddTask({
-            UTTask::kActionReset });
+        m_Instance.m_updateTask.AddTask(
+            UTTask::kActionReset);
     }
 
     void DCBP::ApplyForce(
@@ -63,6 +75,26 @@ namespace CBP
                 a_force
             )
         );
+    }
+
+    bool DCBP::ActorHasNode(SKSE::ObjectHandle a_handle, const std::string& a_node)
+    {
+        auto& actors = GetSimActorList();
+        auto it = actors.find(a_handle);
+        if (it == actors.end())
+            return false;
+
+        return it->second.HasNode(a_node);
+    }
+
+    bool DCBP::ActorHasConfigGroup(SKSE::ObjectHandle a_handle, const std::string& a_cg)
+    {
+        auto& actors = GetSimActorList();
+        auto it = actors.find(a_handle);
+        if (it == actors.end())
+            return false;
+
+        return it->second.HasConfigGroup(a_cg);
     }
 
     void DCBP::UIQueueUpdateCurrentActor() {
@@ -176,9 +208,15 @@ namespace CBP
 
         auto& iface = m_Instance.m_serialization;
 
+        Lock();
+
         iface.LoadGlobals();
         iface.LoadActorProfiles(intfc);
         iface.LoadRaceProfiles(intfc);
+        iface.LoadCollisionGroups();
+        iface.LoadNodeConfig();
+
+        Unlock();
 
         UpdateConfigOnAllActors();
     }
@@ -187,14 +225,22 @@ namespace CBP
     {
         auto& iface = m_Instance.m_serialization;
 
+        Lock();
+
         iface.SaveGlobals();
         iface.SaveActorProfiles();
         iface.SaveRaceProfiles();
+        iface.SaveCollisionGroups();
+        iface.SaveNodeConfig();
+
+        Unlock();
     }
 
     void DCBP::RevertHandler(Event m_code, void* args)
     {
         m_Instance.Debug("Reverting..");
+
+        Lock();
 
         m_Instance.m_loadInstance++;
 
@@ -202,6 +248,11 @@ namespace CBP
         CBP::IConfig::ResetThingGlobalConfig();
         CBP::IConfig::ClearActorConfHolder();
         CBP::IConfig::ClearRaceConfHolder();
+        CBP::IConfig::ClearCollisionGroups();
+        CBP::IConfig::ClearNodeCollisionGroupMap();
+        CBP::IConfig::ClearNodeConfig();
+
+        Unlock();
     }
 
     auto DCBP::EventHandler::ReceiveEvent(TESObjectLoadedEvent* evn, EventDispatcher<TESObjectLoadedEvent>* dispatcher)
@@ -289,18 +340,12 @@ namespace CBP
                 it = m_actors.erase(it);
             }
             else {
-                if (actor->parentCell != nullptr &&
-                    actor->parentCell->cellState == TESObjectCELL::kAttached)
-                {
-                    uint32_t i = numSteps;
-                    while (i) {
-                        it->second.update(actor);
-                        i--;
-                    };
+                for (uint32_t i = 0; i < numSteps; i++) {
+                    it->second.update(actor, i);
+                };
 #ifdef _CBP_MEASURE_PERF
-                    n++;
+                n++;
 #endif
-                }
                 ++it;
             }
         }
@@ -359,10 +404,10 @@ namespace CBP
 
         auto obj = SimObject(
             actor, IConfig::GetActorConf(a_handle),
-            IConfig::GetBoneMap()
+            IConfig::GetNodeMap()
         );
 
-        if (obj.hasBone())
+        if (obj.hasBones())
         {
 #ifdef _CBP_SHOW_STATS
             Debug("Adding %.16llX (%s)", a_handle, CALL_MEMBER_FN(actor, GetReferenceName)());
@@ -388,14 +433,21 @@ namespace CBP
     void UpdateTask::UpdateConfigOnAllActors()
     {
         for (auto& a : m_actors)
-            a.second.updateConfig(CBP::IConfig::GetActorConf(a.first));
+            a.second.UpdateConfig(CBP::IConfig::GetActorConf(a.first));
     }
+
+    void UpdateTask::UpdateGroupInfoOnAllActors()
+    {
+        for (auto& a : m_actors)
+            a.second.UpdateGroupInfo();
+    }
+
 
     void UpdateTask::UpdateConfig(SKSE::ObjectHandle handle)
     {
         auto it = m_actors.find(handle);
         if (it != m_actors.end())
-            it->second.updateConfig(CBP::IConfig::GetActorConf(it->first));
+            it->second.UpdateConfig(CBP::IConfig::GetActorConf(it->first));
     }
 
     void UpdateTask::ApplyForce(
@@ -443,6 +495,17 @@ namespace CBP
             AddActor(e);
     }
 
+    void UpdateTask::PhysicsReset()
+    {
+        for (auto& e : m_actors)
+        {
+            auto actor = SKSE::ResolveObject<Actor>(e.first, Actor::kTypeID);
+            if (ActorValid(actor)) {
+                e.second.reset(actor);
+            }
+        }
+    }
+
     void UpdateTask::AddTask(const UTTask& task)
     {
         m_taskLock.Enter();
@@ -454,6 +517,21 @@ namespace CBP
     {
         m_taskLock.Enter();
         m_taskQueue.emplace(std::forward<UTTask>(task));
+        m_taskLock.Leave();
+    }
+
+
+    void UpdateTask::AddTask(UTTask::UTTAction a_action)
+    {
+        m_taskLock.Enter();
+        m_taskQueue.emplace(UTTask{ a_action });
+        m_taskLock.Leave();
+    }
+
+    void UpdateTask::AddTask(UTTask::UTTAction a_action, SKSE::ObjectHandle a_handle)
+    {
+        m_taskLock.Enter();
+        m_taskQueue.emplace(UTTask{ a_action, a_handle });
         m_taskLock.Leave();
     }
 
@@ -493,6 +571,12 @@ namespace CBP
                 break;
             case UTTask::kActionUIUpdateCurrentActor:
                 DCBP::UIQueueUpdateCurrentActorA();
+                break;
+            case UTTask::kActionUpdateGroupInfoAll:
+                UpdateGroupInfoOnAllActors();
+                break;
+            case UTTask::kActionPhysicsReset:
+                PhysicsReset();
                 break;
             }
         }
@@ -552,7 +636,7 @@ namespace CBP
         else {
             auto mm = MenuManager::GetSingleton();
             if (mm && mm->InPausedMenu())
-                uiState.show = false;            
+                uiState.show = false;
             else
                 m_uiContext.Draw(&uiState.show);
         }

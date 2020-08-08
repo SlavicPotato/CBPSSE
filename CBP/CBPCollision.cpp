@@ -10,17 +10,22 @@ namespace CBP
     {
         using EventType = CollisionCallback::ContactPair::EventType;
 
-        for (r3d::uint p = 0; p < callbackData.getNbContactPairs(); p++)
+        auto& globalConf = IConfig::GetGlobalConfig();
+
+        auto nbContactPairs = callbackData.getNbContactPairs();
+
+        for (r3d::uint p = 0; p < nbContactPairs; p++)
         {
             auto contactPair = callbackData.getContactPair(p);
 
-            //auto& globalConf = IConfig::GetGlobalConfig();
-
             auto col1 = contactPair.getCollider1();
             auto col2 = contactPair.getCollider2();
-            
+
             auto sc1 = static_cast<SimComponent*>(col1->getUserData());
             auto sc2 = static_cast<SimComponent*>(col2->getUserData());
+
+            if (sc1->IsSameGroup(*sc2))
+                continue;
 
             switch (contactPair.getEventType()) {
             case EventType::ContactStart:
@@ -31,11 +36,17 @@ namespace CBP
 
                 float dampingMul = 1.0f;
 
-                for (r3d::uint c = 0; c < contactPair.getNbContactPoints(); c++)
+                auto nbContactPoints = contactPair.getNbContactPoints();
+
+                for (r3d::uint c = 0; c < nbContactPoints; c++)
                 {
                     auto contactPoint = contactPair.getContactPoint(c);
 
-                    auto depth = contactPoint.getPenetrationDepth();
+                    //auto worldPoint1 = col1->getLocalToWorldTransform() * contactPoint.getLocalPointOnCollider1();
+                    //auto worldPoint2 = col2->getLocalToWorldTransform() * contactPoint.getLocalPointOnCollider2();
+
+                    auto depth = min(contactPoint.getPenetrationDepth(),
+                        globalConf.phys.colMaxPenetrationDepth);
 
                     dampingMul = max(depth, dampingMul);
 
@@ -55,8 +66,10 @@ namespace CBP
                         vbf
                     );
 
-                    sc1->SetVelocity(vaf);
-                    sc2->SetVelocity(vbf);
+                    if (sc1->HasMovement())
+                        sc1->SetVelocity(vaf);
+                    if (sc2->HasMovement())
+                        sc2->SetVelocity(vbf);
                 }
 
                 sc1->stiffnes2Mul = sc1->stiffnesMul =
@@ -88,6 +101,7 @@ namespace CBP
         r3d::Vector3& vbf
     )
     {
+
         auto& globalConf = IConfig::GetGlobalConfig();
 
         float Jmod = (vai - vbi).length() * depth;
@@ -96,9 +110,10 @@ namespace CBP
 
         auto Bmod = globalConf.phys.timeStep * (1.0f + depth);
         auto Ba = (normal * depth) * Bmod;
-        auto Bb = (normal * -depth) * Bmod;
+        auto Bb = (normal * depth) * -Bmod;
 
         vaf = vai - (Ja * (1.0f / (max(ma / globalConf.phys.timeStep, 1.0f))) + Ba);
         vbf = vbi - (Jb * (1.0f / (max(mb / globalConf.phys.timeStep, 1.0f))) + Bb);
+
     }
 }

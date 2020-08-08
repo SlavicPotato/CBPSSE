@@ -33,6 +33,7 @@ namespace CBP
 
                 globalConfig.phys.timeStep = phys.get("timeStep", 1.0f / 60.0f).asFloat();
                 globalConfig.phys.timeScale = phys.get("timeScale", 1.0f).asFloat();
+                globalConfig.phys.colMaxPenetrationDepth = phys.get("colMaxPenetrationDepth", 15.0f).asFloat();
                 globalConfig.phys.collisions = phys.get("collisions", true).asBool();
             }
 
@@ -77,10 +78,10 @@ namespace CBP
                     }
                 }
 
-                if (ui.isMember("forceSelected")) 
+                if (ui.isMember("forceSelected"))
                 {
                     auto& forceSelected = ui["forceSelected"];
-                    if (forceSelected.isString()) 
+                    if (forceSelected.isString())
                     {
                         std::string v(ui.get("forceSelected", "").asString());
                         transform(v.begin(), v.end(), v.begin(), ::tolower);
@@ -140,7 +141,7 @@ namespace CBP
                         }
                     }
                 }
-            
+
                 if (ui.isMember("colStates")) {
                     auto& colStates = ui["colStates"];
 
@@ -181,6 +182,7 @@ namespace CBP
 
             phys["timeStep"] = globalConfig.phys.timeStep;
             phys["timeScale"] = globalConfig.phys.timeScale;
+            phys["colMaxPenetrationDepth"] = globalConfig.phys.colMaxPenetrationDepth;
             phys["collisions"] = globalConfig.phys.collisions;
 
             auto& ui = root["ui"];
@@ -196,7 +198,7 @@ namespace CBP
 
             auto& force = ui["force"];
 
-            for (const auto& e : globalConfig.ui.forceActor) 
+            for (const auto& e : globalConfig.ui.forceActor)
             {
                 auto& fe = force[e.first];
 
@@ -209,11 +211,11 @@ namespace CBP
             ui["forceSelected"] = globalConfig.ui.forceActorSelected;
 
             auto& mirror = ui["mirror"];
-            for (const auto& e : globalConfig.ui.mirror) 
-            { 
+            for (const auto& e : globalConfig.ui.mirror)
+            {
                 auto& je = mirror[std::to_string(e.first)];
 
-                for (const auto& k : e.second) 
+                for (const auto& k : e.second)
                 {
                     auto& ke = je[k.first];
 
@@ -230,6 +232,173 @@ namespace CBP
             }
 
             WriteJsonData(PLUGIN_CBP_GLOBAL_DATA, root);
+
+            return true;
+        }
+        catch (const std::exception& e) {
+            lastException = e;
+            Error("%s: %s", __FUNCTION__, e.what());
+            return false;
+        }
+    }
+
+    void Serialization::LoadCollisionGroups()
+    {
+        try
+        {
+            auto& colGroups = IConfig::GetCollisionGroups();
+            auto& nodeColGroupMap = IConfig::GetNodeCollisionGroupMap();
+
+            colGroups.clear();
+            nodeColGroupMap.clear();
+
+            Json::Value root;
+            if (!ReadJsonData(PLUGIN_CBP_CG_DATA, root))
+                return;
+
+            if (root.isMember("groups")) {
+                auto& groups = root["groups"];
+                if (groups.isArray()) {
+                    for (const auto& e : groups)
+                    {
+                        if (!e.isNumeric())
+                            continue;
+
+                        auto v = static_cast<uint64_t>(e.asUInt64());
+                        reinterpret_cast<char*>(&v)[sizeof(v) - 1] = 0x0;
+
+                        if (v != 0)
+                            colGroups.emplace(v);
+                    }
+                }
+            }
+
+            if (root.isMember("nodeMap")) {
+                auto& nmap = root["nodeMap"];
+                if (nmap.isObject()) {
+
+                    for (auto it = nmap.begin(); it != nmap.end(); ++it)
+                    {
+                        if (!it->isNumeric())
+                            continue;
+
+                        std::string k(it.key().asString());
+
+                        if (!IConfig::IsValidNode(k))
+                            continue;
+
+                        auto v = static_cast<uint64_t>(it->asUInt64());
+
+                        if (v == 0)
+                            continue;
+
+                        if (!colGroups.contains(v))
+                            continue;
+
+                        nodeColGroupMap.emplace(k, v);
+                    }
+                }
+            }
+        }
+        catch (const std::exception& e)
+        {
+            IConfig::ClearCollisionGroups();
+            IConfig::ClearNodeCollisionGroupMap();
+            Error("%s: %s", __FUNCTION__, e.what());
+        }
+    }
+
+    bool Serialization::SaveCollisionGroups()
+    {
+        try
+        {
+            auto& colGroups = IConfig::GetCollisionGroups();
+            auto& nodeColGroupMap = IConfig::GetNodeCollisionGroupMap();
+
+            Json::Value root;
+
+            auto& groups = root["groups"];
+
+            for (const auto& e : colGroups) {
+                groups.append(e);
+            }
+
+            auto& ncgMap = root["nodeMap"];
+
+            for (const auto& e : nodeColGroupMap) {
+                ncgMap[e.first] = e.second;
+            }
+
+            WriteJsonData(PLUGIN_CBP_CG_DATA, root);
+
+            return true;
+        }
+        catch (const std::exception& e) {
+            lastException = e;
+            Error("%s: %s", __FUNCTION__, e.what());
+            return false;
+        }
+    }
+
+    void Serialization::LoadNodeConfig()
+    {
+        try
+        {
+            auto& nodeConfig = IConfig::GetNodeConfig();
+
+            nodeConfig.clear();
+
+            Json::Value root;
+            if (!ReadJsonData(PLUGIN_CBP_NODE_DATA, root))
+                return;
+
+            if (root.isMember("nodes")) {
+                auto& nodes = root["nodes"];
+                if (nodes.isObject()) {
+                    for (auto it = nodes.begin(); it != nodes.end(); ++it)
+                    {
+                        if (!it->isObject())
+                            continue;
+
+                        std::string k(it.key().asString());
+
+                        if (!IConfig::IsValidNode(k))
+                            continue;
+
+                        auto& nc = nodeConfig[k];
+
+                        nc.movement = it->get("movement", true).asBool();
+                        nc.collisions = it->get("collisions", true).asBool();
+                    }
+                }
+            }
+
+        }
+        catch (const std::exception& e)
+        {
+            IConfig::ClearNodeConfig();
+            Error("%s: %s", __FUNCTION__, e.what());
+        }
+    }
+    
+    bool Serialization::SaveNodeConfig()
+    {
+        try
+        {
+            auto& nodeConfig = IConfig::GetNodeConfig();
+
+            Json::Value root;
+
+            auto& nodes = root["nodes"];
+
+            for (const auto& e : nodeConfig) {
+                auto& n = nodes[e.first];
+
+                n["movement"] = e.second.movement;
+                n["collisions"] = e.second.collisions;
+            }
+
+            WriteJsonData(PLUGIN_CBP_NODE_DATA, root);
 
             return true;
         }
@@ -286,7 +455,7 @@ namespace CBP
             for (auto it2 = it1->begin(); it2 != it1->end(); ++it2)
             {
                 if (!it2->isNumeric()) {
-                    Error("0x%llX: (%s) Bad value, expected number", a_outHandle ,simComponentName.c_str());
+                    Error("0x%llX: (%s) Bad value, expected number", a_outHandle, simComponentName.c_str());
                     return false;
                 }
 

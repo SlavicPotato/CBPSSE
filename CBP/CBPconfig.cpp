@@ -10,6 +10,11 @@ namespace CBP
     IConfig::vKey_t IConfig::validSimComponents;
     nodeMap_t IConfig::nodeMap;
 
+    collisionGroups_t IConfig::collisionGroups;
+    nodeCollisionGroupMap_t IConfig::nodeCollisionGroupMap;
+
+    nodeConfigHolder_t IConfig::nodeConfHolder;
+
     IConfig::IConfigLog IConfig::log;
 
     componentValueToOffsetMap_t configComponent_t::componentValueToOffsetMap = {
@@ -154,7 +159,7 @@ namespace CBP
                     if (k.size() == 0)
                         continue;
 
-                    transform(k.begin(), k.end(), k.begin(), ::tolower);
+                    //transform(k.begin(), k.end(), k.begin(), ::tolower);
 
                     a_out.insert_or_assign(k, simComponent);
                 }
@@ -260,6 +265,27 @@ namespace CBP
     void IConfig::SetActorConf(SKSE::ObjectHandle a_handle, configComponents_t&& a_conf)
     {
         actorConfHolder.insert_or_assign(a_handle, std::forward<configComponents_t>(a_conf));
+    }
+
+    uint64_t IConfig::GetNodeCollisionGroupId(const std::string& a_node) {
+        auto it = nodeCollisionGroupMap.find(a_node);
+        if (it != nodeCollisionGroupMap.end())
+            return it->second;
+
+        return 0;
+    }
+
+    bool IConfig::GetNodeConfig(const std::string& a_node, nodeConfig_t& a_out)
+    {
+        auto& nodeConfig = IConfig::GetNodeConfig();
+
+        auto it2 = nodeConfig.find(a_node);
+        if (it2 != nodeConfig.end()) {
+            a_out = it2->second;
+            return true;
+        }
+        
+        return false;
     }
 
     configComponents_t& IConfig::GetOrCreateActorConf(SKSE::ObjectHandle a_handle)

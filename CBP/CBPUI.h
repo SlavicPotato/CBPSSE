@@ -113,7 +113,7 @@ namespace CBP
 
     template <class T, int ID>
     class UISimComponent
-    {
+    {        
     public:
         UISimComponent() = default;
         virtual ~UISimComponent() = default;
@@ -141,6 +141,11 @@ namespace CBP
             std::ostringstream ss;
             ss << "UISC#" << ID << "#" << a_name;
             return ss.str();
+        }
+
+    private:
+        virtual bool ShouldDrawComponent(T m_handle, const configComponents_t::value_type& a_comp) {
+            return true;
         }
     };
 
@@ -228,6 +233,22 @@ namespace CBP
             UInt32& a_out);
     };
 
+    class UICollisionGroups
+    {
+    public:
+        void Draw(bool* a_active);
+
+    private:
+        UISelectedItem<uint64_t> m_selected;
+        uint64_t m_input;
+    };
+
+    class UINodeConfig
+    {
+    public:
+        void Draw(bool *a_active);
+    };
+
     typedef std::pair<const std::string, configComponents_t> raceEntry_t;
     typedef std::map<SKSE::FormID, raceEntry_t> raceList_t;
 
@@ -294,6 +315,11 @@ namespace CBP
                 SKSE::ObjectHandle m_handle,
                 configComponents_t& a_data,
                 configComponentsValue_t& a_pair);
+        private:
+            virtual bool ShouldDrawComponent(
+                SKSE::ObjectHandle m_handle,
+                const configComponents_t::value_type& a_comp);
+
         };
 
         class UISimComponentGlobal :
@@ -361,6 +387,8 @@ namespace CBP
                 bool options;
                 bool profile;
                 bool race;
+                bool collisionGroups;
+                bool nodeConf;
             } windows;
 
             std::exception lastException;
@@ -369,12 +397,11 @@ namespace CBP
         UIProfileEditor m_profile;
         UIRaceEditor m_raceEditor;
         UIOptions m_options;
+        UICollisionGroups m_colGroups;
+        UINodeConfig m_nodeConfig;
 
         UISimComponentActor m_scActor;
         UISimComponentGlobal m_scGlobal;
     };
-
-
-
 
 }

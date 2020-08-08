@@ -23,6 +23,7 @@ namespace CBP
         {
             float timeStep = 1.0f / 60.0f;
             float timeScale = 1.0f;
+            float colMaxPenetrationDepth = 25.0f;
 
             bool collisions = true;
         } phys;
@@ -42,6 +43,7 @@ namespace CBP
             std::unordered_map<int, configMirrorMap_t> mirror;
             collapsibleStates_t colStates;
             std::string forceActorSelected;
+
         } ui;
 
         inline bool& GetColState(const std::string& a_key) {
@@ -128,7 +130,19 @@ namespace CBP
     typedef configComponents_t::value_type configComponentsValue_t;
     typedef std::map<SKSE::ObjectHandle, configComponents_t> actorConfHolder_t;
     typedef std::map<SKSE::FormID, configComponents_t> raceConfHolder_t;
-    typedef std::unordered_map<std::string, std::string> nodeMap_t;
+    typedef std::map<std::string, std::string> nodeMap_t;
+
+    typedef std::set<uint64_t> collisionGroups_t;
+    typedef std::unordered_map<std::string, uint64_t> nodeCollisionGroupMap_t;
+
+    struct nodeConfig_t
+    {
+        bool movement = true;
+        bool collisions = true;
+
+    };
+
+    typedef std::unordered_map<std::string, nodeConfig_t> nodeConfigHolder_t;
 
     class IConfig
     {
@@ -220,17 +234,49 @@ namespace CBP
             thingGlobalConfig = thingGlobalConfigDefaults;;
         }
 
-        [[nodiscard]] inline static auto& GetBoneMap() {
+        [[nodiscard]] inline static const auto& GetNodeMap() {
             return nodeMap;
         }
 
-        [[nodiscard]] inline static auto& GetValidSimComponents() {
+        [[nodiscard]] inline static bool IsValidNode(const std::string& a_key) {
+            return nodeMap.contains(a_key);
+        }
+
+        [[nodiscard]] inline static const auto& GetValidSimComponents() {
             return validSimComponents;
         }
 
-        [[nodiscard]] inline static auto IsValidSimComponent(const std::string& a_key) {
+        [[nodiscard]] inline static bool IsValidSimComponent(const std::string& a_key) {
             return validSimComponents.contains(a_key);
         }
+
+        [[nodiscard]] inline static auto& GetCollisionGroups() {
+            return collisionGroups;
+        }
+
+        inline static void ClearCollisionGroups() {
+            collisionGroups.clear();
+        }
+
+        [[nodiscard]] inline static auto& GetNodeCollisionGroupMap() {
+            return nodeCollisionGroupMap;
+        }
+        
+        [[nodiscard]] static uint64_t GetNodeCollisionGroupId(const std::string& a_node);
+
+        inline static void ClearNodeCollisionGroupMap() {
+            nodeCollisionGroupMap.clear();
+        }
+
+        [[nodiscard]] inline static auto& GetNodeConfig() {
+            return nodeConfHolder;
+        }
+
+        inline static void ClearNodeConfig() {
+            nodeConfHolder.clear();
+        }
+
+        static bool GetNodeConfig(const std::string& a_node, nodeConfig_t &a_out);
 
     private:
 
@@ -246,6 +292,11 @@ namespace CBP
 
         static nodeMap_t nodeMap;
         static const nodeMap_t defaultNodeMap;
+
+        static collisionGroups_t collisionGroups;
+        static nodeCollisionGroupMap_t nodeCollisionGroupMap;
+
+        static nodeConfigHolder_t nodeConfHolder;
 
         static IConfigLog log;
     };

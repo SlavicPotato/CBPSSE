@@ -274,7 +274,8 @@ namespace CBP
                         ImGui::OpenPopup("Delete failed");
                     }
                 }
-                else if (UICommon::TextInputDialog("Rename", "Enter the new profile name:",
+
+                if (UICommon::TextInputDialog("Rename", "Enter the new profile name:",
                     state.ren_input, sizeof(state.ren_input)))
                 {
                     auto& pm = GenericProfileManager::GetSingleton();
@@ -288,15 +289,13 @@ namespace CBP
                         ImGui::OpenPopup("Rename failed");
                     }
                 }
-                else {
 
-                    UICommon::MessageDialog("Save", "Saving profile '%s' to '%s' failed\n\n%s",
-                        profile.Name().c_str(), profile.Path().string().c_str(), state.lastException.what());
+                UICommon::MessageDialog("Save", "Saving profile '%s' to '%s' failed\n\n%s",
+                    profile.Name().c_str(), profile.Path().string().c_str(), state.lastException.what());
 
-                    ImGui::Separator();
+                ImGui::Separator();
 
-                    DrawSimComponents(0, profile.Data());
-                }
+                DrawSimComponents(0, profile.Data());
 
                 UICommon::MessageDialog("Delete failed",
                     "Could not delete the profile\n\n%s", state.lastException.what());
@@ -714,7 +713,7 @@ namespace CBP
         m_activeLoadInstance(0),
         m_currentActor(0),
         m_tsNoActors(PerfCounter::Query()),
-        state({ .windows{false, false, false } })
+        state({ .windows{false, false, false, false } })
     {
         m_strBuf1[0] = 0;
     }
@@ -801,6 +800,8 @@ namespace CBP
                 {
                     ImGui::MenuItem("Race editor", nullptr, &state.windows.race);
                     ImGui::MenuItem("Profile editor", nullptr, &state.windows.profile);
+                    ImGui::MenuItem("Collision groups", nullptr, &state.windows.collisionGroups);
+                    ImGui::MenuItem("Node config", nullptr, &state.windows.nodeConf);
 
                     ImGui::Separator();
                     ImGui::MenuItem("Options", nullptr, &state.windows.options);
@@ -937,6 +938,12 @@ namespace CBP
             if (m_raceEditor.GetChanged())
                 UpdateActorValues(entry);
         }
+
+        if (state.windows.collisionGroups)
+            m_colGroups.Draw(&state.windows.collisionGroups);
+
+        if (state.windows.nodeConf)
+            m_nodeConfig.Draw(&state.windows.nodeConf);
     }
 
     void UIOptions::Draw(bool* a_active)
@@ -982,6 +989,9 @@ namespace CBP
 
                 if (ImGui::SliderFloat("timeScale", &globalConfig.phys.timeScale, 0.01f, 20.0f))
                     globalConfig.phys.timeScale = std::clamp(globalConfig.phys.timeScale, 0.01f, 20.0f);
+
+                if (ImGui::SliderFloat("colMaxPenetrationDepth", &globalConfig.phys.colMaxPenetrationDepth, 0.1f, 100.0f))
+                    globalConfig.phys.colMaxPenetrationDepth = std::clamp(globalConfig.phys.colMaxPenetrationDepth, 0.01f, 2000.0f);
             }
 
             ImGui::PopID();
@@ -1034,12 +1044,220 @@ namespace CBP
         }
     }
 
+    void UICollisionGroups::Draw(bool* a_active)
+    {
+        auto& io = ImGui::GetIO();
+        //auto& globalConfig = IConfig::GetGlobalConfig();
+
+        ImVec2 center(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f);
+        ImGui::SetNextWindowPos(center, ImGuiCond_FirstUseEver, ImVec2(0.5f, 0.5f));
+
+        ImVec2 sizeMin(min(300.0f, io.DisplaySize.x - 40.0f), min(100.0f, io.DisplaySize.y - 40.0f));
+        ImVec2 sizeMax(min(400.0f, io.DisplaySize.x), max(io.DisplaySize.y - 40.0f, sizeMin.y));
+
+        ImGui::SetNextWindowSizeConstraints(sizeMin, sizeMax);
+
+        if (ImGui::Begin("Collision groups", a_active))
+        {
+            ImGui::PushID(static_cast<const void*>(a_active));
+            ImGui::PushItemWidth(ImGui::GetFontSize() * -11.0f);
+
+            auto& colGroups = IConfig::GetCollisionGroups();
+            auto& nodeColGroupMap = IConfig::GetNodeCollisionGroupMap();
+            auto& nodeMap = IConfig::GetNodeMap();
+
+            const char* curSelName;
+            if (m_selected)
+                curSelName = reinterpret_cast<const char*>(std::addressof(*m_selected));
+            else
+                curSelName = nullptr;
+
+            if (ImGui::BeginCombo("Groups", curSelName))
+            {
+                for (const auto& e : colGroups)
+                {
+                    ImGui::PushID(reinterpret_cast<const void*>(std::addressof(e)));
+
+                    bool selected = e == *m_selected;
+                    if (selected)
+                        ImGui::SetItemDefaultFocus();
+
+                    if (ImGui::Selectable(reinterpret_cast<const char*>(std::addressof(e)), selected)) {
+                        m_selected = e;
+                    }
+
+                    ImGui::PopID();
+                }
+
+                ImGui::EndCombo();
+            }
+
+            ImGui::SameLine();
+            if (ImGui::Button("New")) {
+                ImGui::OpenPopup("New group");
+                m_input = 0;
+            }
+
+            if (UICommon::TextInputDialog("New group", "Enter group name:",
+                reinterpret_cast<char*>(&m_input), sizeof(m_input)))
+            {
+                if (m_input) {
+                    colGroups.emplace(m_input);
+                    m_selected = m_input;
+                    DCBP::SaveCollisionGroups();
+                    DCBP::UpdateGroupInfoOnAllActors();
+                }
+            }
+
+            ImGui::SameLine();
+            if (ImGui::Button("Delete")) {
+                if (m_selected)
+                    ImGui::OpenPopup("Delete");
+            }
+
+            if (UICommon::ConfirmDialog(
+                "Delete",
+                "Are you sure you want to delete group '%s'?\n\n", curSelName))
+            {
+                auto it = nodeColGroupMap.begin();
+                while (it != nodeColGroupMap.end())
+                {
+                    if (it->second == *m_selected)
+                        it = nodeColGroupMap.erase(it);
+                    else
+                        ++it;
+                }
+
+                colGroups.erase(*m_selected);
+
+                m_selected.Clear();
+
+                DCBP::SaveCollisionGroups();
+                DCBP::UpdateGroupInfoOnAllActors();
+            }
+
+            ImGui::Separator();
+
+            for (const auto& e : nodeMap)
+            {
+                uint64_t curSel;
+
+                auto it = nodeColGroupMap.find(e.first);
+                if (it != nodeColGroupMap.end()) {
+                    curSel = it->second;
+                    curSelName = reinterpret_cast<const char*>(&curSel);
+                }
+                else {
+                    curSel = 0;
+                    curSelName = nullptr;
+                }
+
+                ImGui::PushID(static_cast<const void*>(std::addressof(e)));
+
+                if (ImGui::BeginCombo(e.first.c_str(), curSelName))
+                {
+                    if (curSel != 0) {
+                        if (ImGui::Selectable("")) {
+                            nodeColGroupMap.erase(e.first);
+                            DCBP::SaveCollisionGroups();
+                            DCBP::UpdateGroupInfoOnAllActors();
+                        }
+                    }
+
+                    for (const auto& j : colGroups)
+                    {
+                        ImGui::PushID(static_cast<const void*>(std::addressof(j)));
+
+                        bool selected = j == curSel;
+                        if (selected)
+                            ImGui::SetItemDefaultFocus();
+
+                        if (ImGui::Selectable(reinterpret_cast<const char*>(std::addressof(j)), selected)) {
+                            nodeColGroupMap[e.first] = j;
+                            DCBP::SaveCollisionGroups();
+                            DCBP::UpdateGroupInfoOnAllActors();
+                        }
+
+                        ImGui::PopID();
+                    }
+
+                    ImGui::EndCombo();
+                }
+
+                ImGui::PopID();
+            }
+
+            ImGui::PopItemWidth();
+            ImGui::PopID();
+        }
+
+        ImGui::End();
+    }
+
+
+    void UINodeConfig::Draw(bool* a_active)
+    {
+        auto& io = ImGui::GetIO();
+
+        ImVec2 center(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f);
+        ImGui::SetNextWindowPos(center, ImGuiCond_FirstUseEver, ImVec2(0.5f, 0.5f));
+
+        ImVec2 sizeMin(min(300.0f, io.DisplaySize.x - 40.0f), min(100.0f, io.DisplaySize.y - 40.0f));
+        ImVec2 sizeMax(min(400.0f, io.DisplaySize.x), max(io.DisplaySize.y - 40.0f, sizeMin.y));
+
+        ImGui::SetNextWindowSizeConstraints(sizeMin, sizeMax);
+
+        ImGui::PushID(static_cast<const void*>(a_active));
+
+        if (ImGui::Begin("Node config", a_active))
+        {
+            auto& nodeConfig = IConfig::GetNodeConfig();
+            auto& nodeMap = IConfig::GetNodeMap();
+
+            for (const auto& e : nodeMap)
+            {
+                ImGui::PushID(static_cast<const void*>(std::addressof(e)));
+
+                if (ImGui::CollapsingHeader(e.first.c_str(), ImGuiTreeNodeFlags_DefaultOpen))
+                {
+                    auto& conf = nodeConfig[e.first];
+
+                    bool changed = false;
+
+                    changed |= ImGui::Checkbox("Movement", &conf.movement);
+
+                    ImGui::SameLine();
+                    changed |= ImGui::Checkbox("Collisions", &conf.collisions);
+
+                    if (changed) {
+                        DCBP::ResetActors();
+                        DCBP::SaveNodeConfig();
+                    }
+                }
+
+                ImGui::PopID();
+            }
+
+        }
+
+        ImGui::PopID();
+
+        ImGui::End();
+    }
+
     void UIContext::UISimComponentActor::AddSimComponentSlider(
         SKSE::ObjectHandle a_handle,
         configComponents_t& a_data,
         configComponentsValue_t& a_pair)
     {
         ADD_SIM_COMPONENT_SLIDERS(ADD_ACTOR_SIM_COMPONENT_SLIDER);
+    }
+
+    bool UIContext::UISimComponentActor::ShouldDrawComponent(
+        SKSE::ObjectHandle m_handle,
+        const configComponents_t::value_type& a_comp)
+    {
+        return DCBP::ActorHasConfigGroup(m_handle, a_comp.first);
     }
 
     void UIContext::UISimComponentGlobal::AddSimComponentSlider(
@@ -1178,6 +1396,10 @@ namespace CBP
         auto& globalConfig = IConfig::GetGlobalConfig();
 
         m_currentActor = a_handle;
+
+        if (a_handle != 0)
+            m_actorList.at(a_handle).second = IConfig::GetActorConf(a_handle);
+
         globalConfig.ui.lastActor = a_handle;
     }
 
@@ -1187,6 +1409,9 @@ namespace CBP
         const std::string& a_component,
         const NiPoint3& a_force)
     {
+        if (a_steps == 0)
+            return;
+
         SKSE::ObjectHandle handle;
         if (a_data != nullptr)
             handle = a_data->first;
@@ -1236,21 +1461,22 @@ namespace CBP
 
         for (auto& p : a_data)
         {
+            if (!ShouldDrawComponent(a_handle, p))
+                continue;
+
             auto headerName = p.first;
-            if (headerName.size() > 0) {
+            if (headerName.size() != 0) {
                 headerName[0] = std::toupper(headerName[0]);
             }
 
             bool* cs = globalConfig.GetColStateAddr(GetCSID(p.first));
 
-            *cs = ImGui::CollapsingHeader(headerName.c_str(), 
+            *cs = ImGui::CollapsingHeader(headerName.c_str(),
                 *cs ? ImGuiTreeNodeFlags_DefaultOpen : 0);
 
             if (*cs)
             {
                 ImGui::PushID(static_cast<const void*>(std::addressof(p.second)));
-
-                auto wcm = ImGui::GetWindowContentRegionMax();
 
                 if (ImGui::Button("Mirroring >"))
                     ImGui::OpenPopup("mirror_popup");

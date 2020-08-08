@@ -6,7 +6,7 @@ namespace CBP
         return (0.0f < val) - (val < 0.0f);
     }
 
-    bool SimComponent::ColliderData::Create()
+    bool SimComponent::Collider::Create()
     {
         if (m_created)
             return false;
@@ -25,7 +25,7 @@ namespace CBP
         return true;
     }
 
-    bool SimComponent::ColliderData::Destroy()
+    bool SimComponent::Collider::Destroy()
     {
         if (!m_created)
             return false;
@@ -42,7 +42,7 @@ namespace CBP
         return true;
     }
 
-    void SimComponent::ColliderData::Update()
+    void SimComponent::Collider::Update()
     {
         if (!m_created)
             return;
@@ -77,7 +77,7 @@ namespace CBP
         m_mat[1][0] = rot.data[1][0]; m_mat[1][1] = rot.data[1][1]; m_mat[1][2] = rot.data[1][2];
         m_mat[2][0] = rot.data[2][0]; m_mat[2][1] = rot.data[2][1]; m_mat[2][2] = rot.data[2][2];
 
-        auto pos = (m_parent.m_obj->m_parent->m_worldTransform * m_parent.m_obj->m_localTransform.pos) +
+        auto pos = (m_parent.m_obj->m_worldTransform * m_parent.m_obj->m_localTransform.pos) +
             (m_parent.m_obj->m_parent->m_worldTransform * m_sphereOffset);
 
         m_pos.x = pos.x; m_pos.y = pos.y; m_pos.z = pos.z;
@@ -94,42 +94,52 @@ namespace CBP
         NiAVObject* a_obj,
         const BSFixedString& a_name,
         const std::string& a_configGroupName,
-        const configComponent_t& a_config)
+        const configComponent_t& a_config,
+        const nodeConfig_t& a_nodeConfig,
+        uint32_t a_parentId, 
+        uint64_t a_groupId)
         :
         boneName(a_name),
         m_configGroupName(a_configGroupName),
         oldWorldPos(a_obj->m_worldTransform.pos),
         velocity(NiPoint3(0.0f, 0.0f, 0.0f)),
         npZero(NiPoint3(0.0f, 0.0f, 0.0f)),
-        colData(*this),
-        m_obj(a_obj)
+        m_collisionData(*this),
+        m_obj(a_obj),
+        m_parentId(a_parentId),
+        m_groupId(a_groupId)
     {
-        updateConfig(a_config);
-        colData.Update();
+        UpdateConfig(a_config, a_nodeConfig);
+        m_collisionData.Update();
     }
 
     void SimComponent::Release()
     {
-        colData.Destroy();
+        m_collisionData.Destroy();
     }
 
-    void SimComponent::updateConfig(const configComponent_t& a_config) noexcept
+    void SimComponent::UpdateConfig(
+        const configComponent_t& a_config,
+        const nodeConfig_t& a_nodeConfig) noexcept
     {
         conf = a_config;
+        m_nodeConfig = a_nodeConfig;
 
-        if (a_config.colSphereRad > 0.0f) {
-            if (colData.Create())
+        if (m_nodeConfig.collisions &&
+            a_config.colSphereRad > 0.0f)
+        {
+            if (m_collisionData.Create())
                 ResetOverrides();
 
-            colData.SetRadius(conf.colSphereRad);
-            colData.SetSphereOffset(
+            m_collisionData.SetRadius(conf.colSphereRad);
+            m_collisionData.SetSphereOffset(
                 conf.colSphereOffsetX,
                 conf.colSphereOffsetY,
                 conf.colSphereOffsetZ
             );
         }
         else {
-            if (colData.Destroy())
+            if (m_collisionData.Destroy())
                 ResetOverrides();
         }
 
@@ -154,12 +164,8 @@ namespace CBP
         m_applyForceQueue.swap(decltype(m_applyForceQueue)());
     }
 
-    void SimComponent::update(Actor* actor)
+    void SimComponent::UpdateMovement(Actor* actor)
     {
-        m_obj = actor->loadedState->node->GetObjectByName(&boneName.data);
-        if (m_obj == nullptr)
-            return;
-
         auto& globalConf = IConfig::GetGlobalConfig();
 
         //Offset to move Center of Mass make rotaional motion more significant  
@@ -220,8 +226,29 @@ namespace CBP
             ldiff.x * conf.rotationalX,
             ldiff.y * conf.rotationalY,
             ldiff.z * conf.rotationalZ);
+    }
 
-        colData.Update();
+    void SimComponent::update(Actor* actor, uint32_t a_step)
+    {
+        m_obj = actor->loadedState->node->GetObjectByName(&boneName.data);
+        if (m_obj == nullptr) {
+            _DMESSAGE("m_obj gone");
+            return;
+        }
+        
+        if (m_nodeConfig.movement) {
+            UpdateMovement(actor);
+        }
+        else if (a_step == 0) 
+        {
+            auto newPos = m_obj->m_worldTransform.pos;
+            velocity = newPos - oldWorldPos;
+            oldWorldPos = newPos;
+
+            //_DMESSAGE("%f %f %f", velocity.x, velocity.y, velocity.z);
+        }
+
+        m_collisionData.Update();
     }
 
     void SimComponent::ApplyForce(uint32_t a_steps, const NiPoint3& a_force)

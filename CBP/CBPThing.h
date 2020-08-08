@@ -10,10 +10,10 @@ namespace CBP
             NiPoint3 force;
         };
 
-        class ColliderData
+        class Collider
         {
         public:
-            ColliderData(SimComponent& a_parent) :
+            Collider(SimComponent& a_parent) :
                 m_created(false),
                 m_active(true),
                 m_nodeScale(1.0f),
@@ -63,6 +63,7 @@ namespace CBP
         };
 
     private:
+        void UpdateMovement(Actor* actor);
 
         NiPoint3 npCogOffset;
         NiPoint3 npGravityCorrection;
@@ -72,7 +73,7 @@ namespace CBP
         NiPoint3 oldWorldPos;
         NiPoint3 velocity;
 
-        ColliderData colData;
+        Collider m_collisionData;
 
         std::queue<Force> m_applyForceQueue;
 
@@ -80,13 +81,18 @@ namespace CBP
 
         configComponent_t conf;
 
+        nodeConfig_t m_nodeConfig;
+
     public:
         BSFixedString boneName;
         SimComponent(
             NiAVObject* m_obj,
             const BSFixedString& name,
             const std::string& a_configBoneName,
-            const configComponent_t& config
+            const configComponent_t& config,
+            const nodeConfig_t &a_nodeConfig,
+            uint32_t a_parentId,
+            uint64_t a_groupId
         );
 
         SimComponent() = delete;
@@ -95,9 +101,11 @@ namespace CBP
 
         void Release();
 
-        void updateConfig(const configComponent_t& centry) noexcept;
+        void UpdateConfig(
+            const configComponent_t& centry,
+            const nodeConfig_t& a_nodeConfig) noexcept;
 
-        void update(Actor* actor);
+        void update(Actor* actor, uint32_t a_step);
         void reset(Actor* actor);
 
         void ApplyForce(uint32_t a_steps, const NiPoint3& a_force);
@@ -120,11 +128,11 @@ namespace CBP
             velocity.z = std::clamp(a_vel.z, -100000.0f, 100000.0f);
         }
 
-        [[nodiscard]] inline const auto& GetVelocity() {
+        [[nodiscard]] inline const auto& GetVelocity() const {
             return velocity;
         }
 
-        [[nodiscard]] inline const auto& GetConfig() {
+        [[nodiscard]] inline const auto& GetConfig() const {
             return conf;
         }
 
@@ -138,9 +146,31 @@ namespace CBP
             stiffnesMul = 1.0f;
         }
 
+        [[nodiscard]] inline bool IsSameGroup(const SimComponent& a_rhs) const {
+            return a_rhs.m_groupId != 0 && m_groupId != 0 &&
+                a_rhs.m_parentId == m_parentId &&
+                a_rhs.m_groupId == m_groupId;
+        }
+
+        inline void UpdateGroupInfo(uint32_t a_parentId, uint64_t a_groupId) {
+            m_parentId = a_parentId;
+            m_groupId = a_groupId;
+        };
+
+        inline bool HasMovement() const {
+            return m_nodeConfig.movement;
+        }
+
+        inline bool HasCollision() const {
+            return m_nodeConfig.collisions;
+        }
+
         float dampingMul = 1.0f;
         float stiffnesMul = 1.0f;
         float stiffnes2Mul = 1.0f;
+
+        uint64_t m_groupId;
+        uint32_t m_parentId;
 
         NiAVObject* m_obj;
     };

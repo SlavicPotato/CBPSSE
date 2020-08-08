@@ -14,7 +14,9 @@ namespace CBP
             kActionUpdateConfig,
             kActionUpdateConfigAll,
             kActionReset,
-            kActionUIUpdateCurrentActor
+            kActionUIUpdateCurrentActor,
+            kActionUpdateGroupInfoAll,
+            kActionPhysicsReset
         };
 
         UTTAction m_action;
@@ -38,13 +40,17 @@ namespace CBP
         void AddActor(SKSE::ObjectHandle handle);
         void RemoveActor(SKSE::ObjectHandle handle);
         void UpdateConfigOnAllActors();
+        void UpdateGroupInfoOnAllActors();
         void UpdateConfig(SKSE::ObjectHandle handle);
         void ApplyForce(SKSE::ObjectHandle a_handle, uint32_t a_steps, const std::string& a_component, const NiPoint3& a_force);
         void ClearActors();
         void Reset();
+        void PhysicsReset();
 
         void AddTask(const UTTask& task);
         void AddTask(UTTask&& task);
+        void AddTask(UTTask::UTTAction a_action);
+        void AddTask(UTTask::UTTAction a_action, SKSE::ObjectHandle a_handle);
 
         inline const auto& GetSimActorList() {
             return m_actors;
@@ -140,11 +146,23 @@ namespace CBP
         }
 
         static void UpdateConfigOnAllActors();
+        static void UpdateGroupInfoOnAllActors();
+        static void ResetPhysics();
         static void ResetActors();
         static void ApplyForce(SKSE::ObjectHandle a_handle, uint32_t a_steps, const std::string& a_component, const NiPoint3& a_force);
+        [[nodiscard]] static bool ActorHasNode(SKSE::ObjectHandle a_handle, const std::string& a_node);
+        [[nodiscard]] static bool ActorHasConfigGroup(SKSE::ObjectHandle a_handle, const std::string& a_cg);
 
         inline static bool SaveGlobals() {
             return m_Instance.m_serialization.SaveGlobals();
+        }
+
+        inline static bool SaveCollisionGroups() {
+            return m_Instance.m_serialization.SaveCollisionGroups();
+        }
+
+        inline static bool SaveNodeConfig() {
+            return m_Instance.m_serialization.SaveNodeConfig();
         }
 
         [[nodiscard]] inline static const auto& GetLastSerializationException() {
