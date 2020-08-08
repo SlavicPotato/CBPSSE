@@ -128,6 +128,8 @@ namespace CBP
 
         std::atomic<bool> m_nextResetIO;
 
+        ICriticalSection m_lock;
+
         static DUI m_Instance;
     };
 

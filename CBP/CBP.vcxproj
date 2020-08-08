@@ -504,7 +504,7 @@
   <ItemGroup>
     <None Include="..\README.md" />
     <None Include="..\scripts\CBP.psc" />
-    <None Include="CBP.ini" />
+    <None Include="Config\CBP.ini" />
     <None Include="Config\CBPNodes.json" />
     <None Include="exports.def" />
   </ItemGroup>

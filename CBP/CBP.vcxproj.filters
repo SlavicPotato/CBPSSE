@@ -195,7 +195,7 @@
     <None Include="..\scripts\CBP.psc">
       <Filter>Scripts</Filter>
     </None>
-    <None Include="CBP.ini">
+    <None Include="Config\CBP.ini">
       <Filter>Config</Filter>
     </None>
   </ItemGroup>

@@ -40,8 +40,11 @@ namespace CBP
 
     void DUI::Present_Pre_Impl()
     {
+        m_lock.Enter();
+
         if (m_drawCallbacks.size() == 0) {
             m_isRunning = false;
+            m_lock.Leave();
             return;
         }
 
@@ -81,6 +84,8 @@ namespace CBP
             ResetImGuiIO();
             m_isRunning = false;
         }
+
+        m_lock.Leave();
     }
 
     void DUI::CreateD3D11_Hook()
@@ -286,15 +291,21 @@ namespace CBP
         }
     }
 
-    void DUI::AddCallback(uint32_t id, uiDrawCallback_t f) {
+    void DUI::AddCallback(uint32_t id, uiDrawCallback_t f) 
+    {
+        m_Instance.m_lock.Enter();
         m_Instance.m_drawCallbacks.emplace(id, f);
+        m_Instance.m_lock.Leave();
     }
 
-    void DUI::RemoveCallback(uint32_t id) {
+    void DUI::RemoveCallback(uint32_t id) 
+    {
+        m_Instance.m_lock.Enter();
         m_Instance.m_drawCallbacks.erase(id);
         if (m_Instance.m_drawCallbacks.size() == 0) {
             m_Instance.ResetImGuiIO();
         }
+        m_Instance.m_lock.Leave();
     }
 
     void DUI::ResetImGuiIO()

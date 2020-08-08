@@ -168,6 +168,14 @@ namespace CBP
             return m_Instance.m_physicsCommon;
         }
 
+        inline static void Lock() {
+            m_Instance.m_lock.Enter();
+        }
+
+        inline static void Unlock() {
+            m_Instance.m_lock.Leave();
+        }
+
         FN_NAMEPROC("CBP")
     private:
         DCBP();
@@ -211,6 +219,8 @@ namespace CBP
 
         r3d::PhysicsWorld* m_world;
         r3d::PhysicsCommon m_physicsCommon;
+
+        ICriticalSection m_lock;
 
         static DCBP m_Instance;
     };

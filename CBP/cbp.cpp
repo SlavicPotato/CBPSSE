@@ -244,6 +244,13 @@ namespace CBP
         // Process our tasks only when the player is loaded and attached to a cell
         ProcessTasks();
 
+#ifdef _CBP_MEASURE_PERF
+        auto s = PerfCounter::Query();
+        size_t n = 0;
+#endif
+
+        DCBP::Lock();
+
         auto& globalConf = IConfig::GetGlobalConfig();
 
         auto newTime = PerfCounter::Query();
@@ -262,15 +269,12 @@ namespace CBP
             m_timeAccum -= globalConf.phys.timeStep;
         }
 
-        if (numSteps == 0)
+        if (numSteps == 0) {
+            DCBP::Unlock();
             return;
+        }
 
         auto world = DCBP::GetWorld();
-
-#ifdef _CBP_MEASURE_PERF
-        auto s = PerfCounter::Query();
-        size_t n = 0;
-#endif
 
         auto it = m_actors.begin();
         while (it != m_actors.end())
@@ -307,6 +311,8 @@ namespace CBP
                 numSteps--;
             };
         }
+
+        DCBP::Unlock();
 
 #ifdef _CBP_MEASURE_PERF
         auto e = PerfCounter::Query();
@@ -538,6 +544,8 @@ namespace CBP
 
     bool DCBP::ProcessUICallbackImpl()
     {
+        Lock();
+
         if (m_loadInstance != m_uiContext.GetLoadInstance()) {
             uiState.show = false;
         }
@@ -549,12 +557,15 @@ namespace CBP
                 m_uiContext.Draw(&uiState.show);
         }
 
+        bool ret = uiState.show;
+
         if (!uiState.show) {
             DisableUI();
-            return false;
         }
 
-        return true;
+        Unlock();
+
+        return ret;
     }
 
     bool DCBP::UICallback()
@@ -669,17 +680,27 @@ namespace CBP
 
     void DCBP::ToggleUITask::Run()
     {
+        Lock();
+
         if (m_Instance.uiState.show) {
             m_Instance.uiState.show = false;
             m_Instance.DisableUI();
+
+            Unlock();
+
             DUI::RemoveCallback(1);
         }
         else {
             if (m_Instance.RunEnableUIChecks()) {
                 m_Instance.uiState.show = true;
                 m_Instance.EnableUI();
+
+                Unlock();
+
                 DUI::AddCallback(1, UICallback);
             }
+            else
+                Unlock();
         }
     }
 
