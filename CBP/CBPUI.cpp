@@ -1207,8 +1207,6 @@ namespace CBP
 
         ImGui::SetNextWindowSizeConstraints(sizeMin, sizeMax);
 
-        ImGui::PushID(static_cast<const void*>(a_active));
-
         if (ImGui::Begin("Node config", a_active))
         {
             auto& nodeConfig = IConfig::GetNodeConfig();
@@ -1239,8 +1237,6 @@ namespace CBP
             }
 
         }
-
-        ImGui::PopID();
 
         ImGui::End();
     }
