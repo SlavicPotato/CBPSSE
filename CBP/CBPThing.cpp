@@ -77,8 +77,7 @@ namespace CBP
         m_mat[1][0] = rot.data[1][0]; m_mat[1][1] = rot.data[1][1]; m_mat[1][2] = rot.data[1][2];
         m_mat[2][0] = rot.data[2][0]; m_mat[2][1] = rot.data[2][1]; m_mat[2][2] = rot.data[2][2];
 
-        auto pos = (m_parent.m_obj->m_worldTransform * m_parent.m_obj->m_localTransform.pos) +
-            (m_parent.m_obj->m_parent->m_worldTransform * m_sphereOffset);
+        auto pos = m_parent.m_obj->m_worldTransform * m_sphereOffset;
 
         m_pos.x = pos.x; m_pos.y = pos.y; m_pos.z = pos.z;
 
