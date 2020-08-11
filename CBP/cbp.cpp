@@ -280,6 +280,7 @@ namespace CBP
         pt.Start();
 
         iface.LoadGlobals();
+        iface.LoadGlobalProfile();
         iface.LoadActorProfiles(intfc);
         iface.LoadRaceProfiles(intfc);
         iface.LoadCollisionGroups();
@@ -305,6 +306,7 @@ namespace CBP
         pt.Start();
 
         iface.SaveGlobals();
+        iface.SaveGlobalProfile();
         iface.SaveActorProfiles();
         iface.SaveRaceProfiles();
         iface.SaveCollisionGroups();

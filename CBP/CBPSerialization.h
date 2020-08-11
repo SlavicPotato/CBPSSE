@@ -13,6 +13,9 @@ namespace CBP
         void LoadActorProfiles(SKSESerializationInterface* intfc);
         void SaveActorProfiles();
 
+        void LoadGlobalProfile();
+        void SaveGlobalProfile();
+
         void LoadRaceProfiles(SKSESerializationInterface* intfc);
         void SaveRaceProfiles();
 
@@ -33,15 +36,6 @@ namespace CBP
 
         void CreateNodeData(const nodeConfigHolder_t& a_data, Json::Value& a_out);
         [[nodiscard]] bool ParseNodeData(const Json::Value& a_data, nodeConfigHolder_t& a_out);
-
-        template <typename T, std::enable_if_t<std::is_integral<T>::value&& std::is_unsigned<T>::value && sizeof(T) == 0x4, int> = 0>
-        [[nodiscard]] T GetHandle(const Json::Value& a_data) const {
-            return static_cast<T>(a_data.asUInt());
-        }
-        template <typename T, std::enable_if_t<std::is_integral<T>::value&& std::is_unsigned<T>::value && sizeof(T) == 0x8, int> = 0>
-        [[nodiscard]] T GetHandle(const Json::Value& a_data) const {
-            return static_cast<T>(a_data.asUInt64());
-        }
 
         std::exception lastException;
     };

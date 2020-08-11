@@ -17,6 +17,7 @@ constexpr const char* PLUGIN_CBP_RACE_DATA = PLUGIN_BASE_PATH "CBPData\\Races.js
 constexpr const char* PLUGIN_CBP_GLOBAL_DATA = PLUGIN_BASE_PATH "CBPData\\Globals.json";
 constexpr const char* PLUGIN_CBP_CG_DATA = PLUGIN_BASE_PATH "CBPData\\CollisionGroups.json";
 constexpr const char* PLUGIN_CBP_NODE_DATA = PLUGIN_BASE_PATH "CBPData\\NodeSettings.json";
+constexpr const char* PLUGIN_CBP_GLOBPROFILE_DATA = PLUGIN_BASE_PATH "CBPData\\GlobalProfile.json";
 constexpr const char* PLUGIN_IMGUI_INI_FILE = PLUGIN_BASE_PATH PLUGIN_NAME "_ImGui.ini";
 
 #define MIN_SKSE_VERSION            RUNTIME_VERSION_1_5_23

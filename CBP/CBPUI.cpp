@@ -748,7 +748,7 @@ namespace CBP
 
         if (globalConfig.ui.showAllActors)
         {
-            for (const auto& e : IConfig::GetActorConfHolder())
+            for (const auto& e : IConfig::GetActorConfigHolder())
             {
                 if (m_actorList.contains(e.first)) {
                     continue;

@@ -421,6 +421,40 @@ namespace CBP
         return true;
     }
 
+    void Serialization::LoadGlobalProfile()
+    {
+        try
+        {
+            Json::Value root;
+
+            if (!ReadJsonData(PLUGIN_CBP_ACTOR_DATA, root))
+                return;
+
+            if (root.empty())
+                return;
+
+            if (!root.isObject())
+                throw std::exception("Expected an object");
+
+            configComponents_t componentData;
+
+            if (ParseComponents(root, componentData)) {
+                IConfig::SetThingGlobalConfig(componentData);
+            }
+
+            nodeConfigHolder_t nodeData;
+
+            if (ParseNodeData(root, nodeData)) {
+                IConfig::SetNodeConfig(nodeData);
+            }
+        }
+        catch (const std::exception& e)
+        {
+            IConfig::ResetThingGlobalConfig();
+            Error("%s: %s", __FUNCTION__, e.what());
+        }
+    }
+
     void Serialization::LoadActorProfiles(SKSESerializationInterface* intfc)
     {
         try
@@ -430,7 +464,7 @@ namespace CBP
 
             Json::Value root;
 
-            if (!ReadJsonData(PLUGIN_CBP_ACTOR_DATA, root))
+            if (!ReadJsonData(PLUGIN_CBP_GLOBPROFILE_DATA, root))
                 return;
 
             if (root.empty())
@@ -458,43 +492,35 @@ namespace CBP
                     continue;
                 }
 
-                if (handle != 0) {
-                    SKSE::ObjectHandle newHandle = 0;
+                if (handle == 0) {
+                    Warning("handle == 0");
+                    continue;
+                }
 
-                    if (!SKSE::ResolveHandle(intfc, handle, &newHandle)) {
-                        Error("0x%llX: Couldn't resolve handle, discarding", handle);
-                        continue;
-                    }
 
-                    if (newHandle == 0) {
-                        Error("0x%llX: newHandle == 0", handle);
-                        continue;
-                    }
+                SKSE::ObjectHandle newHandle = 0;
 
-                    handle = newHandle;
+                if (!SKSE::ResolveHandle(intfc, handle, &newHandle)) {
+                    Error("0x%llX: Couldn't resolve handle, discarding", handle);
+                    continue;
+                }
+
+                if (newHandle == 0) {
+                    Error("0x%llX: newHandle == 0", handle);
+                    continue;
                 }
 
                 configComponents_t componentData;
 
                 if (ParseComponents(*it, componentData)) {
-                    if (handle != 0) {
-                        IConfig::GetActorConfHolder().emplace(handle, std::move(componentData));
-                        IData::UpdateActorRaceMap(handle);
-                    }
-                    else {
-                        IConfig::SetThingGlobalConfig(componentData);
-                    }
+                    IConfig::GetActorConfigHolder().emplace(newHandle, std::move(componentData));
+                    IData::UpdateActorRaceMap(newHandle);
                 }
 
                 nodeConfigHolder_t nodeData;
 
                 if (ParseNodeData(*it, nodeData)) {
-                    if (handle != 0) {
-                        IConfig::GetActorNodeConfigHolder().emplace(handle, std::move(nodeData));
-                    }
-                    else {
-                        IConfig::SetNodeConfig(nodeData);
-                    }
+                    IConfig::GetActorNodeConfigHolder().emplace(newHandle, std::move(nodeData));
                 }
 
                 c++;
@@ -504,7 +530,6 @@ namespace CBP
         }
         catch (const std::exception& e)
         {
-            IConfig::ResetThingGlobalConfig();
             IConfig::ClearActorConfHolder();
             Error("%s: %s", __FUNCTION__, e.what());
         }
@@ -677,15 +702,11 @@ namespace CBP
 
             Json::Value root;
 
-            auto& global = root["0"];
-            CreateComponents(IConfig::GetThingGlobalConfig(), global);
-
-            for (const auto& e : IConfig::GetActorConfHolder()) {
+            for (const auto& e : IConfig::GetActorConfigHolder()) {
                 auto& actor = root[std::to_string(e.first)];
                 CreateComponents(e.second, actor);
             }
 
-            CreateNodeData(IConfig::GetNodeConfig(), global);
             for (const auto& e : IConfig::GetActorNodeConfigHolder()) {
                 auto& actor = root[std::to_string(e.first)];
                 CreateNodeData(e.second, actor);
@@ -694,6 +715,23 @@ namespace CBP
             WriteJsonData(PLUGIN_CBP_ACTOR_DATA, root);
 
             Debug("Saved %zu actor record(s) (%.4fs)", static_cast<size_t>(root.size()), pt.Stop());
+        }
+        catch (const std::exception& e)
+        {
+            Error("%s: %s", __FUNCTION__, e.what());
+        }
+    }
+
+    void Serialization::SaveGlobalProfile()
+    {
+        try
+        {
+            Json::Value root;
+
+            CreateComponents(IConfig::GetThingGlobalConfig(), root);
+            CreateNodeData(IConfig::GetNodeConfig(), root);
+
+            WriteJsonData(PLUGIN_CBP_GLOBPROFILE_DATA, root);
         }
         catch (const std::exception& e)
         {

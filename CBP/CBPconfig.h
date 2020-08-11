@@ -212,7 +212,7 @@ namespace CBP
             return thingGlobalConfigDefaults;
         }
 
-        [[nodiscard]] inline static auto& GetActorConfHolder() {
+        [[nodiscard]] inline static auto& GetActorConfigHolder() {
             return actorConfHolder;
         }
 
