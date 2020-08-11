@@ -110,6 +110,8 @@ namespace CBP
 
     void ConfigUpdateTask::Run()
     {
+        IScopedCriticalSection m(std::addressof(DCBP::GetLock()));
+
         if (m_handle)
         {
             auto& ach = IConfig::GetActorConfigHolder();

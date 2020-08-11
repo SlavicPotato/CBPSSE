@@ -204,6 +204,10 @@ namespace CBP
             m_Instance.m_lock.Leave();
         }
 
+        inline static auto& GetLock() {
+            return m_Instance.m_lock;
+        }
+
         [[nodiscard]] inline static auto& GetDriverConfig()
         {
             return m_Instance.conf;
