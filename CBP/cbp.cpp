@@ -796,7 +796,7 @@ namespace CBP
             io.WantSaveIniSettings = false;
         }
 
-        DCBP::SaveGlobals();
+        DCBP::SaveAll();
 
         m_uiContext.Reset(m_loadInstance);
 
