@@ -42,9 +42,6 @@ namespace CBP
                 {
                     auto contactPoint = contactPair.getContactPoint(c);
 
-                    //auto worldPoint1 = col1->getLocalToWorldTransform() * contactPoint.getLocalPointOnCollider1();
-                    //auto worldPoint2 = col2->getLocalToWorldTransform() * contactPoint.getLocalPointOnCollider2();
-
                     auto depth = min(contactPoint.getPenetrationDepth(),
                         globalConf.phys.colMaxPenetrationDepth);
 
@@ -65,51 +62,6 @@ namespace CBP
                         vaf,
                         vbf
                     );
-
-                    if (col1->getEntity().getIndex() == col2->getEntity().getIndex())
-                    {
-                        _DMESSAGE("A (%s): %u,%u | %f %f: %d ye %f | %f %f %f | %f %f %f | %p | %llx | %llx | %u %u",
-                            sc1->boneName.c_str(),
-                            col1->getEntity().getIndex(),
-                            col2->getEntity().getIndex(),
-                            r3d::Vector3(v1.x, v1.y, v1.z).length(),
-                            (r3d::Vector3(v1.x, v1.y, v1.z) - r3d::Vector3(v2.x, v2.y, v2.z)).length(),
-                            contactPair.getEventType(),
-                            depth,
-                            v1.x,
-                            v1.y,
-                            v1.z,
-                            vaf.x,
-                            vaf.y,
-                            vaf.z,
-                            sc1->m_obj,
-                            sc1->m_parentId,
-                            sc1->m_groupId,
-                            col1->getEntity().id,
-                            col2->getEntity().id
-                        );
-
-                        _DMESSAGE("B (%s): %u,%u | %f %f: %d ye %f | %f %f %f | %f %f %f | %p | %llx | %llx | %u %u",
-                            sc2->boneName.c_str(),
-                            col1->getEntity().getIndex(),
-                            col2->getEntity().getIndex(),
-                            r3d::Vector3(v2.x, v2.y, v2.z).length(),
-                            (r3d::Vector3(v1.x, v1.y, v1.z) - r3d::Vector3(v2.x, v2.y, v2.z)).length(),
-                            contactPair.getEventType(),
-                            depth,
-                            v2.x,
-                            v2.y,
-                            v2.z,
-                            vbf.x,
-                            vbf.y,
-                            vbf.z,
-                            sc2->m_obj,
-                            sc1->m_parentId,
-                            sc1->m_groupId,
-                            col1->getEntity().id,
-                            col2->getEntity().id
-                        );
-                    }
 
                     sc1->stiffnes2Mul = sc1->stiffnesMul =
                         1.0f / max(dampingMul * conf1.colStiffnessCoef, 1.0f);
@@ -147,8 +99,6 @@ namespace CBP
         r3d::Vector3& vbf
     )
     {
-        auto& globalConf = IConfig::GetGlobalConfig();
-
         auto len = (vai - vbi).length();
 
         auto maga = len + (depth * dma);
