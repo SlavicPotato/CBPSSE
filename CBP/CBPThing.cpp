@@ -179,7 +179,7 @@ namespace CBP
         npGravityCorrection = NiPoint3(0.0f, 0.0f, conf.gravityCorrection);
     }
 
-    void SimComponent::reset(Actor* actor)
+    void SimComponent::Reset(Actor* actor)
     {
         auto m_obj = actor->loadedState->node->GetObjectByName(&boneName.data);
         if (m_obj == nullptr)
@@ -202,7 +202,7 @@ namespace CBP
 
         if (fabs(diff.x) > 120.0f || fabs(diff.y) > 120.0f || fabs(diff.z) > 120.0f)
         {
-            reset(actor);
+            Reset(actor);
             return;
         }
 
@@ -255,18 +255,16 @@ namespace CBP
             ldiff.z * conf.rotationalZ);
     }
 
-    void SimComponent::update(Actor* actor, uint32_t a_step)
+    void SimComponent::Update(Actor* actor, uint32_t a_step)
     {
         m_obj = actor->loadedState->node->GetObjectByName(&boneName.data);
-        if (m_obj == nullptr) {
+        if (m_obj == nullptr)
             return;
-        }
 
         if (m_movement) {
             UpdateMovement(actor);
         }
-        else if (a_step == 0)
-        {
+        else if (a_step == 0) {
             auto newPos = m_obj->m_worldTransform.pos;
             velocity = newPos - oldWorldPos;
             oldWorldPos = newPos;

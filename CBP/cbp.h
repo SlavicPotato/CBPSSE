@@ -69,7 +69,7 @@ namespace CBP
         static std::atomic<uint64_t> m_nextGroupId;
 
 #ifdef _CBP_MEASURE_PERF
-        SDT::PerfTimerInt m_perfTimer;
+        PerfTimerInt m_perfTimer;
         uint32_t m_numActorsAccum = 0;
         uint32_t m_runCount = 0;
 #endif
@@ -166,6 +166,8 @@ namespace CBP
         static void ApplyForce(SKSE::ObjectHandle a_handle, uint32_t a_steps, const std::string& a_component, const NiPoint3& a_force);
         [[nodiscard]] static bool ActorHasNode(SKSE::ObjectHandle a_handle, const std::string& a_node);
         [[nodiscard]] static bool ActorHasConfigGroup(SKSE::ObjectHandle a_handle, const std::string& a_cg);
+
+        static bool SaveAll();
 
         inline static bool SaveGlobals() {
             return m_Instance.m_serialization.SaveGlobals();

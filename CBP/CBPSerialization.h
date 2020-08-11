@@ -12,9 +12,9 @@ namespace CBP
 
         void LoadActorProfiles(SKSESerializationInterface* intfc);
         void SaveActorProfiles();
-
+        
         void LoadGlobalProfile();
-        void SaveGlobalProfile();
+        bool SaveGlobalProfile();
 
         void LoadRaceProfiles(SKSESerializationInterface* intfc);
         void SaveRaceProfiles();

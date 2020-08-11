@@ -99,7 +99,7 @@ namespace CBP
         a_out.position.y = (a_out.position.y * 2.0f) - 1.0f;
         a_out.position.z = (a_out.position.z * 2.0f) - 1.0f;
 
-        auto b = reinterpret_cast<const uint8_t*>(&a_col);
+        const auto b = reinterpret_cast<uint8_t*>(&a_col);
 
         a_out.color.x = static_cast<float>(b[0]);
         a_out.color.y = static_cast<float>(b[1]);

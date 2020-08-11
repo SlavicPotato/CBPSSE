@@ -153,6 +153,17 @@ namespace CBP
         bool femaleCollisions = true;
         bool maleMovement = false;
         bool maleCollisions = false;
+
+        inline void Get(char a_sex, bool& a_collisionsOut, bool &a_movementOut) {
+            if (a_sex == 0) {
+                a_collisionsOut = maleCollisions;
+                a_movementOut = maleMovement;
+            }
+            else {
+                a_collisionsOut = femaleCollisions;
+                a_movementOut = femaleMovement;
+            }
+        }
     };
 
     typedef std::unordered_map<std::string, nodeConfig_t> nodeConfigHolder_t;
@@ -216,11 +227,11 @@ namespace CBP
             return actorConfHolder;
         }
 
-        [[nodiscard]] inline static auto& GetRaceConfHolder() {
+        [[nodiscard]] inline static auto& GetRaceConfigHolder() {
             return raceConfHolder;
         }
 
-        inline static void ClearActorConfHolder() {
+        inline static void ClearActorConfigHolder() {
             actorConfHolder.clear();
         }
 
@@ -244,7 +255,7 @@ namespace CBP
             globalConfig = CBP::configGlobal_t();
         }
 
-        inline static void ResetThingGlobalConfig() {
+        inline static void ClearGlobalProfile() {
             thingGlobalConfig = thingGlobalConfigDefaults;;
         }
 

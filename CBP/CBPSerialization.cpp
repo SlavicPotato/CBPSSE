@@ -438,19 +438,17 @@ namespace CBP
 
             configComponents_t componentData;
 
-            if (ParseComponents(root, componentData)) {
+            if (ParseComponents(root, componentData))
                 IConfig::SetThingGlobalConfig(componentData);
-            }
 
             nodeConfigHolder_t nodeData;
 
-            if (ParseNodeData(root, nodeData)) {
+            if (ParseNodeData(root, nodeData))
                 IConfig::SetNodeConfig(nodeData);
-            }
         }
         catch (const std::exception& e)
         {
-            IConfig::ResetThingGlobalConfig();
+            IConfig::ClearGlobalProfile();
             Error("%s: %s", __FUNCTION__, e.what());
         }
     }
@@ -497,7 +495,6 @@ namespace CBP
                     continue;
                 }
 
-
                 SKSE::ObjectHandle newHandle = 0;
 
                 if (!SKSE::ResolveHandle(intfc, handle, &newHandle)) {
@@ -530,7 +527,7 @@ namespace CBP
         }
         catch (const std::exception& e)
         {
-            IConfig::ClearActorConfHolder();
+            IConfig::ClearActorConfigHolder();
             Error("%s: %s", __FUNCTION__, e.what());
         }
     }
@@ -562,7 +559,6 @@ namespace CBP
                     continue;
                 }
 
-                configComponents_t data;
                 SKSE::FormID formID;
 
                 try {
@@ -591,14 +587,16 @@ namespace CBP
                 }
 
                 if (!IData::GetRaceList().contains(newFormID)) {
-                    Error("0x%lX: race record not found", formID);
+                    Warning("0x%lX: race record not found", newFormID);
                     continue;
                 }
+
+                configComponents_t data;
 
                 if (!ParseComponents(*it, data))
                     continue;
 
-                IConfig::GetRaceConfHolder().emplace(newFormID, std::move(data));
+                IConfig::GetRaceConfigHolder().emplace(newFormID, std::move(data));
 
                 c++;
             }
@@ -718,11 +716,12 @@ namespace CBP
         }
         catch (const std::exception& e)
         {
+            lastException = e;
             Error("%s: %s", __FUNCTION__, e.what());
         }
     }
 
-    void Serialization::SaveGlobalProfile()
+    bool Serialization::SaveGlobalProfile()
     {
         try
         {
@@ -732,10 +731,15 @@ namespace CBP
             CreateNodeData(IConfig::GetNodeConfig(), root);
 
             WriteJsonData(PLUGIN_CBP_GLOBPROFILE_DATA, root);
+
+            return true;
         }
         catch (const std::exception& e)
         {
+            lastException = e;
             Error("%s: %s", __FUNCTION__, e.what());
+
+            return false;
         }
     }
 
@@ -748,7 +752,7 @@ namespace CBP
 
             Json::Value root;
 
-            for (const auto& e : IConfig::GetRaceConfHolder()) {
+            for (const auto& e : IConfig::GetRaceConfigHolder()) {
                 auto& race = root[std::to_string(e.first)];
                 CreateComponents(e.second, race);
             }
@@ -759,6 +763,7 @@ namespace CBP
         }
         catch (const std::exception& e)
         {
+            lastException = e;
             Error("%s: %s", __FUNCTION__, e.what());
         }
     }

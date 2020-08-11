@@ -104,11 +104,10 @@ namespace CBP
         bool m_isSelected;
     };
 
-    enum UISimComponentID : int {
+    enum UIEditorID : int {
         kProfileEditor = 0,
         kRaceEditor,
-        kActor,
-        kGlobal
+        kMainEditor
     };
 
     template <class T, int ID>
@@ -123,7 +122,7 @@ namespace CBP
             configComponents_t& a_data);
 
         virtual void AddSimComponentSlider(
-            T m_handle,
+            T a_handle,
             configComponents_t& a_data,
             configComponentsValue_t& a_pair) = 0;
 
@@ -200,7 +199,7 @@ namespace CBP
     };
 
     class UIProfileEditor :
-        UISimComponent<int, UISimComponentID::kProfileEditor>
+        UISimComponent<int, UIEditorID::kProfileEditor>
     {
     public:
 
@@ -302,7 +301,7 @@ namespace CBP
 
     class UIRaceEditor :
         UIProfileSelector<raceList_t::value_type>,
-        UISimComponent<SKSE::FormID, UISimComponentID::kRaceEditor>
+        UISimComponent<SKSE::FormID, UIEditorID::kRaceEditor>
     {
         using raceListValue_t = raceList_t::value_type;
     public:
@@ -331,7 +330,10 @@ namespace CBP
         virtual void ApplyProfile(raceListValue_t* a_data, const Profile& m_profile);
         [[nodiscard]] virtual const configComponents_t& GetComponentData(const raceListValue_t* a_data) const;
 
-        virtual void AddSimComponentSlider(SKSE::FormID m_handle, configComponents_t& a_data, configComponentsValue_t& a_pair);
+        virtual void AddSimComponentSlider(
+            SKSE::FormID a_handle, 
+            configComponents_t& a_data, 
+            configComponentsValue_t& a_pair);
 
         inline void MarkChanged() { m_changed = true; }
 
@@ -354,26 +356,26 @@ namespace CBP
         using actorListValue_t = actorListBaseConf_t::value_type;
 
         class UISimComponentActor :
-            public UISimComponent<SKSE::ObjectHandle, UISimComponentID::kActor>
+            public UISimComponent<SKSE::ObjectHandle, UIEditorID::kMainEditor>
         {
         public:
             virtual void AddSimComponentSlider(
-                SKSE::ObjectHandle m_handle,
+                SKSE::ObjectHandle a_handle,
                 configComponents_t& a_data,
                 configComponentsValue_t& a_pair);
         private:
             virtual bool ShouldDrawComponent(
-                SKSE::ObjectHandle m_handle,
+                SKSE::ObjectHandle a_handle,
                 const configComponents_t::value_type& a_comp);
 
         };
 
         class UISimComponentGlobal :
-            public UISimComponent<SKSE::ObjectHandle, UISimComponentID::kGlobal>
+            public UISimComponent<SKSE::ObjectHandle, UIEditorID::kMainEditor>
         {
         public:
             virtual void AddSimComponentSlider(
-                SKSE::ObjectHandle m_handle,
+                SKSE::ObjectHandle a_handle,
                 configComponents_t& a_data,
                 configComponentsValue_t& a_pair);
         };

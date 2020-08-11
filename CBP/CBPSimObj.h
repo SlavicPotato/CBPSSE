@@ -9,11 +9,11 @@ namespace CBP
         NiAVObject* bone;
         const std::string &confGroup;
         const configComponent_t& conf;
-        bool femaleCollisions;
-        bool femaleMovement;
+        bool collisions;
+        bool movement;
     };
 
-    typedef std::vector< nodeDesc_t> nodeDescList_t;
+    typedef std::vector<nodeDesc_t> nodeDescList_t;
 
     class SimObject
     {
@@ -29,9 +29,9 @@ namespace CBP
         SimObject(const SimObject& a_rhs) = delete;
         SimObject(SimObject&& a_rhs) = delete;
 
-        void update(Actor* actor, uint32_t a_step);
+        void Update(Actor* actor, uint32_t a_step);
         void UpdateConfig(const configComponents_t& config);
-        void reset(Actor* a_actor);
+        void Reset(Actor* a_actor);
 
         void ApplyForce(uint32_t a_steps, const std::string& a_component, const NiPoint3& a_force);
         void UpdateGroupInfo();

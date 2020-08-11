@@ -126,10 +126,24 @@ namespace CBP
         return it->second.HasConfigGroup(a_cg);
     }
 
-    void DCBP::UIQueueUpdateCurrentActor() {
+    void DCBP::UIQueueUpdateCurrentActor()
+    {
         if (m_Instance.conf.ui_enabled)
             m_Instance.m_updateTask.AddTask({
                 UTTask::kActionUIUpdateCurrentActor });
+    }
+
+    bool DCBP::SaveAll()
+    {
+        auto& iface = m_Instance.m_serialization;
+
+        bool failed = false;
+
+        failed |= !iface.SaveGlobals();
+        failed |= !iface.SaveGlobalProfile();
+        failed |= !iface.SaveCollisionGroups();
+
+        return !failed;
     }
 
     uint32_t DCBP::ConfigGetComboKey(int32_t param)
@@ -325,8 +339,8 @@ namespace CBP
         m_Instance.m_loadInstance++;
 
         CBP::IConfig::ResetGlobalConfig();
-        CBP::IConfig::ResetThingGlobalConfig();
-        CBP::IConfig::ClearActorConfHolder();
+        CBP::IConfig::ClearGlobalProfile();
+        CBP::IConfig::ClearActorConfigHolder();
         CBP::IConfig::ClearRaceConfHolder();
         CBP::IConfig::ClearCollisionGroups();
         CBP::IConfig::ClearNodeCollisionGroupMap();
@@ -434,7 +448,7 @@ namespace CBP
             }
             else {
                 for (uint32_t i = 0; i < numSteps; i++) {
-                    it->second.update(actor, i);
+                    it->second.Update(actor, i);
                 };
 
 #ifdef _CBP_MEASURE_PERF
@@ -576,7 +590,7 @@ namespace CBP
         {
             auto actor = SKSE::ResolveObject<Actor>(e.first, Actor::kTypeID);
             if (ActorValid(actor)) {
-                e.second.reset(actor);
+                e.second.Reset(actor);
             }
             e.second.Release();
         }
@@ -604,7 +618,7 @@ namespace CBP
         {
             auto actor = SKSE::ResolveObject<Actor>(e.first, Actor::kTypeID);
             if (ActorValid(actor)) {
-                e.second.reset(actor);
+                e.second.Reset(actor);
             }
         }
     }

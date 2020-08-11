@@ -281,7 +281,8 @@ namespace CBP
                         state.lastException = pm.GetLastException();
                         ImGui::OpenPopup("Delete failed");
                     }
-                } else if (UICommon::TextInputDialog("Rename", "Enter the new profile name:",
+                }
+                else if (UICommon::TextInputDialog("Rename", "Enter the new profile name:",
                     state.ren_input, sizeof(state.ren_input)))
                 {
                     auto& pm = GenericProfileManager::GetSingleton();
@@ -936,15 +937,24 @@ namespace CBP
             ImGui::PushItemWidth(ImGui::GetFontSize() * -12);
 
             bool saveGlobalsFailed = false;
+            bool saveAllFailed = false;
 
             if (ImGui::BeginMenuBar())
             {
                 if (ImGui::BeginMenu("File"))
                 {
+                    if (ImGui::MenuItem("Save"))
+                        if (!DCBP::SaveAll()) {
+                            saveAllFailed = true;
+                            state.lastException = 
+                                DCBP::GetLastSerializationException();
+                        }
+
                     if (ImGui::MenuItem("Save globals"))
                         if (!DCBP::SaveGlobals()) {
                             saveGlobalsFailed = true;
-                            state.lastException = DCBP::GetLastSerializationException();
+                            state.lastException = 
+                                DCBP::GetLastSerializationException();
                         }
 
                     ImGui::Separator();
@@ -987,24 +997,18 @@ namespace CBP
             auto& globalConfig = IConfig::GetGlobalConfig();
 
             ImGui::Spacing();
-            if (ImGui::Checkbox("Show all actors", &globalConfig.ui.showAllActors)) {
-                QueueUpdateActorList();
-                DCBP::SaveGlobals();
-            }
+            ImGui::Checkbox("Show all actors", &globalConfig.ui.showAllActors);
 
             ImGui::SameLine(ImGui::GetWindowContentRegionMax().x - 50.0f);
-            if (ImGui::Button("Rescan")) {
-                QueueUpdateActorList();
-            }
+            if (ImGui::Button("Rescan")) 
+                QueueUpdateActorList();            
 
             ImGui::Spacing();
-            if (ImGui::Checkbox("Clamp values", &globalConfig.ui.clampValuesMain))
-                DCBP::SaveGlobals();
+            ImGui::Checkbox("Clamp values", &globalConfig.ui.clampValuesMain);
 
             ImGui::SameLine(ImGui::GetWindowContentRegionMax().x - 43.0f);
-            if (ImGui::Button("Reset")) {
-                ImGui::OpenPopup("Reset");
-            }
+            if (ImGui::Button("Reset")) 
+                ImGui::OpenPopup("Reset");            
 
             if (UICommon::ConfirmDialog(
                 "Reset",
@@ -1015,13 +1019,15 @@ namespace CBP
                     DCBP::DispatchActorTask(m_currentActor, UTTask::kActionUpdateConfig);
                 }
                 else {
-                    IConfig::ResetThingGlobalConfig();
+                    IConfig::ClearGlobalProfile();
                     DCBP::UpdateConfigOnAllActors();
                 }
             }
 
             if (saveGlobalsFailed)
                 ImGui::OpenPopup("Settings save failed");
+            else if (saveAllFailed)
+                ImGui::OpenPopup("Save failed");
 
             ImGui::Spacing();
 
@@ -1041,7 +1047,7 @@ namespace CBP
             }
 
             UICommon::MessageDialog("Settings save failed", "Error occured while trying to save settings\n\n%s", state.lastException.what());
-            UICommon::MessageDialog("Save failed", "Saving actor data failed\n\n%s", state.lastException.what());
+            UICommon::MessageDialog("Save failed", "Saving one or more files failed.\nThe last exception was:\n\n%s", state.lastException.what());
 
             ImGui::PopItemWidth();
             ImGui::PopID();
@@ -1390,7 +1396,7 @@ namespace CBP
                 entry->second.second :
                 IConfig::GetNodeConfig();
 
-            ImGui::PushItemWidth(ImGui::GetFontSize() * -3.0f);
+            ImGui::PushItemWidth(ImGui::GetFontSize() * -10.0f);
 
             for (const auto& e : nodeMap)
             {
@@ -1464,14 +1470,14 @@ namespace CBP
     }
 
     bool UIContext::UISimComponentActor::ShouldDrawComponent(
-        SKSE::ObjectHandle m_handle,
+        SKSE::ObjectHandle a_handle,
         const configComponents_t::value_type& a_comp)
     {
-        return DCBP::ActorHasConfigGroup(m_handle, a_comp.first);
+        return DCBP::ActorHasConfigGroup(a_handle, a_comp.first);
     }
 
     void UIContext::UISimComponentGlobal::AddSimComponentSlider(
-        SKSE::ObjectHandle m_handle,
+        SKSE::ObjectHandle a_handle,
         configComponents_t& a_data,
         configComponentsValue_t& a_pair)
     {
@@ -1549,10 +1555,13 @@ namespace CBP
         float a_val)
     {
         auto& globalConfig = IConfig::GetGlobalConfig();
-        auto& mirrorTo = globalConfig.ui.mirror[ID];
 
-        auto it = mirrorTo.find(a_comp);
-        if (it == mirrorTo.end())
+        auto itm = globalConfig.ui.mirror.find(ID);
+        if (itm == globalConfig.ui.mirror.end())
+            return;
+
+        auto it = itm->second.find(a_comp);
+        if (it == itm->second.end())
             return;
 
         transform(a_key.begin(), a_key.end(), a_key.begin(), ::tolower);
@@ -1595,7 +1604,7 @@ namespace CBP
 
             if (*cs)
             {
-                ImGui::PushID(static_cast<const void*>(std::addressof(p.second)));
+                ImGui::PushID(static_cast<const void*>(std::addressof(p)));
 
                 if (ImGui::Button("Mirroring >"))
                     ImGui::OpenPopup("mirror_popup");
@@ -1624,16 +1633,12 @@ namespace CBP
                     if (d.size()) {
                         ImGui::Separator();
 
-                        if (ImGui::MenuItem("Clear", nullptr))
+                        if (ImGui::MenuItem("Clear"))
                             mirrorTo.erase(p.first);
                     }
 
                     ImGui::EndPopup();
                 }
-
-                ImGui::PopID();
-
-                ImGui::PushID(static_cast<const void*>(std::addressof(p)));
 
                 AddSimComponentSlider(a_handle, a_data, p);
 

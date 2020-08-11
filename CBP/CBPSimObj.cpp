@@ -26,20 +26,13 @@ namespace CBP
             nodeConfig_t nodeConf;
             IConfig::GetActorNodeConfig(a_handle, b.first, nodeConf);
 
-            bool femaleCollisions, femaleMovement;
-            if (a_sex == 0) {
-                femaleCollisions = nodeConf.maleCollisions;
-                femaleMovement = nodeConf.maleMovement;
-            }
-            else {
-                femaleCollisions = nodeConf.femaleCollisions;
-                femaleMovement = nodeConf.femaleMovement;
-            }
+            bool collisions, movement;
+            nodeConf.Get(a_sex, collisions, movement);
 
-            if (!femaleCollisions && !femaleMovement)
+            if (!collisions && !movement)
                 continue;
 
-            a_out.emplace_back(nodeDesc_t{ b.first, cs, bone, it->first, it->second, femaleCollisions, femaleMovement });
+            a_out.emplace_back(nodeDesc_t{ b.first, cs, bone, it->first, it->second, collisions, movement });
         }
 
         return a_out.size();
@@ -68,23 +61,23 @@ namespace CBP
                 e.conf,
                 m_Id,
                 IConfig::GetNodeCollisionGroupId(e.nodeName),
-                e.femaleCollisions,
-                e.femaleMovement
+                e.collisions,
+                e.movement
             );
 
             m_configGroups.emplace(e.confGroup);
         }
     }
 
-    void SimObject::reset(Actor* a_actor)
+    void SimObject::Reset(Actor* a_actor)
     {
         for (auto& p : m_things)
-            p.second.reset(a_actor);
+            p.second.Reset(a_actor);
     }
 
-    void SimObject::update(Actor* a_actor, uint32_t a_step) {
+    void SimObject::Update(Actor* a_actor, uint32_t a_step) {
         for (auto& p : m_things)
-            p.second.update(a_actor, a_step);
+            p.second.Update(a_actor, a_step);
     }
 
     void SimObject::UpdateConfig(const configComponents_t& a_config)
@@ -98,21 +91,14 @@ namespace CBP
             nodeConfig_t nodeConf;
             IConfig::GetActorNodeConfig(m_handle, p.first, nodeConf);
 
-            bool femaleCollisions, femaleMovement;
-            if (m_sex == 0) {
-                femaleCollisions = nodeConf.maleCollisions;
-                femaleMovement = nodeConf.maleMovement;
-            }
-            else {
-                femaleCollisions = nodeConf.femaleCollisions;
-                femaleMovement = nodeConf.femaleMovement;
-            }
+            bool collisions, movement;
+            nodeConf.Get(m_sex, collisions, movement);
 
             p.second.UpdateConfig(
                 SKSE::ResolveObject<Actor>(m_handle, Actor::kTypeID),
                 it2->second,
-                femaleCollisions,
-                femaleMovement
+                collisions,
+                movement
             );
         }
     }
@@ -126,14 +112,9 @@ namespace CBP
 
     void SimObject::UpdateGroupInfo()
     {
-        auto& nodeColGroupMap = IConfig::GetNodeCollisionGroupMap();
-
-        for (auto& p : m_things) {
-
-            //_DMESSAGE(":: %s: %X | %llX", p.first.c_str(), m_Id, groupId);
-
-            p.second.UpdateGroupInfo(m_Id, IConfig::GetNodeCollisionGroupId(p.first));
-        }
+        for (auto& p : m_things) 
+            p.second.UpdateGroupInfo(m_Id, 
+                IConfig::GetNodeCollisionGroupId(p.first));        
     }
 
     void SimObject::Release() {

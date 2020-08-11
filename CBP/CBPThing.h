@@ -121,8 +121,8 @@ namespace CBP
             bool a_collisions,
             bool a_movement) noexcept;
 
-        void update(Actor* actor, uint32_t a_step);
-        void reset(Actor* actor);
+        void Update(Actor* actor, uint32_t a_step);
+        void Reset(Actor* actor);
 
         void ApplyForce(uint32_t a_steps, const NiPoint3& a_force);
 
