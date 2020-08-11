@@ -427,7 +427,7 @@ namespace CBP
         {
             Json::Value root;
 
-            if (!ReadJsonData(PLUGIN_CBP_ACTOR_DATA, root))
+            if (!ReadJsonData(PLUGIN_CBP_GLOBPROFILE_DATA, root))
                 return;
 
             if (root.empty())
@@ -464,7 +464,7 @@ namespace CBP
 
             Json::Value root;
 
-            if (!ReadJsonData(PLUGIN_CBP_GLOBPROFILE_DATA, root))
+            if (!ReadJsonData(PLUGIN_CBP_ACTOR_DATA, root))
                 return;
 
             if (root.empty())
