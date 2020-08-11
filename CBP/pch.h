@@ -18,7 +18,17 @@
 #include <d3d11.h>
 #include <dxgi1_5.h>
 
+#include <wrl/client.h>
+
 #include <reactphysics3d/reactphysics3d.h>
+
+#include <Inc/CommonStates.h>
+#include <Inc/SimpleMath.h>
+#include <Inc/PrimitiveBatch.h>
+#include <Inc/Effects.h>
+#include <Inc/VertexTypes.h>
+#include <Inc/DirectXHelpers.h>
+#include <Src/PlatformHelpers.h>
 
 #include "json/json.h"
 
@@ -68,6 +78,7 @@ namespace r3d = reactphysics3d;
 #include "tasks.h"
 #include "events.h"
 #include "input.h"
+#include "render.h"
 #include "gui.h"
 #include "CBPConfig.h"
 #include "CBPData.h"
@@ -78,6 +89,7 @@ namespace r3d = reactphysics3d;
 #include "CBPUI.h"
 #include "CBPPapyrus.h"
 #include "CBPSerialization.h"
+#include "CBPRenderer.h"
 #include "cbp.h"
 
 #endif //PCH_H

@@ -46,6 +46,14 @@ namespace CBP
 
         } ui;
 
+        struct
+        {
+            bool enabled = false;
+            bool wireframe = true;
+            float contactPointSphereRadius = 0.5f;
+            float contactNormalLength = 2.0f;
+        } debugRenderer;
+
         inline bool& GetColState(const std::string& a_key) {
             return ui.colStates[a_key];
         }
@@ -112,19 +120,23 @@ namespace CBP
         float rotationalX = 0.0f;
         float rotationalY = 0.0f;
         float rotationalZ = 0.0f;
-        float colSphereRad = 1.0f;
-        float colSphereOffsetX = 0.0f;
-        float colSphereOffsetY = 0.0f;
-        float colSphereOffsetZ = 0.0f;
-        float colDampingCoef = 0.6f;
-        float colStiffnessCoef = 0.1f;
-        float mass = 50.0f;
+        float colSphereRadMin = 4.0f;
+        float colSphereRadMax = 4.0f;
+        float colSphereOffsetXMin = 0.0f;
+        float colSphereOffsetXMax = 0.0f;
+        float colSphereOffsetYMin = 0.0f;
+        float colSphereOffsetYMax = 0.0f;
+        float colSphereOffsetZMin = 0.0f;
+        float colSphereOffsetZMax = 0.0f;
+        float colDampingCoef = 2.0f;
+        float colStiffnessCoef = 0.0f;
+        float colDepthMul = 100.0f;
 
     private:
         static componentValueToOffsetMap_t componentValueToOffsetMap;
     };
 
-    static_assert(sizeof(configComponent_t) == 0x50);
+    static_assert(sizeof(configComponent_t) == 0x60);
 
     typedef std::map<std::string, configComponent_t> configComponents_t;
     typedef configComponents_t::value_type configComponentsValue_t;
@@ -137,12 +149,14 @@ namespace CBP
 
     struct nodeConfig_t
     {
-        bool movement = true;
-        bool collisions = true;
-
+        bool femaleMovement = true;
+        bool femaleCollisions = true;
+        bool maleMovement = false;
+        bool maleCollisions = false;
     };
 
     typedef std::unordered_map<std::string, nodeConfig_t> nodeConfigHolder_t;
+    typedef std::unordered_map<SKSE::ObjectHandle, nodeConfigHolder_t> actorNodeConfigHolder_t;
 
     class IConfig
     {
@@ -269,14 +283,34 @@ namespace CBP
         }
 
         [[nodiscard]] inline static auto& GetNodeConfig() {
-            return nodeConfHolder;
+            return nodeConfigHolder;
+        }
+
+        inline static void SetNodeConfig(nodeConfigHolder_t &a_rhs) {
+            nodeConfigHolder = a_rhs;
         }
 
         inline static void ClearNodeConfig() {
-            nodeConfHolder.clear();
+            nodeConfigHolder.clear();
         }
 
         static bool GetNodeConfig(const std::string& a_node, nodeConfig_t &a_out);
+
+        [[nodiscard]] inline static auto& GetActorNodeConfigHolder() {
+            return actorNodeConfigHolder;
+        }
+
+        static nodeConfigHolder_t& GetActorNodeConfig(SKSE::ObjectHandle a_handle);
+        static nodeConfigHolder_t& GetOrCreateActorNodeConfig(SKSE::ObjectHandle a_handle);
+        static bool GetActorNodeConfig(SKSE::ObjectHandle a_handle, const std::string& a_node, nodeConfig_t& a_out);
+
+        inline static void EraseActorNodeConfig(SKSE::ObjectHandle handle) {
+            actorNodeConfigHolder.erase(handle);
+        }
+
+        inline static void ClearActorNodeConfigHolder() {
+            actorNodeConfigHolder.clear();
+        }
 
     private:
 
@@ -296,7 +330,8 @@ namespace CBP
         static collisionGroups_t collisionGroups;
         static nodeCollisionGroupMap_t nodeCollisionGroupMap;
 
-        static nodeConfigHolder_t nodeConfHolder;
+        static nodeConfigHolder_t nodeConfigHolder;
+        static actorNodeConfigHolder_t actorNodeConfigHolder;
 
         static IConfigLog log;
     };

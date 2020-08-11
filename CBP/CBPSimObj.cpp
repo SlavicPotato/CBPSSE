@@ -2,19 +2,16 @@
 
 namespace CBP
 {
-    uint32_t SimObject::m_nextId = 0;
-
-    SimObject::SimObject(Actor* a_actor, const configComponents_t& a_config, const nodeMap_t& a_boneMap)
-        : m_things(a_boneMap.size())
+    auto SimObject::CreateNodeDescriptorList(
+        SKSE::ObjectHandle a_handle,
+        Actor* a_actor,
+        char a_sex,
+        const configComponents_t& a_config,
+        const nodeMap_t& a_nodeMap,
+        nodeDescList_t& a_out)
+        -> nodeDescList_t::size_type
     {
-        m_Id = m_nextId++;
-
-        bind(a_actor, a_config, a_boneMap);
-    }
-
-    void SimObject::bind(Actor* a_actor, const configComponents_t& a_config, const nodeMap_t& a_boneMap)
-    {
-        for (const auto& b : a_boneMap)
+        for (const auto& b : a_nodeMap)
         {
             BSFixedString cs(b.first.c_str());
 
@@ -27,22 +24,55 @@ namespace CBP
                 continue;
 
             nodeConfig_t nodeConf;
-            IConfig::GetNodeConfig(b.first, nodeConf);
+            IConfig::GetActorNodeConfig(a_handle, b.first, nodeConf);
 
-            if (!nodeConf.collisions && !nodeConf.movement)
+            bool femaleCollisions, femaleMovement;
+            if (a_sex == 0) {
+                femaleCollisions = nodeConf.maleCollisions;
+                femaleMovement = nodeConf.maleMovement;
+            }
+            else {
+                femaleCollisions = nodeConf.femaleCollisions;
+                femaleMovement = nodeConf.femaleMovement;
+            }
+
+            if (!femaleCollisions && !femaleMovement)
                 continue;
 
+            a_out.emplace_back(nodeDesc_t{ b.first, cs, bone, it->first, it->second, femaleCollisions, femaleMovement });
+        }
+
+        return a_out.size();
+    }
+
+    SimObject::SimObject(
+        SKSE::ObjectHandle a_handle,
+        Actor* a_actor,
+        char a_sex,
+        uint64_t a_Id,
+        const nodeDescList_t& a_desc)
+        :
+        m_handle(a_handle),
+        m_things(a_desc.size()),
+        m_Id(a_Id),
+        m_sex(a_sex)
+    {
+        for (const auto& e : a_desc)
+        {
             m_things.try_emplace(
-                b.first,
-                bone,
-                cs,
-                it->first,
-                it->second,
-                nodeConf,
+                e.nodeName,
+                a_actor,
+                e.bone,
+                e.cs,
+                e.confGroup,
+                e.conf,
                 m_Id,
-                IConfig::GetNodeCollisionGroupId(b.first)
+                IConfig::GetNodeCollisionGroupId(e.nodeName),
+                e.femaleCollisions,
+                e.femaleMovement
             );
-            m_configGroups.emplace(it->first);
+
+            m_configGroups.emplace(e.confGroup);
         }
     }
 
@@ -65,10 +95,25 @@ namespace CBP
             if (it2 == a_config.end())
                 continue;
 
-            nodeConfig_t n;
-            IConfig::GetNodeConfig(p.first, n);
+            nodeConfig_t nodeConf;
+            IConfig::GetActorNodeConfig(m_handle, p.first, nodeConf);
 
-            p.second.UpdateConfig(it2->second, n);
+            bool femaleCollisions, femaleMovement;
+            if (m_sex == 0) {
+                femaleCollisions = nodeConf.maleCollisions;
+                femaleMovement = nodeConf.maleMovement;
+            }
+            else {
+                femaleCollisions = nodeConf.femaleCollisions;
+                femaleMovement = nodeConf.femaleMovement;
+            }
+
+            p.second.UpdateConfig(
+                SKSE::ResolveObject<Actor>(m_handle, Actor::kTypeID),
+                it2->second,
+                femaleCollisions,
+                femaleMovement
+            );
         }
     }
 
@@ -84,6 +129,9 @@ namespace CBP
         auto& nodeColGroupMap = IConfig::GetNodeCollisionGroupMap();
 
         for (auto& p : m_things) {
+
+            //_DMESSAGE(":: %s: %X | %llX", p.first.c_str(), m_Id, groupId);
+
             p.second.UpdateGroupInfo(m_Id, IConfig::GetNodeCollisionGroupId(p.first));
         }
     }

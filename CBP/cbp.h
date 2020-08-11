@@ -29,11 +29,7 @@ namespace CBP
     {
         typedef std::unordered_set<SKSE::ObjectHandle> handleSet_t;
     public:
-        UpdateTask() :
-            m_lTime(PerfCounter::Query()),
-            m_timeAccum(0.0f)
-        {
-        }
+        UpdateTask();
 
         virtual void Run();
 
@@ -67,16 +63,16 @@ namespace CBP
 
         ICriticalSection m_taskLock;
 
-
         float m_timeAccum;
         long long m_lTime;
 
+        static std::atomic<uint64_t> m_nextGroupId;
+
 #ifdef _CBP_MEASURE_PERF
-        long long ss;
+        long long ss = PerfCounter::Query();
         long long ee = 0;
         long long c = 0;
         size_t a;
-        long long s = PerfCounter::Query();
 #endif
     };
 
@@ -111,6 +107,23 @@ namespace CBP
         {
         public:
             virtual void Run();
+        };
+        
+        class SwitchUITask :
+            public TaskDelegate
+        {
+        public:
+            SwitchUITask(bool a_switch) :
+                m_switch(a_switch)
+            {
+            }
+
+            virtual void Run();
+            virtual void Dispose() {
+                delete this;
+            };
+        private:
+            bool m_switch;
         };
 
         class ApplyForceTask :
@@ -149,6 +162,8 @@ namespace CBP
         static void UpdateGroupInfoOnAllActors();
         static void ResetPhysics();
         static void ResetActors();
+        static void UpdateDebugRendererState();
+        static void UpdateDebugRendererSettings();
         static void ApplyForce(SKSE::ObjectHandle a_handle, uint32_t a_steps, const std::string& a_component, const NiPoint3& a_force);
         [[nodiscard]] static bool ActorHasNode(SKSE::ObjectHandle a_handle, const std::string& a_node);
         [[nodiscard]] static bool ActorHasConfigGroup(SKSE::ObjectHandle a_handle, const std::string& a_cg);
@@ -159,10 +174,6 @@ namespace CBP
 
         inline static bool SaveCollisionGroups() {
             return m_Instance.m_serialization.SaveCollisionGroups();
-        }
-
-        inline static bool SaveNodeConfig() {
-            return m_Instance.m_serialization.SaveNodeConfig();
         }
 
         [[nodiscard]] inline static const auto& GetLastSerializationException() {
@@ -194,6 +205,15 @@ namespace CBP
             m_Instance.m_lock.Leave();
         }
 
+        [[nodiscard]] inline static auto& GetDriverConfig()
+        {
+            return m_Instance.conf;
+        }
+
+        inline static auto &GetRenderer() {
+            return m_Instance.m_renderer;
+        }
+
         FN_NAMEPROC("CBP")
     private:
         DCBP();
@@ -208,6 +228,9 @@ namespace CBP
         static void LoadGameHandler(Event m_code, void* args);
         static void SaveGameHandler(Event m_code, void* args);
 
+        static void OnD3D11PostCreate_CBP(Event code, void* data);
+        static void Present_Pre();
+
         static uint32_t ConfigGetComboKey(int32_t param);
 
         static bool UICallback();
@@ -219,7 +242,7 @@ namespace CBP
         struct
         {
             bool ui_enabled;
-            bool auto_reload;
+            bool debug_renderer;
         } conf;
 
         KeyPressHandler inputEventHandler;
@@ -233,6 +256,7 @@ namespace CBP
 
         Serialization m_serialization;
         UpdateTask m_updateTask;
+        std::unique_ptr<CBP::Renderer> m_renderer;
 
         r3d::PhysicsWorld* m_world;
         r3d::PhysicsCommon m_physicsCommon;

@@ -13,7 +13,8 @@ namespace CBP
     collisionGroups_t IConfig::collisionGroups;
     nodeCollisionGroupMap_t IConfig::nodeCollisionGroupMap;
 
-    nodeConfigHolder_t IConfig::nodeConfHolder;
+    nodeConfigHolder_t IConfig::nodeConfigHolder;
+    actorNodeConfigHolder_t IConfig::actorNodeConfigHolder;
 
     IConfig::IConfigLog IConfig::log;
 
@@ -31,85 +32,17 @@ namespace CBP
         {"gravitybias", offsetof(configComponent_t, gravityBias)},
         {"gravitycorrection", offsetof(configComponent_t, gravityCorrection)},
         {"cogoffset", offsetof(configComponent_t, cogOffset)},
-        {"colsphererad", offsetof(configComponent_t, colSphereRad)},
-        {"colsphereoffsetx", offsetof(configComponent_t, colSphereOffsetX)},
-        {"colsphereoffsety", offsetof(configComponent_t, colSphereOffsetY)},
-        {"colsphereoffsetz", offsetof(configComponent_t, colSphereOffsetZ)},
+        {"colsphereradmin", offsetof(configComponent_t, colSphereRadMin)},
+        {"colsphereradmax", offsetof(configComponent_t, colSphereRadMax)},
+        {"colsphereoffsetxmin", offsetof(configComponent_t, colSphereOffsetXMin)},
+        {"colsphereoffsetxmax", offsetof(configComponent_t, colSphereOffsetXMax)},
+        {"colsphereoffsetymin", offsetof(configComponent_t, colSphereOffsetYMin)},
+        {"colsphereoffsetymax", offsetof(configComponent_t, colSphereOffsetYMax)},
+        {"colsphereoffsetzmin", offsetof(configComponent_t, colSphereOffsetZMin)},
+        {"colsphereoffsetzmax", offsetof(configComponent_t, colSphereOffsetZMax)},
         {"coldampingcoef", offsetof(configComponent_t, colDampingCoef)},
         {"colstiffnesscoef", offsetof(configComponent_t, colStiffnessCoef)},
-        {"mass", offsetof(configComponent_t, mass)},
-    };
-
-    static const configComponents_t defaultConfig = {
-        {"breast", {
-            10.0f,
-            10.0f,
-            0.94f,
-            20.0f,
-            5.0f,
-            40.0f,
-            3.0f,
-            0.5f,
-            0.1f,
-            0.25f,
-            0.0f,
-            0.0f,
-            0.025f,
-            10.0f,
-            0.0f,
-            0.0f,
-            0.0f,
-            0.6f,
-            0.1f,
-            50.0f
-            }
-       },
-       {"belly", {
-            5.0f,
-            5.0f,
-            1.0f,
-            4.0f,
-            0.0f,
-            0.0f,
-            0.0f,
-            0.3f,
-            0.02f,
-            0.3f,
-            0.0f,
-            0.0f,
-            0.0f,
-            0.0f,
-            0.0f,
-            0.0f,
-            0.0f,
-            0.6f,
-            0.1f,
-            50.0f
-            }
-       },
-       {"butt", {
-            4.5f,
-            9.5f,
-            0.95f,
-            10.0f,
-            10.0f,
-            40.0f,
-            3.0f,
-            0.2f,
-            0.1f,
-            0.4f,
-            0.0f,
-            0.0f,
-            0.0f,
-            7.0f,
-            0.0f,
-            0.0f,
-            0.0f,
-            0.6f,
-            0.1f,
-            50.0f
-            }
-       }
+        {"coldepthmul", offsetof(configComponent_t, colDepthMul)},
     };
 
     const nodeMap_t IConfig::defaultNodeMap = {
@@ -279,15 +212,46 @@ namespace CBP
     {
         auto& nodeConfig = IConfig::GetNodeConfig();
 
-        auto it2 = nodeConfig.find(a_node);
-        if (it2 != nodeConfig.end()) {
-            a_out = it2->second;
+        auto it = nodeConfig.find(a_node);
+        if (it != nodeConfig.end()) {
+            a_out = it->second;
             return true;
         }
         
         return false;
     }
 
+    nodeConfigHolder_t& IConfig::GetActorNodeConfig(SKSE::ObjectHandle a_handle)
+    {
+        auto it = actorNodeConfigHolder.find(a_handle);
+        if (it != actorNodeConfigHolder.end())
+            return it->second;
+
+        return IConfig::GetNodeConfig();
+    }
+
+    nodeConfigHolder_t& IConfig::GetOrCreateActorNodeConfig(SKSE::ObjectHandle a_handle)
+    {
+        auto it = actorNodeConfigHolder.find(a_handle);
+        if (it != actorNodeConfigHolder.end())
+            return it->second;
+        else
+            return (actorNodeConfigHolder[a_handle] = IConfig::GetNodeConfig());        
+    }
+
+    bool IConfig::GetActorNodeConfig(SKSE::ObjectHandle a_handle, const std::string& a_node, nodeConfig_t& a_out)
+    {
+        auto& nodeConfig = GetActorNodeConfig(a_handle);
+
+        auto it = nodeConfig.find(a_node);
+        if (it != nodeConfig.end()) {
+            a_out = it->second;
+            return true;
+        }
+
+        return false;
+    }
+    
     configComponents_t& IConfig::GetOrCreateActorConf(SKSE::ObjectHandle a_handle)
     {
         auto ita = actorConfHolder.find(a_handle);

@@ -18,7 +18,7 @@ namespace CBP
         if (a_actor->race == nullptr)
             return;
 
-        actorRaceMap.emplace(a_handle, a_actor->race->formID);
+        actorRaceMap.insert_or_assign(a_handle, a_actor->race->formID);
     }
 
     void IData::UpdateActorRaceMap(SKSE::ObjectHandle a_handle)
@@ -30,21 +30,21 @@ namespace CBP
         if (actor->race == nullptr)
             return;
 
-        actorRaceMap.emplace(a_handle, actor->race->formID);
+        actorRaceMap.insert_or_assign(a_handle, actor->race->formID);
     }
 
     bool IData::PopulateRaceList()
     {
-        if (raceList.size())
-            return false;
+        raceList.clear();
 
         auto dh = DataHandler::GetSingleton();
         if (!dh)
             return false;
 
-        for (UInt32 i = 0; i < dh->races.count; i++) {
+        for (UInt32 i = 0; i < dh->races.count; i++) 
+        {
             auto race = dh->races[i];
-            if (!race)
+            if (race == nullptr)
                 continue;
 
             if (race->formID == 0)

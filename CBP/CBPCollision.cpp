@@ -56,8 +56,8 @@ namespace CBP
                     r3d::Vector3 vaf, vbf;
 
                     ResolveCollision(
-                        conf1.mass,
-                        conf2.mass,
+                        conf1.colDepthMul,
+                        conf2.colDepthMul,
                         depth,
                         contactPoint.getWorldNormal(),
                         r3d::Vector3(v1.x, v1.y, v1.z),
@@ -66,19 +66,65 @@ namespace CBP
                         vbf
                     );
 
+                    if (col1->getEntity().getIndex() == col2->getEntity().getIndex())
+                    {
+                        _DMESSAGE("A (%s): %u,%u | %f %f: %d ye %f | %f %f %f | %f %f %f | %p | %llx | %llx | %u %u",
+                            sc1->boneName.c_str(),
+                            col1->getEntity().getIndex(),
+                            col2->getEntity().getIndex(),
+                            r3d::Vector3(v1.x, v1.y, v1.z).length(),
+                            (r3d::Vector3(v1.x, v1.y, v1.z) - r3d::Vector3(v2.x, v2.y, v2.z)).length(),
+                            contactPair.getEventType(),
+                            depth,
+                            v1.x,
+                            v1.y,
+                            v1.z,
+                            vaf.x,
+                            vaf.y,
+                            vaf.z,
+                            sc1->m_obj,
+                            sc1->m_parentId,
+                            sc1->m_groupId,
+                            col1->getEntity().id,
+                            col2->getEntity().id
+                        );
+
+                        _DMESSAGE("B (%s): %u,%u | %f %f: %d ye %f | %f %f %f | %f %f %f | %p | %llx | %llx | %u %u",
+                            sc2->boneName.c_str(),
+                            col1->getEntity().getIndex(),
+                            col2->getEntity().getIndex(),
+                            r3d::Vector3(v2.x, v2.y, v2.z).length(),
+                            (r3d::Vector3(v1.x, v1.y, v1.z) - r3d::Vector3(v2.x, v2.y, v2.z)).length(),
+                            contactPair.getEventType(),
+                            depth,
+                            v2.x,
+                            v2.y,
+                            v2.z,
+                            vbf.x,
+                            vbf.y,
+                            vbf.z,
+                            sc2->m_obj,
+                            sc1->m_parentId,
+                            sc1->m_groupId,
+                            col1->getEntity().id,
+                            col2->getEntity().id
+                        );
+                    }
+
+                    sc1->stiffnes2Mul = sc1->stiffnesMul =
+                        1.0f / max(dampingMul * conf1.colStiffnessCoef, 1.0f);
+                    sc2->stiffnes2Mul = sc2->stiffnesMul =
+                        1.0f / max(dampingMul * conf2.colStiffnessCoef, 1.0f);
+
+                    sc1->dampingMul = std::clamp(dampingMul * conf1.colDampingCoef, 1.0f, 15.0f);
+                    sc2->dampingMul = std::clamp(dampingMul * conf2.colDampingCoef, 1.0f, 15.0f);
+
                     if (sc1->HasMovement())
-                        sc1->SetVelocity(vaf);
+                        sc1->SetVelocity2(vaf);
                     if (sc2->HasMovement())
-                        sc2->SetVelocity(vbf);
+                        sc2->SetVelocity2(vbf);
                 }
 
-                sc1->stiffnes2Mul = sc1->stiffnesMul =
-                    1.0f / max(dampingMul * conf1.colStiffnessCoef, 1.0f);
-                sc2->stiffnes2Mul = sc2->stiffnesMul =
-                    1.0f / max(dampingMul * conf2.colStiffnessCoef, 1.0f);
-
-                sc1->dampingMul = std::clamp(dampingMul * conf1.colDampingCoef, 1.0f, 15.0f);
-                sc2->dampingMul = std::clamp(dampingMul * conf2.colDampingCoef, 1.0f, 15.0f);
             }
             break;
             case EventType::ContactExit:
@@ -91,8 +137,8 @@ namespace CBP
     }
 
     void ICollision::ResolveCollision(
-        float ma,
-        float mb,
+        float dma,
+        float dmb,
         float depth,
         const r3d::Vector3& normal,
         const r3d::Vector3& vai,
@@ -101,19 +147,17 @@ namespace CBP
         r3d::Vector3& vbf
     )
     {
-
         auto& globalConf = IConfig::GetGlobalConfig();
 
-        float Jmod = (vai - vbi).length() * depth;
-        auto Ja = (normal * Jmod);
-        auto Jb = (normal * -Jmod);
+        auto len = (vai - vbi).length();
 
-        auto Bmod = globalConf.phys.timeStep * (1.0f + depth);
-        auto Ba = (normal * depth) * Bmod;
-        auto Bb = (normal * depth) * -Bmod;
+        auto maga = len + (depth * dma);
+        auto magb = len + (depth * dmb);
 
-        vaf = vai - (Ja * (1.0f / (max(ma / globalConf.phys.timeStep, 1.0f))) + Ba);
-        vbf = vbi - (Jb * (1.0f / (max(mb / globalConf.phys.timeStep, 1.0f))) + Bb);
+        auto Ja = (normal * (maga * depth));
+        auto Jb = (normal * (magb * -depth));
 
+        vaf = Ja;
+        vbf = Jb;
     }
 }

@@ -15,7 +15,7 @@ namespace CBP
         auto& physicsCommon = DCBP::GetPhysicsCommon();
 
         m_body = world->createCollisionBody(r3d::Transform::identity());
-        m_sphereShape = physicsCommon.createSphereShape(m_parent.conf.colSphereRad);
+        m_sphereShape = physicsCommon.createSphereShape(m_parent.conf.colSphereRadMax);
         m_collider = m_body->addCollider(m_sphereShape, r3d::Transform::identity());
         m_collider->setUserData(std::addressof(m_parent));
 
@@ -71,7 +71,7 @@ namespace CBP
             }
         }
 
-        auto& rot = m_parent.m_obj->m_parent->m_worldTransform.rot;
+        auto& rot = m_parent.m_obj->m_worldTransform.rot;
 
         m_mat[0][0] = rot.data[0][0]; m_mat[0][1] = rot.data[0][1]; m_mat[0][2] = rot.data[0][2];
         m_mat[1][0] = rot.data[1][0]; m_mat[1][1] = rot.data[1][1]; m_mat[1][2] = rot.data[1][2];
@@ -90,13 +90,15 @@ namespace CBP
     }
 
     SimComponent::SimComponent(
+        Actor* a_actor,
         NiAVObject* a_obj,
         const BSFixedString& a_name,
         const std::string& a_configGroupName,
         const configComponent_t& a_config,
-        const nodeConfig_t& a_nodeConfig,
-        uint32_t a_parentId, 
-        uint64_t a_groupId)
+        uint32_t a_parentId,
+        uint64_t a_groupId,
+        bool a_collisions,
+        bool a_movement)
         :
         boneName(a_name),
         m_configGroupName(a_configGroupName),
@@ -108,7 +110,7 @@ namespace CBP
         m_parentId(a_parentId),
         m_groupId(a_groupId)
     {
-        UpdateConfig(a_config, a_nodeConfig);
+        UpdateConfig(a_actor, a_config, a_collisions, a_movement);
         m_collisionData.Update();
     }
 
@@ -117,24 +119,55 @@ namespace CBP
         m_collisionData.Destroy();
     }
 
+    inline static float mmw(float a_val, float a_min, float a_max) {
+        return a_min + (a_max - a_min) * a_val / 100.0f;
+    }
+
+    bool SimComponent::UpdateWeightData(Actor* a_actor, const configComponent_t& a_config)
+    {
+        if (a_actor == nullptr)
+            return false;
+
+        auto npc = DYNAMIC_CAST(a_actor->baseForm, TESForm, TESNPC);
+        if (npc == nullptr)
+            return false;
+
+        colSphereRad = mmw(npc->weight, a_config.colSphereRadMin, a_config.colSphereRadMax);
+        colSphereOffsetX = mmw(npc->weight, a_config.colSphereOffsetXMin, a_config.colSphereOffsetXMax);
+        colSphereOffsetY = mmw(npc->weight, a_config.colSphereOffsetYMin, a_config.colSphereOffsetYMax);
+        colSphereOffsetZ = mmw(npc->weight, a_config.colSphereOffsetZMin, a_config.colSphereOffsetZMax);
+
+        return true;
+    }
+
     void SimComponent::UpdateConfig(
+        Actor* a_actor,
         const configComponent_t& a_config,
-        const nodeConfig_t& a_nodeConfig) noexcept
+        bool a_collisions,
+        bool a_movement) noexcept
     {
         conf = a_config;
-        m_nodeConfig = a_nodeConfig;
+        m_collisions = a_collisions;
+        m_movement = a_movement;
 
-        if (m_nodeConfig.collisions &&
-            a_config.colSphereRad > 0.0f)
+        if (!UpdateWeightData(a_actor, a_config)) {
+            colSphereRad = a_config.colSphereRadMax;
+            colSphereOffsetX = a_config.colSphereOffsetXMax;
+            colSphereOffsetY = a_config.colSphereOffsetYMax;
+            colSphereOffsetZ = a_config.colSphereOffsetZMax;
+        }
+
+        if (m_collisions &&
+            colSphereRad > 0.0f)
         {
             if (m_collisionData.Create())
                 ResetOverrides();
 
-            m_collisionData.SetRadius(conf.colSphereRad);
+            m_collisionData.SetRadius(colSphereRad);
             m_collisionData.SetSphereOffset(
-                conf.colSphereOffsetX,
-                conf.colSphereOffsetY,
-                conf.colSphereOffsetZ
+                colSphereOffsetX,
+                colSphereOffsetY,
+                colSphereOffsetZ
             );
         }
         else {
@@ -144,11 +177,6 @@ namespace CBP
 
         npCogOffset = NiPoint3(0.0f, conf.cogOffset, 0.0f);
         npGravityCorrection = NiPoint3(0.0f, 0.0f, conf.gravityCorrection);
-
-        auto& globalConf = IConfig::GetGlobalConfig();
-        dampingForce = conf.damping * globalConf.phys.timeStep;
-
-        conf.mass /= 10.0f;
     }
 
     void SimComponent::reset(Actor* actor)
@@ -190,7 +218,7 @@ namespace CBP
             auto& current = m_applyForceQueue.front();
 
             auto vD = m_obj->m_parent->m_worldTransform * current.force;
-            auto vP = m_obj->m_parent->m_worldTransform * m_obj->m_localTransform.pos;
+            auto vP = m_obj->m_parent->m_worldTransform.pos;
 
             force += (vD - vP) / globalConf.phys.timeStep;
 
@@ -233,17 +261,15 @@ namespace CBP
         if (m_obj == nullptr) {
             return;
         }
-        
-        if (m_nodeConfig.movement) {
+
+        if (m_movement) {
             UpdateMovement(actor);
         }
-        else if (a_step == 0) 
+        else if (a_step == 0)
         {
             auto newPos = m_obj->m_worldTransform.pos;
             velocity = newPos - oldWorldPos;
             oldWorldPos = newPos;
-
-            //_DMESSAGE("%f %f %f", velocity.x, velocity.y, velocity.z);
         }
 
         m_collisionData.Update();

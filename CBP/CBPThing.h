@@ -21,6 +21,10 @@ namespace CBP
                 m_parent(a_parent)
             {}
 
+            Collider() = delete;
+            Collider(const Collider& a_rhs) = delete;
+            Collider(Collider&& a_rhs) = delete;
+
             bool Create();
             bool Destroy();
             void Update();
@@ -63,13 +67,13 @@ namespace CBP
         };
 
     private:
-        void UpdateMovement(Actor* actor);
+        void UpdateMovement(Actor* a_actor);
+        bool UpdateWeightData(Actor* a_actor, const configComponent_t& a_config);
 
         NiPoint3 npCogOffset;
         NiPoint3 npGravityCorrection;
         NiPoint3 npZero;
 
-        float dampingForce;
         NiPoint3 oldWorldPos;
         NiPoint3 velocity;
 
@@ -81,23 +85,28 @@ namespace CBP
 
         configComponent_t conf;
 
-        nodeConfig_t m_nodeConfig;
+        bool m_collisions;
+        bool m_movement;
 
-        uint64_t m_groupId;
-        uint32_t m_parentId;
+        float colSphereRad = 1.0f;
+        float colSphereOffsetX = 0.0f;
+        float colSphereOffsetY = 0.0f;
+        float colSphereOffsetZ = 0.0f;
 
-        NiAVObject* m_obj;
+        
 
     public:
         BSFixedString boneName;
         SimComponent(
+            Actor* a_actor,
             NiAVObject* m_obj,
             const BSFixedString& name,
             const std::string& a_configBoneName,
             const configComponent_t& config,
-            const nodeConfig_t &a_nodeConfig,
             uint32_t a_parentId,
-            uint64_t a_groupId
+            uint64_t a_groupId,
+            bool a_collisions,
+            bool a_movement
         );
 
         SimComponent() = delete;
@@ -107,8 +116,10 @@ namespace CBP
         void Release();
 
         void UpdateConfig(
+            Actor *a_actor,
             const configComponent_t& centry,
-            const nodeConfig_t& a_nodeConfig) noexcept;
+            bool a_collisions,
+            bool a_movement) noexcept;
 
         void update(Actor* actor, uint32_t a_step);
         void reset(Actor* actor);
@@ -121,18 +132,22 @@ namespace CBP
             velocity.z = std::clamp(a_vel.z, -100000.0f, 100000.0f);
         }
 
-        inline void SetVelocity2(const r3d::Vector3& a_vel) {
-            velocity.x = a_vel.x;
-            velocity.y = a_vel.y;
-            velocity.z = a_vel.z;
-        }
-
         inline void SetVelocity(const NiPoint3& a_vel) {
             velocity.x = std::clamp(a_vel.x, -100000.0f, 100000.0f);
             velocity.y = std::clamp(a_vel.y, -100000.0f, 100000.0f);
             velocity.z = std::clamp(a_vel.z, -100000.0f, 100000.0f);
         }
+        
+        inline void SetVelocity2(const r3d::Vector3& a_vel) {
 
+            auto& globalConf = IConfig::GetGlobalConfig();
+
+            NiPoint3 d(a_vel.x, a_vel.y, a_vel.z);
+
+            velocity = (velocity - (d * globalConf.phys.timeStep)) - 
+                (velocity * ((conf.damping * globalConf.phys.timeStep) * dampingMul));
+        }
+        
         [[nodiscard]] inline const auto& GetVelocity() const {
             return velocity;
         }
@@ -157,21 +172,26 @@ namespace CBP
                 a_rhs.m_groupId == m_groupId;
         }
 
-        inline void UpdateGroupInfo(uint32_t a_parentId, uint64_t a_groupId) {
+        inline void UpdateGroupInfo(uint64_t a_parentId, uint64_t a_groupId) {
             m_parentId = a_parentId;
             m_groupId = a_groupId;
         };
 
-        inline bool HasMovement() const {
-            return m_nodeConfig.movement;
+        [[nodiscard]] inline bool HasMovement() const {
+            return m_movement;
         }
 
-        inline bool HasCollision() const {
-            return m_nodeConfig.collisions;
+        [[nodiscard]] inline bool HasCollision() const {
+            return m_collisions;
         }
 
         float dampingMul = 1.0f;
         float stiffnesMul = 1.0f;
         float stiffnes2Mul = 1.0f;
+
+        uint64_t m_groupId;
+        uint64_t m_parentId;
+
+        NiAVObject* m_obj;
     };
 }

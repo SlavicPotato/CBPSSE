@@ -1,5 +1,13 @@
 {
-	"breast" : ["NPC L Breast", "NPC R Breast"],
-	"butt" : ["NPC L Butt", "NPC R Butt"],
-	"belly" : ["HDT Belly"]
+	"breast left": [ "NPC L Breast" ],
+	"breast right": [ "NPC R Breast" ],
+	"butt left": [ "NPC L Butt" ],
+	"butt right": [ "NPC R Butt" ],
+	"belly": [ "HDT Belly" ],
+	"hand left": [ "NPC L Hand [LHnd]" ],
+	"hand right": [ "NPC R Hand [RHnd]" ],
+	"forearm left": [ "NPC L Forearm [LLar]" ],
+	"forearm right": [ "NPC R Forearm [RLar]" ],
+	"palm left": [ "NPC L Finger20 [LF20]" ],
+	"palm right": [ "NPC R Finger20 [RF20]" ]
 }

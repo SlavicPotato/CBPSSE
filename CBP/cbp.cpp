@@ -11,6 +11,7 @@ namespace CBP
     constexpr char* CKEY_COMBOKEY = "ComboKey";
     constexpr char* CKEY_SHOWKEY = "ToggleKey";
     constexpr char* CKEY_UIENABLED = "UIEnabled";
+    constexpr char* CKEY_DEBUGRENDERER = "DebugRenderer";
 
     inline static bool ActorValid(const Actor* actor)
     {
@@ -59,6 +60,34 @@ namespace CBP
     {
         m_Instance.m_updateTask.AddTask(
             UTTask::kActionReset);
+    }
+
+    void DCBP::UpdateDebugRendererState()
+    {
+        if (!m_Instance.conf.debug_renderer)
+            return;
+
+        auto& globalConf = CBP::IConfig::GetGlobalConfig();
+        if (globalConf.debugRenderer.enabled) {
+            m_Instance.m_world->setIsDebugRenderingEnabled(true);
+        }
+        else
+            m_Instance.m_world->setIsDebugRenderingEnabled(false);
+    }
+
+    void DCBP::UpdateDebugRendererSettings()
+    {
+        if (!m_Instance.conf.debug_renderer)
+            return;
+
+        auto& globalConf = CBP::IConfig::GetGlobalConfig();
+
+        auto& debugRenderer = m_Instance.m_world->getDebugRenderer();
+
+        debugRenderer.setContactPointSphereRadius(
+            globalConf.debugRenderer.contactPointSphereRadius);
+        debugRenderer.setContactNormalLength(
+            globalConf.debugRenderer.contactNormalLength);
     }
 
     void DCBP::ApplyForce(
@@ -136,6 +165,7 @@ namespace CBP
     void DCBP::LoadConfig()
     {
         conf.ui_enabled = GetConfigValue(SECTION_CBP, CKEY_UIENABLED, true);
+        conf.debug_renderer = GetConfigValue(SECTION_CBP, CKEY_DEBUGRENDERER, false);
 
         auto& globalConfig = CBP::IConfig::GetGlobalConfig();
 
@@ -159,23 +189,59 @@ namespace CBP
 
         SKSE::g_papyrus->Register(RegisterFuncs);
 
+        m_Instance.m_world = m_Instance.m_physicsCommon.createPhysicsWorld();
+        m_Instance.m_world->setEventListener(std::addressof(CBP::ICollision::GetSingleton()));
+
+        if (m_Instance.conf.debug_renderer) {
+            IEvents::RegisterForEvent(Event::OnD3D11PostCreate, OnD3D11PostCreate_CBP);
+
+            DRender::AddPresentCallback(Present_Pre);
+
+            auto& debugRenderer = m_Instance.m_world->getDebugRenderer();
+            debugRenderer.setIsDebugItemDisplayed(r3d::DebugRenderer::DebugItem::COLLISION_SHAPE, true);
+            debugRenderer.setIsDebugItemDisplayed(r3d::DebugRenderer::DebugItem::CONTACT_POINT, true);
+            debugRenderer.setIsDebugItemDisplayed(r3d::DebugRenderer::DebugItem::CONTACT_NORMAL, true);
+
+            m_Instance.Message("Debug renderer enabled");
+        }
+
         if (m_Instance.conf.ui_enabled)
         {
             if (DUI::Initialize()) {
-                DInput::Initialize();
                 DInput::RegisterForKeyEvents(&m_Instance.inputEventHandler);
 
                 m_Instance.Message("UI enabled");
             }
         }
 
-        m_Instance.m_world = m_Instance.m_physicsCommon.createPhysicsWorld();
-        m_Instance.m_world->setEventListener(std::addressof(CBP::ICollision::GetSingleton()));
-
         IConfig::LoadConfig();
 
         auto& pm = GenericProfileManager::GetSingleton();
         pm.Load(PLUGIN_CBP_PROFILE_PATH);
+    }
+
+    void DCBP::OnD3D11PostCreate_CBP(Event, void* data)
+    {
+        auto info = static_cast<D3D11CreateEventPost*>(data);
+
+        m_Instance.m_renderer = std::make_unique<CBP::Renderer>(
+            info->m_pDevice, info->m_pImmediateContext);
+    }
+
+
+    void DCBP::Present_Pre()
+    {
+        Lock();
+
+        auto& globalConf = CBP::IConfig::GetGlobalConfig();
+
+        if (globalConf.debugRenderer.enabled &&
+            globalConf.phys.collisions) 
+        {
+            m_Instance.m_renderer->Draw();
+        }
+
+        Unlock();
     }
 
     void DCBP::MessageHandler(Event, void* args)
@@ -210,15 +276,23 @@ namespace CBP
 
         Lock();
 
+        PerfTimer pt;
+        pt.Start();
+
         iface.LoadGlobals();
         iface.LoadActorProfiles(intfc);
         iface.LoadRaceProfiles(intfc);
         iface.LoadCollisionGroups();
-        iface.LoadNodeConfig();
+
+        m_Instance.Debug("%s: %f", __FUNCTION__, pt.Stop());
+
+        UpdateDebugRendererState();
+        UpdateDebugRendererSettings();
 
         Unlock();
 
         UpdateConfigOnAllActors();
+        ResetPhysics();
     }
 
     void DCBP::SaveGameHandler(Event, void*)
@@ -227,11 +301,15 @@ namespace CBP
 
         Lock();
 
+        PerfTimer pt;
+        pt.Start();
+
         iface.SaveGlobals();
         iface.SaveActorProfiles();
         iface.SaveRaceProfiles();
         iface.SaveCollisionGroups();
-        iface.SaveNodeConfig();
+
+        m_Instance.Debug("%s: %f", __FUNCTION__, pt.Stop());
 
         Unlock();
     }
@@ -251,6 +329,7 @@ namespace CBP
         CBP::IConfig::ClearCollisionGroups();
         CBP::IConfig::ClearNodeCollisionGroupMap();
         CBP::IConfig::ClearNodeConfig();
+        CBP::IConfig::ClearActorNodeConfigHolder();
 
         Unlock();
     }
@@ -284,6 +363,12 @@ namespace CBP
         }
 
         return kEvent_Continue;
+    }
+
+    UpdateTask::UpdateTask() :
+        m_lTime(PerfCounter::Query()),
+        m_timeAccum(0.0f)
+    {
     }
 
     void UpdateTask::Run()
@@ -346,6 +431,7 @@ namespace CBP
                 for (uint32_t i = 0; i < numSteps; i++) {
                     it->second.update(actor, i);
                 };
+
 #ifdef _CBP_MEASURE_PERF
                 n++;
 #endif
@@ -358,17 +444,21 @@ namespace CBP
                 world->update(globalConf.phys.timeStep);
                 numSteps--;
             };
+
+            if (globalConf.debugRenderer.enabled) {
+                DCBP::GetRenderer()->Update(DCBP::GetWorld()->getDebugRenderer());
+            }
         }
 
         DCBP::Unlock();
 
 #ifdef _CBP_MEASURE_PERF
         auto e = PerfCounter::Query();
-        ee += PerfCounter::DeltaT_us(s, e);
+        ee += PerfCounter::DeltaTu(s, e);
         c++;
         a += n;
 
-        if (PerfCounter::DeltaT_us(ss, e) > 5000000LL) {
+        if (PerfCounter::DeltaTu(ss, e) > 5000000LL) {
             ss = e;
             Debug("Perf: %lld us (%zu actors)", ee / c, a / c);
             ee = 0;
@@ -376,7 +466,10 @@ namespace CBP
             a = 0;
         }
 #endif
+
     }
+
+    std::atomic<uint64_t> UpdateTask::m_nextGroupId = 0;
 
     void UpdateTask::AddActor(SKSE::ObjectHandle a_handle)
     {
@@ -397,26 +490,30 @@ namespace CBP
 
         auto& globalConfig = IConfig::GetGlobalConfig();
 
-        if (globalConfig.general.femaleOnly) {
-            auto npc = DYNAMIC_CAST(actor->baseForm, TESForm, TESNPC);
-            if (npc != nullptr && CALL_MEMBER_FN(npc, GetSex)() == 0)
-                return;
-        }
+        char sex;
+        auto npc = DYNAMIC_CAST(actor->baseForm, TESForm, TESNPC);
+        if (npc != nullptr)
+            sex = CALL_MEMBER_FN(npc, GetSex)();
+        else
+            sex = 0;
+
+        if (sex == 0 && globalConfig.general.femaleOnly)
+            return;
+
+        auto& actorConf = IConfig::GetActorConf(a_handle);
+        auto& nodeMap = IConfig::GetNodeMap();
+
+        nodeDescList_t descList;
+        if (!SimObject::CreateNodeDescriptorList(a_handle, actor, sex, actorConf, nodeMap, descList))
+            return;
 
         IData::UpdateActorRaceMap(a_handle, actor);
 
-        auto obj = SimObject(
-            actor, IConfig::GetActorConf(a_handle),
-            IConfig::GetNodeMap()
-        );
-
-        if (obj.hasBones())
-        {
 #ifdef _CBP_SHOW_STATS
-            Debug("Adding %.16llX (%s)", a_handle, CALL_MEMBER_FN(actor, GetReferenceName)());
+        Debug("Adding %.16llX (%s)", a_handle, CALL_MEMBER_FN(actor, GetReferenceName)());
 #endif
-            m_actors.emplace(a_handle, std::move(obj));
-        }
+
+        m_actors.try_emplace(a_handle, a_handle, actor, sex, m_nextGroupId++, descList);
     }
 
     void UpdateTask::RemoveActor(SKSE::ObjectHandle handle)
@@ -436,7 +533,8 @@ namespace CBP
     void UpdateTask::UpdateConfigOnAllActors()
     {
         for (auto& a : m_actors)
-            a.second.UpdateConfig(CBP::IConfig::GetActorConf(a.first));
+            a.second.UpdateConfig(
+                CBP::IConfig::GetActorConf(a.first));
     }
 
     void UpdateTask::UpdateGroupInfoOnAllActors()
@@ -445,12 +543,12 @@ namespace CBP
             a.second.UpdateGroupInfo();
     }
 
-
     void UpdateTask::UpdateConfig(SKSE::ObjectHandle handle)
     {
         auto it = m_actors.find(handle);
         if (it != m_actors.end())
-            it->second.UpdateConfig(CBP::IConfig::GetActorConf(it->first));
+            it->second.UpdateConfig(
+                CBP::IConfig::GetActorConf(it->first));
     }
 
     void UpdateTask::ApplyForce(
@@ -645,9 +743,8 @@ namespace CBP
 
         bool ret = uiState.show;
 
-        if (!uiState.show) {
-            DisableUI();
-        }
+        if (!uiState.show)
+            DTasks::AddTask(new SwitchUITask(false));
 
         Unlock();
 
@@ -784,6 +881,15 @@ namespace CBP
             }
             else
                 Unlock();
+        }
+    }
+
+    void DCBP::SwitchUITask::Run()
+    {
+        if (!m_switch) {
+            Lock();
+            m_Instance.DisableUI();
+            Unlock();
         }
     }
 

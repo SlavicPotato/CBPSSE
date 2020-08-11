@@ -18,13 +18,17 @@ namespace CBP
         {"stiffness2", "Quadratic spring stiffness"},
         {"timeScale", "Time scale"},
         {"timeStep", "Update rate in Hz"},
-        {"colSphereRad", "Collision sphere radius (set to 0 to disable collisions)"},
-        {"colSphereOffsetX", "Collision sphere X offset"},
-        {"colSphereOffsetY", "Collision sphere Y offset"},
-        {"colSphereOffsetZ", "Collision sphere Z offset"},
+        {"colSphereRadMax", "Collision sphere radius (weigth 100)"},
+        {"colSphereRadMin", "Collision sphere radius (weight 0)"},
+        {"colSphereOffsetXMax", "Collision sphere X offset (weigth 100)"},
+        {"colSphereOffsetXMin", "Collision sphere X offset (weigth 0)"},
+        {"colSphereOffsetYMax", "Collision sphere Y offset (weigth 100)"},
+        {"colSphereOffsetYMin", "Collision sphere Y offset (weigth 0)"},
+        {"colSphereOffsetZMax", "Collision sphere Z offset (weigth 100)"},
+        {"colSphereOffsetZMin", "Collision sphere Z offset (weigth 0)"},
         {"colDampingCoef", ""},
         {"colStiffnessCoef", ""},
-        {"mass", "Only used for collisions"}
+        {"colDepthMul", "Only used for collisions"}
     };
 
     static const keyDesc_t comboKeyDesc({
@@ -138,13 +142,17 @@ namespace CBP
     m(rotationalZ, 0.0f, 1.0f); \
     m(stiffness, 0.0f, 100.0f); \
     m(stiffness2, 0.0f, 100.0f); \
-    m(colSphereRad, 0.0f, 100.0f); \
-    m(colSphereOffsetX, -50.0f, 50.0f); \
-    m(colSphereOffsetY, -50.0f, 50.0f); \
-    m(colSphereOffsetZ, -50.0f, 50.0f); \
-    m(colDampingCoef, 0.0f, 1.0f); \
+    m(colSphereRadMin, 0.0f, a_pair.second.colSphereRadMax); \
+    m(colSphereRadMax, a_pair.second.colSphereRadMin, 100.0f); \
+    m(colSphereOffsetXMin, -50.0f, a_pair.second.colSphereOffsetXMax); \
+    m(colSphereOffsetXMax, a_pair.second.colSphereOffsetXMin, 50.0f); \
+    m(colSphereOffsetYMin, -50.0f, a_pair.second.colSphereOffsetYMax); \
+    m(colSphereOffsetYMax, a_pair.second.colSphereOffsetYMin, 50.0f); \
+    m(colSphereOffsetZMin, -50.0f, a_pair.second.colSphereOffsetZMax); \
+    m(colSphereOffsetZMax, a_pair.second.colSphereOffsetZMin, 50.0f); \
+    m(colDampingCoef, 0.0f, 10.0f); \
     m(colStiffnessCoef, 0.0f, 1.0f); \
-    m(mass, 1.0f, 1000.0f);
+    m(colDepthMul, 1.0f, 1000.0f);
 
     void UIProfileEditor::Draw(bool* a_active)
     {
@@ -273,9 +281,7 @@ namespace CBP
                         state.lastException = pm.GetLastException();
                         ImGui::OpenPopup("Delete failed");
                     }
-                }
-
-                if (UICommon::TextInputDialog("Rename", "Enter the new profile name:",
+                } else if (UICommon::TextInputDialog("Rename", "Enter the new profile name:",
                     state.ren_input, sizeof(state.ren_input)))
                 {
                     auto& pm = GenericProfileManager::GetSingleton();
@@ -289,13 +295,15 @@ namespace CBP
                         ImGui::OpenPopup("Rename failed");
                     }
                 }
+                else {
 
-                UICommon::MessageDialog("Save", "Saving profile '%s' to '%s' failed\n\n%s",
-                    profile.Name().c_str(), profile.Path().string().c_str(), state.lastException.what());
+                    UICommon::MessageDialog("Save", "Saving profile '%s' to '%s' failed\n\n%s",
+                        profile.Name().c_str(), profile.Path().string().c_str(), state.lastException.what());
 
-                ImGui::Separator();
+                    ImGui::Separator();
 
-                DrawSimComponents(0, profile.Data());
+                    DrawSimComponents(0, profile.Data());
+                }
 
                 UICommon::MessageDialog("Delete failed",
                     "Could not delete the profile\n\n%s", state.lastException.what());
@@ -707,15 +715,175 @@ namespace CBP
         ImGui::PopID();
     }
 
+    template <typename T>
+    UIActorList<T>::UIActorList() :
+        m_currentActor(0),
+        m_nextUpdateActorList(true)
+    {
+        m_strBuf1[0] = 0x0;
+    }
+
+    template <typename T>
+    void UIActorList<T>::UpdateActorList(const simActorList_t& a_list)
+    {
+        m_actorList.clear();
+
+        for (const auto& e : a_list)
+        {
+            auto actor = SKSE::ResolveObject<Actor>(e.first, Actor::kTypeID);
+            if (actor == nullptr) {
+                continue;
+            }
+
+            std::ostringstream ss;
+            ss << "[" << std::uppercase << std::setfill('0') <<
+                std::setw(8) << std::hex << actor->formID << "] ";
+            ss << CALL_MEMBER_FN(actor, GetReferenceName)();
+
+            m_actorList.try_emplace(e.first,
+                std::move(ss.str()), GetData(e.first));
+        }
+
+        auto& globalConfig = IConfig::GetGlobalConfig();
+
+        if (globalConfig.ui.showAllActors)
+        {
+            for (const auto& e : IConfig::GetActorConfHolder())
+            {
+                if (m_actorList.contains(e.first)) {
+                    continue;
+                }
+
+                std::ostringstream ss;
+                ss << "[" << std::uppercase << std::setfill('0') <<
+                    std::setw(8) << std::hex << (e.first & 0xFFFFFFFF) << "]";
+
+                auto actor = SKSE::ResolveObject<Actor>(e.first, Actor::kTypeID);
+                if (actor != nullptr) {
+                    ss << " " << CALL_MEMBER_FN(actor, GetReferenceName)();
+                }
+
+                m_actorList.try_emplace(e.first,
+                    std::move(ss.str()), GetData(e.first));
+            }
+        }
+
+        if (m_actorList.size() == 0) {
+            _snprintf_s(m_strBuf1, _TRUNCATE, "No actors");
+            SetCurrentActor(0);
+            return;
+        }
+
+        _snprintf_s(m_strBuf1, _TRUNCATE, "%zu actors", m_actorList.size());
+
+        auto refHolder = CrosshairRefHandleHolder::GetSingleton();
+        if (refHolder) {
+            auto handle = refHolder->CrosshairRefHandle();
+
+            NiPointer<TESObjectREFR> ref;
+            LookupREFRByHandle(handle, ref);
+            if (ref != nullptr) {
+                if (ref->formType == Actor::kTypeID) {
+                    SKSE::ObjectHandle handle;
+                    if (SKSE::GetHandle(ref, ref->formType, handle)) {
+                        auto it = m_actorList.find(handle);
+                        if (it != m_actorList.end()) {
+                            SetCurrentActor(it->first);
+                            return;
+                        }
+                    }
+                }
+            }
+        }
+
+        if (m_currentActor != 0) {
+            if (!m_actorList.contains(m_currentActor))
+                SetCurrentActor(0);
+        }
+        else {
+            if (globalConfig.ui.lastActor &&
+                m_actorList.contains(globalConfig.ui.lastActor))
+            {
+                m_currentActor = globalConfig.ui.lastActor;
+            }
+        }
+    }
+
+    template <typename T>
+    void UIActorList<T>::SetCurrentActor(SKSE::ObjectHandle a_handle)
+    {
+        auto& globalConfig = IConfig::GetGlobalConfig();
+
+        m_currentActor = a_handle;
+
+        if (a_handle != 0)
+            m_actorList.at(a_handle).second = GetData(a_handle);
+
+        globalConfig.ui.lastActor = a_handle;
+    }
+
+    template <typename T>
+    auto UIActorList<T>::GetSelectedEntry()
+        ->  actorListValue_t*
+    {
+        if (m_currentActor != 0) {
+            auto it = m_actorList.find(m_currentActor);
+            return std::addressof(*it);
+        }
+
+        return nullptr;
+    }
+
+    template <typename T>
+    void UIActorList<T>::DrawActorList(actorListValue_t*& a_entry, const char*& a_curSelName)
+    {
+        static constexpr const char* lGlob = "Global";
+
+        if (a_entry) {
+            a_curSelName = a_entry->second.first.c_str();
+        }
+        else {
+            a_curSelName = lGlob;
+        }
+
+        ImGui::PushItemWidth(ImGui::GetFontSize() * -8.0f);
+
+        if (ImGui::BeginCombo(m_strBuf1, a_curSelName, ImGuiComboFlags_HeightLarge))
+        {
+            ImGui::PushID(static_cast<const void*>(lGlob));
+            if (ImGui::Selectable(lGlob, 0 == m_currentActor)) {
+                SetCurrentActor(0);
+                a_entry = nullptr;
+            }
+            ImGui::PopID();
+
+            for (auto& e : m_actorList)
+            {
+                ImGui::PushID(reinterpret_cast<const void*>(e.first));
+
+                bool selected = e.first == m_currentActor;
+                if (selected)
+                    ImGui::SetItemDefaultFocus();
+
+                if (ImGui::Selectable(e.second.first.c_str(), selected)) {
+                    SetCurrentActor(e.first);
+                    a_entry = std::addressof(e);
+                }
+
+                ImGui::PopID();
+            }
+            ImGui::EndCombo();
+        }
+
+        ImGui::PopItemWidth();
+    }
+
     UIContext::UIContext() noexcept :
-        m_nextUpdateActorList(true),
         m_nextUpdateCurrentActor(false),
         m_activeLoadInstance(0),
-        m_currentActor(0),
         m_tsNoActors(PerfCounter::Query()),
-        state({ .windows{false, false, false, false } })
+        state({ .windows{false, false, false, false, false } })
     {
-        m_strBuf1[0] = 0;
     }
 
     void UIContext::Reset(uint32_t a_loadInstance)
@@ -726,17 +894,7 @@ namespace CBP
         m_activeLoadInstance = a_loadInstance;
 
         m_raceEditor.Reset();
-    }
-
-    auto UIContext::GetSelectedEntry()
-        ->  actorListValue_t*
-    {
-        if (m_currentActor != 0) {
-            auto it = m_actorList.find(m_currentActor);
-            return std::addressof(*it);
-        }
-
-        return nullptr;
+        m_nodeConfig.Reset();
     }
 
     void UIContext::Draw(bool* a_active)
@@ -824,43 +982,7 @@ namespace CBP
 
             const char* curSelName;
 
-            if (entry) {
-                curSelName = entry->second.first.c_str();
-            }
-            else {
-                curSelName = lGlob;
-            }
-
-            ImGui::PushItemWidth(ImGui::GetFontSize() * -8.0f);
-
-            if (ImGui::BeginCombo(m_strBuf1, curSelName, ImGuiComboFlags_HeightLarge))
-            {
-                ImGui::PushID(reinterpret_cast<const void*>(lGlob));
-                if (ImGui::Selectable(lGlob, 0 == m_currentActor)) {
-                    SetCurrentActor(0);
-                    entry = nullptr;
-                }
-                ImGui::PopID();
-
-                for (auto& e : m_actorList)
-                {
-                    ImGui::PushID(reinterpret_cast<const void*>(e.first));
-
-                    bool selected = e.first == m_currentActor;
-                    if (selected)
-                        ImGui::SetItemDefaultFocus();
-
-                    if (ImGui::Selectable(e.second.first.c_str(), selected)) {
-                        SetCurrentActor(e.first);
-                        entry = std::addressof(e);
-                    }
-
-                    ImGui::PopID();
-                }
-                ImGui::EndCombo();
-            }
-
-            ImGui::PopItemWidth();
+            DrawActorList(entry, curSelName);
 
             auto& globalConfig = IConfig::GetGlobalConfig();
 
@@ -987,11 +1109,36 @@ namespace CBP
                 if (ImGui::SliderFloat("timeStep", &timeStep, 30.0f, 240.0f, "%.0f"))
                     globalConfig.phys.timeStep = 1.0f / std::clamp(timeStep, 30.0f, 240.0f);
 
-                if (ImGui::SliderFloat("timeScale", &globalConfig.phys.timeScale, 0.01f, 20.0f))
-                    globalConfig.phys.timeScale = std::clamp(globalConfig.phys.timeScale, 0.01f, 20.0f);
+                if (ImGui::SliderFloat("timeScale", &globalConfig.phys.timeScale, 0.05f, 10.0f))
+                    globalConfig.phys.timeScale = std::clamp(globalConfig.phys.timeScale, 0.05f, 10.0f);
 
-                if (ImGui::SliderFloat("colMaxPenetrationDepth", &globalConfig.phys.colMaxPenetrationDepth, 0.1f, 100.0f))
-                    globalConfig.phys.colMaxPenetrationDepth = std::clamp(globalConfig.phys.colMaxPenetrationDepth, 0.01f, 2000.0f);
+                if (ImGui::SliderFloat("colMaxPenetrationDepth", &globalConfig.phys.colMaxPenetrationDepth, 0.5f, 100.0f))
+                    globalConfig.phys.colMaxPenetrationDepth = std::clamp(globalConfig.phys.colMaxPenetrationDepth, 0.05f, 2000.0f);
+            }
+
+            if (DCBP::GetDriverConfig().debug_renderer)
+            {
+                if (ImGui::CollapsingHeader("Debug Renderer", ImGuiTreeNodeFlags_DefaultOpen))
+                {
+                    ImGui::Spacing();
+
+                    if (ImGui::Checkbox("Enable", &globalConfig.debugRenderer.enabled))
+                        DCBP::UpdateDebugRendererState();
+
+                    ImGui::Checkbox("Wireframe", &globalConfig.debugRenderer.wireframe);
+
+                    ImGui::Spacing();
+
+                    if (ImGui::SliderFloat("Contact point sphere radius", &globalConfig.debugRenderer.contactPointSphereRadius, 0.1f, 25.0f, "%.2f")) {
+                        globalConfig.debugRenderer.contactPointSphereRadius = std::clamp(globalConfig.debugRenderer.contactPointSphereRadius, 0.1f, 25.0f);
+                        DCBP::UpdateDebugRendererSettings();
+                    }
+
+                    if (ImGui::SliderFloat("Contact normal length", &globalConfig.debugRenderer.contactNormalLength, 0.1f, 50.0f, "%.2f")) {
+                        globalConfig.debugRenderer.contactNormalLength = std::clamp(globalConfig.debugRenderer.contactNormalLength, 0.1f, 50.0f);
+                        DCBP::UpdateDebugRendererSettings();
+                    }
+                }
             }
 
             ImGui::PopID();
@@ -1046,6 +1193,7 @@ namespace CBP
 
     void UICollisionGroups::Draw(bool* a_active)
     {
+
         auto& io = ImGui::GetIO();
         //auto& globalConfig = IConfig::GetGlobalConfig();
 
@@ -1194,9 +1342,19 @@ namespace CBP
         ImGui::End();
     }
 
+    void UINodeConfig::Reset()
+    {
+        m_actorList.clear();
+        m_nextUpdateActorList = true;
+    }
 
     void UINodeConfig::Draw(bool* a_active)
     {
+        if (m_nextUpdateActorList) {
+            m_nextUpdateActorList = false;
+            UpdateActorList(DCBP::GetSimActorList());
+        }
+
         auto& io = ImGui::GetIO();
 
         ImVec2 center(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f);
@@ -1209,8 +1367,30 @@ namespace CBP
 
         if (ImGui::Begin("Node config", a_active))
         {
-            auto& nodeConfig = IConfig::GetNodeConfig();
             auto& nodeMap = IConfig::GetNodeMap();
+
+            auto entry = GetSelectedEntry();
+            const char* curSelName;
+
+            DrawActorList(entry, curSelName);
+
+            if (entry) {
+                if (ImGui::Button("Reset"))
+                    ResetAllActorValues(entry->first);
+
+                ImGui::SameLine();
+            }
+
+            if (ImGui::Button("Rescan"))
+                m_nextUpdateActorList = true;
+
+            ImGui::Separator();
+
+            auto& nodeConfig = entry ?
+                entry->second.second :
+                IConfig::GetNodeConfig();
+
+            ImGui::PushItemWidth(ImGui::GetFontSize() * -3.0f);
 
             for (const auto& e : nodeMap)
             {
@@ -1222,23 +1402,57 @@ namespace CBP
 
                     bool changed = false;
 
-                    changed |= ImGui::Checkbox("Movement", &conf.movement);
+                    ImGui::Columns(2, nullptr, false);
 
-                    ImGui::SameLine();
-                    changed |= ImGui::Checkbox("Collisions", &conf.collisions);
+                    changed |= ImGui::Checkbox("Female movement", &conf.femaleMovement);
+                    changed |= ImGui::Checkbox("Female collisions", &conf.femaleCollisions);
 
-                    if (changed) {
-                        DCBP::ResetActors();
-                        DCBP::SaveNodeConfig();
-                    }
+                    ImGui::NextColumn();
+
+                    changed |= ImGui::Checkbox("Male movement", &conf.maleMovement);
+                    changed |= ImGui::Checkbox("Male collisions", &conf.maleCollisions);
+
+                    ImGui::Columns(1);
+
+                    if (changed)
+                        UpdateActorRecord(entry, e.first, conf);
                 }
 
                 ImGui::PopID();
             }
 
+            ImGui::PopItemWidth();
+
         }
 
         ImGui::End();
+    }
+
+    auto UINodeConfig::GetData(SKSE::ObjectHandle a_handle) ->
+        const actorEntryValue_t&
+    {
+        return IConfig::GetActorNodeConfig(a_handle);
+    }
+
+    void UINodeConfig::ResetAllActorValues(SKSE::ObjectHandle a_handle)
+    {
+        IConfig::EraseActorNodeConfig(a_handle);
+        m_actorList.at(a_handle).second = IConfig::GetActorNodeConfig(a_handle);
+        DCBP::ResetActors();
+    }
+
+    void UINodeConfig::UpdateActorRecord(
+        actorListValue_t* a_entry,
+        const std::string& a_node,
+        const actorEntryValue_t::mapped_type& a_rec)
+    {
+        auto& nodeConfig = a_entry ?
+            IConfig::GetOrCreateActorNodeConfig(a_entry->first) :
+            IConfig::GetNodeConfig();
+
+        nodeConfig.insert_or_assign(a_node, a_rec);
+
+        DCBP::ResetActors();
     }
 
     void UIContext::UISimComponentActor::AddSimComponentSlider(
@@ -1302,101 +1516,10 @@ namespace CBP
             a_data->second.second = IConfig::GetActorConf(a_data->first);
     }
 
-    void UIContext::UpdateActorList(const simActorList_t& a_list)
+    auto UIContext::GetData(SKSE::ObjectHandle a_handle) ->
+        const actorEntryValue_t&
     {
-        m_actorList.clear();
-
-        for (const auto& e : a_list)
-        {
-            auto actor = SKSE::ResolveObject<Actor>(e.first, Actor::kTypeID);
-            if (actor == nullptr) {
-                continue;
-            }
-
-            std::ostringstream ss;
-            ss << "[" << std::uppercase << std::setfill('0') <<
-                std::setw(8) << std::hex << actor->formID << "] ";
-            ss << CALL_MEMBER_FN(actor, GetReferenceName)();
-
-            m_actorList.emplace(e.first, actorEntry_t(
-                std::move(ss.str()), IConfig::GetActorConf(e.first)));
-        }
-
-        auto& globalConfig = IConfig::GetGlobalConfig();
-
-        if (globalConfig.ui.showAllActors)
-        {
-            for (const auto& e : IConfig::GetActorConfHolder())
-            {
-                if (m_actorList.contains(e.first)) {
-                    continue;
-                }
-
-                std::ostringstream ss;
-                ss << "[" << std::uppercase << std::setfill('0') <<
-                    std::setw(8) << std::hex << (e.first & 0xFFFFFFFF) << "]";
-
-                auto actor = SKSE::ResolveObject<Actor>(e.first, Actor::kTypeID);
-                if (actor != nullptr) {
-                    ss << " " << CALL_MEMBER_FN(actor, GetReferenceName)();
-                }
-
-                m_actorList.emplace(e.first, actorEntry_t(
-                    std::move(ss.str()), IConfig::GetActorConf(e.first)));
-            }
-        }
-
-        if (m_actorList.size() == 0) {
-            _snprintf_s(m_strBuf1, _TRUNCATE, "No actors");
-            SetCurrentActor(0);
-            return;
-        }
-
-        _snprintf_s(m_strBuf1, _TRUNCATE, "%zu actors", m_actorList.size());
-
-        auto refHolder = CrosshairRefHandleHolder::GetSingleton();
-        if (refHolder) {
-            auto handle = refHolder->CrosshairRefHandle();
-
-            NiPointer<TESObjectREFR> ref;
-            LookupREFRByHandle(handle, ref);
-            if (ref != nullptr) {
-                if (ref->formType == Actor::kTypeID) {
-                    SKSE::ObjectHandle handle;
-                    if (SKSE::GetHandle(ref, ref->formType, handle)) {
-                        auto it = m_actorList.find(handle);
-                        if (it != m_actorList.end()) {
-                            SetCurrentActor(it->first);
-                            return;
-                        }
-                    }
-                }
-            }
-        }
-
-        if (m_currentActor != 0) {
-            if (!m_actorList.contains(m_currentActor))
-                SetCurrentActor(0);
-        }
-        else {
-            if (globalConfig.ui.lastActor &&
-                m_actorList.contains(globalConfig.ui.lastActor))
-            {
-                m_currentActor = globalConfig.ui.lastActor;
-            }
-        }
-    }
-
-    void UIContext::SetCurrentActor(SKSE::ObjectHandle a_handle)
-    {
-        auto& globalConfig = IConfig::GetGlobalConfig();
-
-        m_currentActor = a_handle;
-
-        if (a_handle != 0)
-            m_actorList.at(a_handle).second = IConfig::GetActorConf(a_handle);
-
-        globalConfig.ui.lastActor = a_handle;
+        return IConfig::GetActorConf(a_handle);
     }
 
     void UIContext::ApplyForce(

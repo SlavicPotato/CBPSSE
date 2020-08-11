@@ -129,13 +129,17 @@ namespace CBP
                 simComponent["rotationalZ"] = v.second.rotationalZ;
                 simComponent["stiffness"] = v.second.stiffness;
                 simComponent["stiffness2"] = v.second.stiffness2;
-                simComponent["colsphererad"] = v.second.colSphereRad;
-                simComponent["colsphereoffsetx"] = v.second.colSphereOffsetX;
-                simComponent["colsphereoffsety"] = v.second.colSphereOffsetY;
-                simComponent["colsphereoffsetz"] = v.second.colSphereOffsetZ;
+                simComponent["colsphereradmin"] = v.second.colSphereRadMin;
+                simComponent["colsphereradmax"] = v.second.colSphereRadMax;
+                simComponent["colsphereoffsetxmin"] = v.second.colSphereOffsetXMin;
+                simComponent["colsphereoffsetxmax"] = v.second.colSphereOffsetXMax;
+                simComponent["colsphereoffsetymin"] = v.second.colSphereOffsetYMin;
+                simComponent["colsphereoffsetymax"] = v.second.colSphereOffsetYMax;
+                simComponent["colsphereoffsetzmin"] = v.second.colSphereOffsetZMin;
+                simComponent["colsphereoffsetzmax"] = v.second.colSphereOffsetZMax;
                 simComponent["coldampingcoef"] = v.second.colDampingCoef;
                 simComponent["colstiffnesscoef"] = v.second.colStiffnessCoef;
-                simComponent["mass"] = v.second.mass;
+                simComponent["coldepthmul"] = v.second.colDepthMul;
             }
 
             root["id"] = m_id;

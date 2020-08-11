@@ -173,11 +173,11 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NOMINMAX;_DEBUG;CBP_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NOMINMAX;NTDDI_VERSION=NTDDI_WIN10;_DEBUG;CBP_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>false</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include;$(SolutionDir)..\DirectXTK</AdditionalIncludeDirectories>
       <ForcedIncludeFiles>common/IPrefix.h</ForcedIncludeFiles>
       <UseFullPaths>false</UseFullPaths>
       <LanguageStandard>stdcpplatest</LanguageStandard>
@@ -202,11 +202,11 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>false</SDLCheck>
-      <PreprocessorDefinitions>NOMINMAX;NDEBUG;CBP_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NOMINMAX;NTDDI_VERSION=NTDDI_WIN10;NDEBUG;CBP_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>false</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include;$(SolutionDir)..\DirectXTK</AdditionalIncludeDirectories>
       <ForcedIncludeFiles>common/IPrefix.h</ForcedIncludeFiles>
       <UseFullPaths>false</UseFullPaths>
       <LanguageStandard>stdcpplatest</LanguageStandard>
@@ -235,11 +235,11 @@
       <WarningLevel>Level3</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>NOMINMAX;NDEBUG;CBP_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NOMINMAX;NTDDI_VERSION=NTDDI_WIN10;NDEBUG;CBP_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>false</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include;$(SolutionDir)..\DirectXTK</AdditionalIncludeDirectories>
       <ForcedIncludeFiles>common/IPrefix.h</ForcedIncludeFiles>
       <UseFullPaths>false</UseFullPaths>
       <LanguageStandard>stdcpplatest</LanguageStandard>
@@ -269,11 +269,11 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>false</SDLCheck>
-      <PreprocessorDefinitions>NOMINMAX;NDEBUG;CBP_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NOMINMAX;NTDDI_VERSION=NTDDI_WIN10;NDEBUG;CBP_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>false</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include;$(SolutionDir)..\DirectXTK</AdditionalIncludeDirectories>
       <ForcedIncludeFiles>common/IPrefix.h</ForcedIncludeFiles>
       <UseFullPaths>false</UseFullPaths>
       <LanguageStandard>stdcpplatest</LanguageStandard>
@@ -302,11 +302,11 @@
       <WarningLevel>Level3</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>NOMINMAX;NDEBUG;CBP_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NOMINMAX;NTDDI_VERSION=NTDDI_WIN10;NDEBUG;CBP_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>false</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include;$(SolutionDir)..\DirectXTK</AdditionalIncludeDirectories>
       <ForcedIncludeFiles>common/IPrefix.h</ForcedIncludeFiles>
       <UseFullPaths>false</UseFullPaths>
       <LanguageStandard>stdcpplatest</LanguageStandard>
@@ -339,11 +339,11 @@
       <WarningLevel>Level3</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>NOMINMAX;NDEBUG;CBP_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NOMINMAX;NTDDI_VERSION=NTDDI_WIN10;NDEBUG;CBP_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>false</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include;$(SolutionDir)..\DirectXTK</AdditionalIncludeDirectories>
       <ForcedIncludeFiles>common/IPrefix.h</ForcedIncludeFiles>
       <UseFullPaths>false</UseFullPaths>
       <LanguageStandard>stdcpplatest</LanguageStandard>
@@ -376,11 +376,11 @@
       <WarningLevel>Level3</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>NOMINMAX;NDEBUG;CBP_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NOMINMAX;NTDDI_VERSION=NTDDI_WIN10;NDEBUG;CBP_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>false</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include;$(SolutionDir)..\DirectXTK</AdditionalIncludeDirectories>
       <ForcedIncludeFiles>common/IPrefix.h</ForcedIncludeFiles>
       <UseFullPaths>false</UseFullPaths>
       <LanguageStandard>stdcpplatest</LanguageStandard>
@@ -409,11 +409,11 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
-      <PreprocessorDefinitions>NOMINMAX;NDEBUG;CBP_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NOMINMAX;NTDDI_VERSION=NTDDI_WIN10;NDEBUG;CBP_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>false</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include;$(SolutionDir)..\DirectXTK</AdditionalIncludeDirectories>
       <ForcedIncludeFiles>common/IPrefix.h</ForcedIncludeFiles>
       <UseFullPaths>false</UseFullPaths>
       <LanguageStandard>stdcpplatest</LanguageStandard>
@@ -426,6 +426,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <DebugInformationFormat>None</DebugInformationFormat>
+      <FloatingPointModel>Fast</FloatingPointModel>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -464,6 +465,7 @@
     <ClInclude Include="macro_helpers.h" />
     <ClInclude Include="patching.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="render.h" />
     <ClInclude Include="skse.h" />
     <ClInclude Include="tasks.h" />
     <ClInclude Include="version.h" />
@@ -475,6 +477,7 @@
     <ClCompile Include="CBPData.cpp" />
     <ClCompile Include="CBPPapyrus.cpp" />
     <ClCompile Include="CBPProfile.cpp" />
+    <ClCompile Include="CBPRenderer.cpp" />
     <ClCompile Include="CBPSerialization.cpp" />
     <ClCompile Include="CBPSimObj.cpp" />
     <ClCompile Include="CBPThing.cpp" />
@@ -498,6 +501,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='ReleaseAVX2|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='ReleaseAVX2 MT|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="render.cpp" />
     <ClCompile Include="skse.cpp" />
     <ClCompile Include="tasks.cpp" />
   </ItemGroup>
@@ -505,10 +509,15 @@
     <None Include="..\README.md" />
     <None Include="..\scripts\CBP.psc" />
     <None Include="Config\CBP.ini" />
+    <None Include="Config\CBPData\Actors.json" />
+    <None Include="Config\CBPData\CollisionGroups.json" />
     <None Include="Config\CBPNodes.json" />
     <None Include="exports.def" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\DirectXTK\DirectXTK_Desktop_2019_Win10_x.vcxproj">
+      <Project>{e0b52ae7-e160-4d32-bf3f-910b785e5a8e}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\..\imgui\deployment\a\imgui.vcxproj">
       <Project>{9f316e83-5ae5-4939-a723-305a94f48005}</Project>
     </ProjectReference>

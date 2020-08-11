@@ -12,9 +12,6 @@ namespace CBP
         ILog
     {
         typedef bool (*uiDrawCallback_t)(void);
-        typedef void (*createD3D11_t)(void);
-        typedef void (*unkPresent)(uint32_t p1);
-
         class KeyPressHandler : public KeyEventHandler
         {
         public:
@@ -89,7 +86,7 @@ namespace CBP
     private:
         DUI();
 
-        static void Present_Pre(uint32_t);
+        static void Present_Pre();
         static void CreateD3D11_Hook();
 
         void Present_Pre_Impl();
@@ -99,6 +96,8 @@ namespace CBP
             UINT uMsg,
             WPARAM wParam,
             LPARAM lParam);
+
+        static void OnD3D11PostCreate_DUI(Event, void* data);
 
         WNDPROC pfnWndProc;
 
@@ -119,12 +118,6 @@ namespace CBP
         HWND m_WindowHandle;
 
         TaskQueueUnsafe m_keyEvents;
-
-        static inline auto CreateD3D11 = IAL::Addr(75595, 0x9);
-        static inline auto UnkPresent = IAL::Addr(75461, 0x9);
-
-        createD3D11_t CreateD3D11_O;
-        unkPresent UnkPresent_O;
 
         std::atomic<bool> m_nextResetIO;
 

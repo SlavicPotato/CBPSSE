@@ -37,6 +37,9 @@
     <Filter Include="Scripts">
       <UniqueIdentifier>{9771a003-fdd2-47f6-9146-e435901816a4}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Config\CBPData">
+      <UniqueIdentifier>{e0cb373c-14d7-4ef0-b085-ca058bedd21f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">
@@ -117,6 +120,9 @@
     <ClInclude Include="CBPCollision.h">
       <Filter>Header Files\CBP</Filter>
     </ClInclude>
+    <ClInclude Include="render.h">
+      <Filter>Header Files\Drivers</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp">
@@ -185,6 +191,12 @@
     <ClCompile Include="CBPCollision.cpp">
       <Filter>Source Files\CBP</Filter>
     </ClCompile>
+    <ClCompile Include="render.cpp">
+      <Filter>Source Files\Drivers</Filter>
+    </ClCompile>
+    <ClCompile Include="CBPRenderer.cpp">
+      <Filter>Source Files\CBP</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="exports.def" />
@@ -197,6 +209,12 @@
     </None>
     <None Include="Config\CBP.ini">
       <Filter>Config</Filter>
+    </None>
+    <None Include="Config\CBPData\Actors.json">
+      <Filter>Config\CBPData</Filter>
+    </None>
+    <None Include="Config\CBPData\CollisionGroups.json">
+      <Filter>Config\CBPData</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>

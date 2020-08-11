@@ -113,7 +113,7 @@ namespace CBP
 
     template <class T, int ID>
     class UISimComponent
-    {        
+    {
     public:
         UISimComponent() = default;
         virtual ~UISimComponent() = default;
@@ -136,7 +136,7 @@ namespace CBP
             float a_val);
 
         [[nodiscard]] inline std::string GetCSID(
-            const std::string &a_name)
+            const std::string& a_name)
         {
             std::ostringstream ss;
             ss << "UISC#" << ID << "#" << a_name;
@@ -233,20 +233,68 @@ namespace CBP
             UInt32& a_out);
     };
 
+    typedef std::pair<const std::string, configComponents_t> actorEntryBaseConf_t;
+    typedef std::map<SKSE::ObjectHandle, actorEntryBaseConf_t> actorListBaseConf_t;
+
+
+    typedef std::pair<const std::string, nodeConfigHolder_t> actorEntryNodeConf_t;
+    typedef std::map<SKSE::ObjectHandle, actorEntryNodeConf_t> actorListNodeConf_t;
+
+    template <class T>
+    class UIActorList
+    {
+    public:
+        void UpdateActorList(const simActorList_t& a_list);
+                
+    protected:
+        using actorListValue_t = typename T::value_type;
+        using actorEntryValue_t = typename T::value_type::second_type::second_type;
+
+        UIActorList();
+        virtual ~UIActorList() noexcept = default;
+
+        actorListValue_t* GetSelectedEntry();
+
+        void DrawActorList(actorListValue_t*& entry, const char*& curSelName);
+        void SetCurrentActor(SKSE::ObjectHandle a_handle);
+
+        T m_actorList;
+        SKSE::ObjectHandle m_currentActor;
+
+        bool m_nextUpdateActorList;
+
+        char m_strBuf1[128];
+    private:
+        virtual void ResetAllActorValues(SKSE::ObjectHandle a_handle) = 0;
+        virtual const actorEntryValue_t& GetData(SKSE::ObjectHandle a_handle) = 0;
+
+    };
+
     class UICollisionGroups
     {
     public:
-        void Draw(bool* a_active);
+        UICollisionGroups() = default;
 
+        void Draw(bool* a_active);
     private:
         UISelectedItem<uint64_t> m_selected;
         uint64_t m_input;
     };
 
-    class UINodeConfig
+    class UINodeConfig :
+        UIActorList<actorListNodeConf_t>
     {
     public:
-        void Draw(bool *a_active);
+        void Draw(bool* a_active);
+        void Reset();
+    private:
+        virtual void ResetAllActorValues(SKSE::ObjectHandle a_handle);
+        virtual const actorEntryValue_t& GetData(SKSE::ObjectHandle a_handle);
+
+        void UpdateActorRecord(
+            actorListValue_t *a_entry,
+            const std::string& a_node, 
+            const actorEntryValue_t::mapped_type& a_rec);
     };
 
     typedef std::pair<const std::string, configComponents_t> raceEntry_t;
@@ -298,14 +346,12 @@ namespace CBP
         bool m_changed;
     };
 
-    typedef std::pair<const std::string, configComponents_t> actorEntry_t;
-    typedef std::map<SKSE::ObjectHandle, actorEntry_t> actorList_t;
-
     class UIContext :
-        UIProfileSelector<actorList_t::value_type>,
-        UIApplyForce<actorList_t::value_type>
+        UIActorList<actorListBaseConf_t>,
+        UIProfileSelector<actorListBaseConf_t::value_type>,
+        UIApplyForce<actorListBaseConf_t::value_type>
     {
-        using actorListValue_t = actorList_t::value_type;
+        using actorListValue_t = actorListBaseConf_t::value_type;
 
         class UISimComponentActor :
             public UISimComponent<SKSE::ObjectHandle, UISimComponentID::kActor>
@@ -339,8 +385,6 @@ namespace CBP
         void Reset(uint32_t a_loadInstance);
         void Draw(bool* a_active);
 
-        void UpdateActorList(const simActorList_t& a_list);
-
         inline void QueueUpdateActorList() {
             m_nextUpdateActorList = true;
         }
@@ -355,10 +399,6 @@ namespace CBP
 
     private:
 
-        actorListValue_t* GetSelectedEntry();
-
-        void SetCurrentActor(SKSE::ObjectHandle a_handle);
-
         virtual void ApplyProfile(actorListValue_t* a_data, const Profile& m_profile);
         [[nodiscard]] virtual const configComponents_t& GetComponentData(const actorListValue_t* a_data) const;
 
@@ -368,19 +408,16 @@ namespace CBP
             const std::string& a_component,
             const NiPoint3& a_force);
 
-        void ResetAllActorValues(SKSE::ObjectHandle a_handle);
+        virtual void ResetAllActorValues(SKSE::ObjectHandle a_handle);
         void UpdateActorValues(SKSE::ObjectHandle a_handle);
         void UpdateActorValues(actorListValue_t* a_data);
 
-        SKSE::ObjectHandle m_currentActor;
-        actorList_t m_actorList;
+        virtual const actorEntryValue_t& GetData(SKSE::ObjectHandle a_handle);
 
-        bool m_nextUpdateActorList;
         bool m_nextUpdateCurrentActor;
 
         uint32_t m_activeLoadInstance;
         long long m_tsNoActors;
-        char m_strBuf1[128];
 
         struct {
             struct {

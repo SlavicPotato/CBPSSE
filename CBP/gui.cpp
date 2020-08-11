@@ -12,29 +12,17 @@ namespace CBP
 
     bool DUI::Initialize()
     {
-        if (!Hook::CheckDst5<0xE8>(m_Instance.CreateD3D11) ||
-            !Hook::CheckDst5<0xE8>(m_Instance.UnkPresent))
-        {
-            m_Instance.Error("Unable to hook, one or more invalid targets");
-            return false;
-        }
-
-        ASSERT(Hook::Call5(m_Instance.CreateD3D11,
-            reinterpret_cast<uintptr_t>(CreateD3D11_Hook),
-            m_Instance.CreateD3D11_O));
-
-        ASSERT(Hook::Call5(m_Instance.UnkPresent,
-            reinterpret_cast<uintptr_t>(Present_Pre),
-            m_Instance.UnkPresent_O));
-
         DInput::RegisterForKeyEvents(&m_Instance.inputEventHandler);
+
+        IEvents::RegisterForEvent(Event::OnD3D11PostCreate, OnD3D11PostCreate_DUI);
+        DRender::AddPresentCallback(Present_Pre);
 
         return true;
     }
 
-    void DUI::Present_Pre(uint32_t p1)
+
+    void DUI::Present_Pre()
     {
-        m_Instance.UnkPresent_O(p1);
         m_Instance.Present_Pre_Impl();
     }
 
@@ -88,28 +76,13 @@ namespace CBP
         m_lock.Leave();
     }
 
-    void DUI::CreateD3D11_Hook()
+    void DUI::OnD3D11PostCreate_DUI(Event, void* data)
     {
-        m_Instance.CreateD3D11_O();
+        auto info = static_cast<D3D11CreateEventPost*>(data);
 
-        auto rm = BSRenderManager::GetSingleton();
-        if (!rm) {
-            m_Instance.Error("Couldn't get BSRenderManager");
-            return;
-        }
-
-        if (!rm->swapChain)
-            return;
-
-        DXGI_SWAP_CHAIN_DESC sd;
-        if (rm->swapChain->GetDesc(&sd) != S_OK) {
-            m_Instance.Error("IDXGISwapChain::GetDesc failed");
-            return;
-        }
-
-        m_Instance.info.bufferSize.width = static_cast<float>(sd.BufferDesc.Width);
-        m_Instance.info.bufferSize.height = static_cast<float>(sd.BufferDesc.Height);
-        m_Instance.m_WindowHandle = sd.OutputWindow;
+        m_Instance.info.bufferSize.width = static_cast<float>(info->m_pSwapChainDesc->BufferDesc.Width);
+        m_Instance.info.bufferSize.height = static_cast<float>(info->m_pSwapChainDesc->BufferDesc.Height);
+        m_Instance.m_WindowHandle = info->m_pSwapChainDesc->OutputWindow;
 
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
@@ -126,19 +99,20 @@ namespace CBP
 
         ImGui::StyleColorsDark();
 
-        ImGui_ImplWin32_Init(sd.OutputWindow);
-        ImGui_ImplDX11_Init(rm->forwarder, rm->context);
+        ImGui_ImplWin32_Init(info->m_pSwapChainDesc->OutputWindow);
+        ImGui_ImplDX11_Init(info->m_pDevice, info->m_pImmediateContext);
 
         m_Instance.pfnWndProc = reinterpret_cast<WNDPROC>(
             ::SetWindowLongPtrA(
-                sd.OutputWindow,
+                info->m_pSwapChainDesc->OutputWindow,
                 GWLP_WNDPROC,
                 reinterpret_cast<LONG_PTR>(WndProc_Hook))
             );
 
         if (!m_Instance.pfnWndProc)
             m_Instance.Error(
-                "[0x%llX] SetWindowLongPtrA failed", sd.OutputWindow);
+                "[0x%llX] SetWindowLongPtrA failed", info->m_pSwapChainDesc->OutputWindow);
+
     }
 
     LRESULT CALLBACK DUI::WndProc_Hook(

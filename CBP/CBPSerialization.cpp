@@ -158,6 +158,17 @@ namespace CBP
                     }
                 }
             }
+
+            if (root.isMember("debugRenderer")) {
+                auto& debugRenderer = root["debugRenderer"];
+                if (debugRenderer.isObject())
+                {
+                    globalConfig.debugRenderer.enabled = debugRenderer.get("enabled", false).asBool();
+                    globalConfig.debugRenderer.wireframe = debugRenderer.get("wireframe", true).asBool();
+                    globalConfig.debugRenderer.contactPointSphereRadius = debugRenderer.get("contactPointSphereRadius", 0.5f).asFloat();
+                    globalConfig.debugRenderer.contactNormalLength = debugRenderer.get("contactNormalLength", 2.0f).asFloat();
+                }
+            }
         }
         catch (const std::exception& e)
         {
@@ -230,6 +241,13 @@ namespace CBP
             {
                 colStates[e.first] = e.second;
             }
+
+            auto& debugRenderer = root["debugRenderer"];
+
+            debugRenderer["enabled"] = globalConfig.debugRenderer.enabled;
+            debugRenderer["wireframe"] = globalConfig.debugRenderer.wireframe;
+            debugRenderer["contactPointSphereRadius"] = globalConfig.debugRenderer.contactPointSphereRadius;
+            debugRenderer["contactNormalLength"] = globalConfig.debugRenderer.contactNormalLength;
 
             WriteJsonData(PLUGIN_CBP_GLOBAL_DATA, root);
 
@@ -340,105 +358,30 @@ namespace CBP
         }
     }
 
-    void Serialization::LoadNodeConfig()
+    bool Serialization::ParseComponents(const Json::Value& a_data, configComponents_t& a_outData)
     {
-        try
-        {
-            auto& nodeConfig = IConfig::GetNodeConfig();
-
-            nodeConfig.clear();
-
-            Json::Value root;
-            if (!ReadJsonData(PLUGIN_CBP_NODE_DATA, root))
-                return;
-
-            if (root.isMember("nodes")) {
-                auto& nodes = root["nodes"];
-                if (nodes.isObject()) {
-                    for (auto it = nodes.begin(); it != nodes.end(); ++it)
-                    {
-                        if (!it->isObject())
-                            continue;
-
-                        std::string k(it.key().asString());
-
-                        if (!IConfig::IsValidNode(k))
-                            continue;
-
-                        auto& nc = nodeConfig[k];
-
-                        nc.movement = it->get("movement", true).asBool();
-                        nc.collisions = it->get("collisions", true).asBool();
-                    }
-                }
-            }
-
-        }
-        catch (const std::exception& e)
-        {
-            IConfig::ClearNodeConfig();
-            Error("%s: %s", __FUNCTION__, e.what());
-        }
-    }
-    
-    bool Serialization::SaveNodeConfig()
-    {
-        try
-        {
-            auto& nodeConfig = IConfig::GetNodeConfig();
-
-            Json::Value root;
-
-            auto& nodes = root["nodes"];
-
-            for (const auto& e : nodeConfig) {
-                auto& n = nodes[e.first];
-
-                n["movement"] = e.second.movement;
-                n["collisions"] = e.second.collisions;
-            }
-
-            WriteJsonData(PLUGIN_CBP_NODE_DATA, root);
-
-            return true;
-        }
-        catch (const std::exception& e) {
-            lastException = e;
-            Error("%s: %s", __FUNCTION__, e.what());
-            return false;
-        }
-    }
-
-    template <typename T>
-    bool Serialization::ParseComponents(const Json::Value& a_data, configComponents_t& a_outData, T& a_outHandle)
-    {
-        static_assert(sizeof(T) <= 0x8);
-
         auto& conf = a_data["data"];
+
+        if (conf.empty())
+            return false;
+
         if (!conf.isObject()) {
             Error("Expected an object");
             return false;
         }
 
-        auto& handle = a_data["handle"];
-        if (!handle.isNumeric()) {
-            Error("Handle not numeric");
-            return false;
-        }
-
-        a_outHandle = GetHandle<T>(handle);
         a_outData = IConfig::GetThingGlobalConfigDefaults();
 
         for (auto it1 = conf.begin(); it1 != conf.end(); ++it1)
         {
             if (!it1->isObject()) {
-                Error("0x%llX: Bad sim component data, expected object", a_outHandle);
+                Error("Bad sim component data, expected object");
                 return false;
             }
 
             auto k = it1.key();
             if (!k.isString()) {
-                Error("0x%llX: Bad sim component name, expected string", a_outHandle);
+                Error("Bad sim component name, expected string");
                 return false;
             }
 
@@ -446,7 +389,7 @@ namespace CBP
             transform(simComponentName.begin(), simComponentName.end(), simComponentName.begin(), ::tolower);
 
             if (!IConfig::IsValidSimComponent(simComponentName)) {
-                Error("0x%llX: Untracked sim component: %s", a_outHandle, simComponentName.c_str());
+                Error("Untracked sim component: %s", simComponentName.c_str());
                 return false;
             }
 
@@ -455,13 +398,13 @@ namespace CBP
             for (auto it2 = it1->begin(); it2 != it1->end(); ++it2)
             {
                 if (!it2->isNumeric()) {
-                    Error("0x%llX: (%s) Bad value, expected number", a_outHandle, simComponentName.c_str());
+                    Error("(%s) Bad value, expected number", simComponentName.c_str());
                     return false;
                 }
 
                 auto k = it2.key();
                 if (!k.isString()) {
-                    Error("0x%llX: (%s) Bad key, expected string", a_outHandle, simComponentName.c_str());
+                    Error("(%s) Bad key, expected string", simComponentName.c_str());
                     return false;
                 }
 
@@ -469,7 +412,7 @@ namespace CBP
                 transform(valName.begin(), valName.end(), valName.begin(), ::tolower);
 
                 if (!tmp.Set(valName, it2->asFloat()))
-                    Warning("0x%llX: (%s) Unknown value: %s", a_outHandle, simComponentName.c_str(), valName.c_str());
+                    Warning("(%s) Unknown value: %s", simComponentName.c_str(), valName.c_str());
             }
 
             a_outData.insert_or_assign(simComponentName, std::move(tmp));
@@ -493,23 +436,27 @@ namespace CBP
             if (root.empty())
                 return;
 
-            if (!root.isArray())
-                throw std::exception("Expected an array");
+            if (!root.isObject())
+                throw std::exception("Expected an object");
 
             size_t c = 0;
 
-            for (const auto& e : root)
+            for (auto it = root.begin(); it != root.end(); ++it)
             {
-                if (!e.isObject()) {
+                if (!it->isObject()) {
                     Error("Expected an object");
                     continue;
                 }
 
-                configComponents_t data;
                 SKSE::ObjectHandle handle;
 
-                if (!ParseComponents(e, data, handle))
+                try {
+                    handle = static_cast<SKSE::ObjectHandle>(std::stoull(it.key().asString()));
+                }
+                catch (...) {
+                    Error("Exception while trying to convert handle");
                     continue;
+                }
 
                 if (handle != 0) {
                     SKSE::ObjectHandle newHandle = 0;
@@ -519,17 +466,36 @@ namespace CBP
                         continue;
                     }
 
-                    if (newHandle != 0) {
-                        IConfig::GetActorConfHolder().emplace(newHandle, std::move(data));
-                        IData::UpdateActorRaceMap(newHandle);
-                    }
-                    else {
+                    if (newHandle == 0) {
                         Error("0x%llX: newHandle == 0", handle);
                         continue;
                     }
+
+                    handle = newHandle;
                 }
-                else
-                    IConfig::SetThingGlobalConfig(data);
+
+                configComponents_t componentData;
+
+                if (ParseComponents(*it, componentData)) {
+                    if (handle != 0) {
+                        IConfig::GetActorConfHolder().emplace(handle, std::move(componentData));
+                        IData::UpdateActorRaceMap(handle);
+                    }
+                    else {
+                        IConfig::SetThingGlobalConfig(componentData);
+                    }
+                }
+
+                nodeConfigHolder_t nodeData;
+
+                if (ParseNodeData(*it, nodeData)) {
+                    if (handle != 0) {
+                        IConfig::GetActorNodeConfigHolder().emplace(handle, std::move(nodeData));
+                    }
+                    else {
+                        IConfig::SetNodeConfig(nodeData);
+                    }
+                }
 
                 c++;
             }
@@ -559,14 +525,14 @@ namespace CBP
             if (root.empty())
                 return;
 
-            if (!root.isArray())
-                throw std::exception("Expected an array");
+            if (!root.isObject())
+                throw std::exception("Expected an object");
 
             size_t c = 0;
 
-            for (const auto& e : root)
+            for (auto it = root.begin(); it != root.end(); ++it)
             {
-                if (!e.isObject()) {
+                if (!it->isObject()) {
                     Error("Expected an object");
                     continue;
                 }
@@ -574,8 +540,13 @@ namespace CBP
                 configComponents_t data;
                 SKSE::FormID formID;
 
-                if (!ParseComponents(e, data, formID))
+                try {
+                    formID = static_cast<SKSE::FormID>(std::stoul(it.key().asString()));
+                }
+                catch (...) {
+                    Error("Exception while trying to convert formID");
                     continue;
+                }
 
                 if (formID == 0) {
                     Error("formID == 0");
@@ -585,19 +556,22 @@ namespace CBP
                 SKSE::FormID newFormID = 0;
 
                 if (!SKSE::ResolveRaceForm(intfc, formID, &newFormID)) {
-                    Error("0x%llX: Couldn't resolve handle, discarding", formID);
+                    Error("0x%lX: Couldn't resolve handle, discarding", formID);
                     continue;
                 }
 
                 if (newFormID == 0) {
-                    Error("0x%llX: newFormID == 0", formID);
+                    Error("0x%lX: newFormID == 0", formID);
                     continue;
                 }
 
                 if (!IData::GetRaceList().contains(newFormID)) {
-                    Error("0x%llX: race record not found", formID);
+                    Error("0x%lX: race record not found", formID);
                     continue;
                 }
+
+                if (!ParseComponents(*it, data))
+                    continue;
 
                 IConfig::GetRaceConfHolder().emplace(newFormID, std::move(data));
 
@@ -613,8 +587,7 @@ namespace CBP
         }
     }
 
-    template <typename T>
-    void Serialization::CreateComponents(T a_handle, const configComponents_t& a_data, Json::Value& a_out)
+    void Serialization::CreateComponents(const configComponents_t& a_data, Json::Value& a_out)
     {
         auto& data = a_out["data"];
 
@@ -634,16 +607,65 @@ namespace CBP
             simComponent["rotationalZ"] = v.second.rotationalZ;
             simComponent["stiffness"] = v.second.stiffness;
             simComponent["stiffness2"] = v.second.stiffness2;
-            simComponent["colSphereRad"] = v.second.colSphereRad;
-            simComponent["colSphereOffsetX"] = v.second.colSphereOffsetX;
-            simComponent["colSphereOffsetY"] = v.second.colSphereOffsetY;
-            simComponent["colSphereOffsetZ"] = v.second.colSphereOffsetZ;
+            simComponent["colSphereRadMin"] = v.second.colSphereRadMin;
+            simComponent["colSphereRadMax"] = v.second.colSphereRadMax;
+            simComponent["colSphereOffsetXMin"] = v.second.colSphereOffsetXMin;
+            simComponent["colSphereOffsetXMax"] = v.second.colSphereOffsetXMax;
+            simComponent["colSphereOffsetYMin"] = v.second.colSphereOffsetYMin;
+            simComponent["colSphereOffsetYMax"] = v.second.colSphereOffsetYMax;
+            simComponent["colSphereOffsetZMin"] = v.second.colSphereOffsetZMin;
+            simComponent["colSphereOffsetZMax"] = v.second.colSphereOffsetZMax;
             simComponent["colDampingCoef"] = v.second.colDampingCoef;
             simComponent["colStiffnessCoef"] = v.second.colStiffnessCoef;
-            simComponent["mass"] = v.second.mass;
+            simComponent["colDepthMul"] = v.second.colDepthMul;
+        }
+    }
+
+    void Serialization::CreateNodeData(const nodeConfigHolder_t& a_data, Json::Value& a_out)
+    {
+        auto& nodes = a_out["nodes"];
+
+        for (const auto& e : a_data) {
+            auto& n = nodes[e.first];
+
+            n["femaleMovement"] = e.second.femaleMovement;
+            n["femaleCollisions"] = e.second.femaleCollisions;
+            n["maleMovement"] = e.second.maleMovement;
+            n["maleCollisions"] = e.second.maleCollisions;
+        }
+    }
+
+    bool Serialization::ParseNodeData(const Json::Value& a_data, nodeConfigHolder_t& a_out)
+    {
+        auto& nodes = a_data["nodes"];
+
+        if (nodes.empty())
+            return false;
+
+        if (!nodes.isObject()) {
+            Error("Expected an object");
+            return false;
         }
 
-        SetHandle(a_out["handle"], a_handle);
+        for (auto it = nodes.begin(); it != nodes.end(); ++it)
+        {
+            if (!it->isObject())
+                continue;
+
+            std::string k(it.key().asString());
+
+            if (!IConfig::IsValidNode(k))
+                continue;
+
+            auto& nc = a_out[k];
+
+            nc.femaleMovement = it->get("femaleMovement", true).asBool();
+            nc.femaleCollisions = it->get("femaleCollisions", true).asBool();
+            nc.maleMovement = it->get("maleMovement", false).asBool();
+            nc.maleCollisions = it->get("maleCollisions", false).asBool();
+        }
+
+        return true;
     }
 
     void Serialization::SaveActorProfiles()
@@ -655,12 +677,18 @@ namespace CBP
 
             Json::Value root;
 
-            auto& global = root.append(Json::Value());;
-            CreateComponents(0U, IConfig::GetThingGlobalConfig(), global);
+            auto& global = root["0"];
+            CreateComponents(IConfig::GetThingGlobalConfig(), global);
 
             for (const auto& e : IConfig::GetActorConfHolder()) {
-                auto& actor = root.append(Json::Value());
-                CreateComponents(e.first, e.second, actor);
+                auto& actor = root[std::to_string(e.first)];
+                CreateComponents(e.second, actor);
+            }
+
+            CreateNodeData(IConfig::GetNodeConfig(), global);
+            for (const auto& e : IConfig::GetActorNodeConfigHolder()) {
+                auto& actor = root[std::to_string(e.first)];
+                CreateNodeData(e.second, actor);
             }
 
             WriteJsonData(PLUGIN_CBP_ACTOR_DATA, root);
@@ -683,8 +711,8 @@ namespace CBP
             Json::Value root;
 
             for (const auto& e : IConfig::GetRaceConfHolder()) {
-                auto& actor = root.append(Json::Value());
-                CreateComponents(e.first, e.second, actor);
+                auto& race = root[std::to_string(e.first)];
+                CreateComponents(e.second, race);
             }
 
             WriteJsonData(PLUGIN_CBP_RACE_DATA, root);

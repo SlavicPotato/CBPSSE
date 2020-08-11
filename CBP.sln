@@ -15,6 +15,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ImGui", "..\imgui\deploymen
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "reactphysics3d", "..\reactphysics3d\reactphysics3d.vcxproj", "{31534BAB-E572-3F21-99F1-D1702BC03FDA}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DirectXTK_Desktop_2019_Win10", "..\DirectXTK\DirectXTK_Desktop_2019_Win10_x.vcxproj", "{E0B52AE7-E160-4D32-BF3F-910B785E5A8E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -162,6 +164,28 @@ Global
 		{31534BAB-E572-3F21-99F1-D1702BC03FDA}.ReleaseAVX2|x64.Build.0 = PreReleaseAVX2 MT|x64
 		{31534BAB-E572-3F21-99F1-D1702BC03FDA}.RelWithDebInfo|x64.ActiveCfg = RelWithDebInfo|x64
 		{31534BAB-E572-3F21-99F1-D1702BC03FDA}.RelWithDebInfo|x64.Build.0 = RelWithDebInfo|x64
+		{E0B52AE7-E160-4D32-BF3F-910B785E5A8E}.Debug|x64.ActiveCfg = Debug|x64
+		{E0B52AE7-E160-4D32-BF3F-910B785E5A8E}.Debug|x64.Build.0 = Debug|x64
+		{E0B52AE7-E160-4D32-BF3F-910B785E5A8E}.DeployRelease|x64.ActiveCfg = Release|x64
+		{E0B52AE7-E160-4D32-BF3F-910B785E5A8E}.DeployRelease|x64.Build.0 = Release|x64
+		{E0B52AE7-E160-4D32-BF3F-910B785E5A8E}.MinSizeRel|x64.ActiveCfg = Release MT|x64
+		{E0B52AE7-E160-4D32-BF3F-910B785E5A8E}.MinSizeRel|x64.Build.0 = Release MT|x64
+		{E0B52AE7-E160-4D32-BF3F-910B785E5A8E}.PreRelease MT|x64.ActiveCfg = Release MT|x64
+		{E0B52AE7-E160-4D32-BF3F-910B785E5A8E}.PreRelease MT|x64.Build.0 = Release MT|x64
+		{E0B52AE7-E160-4D32-BF3F-910B785E5A8E}.PreRelease|x64.ActiveCfg = PreRelease|x64
+		{E0B52AE7-E160-4D32-BF3F-910B785E5A8E}.PreRelease|x64.Build.0 = PreRelease|x64
+		{E0B52AE7-E160-4D32-BF3F-910B785E5A8E}.PreReleaseAVX2 MT|x64.ActiveCfg = PreReleaseAVX2 MT|x64
+		{E0B52AE7-E160-4D32-BF3F-910B785E5A8E}.PreReleaseAVX2 MT|x64.Build.0 = PreReleaseAVX2 MT|x64
+		{E0B52AE7-E160-4D32-BF3F-910B785E5A8E}.Release MT|x64.ActiveCfg = Release MT|x64
+		{E0B52AE7-E160-4D32-BF3F-910B785E5A8E}.Release MT|x64.Build.0 = Release MT|x64
+		{E0B52AE7-E160-4D32-BF3F-910B785E5A8E}.Release|x64.ActiveCfg = Release|x64
+		{E0B52AE7-E160-4D32-BF3F-910B785E5A8E}.Release|x64.Build.0 = Release|x64
+		{E0B52AE7-E160-4D32-BF3F-910B785E5A8E}.ReleaseAVX2 MT|x64.ActiveCfg = ReleaseAVX2 MT|x64
+		{E0B52AE7-E160-4D32-BF3F-910B785E5A8E}.ReleaseAVX2 MT|x64.Build.0 = ReleaseAVX2 MT|x64
+		{E0B52AE7-E160-4D32-BF3F-910B785E5A8E}.ReleaseAVX2|x64.ActiveCfg = ReleaseAVX2|x64
+		{E0B52AE7-E160-4D32-BF3F-910B785E5A8E}.ReleaseAVX2|x64.Build.0 = ReleaseAVX2|x64
+		{E0B52AE7-E160-4D32-BF3F-910B785E5A8E}.RelWithDebInfo|x64.ActiveCfg = Release MT|x64
+		{E0B52AE7-E160-4D32-BF3F-910B785E5A8E}.RelWithDebInfo|x64.Build.0 = Release MT|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
