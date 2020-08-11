@@ -69,10 +69,9 @@ namespace CBP
         static std::atomic<uint64_t> m_nextGroupId;
 
 #ifdef _CBP_MEASURE_PERF
-        long long ss = PerfCounter::Query();
-        long long ee = 0;
-        long long c = 0;
-        size_t a;
+        SDT::PerfTimerInt m_perfTimer;
+        uint32_t m_numActorsAccum = 0;
+        uint32_t m_runCount = 0;
 #endif
     };
 

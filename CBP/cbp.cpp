@@ -236,7 +236,7 @@ namespace CBP
         auto& globalConf = CBP::IConfig::GetGlobalConfig();
 
         if (globalConf.debugRenderer.enabled &&
-            globalConf.phys.collisions) 
+            globalConf.phys.collisions)
         {
             m_Instance.m_renderer->Draw();
         }
@@ -368,6 +368,9 @@ namespace CBP
     UpdateTask::UpdateTask() :
         m_lTime(PerfCounter::Query()),
         m_timeAccum(0.0f)
+#ifdef _CBP_MEASURE_PERF
+        , m_perfTimer(5000000)
+#endif
     {
     }
 
@@ -383,8 +386,8 @@ namespace CBP
         ProcessTasks();
 
 #ifdef _CBP_MEASURE_PERF
-        auto s = PerfCounter::Query();
-        size_t n = 0;
+        m_perfTimer.Begin();
+        uint32_t numActors = 0;
 #endif
 
         auto newTime = PerfCounter::Query();
@@ -433,7 +436,7 @@ namespace CBP
                 };
 
 #ifdef _CBP_MEASURE_PERF
-                n++;
+                numActors++;
 #endif
                 ++it;
             }
@@ -453,17 +456,14 @@ namespace CBP
         DCBP::Unlock();
 
 #ifdef _CBP_MEASURE_PERF
-        auto e = PerfCounter::Query();
-        ee += PerfCounter::DeltaTu(s, e);
-        c++;
-        a += n;
+        m_runCount++;
+        m_numActorsAccum += numActors;
 
-        if (PerfCounter::DeltaTu(ss, e) > 5000000LL) {
-            ss = e;
-            Debug("Perf: %lld us (%zu actors)", ee / c, a / c);
-            ee = 0;
-            c = 0;
-            a = 0;
+        long long avgT;
+        if (m_perfTimer.End(avgT)) {
+            Debug("Perf: %lld us (%zu actors)", avgT, m_numActorsAccum / m_runCount);
+            m_runCount = 0;
+            m_numActorsAccum = 0;
         }
 #endif
 

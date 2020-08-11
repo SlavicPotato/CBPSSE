@@ -29,48 +29,32 @@ namespace CBP
 
         auto& globalConfig = IConfig::GetGlobalConfig();
 
-        auto numLines = a_dr.getNbLines();
+        for (const auto& line : a_dr.getLines())
+        {
+            if (!GetScreenPt(line.point1, line.color1, pos1))
+                continue;
+            if (!GetScreenPt(line.point2, line.color2, pos2))
+                continue;
 
-        if (numLines > 0) {
-            auto lines = a_dr.getLinesArray();
-
-            for (r3d::uint32 i = 0; i < numLines; i++)
-            {
-                auto& line = lines[i];
-
-                if (!GetScreenPt(line.point1, line.color1, pos1))
-                    continue;
-                if (!GetScreenPt(line.point2, line.color2, pos2))
-                    continue;
-
-                m_lines.emplace_back(ItemLine{ pos1, pos2 });
-            }
+            m_lines.emplace_back(ItemLine{ pos1, pos2 });
         }
 
-        auto numTris = a_dr.getNbTriangles();
+        for (const auto& tri : a_dr.getTriangles())
+        {
+            if (!GetScreenPt(tri.point1, tri.color1, pos1))
+                continue;
+            if (!GetScreenPt(tri.point2, tri.color2, pos2))
+                continue;
+            if (!GetScreenPt(tri.point3, tri.color3, pos3))
+                continue;
 
-        if (numTris) {
-            auto tris = a_dr.getTrianglesArray();
-
-            for (r3d::uint32 i = 0; i < numTris; i++)
-            {
-                auto& tri = tris[i];
-
-                if (!GetScreenPt(tri.point1, tri.color1, pos1))
-                    continue;
-                if (!GetScreenPt(tri.point2, tri.color2, pos2))
-                    continue;
-                if (!GetScreenPt(tri.point3, tri.color3, pos3))
-                    continue;
-
-                if (globalConfig.debugRenderer.wireframe) {
-                    m_lines.emplace_back(ItemLine{ pos1, pos2 });
-                    m_lines.emplace_back(ItemLine{ pos1, pos3 });
-                    m_lines.emplace_back(ItemLine{ pos3, pos2 });
-                }
-                else {
-                    m_tris.emplace_back(ItemTri{ pos1, pos2, pos3 });
-                }
+            if (globalConfig.debugRenderer.wireframe) {
+                m_lines.emplace_back(ItemLine{ pos1, pos2 });
+                m_lines.emplace_back(ItemLine{ pos1, pos3 });
+                m_lines.emplace_back(ItemLine{ pos3, pos2 });
+            }
+            else {
+                m_tris.emplace_back(ItemTri{ pos1, pos2, pos3 });
             }
         }
     }
@@ -104,7 +88,7 @@ namespace CBP
 
         NiPoint3 p(a_pos.x, a_pos.y, a_pos.z);
 
-        if (!WorldPtToScreenPt3_Internal(g_worldToCamMatrix, g_viewPort, &p, &a_out.position.x, &a_out.position.y, &a_out.position.z, 0.1f))
+        if (!WorldPtToScreenPt3_Internal(g_worldToCamMatrix, g_viewPort, &p, &a_out.position.x, &a_out.position.y, &a_out.position.z, 1e-5f))
             return false;
 
         a_out.position.x = (a_out.position.x * 2.0f) - 1.0f;
