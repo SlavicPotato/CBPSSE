@@ -48,14 +48,7 @@ namespace CBP
             if (!GetScreenPt(tri.point3, tri.color3, pos3))
                 continue;
 
-            if (globalConfig.debugRenderer.wireframe) {
-                m_lines.emplace_back(ItemLine{ pos1, pos2 });
-                m_lines.emplace_back(ItemLine{ pos1, pos3 });
-                m_lines.emplace_back(ItemLine{ pos3, pos2 });
-            }
-            else {
-                m_tris.emplace_back(ItemTri{ pos1, pos2, pos3 });
-            }
+            m_tris.emplace_back(ItemTri{ pos1, pos2, pos3 });
         }
     }
 
@@ -71,13 +64,21 @@ namespace CBP
 
         m_batch->Begin();
 
+        auto& globalConfig = IConfig::GetGlobalConfig();
+
         for (const auto& e : m_lines) {
             m_batch->DrawLine(e.pos1, e.pos2);
         }
 
-        for (const auto& e : m_tris) {
-            m_batch->DrawTriangle(e.pos1, e.pos2, e.pos3);
-        }
+        if (globalConfig.debugRenderer.wireframe)
+            for (const auto& e : m_tris) {
+                m_batch->DrawLine(e.pos1, e.pos2);
+                m_batch->DrawLine(e.pos1, e.pos3);
+                m_batch->DrawLine(e.pos3, e.pos2);
+            }
+        else
+            for (const auto& e : m_tris)
+                m_batch->DrawTriangle(e.pos1, e.pos2, e.pos3);
 
         m_batch->End();
     }
