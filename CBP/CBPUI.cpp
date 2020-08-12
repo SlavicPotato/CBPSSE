@@ -2,10 +2,11 @@
 
 namespace CBP
 {
-    static std::unordered_map<std::string, const char*> thingHelpText = {
+    static std::unordered_map<std::string, const char*> thingHelpText =
+    {
         {"cogOffset", "The ammount that the COG is forwards of the bone root, changes how rotation will impact motion"},
         {"damping", "Velocity removed/tick 1.0 would be all velocity removed"},
-        {"gravityBias", "This is in effect the gravity coefficient, p's a constant forceActor acting down * the mass of the object"},
+        {"gravityBias", "This is in effect the gravity coefficient, a constant force acting down * the mass of the object"},
         {"gravityCorrection", "Amount to move the target point up to counteract the neutral effect of gravityBias"},
         {"linearX", "Scale of the side to side motion"},
         {"linearY", "Scale of the front to back motion"},
@@ -16,8 +17,6 @@ namespace CBP
         {"rotationalZ", "Scale of the bones rotation around the Z axis"},
         {"stiffness", "Linear spring stiffness"},
         {"stiffness2", "Quadratic spring stiffness"},
-        {"timeScale", "Time scale"},
-        {"timeStep", "Update rate in Hz"},
         {"colSphereRadMax", "Collision sphere radius (weigth 100)"},
         {"colSphereRadMin", "Collision sphere radius (weight 0)"},
         {"colSphereOffsetXMax", "Collision sphere X offset (weigth 100)"},
@@ -26,9 +25,16 @@ namespace CBP
         {"colSphereOffsetYMin", "Collision sphere Y offset (weigth 0)"},
         {"colSphereOffsetZMax", "Collision sphere Z offset (weigth 100)"},
         {"colSphereOffsetZMin", "Collision sphere Z offset (weigth 0)"},
-        {"colDampingCoef", ""},
+        {"colDampingCoef", "Velocity damping scale when nodes are colliding"},
         {"colStiffnessCoef", ""},
-        {"colDepthMul", "Only used for collisions"}
+        {"colDepthMul", ""}
+    };
+
+    std::unordered_map<MiscHelpText, const char*> UIBase::m_helpText =
+    {
+        {kHT_timeStep, "Update rate in Hz. Higher values produce smoother motion but cost more CPU time. It's pointless to set this above maximum framerate unless timeScale is below 1."},
+        {kHT_timeScale, "Simulation rate, speeds up or slows down time"},
+        {kHT_colMaxPenetrationDepth, "Maximum penetration depth during collisions"}
     };
 
     static const keyDesc_t comboKeyDesc({
@@ -198,7 +204,7 @@ namespace CBP
 
         if (ImGui::Begin("Profile Editor", a_active))
         {
-            ImGui::PushItemWidth(ImGui::GetFontSize() * -12.0f);
+            ImGui::PushItemWidth(ImGui::GetFontSize() * -12.5f);
 
             auto& data = GenericProfileManager::GetSingleton().Data();
 
@@ -494,10 +500,10 @@ namespace CBP
 
             if (m_currentRace)
             {
-                ImGui::PushItemWidth(ImGui::GetFontSize() * -12.0f);
+                ImGui::PushItemWidth(ImGui::GetFontSize() * -12.5f);
 
                 auto& rlEntry = IData::GetRaceListEntry(m_currentRace);
-                ImGui::LabelText("", "Playable: %s", rlEntry.playable ? "yes" : "no");
+                ImGui::Text("Playable: %s", rlEntry.playable ? "yes" : "no");
 
                 auto& globalConfig = IConfig::GetGlobalConfig();
 
@@ -1123,16 +1129,14 @@ namespace CBP
         ImVec2 sizeMax(min(400.0f, io.DisplaySize.x), max(io.DisplaySize.y - 40.0f, sizeMin.y));
 
         ImGui::SetNextWindowSizeConstraints(sizeMin, sizeMax);
-        //ImGui::SetNextWindowContentSize(ImVec2(sizeConstraint.x, 0.0f));
 
         auto entry = GetSelectedEntry();
 
         if (ImGui::Begin("CBP Config Editor", a_active, ImGuiWindowFlags_MenuBar))
         {
             ImGui::PushID(static_cast<const void*>(this));
-            ImGui::PushItemWidth(ImGui::GetFontSize() * -12);
+            ImGui::PushItemWidth(ImGui::GetFontSize() * -12.5f);
 
-            //bool saveGlobalsFailed = false;
             bool saveAllFailed = false;
 
             if (ImGui::BeginMenuBar())
@@ -1145,14 +1149,6 @@ namespace CBP
                             state.lastException =
                                 DCBP::GetLastSerializationException();
                         }
-
-                    /*if (ImGui::MenuItem("Save globals"))
-                        if (!DCBP::SaveGlobals()) {
-                            saveGlobalsFailed = true;
-                            state.lastException =
-                                DCBP::GetLastSerializationException();
-                        }
-                        */
 
                     ImGui::Separator();
                     if (ImGui::MenuItem("Exit"))
@@ -1194,6 +1190,26 @@ namespace CBP
 
             DrawActorList(entry, curSelName);
 
+            ImGui::Spacing();
+
+            if (m_currentActor) {
+                auto confClass = IConfig::GetActorConfigClass(m_currentActor);
+                const char* classText;
+                switch (confClass)
+                {
+                case ConfigClass::kConfigActor:
+                    classText = "actor";
+                    break;
+                case ConfigClass::kConfigRace:
+                    classText = "race";
+                    break;
+                default:
+                    classText = "global";
+                    break;
+                }
+                ImGui::Text("Config in use: %s", classText);
+            }
+
             auto& globalConfig = IConfig::GetGlobalConfig();
 
             ImGui::Spacing();
@@ -1226,8 +1242,6 @@ namespace CBP
                 }
             }
 
-            /*if (saveGlobalsFailed)
-                ImGui::OpenPopup("Settings save failed");*/
             if (saveAllFailed)
                 ImGui::OpenPopup("Save failed");
 
@@ -1248,7 +1262,6 @@ namespace CBP
                 m_scGlobal.DrawSimComponents(0, IConfig::GetThingGlobalConfig());
             }
 
-            //UICommon::MessageDialog("Settings save failed", "Error occured while trying to save settings\n\n%s", state.lastException.what());
             UICommon::MessageDialog("Save failed", "Saving one or more files failed.\nThe last exception was:\n\n%s", state.lastException.what());
 
             ImGui::PopItemWidth();
@@ -1299,6 +1312,13 @@ namespace CBP
 
                 DrawKeyOptions("Combo key", comboKeyDesc, globalConfig.ui.comboKey);
                 DrawKeyOptions("Key", keyDesc, globalConfig.ui.showKey);
+
+                ImGui::Spacing();
+                ImGui::Separator();
+                ImGui::Spacing();
+
+                if (ImGui::Checkbox("Lock game controls while UI active", &globalConfig.ui.lockControls))
+                    DCBP::MarkGlobalsForSave();
             }
 
             ImGui::Spacing();
@@ -1324,16 +1344,19 @@ namespace CBP
                     globalConfig.phys.timeStep = 1.0f / std::clamp(timeStep, 30.0f, 240.0f);
                     DCBP::MarkGlobalsForSave();
                 }
+                HelpMarker(kHT_timeStep);
 
                 if (ImGui::SliderFloat("timeScale", &globalConfig.phys.timeScale, 0.05f, 10.0f)) {
                     globalConfig.phys.timeScale = std::clamp(globalConfig.phys.timeScale, 0.05f, 10.0f);
                     DCBP::MarkGlobalsForSave();
                 }
+                HelpMarker(kHT_timeScale);
 
                 if (ImGui::SliderFloat("colMaxPenetrationDepth", &globalConfig.phys.colMaxPenetrationDepth, 0.5f, 100.0f)) {
                     globalConfig.phys.colMaxPenetrationDepth = std::clamp(globalConfig.phys.colMaxPenetrationDepth, 0.05f, 500.0f);
                     DCBP::MarkGlobalsForSave();
                 }
+                HelpMarker(kHT_colMaxPenetrationDepth);
             }
 
             if (DCBP::GetDriverConfig().debug_renderer)
@@ -1892,15 +1915,17 @@ namespace CBP
                 ImGui::LabelText("Avg. time", "%lld us", stats.avgTime);
                 ImGui::LabelText("Avg. actors", "%u", stats.avgActorCount);
 
-                if (globalConfig.debugRenderer.enabled) 
+                if (globalConfig.debugRenderer.enabled)
                 {
                     ImGui::Spacing();
+                    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.66f, 0.13f, 1.0f));
                     ImGui::TextWrapped("WARNING: Disable debug renderer for accurate measurement");
+                    ImGui::PopStyleColor();
                     ImGui::Spacing();
                 }
-            }
 
-            ImGui::Separator();
+                ImGui::Separator();
+            }
 
             static const std::string chKey("Stats#Settings");
 

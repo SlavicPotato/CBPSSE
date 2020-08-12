@@ -43,6 +43,7 @@ namespace CBP
             {
                 const auto& ui = root["ui"];
 
+                globalConfig.ui.lockControls = ui.get("lockControls", true).asBool();
                 globalConfig.ui.showAllActors = ui.get("showAllActors", false).asBool();
                 globalConfig.ui.clampValuesMain = ui.get("clampValuesMain", true).asBool();
                 globalConfig.ui.clampValuesRace = ui.get("clampValuesRace", true).asBool();
@@ -202,6 +203,7 @@ namespace CBP
 
             auto& ui = root["ui"];
 
+            ui["lockControls"] = globalConfig.ui.lockControls;
             ui["showAllActors"] = globalConfig.ui.showAllActors;
             ui["clampValuesMain"] = globalConfig.ui.clampValuesMain;
             ui["clampValuesRace"] = globalConfig.ui.clampValuesRace;

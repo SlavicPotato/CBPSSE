@@ -190,6 +190,20 @@ namespace CBP
         thingGlobalConfigDefaults = thingGlobalConfig;
     }
 
+    ConfigClass IConfig::GetActorConfigClass(SKSE::ObjectHandle a_handle)
+    {
+        if (actorConfHolder.contains(a_handle))
+            return ConfigClass::kConfigActor;
+
+        auto& rm = IData::GetActorRaceMap();
+        auto it = rm.find(a_handle);
+        if (it != rm.end())
+            if (raceConfHolder.contains(it->second))
+                return ConfigClass::kConfigRace;
+
+        return ConfigClass::kConfigGlobal;
+    }
+
     void IConfig::SetActorConf(SKSE::ObjectHandle a_handle, const configComponents_t& a_conf)
     {
         actorConfHolder.insert_or_assign(a_handle, a_conf);
@@ -217,7 +231,7 @@ namespace CBP
             a_out = it->second;
             return true;
         }
-        
+
         return false;
     }
 
@@ -236,7 +250,7 @@ namespace CBP
         if (it != actorNodeConfigHolder.end())
             return it->second;
         else
-            return (actorNodeConfigHolder[a_handle] = IConfig::GetNodeConfig());        
+            return (actorNodeConfigHolder[a_handle] = IConfig::GetNodeConfig());
     }
 
     bool IConfig::GetActorNodeConfig(SKSE::ObjectHandle a_handle, const std::string& a_node, nodeConfig_t& a_out)
@@ -251,7 +265,7 @@ namespace CBP
 
         return false;
     }
-    
+
     configComponents_t& IConfig::GetOrCreateActorConf(SKSE::ObjectHandle a_handle)
     {
         auto ita = actorConfHolder.find(a_handle);

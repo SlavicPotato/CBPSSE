@@ -32,6 +32,7 @@ namespace CBP
 
         struct
         {
+            bool lockControls = true;
             bool showAllActors = false;
             bool clampValuesMain = true;
             bool rlPlayableOnly = true;
@@ -171,6 +172,13 @@ namespace CBP
     typedef std::unordered_map<std::string, nodeConfig_t> nodeConfigHolder_t;
     typedef std::unordered_map<SKSE::ObjectHandle, nodeConfigHolder_t> actorNodeConfigHolder_t;
 
+    enum class ConfigClass
+    {
+        kConfigGlobal,
+        kConfigRace,
+        kConfigActor
+    };
+
     class IConfig
     {
         class IConfigLog
@@ -184,6 +192,9 @@ namespace CBP
         typedef std::unordered_set<std::string> vKey_t;
 
         static void LoadConfig();
+
+        [[nodiscard]] static ConfigClass GetActorConfigClass(SKSE::ObjectHandle a_handle);
+
         // Not guaranteed to be actual actor conf storage
         [[nodiscard]] static const configComponents_t& GetActorConf(SKSE::ObjectHandle handle);
         [[nodiscard]] static configComponents_t& GetOrCreateActorConf(SKSE::ObjectHandle handle);

@@ -114,6 +114,13 @@ namespace CBP
         kMainEditor
     };
 
+    enum MiscHelpText
+    {
+        kHT_timeStep,
+        kHT_timeScale,
+        kHT_colMaxPenetrationDepth
+    };
+
     class UIBase
     {
     protected:
@@ -125,6 +132,13 @@ namespace CBP
                 *cs ? ImGuiTreeNodeFlags_DefaultOpen : 0);
             return *cs;
         }
+
+        inline void HelpMarker(MiscHelpText a_id) {
+            ImGui::SameLine();
+            UICommon::HelpMarker(m_helpText.at(a_id));
+        }
+    private:
+        static std::unordered_map<MiscHelpText, const char*> m_helpText;
     };
 
     template <class T, int ID>
@@ -274,7 +288,8 @@ namespace CBP
         UIGenericFilter m_filter;
     };
 
-    class UIOptions
+    class UIOptions :
+        UIBase
     {
     public:
         void Draw(bool* a_active);

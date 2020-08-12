@@ -194,7 +194,7 @@ namespace CBP
 
     DCBP::DCBP() :
         m_loadInstance(0),
-        uiState({ false })
+        uiState({ false, false })
     {
     }
 
@@ -480,7 +480,7 @@ namespace CBP
             }
             else {
                 for (uint32_t i = 0; i < numSteps; i++)
-                    it->second.Update(actor, i);                
+                    it->second.Update(actor, i);
 
                 numProcessed++;
                 ++it;
@@ -610,9 +610,9 @@ namespace CBP
         for (auto& e : m_actors)
         {
             auto actor = SKSE::ResolveObject<Actor>(e.first, Actor::kTypeID);
-            if (ActorValid(actor)) {
+            if (ActorValid(actor))
                 e.second.Reset(actor);
-            }
+
             e.second.Release();
         }
 
@@ -638,9 +638,8 @@ namespace CBP
         for (auto& e : m_actors)
         {
             auto actor = SKSE::ResolveObject<Actor>(e.first, Actor::kTypeID);
-            if (ActorValid(actor)) {
+            if (ActorValid(actor))
                 e.second.Reset(actor);
-            }
         }
     }
 
@@ -820,9 +819,15 @@ namespace CBP
             player->byCharGenFlag |= byChargenDisableFlags;
         }
 
-        auto im = InputManager::GetSingleton();
-        if (im) {
-            im->EnableControls(controlDisableFlags, false);
+        auto& globalConf = CBP::IConfig::GetGlobalConfig();
+
+        uiState.lockControls = globalConf.ui.lockControls;
+
+        if (uiState.lockControls) {
+            auto im = InputManager::GetSingleton();
+            if (im) {
+                im->EnableControls(controlDisableFlags, false);
+            }
         }
 
         m_uiContext.Reset(m_loadInstance);
@@ -841,9 +846,11 @@ namespace CBP
 
         m_uiContext.Reset(m_loadInstance);
 
-        auto im = InputManager::GetSingleton();
-        if (im) {
-            im->EnableControls(controlDisableFlags, true);
+        if (uiState.lockControls) {
+            auto im = InputManager::GetSingleton();
+            if (im) {
+                im->EnableControls(controlDisableFlags, true);
+            }
         }
 
         auto player = *g_thePlayer;

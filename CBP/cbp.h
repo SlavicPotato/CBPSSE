@@ -286,6 +286,7 @@ namespace CBP
 
         struct {
             bool show;
+            bool lockControls;
         } uiState;
 
         Serialization m_serialization;
