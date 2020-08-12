@@ -831,6 +831,8 @@ namespace CBP
         }
 
         m_uiContext.Reset(m_loadInstance);
+
+        CBP::IData::UpdateCache(GetSimActorList());
     }
 
     void DCBP::DisableUI()
@@ -975,4 +977,10 @@ namespace CBP
         m_Instance.m_updateTask.ApplyForce(m_handle, m_steps, m_component, m_force);
     }
 
+    void DCBP::UpdateActorCacheTask::Run()
+    {
+        Lock();
+        CBP::IData::UpdateCache(GetSimActorList());
+        Unlock();
+    }
 }

@@ -4,6 +4,9 @@ namespace CBP
 {
     IData::raceList_t IData::raceList;
     IData::actorRaceMap_t IData::actorRaceMap;
+    IData::actorCache_t IData::actorCache;
+    SKSE::ObjectHandle IData::crosshairRef = 0;
+    uint64_t IData::actorCacheUpdateId = 1;
 
     std::unordered_set<SKSE::FormID> IData::ignoredRaces = {
         0x0002C65C,
@@ -31,6 +34,67 @@ namespace CBP
             return;
 
         actorRaceMap.insert_or_assign(a_handle, actor->race->formID);
+    }
+
+    void IData::UpdateCache(const simActorList_t& a_list)
+    {
+        actorCache.clear();
+        crosshairRef = 0;
+
+        for (const auto& e : a_list)
+        {
+            auto actor = SKSE::ResolveObject<Actor>(e.first, Actor::kTypeID);
+            if (actor == nullptr) 
+                continue;
+            
+            std::ostringstream ss;
+            ss << "[" << std::uppercase << std::setfill('0') <<
+                std::setw(8) << std::hex << actor->formID << "] ";
+            ss << CALL_MEMBER_FN(actor, GetReferenceName)();
+
+            actorCache.emplace(e.first, 
+                actorCacheEntry_t{ true, std::move(ss.str()) });
+        }
+
+        for (const auto& e : IConfig::GetActorConfigHolder())
+        {
+            if (actorCache.contains(e.first)) {
+                continue;
+            }
+
+            std::ostringstream ss;
+            ss << "[" << std::uppercase << std::setfill('0') <<
+                std::setw(8) << std::hex << (e.first & 0xFFFFFFFF) << "]";
+
+            auto actor = SKSE::ResolveObject<Actor>(e.first, Actor::kTypeID);
+            if (actor != nullptr) {
+                ss << " " << CALL_MEMBER_FN(actor, GetReferenceName)();
+            }
+
+            actorCache.emplace(e.first,
+                actorCacheEntry_t{ false, std::move(ss.str()) });
+        }
+
+        auto refHolder = CrosshairRefHandleHolder::GetSingleton();
+        if (refHolder) {
+            auto handle = refHolder->CrosshairRefHandle();
+
+            NiPointer<TESObjectREFR> ref;
+            LookupREFRByHandle(handle, ref);
+            if (ref != nullptr) {
+                if (ref->formType == Actor::kTypeID) {
+                    SKSE::ObjectHandle handle;
+                    if (SKSE::GetHandle(ref, ref->formType, handle)) {
+                        auto it = actorCache.find(handle);
+                        if (it != actorCache.end()) {
+                            crosshairRef = it->first;
+                        }
+                    }
+                }
+            }
+        }
+
+        actorCacheUpdateId++;
     }
 
     bool IData::PopulateRaceList()

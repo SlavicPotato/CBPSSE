@@ -177,8 +177,6 @@ namespace CBP
         for (const auto& v : nodeMap)
             validSimComponents.insert(v.second);
 
-        //thingGlobalConfig = defaultConfig;
-
         for (const auto& v : validSimComponents)
             if (!thingGlobalConfig.contains(v))
                 thingGlobalConfig.emplace(v, configComponent_t());

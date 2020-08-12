@@ -155,6 +155,13 @@ namespace CBP
             NiPoint3 m_force;
         };
 
+        class UpdateActorCacheTask :
+            public TaskDelegateStatic
+        {
+        public:
+            virtual void Run();
+        };
+
     public:
         static void Initialize();
 
@@ -206,6 +213,10 @@ namespace CBP
         static void UIQueueUpdateCurrentActor();
         inline static void UIQueueUpdateCurrentActorA() {
             m_Instance.m_uiContext.QueueUpdateCurrentActor();
+        }
+
+        inline static void QueueActorCacheUpdate() {
+            DTasks::AddTask(&m_Instance.m_updateActorCacheTask);
         }
 
         [[nodiscard]] inline static auto& GetUpdateTask() {
@@ -282,7 +293,10 @@ namespace CBP
         KeyPressHandler inputEventHandler;
         UIContext m_uiContext;
         uint32_t m_loadInstance;
+
+        UpdateTask m_updateTask;
         ToggleUITask m_taskToggle;
+        UpdateActorCacheTask m_updateActorCacheTask;
 
         struct {
             bool show;
@@ -290,7 +304,6 @@ namespace CBP
         } uiState;
 
         Serialization m_serialization;
-        UpdateTask m_updateTask;
         std::unique_ptr<CBP::Renderer> m_renderer;
 
         r3d::PhysicsWorld* m_world;

@@ -188,6 +188,26 @@ namespace CBP
     m(colStiffnessCoef, 0.0f, 1.0f); \
     m(colDepthMul, 1.0f, 1000.0f);
 
+
+    bool UIBase::CollapsingHeader(
+        const std::string& a_key,
+        const char* a_label,
+        bool a_default)
+    {
+        auto& globalConfig = IConfig::GetGlobalConfig();
+
+        bool& state = globalConfig.GetColState(a_key, a_default);
+        bool newState = ImGui::CollapsingHeader(a_label,
+            state ? ImGuiTreeNodeFlags_DefaultOpen : 0);
+
+        if (state != newState) {
+            state = newState;
+            DCBP::MarkGlobalsForSave();
+        }
+
+        return newState;
+    }
+
     void UIProfileEditor::Draw(bool* a_active)
     {
         auto& io = ImGui::GetIO();
@@ -582,22 +602,15 @@ namespace CBP
             return;
         }
 
-        auto refHolder = CrosshairRefHandleHolder::GetSingleton();
-        if (refHolder) {
-            auto handle = refHolder->CrosshairRefHandle();
-
-            NiPointer<TESObjectREFR> ref;
-            LookupREFRByHandle(handle, ref);
-            if (ref != nullptr) {
-                if (ref->formType == Actor::kTypeID) {
-                    auto actor = DYNAMIC_CAST(ref, TESObjectREFR, Actor);
-                    if (actor && actor->race) {
-                        auto it = m_raceList.find(actor->race->formID);
-                        if (it != m_raceList.end()) {
-                            m_currentRace = it->first;
-                            return;
-                        }
-                    }
+        auto crosshairRef = IData::GetCrosshairRef();
+        if (crosshairRef)
+        {
+            auto& actorRaceMap = IData::GetActorRaceMap();
+            auto it = actorRaceMap.find(crosshairRef);
+            if (it != actorRaceMap.end()) {
+                if (m_raceList.contains(it->second)) {
+                    m_currentRace = it->second;
+                    return;
                 }
             }
         }
@@ -815,55 +828,25 @@ namespace CBP
     template <typename T>
     UIActorList<T>::UIActorList() :
         m_currentActor(0),
-        m_nextUpdateActorList(true),
-        m_globLabel("Global")
+        m_globLabel("Global"),
+        m_lastCacheUpdateId(0)
     {
         m_strBuf1[0] = 0x0;
     }
 
     template <typename T>
-    void UIActorList<T>::UpdateActorList(const simActorList_t& a_list)
+    void UIActorList<T>::UpdateActorList()
     {
-        m_actorList.clear();
-
-        for (const auto& e : a_list)
-        {
-            auto actor = SKSE::ResolveObject<Actor>(e.first, Actor::kTypeID);
-            if (actor == nullptr) {
-                continue;
-            }
-
-            std::ostringstream ss;
-            ss << "[" << std::uppercase << std::setfill('0') <<
-                std::setw(8) << std::hex << actor->formID << "] ";
-            ss << CALL_MEMBER_FN(actor, GetReferenceName)();
-
-            m_actorList.try_emplace(e.first,
-                std::move(ss.str()), GetData(e.first));
-        }
-
         auto& globalConfig = IConfig::GetGlobalConfig();
 
-        if (globalConfig.ui.showAllActors)
+        m_actorList.clear();
+
+        for (const auto& e : IData::GetCache())
         {
-            for (const auto& e : IConfig::GetActorConfigHolder())
-            {
-                if (m_actorList.contains(e.first)) {
-                    continue;
-                }
+            if (!globalConfig.ui.showAllActors && !e.second.active)
+                continue;
 
-                std::ostringstream ss;
-                ss << "[" << std::uppercase << std::setfill('0') <<
-                    std::setw(8) << std::hex << (e.first & 0xFFFFFFFF) << "]";
-
-                auto actor = SKSE::ResolveObject<Actor>(e.first, Actor::kTypeID);
-                if (actor != nullptr) {
-                    ss << " " << CALL_MEMBER_FN(actor, GetReferenceName)();
-                }
-
-                m_actorList.try_emplace(e.first,
-                    std::move(ss.str()), GetData(e.first));
-            }
+            m_actorList.try_emplace(e.first, e.second.name, GetData(e.first));
         }
 
         if (m_actorList.size() == 0) {
@@ -874,23 +857,11 @@ namespace CBP
 
         _snprintf_s(m_strBuf1, _TRUNCATE, "%zu actors", m_actorList.size());
 
-        auto refHolder = CrosshairRefHandleHolder::GetSingleton();
-        if (refHolder) {
-            auto handle = refHolder->CrosshairRefHandle();
-
-            NiPointer<TESObjectREFR> ref;
-            LookupREFRByHandle(handle, ref);
-            if (ref != nullptr) {
-                if (ref->formType == Actor::kTypeID) {
-                    SKSE::ObjectHandle handle;
-                    if (SKSE::GetHandle(ref, ref->formType, handle)) {
-                        auto it = m_actorList.find(handle);
-                        if (it != m_actorList.end()) {
-                            SetCurrentActor(it->first);
-                            return;
-                        }
-                    }
-                }
+        auto crosshairRef = IData::GetCrosshairRef();
+        if (crosshairRef) {
+            if (m_actorList.contains(crosshairRef)) {
+                SetCurrentActor(crosshairRef);
+                return;
             }
         }
 
@@ -904,6 +875,16 @@ namespace CBP
             {
                 m_currentActor = globalConfig.ui.lastActor;
             }
+        }
+    }
+
+    template <typename T>
+    void UIActorList<T>::ActorListTick()
+    {
+        auto cacheUpdateId = IData::GetCacheUpdateId();
+        if (cacheUpdateId != m_lastCacheUpdateId) {
+            m_lastCacheUpdateId = cacheUpdateId;
+            UpdateActorList();
         }
     }
 
@@ -1092,7 +1073,7 @@ namespace CBP
     void UIContext::Reset(uint32_t a_loadInstance)
     {
         m_actorList.clear();
-        m_nextUpdateActorList = true;
+        m_lastCacheUpdateId = IData::GetCacheUpdateId() - 1;
         m_nextUpdateCurrentActor = false;
         m_activeLoadInstance = a_loadInstance;
 
@@ -1104,10 +1085,7 @@ namespace CBP
     {
         auto& io = ImGui::GetIO();
 
-        if (m_nextUpdateActorList) {
-            m_nextUpdateActorList = false;
-            UpdateActorList(DCBP::GetSimActorList());
-        }
+        ActorListTick();
 
         if (m_nextUpdateCurrentActor) {
             m_nextUpdateCurrentActor = false;
@@ -1117,7 +1095,7 @@ namespace CBP
         if (m_actorList.size() == 0) {
             auto t = PerfCounter::Query();
             if (PerfCounter::delta_us(m_tsNoActors, t) >= 2500000LL) {
-                m_nextUpdateActorList = true;
+                DCBP::QueueActorCacheUpdate();
                 m_tsNoActors = t;
             }
         }
@@ -1161,14 +1139,16 @@ namespace CBP
                 {
                     ImGui::MenuItem("Race editor", nullptr, &state.windows.race);
                     ImGui::MenuItem("Profile editor", nullptr, &state.windows.profile);
-                    ImGui::MenuItem("Collision groups", nullptr, &state.windows.collisionGroups);
-                    ImGui::MenuItem("Node config", nullptr, &state.windows.nodeConf);
 
                     ImGui::Separator();
-                    ImGui::MenuItem("Options", nullptr, &state.windows.options);
+                    ImGui::MenuItem("Node config", nullptr, &state.windows.nodeConf);
+                    ImGui::MenuItem("Collision groups", nullptr, &state.windows.collisionGroups);
 
                     ImGui::Separator();
                     ImGui::MenuItem("Stats", nullptr, &state.windows.profiling);
+
+                    ImGui::Separator();
+                    ImGui::MenuItem("Options", nullptr, &state.windows.options);
 
                     ImGui::EndMenu();
                 }
@@ -1218,7 +1198,7 @@ namespace CBP
 
             ImGui::SameLine(ImGui::GetWindowContentRegionMax().x - 50.0f);
             if (ImGui::Button("Rescan"))
-                QueueUpdateActorList();
+                DCBP::QueueActorCacheUpdate();
 
             ImGui::Spacing();
             if (ImGui::Checkbox("Clamp values", &globalConfig.ui.clampValuesMain))
@@ -1299,14 +1279,13 @@ namespace CBP
 
         ImVec2 center(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f);
         ImGui::SetNextWindowPos(center, ImGuiCond_FirstUseEver, ImVec2(0.5f, 0.5f));
+        ImGui::SetNextWindowSizeConstraints(ImVec2(400.0f, 100.0f), ImVec2(800.0f, 800.0f));
 
         ImGui::PushID(static_cast<const void*>(a_active));
 
         if (ImGui::Begin("Options", a_active, ImGuiWindowFlags_AlwaysAutoResize))
         {
-            ImGui::Spacing();
-
-            if (ImGui::CollapsingHeader("Controls", ImGuiTreeNodeFlags_DefaultOpen))
+            if (CollapsingHeader("Options#Controls", "Controls"))
             {
                 ImGui::Spacing();
 
@@ -1314,18 +1293,12 @@ namespace CBP
                 DrawKeyOptions("Key", keyDesc, globalConfig.ui.showKey);
 
                 ImGui::Spacing();
-                ImGui::Separator();
-                ImGui::Spacing();
 
                 if (ImGui::Checkbox("Lock game controls while UI active", &globalConfig.ui.lockControls))
                     DCBP::MarkGlobalsForSave();
             }
 
-            ImGui::Spacing();
-            ImGui::Separator();
-            ImGui::Spacing();
-
-            if (ImGui::CollapsingHeader("Simulation", ImGuiTreeNodeFlags_DefaultOpen))
+            if (CollapsingHeader("Options#Simulation", "Simulation"))
             {
                 ImGui::Spacing();
 
@@ -1361,7 +1334,7 @@ namespace CBP
 
             if (DCBP::GetDriverConfig().debug_renderer)
             {
-                if (ImGui::CollapsingHeader("Debug Renderer", ImGuiTreeNodeFlags_DefaultOpen))
+                if (CollapsingHeader("Options#DebugRenderer", "Debug Renderer"))
                 {
                     ImGui::Spacing();
 
@@ -1594,16 +1567,13 @@ namespace CBP
 
     void UINodeConfig::Reset()
     {
+        m_lastCacheUpdateId = IData::GetCacheUpdateId() - 1;
         m_actorList.clear();
-        m_nextUpdateActorList = true;
     }
 
     void UINodeConfig::Draw(bool* a_active)
     {
-        if (m_nextUpdateActorList) {
-            m_nextUpdateActorList = false;
-            UpdateActorList(DCBP::GetSimActorList());
-        }
+        ActorListTick();
 
         auto& io = ImGui::GetIO();
 
@@ -1634,7 +1604,7 @@ namespace CBP
             }
 
             if (ImGui::Button("Rescan"))
-                m_nextUpdateActorList = true;
+                DCBP::QueueActorCacheUpdate();
 
             ImGui::Separator();
 
@@ -1912,8 +1882,17 @@ namespace CBP
             {
                 auto& stats = DCBP::GetProfiler().Current();
 
-                ImGui::LabelText("Avg. time", "%lld us", stats.avgTime);
-                ImGui::LabelText("Avg. actors", "%u", stats.avgActorCount);
+                ImGui::Columns(2, nullptr, false);
+
+                ImGui::Text("Avg. time:");
+                ImGui::Text("Avg. actors:");
+
+                ImGui::NextColumn();
+
+                ImGui::Text("%lld us", stats.avgTime);
+                ImGui::Text("%u", stats.avgActorCount);
+
+                ImGui::Columns(1);
 
                 if (globalConfig.debugRenderer.enabled)
                 {

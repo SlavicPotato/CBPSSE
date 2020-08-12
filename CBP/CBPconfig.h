@@ -25,7 +25,7 @@ namespace CBP
         {
             float timeStep = 1.0f / 60.0f;
             float timeScale = 1.0f;
-            float colMaxPenetrationDepth = 25.0f;
+            float colMaxPenetrationDepth = 35.0f;
 
             bool collisions = true;
         } phys;
@@ -57,12 +57,15 @@ namespace CBP
             float contactNormalLength = 2.0f;
         } debugRenderer;
 
-        inline bool& GetColState(const std::string& a_key) {
-            return ui.colStates[a_key];
-        }
-
-        inline constexpr bool* GetColStateAddr(const std::string& a_key) {
-            return std::addressof(ui.colStates[a_key]);
+        inline bool& GetColState(
+            const std::string& a_key, 
+            bool a_default = true) 
+        {
+            auto it = ui.colStates.find(a_key);
+            if (it != ui.colStates.end())
+                return it->second;
+            else
+                return ui.colStates[a_key] = a_default;
         }
     };
 

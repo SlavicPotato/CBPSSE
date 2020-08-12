@@ -124,14 +124,10 @@ namespace CBP
     class UIBase
     {
     protected:
-        inline bool CollapsingHeader(const std::string &a_key, const char *a_label)
-        {
-            auto& globalConfig = IConfig::GetGlobalConfig();
-            bool* cs = globalConfig.GetColStateAddr(a_key);
-            *cs = ImGui::CollapsingHeader(a_label,
-                *cs ? ImGuiTreeNodeFlags_DefaultOpen : 0);
-            return *cs;
-        }
+        bool CollapsingHeader(
+            const std::string& a_key,
+            const char* a_label,
+            bool a_default = true);
 
         inline void HelpMarker(MiscHelpText a_id) {
             ImGui::SameLine();
@@ -312,8 +308,7 @@ namespace CBP
     class UIActorList
     {
     public:
-        void UpdateActorList(const simActorList_t& a_list);
-
+        void ActorListTick();
     protected:
         using actorListValue_t = typename T::value_type;
         using actorEntryValue_t = typename T::value_type::second_type::second_type;
@@ -329,9 +324,11 @@ namespace CBP
         T m_actorList;
         SKSE::ObjectHandle m_currentActor;
 
-        bool m_nextUpdateActorList;
+        uint64_t m_lastCacheUpdateId;
 
     private:
+        void UpdateActorList();
+
         virtual void ResetAllActorValues(SKSE::ObjectHandle a_handle) = 0;
         virtual const actorEntryValue_t& GetData(SKSE::ObjectHandle a_handle) = 0;
 
@@ -470,10 +467,6 @@ namespace CBP
 
         void Reset(uint32_t a_loadInstance);
         void Draw(bool* a_active);
-
-        inline void QueueUpdateActorList() {
-            m_nextUpdateActorList = true;
-        }
 
         inline void QueueUpdateCurrentActor() {
             m_nextUpdateCurrentActor = true;

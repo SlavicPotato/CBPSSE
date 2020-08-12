@@ -1,5 +1,7 @@
 #pragma once
 
+#include "CBPThing.h"
+
 namespace CBP
 {
     struct nodeDesc_t 
