@@ -25,6 +25,8 @@ namespace CBP
                 const auto& general = root["general"];
 
                 globalConfig.general.femaleOnly = general.get("femaleOnly", true).asBool();
+                globalConfig.general.enableProfiling = general.get("enableProfiling", false).asBool();
+                globalConfig.general.profilingInterval = general.get("profilingInterval", 1000).asInt();
             }
 
             if (root.isMember("physics"))
@@ -188,6 +190,8 @@ namespace CBP
             auto& general = root["general"];
 
             general["femaleOnly"] = globalConfig.general.femaleOnly;
+            general["enableProfiling"] = globalConfig.general.enableProfiling;
+            general["profilingInterval"] = globalConfig.general.profilingInterval;
 
             auto& phys = root["physics"];
 
@@ -254,7 +258,7 @@ namespace CBP
             return true;
         }
         catch (const std::exception& e) {
-            lastException = e;
+            m_lastException = e;
             Error("%s: %s", __FUNCTION__, e.what());
             return false;
         }
@@ -352,7 +356,7 @@ namespace CBP
             return true;
         }
         catch (const std::exception& e) {
-            lastException = e;
+            m_lastException = e;
             Error("%s: %s", __FUNCTION__, e.what());
             return false;
         }
@@ -439,7 +443,7 @@ namespace CBP
             configComponents_t componentData;
 
             if (ParseComponents(root, componentData))
-                IConfig::SetThingGlobalConfig(componentData);
+                IConfig::SetGlobalProfile(componentData);
 
             nodeConfigHolder_t nodeData;
 
@@ -449,6 +453,7 @@ namespace CBP
         catch (const std::exception& e)
         {
             IConfig::ClearGlobalProfile();
+            IConfig::ClearNodeConfig();
             Error("%s: %s", __FUNCTION__, e.what());
         }
     }
@@ -716,7 +721,7 @@ namespace CBP
         }
         catch (const std::exception& e)
         {
-            lastException = e;
+            m_lastException = e;
             Error("%s: %s", __FUNCTION__, e.what());
         }
     }
@@ -736,7 +741,7 @@ namespace CBP
         }
         catch (const std::exception& e)
         {
-            lastException = e;
+            m_lastException = e;
             Error("%s: %s", __FUNCTION__, e.what());
 
             return false;
@@ -763,7 +768,7 @@ namespace CBP
         }
         catch (const std::exception& e)
         {
-            lastException = e;
+            m_lastException = e;
             Error("%s: %s", __FUNCTION__, e.what());
         }
     }
@@ -804,4 +809,14 @@ namespace CBP
         ofs << a_root << std::endl;
     }
 
+    bool Serialization::SavePending()
+    {
+        bool failed = false;
+
+        failed |= !DoPendingSave(Group::kGlobals, &Serialization::SaveGlobals);
+        failed |= !DoPendingSave(Group::kGlobalProfile, &Serialization::SaveGlobalProfile);
+        failed |= !DoPendingSave(Group::kCollisionGroups, &Serialization::SaveCollisionGroups);
+
+        return !failed;
+    }
 }

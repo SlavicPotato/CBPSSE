@@ -17,6 +17,8 @@ namespace CBP
         struct
         {
             bool femaleOnly = true;
+            bool enableProfiling = false;
+            int profilingInterval = 1000;
         } general;
 
         struct
@@ -207,7 +209,7 @@ namespace CBP
             return thingGlobalConfig;
         }
 
-        inline static void SetThingGlobalConfig(const configComponents_t& a_lhs) {
+        inline static void SetGlobalProfile(const configComponents_t& a_lhs) {
             thingGlobalConfig = a_lhs;
         }
 
@@ -215,7 +217,7 @@ namespace CBP
             CopyComponents(a_lhs, thingGlobalConfig);
         }
 
-        inline static void SetThingGlobalConfig(configComponents_t&& a_lhs) {
+        inline static void SetGlobalProfile(configComponents_t&& a_lhs) {
             thingGlobalConfig = std::forward<configComponents_t>(a_lhs);
         }
 

@@ -181,13 +181,18 @@ namespace CBP
 
     void SimComponent::Reset(Actor* actor)
     {
-        auto m_obj = actor->loadedState->node->GetObjectByName(&boneName.data);
-        if (m_obj == nullptr)
-            return;
+        if (m_movement)
+        {
+            auto obj = actor->loadedState->node->GetObjectByName(&boneName.data);
+            if (obj != nullptr) {
+                obj->m_localTransform.pos = npZero;
+                obj->m_localTransform.rot.Identity();
+                oldWorldPos = obj->m_worldTransform.pos;
+            }
+        }
 
-        m_obj->m_localTransform.pos = npZero;
-        oldWorldPos = m_obj->m_worldTransform.pos;
         velocity = npZero;
+
         m_applyForceQueue.swap(decltype(m_applyForceQueue)());
     }
 

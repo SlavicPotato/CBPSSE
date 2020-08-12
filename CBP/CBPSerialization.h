@@ -7,6 +7,14 @@ namespace CBP
     {
     public:
 
+        enum Group : uint8_t 
+        {
+            kGlobals = 0,
+            kGlobalProfile,
+            kCollisionGroups,
+            kNumGroups
+        };
+
         void LoadGlobals();
         bool SaveGlobals();
 
@@ -22,9 +30,15 @@ namespace CBP
         void LoadCollisionGroups();
         bool SaveCollisionGroups();
 
-        [[nodiscard]] inline const std::exception& GetLastException() const {
-            return lastException;
+        inline void MarkForSave(Group a_grp) {
+            m_pendingSave[a_grp] = true;
         }
+
+        [[nodiscard]] inline const std::exception& GetLastException() const {
+            return m_lastException;
+        }
+
+        bool SavePending();
 
         FN_NAMEPROC("Serialization")
     private:
@@ -37,6 +51,20 @@ namespace CBP
         void CreateNodeData(const nodeConfigHolder_t& a_data, Json::Value& a_out);
         [[nodiscard]] bool ParseNodeData(const Json::Value& a_data, nodeConfigHolder_t& a_out);
 
-        std::exception lastException;
+        std::exception m_lastException;
+
+        template <typename T>
+        bool DoPendingSave(Group a_grp, T a_call) 
+        {
+            if (m_pendingSave[a_grp]) {
+                bool res = std::bind(a_call, this)();
+                if (res)
+                    m_pendingSave[a_grp] = false;
+                return res;
+            }
+            return true;
+        }
+
+        bool m_pendingSave[Group::kNumGroups];
     };
 }

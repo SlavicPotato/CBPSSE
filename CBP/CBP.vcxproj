@@ -448,6 +448,7 @@
     <ClInclude Include="CBPData.h" />
     <ClInclude Include="CBPPapyrus.h" />
     <ClInclude Include="CBPProfile.h" />
+    <ClInclude Include="CBPProfiling.h" />
     <ClInclude Include="CBPSerialization.h" />
     <ClInclude Include="CBPSimObj.h" />
     <ClInclude Include="CBPThing.h" />
@@ -477,6 +478,7 @@
     <ClCompile Include="CBPData.cpp" />
     <ClCompile Include="CBPPapyrus.cpp" />
     <ClCompile Include="CBPProfile.cpp" />
+    <ClCompile Include="CBPProfiling.cpp" />
     <ClCompile Include="CBPRenderer.cpp" />
     <ClCompile Include="CBPSerialization.cpp" />
     <ClCompile Include="CBPSimObj.cpp" />

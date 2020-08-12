@@ -56,6 +56,18 @@ namespace CBP
             UTTask::kActionPhysicsReset);
     }
 
+    void DCBP::NiNodeUpdate()
+    {
+        m_Instance.m_updateTask.AddTask(
+            CBP::UTTask::kActionNiNodeUpdateAll);
+    }
+
+    void DCBP::NiNodeUpdate(SKSE::ObjectHandle a_handle)
+    {
+        m_Instance.m_updateTask.AddTask(
+            CBP::UTTask::kActionNiNodeUpdate, a_handle);
+    }
+
     void DCBP::ResetActors()
     {
         m_Instance.m_updateTask.AddTask(
@@ -144,6 +156,16 @@ namespace CBP
         failed |= !iface.SaveCollisionGroups();
 
         return !failed;
+    }
+
+    void DCBP::ResetProfiler()
+    {
+        m_Instance.m_updateTask.GetProfiler().Reset();
+    }
+
+    void DCBP::SetProfilerInterval(long long a_interval)
+    {
+        m_Instance.m_updateTask.GetProfiler().SetInterval(a_interval);
     }
 
     uint32_t DCBP::ConfigGetComboKey(int32_t param)
@@ -304,6 +326,18 @@ namespace CBP
         UpdateDebugRendererState();
         UpdateDebugRendererSettings();
 
+        GetUpdateTask().ResetTime();
+
+        auto& globalConf = CBP::IConfig::GetGlobalConfig();
+
+        if (globalConf.general.enableProfiling) {
+            auto& profiler = GetProfiler();
+
+            profiler.SetInterval(static_cast<long long>(
+                globalConf.general.profilingInterval) * 1000);
+            profiler.Reset();
+        }
+
         Unlock();
 
         UpdateConfigOnAllActors();
@@ -383,10 +417,8 @@ namespace CBP
 
     UpdateTask::UpdateTask() :
         m_lTime(PerfCounter::Query()),
-        m_timeAccum(0.0f)
-#ifdef _CBP_MEASURE_PERF
-        , m_perfTimer(5000000)
-#endif
+        m_timeAccum(0.0f),
+        m_profiler(1000000)
     {
     }
 
@@ -401,10 +433,10 @@ namespace CBP
         // Process our tasks only when the player is loaded and attached to a cell
         ProcessTasks();
 
-#ifdef _CBP_MEASURE_PERF
-        m_perfTimer.Begin();
-        uint32_t numActors = 0;
-#endif
+        auto& globalConf = IConfig::GetGlobalConfig();
+
+        if (globalConf.general.enableProfiling)
+            m_profiler.Begin();
 
         auto newTime = PerfCounter::Query();
         auto deltaT = PerfCounter::delta(m_lTime, newTime);
@@ -415,8 +447,6 @@ namespace CBP
             DCBP::Unlock();
             return;
         }
-
-        auto& globalConf = IConfig::GetGlobalConfig();
 
         m_timeAccum += deltaT * globalConf.phys.timeScale;
 
@@ -434,6 +464,8 @@ namespace CBP
 
         auto world = DCBP::GetWorld();
 
+        uint32_t numProcessed = 0;
+
         auto it = m_actors.begin();
         while (it != m_actors.end())
         {
@@ -447,13 +479,10 @@ namespace CBP
                 it = m_actors.erase(it);
             }
             else {
-                for (uint32_t i = 0; i < numSteps; i++) {
-                    it->second.Update(actor, i);
-                };
+                for (uint32_t i = 0; i < numSteps; i++)
+                    it->second.Update(actor, i);                
 
-#ifdef _CBP_MEASURE_PERF
-                numActors++;
-#endif
+                numProcessed++;
                 ++it;
             }
         }
@@ -469,20 +498,12 @@ namespace CBP
             }
         }
 
-        DCBP::Unlock();
-
-#ifdef _CBP_MEASURE_PERF
-        m_runCount++;
-        m_numActorsAccum += numActors;
-
-        long long avgT;
-        if (m_perfTimer.End(avgT)) {
-            Debug("Perf: %lld us (%zu actors)", avgT, m_numActorsAccum / m_runCount);
-            m_runCount = 0;
-            m_numActorsAccum = 0;
+        if (globalConf.general.enableProfiling) {
+            m_profiler.AddActorCount(numProcessed);
+            m_profiler.End();
         }
-#endif
 
+        DCBP::Unlock();
     }
 
     std::atomic<uint64_t> UpdateTask::m_nextGroupId = 0;
@@ -623,6 +644,20 @@ namespace CBP
         }
     }
 
+    void UpdateTask::NiNodeUpdate(SKSE::ObjectHandle a_handle)
+    {
+        auto actor = SKSE::ResolveObject<Actor>(a_handle, Actor::kTypeID);
+        if (ActorValid(actor))
+            CALL_MEMBER_FN(actor, QueueNiNodeUpdate)(true);
+    }
+
+    void UpdateTask::NiNodeUpdateAll()
+    {
+        for (auto& e : m_actors)
+            NiNodeUpdate(e.first);
+    }
+
+
     void UpdateTask::AddTask(const UTTask& task)
     {
         m_taskLock.Enter();
@@ -693,6 +728,12 @@ namespace CBP
                 break;
             case UTTask::kActionPhysicsReset:
                 PhysicsReset();
+                break;
+            case UTTask::kActionNiNodeUpdate:
+                NiNodeUpdate(task.m_handle);
+                break;
+            case UTTask::kActionNiNodeUpdateAll:
+                NiNodeUpdateAll();
                 break;
             }
         }
@@ -796,7 +837,7 @@ namespace CBP
             io.WantSaveIniSettings = false;
         }
 
-        DCBP::SaveAll();
+        SavePending();
 
         m_uiContext.Reset(m_loadInstance);
 

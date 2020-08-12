@@ -16,7 +16,9 @@ namespace CBP
             kActionReset,
             kActionUIUpdateCurrentActor,
             kActionUpdateGroupInfoAll,
-            kActionPhysicsReset
+            kActionPhysicsReset,
+            kActionNiNodeUpdate,
+            kActionNiNodeUpdateAll,
         };
 
         UTTAction m_action;
@@ -42,6 +44,8 @@ namespace CBP
         void ClearActors();
         void Reset();
         void PhysicsReset();
+        void NiNodeUpdate(SKSE::ObjectHandle a_handle);
+        void NiNodeUpdateAll();
 
         void AddTask(const UTTask& task);
         void AddTask(UTTask&& task);
@@ -50,7 +54,15 @@ namespace CBP
 
         inline const auto& GetSimActorList() {
             return m_actors;
-        };
+        }
+
+        inline void ResetTime() {
+            m_lTime = PerfCounter::Query();
+        }
+
+        inline auto& GetProfiler() {
+            return m_profiler;
+        }
 
         FN_NAMEPROC("UpdateTask")
     private:
@@ -68,11 +80,7 @@ namespace CBP
 
         static std::atomic<uint64_t> m_nextGroupId;
 
-#ifdef _CBP_MEASURE_PERF
-        PerfTimerInt m_perfTimer;
-        uint32_t m_numActorsAccum = 0;
-        uint32_t m_runCount = 0;
-#endif
+        Profiler m_profiler;
     };
 
     class DCBP :
@@ -160,6 +168,8 @@ namespace CBP
         static void UpdateConfigOnAllActors();
         static void UpdateGroupInfoOnAllActors();
         static void ResetPhysics();
+        static void NiNodeUpdate();
+        static void NiNodeUpdate(SKSE::ObjectHandle a_handle);
         static void ResetActors();
         static void UpdateDebugRendererState();
         static void UpdateDebugRendererSettings();
@@ -173,8 +183,20 @@ namespace CBP
             return m_Instance.m_serialization.SaveGlobals();
         }
 
+        inline static void MarkGlobalsForSave() {
+            m_Instance.m_serialization.MarkForSave(CBP::Serialization::kGlobals);
+        }
+
+        inline static void MarkForSave(CBP::Serialization::Group a_grp) {
+            m_Instance.m_serialization.MarkForSave(a_grp);
+        }
+
         inline static bool SaveCollisionGroups() {
             return m_Instance.m_serialization.SaveCollisionGroups();
+        }
+
+        inline static bool SavePending() {
+            return m_Instance.m_serialization.SavePending();
         }
 
         [[nodiscard]] inline static const auto& GetLastSerializationException() {
@@ -196,6 +218,13 @@ namespace CBP
 
         [[nodiscard]] inline static auto& GetPhysicsCommon() {
             return m_Instance.m_physicsCommon;
+        }
+
+        static void ResetProfiler();
+        static void SetProfilerInterval(long long a_interval);
+
+        [[nodiscard]] inline static auto& GetProfiler() {
+            return m_Instance.m_updateTask.GetProfiler();
         }
 
         inline static void Lock() {

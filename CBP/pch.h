@@ -90,6 +90,7 @@ namespace r3d = reactphysics3d;
 #include "CBPPapyrus.h"
 #include "CBPSerialization.h"
 #include "CBPRenderer.h"
+#include "CBPProfiling.h"
 #include "cbp.h"
 
 #endif //PCH_H

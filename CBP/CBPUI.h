@@ -91,6 +91,10 @@ namespace CBP
             return m_item;
         }
 
+        [[nodiscard]] inline const T* operator->() const {
+            return std::addressof(m_item);
+        }
+
         [[nodiscard]] inline bool Has() const noexcept {
             return m_isSelected;
         }
@@ -110,8 +114,22 @@ namespace CBP
         kMainEditor
     };
 
+    class UIBase
+    {
+    protected:
+        inline bool CollapsingHeader(const std::string &a_key, const char *a_label)
+        {
+            auto& globalConfig = IConfig::GetGlobalConfig();
+            bool* cs = globalConfig.GetColStateAddr(a_key);
+            *cs = ImGui::CollapsingHeader(a_label,
+                *cs ? ImGuiTreeNodeFlags_DefaultOpen : 0);
+            return *cs;
+        }
+    };
+
     template <class T, int ID>
-    class UISimComponent
+    class UISimComponent :
+        UIBase
     {
     public:
         UISimComponent() = default;
@@ -141,11 +159,45 @@ namespace CBP
             ss << "UISC#" << ID << "#" << a_name;
             return ss.str();
         }
-
     private:
         virtual bool ShouldDrawComponent(T m_handle, const configComponents_t::value_type& a_comp) {
             return true;
         }
+    };
+
+    class UIGenericFilter
+    {
+    public:
+        UIGenericFilter();
+
+    public:
+        void Draw();
+        void DrawButton();
+        void Clear();
+        void Toggle();
+
+        [[nodiscard]] bool Test(const std::string& a_haystack);
+
+        inline bool IsOpen() {
+            return m_searchOpen;
+        }
+
+        [[nodiscard]] inline explicit operator bool() const noexcept {
+            return m_filter.Has();
+        }
+
+        [[nodiscard]] inline const auto& operator*() const noexcept {
+            return m_filter;
+        }
+
+        [[nodiscard]] inline const auto* operator->() const {
+            return std::addressof(m_filter);
+        }
+    private:
+        char m_filterBuf[128];
+
+        UISelectedItem<std::string> m_filter;
+        bool m_searchOpen;
     };
 
     template <class T>
@@ -176,6 +228,7 @@ namespace CBP
 
     template <class T>
     class UIApplyForce :
+        UIBase,
         UIComponentBase<T>
     {
         static constexpr float FORCE_MIN = -1000.0f;
@@ -217,6 +270,8 @@ namespace CBP
             char ren_input[60];
             std::exception lastException;
         } state;
+
+        UIGenericFilter m_filter;
     };
 
     class UIOptions
@@ -235,7 +290,6 @@ namespace CBP
     typedef std::pair<const std::string, configComponents_t> actorEntryBaseConf_t;
     typedef std::map<SKSE::ObjectHandle, actorEntryBaseConf_t> actorListBaseConf_t;
 
-
     typedef std::pair<const std::string, nodeConfigHolder_t> actorEntryNodeConf_t;
     typedef std::map<SKSE::ObjectHandle, actorEntryNodeConf_t> actorListNodeConf_t;
 
@@ -244,7 +298,7 @@ namespace CBP
     {
     public:
         void UpdateActorList(const simActorList_t& a_list);
-                
+
     protected:
         using actorListValue_t = typename T::value_type;
         using actorEntryValue_t = typename T::value_type::second_type::second_type;
@@ -254,7 +308,7 @@ namespace CBP
 
         actorListValue_t* GetSelectedEntry();
 
-        void DrawActorList(actorListValue_t*& entry, const char*& curSelName);
+        void DrawActorList(actorListValue_t*& a_entry, const char*& a_curSelName);
         void SetCurrentActor(SKSE::ObjectHandle a_handle);
 
         T m_actorList;
@@ -262,11 +316,17 @@ namespace CBP
 
         bool m_nextUpdateActorList;
 
-        char m_strBuf1[128];
     private:
         virtual void ResetAllActorValues(SKSE::ObjectHandle a_handle) = 0;
         virtual const actorEntryValue_t& GetData(SKSE::ObjectHandle a_handle) = 0;
 
+        void FilterSelected(actorListValue_t*& a_entry, const char*& a_curSelName);
+
+        char m_strBuf1[128];
+
+        UIGenericFilter m_filter;
+
+        std::string m_globLabel;
     };
 
     class UICollisionGroups
@@ -291,8 +351,8 @@ namespace CBP
         virtual const actorEntryValue_t& GetData(SKSE::ObjectHandle a_handle);
 
         void UpdateActorRecord(
-            actorListValue_t *a_entry,
-            const std::string& a_node, 
+            actorListValue_t* a_entry,
+            const std::string& a_node,
             const actorEntryValue_t::mapped_type& a_rec);
     };
 
@@ -331,8 +391,8 @@ namespace CBP
         [[nodiscard]] virtual const configComponents_t& GetComponentData(const raceListValue_t* a_data) const;
 
         virtual void AddSimComponentSlider(
-            SKSE::FormID a_handle, 
-            configComponents_t& a_data, 
+            SKSE::FormID a_handle,
+            configComponents_t& a_data,
             configComponentsValue_t& a_pair);
 
         inline void MarkChanged() { m_changed = true; }
@@ -346,6 +406,15 @@ namespace CBP
 
         bool m_nextUpdateRaceList;
         bool m_changed;
+
+        UIGenericFilter m_filter;
+    };
+
+    class UIProfiling :
+        UIBase
+    {
+    public:
+        void Draw(bool* a_active);
     };
 
     class UIContext :
@@ -428,6 +497,7 @@ namespace CBP
                 bool race;
                 bool collisionGroups;
                 bool nodeConf;
+                bool profiling;
             } windows;
 
             std::exception lastException;
@@ -438,6 +508,7 @@ namespace CBP
         UIOptions m_options;
         UICollisionGroups m_colGroups;
         UINodeConfig m_nodeConfig;
+        UIProfiling m_profiling;
 
         UISimComponentActor m_scActor;
         UISimComponentGlobal m_scGlobal;

@@ -13,7 +13,7 @@ namespace CBP
         bool movement;
     };
 
-    typedef std::vector<nodeDesc_t> nodeDescList_t;
+    typedef std::vector< nodeDesc_t> nodeDescList_t;
 
     class SimObject
     {

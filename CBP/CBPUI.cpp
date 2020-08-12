@@ -1,4 +1,4 @@
-#include "pch.h"
+﻿#include "pch.h"
 
 namespace CBP
 {
@@ -48,7 +48,35 @@ namespace CBP
         {DIK_END,"End"},
         {DIK_PGUP,"Page up"},
         {DIK_PGDN,"Page down"},
+        {DIK_BACKSPACE, "Backspace"},
         {DIK_RETURN,"Return"},
+        {DIK_PAUSE, "Pause"},
+        {DIK_CAPSLOCK, "Caps lock"},
+        {DIK_ADD, "Num +"},
+        {DIK_MULTIPLY, "Num *"},
+        {DIK_SUBTRACT, "Num -"},
+        {DIK_PERIOD, "."},
+        {DIK_COMMA, ","},
+        {DIK_MINUS, "-"},
+        {DIK_BACKSLASH, "\\"},
+        {DIK_COLON, ":"},
+        {DIK_SEMICOLON, ";"},
+        {DIK_SLASH, "/"},
+        {DIK_F1, "F1"},
+        {DIK_F2, "F2"},
+        {DIK_F3, "F3"},
+        {DIK_F4, "F4"},
+        {DIK_F5, "F5"},
+        {DIK_F6, "F6"},
+        {DIK_F7, "F7"},
+        {DIK_F8, "F8"},
+        {DIK_F9, "F9"},
+        {DIK_F10, "F10"},
+        {DIK_F11, "F11"},
+        {DIK_F12, "F12"},
+        {DIK_F13, "F13"},
+        {DIK_F14, "F14"},
+        {DIK_F15, "F15"},
         {DIK_0,"0"},
         {DIK_1,"1"},
         {DIK_2,"2"},
@@ -166,17 +194,33 @@ namespace CBP
 
         ImGui::SetNextWindowSizeConstraints(sizeMin, sizeMax);
 
+        ImGui::PushID(static_cast<const void*>(a_active));
+
         if (ImGui::Begin("Profile Editor", a_active))
         {
-            ImGui::PushID(static_cast<const void*>(a_active));
             ImGui::PushItemWidth(ImGui::GetFontSize() * -12.0f);
 
             auto& data = GenericProfileManager::GetSingleton().Data();
 
             const char* curSelName = nullptr;
             if (state.selected) {
-                if (data.contains(*state.selected)) {
-                    curSelName = (*state.selected).c_str();
+                if (data.contains(*state.selected))
+                {
+                    curSelName = state.selected->c_str();
+
+                    if (!m_filter.Test(*state.selected))
+                    {
+                        for (const auto& e : data)
+                        {
+                            if (!m_filter.Test(e.first))
+                                continue;
+
+                            state.selected = e.first;
+                            curSelName = e.first.c_str();
+
+                            break;
+                        }
+                    }
                 }
                 else {
                     state.selected.Clear();
@@ -189,12 +233,15 @@ namespace CBP
                 }
             }
 
-            ImGui::PushItemWidth(ImGui::GetFontSize() * -8.0f);
+            ImGui::PushItemWidth(ImGui::GetFontSize() * -9.0f);
 
             if (ImGui::BeginCombo("Profile", curSelName, ImGuiComboFlags_HeightLarge))
             {
                 for (const auto& e : data)
                 {
+                    if (!m_filter.Test(e.first))
+                        continue;
+
                     ImGui::PushID(reinterpret_cast<const void*>(std::addressof(e)));
                     bool selected = e.first == *state.selected;
                     if (selected)
@@ -208,13 +255,18 @@ namespace CBP
                 ImGui::EndCombo();
             }
 
-            ImGui::PopItemWidth();
+            ImGui::SameLine();
+            m_filter.DrawButton();
 
             ImGui::SameLine(ImGui::GetWindowContentRegionMax().x - 30.0f);
             if (ImGui::Button("New")) {
                 ImGui::OpenPopup("New");
                 state.new_input[0] = 0;
             }
+
+            m_filter.Draw();
+
+            ImGui::PopItemWidth();
 
             if (UICommon::TextInputDialog("New", "Enter the profile name:",
                 state.new_input, sizeof(state.new_input)))
@@ -313,10 +365,11 @@ namespace CBP
             }
 
             ImGui::PopItemWidth();
-            ImGui::PopID();
         }
 
         ImGui::End();
+
+        ImGui::PopID();
     }
 
     void UIProfileEditor::AddSimComponentSlider(
@@ -373,15 +426,36 @@ namespace CBP
 
         ImGui::SetNextWindowSizeConstraints(sizeMin, sizeMax);
 
+        ImGui::PushID(static_cast<const void*>(a_active));
+
         if (ImGui::Begin("Race Editor", a_active))
         {
-            ImGui::PushID(static_cast<const void*>(a_active));
-
             auto entry = GetSelectedEntry();
 
             const char* curSelName;
-            if (entry)
-                curSelName = entry->second.first.c_str();
+
+            if (entry) {
+                if (!m_filter.Test(entry->second.first))
+                {
+                    m_currentRace = 0;
+                    entry = nullptr;
+                    curSelName = nullptr;
+
+                    for (auto& e : m_raceList)
+                    {
+                        if (!m_filter.Test(e.second.first))
+                            continue;
+
+                        m_currentRace = e.first;
+                        entry = std::addressof(e);
+                        curSelName = e.second.first.c_str();
+
+                        break;
+                    }
+                }
+                else
+                    curSelName = entry->second.first.c_str();
+            }
             else
                 curSelName = nullptr;
 
@@ -391,6 +465,9 @@ namespace CBP
             {
                 for (auto& e : m_raceList)
                 {
+                    if (!m_filter.Test(e.second.first))
+                        continue;
+
                     ImGui::PushID(reinterpret_cast<const void*>(std::addressof(e)));
 
                     bool selected = e.first == m_currentRace;
@@ -407,6 +484,10 @@ namespace CBP
                 ImGui::EndCombo();
             }
 
+            ImGui::SameLine();
+            m_filter.DrawButton();
+            m_filter.Draw();
+
             ImGui::PopItemWidth();
 
             ImGui::Spacing();
@@ -421,16 +502,20 @@ namespace CBP
                 auto& globalConfig = IConfig::GetGlobalConfig();
 
                 ImGui::Spacing();
-                if (ImGui::Checkbox("Playable only", &globalConfig.ui.rlPlayableOnly))
+                if (ImGui::Checkbox("Playable only", &globalConfig.ui.rlPlayableOnly)) {
                     QueueUpdateRaceList();
+                    DCBP::MarkGlobalsForSave();
+                }
 
                 ImGui::Spacing();
-                if (ImGui::Checkbox("Editor IDs", &globalConfig.ui.rlShowEditorIDs))
+                if (ImGui::Checkbox("Editor IDs", &globalConfig.ui.rlShowEditorIDs)) {
                     QueueUpdateRaceList();
+                    DCBP::MarkGlobalsForSave();
+                }
 
                 ImGui::Spacing();
                 if (ImGui::Checkbox("Clamp values", &globalConfig.ui.clampValuesRace))
-                    DCBP::SaveGlobals();
+                    DCBP::MarkGlobalsForSave();
 
                 ImGui::SameLine(ImGui::GetWindowContentRegionMax().x - 43.0f);
                 if (ImGui::Button("Reset")) {
@@ -454,11 +539,11 @@ namespace CBP
 
                 ImGui::PopItemWidth();
             }
-
-            ImGui::PopID();
         }
 
         ImGui::End();
+
+        ImGui::PopID();
     }
 
     void UIRaceEditor::UpdateRaceList()
@@ -555,12 +640,10 @@ namespace CBP
 
         const char* curSelName = nullptr;
         if (m_selectedProfile) {
-            if (data.contains(*m_selectedProfile)) {
-                curSelName = (*m_selectedProfile).c_str();
-            }
-            else {
+            if (data.contains(*m_selectedProfile))
+                curSelName = m_selectedProfile->c_str();
+            else
                 m_selectedProfile.Clear();
-            }
         }
 
         if (ImGui::BeginCombo("Profile", curSelName, ImGuiComboFlags_HeightLarge))
@@ -633,10 +716,9 @@ namespace CBP
 
         ImGui::PushID(static_cast<const void*>(std::addressof(m_forceState)));
 
-        bool* cs = globalConfig.GetColStateAddr("Main#Force");
-        *cs = ImGui::CollapsingHeader("Force", *cs ? ImGuiTreeNodeFlags_DefaultOpen : 0);
+        static const std::string chKey("Main#Force");
 
-        if (*cs)
+        if (CollapsingHeader(chKey, "Force"))
         {
             auto& data = GetComponentData(a_data);
             auto& globalConfig = IConfig::GetGlobalConfig();
@@ -678,7 +760,7 @@ namespace CBP
                     if (ImGui::Selectable(e.first.c_str(), selected)) {
                         m_forceState.selected = (
                             globalConfig.ui.forceActorSelected = e.first);
-                        DCBP::SaveGlobals();
+                        DCBP::MarkGlobalsForSave();
                     }
 
                     ImGui::PopID();
@@ -697,19 +779,27 @@ namespace CBP
 
                 ImGui::Spacing();
 
-                ImGui::SliderFloat("X", std::addressof(e.force.x), FORCE_MIN, FORCE_MAX, "%.0f");
+                if (ImGui::SliderFloat("X", std::addressof(e.force.x), FORCE_MIN, FORCE_MAX, "%.0f"))
+                    DCBP::MarkGlobalsForSave();
 
                 ImGui::SameLine(ImGui::GetWindowContentRegionMax().x - 43.0f);
-                if (ImGui::Button("Reset"))
+                if (ImGui::Button("Reset")) {
                     e = configForce_t();
+                    DCBP::MarkGlobalsForSave();
+                }
 
-                ImGui::SliderFloat("Y", std::addressof(e.force.y), FORCE_MIN, FORCE_MAX, "%.0f");
-                ImGui::SliderFloat("Z", std::addressof(e.force.z), FORCE_MIN, FORCE_MAX, "%.0f");
+                if (ImGui::SliderFloat("Y", std::addressof(e.force.y), FORCE_MIN, FORCE_MAX, "%.0f"))
+                    DCBP::MarkGlobalsForSave();
+
+                if (ImGui::SliderFloat("Z", std::addressof(e.force.z), FORCE_MIN, FORCE_MAX, "%.0f"))
+                    DCBP::MarkGlobalsForSave();
 
                 ImGui::Spacing();
 
-                if (ImGui::SliderInt("Steps", std::addressof(e.steps), 0, 100))
+                if (ImGui::SliderInt("Steps", std::addressof(e.steps), 0, 100)) {
                     e.steps = max(e.steps, 0);
+                    DCBP::MarkGlobalsForSave();
+                }
             }
         }
 
@@ -719,7 +809,8 @@ namespace CBP
     template <typename T>
     UIActorList<T>::UIActorList() :
         m_currentActor(0),
-        m_nextUpdateActorList(true)
+        m_nextUpdateActorList(true),
+        m_globLabel("Global")
     {
         m_strBuf1[0] = 0x0;
     }
@@ -820,7 +911,10 @@ namespace CBP
         if (a_handle != 0)
             m_actorList.at(a_handle).second = GetData(a_handle);
 
-        globalConfig.ui.lastActor = a_handle;
+        if (a_handle != globalConfig.ui.lastActor) {
+            globalConfig.ui.lastActor = a_handle;
+            DCBP::MarkGlobalsForSave();
+        }
     }
 
     template <typename T>
@@ -838,29 +932,38 @@ namespace CBP
     template <typename T>
     void UIActorList<T>::DrawActorList(actorListValue_t*& a_entry, const char*& a_curSelName)
     {
-        static constexpr const char* lGlob = "Global";
-
         if (a_entry) {
             a_curSelName = a_entry->second.first.c_str();
         }
         else {
-            a_curSelName = lGlob;
+            a_curSelName = m_globLabel.c_str();
         }
+
+        FilterSelected(a_entry, a_curSelName);
 
         ImGui::PushItemWidth(ImGui::GetFontSize() * -8.0f);
 
         if (ImGui::BeginCombo(m_strBuf1, a_curSelName, ImGuiComboFlags_HeightLarge))
         {
-            ImGui::PushID(static_cast<const void*>(lGlob));
-            if (ImGui::Selectable(lGlob, 0 == m_currentActor)) {
-                SetCurrentActor(0);
-                a_entry = nullptr;
+            if (m_filter.Test(m_globLabel))
+            {
+                ImGui::PushID(static_cast<const void*>(m_globLabel.c_str()));
+
+                if (ImGui::Selectable(m_globLabel.c_str(), 0 == m_currentActor)) {
+                    SetCurrentActor(0);
+                    a_entry = nullptr;
+                    a_curSelName = m_globLabel.c_str();
+                }
+
+                ImGui::PopID();
             }
-            ImGui::PopID();
 
             for (auto& e : m_actorList)
             {
-                ImGui::PushID(reinterpret_cast<const void*>(e.first));
+                if (!m_filter.Test(e.second.first))
+                    continue;
+
+                ImGui::PushID(static_cast<const void*>(std::addressof(e)));
 
                 bool selected = e.first == m_currentActor;
                 if (selected)
@@ -869,21 +972,114 @@ namespace CBP
                 if (ImGui::Selectable(e.second.first.c_str(), selected)) {
                     SetCurrentActor(e.first);
                     a_entry = std::addressof(e);
+                    a_curSelName = e.second.first.c_str();
                 }
 
                 ImGui::PopID();
             }
+
             ImGui::EndCombo();
         }
 
+        ImGui::SameLine();
+        m_filter.DrawButton();
+        m_filter.Draw();
+
         ImGui::PopItemWidth();
+    }
+
+    template <typename T>
+    void UIActorList<T>::FilterSelected(
+        actorListValue_t*& a_entry,
+        const char*& a_curSelName)
+    {
+        if (m_filter.Test(a_entry ?
+            a_entry->second.first :
+            m_globLabel))
+        {
+            return;
+        }
+
+        for (auto& e : m_actorList)
+        {
+            if (!m_filter.Test(e.second.first))
+                continue;
+
+            SetCurrentActor(e.first);
+            a_entry = std::addressof(e);
+            a_curSelName = e.second.first.c_str();
+
+            return;
+        }
+
+        if (m_filter.Test(m_globLabel)) {
+            SetCurrentActor(0);
+            a_entry = nullptr;
+            a_curSelName = m_globLabel.c_str();
+        }
+    }
+
+    UIGenericFilter::UIGenericFilter() :
+        m_searchOpen(false)
+    {
+        m_filterBuf[0] = 0x0;
+    }
+
+    void UIGenericFilter::DrawButton()
+    {
+        if (ImGui::Button(m_searchOpen ? "<" : ">"))
+            m_searchOpen = !m_searchOpen;
+    }
+
+    void UIGenericFilter::Draw()
+    {
+        if (!m_searchOpen)
+            return;
+
+        ImGui::PushID(static_cast<const void*>(&m_searchOpen));
+
+        if (ImGui::InputText("Filter", m_filterBuf, sizeof(m_filterBuf))) {
+            if (strlen(m_filterBuf))
+                m_filter = m_filterBuf;
+            else
+                m_filter.Clear();
+        }
+
+        ImGui::PopID();
+    }
+
+    void UIGenericFilter::Toggle()
+    {
+        m_searchOpen = !m_searchOpen;
+    }
+
+    bool UIGenericFilter::Test(const std::string& a_haystack)
+    {
+        if (!m_filter)
+            return true;
+
+        auto it = std::search(
+            a_haystack.begin(), a_haystack.end(),
+            m_filter->begin(), m_filter->end(),
+            [](char a_lhs, char a_rhs) {
+                return std::tolower(a_lhs) ==
+                    std::tolower(a_rhs);
+            }
+        );
+
+        return (it != a_haystack.end());
+    }
+
+    void UIGenericFilter::Clear() {
+        m_filter.Clear();
+        m_filterBuf[0] = 0x0;
     }
 
     UIContext::UIContext() noexcept :
         m_nextUpdateCurrentActor(false),
         m_activeLoadInstance(0),
         m_tsNoActors(PerfCounter::Query()),
-        state({ .windows{false, false, false, false, false } })
+        state({ .windows{false, false, false, false, false, false } })
     {
     }
 
@@ -936,7 +1132,7 @@ namespace CBP
             ImGui::PushID(static_cast<const void*>(this));
             ImGui::PushItemWidth(ImGui::GetFontSize() * -12);
 
-            bool saveGlobalsFailed = false;
+            //bool saveGlobalsFailed = false;
             bool saveAllFailed = false;
 
             if (ImGui::BeginMenuBar())
@@ -946,16 +1142,17 @@ namespace CBP
                     if (ImGui::MenuItem("Save"))
                         if (!DCBP::SaveAll()) {
                             saveAllFailed = true;
-                            state.lastException = 
+                            state.lastException =
                                 DCBP::GetLastSerializationException();
                         }
 
-                    if (ImGui::MenuItem("Save globals"))
+                    /*if (ImGui::MenuItem("Save globals"))
                         if (!DCBP::SaveGlobals()) {
                             saveGlobalsFailed = true;
-                            state.lastException = 
+                            state.lastException =
                                 DCBP::GetLastSerializationException();
                         }
+                        */
 
                     ImGui::Separator();
                     if (ImGui::MenuItem("Exit"))
@@ -974,6 +1171,9 @@ namespace CBP
                     ImGui::Separator();
                     ImGui::MenuItem("Options", nullptr, &state.windows.options);
 
+                    ImGui::Separator();
+                    ImGui::MenuItem("Stats", nullptr, &state.windows.profiling);
+
                     ImGui::EndMenu();
                 }
 
@@ -981,14 +1181,14 @@ namespace CBP
                 {
                     if (ImGui::MenuItem("Reset actors"))
                         DCBP::ResetActors();
+                    if (ImGui::MenuItem("NiNode update"))
+                        DCBP::NiNodeUpdate();
 
                     ImGui::EndMenu();
                 }
 
                 ImGui::EndMenuBar();
             }
-
-            static const char* lGlob = "Global";
 
             const char* curSelName;
 
@@ -997,18 +1197,20 @@ namespace CBP
             auto& globalConfig = IConfig::GetGlobalConfig();
 
             ImGui::Spacing();
-            ImGui::Checkbox("Show all actors", &globalConfig.ui.showAllActors);
+            if (ImGui::Checkbox("Show all actors", &globalConfig.ui.showAllActors))
+                DCBP::MarkGlobalsForSave();
 
             ImGui::SameLine(ImGui::GetWindowContentRegionMax().x - 50.0f);
-            if (ImGui::Button("Rescan")) 
-                QueueUpdateActorList();            
+            if (ImGui::Button("Rescan"))
+                QueueUpdateActorList();
 
             ImGui::Spacing();
-            ImGui::Checkbox("Clamp values", &globalConfig.ui.clampValuesMain);
+            if (ImGui::Checkbox("Clamp values", &globalConfig.ui.clampValuesMain))
+                DCBP::MarkGlobalsForSave();
 
             ImGui::SameLine(ImGui::GetWindowContentRegionMax().x - 43.0f);
-            if (ImGui::Button("Reset")) 
-                ImGui::OpenPopup("Reset");            
+            if (ImGui::Button("Reset"))
+                ImGui::OpenPopup("Reset");
 
             if (UICommon::ConfirmDialog(
                 "Reset",
@@ -1024,9 +1226,9 @@ namespace CBP
                 }
             }
 
-            if (saveGlobalsFailed)
-                ImGui::OpenPopup("Settings save failed");
-            else if (saveAllFailed)
+            /*if (saveGlobalsFailed)
+                ImGui::OpenPopup("Settings save failed");*/
+            if (saveAllFailed)
                 ImGui::OpenPopup("Save failed");
 
             ImGui::Spacing();
@@ -1046,7 +1248,7 @@ namespace CBP
                 m_scGlobal.DrawSimComponents(0, IConfig::GetThingGlobalConfig());
             }
 
-            UICommon::MessageDialog("Settings save failed", "Error occured while trying to save settings\n\n%s", state.lastException.what());
+            //UICommon::MessageDialog("Settings save failed", "Error occured while trying to save settings\n\n%s", state.lastException.what());
             UICommon::MessageDialog("Save failed", "Saving one or more files failed.\nThe last exception was:\n\n%s", state.lastException.what());
 
             ImGui::PopItemWidth();
@@ -1072,6 +1274,9 @@ namespace CBP
 
         if (state.windows.nodeConf)
             m_nodeConfig.Draw(&state.windows.nodeConf);
+
+        if (state.windows.profiling)
+            m_profiling.Draw(&state.windows.profiling);
     }
 
     void UIOptions::Draw(bool* a_active)
@@ -1082,10 +1287,10 @@ namespace CBP
         ImVec2 center(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f);
         ImGui::SetNextWindowPos(center, ImGuiCond_FirstUseEver, ImVec2(0.5f, 0.5f));
 
+        ImGui::PushID(static_cast<const void*>(a_active));
+
         if (ImGui::Begin("Options", a_active, ImGuiWindowFlags_AlwaysAutoResize))
         {
-            ImGui::PushID(static_cast<const void*>(a_active));
-
             ImGui::Spacing();
 
             if (ImGui::CollapsingHeader("Controls", ImGuiTreeNodeFlags_DefaultOpen))
@@ -1104,22 +1309,31 @@ namespace CBP
             {
                 ImGui::Spacing();
 
-                if (ImGui::Checkbox("Female actors only", &globalConfig.general.femaleOnly))
+                if (ImGui::Checkbox("Female actors only", &globalConfig.general.femaleOnly)) {
                     DCBP::ResetActors();
+                    DCBP::MarkGlobalsForSave();
+                }
 
-                ImGui::Checkbox("Enable collisions", &globalConfig.phys.collisions);
+                if (ImGui::Checkbox("Enable collisions", &globalConfig.phys.collisions))
+                    DCBP::MarkGlobalsForSave();
 
                 ImGui::Spacing();
 
                 float timeStep = 1.0f / globalConfig.phys.timeStep;
-                if (ImGui::SliderFloat("timeStep", &timeStep, 30.0f, 240.0f, "%.0f"))
+                if (ImGui::SliderFloat("timeStep", &timeStep, 30.0f, 240.0f, "%.0f")) {
                     globalConfig.phys.timeStep = 1.0f / std::clamp(timeStep, 30.0f, 240.0f);
+                    DCBP::MarkGlobalsForSave();
+                }
 
-                if (ImGui::SliderFloat("timeScale", &globalConfig.phys.timeScale, 0.05f, 10.0f))
+                if (ImGui::SliderFloat("timeScale", &globalConfig.phys.timeScale, 0.05f, 10.0f)) {
                     globalConfig.phys.timeScale = std::clamp(globalConfig.phys.timeScale, 0.05f, 10.0f);
+                    DCBP::MarkGlobalsForSave();
+                }
 
-                if (ImGui::SliderFloat("colMaxPenetrationDepth", &globalConfig.phys.colMaxPenetrationDepth, 0.5f, 100.0f))
-                    globalConfig.phys.colMaxPenetrationDepth = std::clamp(globalConfig.phys.colMaxPenetrationDepth, 0.05f, 2000.0f);
+                if (ImGui::SliderFloat("colMaxPenetrationDepth", &globalConfig.phys.colMaxPenetrationDepth, 0.5f, 100.0f)) {
+                    globalConfig.phys.colMaxPenetrationDepth = std::clamp(globalConfig.phys.colMaxPenetrationDepth, 0.05f, 500.0f);
+                    DCBP::MarkGlobalsForSave();
+                }
             }
 
             if (DCBP::GetDriverConfig().debug_renderer)
@@ -1128,29 +1342,34 @@ namespace CBP
                 {
                     ImGui::Spacing();
 
-                    if (ImGui::Checkbox("Enable", &globalConfig.debugRenderer.enabled))
+                    if (ImGui::Checkbox("Enable", &globalConfig.debugRenderer.enabled)) {
                         DCBP::UpdateDebugRendererState();
+                        DCBP::MarkGlobalsForSave();
+                    }
 
-                    ImGui::Checkbox("Wireframe", &globalConfig.debugRenderer.wireframe);
+                    if (ImGui::Checkbox("Wireframe", &globalConfig.debugRenderer.wireframe))
+                        DCBP::MarkGlobalsForSave();
 
                     ImGui::Spacing();
 
                     if (ImGui::SliderFloat("Contact point sphere radius", &globalConfig.debugRenderer.contactPointSphereRadius, 0.1f, 25.0f, "%.2f")) {
                         globalConfig.debugRenderer.contactPointSphereRadius = std::clamp(globalConfig.debugRenderer.contactPointSphereRadius, 0.1f, 25.0f);
                         DCBP::UpdateDebugRendererSettings();
+                        DCBP::MarkGlobalsForSave();
                     }
 
                     if (ImGui::SliderFloat("Contact normal length", &globalConfig.debugRenderer.contactNormalLength, 0.1f, 50.0f, "%.2f")) {
                         globalConfig.debugRenderer.contactNormalLength = std::clamp(globalConfig.debugRenderer.contactNormalLength, 0.1f, 50.0f);
                         DCBP::UpdateDebugRendererSettings();
+                        DCBP::MarkGlobalsForSave();
                     }
                 }
             }
-
-            ImGui::PopID();
         }
 
         ImGui::End();
+
+        ImGui::PopID();
     }
 
     void UIOptions::DrawKeyOptions(
@@ -1186,7 +1405,7 @@ namespace CBP
                 if (ImGui::Selectable(e.second, selected)) {
                     if (a_out != e.first) {
                         a_out = e.first;
-                        DCBP::SaveGlobals();
+                        DCBP::MarkGlobalsForSave();
                     }
                 }
 
@@ -1211,9 +1430,10 @@ namespace CBP
 
         ImGui::SetNextWindowSizeConstraints(sizeMin, sizeMax);
 
+        ImGui::PushID(static_cast<const void*>(a_active));
+
         if (ImGui::Begin("Collision groups", a_active))
         {
-            ImGui::PushID(static_cast<const void*>(a_active));
             ImGui::PushItemWidth(ImGui::GetFontSize() * -11.0f);
 
             auto& colGroups = IConfig::GetCollisionGroups();
@@ -1342,10 +1562,11 @@ namespace CBP
             }
 
             ImGui::PopItemWidth();
-            ImGui::PopID();
         }
 
         ImGui::End();
+
+        ImGui::PopID();
     }
 
     void UINodeConfig::Reset()
@@ -1370,6 +1591,8 @@ namespace CBP
         ImVec2 sizeMax(min(400.0f, io.DisplaySize.x), max(io.DisplaySize.y - 40.0f, sizeMin.y));
 
         ImGui::SetNextWindowSizeConstraints(sizeMin, sizeMax);
+
+        ImGui::PushID(static_cast<const void*>(a_active));
 
         if (ImGui::Begin("Node config", a_active))
         {
@@ -1432,6 +1655,8 @@ namespace CBP
         }
 
         ImGui::End();
+
+        ImGui::PopID();
     }
 
     auto UINodeConfig::GetData(SKSE::ObjectHandle a_handle) ->
@@ -1444,6 +1669,8 @@ namespace CBP
     {
         IConfig::EraseActorNodeConfig(a_handle);
         m_actorList.at(a_handle).second = IConfig::GetActorNodeConfig(a_handle);
+
+        DCBP::MarkForSave(Serialization::kGlobalProfile);
         DCBP::ResetActors();
     }
 
@@ -1458,6 +1685,7 @@ namespace CBP
 
         nodeConfig.insert_or_assign(a_node, a_rec);
 
+        DCBP::MarkForSave(Serialization::kGlobalProfile);
         DCBP::ResetActors();
     }
 
@@ -1597,12 +1825,7 @@ namespace CBP
                 headerName[0] = std::toupper(headerName[0]);
             }
 
-            bool* cs = globalConfig.GetColStateAddr(GetCSID(p.first));
-
-            *cs = ImGui::CollapsingHeader(headerName.c_str(),
-                *cs ? ImGuiTreeNodeFlags_DefaultOpen : 0);
-
-            if (*cs)
+            if (CollapsingHeader(GetCSID(p.first), headerName.c_str()))
             {
                 ImGui::PushID(static_cast<const void*>(std::addressof(p)));
 
@@ -1622,19 +1845,21 @@ namespace CBP
                             continue;
 
                         auto headerName = e.first;
-                        if (headerName.size() > 0) {
+                        if (headerName.size() != 0)
                             headerName[0] = std::toupper(headerName[0]);
-                        }
 
                         auto i = d.try_emplace(e.first, false);
-                        ImGui::MenuItem(headerName.c_str(), nullptr, std::addressof(i.first->second));
+                        if (ImGui::MenuItem(headerName.c_str(), nullptr, std::addressof(i.first->second)))
+                            DCBP::MarkGlobalsForSave();
                     }
 
                     if (d.size()) {
                         ImGui::Separator();
 
-                        if (ImGui::MenuItem("Clear"))
+                        if (ImGui::MenuItem("Clear")) {
                             mirrorTo.erase(p.first);
+                            DCBP::MarkGlobalsForSave();
+                        }
                     }
 
                     ImGui::EndPopup();
@@ -1645,5 +1870,66 @@ namespace CBP
                 ImGui::PopID();
             }
         }
+    }
+
+    void UIProfiling::Draw(bool* a_active)
+    {
+        auto& io = ImGui::GetIO();
+        auto& globalConfig = IConfig::GetGlobalConfig();
+
+        ImVec2 center(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f);
+        ImGui::SetNextWindowPos(center, ImGuiCond_FirstUseEver, ImVec2(0.5f, 0.5f));
+        ImGui::SetNextWindowSizeConstraints(ImVec2(300.0f, 50.0f), ImVec2(400.0f, 500.0f));
+
+        ImGui::PushID(static_cast<const void*>(a_active));
+
+        if (ImGui::Begin("Stats", a_active, ImGuiWindowFlags_AlwaysAutoResize))
+        {
+            if (globalConfig.general.enableProfiling)
+            {
+                auto& stats = DCBP::GetProfiler().Current();
+
+                ImGui::LabelText("Avg. time", "%lld us", stats.avgTime);
+                ImGui::LabelText("Avg. actors", "%u", stats.avgActorCount);
+
+                if (globalConfig.debugRenderer.enabled) 
+                {
+                    ImGui::Spacing();
+                    ImGui::TextWrapped("WARNING: Disable debug renderer for accurate measurement");
+                    ImGui::Spacing();
+                }
+            }
+
+            ImGui::Separator();
+
+            static const std::string chKey("Stats#Settings");
+
+            if (CollapsingHeader(chKey, "Settings"))
+            {
+                ImGui::PushItemWidth(ImGui::GetFontSize() * -8.0f);
+
+                if (ImGui::Checkbox("Enabled", &globalConfig.general.enableProfiling))
+                {
+                    if (globalConfig.general.enableProfiling)
+                        DCBP::ResetProfiler();
+                    DCBP::MarkGlobalsForSave();
+                }
+
+                if (ImGui::SliderInt("Interval (ms)", &globalConfig.general.profilingInterval, 100, 10000, "%d"))
+                {
+                    globalConfig.general.profilingInterval =
+                        std::clamp(globalConfig.general.profilingInterval, 100, 10000);
+                    DCBP::SetProfilerInterval(static_cast<long long>(
+                        globalConfig.general.profilingInterval) * 1000);
+                    DCBP::MarkGlobalsForSave();
+                }
+
+                ImGui::PopItemWidth();
+            }
+        }
+
+        ImGui::End();
+
+        ImGui::PopID();
     }
 }
