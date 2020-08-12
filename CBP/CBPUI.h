@@ -309,6 +309,7 @@ namespace CBP
     {
     public:
         void ActorListTick();
+        void ResetActorList();
     protected:
         using actorListValue_t = typename T::value_type;
         using actorEntryValue_t = typename T::value_type::second_type::second_type;

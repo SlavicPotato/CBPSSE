@@ -67,6 +67,8 @@ namespace CBP
         }
 
     private:
+        static void AddExtraActorEntry(SKSE::ObjectHandle a_handle);
+
         static raceList_t raceList;
         static actorRaceMap_t actorRaceMap;
 

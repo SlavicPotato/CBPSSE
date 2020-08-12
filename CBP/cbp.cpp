@@ -133,7 +133,7 @@ namespace CBP
         auto& actors = GetSimActorList();
         auto it = actors.find(a_handle);
         if (it == actors.end())
-            return false;
+            return true;
 
         return it->second.HasConfigGroup(a_cg);
     }

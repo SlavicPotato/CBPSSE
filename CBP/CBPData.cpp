@@ -36,6 +36,25 @@ namespace CBP
         actorRaceMap.insert_or_assign(a_handle, actor->race->formID);
     }
 
+    void IData::AddExtraActorEntry(
+        SKSE::ObjectHandle a_handle)
+    {
+        if (actorCache.contains(a_handle))
+            return;
+
+        std::ostringstream ss;
+        ss << "[" << std::uppercase << std::setfill('0') <<
+            std::setw(8) << std::hex << (a_handle & 0xFFFFFFFF) << "]";
+
+        auto actor = SKSE::ResolveObject<Actor>(a_handle, Actor::kTypeID);
+        if (actor != nullptr) {
+            ss << " " << CALL_MEMBER_FN(actor, GetReferenceName)();
+        }
+
+        actorCache.emplace(a_handle,
+            actorCacheEntry_t{ false, std::move(ss.str()) });
+    }
+
     void IData::UpdateCache(const simActorList_t& a_list)
     {
         actorCache.clear();
@@ -58,21 +77,12 @@ namespace CBP
 
         for (const auto& e : IConfig::GetActorConfigHolder())
         {
-            if (actorCache.contains(e.first)) {
-                continue;
-            }
+            AddExtraActorEntry(e.first);
+        }
 
-            std::ostringstream ss;
-            ss << "[" << std::uppercase << std::setfill('0') <<
-                std::setw(8) << std::hex << (e.first & 0xFFFFFFFF) << "]";
-
-            auto actor = SKSE::ResolveObject<Actor>(e.first, Actor::kTypeID);
-            if (actor != nullptr) {
-                ss << " " << CALL_MEMBER_FN(actor, GetReferenceName)();
-            }
-
-            actorCache.emplace(e.first,
-                actorCacheEntry_t{ false, std::move(ss.str()) });
+        for (const auto& e : IConfig::GetActorNodeConfigHolder())
+        {
+            AddExtraActorEntry(e.first);
         }
 
         auto refHolder = CrosshairRefHandleHolder::GetSingleton();

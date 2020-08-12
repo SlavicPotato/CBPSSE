@@ -889,6 +889,13 @@ namespace CBP
     }
 
     template <typename T>
+    void UIActorList<T>::ResetActorList()
+    {
+        m_actorList.clear();
+        m_lastCacheUpdateId = IData::GetCacheUpdateId() - 1;
+    }
+
+    template <typename T>
     void UIActorList<T>::SetCurrentActor(SKSE::ObjectHandle a_handle)
     {
         auto& globalConfig = IConfig::GetGlobalConfig();
@@ -1072,7 +1079,7 @@ namespace CBP
 
     void UIContext::Reset(uint32_t a_loadInstance)
     {
-        m_actorList.clear();
+        ResetActorList();
         m_lastCacheUpdateId = IData::GetCacheUpdateId() - 1;
         m_nextUpdateCurrentActor = false;
         m_activeLoadInstance = a_loadInstance;
@@ -1193,8 +1200,10 @@ namespace CBP
             auto& globalConfig = IConfig::GetGlobalConfig();
 
             ImGui::Spacing();
-            if (ImGui::Checkbox("Show all actors", &globalConfig.ui.showAllActors))
+            if (ImGui::Checkbox("Show all actors", &globalConfig.ui.showAllActors)) {
+                DCBP::QueueActorCacheUpdate();
                 DCBP::MarkGlobalsForSave();
+            }
 
             ImGui::SameLine(ImGui::GetWindowContentRegionMax().x - 50.0f);
             if (ImGui::Button("Rescan"))
@@ -1567,8 +1576,7 @@ namespace CBP
 
     void UINodeConfig::Reset()
     {
-        m_lastCacheUpdateId = IData::GetCacheUpdateId() - 1;
-        m_actorList.clear();
+        ResetActorList();
     }
 
     void UINodeConfig::Draw(bool* a_active)
