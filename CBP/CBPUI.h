@@ -327,6 +327,8 @@ namespace CBP
 
         uint64_t m_lastCacheUpdateId;
 
+        bool m_firstUpdate;
+
     private:
         void UpdateActorList();
 
@@ -419,6 +421,7 @@ namespace CBP
 
         bool m_nextUpdateRaceList;
         bool m_changed;
+        bool m_firstUpdate;
 
         UIGenericFilter m_filter;
     };

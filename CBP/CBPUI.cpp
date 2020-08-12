@@ -409,13 +409,15 @@ namespace CBP
     UIRaceEditor::UIRaceEditor() noexcept :
         m_currentRace(0),
         m_nextUpdateRaceList(true),
-        m_changed(false)
+        m_changed(false),
+        m_firstUpdate(false)
     {
     }
 
     void UIRaceEditor::Reset() {
         m_nextUpdateRaceList = true;
         m_changed = false;
+        m_firstUpdate = false;
     }
 
     auto UIRaceEditor::GetSelectedEntry()
@@ -574,6 +576,10 @@ namespace CBP
 
     void UIRaceEditor::UpdateRaceList()
     {
+        bool isFirstUpdate = m_firstUpdate;
+
+        m_firstUpdate = true;
+
         m_raceList.clear();
 
         auto& rl = IData::GetRaceList();
@@ -602,15 +608,17 @@ namespace CBP
             return;
         }
 
-        auto crosshairRef = IData::GetCrosshairRef();
-        if (crosshairRef)
-        {
-            auto& actorRaceMap = IData::GetActorRaceMap();
-            auto it = actorRaceMap.find(crosshairRef);
-            if (it != actorRaceMap.end()) {
-                if (m_raceList.contains(it->second)) {
-                    m_currentRace = it->second;
-                    return;
+        if (!isFirstUpdate) {
+            auto crosshairRef = IData::GetCrosshairRef();
+            if (crosshairRef)
+            {
+                auto& actorRaceMap = IData::GetActorRaceMap();
+                auto it = actorRaceMap.find(crosshairRef);
+                if (it != actorRaceMap.end()) {
+                    if (m_raceList.contains(it->second)) {
+                        m_currentRace = it->second;
+                        return;
+                    }
                 }
             }
         }
@@ -829,7 +837,8 @@ namespace CBP
     UIActorList<T>::UIActorList() :
         m_currentActor(0),
         m_globLabel("Global"),
-        m_lastCacheUpdateId(0)
+        m_lastCacheUpdateId(0),
+        m_firstUpdate(false)
     {
         m_strBuf1[0] = 0x0;
     }
@@ -837,6 +846,10 @@ namespace CBP
     template <typename T>
     void UIActorList<T>::UpdateActorList()
     {
+        bool isFirstUpdate = m_firstUpdate;
+
+        m_firstUpdate = true;
+
         auto& globalConfig = IConfig::GetGlobalConfig();
 
         m_actorList.clear();
@@ -857,11 +870,13 @@ namespace CBP
 
         _snprintf_s(m_strBuf1, _TRUNCATE, "%zu actors", m_actorList.size());
 
-        auto crosshairRef = IData::GetCrosshairRef();
-        if (crosshairRef) {
-            if (m_actorList.contains(crosshairRef)) {
-                SetCurrentActor(crosshairRef);
-                return;
+        if (!isFirstUpdate) {
+            auto crosshairRef = IData::GetCrosshairRef();
+            if (crosshairRef) {
+                if (m_actorList.contains(crosshairRef)) {
+                    SetCurrentActor(crosshairRef);
+                    return;
+                }
             }
         }
 
@@ -891,6 +906,7 @@ namespace CBP
     template <typename T>
     void UIActorList<T>::ResetActorList()
     {
+        m_firstUpdate = false;
         m_actorList.clear();
         m_lastCacheUpdateId = IData::GetCacheUpdateId() - 1;
     }
