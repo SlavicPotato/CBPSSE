@@ -309,7 +309,7 @@ namespace CBP
             nodeCollisionGroupMap.clear();
         }
 
-        [[nodiscard]] inline static const auto& GetNodeConfig() {
+        [[nodiscard]] inline static auto& GetNodeConfig() {
             return nodeConfigHolder;
         }
 
