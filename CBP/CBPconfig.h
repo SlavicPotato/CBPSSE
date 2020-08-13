@@ -76,7 +76,7 @@ namespace CBP
     public:
         [[nodiscard]] inline bool Get(const std::string& a_key, float& a_out) const
         {
-            auto it = componentValueToOffsetMap.find(a_key);
+            const auto it = componentValueToOffsetMap.find(a_key);
             if (it == componentValueToOffsetMap.end())
                 return false;
 
@@ -94,7 +94,7 @@ namespace CBP
 
         inline bool Set(const std::string& a_key, float a_value)
         {
-            auto it = componentValueToOffsetMap.find(a_key);
+            const auto it = componentValueToOffsetMap.find(a_key);
             if (it == componentValueToOffsetMap.end())
                 return false;
 
@@ -105,7 +105,7 @@ namespace CBP
             return true;
         }
 
-        [[nodiscard]] inline float& operator[](const std::string& a_key)
+        [[nodiscard]] inline float& operator[](const std::string& a_key) const
         {
             auto addr = reinterpret_cast<uintptr_t>(this) +
                 componentValueToOffsetMap.at(a_key);
@@ -139,7 +139,7 @@ namespace CBP
         float colDepthMul = 100.0f;
 
     private:
-        static componentValueToOffsetMap_t componentValueToOffsetMap;
+        static const componentValueToOffsetMap_t componentValueToOffsetMap;
     };
 
     static_assert(sizeof(configComponent_t) == 0x60);
@@ -219,7 +219,7 @@ namespace CBP
 
         static void CopyComponents(const configComponents_t& a_lhs, configComponents_t& a_rhs);
 
-        [[nodiscard]] inline static auto& GetThingGlobalConfig() {
+        [[nodiscard]] inline static auto& GetGlobalProfile() {
             return thingGlobalConfig;
         }
 
@@ -227,7 +227,7 @@ namespace CBP
             thingGlobalConfig = a_lhs;
         }
 
-        inline static void CopyToThingGlobalConfig(const configComponents_t& a_lhs) {
+        inline static void CopyToGlobalProfile(const configComponents_t& a_lhs) {
             CopyComponents(a_lhs, thingGlobalConfig);
         }
 
@@ -309,7 +309,7 @@ namespace CBP
             nodeCollisionGroupMap.clear();
         }
 
-        [[nodiscard]] inline static auto& GetNodeConfig() {
+        [[nodiscard]] inline static const auto& GetNodeConfig() {
             return nodeConfigHolder;
         }
 
@@ -327,7 +327,7 @@ namespace CBP
             return actorNodeConfigHolder;
         }
 
-        static nodeConfigHolder_t& GetActorNodeConfig(SKSE::ObjectHandle a_handle);
+        static const nodeConfigHolder_t& GetActorNodeConfig(SKSE::ObjectHandle a_handle);
         static nodeConfigHolder_t& GetOrCreateActorNodeConfig(SKSE::ObjectHandle a_handle);
         static bool GetActorNodeConfig(SKSE::ObjectHandle a_handle, const std::string& a_node, nodeConfig_t& a_out);
 

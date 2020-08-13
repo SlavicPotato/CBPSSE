@@ -93,7 +93,10 @@ namespace CBP
         float colSphereOffsetY = 0.0f;
         float colSphereOffsetZ = 0.0f;
 
-        
+        uint64_t m_groupId;
+        uint64_t m_parentId;
+
+        NiAVObject* m_obj;
 
     public:
         BSFixedString boneName;
@@ -188,10 +191,5 @@ namespace CBP
         float dampingMul = 1.0f;
         float stiffnesMul = 1.0f;
         float stiffnes2Mul = 1.0f;
-
-        uint64_t m_groupId;
-        uint64_t m_parentId;
-
-        NiAVObject* m_obj;
     };
 }

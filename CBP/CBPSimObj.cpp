@@ -80,7 +80,7 @@ namespace CBP
             p.second.Update(a_actor, a_step);
     }
 
-    void SimObject::UpdateConfig(const configComponents_t& a_config)
+    void SimObject::UpdateConfig(Actor* a_actor, const configComponents_t& a_config)
     {
         for (auto& p : m_things)
         {
@@ -95,7 +95,7 @@ namespace CBP
             nodeConf.Get(m_sex, collisions, movement);
 
             p.second.UpdateConfig(
-                SKSE::ResolveObject<Actor>(m_handle, Actor::kTypeID),
+                a_actor,
                 it2->second,
                 collisions,
                 movement

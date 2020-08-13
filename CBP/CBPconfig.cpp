@@ -18,7 +18,7 @@ namespace CBP
 
     IConfig::IConfigLog IConfig::log;
 
-    componentValueToOffsetMap_t configComponent_t::componentValueToOffsetMap = {
+    const componentValueToOffsetMap_t configComponent_t::componentValueToOffsetMap = {
         {"stiffness", offsetof(configComponent_t, stiffness)},
         {"stiffness2", offsetof(configComponent_t, stiffness2)},
         {"damping", offsetof(configComponent_t, damping)},
@@ -222,7 +222,7 @@ namespace CBP
 
     bool IConfig::GetNodeConfig(const std::string& a_node, nodeConfig_t& a_out)
     {
-        auto& nodeConfig = IConfig::GetNodeConfig();
+        auto& nodeConfig = GetNodeConfig();
 
         auto it = nodeConfig.find(a_node);
         if (it != nodeConfig.end()) {
@@ -233,7 +233,7 @@ namespace CBP
         return false;
     }
 
-    nodeConfigHolder_t& IConfig::GetActorNodeConfig(SKSE::ObjectHandle a_handle)
+    const nodeConfigHolder_t& IConfig::GetActorNodeConfig(SKSE::ObjectHandle a_handle)
     {
         auto it = actorNodeConfigHolder.find(a_handle);
         if (it != actorNodeConfigHolder.end())
@@ -248,7 +248,7 @@ namespace CBP
         if (it != actorNodeConfigHolder.end())
             return it->second;
         else
-            return (actorNodeConfigHolder[a_handle] = IConfig::GetNodeConfig());
+            return (actorNodeConfigHolder[a_handle] = GetNodeConfig());
     }
 
     bool IConfig::GetActorNodeConfig(SKSE::ObjectHandle a_handle, const std::string& a_node, nodeConfig_t& a_out)

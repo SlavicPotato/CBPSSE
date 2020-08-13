@@ -567,25 +567,38 @@ namespace CBP
         }
     }
 
-    void UpdateTask::UpdateConfigOnAllActors()
-    {
-        for (auto& a : m_actors)
-            a.second.UpdateConfig(
-                CBP::IConfig::GetActorConf(a.first));
-    }
-
     void UpdateTask::UpdateGroupInfoOnAllActors()
     {
         for (auto& a : m_actors)
             a.second.UpdateGroupInfo();
     }
+    void UpdateTask::UpdateConfigOnAllActors()
+    {
+        for (auto& e : m_actors)
+        {
+            auto actor = SKSE::ResolveObject<Actor>(e.first, Actor::kTypeID);
+            if (!ActorValid(actor))
+                continue;
+
+            e.second.UpdateConfig(
+                actor,
+                CBP::IConfig::GetActorConf(e.first));
+        }
+    }
 
     void UpdateTask::UpdateConfig(SKSE::ObjectHandle handle)
     {
         auto it = m_actors.find(handle);
-        if (it != m_actors.end())
-            it->second.UpdateConfig(
-                CBP::IConfig::GetActorConf(it->first));
+        if (it == m_actors.end())
+            return;
+
+        auto actor = SKSE::ResolveObject<Actor>(handle, Actor::kTypeID);
+        if (!ActorValid(actor))
+            return;
+
+        it->second.UpdateConfig(
+            actor,
+            CBP::IConfig::GetActorConf(it->first));
     }
 
     void UpdateTask::ApplyForce(
@@ -832,7 +845,7 @@ namespace CBP
 
         m_uiContext.Reset(m_loadInstance);
 
-        CBP::IData::UpdateCache(GetSimActorList());
+        CBP::IData::UpdateActorCache(GetSimActorList());
     }
 
     void DCBP::DisableUI()
@@ -980,7 +993,7 @@ namespace CBP
     void DCBP::UpdateActorCacheTask::Run()
     {
         Lock();
-        CBP::IData::UpdateCache(GetSimActorList());
+        CBP::IData::UpdateActorCache(GetSimActorList());
         Unlock();
     }
 }

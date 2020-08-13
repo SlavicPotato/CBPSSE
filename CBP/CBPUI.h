@@ -118,7 +118,8 @@ namespace CBP
     {
         kHT_timeStep,
         kHT_timeScale,
-        kHT_colMaxPenetrationDepth
+        kHT_colMaxPenetrationDepth,
+        kHT_showAllActors,
     };
 
     class UIBase
@@ -127,19 +128,16 @@ namespace CBP
         bool CollapsingHeader(
             const std::string& a_key,
             const char* a_label,
-            bool a_default = true);
+            bool a_default = true) const;
 
-        inline void HelpMarker(MiscHelpText a_id) {
-            ImGui::SameLine();
-            UICommon::HelpMarker(m_helpText.at(a_id));
-        }
+        void HelpMarker(MiscHelpText a_id) const;
     private:
         static std::unordered_map<MiscHelpText, const char*> m_helpText;
     };
 
     template <class T, int ID>
     class UISimComponent :
-        UIBase
+        virtual protected UIBase
     {
     public:
         UISimComponent() = default;
@@ -186,7 +184,7 @@ namespace CBP
         void Clear();
         void Toggle();
 
-        [[nodiscard]] bool Test(const std::string& a_haystack);
+        [[nodiscard]] bool Test(const std::string& a_haystack) const;
 
         inline bool IsOpen() {
             return m_searchOpen;
@@ -200,7 +198,7 @@ namespace CBP
             return m_filter;
         }
 
-        [[nodiscard]] inline const auto* operator->() const {
+        [[nodiscard]] inline const auto* operator->() const noexcept {
             return std::addressof(m_filter);
         }
     private:
@@ -238,7 +236,7 @@ namespace CBP
 
     template <class T>
     class UIApplyForce :
-        UIBase,
+        virtual protected UIBase,
         UIComponentBase<T>
     {
         static constexpr float FORCE_MIN = -1000.0f;
@@ -317,7 +315,7 @@ namespace CBP
         UIActorList();
         virtual ~UIActorList() noexcept = default;
 
-        actorListValue_t* GetSelectedEntry();
+        actorListValue_t*  GetSelectedEntry() ;
 
         void DrawActorList(actorListValue_t*& a_entry, const char*& a_curSelName);
         void SetCurrentActor(SKSE::ObjectHandle a_handle);
@@ -328,7 +326,6 @@ namespace CBP
         uint64_t m_lastCacheUpdateId;
 
         bool m_firstUpdate;
-
     private:
         void UpdateActorList();
 
@@ -434,6 +431,7 @@ namespace CBP
     };
 
     class UIContext :
+        virtual UIBase,
         UIActorList<actorListBaseConf_t>,
         UIProfileSelector<actorListBaseConf_t::value_type>,
         UIApplyForce<actorListBaseConf_t::value_type>

@@ -34,7 +34,8 @@ namespace CBP
     {
         {kHT_timeStep, "Update rate in Hz. Higher values produce smoother motion but cost more CPU time. It's pointless to set this above maximum framerate unless timeScale is below 1."},
         {kHT_timeScale, "Simulation rate, speeds up or slows down time"},
-        {kHT_colMaxPenetrationDepth, "Maximum penetration depth during collisions"}
+        {kHT_colMaxPenetrationDepth, "Maximum penetration depth during collisions"},
+        {kHT_showAllActors, "Checked: Show all known actors\nUnchecked: Show only actors currently simulated"}
     };
 
     static const keyDesc_t comboKeyDesc({
@@ -192,7 +193,7 @@ namespace CBP
     bool UIBase::CollapsingHeader(
         const std::string& a_key,
         const char* a_label,
-        bool a_default)
+        bool a_default) const
     {
         auto& globalConfig = IConfig::GetGlobalConfig();
 
@@ -206,6 +207,12 @@ namespace CBP
         }
 
         return newState;
+    }
+
+    void UIBase::HelpMarker(MiscHelpText a_id) const
+    {
+        ImGui::SameLine();
+        UICommon::HelpMarker(m_helpText.at(a_id));
     }
 
     void UIProfileEditor::Draw(bool* a_active)
@@ -631,7 +638,7 @@ namespace CBP
     void UIRaceEditor::ResetAllRaceValues(SKSE::FormID a_formid, raceListValue_t* a_data)
     {
         IConfig::EraseRaceConf(a_formid);
-        a_data->second.second = IConfig::GetThingGlobalConfig();
+        a_data->second.second = IConfig::GetGlobalProfile();
         MarkChanged();
         DCBP::UpdateConfigOnAllActors();
     }
@@ -854,7 +861,7 @@ namespace CBP
 
         m_actorList.clear();
 
-        for (const auto& e : IData::GetCache())
+        for (const auto& e : IData::GetActorCache())
         {
             if (!globalConfig.ui.showAllActors && !e.second.active)
                 continue;
@@ -896,7 +903,7 @@ namespace CBP
     template <typename T>
     void UIActorList<T>::ActorListTick()
     {
-        auto cacheUpdateId = IData::GetCacheUpdateId();
+        auto cacheUpdateId = IData::GetActorCacheUpdateId();
         if (cacheUpdateId != m_lastCacheUpdateId) {
             m_lastCacheUpdateId = cacheUpdateId;
             UpdateActorList();
@@ -908,7 +915,7 @@ namespace CBP
     {
         m_firstUpdate = false;
         m_actorList.clear();
-        m_lastCacheUpdateId = IData::GetCacheUpdateId() - 1;
+        m_lastCacheUpdateId = IData::GetActorCacheUpdateId() - 1;
     }
 
     template <typename T>
@@ -929,10 +936,10 @@ namespace CBP
 
     template <typename T>
     auto UIActorList<T>::GetSelectedEntry()
-        ->  actorListValue_t*
+        -> actorListValue_t*
     {
         if (m_currentActor != 0) {
-            auto it = m_actorList.find(m_currentActor);
+            const auto it = m_actorList.find(m_currentActor);
             return std::addressof(*it);
         }
 
@@ -1063,7 +1070,7 @@ namespace CBP
         m_searchOpen = !m_searchOpen;
     }
 
-    bool UIGenericFilter::Test(const std::string& a_haystack)
+    bool UIGenericFilter::Test(const std::string& a_haystack) const
     {
         if (!m_filter)
             return true;
@@ -1096,7 +1103,6 @@ namespace CBP
     void UIContext::Reset(uint32_t a_loadInstance)
     {
         ResetActorList();
-        m_lastCacheUpdateId = IData::GetCacheUpdateId() - 1;
         m_nextUpdateCurrentActor = false;
         m_activeLoadInstance = a_loadInstance;
 
@@ -1220,6 +1226,7 @@ namespace CBP
                 DCBP::QueueActorCacheUpdate();
                 DCBP::MarkGlobalsForSave();
             }
+            HelpMarker(kHT_showAllActors);
 
             ImGui::SameLine(ImGui::GetWindowContentRegionMax().x - 50.0f);
             if (ImGui::Button("Rescan"))
@@ -1264,7 +1271,7 @@ namespace CBP
                 m_scActor.DrawSimComponents(m_currentActor, entry->second.second);
             }
             else {
-                m_scGlobal.DrawSimComponents(0, IConfig::GetThingGlobalConfig());
+                m_scGlobal.DrawSimComponents(0, IConfig::GetGlobalProfile());
             }
 
             UICommon::MessageDialog("Save failed", "Saving one or more files failed.\nThe last exception was:\n\n%s", state.lastException.what());
@@ -1734,7 +1741,7 @@ namespace CBP
         auto& profileData = a_profile.Data();
 
         if (!a_data) {
-            IConfig::CopyToThingGlobalConfig(profileData);
+            IConfig::CopyToGlobalProfile(profileData);
             DCBP::UpdateConfigOnAllActors();
         }
         else {
@@ -1746,7 +1753,7 @@ namespace CBP
 
     const configComponents_t& UIContext::GetComponentData(const actorListValue_t* a_data) const
     {
-        return !a_data ? IConfig::GetThingGlobalConfig() : a_data->second.second;
+        return !a_data ? IConfig::GetGlobalProfile() : a_data->second.second;
     }
 
     void UIContext::ResetAllActorValues(SKSE::ObjectHandle a_handle)

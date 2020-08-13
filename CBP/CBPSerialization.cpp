@@ -734,7 +734,7 @@ namespace CBP
         {
             Json::Value root;
 
-            CreateComponents(IConfig::GetThingGlobalConfig(), root);
+            CreateComponents(IConfig::GetGlobalProfile(), root);
             CreateNodeData(IConfig::GetNodeConfig(), root);
 
             WriteJsonData(PLUGIN_CBP_GLOBPROFILE_DATA, root);

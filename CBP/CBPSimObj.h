@@ -32,7 +32,7 @@ namespace CBP
         SimObject(SimObject&& a_rhs) = delete;
 
         void Update(Actor* actor, uint32_t a_step);
-        void UpdateConfig(const configComponents_t& config);
+        void UpdateConfig(Actor* a_actor, const configComponents_t& a_config);
         void Reset(Actor* a_actor);
 
         void ApplyForce(uint32_t a_steps, const std::string& a_component, const NiPoint3& a_force);

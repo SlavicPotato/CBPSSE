@@ -2,7 +2,7 @@
 
 namespace CBP
 {
-    static IThreadSafeBasicMemPool<ConfigUpdateTask, 256> s_configUpdateTaskPool;
+    static IThreadSafeBasicMemPool<ConfigUpdateTask, 30> s_configUpdateTaskPool;
 
     static UInt32 PP_GetVersion(StaticFunctionTag* base)
     {
@@ -27,7 +27,6 @@ namespace CBP
         return false;
     }
 
-
     static bool PP_SetActorConfig(StaticFunctionTag* base, Actor* actor, BSFixedString sect, BSFixedString key, float val)
     {
         if (!actor)
@@ -46,12 +45,19 @@ namespace CBP
         return false;
     }
 
+    static void PP_ResetActors(StaticFunctionTag* base)
+    {
+        DCBP::ResetActors();
+    }
+
     bool RegisterFuncs(VMClassRegistry* registry)
     {
         registry->RegisterFunction(
             new NativeFunction0<StaticFunctionTag, UInt32>("GetVersion", "CBP", PP_GetVersion, registry));
         registry->RegisterFunction(
             new NativeFunction0<StaticFunctionTag, void>("UpdateAllActors", "CBP", PP_UpdateAllActors, registry));
+        registry->RegisterFunction(
+            new NativeFunction0<StaticFunctionTag, void>("ResetActors", "CBP", PP_ResetActors, registry));
         registry->RegisterFunction(
             new NativeFunction3<StaticFunctionTag, bool, BSFixedString, BSFixedString, float>("SetGlobalConfig", "CBP", PP_SetGlobalConfig, registry));
         registry->RegisterFunction(
@@ -131,7 +137,7 @@ namespace CBP
             }
         }
         else {
-            auto& globalConfig = IConfig::GetThingGlobalConfig();
+            auto& globalConfig = IConfig::GetGlobalProfile();
 
             auto it = globalConfig.find(m_sect);
             if (it == globalConfig.end())

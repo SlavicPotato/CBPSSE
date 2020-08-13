@@ -32,13 +32,13 @@ namespace CBP
         static void UpdateActorRaceMap(SKSE::ObjectHandle a_handle, const Actor* a_actor);
         static void UpdateActorRaceMap(SKSE::ObjectHandle a_handle);
 
-        static void UpdateCache(const simActorList_t& a_list);
+        static void UpdateActorCache(const simActorList_t& a_list);
 
-        [[nodiscard]] inline static auto& GetCache() {
+        [[nodiscard]] inline static const auto& GetActorCache() {
             return actorCache;
         }
 
-        [[nodiscard]] inline static uint64_t GetCacheUpdateId() {
+        [[nodiscard]] inline static uint64_t GetActorCacheUpdateId() {
             return actorCacheUpdateId;
         }
 
