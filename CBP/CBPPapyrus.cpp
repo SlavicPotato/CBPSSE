@@ -130,11 +130,9 @@ namespace CBP
             if (itt == ith->second.end())
                 return;
 
-            if (itt->second.Set(m_key, m_val)) {
+            if (itt->second.Set(m_key, m_val))
                 DCBP::DispatchActorTask(
-                    m_handle, UTTask::kActionUpdateConfig);
-                DCBP::UIQueueUpdateCurrentActor();
-            }
+                    m_handle, UTTask::kActionUpdateConfig);            
         }
         else {
             auto& globalConfig = IConfig::GetGlobalProfile();
@@ -143,10 +141,8 @@ namespace CBP
             if (it == globalConfig.end())
                 return;
 
-            if (it->second.Set(m_key, m_val)) {
-                DCBP::UpdateConfigOnAllActors();
-                DCBP::UIQueueUpdateCurrentActor();
-            }
+            if (it->second.Set(m_key, m_val)) 
+                DCBP::UpdateConfigOnAllActors();            
         }
 
     }

@@ -132,7 +132,7 @@ namespace CBP
 
         void HelpMarker(MiscHelpText a_id) const;
     private:
-        static std::unordered_map<MiscHelpText, const char*> m_helpText;
+        static const std::unordered_map<MiscHelpText, const char*> m_helpText;
     };
 
     template <class T, int ID>

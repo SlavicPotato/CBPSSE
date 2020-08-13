@@ -488,10 +488,11 @@ namespace CBP
         }
 
         if (globalConf.phys.collisions) {
-            while (numSteps) {
+            uint32_t i = numSteps;
+            while (i) {
                 world->update(globalConf.phys.timeStep);
-                numSteps--;
-            };
+                i--;
+            }
 
             if (globalConf.debugRenderer.enabled) {
                 DCBP::GetRenderer()->Update(DCBP::GetWorld()->getDebugRenderer());
@@ -499,8 +500,7 @@ namespace CBP
         }
 
         if (globalConf.general.enableProfiling) {
-            m_profiler.AddActorCount(numProcessed);
-            m_profiler.End();
+            m_profiler.End(numProcessed, numSteps);
         }
 
         DCBP::Unlock();

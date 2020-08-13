@@ -2,7 +2,7 @@
 
 namespace CBP
 {
-    static std::unordered_map<std::string, const char*> thingHelpText =
+    static const std::unordered_map<std::string, const char*> thingHelpText =
     {
         {"cogOffset", "The ammount that the COG is forwards of the bone root, changes how rotation will impact motion"},
         {"damping", "Velocity removed/tick 1.0 would be all velocity removed"},
@@ -30,7 +30,7 @@ namespace CBP
         {"colDepthMul", ""}
     };
 
-    std::unordered_map<MiscHelpText, const char*> UIBase::m_helpText =
+    const std::unordered_map<MiscHelpText, const char*> UIBase::m_helpText =
     {
         {kHT_timeStep, "Update rate in Hz. Higher values produce smoother motion but cost more CPU time. It's pointless to set this above maximum framerate unless timeScale is below 1."},
         {kHT_timeScale, "Simulation rate, speeds up or slows down time"},
@@ -59,16 +59,11 @@ namespace CBP
         {DIK_RETURN,"Return"},
         {DIK_PAUSE, "Pause"},
         {DIK_CAPSLOCK, "Caps lock"},
-        {DIK_ADD, "Num +"},
-        {DIK_MULTIPLY, "Num *"},
-        {DIK_SUBTRACT, "Num -"},
-        {DIK_PERIOD, "."},
-        {DIK_COMMA, ","},
-        {DIK_MINUS, "-"},
-        {DIK_BACKSLASH, "\\"},
-        {DIK_COLON, ":"},
-        {DIK_SEMICOLON, ";"},
-        {DIK_SLASH, "/"},
+        {DIK_LEFT, "Left"},
+        {DIK_RIGHT, "Right"},
+        {DIK_UP, "Up"},
+        {DIK_DOWN, "Down"},
+        {DIK_TAB, "Tab"},
         {DIK_F1, "F1"},
         {DIK_F2, "F2"},
         {DIK_F3, "F3"},
@@ -84,6 +79,29 @@ namespace CBP
         {DIK_F13, "F13"},
         {DIK_F14, "F14"},
         {DIK_F15, "F15"},
+        {DIK_NUMPAD0, "Num 0"},
+        {DIK_NUMPAD1, "Num 1"},
+        {DIK_NUMPAD2, "Num 2"},
+        {DIK_NUMPAD3, "Num 3"},
+        {DIK_NUMPAD4, "Num 4"},
+        {DIK_NUMPAD5, "Num 5"},
+        {DIK_NUMPAD6, "Num 6"},
+        {DIK_NUMPAD7, "Num 7"},
+        {DIK_NUMPAD8, "Num 8"},
+        {DIK_NUMPAD9, "Num 9"},
+        {DIK_NUMPADSLASH, "Num /"},
+        {DIK_NUMPADSTAR, "Num *"},
+        {DIK_NUMPADMINUS, "Num -"},
+        {DIK_NUMPADPLUS, "Num +"},
+        {DIK_NUMPADENTER, "Num Enter"},
+        {DIK_NUMPADCOMMA, "Num ,"},
+        {DIK_PERIOD, "."},
+        {DIK_COMMA, ","},
+        {DIK_MINUS, "-"},
+        {DIK_BACKSLASH, "\\"},
+        {DIK_COLON, ":"},
+        {DIK_SEMICOLON, ";"},
+        {DIK_SLASH, "/"},
         {DIK_0,"0"},
         {DIK_1,"1"},
         {DIK_2,"2"},
@@ -1917,11 +1935,13 @@ namespace CBP
 
                 ImGui::Text("Avg. time:");
                 ImGui::Text("Avg. actors:");
+                ImGui::Text("Avg. rate:");
 
                 ImGui::NextColumn();
 
                 ImGui::Text("%lld us", stats.avgTime);
                 ImGui::Text("%u", stats.avgActorCount);
+                ImGui::Text("%.1f", stats.avgUpdateRate);
 
                 ImGui::Columns(1);
 

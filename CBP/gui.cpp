@@ -248,14 +248,14 @@ namespace CBP
         case kKeyboard:
             if (m_event == KeyEvent::KeyDown)
             {
-                if (b.m_uval < sizeof(io.KeysDown))
+                if (b.m_uval < IM_ARRAYSIZE(io.KeysDown))
                     io.KeysDown[b.m_uval] = true;
 
                 if (m_k != 0)
                     io.AddInputCharacterUTF16(m_k);
             }
             else {
-                if (b.m_uval < sizeof(io.KeysDown))
+                if (b.m_uval < IM_ARRAYSIZE(io.KeysDown))
                     io.KeysDown[b.m_uval] = false;
             }
             break;
