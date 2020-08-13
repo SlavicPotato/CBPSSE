@@ -18,7 +18,7 @@ namespace CBP
         m_perfTimer.Begin();
     }
 
-    void Profiler::Update(uint32_t a_actors, uint32_t a_steps)
+    void Profiler::End(uint32_t a_actors, uint32_t a_steps)
     {
         m_runCount++;
         m_numActorsAccum += a_actors;

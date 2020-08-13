@@ -35,7 +35,7 @@ namespace CBP
         {kHT_timeStep, "Update rate in Hz. Higher values produce smoother motion but cost more CPU time. It's pointless to set this above maximum framerate unless timeScale is below 1."},
         {kHT_timeScale, "Simulation rate, speeds up or slows down time"},
         {kHT_colMaxPenetrationDepth, "Maximum penetration depth during collisions"},
-        {kHT_showAllActors, "Checked: Show all known actors\nUnchecked: Show only actors currently simulated"}
+        {kHT_showAllActors, "Checked: Show all known actors\nUnchecked: Only show actors currently simulated"}
     };
 
     static const keyDesc_t comboKeyDesc({
