@@ -22,39 +22,52 @@ namespace CBP
         m_batch = std::make_unique<DirectX::PrimitiveBatch<VertexType>>(a_pImmediateContext);
     }
 
-    void Renderer::Update(const r3d::DebugRenderer& a_dr)
+    void Renderer::GenerateLines(const r3d::DebugRenderer& a_dr)
     {
         m_lines.clear();
-        m_tris.clear();
-
-        auto& globalConfig = IConfig::GetGlobalConfig();
 
         for (const auto& line : a_dr.getLines())
         {
-            if (!GetScreenPt(line.point1, line.color1, pos1))
+            ItemLine item;
+
+            if (!GetScreenPt(line.point1, line.color1, item.pos1))
                 continue;
-            if (!GetScreenPt(line.point2, line.color2, pos2))
+            if (!GetScreenPt(line.point2, line.color2, item.pos2))
                 continue;
 
-            m_lines.emplace_back(ItemLine{ pos1, pos2 });
+            m_lines.emplace_back(item);
         }
+
+    }
+
+    void Renderer::GenerateTris(const r3d::DebugRenderer& a_dr)
+    {
+        m_tris.clear();
 
         for (const auto& tri : a_dr.getTriangles())
         {
-            if (!GetScreenPt(tri.point1, tri.color1, pos1))
+            ItemTri item;
+
+            if (!GetScreenPt(tri.point1, tri.color1, item.pos1))
                 continue;
-            if (!GetScreenPt(tri.point2, tri.color2, pos2))
+            if (!GetScreenPt(tri.point2, tri.color2, item.pos2))
                 continue;
-            if (!GetScreenPt(tri.point3, tri.color3, pos3))
+            if (!GetScreenPt(tri.point3, tri.color3, item.pos3))
                 continue;
 
-            m_tris.emplace_back(ItemTri{ pos1, pos2, pos3 });
+            m_tris.emplace_back(item);
         }
+    }
+
+    void Renderer::Update(const r3d::DebugRenderer& a_dr)
+    {
+        GenerateLines(a_dr);
+        GenerateTris(a_dr);
     }
 
     void Renderer::Draw()
     {
-        m_pImmediateContext->OMSetBlendState(m_states->Opaque(), nullptr, 0xFFFFFFFF);
+        m_pImmediateContext->OMSetBlendState(m_states->AlphaBlend(), nullptr, 0xFFFFFFFF);
         m_pImmediateContext->OMSetDepthStencilState(m_states->DepthNone(), 0);
         m_pImmediateContext->RSSetState(m_states->CullCounterClockwise());
 

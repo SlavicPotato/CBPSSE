@@ -126,6 +126,9 @@
     <ClInclude Include="CBPProfiling.h">
       <Filter>Header Files\CBP</Filter>
     </ClInclude>
+    <ClInclude Include="CBPRenderer.h">
+      <Filter>Header Files\CBP</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp">

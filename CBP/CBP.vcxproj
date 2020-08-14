@@ -449,6 +449,7 @@
     <ClInclude Include="CBPPapyrus.h" />
     <ClInclude Include="CBPProfile.h" />
     <ClInclude Include="CBPProfiling.h" />
+    <ClInclude Include="CBPRenderer.h" />
     <ClInclude Include="CBPSerialization.h" />
     <ClInclude Include="CBPSimObj.h" />
     <ClInclude Include="CBPThing.h" />

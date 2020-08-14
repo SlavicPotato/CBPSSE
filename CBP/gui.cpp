@@ -31,7 +31,6 @@ namespace CBP
         m_lock.Enter();
 
         if (m_drawCallbacks.size() == 0) {
-            m_isRunning = false;
             m_lock.Leave();
             return;
         }
@@ -40,8 +39,6 @@ namespace CBP
             m_nextResetIO = false;
             ResetImGuiIO();
         }
-
-        m_isRunning = true;
 
         m_keyEvents.ProcessTasks();
 
@@ -248,14 +245,14 @@ namespace CBP
         case kKeyboard:
             if (m_event == KeyEvent::KeyDown)
             {
-                if (b.m_uval < IM_ARRAYSIZE(io.KeysDown))
+                if (b.m_uval < ARRAYSIZE(io.KeysDown))
                     io.KeysDown[b.m_uval] = true;
 
                 if (m_k != 0)
                     io.AddInputCharacterUTF16(m_k);
             }
             else {
-                if (b.m_uval < IM_ARRAYSIZE(io.KeysDown))
+                if (b.m_uval < ARRAYSIZE(io.KeysDown))
                     io.KeysDown[b.m_uval] = false;
             }
             break;
@@ -268,7 +265,8 @@ namespace CBP
     void DUI::AddCallback(uint32_t id, uiDrawCallback_t f) 
     {
         m_Instance.m_lock.Enter();
-        m_Instance.m_drawCallbacks.emplace(id, f);
+        m_Instance.m_drawCallbacks.insert_or_assign(id, f);
+        m_Instance.m_isRunning = true;
         m_Instance.m_lock.Leave();
     }
 
@@ -278,6 +276,7 @@ namespace CBP
         m_Instance.m_drawCallbacks.erase(id);
         if (m_Instance.m_drawCallbacks.size() == 0) {
             m_Instance.ResetImGuiIO();
+            m_Instance.m_isRunning = false;
         }
         m_Instance.m_lock.Leave();
     }
