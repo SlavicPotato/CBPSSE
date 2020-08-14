@@ -28,6 +28,7 @@ namespace CBP
 
         void Draw();
         void Update(const r3d::DebugRenderer& a_dr);
+        void Clear();
 
     private:
         std::unique_ptr<DirectX::BasicEffect> m_effect;

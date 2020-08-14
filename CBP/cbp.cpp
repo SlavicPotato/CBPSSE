@@ -340,8 +340,7 @@ namespace CBP
 
         Unlock();
 
-        UpdateConfigOnAllActors();
-        ResetPhysics();
+        ResetActors();
     }
 
     void DCBP::SaveGameHandler(Event, void*)
@@ -370,6 +369,11 @@ namespace CBP
 
         Lock();
 
+        auto& globalConf = CBP::IConfig::GetGlobalConfig();
+
+        if (globalConf.debugRenderer.enabled)
+            GetRenderer()->Clear();
+
         m_Instance.m_loadInstance++;
 
         CBP::IConfig::ResetGlobalConfig();
@@ -380,6 +384,8 @@ namespace CBP
         CBP::IConfig::ClearNodeCollisionGroupMap();
         CBP::IConfig::ClearNodeConfig();
         CBP::IConfig::ClearActorNodeConfigHolder();
+
+        GetUpdateTask().ClearActors();
 
         Unlock();
     }

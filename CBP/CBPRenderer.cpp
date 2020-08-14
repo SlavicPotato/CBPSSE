@@ -65,6 +65,12 @@ namespace CBP
         GenerateTris(a_dr);
     }
 
+    void Renderer::Clear()
+    {
+        m_tris.clear();
+        m_lines.clear();
+    }
+
     void Renderer::Draw()
     {
         m_pImmediateContext->OMSetBlendState(m_states->AlphaBlend(), nullptr, 0xFFFFFFFF);
@@ -99,9 +105,14 @@ namespace CBP
     {
         static_assert(sizeof(a_col) == 0x4);
 
-        NiPoint3 p(a_pos.x, a_pos.y, a_pos.z);
+        static_assert(sizeof(Vector3::x) == sizeof(NiPoint3::x));
+        static_assert(sizeof(Vector3::y) == sizeof(NiPoint3::y));
+        static_assert(sizeof(Vector3::z) == sizeof(NiPoint3::z));
+        static_assert(offsetof(Vector3, x) == offsetof(NiPoint3, x));
+        static_assert(offsetof(Vector3, y) == offsetof(NiPoint3, y));
+        static_assert(offsetof(Vector3, z) == offsetof(NiPoint3, z));
 
-        if (!WorldPtToScreenPt3_Internal(g_worldToCamMatrix, g_viewPort, &p, &a_out.position.x, &a_out.position.y, &a_out.position.z, 1e-5f))
+        if (!WorldPtToScreenPt3_Internal(g_worldToCamMatrix, g_viewPort, (NiPoint3*)(std::addressof(a_pos)), &a_out.position.x, &a_out.position.y, &a_out.position.z, 1e-5f))
             return false;
 
         if (a_out.position.x < -0.05f || a_out.position.y < -0.05f || a_out.position.z < -0.05f ||
