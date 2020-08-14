@@ -371,8 +371,11 @@ namespace CBP
 
         auto& globalConf = CBP::IConfig::GetGlobalConfig();
 
-        if (globalConf.debugRenderer.enabled)
+        if (GetDriverConfig().debug_renderer &&
+            globalConf.debugRenderer.enabled)
+        {
             GetRenderer()->Clear();
+        }
 
         m_Instance.m_loadInstance++;
 
@@ -500,7 +503,9 @@ namespace CBP
                 i--;
             }
 
-            if (globalConf.debugRenderer.enabled) {
+            if (globalConf.debugRenderer.enabled &&
+                DCBP::GetDriverConfig().debug_renderer) 
+            {
                 DCBP::GetRenderer()->Update(DCBP::GetWorld()->getDebugRenderer());
             }
         }
