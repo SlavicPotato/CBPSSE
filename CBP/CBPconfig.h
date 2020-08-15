@@ -38,6 +38,9 @@ namespace CBP
             bool rlPlayableOnly = true;
             bool rlShowEditorIDs = true;
             bool clampValuesRace = true;
+            bool syncWeightSlidersMain = false;
+            bool syncWeightSlidersRace = false;
+
             UInt32 comboKey = DIK_LSHIFT;
             UInt32 showKey = DIK_END;
 
@@ -58,8 +61,8 @@ namespace CBP
         } debugRenderer;
 
         inline bool& GetColState(
-            const std::string& a_key, 
-            bool a_default = true) 
+            const std::string& a_key,
+            bool a_default = true)
         {
             auto it = ui.colStates.find(a_key);
             if (it != ui.colStates.end())
@@ -69,18 +72,27 @@ namespace CBP
         }
     };
 
-    typedef std::unordered_map<std::string, ptrdiff_t> componentValueToOffsetMap_t;
+    struct componentValueDesc_t
+    {
+        ptrdiff_t offset;
+        std::string counterpart;
+        float min;
+        float max;
+        const char* helpText;
+    };
+
+    typedef std::map<std::string, const componentValueDesc_t> componentValueDescMap_t;
 
     struct configComponent_t
     {
     public:
         [[nodiscard]] inline bool Get(const std::string& a_key, float& a_out) const
         {
-            const auto it = componentValueToOffsetMap.find(a_key);
-            if (it == componentValueToOffsetMap.end())
+            const auto it = descMap.find(a_key);
+            if (it == descMap.end())
                 return false;
 
-            auto addr = reinterpret_cast<uintptr_t>(this) + it->second;
+            auto addr = reinterpret_cast<uintptr_t>(this) + it->second.offset;
 
             a_out = *reinterpret_cast<float*>(addr);
 
@@ -89,16 +101,16 @@ namespace CBP
 
         [[nodiscard]] inline auto Contains(const std::string& a_key) const
         {
-            return componentValueToOffsetMap.contains(a_key);
+            return descMap.contains(a_key);
         }
 
         inline bool Set(const std::string& a_key, float a_value)
         {
-            const auto it = componentValueToOffsetMap.find(a_key);
-            if (it == componentValueToOffsetMap.end())
+            const auto it = descMap.find(a_key);
+            if (it == descMap.end())
                 return false;
 
-            auto addr = reinterpret_cast<uintptr_t>(this) + it->second;
+            auto addr = reinterpret_cast<uintptr_t>(this) + it->second.offset;
 
             *reinterpret_cast<float*>(addr) = a_value;
 
@@ -108,7 +120,7 @@ namespace CBP
         [[nodiscard]] inline float& operator[](const std::string& a_key) const
         {
             auto addr = reinterpret_cast<uintptr_t>(this) +
-                componentValueToOffsetMap.at(a_key);
+                descMap.at(a_key).offset;
 
             return *reinterpret_cast<float*>(addr);
         }
@@ -138,29 +150,28 @@ namespace CBP
         float colStiffnessCoef = 0.0f;
         float colDepthMul = 100.0f;
 
-    private:
-        static const componentValueToOffsetMap_t componentValueToOffsetMap;
+        static const componentValueDescMap_t descMap;
     };
 
     static_assert(sizeof(configComponent_t) == 0x60);
 
     typedef std::map<std::string, configComponent_t> configComponents_t;
     typedef configComponents_t::value_type configComponentsValue_t;
-    typedef std::map<SKSE::ObjectHandle, configComponents_t> actorConfHolder_t;
-    typedef std::map<SKSE::FormID, configComponents_t> raceConfHolder_t;
+    typedef std::unordered_map<SKSE::ObjectHandle, configComponents_t> actorConfigComponentsHolder_t;
+    typedef std::unordered_map<SKSE::FormID, configComponents_t> raceConfigComponentsHolder_t;
     typedef std::map<std::string, std::string> nodeMap_t;
 
     typedef std::set<uint64_t> collisionGroups_t;
     typedef std::unordered_map<std::string, uint64_t> nodeCollisionGroupMap_t;
 
-    struct nodeConfig_t
+    struct configNode_t
     {
         bool femaleMovement = true;
         bool femaleCollisions = true;
         bool maleMovement = false;
         bool maleCollisions = false;
 
-        inline void Get(char a_sex, bool& a_collisionsOut, bool &a_movementOut) {
+        inline void Get(char a_sex, bool& a_collisionsOut, bool& a_movementOut) {
             if (a_sex == 0) {
                 a_collisionsOut = maleCollisions;
                 a_movementOut = maleMovement;
@@ -172,8 +183,9 @@ namespace CBP
         }
     };
 
-    typedef std::unordered_map<std::string, nodeConfig_t> nodeConfigHolder_t;
-    typedef std::unordered_map<SKSE::ObjectHandle, nodeConfigHolder_t> actorNodeConfigHolder_t;
+    typedef std::map<std::string, configNode_t> configNodes_t;
+    typedef configNodes_t::value_type configNodesValue_t;
+    typedef std::unordered_map<SKSE::ObjectHandle, configNodes_t> actorConfigNodesHolder_t;
 
     enum class ConfigClass
     {
@@ -218,6 +230,7 @@ namespace CBP
         }
 
         static void CopyComponents(const configComponents_t& a_lhs, configComponents_t& a_rhs);
+        static void CopyNodes(const configNodes_t& a_lhs, configNodes_t& a_rhs);
 
         [[nodiscard]] inline static auto& GetGlobalProfile() {
             return thingGlobalConfig;
@@ -229,6 +242,10 @@ namespace CBP
 
         inline static void CopyToGlobalProfile(const configComponents_t& a_lhs) {
             CopyComponents(a_lhs, thingGlobalConfig);
+        }
+
+        inline static void CopyToGlobalNodeProfile(const configNodes_t& a_lhs) {
+            CopyNodes(a_lhs, nodeConfigHolder);
         }
 
         inline static void SetGlobalProfile(configComponents_t&& a_lhs) {
@@ -302,18 +319,18 @@ namespace CBP
         [[nodiscard]] inline static auto& GetNodeCollisionGroupMap() {
             return nodeCollisionGroupMap;
         }
-        
+
         [[nodiscard]] static uint64_t GetNodeCollisionGroupId(const std::string& a_node);
 
         inline static void ClearNodeCollisionGroupMap() {
             nodeCollisionGroupMap.clear();
         }
 
-        [[nodiscard]] inline static auto& GetNodeConfig() {
+        [[nodiscard]] inline static auto& GetGlobalNodeConfig() {
             return nodeConfigHolder;
         }
 
-        inline static void SetNodeConfig(nodeConfigHolder_t &a_rhs) {
+        inline static void SetGlobalNodeConfig(configNodes_t& a_rhs) {
             nodeConfigHolder = a_rhs;
         }
 
@@ -321,15 +338,17 @@ namespace CBP
             nodeConfigHolder.clear();
         }
 
-        static bool GetNodeConfig(const std::string& a_node, nodeConfig_t &a_out);
+        static bool GetGlobalNodeConfig(const std::string& a_node, configNode_t& a_out);
 
         [[nodiscard]] inline static auto& GetActorNodeConfigHolder() {
             return actorNodeConfigHolder;
         }
 
-        static const nodeConfigHolder_t& GetActorNodeConfig(SKSE::ObjectHandle a_handle);
-        static nodeConfigHolder_t& GetOrCreateActorNodeConfig(SKSE::ObjectHandle a_handle);
-        static bool GetActorNodeConfig(SKSE::ObjectHandle a_handle, const std::string& a_node, nodeConfig_t& a_out);
+        static const configNodes_t& GetActorNodeConfig(SKSE::ObjectHandle a_handle);
+        static configNodes_t& GetOrCreateActorNodeConfig(SKSE::ObjectHandle a_handle);
+        static bool GetActorNodeConfig(SKSE::ObjectHandle a_handle, const std::string& a_node, configNode_t& a_out);
+        static void SetActorNodeConfig(SKSE::ObjectHandle a_handle, const configNodes_t& a_conf);
+        static void SetActorNodeConfig(SKSE::ObjectHandle a_handle, configNodes_t&& a_conf);
 
         inline static void EraseActorNodeConfig(SKSE::ObjectHandle handle) {
             actorNodeConfigHolder.erase(handle);
@@ -346,8 +365,8 @@ namespace CBP
 
         static configComponents_t thingGlobalConfig;
         static configComponents_t thingGlobalConfigDefaults;
-        static actorConfHolder_t actorConfHolder;
-        static raceConfHolder_t raceConfHolder;
+        static actorConfigComponentsHolder_t actorConfHolder;
+        static raceConfigComponentsHolder_t raceConfHolder;
         static configGlobal_t globalConfig;
         static vKey_t validSimComponents;
 
@@ -357,8 +376,8 @@ namespace CBP
         static collisionGroups_t collisionGroups;
         static nodeCollisionGroupMap_t nodeCollisionGroupMap;
 
-        static nodeConfigHolder_t nodeConfigHolder;
-        static actorNodeConfigHolder_t actorNodeConfigHolder;
+        static configNodes_t nodeConfigHolder;
+        static actorConfigNodesHolder_t actorNodeConfigHolder;
 
         static IConfigLog log;
     };

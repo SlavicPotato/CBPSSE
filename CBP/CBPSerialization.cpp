@@ -4,6 +4,160 @@ namespace CBP
 {
     namespace fs = std::filesystem;
 
+    bool Parser::Parse(const Json::Value& a_data, configComponents_t& a_outData)
+    {
+        auto& conf = a_data["data"];
+
+        if (conf.empty())
+            return false;
+
+        if (!conf.isObject()) {
+            Error("Expected an object");
+            return false;
+        }
+
+        a_outData = IConfig::GetThingGlobalConfigDefaults();
+
+        for (auto it1 = conf.begin(); it1 != conf.end(); ++it1)
+        {
+            if (!it1->isObject()) {
+                Error("Bad sim component data, expected object");
+                return false;
+            }
+
+            auto k = it1.key();
+            if (!k.isString()) {
+                Error("Bad sim component name, expected string");
+                return false;
+            }
+
+            std::string simComponentName = k.asString();
+            transform(simComponentName.begin(), simComponentName.end(), simComponentName.begin(), ::tolower);
+
+            if (!IConfig::IsValidSimComponent(simComponentName)) {
+                Error("Untracked sim component: %s", simComponentName.c_str());
+                return false;
+            }
+
+            configComponent_t tmp;
+
+            for (auto it2 = it1->begin(); it2 != it1->end(); ++it2)
+            {
+                if (!it2->isNumeric()) {
+                    Error("(%s) Bad value, expected number", simComponentName.c_str());
+                    return false;
+                }
+
+                auto k = it2.key();
+                if (!k.isString()) {
+                    Error("(%s) Bad key, expected string", simComponentName.c_str());
+                    return false;
+                }
+
+                std::string valName = k.asString();
+                transform(valName.begin(), valName.end(), valName.begin(), ::tolower);
+
+                if (!tmp.Set(valName, it2->asFloat()))
+                    Warning("(%s) Unknown value: %s", simComponentName.c_str(), valName.c_str());
+            }
+
+            a_outData.insert_or_assign(simComponentName, std::move(tmp));
+        }
+
+        return true;
+    }
+
+    void Parser::Create(const configComponents_t& a_data, Json::Value& a_out)
+    {
+        auto& data = a_out["data"];
+
+        for (const auto& v : a_data) {
+            auto& simComponent = data[v.first];
+
+            simComponent["cogOffset"] = v.second.cogOffset;
+            simComponent["damping"] = v.second.damping;
+            simComponent["gravityBias"] = v.second.gravityBias;
+            simComponent["gravityCorrection"] = v.second.gravityCorrection;
+            simComponent["linearX"] = v.second.linearX;
+            simComponent["linearY"] = v.second.linearY;
+            simComponent["linearZ"] = v.second.linearZ;
+            simComponent["maxOffset"] = v.second.maxOffset;
+            simComponent["rotationalX"] = v.second.rotationalX;
+            simComponent["rotationalY"] = v.second.rotationalY;
+            simComponent["rotationalZ"] = v.second.rotationalZ;
+            simComponent["stiffness"] = v.second.stiffness;
+            simComponent["stiffness2"] = v.second.stiffness2;
+            simComponent["colSphereRadMin"] = v.second.colSphereRadMin;
+            simComponent["colSphereRadMax"] = v.second.colSphereRadMax;
+            simComponent["colSphereOffsetXMin"] = v.second.colSphereOffsetXMin;
+            simComponent["colSphereOffsetXMax"] = v.second.colSphereOffsetXMax;
+            simComponent["colSphereOffsetYMin"] = v.second.colSphereOffsetYMin;
+            simComponent["colSphereOffsetYMax"] = v.second.colSphereOffsetYMax;
+            simComponent["colSphereOffsetZMin"] = v.second.colSphereOffsetZMin;
+            simComponent["colSphereOffsetZMax"] = v.second.colSphereOffsetZMax;
+            simComponent["colDampingCoef"] = v.second.colDampingCoef;
+            simComponent["colStiffnessCoef"] = v.second.colStiffnessCoef;
+            simComponent["colDepthMul"] = v.second.colDepthMul;
+        }
+    }
+
+    void Parser::Create(const configNodes_t& a_data, Json::Value& a_out)
+    {
+        auto& nodes = a_out["nodes"];
+
+        for (const auto& e : a_data) {
+            auto& n = nodes[e.first];
+
+            n["femaleMovement"] = e.second.femaleMovement;
+            n["femaleCollisions"] = e.second.femaleCollisions;
+            n["maleMovement"] = e.second.maleMovement;
+            n["maleCollisions"] = e.second.maleCollisions;
+        }
+    }
+
+    bool Parser::Parse(const Json::Value& a_data, configNodes_t& a_out)
+    {
+        auto& nodes = a_data["nodes"];
+
+        if (nodes.empty())
+            return false;
+
+        if (!nodes.isObject()) {
+            Error("Expected an object");
+            return false;
+        }
+
+        for (auto it = nodes.begin(); it != nodes.end(); ++it)
+        {
+            if (!it->isObject())
+                continue;
+
+            std::string k(it.key().asString());
+
+            if (!IConfig::IsValidNode(k))
+                continue;
+
+            auto& nc = a_out[k];
+
+            nc.femaleMovement = it->get("femaleMovement", true).asBool();
+            nc.femaleCollisions = it->get("femaleCollisions", true).asBool();
+            nc.maleMovement = it->get("maleMovement", false).asBool();
+            nc.maleCollisions = it->get("maleCollisions", false).asBool();
+        }
+
+        return true;
+    }
+
+    void Parser::GetDefault(configComponents_t& a_out)
+    {
+        a_out = IConfig::GetThingGlobalConfigDefaults();
+    }
+
+    void Parser::GetDefault(configNodes_t& a_out)
+    {
+        a_out = IConfig::GetGlobalNodeConfig();
+    }
+
     void Serialization::LoadGlobals()
     {
         auto& globalConfig = IConfig::GetGlobalConfig();
@@ -364,68 +518,6 @@ namespace CBP
         }
     }
 
-    bool Serialization::ParseComponents(const Json::Value& a_data, configComponents_t& a_outData)
-    {
-        auto& conf = a_data["data"];
-
-        if (conf.empty())
-            return false;
-
-        if (!conf.isObject()) {
-            Error("Expected an object");
-            return false;
-        }
-
-        a_outData = IConfig::GetThingGlobalConfigDefaults();
-
-        for (auto it1 = conf.begin(); it1 != conf.end(); ++it1)
-        {
-            if (!it1->isObject()) {
-                Error("Bad sim component data, expected object");
-                return false;
-            }
-
-            auto k = it1.key();
-            if (!k.isString()) {
-                Error("Bad sim component name, expected string");
-                return false;
-            }
-
-            std::string simComponentName = k.asString();
-            transform(simComponentName.begin(), simComponentName.end(), simComponentName.begin(), ::tolower);
-
-            if (!IConfig::IsValidSimComponent(simComponentName)) {
-                Error("Untracked sim component: %s", simComponentName.c_str());
-                return false;
-            }
-
-            configComponent_t tmp;
-
-            for (auto it2 = it1->begin(); it2 != it1->end(); ++it2)
-            {
-                if (!it2->isNumeric()) {
-                    Error("(%s) Bad value, expected number", simComponentName.c_str());
-                    return false;
-                }
-
-                auto k = it2.key();
-                if (!k.isString()) {
-                    Error("(%s) Bad key, expected string", simComponentName.c_str());
-                    return false;
-                }
-
-                std::string valName = k.asString();
-                transform(valName.begin(), valName.end(), valName.begin(), ::tolower);
-
-                if (!tmp.Set(valName, it2->asFloat()))
-                    Warning("(%s) Unknown value: %s", simComponentName.c_str(), valName.c_str());
-            }
-
-            a_outData.insert_or_assign(simComponentName, std::move(tmp));
-        }
-
-        return true;
-    }
 
     void Serialization::LoadGlobalProfile()
     {
@@ -444,13 +536,13 @@ namespace CBP
 
             configComponents_t componentData;
 
-            if (ParseComponents(root, componentData))
+            if (m_componentParser.Parse(root, componentData))
                 IConfig::SetGlobalProfile(componentData);
 
-            nodeConfigHolder_t nodeData;
+            configNodes_t nodeData;
 
-            if (ParseNodeData(root, nodeData))
-                IConfig::SetNodeConfig(nodeData);
+            if (m_nodeParser.Parse(root, nodeData))
+                IConfig::SetGlobalNodeConfig(nodeData);
         }
         catch (const std::exception& e)
         {
@@ -516,14 +608,14 @@ namespace CBP
 
                 configComponents_t componentData;
 
-                if (ParseComponents(*it, componentData)) {
+                if (m_componentParser.Parse(*it, componentData)) {
                     IConfig::GetActorConfigHolder().emplace(newHandle, std::move(componentData));
                     IData::UpdateActorRaceMap(newHandle);
                 }
 
-                nodeConfigHolder_t nodeData;
+                configNodes_t nodeData;
 
-                if (ParseNodeData(*it, nodeData)) {
+                if (m_nodeParser.Parse(*it, nodeData)) {
                     IConfig::GetActorNodeConfigHolder().emplace(newHandle, std::move(nodeData));
                 }
 
@@ -600,7 +692,7 @@ namespace CBP
 
                 configComponents_t data;
 
-                if (!ParseComponents(*it, data))
+                if (!m_componentParser.Parse(*it, data))
                     continue;
 
                 IConfig::GetRaceConfigHolder().emplace(newFormID, std::move(data));
@@ -617,87 +709,6 @@ namespace CBP
         }
     }
 
-    void Serialization::CreateComponents(const configComponents_t& a_data, Json::Value& a_out)
-    {
-        auto& data = a_out["data"];
-
-        for (const auto& v : a_data) {
-            auto& simComponent = data[v.first];
-
-            simComponent["cogOffset"] = v.second.cogOffset;
-            simComponent["damping"] = v.second.damping;
-            simComponent["gravityBias"] = v.second.gravityBias;
-            simComponent["gravityCorrection"] = v.second.gravityCorrection;
-            simComponent["linearX"] = v.second.linearX;
-            simComponent["linearY"] = v.second.linearY;
-            simComponent["linearZ"] = v.second.linearZ;
-            simComponent["maxOffset"] = v.second.maxOffset;
-            simComponent["rotationalX"] = v.second.rotationalX;
-            simComponent["rotationalY"] = v.second.rotationalY;
-            simComponent["rotationalZ"] = v.second.rotationalZ;
-            simComponent["stiffness"] = v.second.stiffness;
-            simComponent["stiffness2"] = v.second.stiffness2;
-            simComponent["colSphereRadMin"] = v.second.colSphereRadMin;
-            simComponent["colSphereRadMax"] = v.second.colSphereRadMax;
-            simComponent["colSphereOffsetXMin"] = v.second.colSphereOffsetXMin;
-            simComponent["colSphereOffsetXMax"] = v.second.colSphereOffsetXMax;
-            simComponent["colSphereOffsetYMin"] = v.second.colSphereOffsetYMin;
-            simComponent["colSphereOffsetYMax"] = v.second.colSphereOffsetYMax;
-            simComponent["colSphereOffsetZMin"] = v.second.colSphereOffsetZMin;
-            simComponent["colSphereOffsetZMax"] = v.second.colSphereOffsetZMax;
-            simComponent["colDampingCoef"] = v.second.colDampingCoef;
-            simComponent["colStiffnessCoef"] = v.second.colStiffnessCoef;
-            simComponent["colDepthMul"] = v.second.colDepthMul;
-        }
-    }
-
-    void Serialization::CreateNodeData(const nodeConfigHolder_t& a_data, Json::Value& a_out)
-    {
-        auto& nodes = a_out["nodes"];
-
-        for (const auto& e : a_data) {
-            auto& n = nodes[e.first];
-
-            n["femaleMovement"] = e.second.femaleMovement;
-            n["femaleCollisions"] = e.second.femaleCollisions;
-            n["maleMovement"] = e.second.maleMovement;
-            n["maleCollisions"] = e.second.maleCollisions;
-        }
-    }
-
-    bool Serialization::ParseNodeData(const Json::Value& a_data, nodeConfigHolder_t& a_out)
-    {
-        auto& nodes = a_data["nodes"];
-
-        if (nodes.empty())
-            return false;
-
-        if (!nodes.isObject()) {
-            Error("Expected an object");
-            return false;
-        }
-
-        for (auto it = nodes.begin(); it != nodes.end(); ++it)
-        {
-            if (!it->isObject())
-                continue;
-
-            std::string k(it.key().asString());
-
-            if (!IConfig::IsValidNode(k))
-                continue;
-
-            auto& nc = a_out[k];
-
-            nc.femaleMovement = it->get("femaleMovement", true).asBool();
-            nc.femaleCollisions = it->get("femaleCollisions", true).asBool();
-            nc.maleMovement = it->get("maleMovement", false).asBool();
-            nc.maleCollisions = it->get("maleCollisions", false).asBool();
-        }
-
-        return true;
-    }
-
     void Serialization::SaveActorProfiles()
     {
         try
@@ -709,12 +720,12 @@ namespace CBP
 
             for (const auto& e : IConfig::GetActorConfigHolder()) {
                 auto& actor = root[std::to_string(e.first)];
-                CreateComponents(e.second, actor);
+                m_componentParser.Create(e.second, actor);
             }
 
             for (const auto& e : IConfig::GetActorNodeConfigHolder()) {
                 auto& actor = root[std::to_string(e.first)];
-                CreateNodeData(e.second, actor);
+                m_nodeParser.Create(e.second, actor);
             }
 
             WriteJsonData(PLUGIN_CBP_ACTOR_DATA, root);
@@ -734,8 +745,8 @@ namespace CBP
         {
             Json::Value root;
 
-            CreateComponents(IConfig::GetGlobalProfile(), root);
-            CreateNodeData(IConfig::GetNodeConfig(), root);
+            m_componentParser.Create(IConfig::GetGlobalProfile(), root);
+            m_nodeParser.Create(IConfig::GetGlobalNodeConfig(), root);
 
             WriteJsonData(PLUGIN_CBP_GLOBPROFILE_DATA, root);
 
@@ -761,7 +772,7 @@ namespace CBP
 
             for (const auto& e : IConfig::GetRaceConfigHolder()) {
                 auto& race = root[std::to_string(e.first)];
-                CreateComponents(e.second, race);
+                m_componentParser.Create(e.second, race);
             }
 
             WriteJsonData(PLUGIN_CBP_RACE_DATA, root);

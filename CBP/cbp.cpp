@@ -252,8 +252,11 @@ namespace CBP
 
         IConfig::LoadConfig();
 
-        auto& pm = GenericProfileManager::GetSingleton();
-        pm.Load(PLUGIN_CBP_PROFILE_PATH);
+        auto& pms = CBP::GlobalProfileManager::GetSingleton<CBP::SimProfile>();
+        pms.Load(PLUGIN_CBP_PROFILE_PATH);
+
+        auto& pmn = CBP::GlobalProfileManager::GetSingleton<CBP::NodeProfile>();
+        pmn.Load(PLUGIN_CBP_PROFILE_NODE_PATH);
     }
 
     void DCBP::OnD3D11PostCreate_CBP(Event, void* data)
@@ -329,12 +332,12 @@ namespace CBP
         GetUpdateTask().ResetTime();
 
         auto& globalConf = CBP::IConfig::GetGlobalConfig();
+        auto& profiler = GetProfiler();
+
+        profiler.SetInterval(static_cast<long long>(
+            max(globalConf.general.profilingInterval, 100)) * 1000);
 
         if (globalConf.general.enableProfiling) {
-            auto& profiler = GetProfiler();
-
-            profiler.SetInterval(static_cast<long long>(
-                globalConf.general.profilingInterval) * 1000);
             profiler.Reset();
         }
 
@@ -822,8 +825,7 @@ namespace CBP
         }
 
         bool ret = uiState.show;
-
-        if (!uiState.show)
+        if (!ret)
             DTasks::AddTask(new SwitchUITask(false));
 
         Unlock();

@@ -134,7 +134,7 @@ namespace CBP
 
         float weight = std::clamp(npc->weight, 0.0f, 100.0f);
 
-        colSphereRad = mmw(weight, a_config.colSphereRadMin, a_config.colSphereRadMax);
+        colSphereRad = max(mmw(weight, a_config.colSphereRadMin, a_config.colSphereRadMax), 0.0f);
         colSphereOffsetX = mmw(weight, a_config.colSphereOffsetXMin, a_config.colSphereOffsetXMax);
         colSphereOffsetY = mmw(weight, a_config.colSphereOffsetYMin, a_config.colSphereOffsetYMax);
         colSphereOffsetZ = mmw(weight, a_config.colSphereOffsetZMin, a_config.colSphereOffsetZMax);

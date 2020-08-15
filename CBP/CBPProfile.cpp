@@ -4,99 +4,11 @@ namespace CBP
 {
     namespace fs = std::filesystem;
 
-    ProfileManager GenericProfileManager::m_Instance("^[a-zA-Z0-9_\\- ]+$");
+    ProfileManager<SimProfile> GlobalProfileManager::m_Instance1("^[a-zA-Z0-9_\\- ]+$");
+    ProfileManager<NodeProfile> GlobalProfileManager::m_Instance2("^[a-zA-Z0-9_\\- ]+$");
 
-    Profile::Profile() :
-        m_pendingSave(false),
-        m_id(0)
-    {
-        m_conf = IConfig::GetThingGlobalConfigDefaults();
-    }
-
-    Profile::Profile(const std::string& a_path) :
-        m_path(a_path),
-        m_pendingSave(false),
-        m_id(0)
-    {
-        _init();
-    }
-
-    Profile::Profile(const std::filesystem::path& a_path) :
-        m_path(a_path),
-        m_pendingSave(false),
-        m_id(0)
-    {
-        _init();
-    }
-
-    void Profile::_init()
-    {
-        m_name = m_path.stem().string();
-        m_conf = IConfig::GetThingGlobalConfigDefaults();
-    }
-
-    void Profile::SetPath(const std::filesystem::path& a_path)
-    {
-        m_path = a_path;
-        m_name = a_path.stem().string();
-    }
-
-    const std::string& Profile::Name() const noexcept
-    {
-        return m_name;
-    }
-
-    configComponents_t& Profile::Data() noexcept
-    {
-        return m_conf;
-    }
-
-    const configComponents_t& Profile::Data() const noexcept
-    {
-        return m_conf;
-    }
-
-    const fs::path& Profile::Path() const noexcept
-    {
-        return m_path;
-    }
-
-    configComponent_t& Profile::GetComponent(const std::string& a_key)
-    {
-        return m_conf.at(a_key);
-    }
-
-    const configComponent_t& Profile::GetComponent(const std::string& a_key) const
-    {
-        return m_conf.at(a_key);
-    }
-
-    bool Profile::GetComponent(const std::string& a_key, configComponent_t& a_out) const
-    {
-        auto it = m_conf.find(a_key);
-        if (it != m_conf.end()) {
-            a_out = it->second;
-            return true;
-        }
-        return false;
-    }
-
-    uint64_t Profile::GetID() const noexcept
-    {
-        return m_id;
-    }
-
-    void Profile::SetID(uint64_t a_id) noexcept
-    {
-        m_id = a_id;
-    }
-
-    void Profile::SetData(const configComponents_t& a_data) noexcept
-    {
-        m_conf = a_data;
-    }
-
-    bool Profile::Save(const configComponents_t& a_data, bool a_store)
+    template <class T>
+    bool Profile<T>::Save(const T& a_data, bool a_store)
     {
         try
         {
@@ -106,47 +18,16 @@ namespace CBP
 
             std::ofstream fs;
             fs.open(m_path, std::ofstream::out | std::ofstream::binary | std::ofstream::trunc);
-            if (!fs.is_open()) {
-                throw std::exception("Could not open file for writing");
-            }
+            if (!fs.is_open()) 
+                throw std::exception("Could not open file for writing");            
 
             Json::Value root;
-            auto& data = root["data"];
 
-            for (const auto& v : a_data) {
-                auto& simComponent = data[v.first];
-
-                simComponent["cogOffset"] = v.second.cogOffset;
-                simComponent["damping"] = v.second.damping;
-                simComponent["gravityBias"] = v.second.gravityBias;
-                simComponent["gravityCorrection"] = v.second.gravityCorrection;
-                simComponent["linearX"] = v.second.linearX;
-                simComponent["linearY"] = v.second.linearY;
-                simComponent["linearZ"] = v.second.linearZ;
-                simComponent["maxOffset"] = v.second.maxOffset;
-                simComponent["rotationalX"] = v.second.rotationalX;
-                simComponent["rotationalY"] = v.second.rotationalY;
-                simComponent["rotationalZ"] = v.second.rotationalZ;
-                simComponent["stiffness"] = v.second.stiffness;
-                simComponent["stiffness2"] = v.second.stiffness2;
-                simComponent["colsphereradmin"] = v.second.colSphereRadMin;
-                simComponent["colsphereradmax"] = v.second.colSphereRadMax;
-                simComponent["colsphereoffsetxmin"] = v.second.colSphereOffsetXMin;
-                simComponent["colsphereoffsetxmax"] = v.second.colSphereOffsetXMax;
-                simComponent["colsphereoffsetymin"] = v.second.colSphereOffsetYMin;
-                simComponent["colsphereoffsetymax"] = v.second.colSphereOffsetYMax;
-                simComponent["colsphereoffsetzmin"] = v.second.colSphereOffsetZMin;
-                simComponent["colsphereoffsetzmax"] = v.second.colSphereOffsetZMax;
-                simComponent["coldampingcoef"] = v.second.colDampingCoef;
-                simComponent["colstiffnesscoef"] = v.second.colStiffnessCoef;
-                simComponent["coldepthmul"] = v.second.colDepthMul;
-            }
+            Create(a_data, root);
 
             root["id"] = m_id;
 
             fs << root << std::endl;
-
-            m_pendingSave = false;
 
             if (a_store) {
                 m_conf = a_data;
@@ -161,12 +42,8 @@ namespace CBP
         }
     }
 
-    bool Profile::Save()
-    {
-        return Save(m_conf, false);
-    }
-
-    bool Profile::Load()
+    template <class T>
+    bool Profile<T>::Load()
     {
         try
         {
@@ -183,44 +60,10 @@ namespace CBP
             Json::Value root;
             fs >> root;
 
-            auto& conf = root["data"];
-            if (!conf.isObject()) {
-                throw std::exception("Bad data: not an object");
-            }
-
             m_conf.clear();
 
-            for (auto it1 = conf.begin(); it1 != conf.end(); ++it1)
-            {
-                if (!it1->isObject())
-                    continue;                
-
-                auto k = it1.key();
-                if (!k.isString()) 
-                    continue;                
-
-                std::string simComponentName = k.asString();
-                transform(simComponentName.begin(), simComponentName.end(), simComponentName.begin(), ::tolower);
-
-                configComponent_t tmp;
-
-                for (auto it2 = it1->begin(); it2 != it1->end(); ++it2)
-                {
-                    if (!it2->isNumeric())
-                        continue;
-
-                    auto k = it2.key();
-                    if (!k.isString())
-                        continue;
-
-                    std::string valName(k.asString());
-                    transform(valName.begin(), valName.end(), valName.begin(), ::tolower);
-
-                    tmp.Set(valName, it2->asFloat());
-                }
-
-                m_conf.insert_or_assign(simComponentName, std::move(tmp));
-            }
+            if (!Parse(root, m_conf))
+                throw std::exception("Parser error");
 
             auto& id = root["id"];
             if (!id.isNumeric()) {
@@ -240,29 +83,16 @@ namespace CBP
         }
     }
 
-    void Profile::MarkChanged() noexcept
-    {
-        m_pendingSave = true;
-    }
-
-    bool Profile::PendingSave() const noexcept {
-        return m_pendingSave;
-    }
-
-    const std::exception& Profile::GetLastException() const noexcept
-    {
-        return m_lastExcept;
-    }
-
-
-    ProfileManager::ProfileManager(const char* a_fc) :
+    template <typename T>
+    ProfileManager<T>::ProfileManager(const std::string& a_fc) :
         m_isInitialized(false),
         m_rFileCheck(a_fc,
             std::regex_constants::ECMAScript | std::regex_constants::icase)
     {
     }
 
-    bool ProfileManager::Load(const std::string& a_path)
+    template <typename T>
+    bool ProfileManager<T>::Load(const std::string& a_path)
     {
         try
         {
@@ -310,7 +140,7 @@ namespace CBP
                     continue;
                 }
 
-                Profile profile(path);
+                T profile(path);
                 if (!profile.Load()) {
                     Warning("Failed to load profile '%s': %s",
                         filename.c_str(), profile.GetLastException().what());
@@ -331,7 +161,8 @@ namespace CBP
         }
     }
 
-    bool ProfileManager::CreateProfile(const std::string &a_name, Profile& a_out)
+    template <class T>
+    bool ProfileManager<T>::CreateProfile(const std::string &a_name, T& a_out)
     {
         try
         {
@@ -362,6 +193,7 @@ namespace CBP
             }
 
             a_out.SetPath(path);
+            a_out.SetDefaults();
             if (!a_out.Save()) {
                 throw a_out.GetLastException();
             }
@@ -374,7 +206,8 @@ namespace CBP
         }
     }
 
-    bool ProfileManager::AddProfile(const Profile& a_in)
+    template <class T>
+    bool ProfileManager<T>::AddProfile(const T& a_in)
     {
         try
         {
@@ -395,8 +228,9 @@ namespace CBP
             return false;
         }
     }
-    
-    bool ProfileManager::AddProfile(Profile&& a_in)
+
+    template <class T>
+    bool ProfileManager<T>::AddProfile(T&& a_in)
     {
         try
         {
@@ -408,7 +242,7 @@ namespace CBP
 
             CheckProfileKey(key);
 
-            m_storage.emplace(key, std::forward<Profile>(a_in));
+            m_storage.emplace(key, std::forward<T>(a_in));
 
             return true;
         }
@@ -418,7 +252,8 @@ namespace CBP
         }
     }
 
-    void ProfileManager::CheckProfileKey(const std::string& a_key) const
+    template <class T>
+    void ProfileManager<T>::CheckProfileKey(const std::string& a_key) const
     {
         if (m_storage.contains(a_key)) 
             throw std::exception("Profile already exists");        
@@ -427,7 +262,8 @@ namespace CBP
             throw std::exception("Invalid characters in profile name");        
     }
 
-    bool ProfileManager::DeleteProfile(const std::string& a_name)
+    template <class T>
+    bool ProfileManager<T>::DeleteProfile(const std::string& a_name)
     {
         try
         {
@@ -458,7 +294,8 @@ namespace CBP
         }
     }
 
-    bool ProfileManager::RenameProfile(const std::string& a_oldName, const std::string& a_newName)
+    template <class T>
+    bool ProfileManager<T>::RenameProfile(const std::string& a_oldName, const std::string& a_newName)
     {
         try
         {
@@ -509,11 +346,12 @@ namespace CBP
         }
     }
 
-    void ProfileManager::MarkChanged(const std::string& a_key)
+    /*template <class T>
+    void ProfileManager<T>::MarkChanged(const std::string& a_key)
     {
         auto it = m_storage.find(a_key);
         if (it != m_storage.end()) {
             it->second.MarkChanged();
         }
-    }
+    }*/
 }

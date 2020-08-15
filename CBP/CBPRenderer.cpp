@@ -18,7 +18,7 @@ namespace CBP
             CreateInputLayoutFromEffect<VertexType>(a_pDevice, m_effect.get(),
                 m_inputLayout.ReleaseAndGetAddressOf())
         );
-
+        
         m_batch = std::make_unique<DirectX::PrimitiveBatch<VertexType>>(a_pImmediateContext);
     }
 

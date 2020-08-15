@@ -130,7 +130,7 @@ namespace CBP
             if (itt == ith->second.end())
                 return;
 
-            if (itt->second.Set(m_key, m_val))
+            if (itt->second.Set(m_key, m_val)) 
                 DCBP::DispatchActorTask(
                     m_handle, UTTask::kActionUpdateConfig);            
         }
@@ -141,7 +141,7 @@ namespace CBP
             if (it == globalConfig.end())
                 return;
 
-            if (it->second.Set(m_key, m_val)) 
+            if (it->second.Set(m_key, m_val))
                 DCBP::UpdateConfigOnAllActors();            
         }
 

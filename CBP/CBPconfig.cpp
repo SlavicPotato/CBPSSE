@@ -4,8 +4,8 @@ namespace CBP
 {
     configComponents_t IConfig::thingGlobalConfig;
     configComponents_t IConfig::thingGlobalConfigDefaults;
-    actorConfHolder_t IConfig::actorConfHolder;
-    raceConfHolder_t IConfig::raceConfHolder;
+    actorConfigComponentsHolder_t IConfig::actorConfHolder;
+    raceConfigComponentsHolder_t IConfig::raceConfHolder;
     configGlobal_t IConfig::globalConfig;
     IConfig::vKey_t IConfig::validSimComponents;
     nodeMap_t IConfig::nodeMap;
@@ -13,36 +13,151 @@ namespace CBP
     collisionGroups_t IConfig::collisionGroups;
     nodeCollisionGroupMap_t IConfig::nodeCollisionGroupMap;
 
-    nodeConfigHolder_t IConfig::nodeConfigHolder;
-    actorNodeConfigHolder_t IConfig::actorNodeConfigHolder;
+    configNodes_t IConfig::nodeConfigHolder;
+    actorConfigNodesHolder_t IConfig::actorNodeConfigHolder;
 
     IConfig::IConfigLog IConfig::log;
 
-    const componentValueToOffsetMap_t configComponent_t::componentValueToOffsetMap = {
-        {"stiffness", offsetof(configComponent_t, stiffness)},
-        {"stiffness2", offsetof(configComponent_t, stiffness2)},
-        {"damping", offsetof(configComponent_t, damping)},
-        {"maxoffset", offsetof(configComponent_t, maxOffset)},
-        {"linearx", offsetof(configComponent_t, linearX)},
-        {"lineary", offsetof(configComponent_t, linearY)},
-        {"linearz", offsetof(configComponent_t, linearZ)},
-        {"rotationalx", offsetof(configComponent_t, rotationalX)},
-        {"rotationaly", offsetof(configComponent_t, rotationalY)},
-        {"rotationalz", offsetof(configComponent_t, rotationalZ)},
-        {"gravitybias", offsetof(configComponent_t, gravityBias)},
-        {"gravitycorrection", offsetof(configComponent_t, gravityCorrection)},
-        {"cogoffset", offsetof(configComponent_t, cogOffset)},
-        {"colsphereradmin", offsetof(configComponent_t, colSphereRadMin)},
-        {"colsphereradmax", offsetof(configComponent_t, colSphereRadMax)},
-        {"colsphereoffsetxmin", offsetof(configComponent_t, colSphereOffsetXMin)},
-        {"colsphereoffsetxmax", offsetof(configComponent_t, colSphereOffsetXMax)},
-        {"colsphereoffsetymin", offsetof(configComponent_t, colSphereOffsetYMin)},
-        {"colsphereoffsetymax", offsetof(configComponent_t, colSphereOffsetYMax)},
-        {"colsphereoffsetzmin", offsetof(configComponent_t, colSphereOffsetZMin)},
-        {"colsphereoffsetzmax", offsetof(configComponent_t, colSphereOffsetZMax)},
-        {"coldampingcoef", offsetof(configComponent_t, colDampingCoef)},
-        {"colstiffnesscoef", offsetof(configComponent_t, colStiffnessCoef)},
-        {"coldepthmul", offsetof(configComponent_t, colDepthMul)},
+    const componentValueDescMap_t configComponent_t::descMap = {
+        {"stiffness", {
+            offsetof(configComponent_t, stiffness),
+            "",
+            0.0f, 100.0f,
+            "Linear spring stiffness"
+        }},
+        {"stiffness2", {
+            offsetof(configComponent_t, stiffness2),
+            "", 0.0f, 100.0f,
+            "Quadratic spring stiffness"
+        }},
+        {"damping", {
+            offsetof(configComponent_t, damping),
+            "",
+            0.0f, 10.0f,
+            "Velocity removed/tick 1.0 would be all velocity removed"
+        }},
+        {"maxoffset", {
+            offsetof(configComponent_t, maxOffset),
+            "", 0.0f, 100.0f,
+            "Maximum amount the bone is allowed to move from target"
+        }},
+        {"linearx", {
+            offsetof(configComponent_t, linearX),
+            "",
+            0.0f, 10.0f,
+            "Scale of the side to side motion"
+        }},
+        {"lineary", {
+            offsetof(configComponent_t, linearY),
+            "", 0.0f, 10.0f,
+            "Scale of the front to back motion"
+        }},
+        {"linearz", {
+            offsetof(configComponent_t, linearZ),
+            "", 0.0f, 10.0f ,
+            "Scale of the up and down motion"
+        }},
+        {"rotationalx", {
+            offsetof(configComponent_t, rotationalX),
+            "", 0.0f, 1.0f,
+            "Scale of the bones rotation around the X axis"
+        }},
+        {"rotationaly", {
+            offsetof(configComponent_t, rotationalY),
+            "",
+            0.0f, 1.0f,
+            "Scale of the bones rotation around the Y axis"
+        }},
+        {"rotationalz", {
+            offsetof(configComponent_t, rotationalZ),
+            "",
+            0.0f, 1.0f,
+            "Scale of the bones rotation around the Z axis"
+        }},
+        {"gravitybias", {
+            offsetof(configComponent_t, gravityBias),
+            "",
+            -300.0f, 300.0f,
+            "This is in effect the gravity coefficient, a constant force acting down * the mass of the object"
+        }},
+        {"gravitycorrection", {
+            offsetof(configComponent_t, gravityCorrection),
+            "",
+            -100.0f, 100.0f,
+            "Amount to move the target point up to counteract the neutral effect of gravityBias"
+        }},
+        {"cogoffset", {
+            offsetof(configComponent_t, cogOffset),
+            "",
+            0.0f, 100.0f,
+            "The ammount that the COG is forwards of the bone root, changes how rotation will impact motion"
+        }},
+        {"colsphereradmin", {
+            offsetof(configComponent_t, colSphereRadMin),
+            "colsphereradmax",
+            0.0f, 100.0,
+            "Collision sphere radius (weigth 100)"
+        }},
+        {"colsphereradmax", {
+            offsetof(configComponent_t, colSphereRadMax),
+            "colsphereradmin",
+            0.0f, 100.0f,
+            "Collision sphere radius (weight 0)"
+        }},
+        {"colsphereoffsetxmin", {
+            offsetof(configComponent_t, colSphereOffsetXMin),
+            "colsphereoffsetxmax",
+            -50.0f, 50.0f,
+            "Collision sphere X offset (weigth 0)"
+        }},
+        {"colsphereoffsetxmax", {
+            offsetof(configComponent_t, colSphereOffsetXMax),
+            "colsphereoffsetxmin",
+            -50.0f, 50.0f,
+            "Collision sphere X offset (weigth 100)"
+        }},
+        {"colsphereoffsetymin", {
+            offsetof(configComponent_t, colSphereOffsetYMin),
+            "colsphereoffsetymax",
+            -50.0f, 50.0f,
+            "Collision sphere Y offset (weigth 0)"
+        }},
+        {"colsphereoffsetymax", {
+            offsetof(configComponent_t, colSphereOffsetYMax),
+            "colsphereoffsetymin",
+            -50.0f, 50.0f,
+            "Collision sphere Y offset (weigth 100)"
+        }},
+        {"colsphereoffsetzmin", {
+            offsetof(configComponent_t, colSphereOffsetZMin),
+            "colsphereoffsetzmax",
+            -50.0f, 50.0f,
+            "Collision sphere Z offset (weigth 0)"
+        }},
+        {"colsphereoffsetzmax", {
+            offsetof(configComponent_t, colSphereOffsetZMax),
+            "colsphereoffsetzmin",
+            -50.0f, 50.0f,
+            "Collision sphere Z offset (weigth 100)"
+        }},
+        {"coldampingcoef", {
+            offsetof(configComponent_t, colDampingCoef),
+            "",
+            0.0f, 10.0f,
+            "Velocity damping scale when nodes are colliding"
+        }},
+        {"colstiffnesscoef", {
+            offsetof(configComponent_t, colStiffnessCoef),
+            "",
+            0.0f, 1.0f,
+            ""
+        }},
+        {"coldepthmul", {
+            offsetof(configComponent_t, colDepthMul),
+            "",
+            1.0f, 1000.0f,
+            ""
+        }},
     };
 
     const nodeMap_t IConfig::defaultNodeMap = {
@@ -220,9 +335,9 @@ namespace CBP
         return 0;
     }
 
-    bool IConfig::GetNodeConfig(const std::string& a_node, nodeConfig_t& a_out)
+    bool IConfig::GetGlobalNodeConfig(const std::string& a_node, configNode_t& a_out)
     {
-        auto& nodeConfig = GetNodeConfig();
+        auto& nodeConfig = GetGlobalNodeConfig();
 
         auto it = nodeConfig.find(a_node);
         if (it != nodeConfig.end()) {
@@ -233,25 +348,26 @@ namespace CBP
         return false;
     }
 
-    const nodeConfigHolder_t& IConfig::GetActorNodeConfig(SKSE::ObjectHandle a_handle)
+    const configNodes_t& IConfig::GetActorNodeConfig(SKSE::ObjectHandle a_handle)
     {
         auto it = actorNodeConfigHolder.find(a_handle);
         if (it != actorNodeConfigHolder.end())
             return it->second;
 
-        return IConfig::GetNodeConfig();
+        return IConfig::GetGlobalNodeConfig();
     }
 
-    nodeConfigHolder_t& IConfig::GetOrCreateActorNodeConfig(SKSE::ObjectHandle a_handle)
+    configNodes_t& IConfig::GetOrCreateActorNodeConfig(SKSE::ObjectHandle a_handle)
     {
         auto it = actorNodeConfigHolder.find(a_handle);
         if (it != actorNodeConfigHolder.end())
             return it->second;
         else
-            return (actorNodeConfigHolder[a_handle] = GetNodeConfig());
+            return (actorNodeConfigHolder[a_handle] = GetGlobalNodeConfig());
+
     }
 
-    bool IConfig::GetActorNodeConfig(SKSE::ObjectHandle a_handle, const std::string& a_node, nodeConfig_t& a_out)
+    bool IConfig::GetActorNodeConfig(SKSE::ObjectHandle a_handle, const std::string& a_node, configNode_t& a_out)
     {
         auto& nodeConfig = GetActorNodeConfig(a_handle);
 
@@ -263,6 +379,17 @@ namespace CBP
 
         return false;
     }
+
+    void IConfig::SetActorNodeConfig(SKSE::ObjectHandle a_handle, const configNodes_t& a_conf)
+    {
+        actorNodeConfigHolder.insert_or_assign(a_handle, a_conf);
+    }
+
+    void IConfig::SetActorNodeConfig(SKSE::ObjectHandle a_handle, configNodes_t&& a_conf)
+    {
+        actorNodeConfigHolder.insert_or_assign(a_handle, std::forward<configNodes_t>(a_conf));
+    }
+
 
     configComponents_t& IConfig::GetOrCreateActorConf(SKSE::ObjectHandle a_handle)
     {
@@ -335,4 +462,10 @@ namespace CBP
                 a_rhs.insert_or_assign(e.first, e.second);
     }
 
+    void IConfig::CopyNodes(const configNodes_t& a_lhs, configNodes_t& a_rhs)
+    {
+        for (const auto& e : a_lhs)
+            if (a_rhs.contains(e.first))
+                a_rhs.insert_or_assign(e.first, e.second);
+    }
 }

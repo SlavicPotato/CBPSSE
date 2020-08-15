@@ -23,7 +23,7 @@ namespace CBP
             if (it == a_config.end())
                 continue;
 
-            nodeConfig_t nodeConf;
+            configNode_t nodeConf;
             IConfig::GetActorNodeConfig(a_handle, b.first, nodeConf);
 
             bool collisions, movement;
@@ -88,7 +88,7 @@ namespace CBP
             if (it2 == a_config.end())
                 continue;
 
-            nodeConfig_t nodeConf;
+            configNode_t nodeConf;
             IConfig::GetActorNodeConfig(m_handle, p.first, nodeConf);
 
             bool collisions, movement;

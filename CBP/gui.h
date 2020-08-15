@@ -64,7 +64,7 @@ namespace CBP
             return m_Instance.m_drawCallbacks.size() != 0;
         }
 
-        static void AddCallback(uint32_t id, uiDrawCallback_t f);
+        static void AddCallback(uint32_t id, const uiDrawCallback_t f);
         static void RemoveCallback(uint32_t id);
 
         inline static bool HasCallback(uint32_t id) {
@@ -110,7 +110,7 @@ namespace CBP
             UIRect bufferSize;
         } info;
 
-        std::map<uint32_t, const uiDrawCallback_t> m_drawCallbacks;
+        std::map<uint32_t, uiDrawCallback_t> m_drawCallbacks;
 
         KeyPressHandler inputEventHandler;
 

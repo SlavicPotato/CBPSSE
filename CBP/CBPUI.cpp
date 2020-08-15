@@ -2,34 +2,6 @@
 
 namespace CBP
 {
-    static const std::unordered_map<std::string, const char*> thingHelpText =
-    {
-        {"cogOffset", "The ammount that the COG is forwards of the bone root, changes how rotation will impact motion"},
-        {"damping", "Velocity removed/tick 1.0 would be all velocity removed"},
-        {"gravityBias", "This is in effect the gravity coefficient, a constant force acting down * the mass of the object"},
-        {"gravityCorrection", "Amount to move the target point up to counteract the neutral effect of gravityBias"},
-        {"linearX", "Scale of the side to side motion"},
-        {"linearY", "Scale of the front to back motion"},
-        {"linearZ", "Scale of the up and down motion"},
-        {"maxOffset", "Maximum amount the bone is allowed to move from target"},
-        {"rotationalX", "Scale of the bones rotation around the X axis"},
-        {"rotationalY", "Scale of the bones rotation around the Y axis"},
-        {"rotationalZ", "Scale of the bones rotation around the Z axis"},
-        {"stiffness", "Linear spring stiffness"},
-        {"stiffness2", "Quadratic spring stiffness"},
-        {"colSphereRadMax", "Collision sphere radius (weigth 100)"},
-        {"colSphereRadMin", "Collision sphere radius (weight 0)"},
-        {"colSphereOffsetXMax", "Collision sphere X offset (weigth 100)"},
-        {"colSphereOffsetXMin", "Collision sphere X offset (weigth 0)"},
-        {"colSphereOffsetYMax", "Collision sphere Y offset (weigth 100)"},
-        {"colSphereOffsetYMin", "Collision sphere Y offset (weigth 0)"},
-        {"colSphereOffsetZMax", "Collision sphere Z offset (weigth 100)"},
-        {"colSphereOffsetZMin", "Collision sphere Z offset (weigth 0)"},
-        {"colDampingCoef", "Velocity damping scale when nodes are colliding"},
-        {"colStiffnessCoef", ""},
-        {"colDepthMul", ""}
-    };
-
     const std::unordered_map<MiscHelpText, const char*> UIBase::m_helpText =
     {
         {kHT_timeStep, "Update rate in Hz. Higher values produce smoother motion but cost more CPU time. It's pointless to set this above maximum framerate unless timeScale is below 1."},
@@ -140,74 +112,6 @@ namespace CBP
         {DIK_Z,"Z"}
         });
 
-#define ADD_ACTOR_SIM_COMPONENT_SLIDER(n, vmin, vmax, ...) \
-    if (ImGui::SliderFloat(STR(n), std::addressof(a_pair.second. ## n), vmin, vmax, __VA_ARGS__)) { \
-        if (IConfig::GetGlobalConfig().ui.clampValuesMain) \
-            a_pair.second. ## n = std::clamp(a_pair.second. ## n, vmin, vmax); \
-        auto& actorConf = IConfig::GetOrCreateActorConf(a_handle); \
-        actorConf.at(a_pair.first). ## n = a_pair.second. ## n; \
-        Propagate(a_data, std::addressof(actorConf), a_pair.first, STR(n), a_pair.second. ## n); \
-        DCBP::DispatchActorTask(a_handle, UTTask::kActionUpdateConfig); \
-    } \
-    ImGui::SameLine(); UICommon::HelpMarker(thingHelpText.at(STR(n))); \
-
-
-#define ADD_RACE_SIM_COMPONENT_SLIDER(n, vmin, vmax, ...) \
-    if (ImGui::SliderFloat(STR(n), std::addressof(a_pair.second. ## n), vmin, vmax, __VA_ARGS__)) { \
-        if (IConfig::GetGlobalConfig().ui.clampValuesRace) \
-            a_pair.second. ## n = std::clamp(a_pair.second. ## n, vmin, vmax); \
-        auto& raceConf = IConfig::GetOrCreateRaceConf(a_formid); \
-        raceConf.at(a_pair.first). ## n = a_pair.second. ## n; \
-        Propagate(a_data, std::addressof(raceConf), a_pair.first, STR(n), a_pair.second. ## n); \
-        MarkChanged(); \
-        DCBP::UpdateConfigOnAllActors(); \
-    } \
-    ImGui::SameLine(); UICommon::HelpMarker(thingHelpText.at(STR(n))); \
-
-#define ADD_GLOBAL_SIM_COMPONENT_SLIDER(n, vmin, vmax, ...) \
-    if (ImGui::SliderFloat(STR(n), std::addressof(a_pair.second. ## n), vmin, vmax, __VA_ARGS__)) { \
-        if (IConfig::GetGlobalConfig().ui.clampValuesMain) \
-            a_pair.second. ## n = std::clamp(a_pair.second. ## n, vmin, vmax); \
-        Propagate(a_data, nullptr, a_pair.first, STR(n), a_pair.second. ## n); \
-        DCBP::UpdateConfigOnAllActors(); \
-    } \
-    ImGui::SameLine(); UICommon::HelpMarker(thingHelpText.at(STR(n))); \
-
-#define ADD_PROFILE_SIM_COMPONENT_SLIDER(n, vmin, vmax, ...) \
-    if (ImGui::SliderFloat(STR(n), std::addressof(a_pair.second. ## n), vmin, vmax, __VA_ARGS__)) { \
-        if (IConfig::GetGlobalConfig().ui.clampValuesMain) \
-            a_pair.second. ## n = std::clamp(a_pair.second. ## n, vmin, vmax); \
-        Propagate(a_data, nullptr, a_pair.first, STR(n), a_pair.second. ## n); \
-    } \
-    ImGui::SameLine(); UICommon::HelpMarker(thingHelpText.at(STR(n))); \
-
-#define ADD_SIM_COMPONENT_SLIDERS(m) \
-    m(cogOffset, 0.0f, 100.0f); \
-    m(damping, 0.0f, 10.0f); \
-    m(gravityBias, -300.0f, 300.0f); \
-    m(gravityCorrection, -100.0f, 100.0f); \
-    m(linearX, 0.0f, 10.0f); \
-    m(linearY, 0.0f, 10.0f); \
-    m(linearZ, 0.0f, 10.0f); \
-    m(maxOffset, 0.0f, 100.0f); \
-    m(rotationalX, 0.0f, 1.0f); \
-    m(rotationalY, 0.0f, 1.0f); \
-    m(rotationalZ, 0.0f, 1.0f); \
-    m(stiffness, 0.0f, 100.0f); \
-    m(stiffness2, 0.0f, 100.0f); \
-    m(colSphereRadMin, 0.0f, a_pair.second.colSphereRadMax); \
-    m(colSphereRadMax, a_pair.second.colSphereRadMin, 100.0f); \
-    m(colSphereOffsetXMin, -50.0f, a_pair.second.colSphereOffsetXMax); \
-    m(colSphereOffsetXMax, a_pair.second.colSphereOffsetXMin, 50.0f); \
-    m(colSphereOffsetYMin, -50.0f, a_pair.second.colSphereOffsetYMax); \
-    m(colSphereOffsetYMax, a_pair.second.colSphereOffsetYMin, 50.0f); \
-    m(colSphereOffsetZMin, -50.0f, a_pair.second.colSphereOffsetZMax); \
-    m(colSphereOffsetZMax, a_pair.second.colSphereOffsetZMin, 50.0f); \
-    m(colDampingCoef, 0.0f, 10.0f); \
-    m(colStiffnessCoef, 0.0f, 1.0f); \
-    m(colDepthMul, 1.0f, 1000.0f);
-
-
     bool UIBase::CollapsingHeader(
         const std::string& a_key,
         const char* a_label,
@@ -233,7 +137,14 @@ namespace CBP
         UICommon::HelpMarker(m_helpText.at(a_id));
     }
 
-    void UIProfileEditor::Draw(bool* a_active)
+    template <class T>
+    UIProfileEditorBase<T>::UIProfileEditorBase(const char* a_name) :
+        m_name(a_name)
+    {
+    }
+
+    template <class T>
+    void UIProfileEditorBase<T>::Draw(bool* a_active)
     {
         auto& io = ImGui::GetIO();
 
@@ -247,11 +158,11 @@ namespace CBP
 
         ImGui::PushID(static_cast<const void*>(a_active));
 
-        if (ImGui::Begin("Profile Editor", a_active))
+        if (ImGui::Begin(m_name, a_active))
         {
             ImGui::PushItemWidth(ImGui::GetFontSize() * -12.5f);
 
-            auto& data = GenericProfileManager::GetSingleton().Data();
+            auto& data = GlobalProfileManager::GetSingleton<T>().Data();
 
             const char* curSelName = nullptr;
             if (state.selected) {
@@ -293,14 +204,15 @@ namespace CBP
                     if (!m_filter.Test(e.first))
                         continue;
 
-                    ImGui::PushID(reinterpret_cast<const void*>(std::addressof(e)));
+                    ImGui::PushID(reinterpret_cast<const void*>(std::addressof(e.second)));
+
                     bool selected = e.first == *state.selected;
                     if (selected)
-                        ImGui::SetItemDefaultFocus();
+                        if (ImGui::IsWindowAppearing()) ImGui::SetScrollHereY();
 
-                    if (ImGui::Selectable(e.second.Name().c_str(), selected)) {
+                    if (ImGui::Selectable(e.second.Name().c_str(), selected))
                         state.selected = e.first;
-                    }
+
                     ImGui::PopID();
                 }
                 ImGui::EndCombo();
@@ -323,9 +235,9 @@ namespace CBP
                 state.new_input, sizeof(state.new_input)))
             {
                 if (strlen(state.new_input)) {
-                    Profile profile;
+                    T profile;
 
-                    auto& pm = GenericProfileManager::GetSingleton();
+                    auto& pm = GlobalProfileManager::GetSingleton<T>();
 
                     if (pm.CreateProfile(state.new_input, profile))
                     {
@@ -376,7 +288,7 @@ namespace CBP
                     "Delete",
                     "Are you sure you want to delete profile '%s'?\n\n", curSelName))
                 {
-                    auto& pm = GenericProfileManager::GetSingleton();
+                    auto& pm = GlobalProfileManager::GetSingleton<T>();
                     if (pm.DeleteProfile(*state.selected)) {
                         state.selected.Clear();
                     }
@@ -388,7 +300,7 @@ namespace CBP
                 else if (UICommon::TextInputDialog("Rename", "Enter the new profile name:",
                     state.ren_input, sizeof(state.ren_input)))
                 {
-                    auto& pm = GenericProfileManager::GetSingleton();
+                    auto& pm = GlobalProfileManager::GetSingleton<T>();
                     std::string newName(state.ren_input);
 
                     if (pm.RenameProfile(*state.selected, newName)) {
@@ -406,7 +318,7 @@ namespace CBP
 
                     ImGui::Separator();
 
-                    DrawSimComponents(0, profile.Data());
+                    DrawItem(profile);
                 }
 
                 UICommon::MessageDialog("Delete failed",
@@ -423,12 +335,46 @@ namespace CBP
         ImGui::PopID();
     }
 
-    void UIProfileEditor::AddSimComponentSlider(
+    void UIProfileEditorSim::DrawItem(SimProfile& a_profile) {
+        DrawSimComponents(0, a_profile.Data());
+    }
+
+    void UIProfileEditorSim::AddSimComponentSlider(
         int,
-        configComponents_t& a_data,
-        configComponentsValue_t& a_pair)
+        SimProfile::base_type& a_data,
+        SimProfile::base_type::value_type& a_pair,
+        const componentValueDescMap_t::value_type& a_desc)
     {
-        ADD_SIM_COMPONENT_SLIDERS(ADD_PROFILE_SIM_COMPONENT_SLIDER);
+        auto& globalConfig = IConfig::GetGlobalConfig();
+
+        auto addr = reinterpret_cast<uintptr_t>(std::addressof(a_pair.second)) + a_desc.second.offset;
+        float* pValue = reinterpret_cast<float*>(addr);
+
+        if (ImGui::SliderFloat(a_desc.first.c_str(), pValue, a_desc.second.min, a_desc.second.max))
+        {
+            if (globalConfig.ui.clampValuesMain)
+                *pValue = std::clamp(*pValue, a_desc.second.min, a_desc.second.max);
+
+            Propagate(a_data, nullptr, a_pair.first, a_desc.first, *pValue);
+
+            if (a_desc.second.counterpart.size() && globalConfig.ui.syncWeightSlidersMain) {
+                a_pair.second.Set(a_desc.second.counterpart, *pValue);
+                Propagate(a_data, nullptr, a_pair.first, a_desc.second.counterpart, *pValue);
+            }
+        }
+        ImGui::SameLine(); UICommon::HelpMarker(a_desc.second.helpText);
+    }
+
+    void UIProfileEditorNode::DrawItem(NodeProfile& a_profile)
+    {
+        DrawNodes(0, a_profile.Data());
+    }
+
+    void UIProfileEditorNode::UpdateNodeData(
+        int,
+        const std::string&,
+        const NodeProfile::base_type::mapped_type&)
+    {
     }
 
     UIRaceEditor::UIRaceEditor() noexcept :
@@ -521,11 +467,11 @@ namespace CBP
                     if (!m_filter.Test(e.second.first))
                         continue;
 
-                    ImGui::PushID(reinterpret_cast<const void*>(std::addressof(e)));
+                    ImGui::PushID(reinterpret_cast<const void*>(std::addressof(e.second)));
 
                     bool selected = e.first == m_currentRace;
                     if (selected)
-                        ImGui::SetItemDefaultFocus();
+                        if (ImGui::IsWindowAppearing()) ImGui::SetScrollHereY();
 
                     if (ImGui::Selectable(e.second.first.c_str(), selected)) {
                         m_currentRace = e.first;
@@ -534,6 +480,7 @@ namespace CBP
 
                     ImGui::PopID();
                 }
+
                 ImGui::EndCombo();
             }
 
@@ -565,15 +512,17 @@ namespace CBP
                     QueueUpdateRaceList();
                     DCBP::MarkGlobalsForSave();
                 }
-
                 ImGui::Spacing();
                 if (ImGui::Checkbox("Clamp values", &globalConfig.ui.clampValuesRace))
                     DCBP::MarkGlobalsForSave();
 
+                ImGui::Spacing();
+                if (ImGui::Checkbox("Sync min/max weight sliders", &globalConfig.ui.syncWeightSlidersRace))
+                    DCBP::MarkGlobalsForSave();
+
                 ImGui::SameLine(ImGui::GetWindowContentRegionMax().x - 43.0f);
-                if (ImGui::Button("Reset")) {
+                if (ImGui::Button("Reset"))
                     ImGui::OpenPopup("Reset");
-                }
 
                 if (UICommon::ConfirmDialog(
                     "Reset",
@@ -661,15 +610,15 @@ namespace CBP
         DCBP::UpdateConfigOnAllActors();
     }
 
-    void UIRaceEditor::ApplyProfile(raceListValue_t* a_data, const Profile& m_profile)
+    void UIRaceEditor::ApplyProfile(raceListValue_t* a_data, const SimProfile& a_profile)
     {
-        IConfig::CopyComponents(m_profile.Data(), a_data->second.second);
+        IConfig::CopyComponents(a_profile.Data(), a_data->second.second);
         IConfig::SetRaceConf(a_data->first, a_data->second.second);
         MarkChanged();
         DCBP::UpdateConfigOnAllActors();
     }
 
-    const configComponents_t& UIRaceEditor::GetComponentData(const raceListValue_t* a_data) const
+    const configComponents_t& UIRaceEditor::GetData(const raceListValue_t* a_data) const
     {
         return a_data->second.second;
     }
@@ -677,15 +626,46 @@ namespace CBP
     void UIRaceEditor::AddSimComponentSlider(
         SKSE::FormID a_formid,
         configComponents_t& a_data,
-        configComponentsValue_t& a_pair)
+        configComponentsValue_t& a_pair,
+        const componentValueDescMap_t::value_type& a_desc)
     {
-        ADD_SIM_COMPONENT_SLIDERS(ADD_RACE_SIM_COMPONENT_SLIDER);
+        auto& globalConfig = IConfig::GetGlobalConfig();
+
+        auto addr = reinterpret_cast<uintptr_t>(std::addressof(a_pair.second)) + a_desc.second.offset;
+        float* pValue = reinterpret_cast<float*>(addr);
+
+        if (ImGui::SliderFloat(a_desc.first.c_str(), pValue, a_desc.second.min, a_desc.second.max)) {
+            if (globalConfig.ui.clampValuesMain)
+                *pValue = std::clamp(*pValue, a_desc.second.min, a_desc.second.max);
+
+            auto& raceConf = IConfig::GetOrCreateRaceConf(a_formid);
+            auto& entry = raceConf.at(a_pair.first);
+
+            addr = reinterpret_cast<uintptr_t>(std::addressof(entry)) + a_desc.second.offset;
+
+            *reinterpret_cast<float*>(addr) = *pValue;
+
+            Propagate(a_data, std::addressof(raceConf), a_pair.first, a_desc.first, *pValue);
+
+            if (a_desc.second.counterpart.size() &&
+                globalConfig.ui.syncWeightSlidersRace)
+            {
+                a_pair.second.Set(a_desc.second.counterpart, *pValue);
+                entry.Set(a_desc.second.counterpart, *pValue);
+                Propagate(a_data, std::addressof(raceConf), a_pair.first, a_desc.second.counterpart, *pValue);
+            }
+
+            MarkChanged();
+            DCBP::UpdateConfigOnAllActors();
+
+        }
+        ImGui::SameLine(); UICommon::HelpMarker(a_desc.second.helpText);
     }
 
-    template<typename T>
-    void UIProfileSelector<T>::DrawProfileSelector(T* a_data)
+    template<class T, class P>
+    void UIProfileSelector<T, P>::DrawProfileSelector(T* a_data)
     {
-        auto& pm = GenericProfileManager::GetSingleton();
+        auto& pm = GlobalProfileManager::GetSingleton<P>();
         auto& data = pm.Data();
 
         ImGui::PushID(std::addressof(pm));
@@ -702,13 +682,13 @@ namespace CBP
         {
             for (const auto& e : data)
             {
-                ImGui::PushID(reinterpret_cast<const void*>(std::addressof(e)));
+                ImGui::PushID(reinterpret_cast<const void*>(std::addressof(e.second)));
 
                 bool selected = m_selectedProfile &&
                     e.first == *m_selectedProfile;
 
                 if (selected)
-                    ImGui::SetItemDefaultFocus();
+                    if (ImGui::IsWindowAppearing()) ImGui::SetScrollHereY();
 
                 if (ImGui::Selectable(e.second.Name().c_str(), selected)) {
                     m_selectedProfile = e.first;
@@ -746,7 +726,7 @@ namespace CBP
                 "Save current values to profile '%s'?\n\n",
                 profile.Name().c_str()))
             {
-                auto& data = GetComponentData(a_data);
+                auto& data = GetData(a_data);
                 if (!profile.Save(data, true)) {
                     m_lastException = profile.GetLastException();
                     ImGui::OpenPopup("Save to profile error");
@@ -772,7 +752,7 @@ namespace CBP
 
         if (CollapsingHeader(chKey, "Force"))
         {
-            auto& data = GetComponentData(a_data);
+            auto& data = GetData(a_data);
             auto& globalConfig = IConfig::GetGlobalConfig();
 
             const char* curSelName = nullptr;
@@ -801,13 +781,13 @@ namespace CBP
             {
                 for (const auto& e : data)
                 {
-                    ImGui::PushID(reinterpret_cast<const void*>(std::addressof(e)));
+                    ImGui::PushID(reinterpret_cast<const void*>(std::addressof(e.second)));
 
                     bool selected = m_forceState.selected &&
                         e.first == *m_forceState.selected;
 
                     if (selected)
-                        ImGui::SetItemDefaultFocus();
+                        if (ImGui::IsWindowAppearing()) ImGui::SetScrollHereY();
 
                     if (ImGui::Selectable(e.first.c_str(), selected)) {
                         m_forceState.selected = (
@@ -952,7 +932,7 @@ namespace CBP
         }
     }
 
-    template <typename T>
+    template <class T>
     auto UIActorList<T>::GetSelectedEntry()
         -> actorListValue_t*
     {
@@ -964,7 +944,7 @@ namespace CBP
         return nullptr;
     }
 
-    template <typename T>
+    template <class T>
     void UIActorList<T>::DrawActorList(actorListValue_t*& a_entry, const char*& a_curSelName)
     {
         if (a_entry) {
@@ -998,11 +978,11 @@ namespace CBP
                 if (!m_filter.Test(e.second.first))
                     continue;
 
-                ImGui::PushID(static_cast<const void*>(std::addressof(e)));
+                ImGui::PushID(static_cast<const void*>(std::addressof(e.second)));
 
                 bool selected = e.first == m_currentActor;
                 if (selected)
-                    ImGui::SetItemDefaultFocus();
+                    if (ImGui::IsWindowAppearing()) ImGui::SetScrollHereY();
 
                 if (ImGui::Selectable(e.second.first.c_str(), selected)) {
                     SetCurrentActor(e.first);
@@ -1023,7 +1003,7 @@ namespace CBP
         ImGui::PopItemWidth();
     }
 
-    template <typename T>
+    template <class T>
     void UIActorList<T>::FilterSelected(
         actorListValue_t*& a_entry,
         const char*& a_curSelName)
@@ -1114,7 +1094,9 @@ namespace CBP
         m_nextUpdateCurrentActor(false),
         m_activeLoadInstance(0),
         m_tsNoActors(PerfCounter::Query()),
-        state({ .windows{false, false, false, false, false, false } })
+        m_peComponents("Sim Profile Editor"),
+        m_peNodes("Node Profile Editor"),
+        state({ .windows{false, false, false, false, false, false, false } })
     {
     }
 
@@ -1185,7 +1167,8 @@ namespace CBP
                 if (ImGui::BeginMenu("Tools"))
                 {
                     ImGui::MenuItem("Race editor", nullptr, &state.windows.race);
-                    ImGui::MenuItem("Profile editor", nullptr, &state.windows.profile);
+                    ImGui::MenuItem("Sim profile editor", nullptr, &state.windows.profileSim);
+                    ImGui::MenuItem("Node profile editor", nullptr, &state.windows.profileNodes);
 
                     ImGui::Separator();
                     ImGui::MenuItem("Node config", nullptr, &state.windows.nodeConf);
@@ -1258,6 +1241,10 @@ namespace CBP
             if (ImGui::Button("Reset"))
                 ImGui::OpenPopup("Reset");
 
+            ImGui::Spacing();
+            if (ImGui::Checkbox("Sync min/max weight sliders", &globalConfig.ui.syncWeightSlidersMain))
+                DCBP::MarkGlobalsForSave();
+
             if (UICommon::ConfirmDialog(
                 "Reset",
                 "%s: clear all values for actor?\n\n", curSelName))
@@ -1303,8 +1290,11 @@ namespace CBP
         if (state.windows.options)
             m_options.Draw(&state.windows.options);
 
-        if (state.windows.profile)
-            m_profile.Draw(&state.windows.profile);
+        if (state.windows.profileSim)
+            m_peComponents.Draw(&state.windows.profileSim);
+
+        if (state.windows.profileNodes)
+            m_peNodes.Draw(&state.windows.profileNodes);
 
         if (state.windows.race) {
             m_raceEditor.Draw(&state.windows.race);
@@ -1443,10 +1433,10 @@ namespace CBP
         {
             for (const auto& e : a_dmap)
             {
-                ImGui::PushID(reinterpret_cast<const void*>(std::addressof(e)));
+                ImGui::PushID(reinterpret_cast<const void*>(std::addressof(e.second)));
                 bool selected = e.first == a_out;
                 if (selected)
-                    ImGui::SetItemDefaultFocus();
+                    if (ImGui::IsWindowAppearing()) ImGui::SetScrollHereY();
 
                 if (ImGui::Selectable(e.second, selected)) {
                     if (a_out != e.first) {
@@ -1500,7 +1490,7 @@ namespace CBP
 
                     bool selected = e == *m_selected;
                     if (selected)
-                        ImGui::SetItemDefaultFocus();
+                        if (ImGui::IsWindowAppearing()) ImGui::SetScrollHereY();
 
                     if (ImGui::Selectable(reinterpret_cast<const char*>(std::addressof(e)), selected)) {
                         m_selected = e;
@@ -1590,7 +1580,7 @@ namespace CBP
 
                         bool selected = j == curSel;
                         if (selected)
-                            ImGui::SetItemDefaultFocus();
+                            if (ImGui::IsWindowAppearing()) ImGui::SetScrollHereY();
 
                         if (ImGui::Selectable(reinterpret_cast<const char*>(std::addressof(j)), selected)) {
                             nodeColGroupMap[e.first] = j;
@@ -1638,7 +1628,7 @@ namespace CBP
 
         if (ImGui::Begin("Node config", a_active))
         {
-            auto& nodeMap = IConfig::GetNodeMap();
+            ImGui::PushItemWidth(ImGui::GetFontSize() * -12.0f);
 
             auto entry = GetSelectedEntry();
             const char* curSelName;
@@ -1655,45 +1645,28 @@ namespace CBP
             if (ImGui::Button("Rescan"))
                 DCBP::QueueActorCacheUpdate();
 
-            ImGui::Separator();
+            ImGui::Spacing();
 
-            auto& nodeConfig = entry ?
-                entry->second.second :
-                IConfig::GetNodeConfig();
+            DrawProfileSelector(entry);
+
+            ImGui::Spacing();
+
+            ImGui::Separator();
 
             ImGui::PushItemWidth(ImGui::GetFontSize() * -10.0f);
 
-            for (const auto& e : nodeMap)
-            {
-                ImGui::PushID(static_cast<const void*>(std::addressof(e)));
 
-                if (ImGui::CollapsingHeader(e.first.c_str(), ImGuiTreeNodeFlags_DefaultOpen))
-                {
-                    auto& conf = nodeConfig[e.first];
-
-                    bool changed = false;
-
-                    ImGui::Columns(2, nullptr, false);
-
-                    changed |= ImGui::Checkbox("Female movement", &conf.femaleMovement);
-                    changed |= ImGui::Checkbox("Female collisions", &conf.femaleCollisions);
-
-                    ImGui::NextColumn();
-
-                    changed |= ImGui::Checkbox("Male movement", &conf.maleMovement);
-                    changed |= ImGui::Checkbox("Male collisions", &conf.maleCollisions);
-
-                    ImGui::Columns(1);
-
-                    if (changed)
-                        UpdateActorRecord(entry, e.first, conf);
-                }
-
-                ImGui::PopID();
+            if (entry) {
+                DrawNodes(entry->first, entry->second.second);
             }
+            else {
+                DrawNodes(0, IConfig::GetGlobalNodeConfig());
+            }
+
 
             ImGui::PopItemWidth();
 
+            ImGui::PopItemWidth();
         }
 
         ImGui::End();
@@ -1707,6 +1680,26 @@ namespace CBP
         return IConfig::GetActorNodeConfig(a_handle);
     }
 
+    const NodeProfile::base_type& UINodeConfig::GetData(const actorListValue_t* a_data) const
+    {
+        return !a_data ? IConfig::GetGlobalNodeConfig() : a_data->second.second;
+    }
+
+    void UINodeConfig::ApplyProfile(actorListValue_t* a_data, const NodeProfile& a_profile)
+    {
+        auto& profileData = a_profile.Data();
+
+        if (!a_data) {
+            IConfig::CopyToGlobalNodeProfile(profileData);
+        }
+        else {
+            IConfig::CopyNodes(profileData, a_data->second.second);
+            IConfig::SetActorNodeConfig(a_data->first, a_data->second.second);
+        }
+
+        DCBP::ResetActors();
+    }
+
     void UINodeConfig::ResetAllActorValues(SKSE::ObjectHandle a_handle)
     {
         IConfig::EraseActorNodeConfig(a_handle);
@@ -1716,27 +1709,57 @@ namespace CBP
         DCBP::ResetActors();
     }
 
-    void UINodeConfig::UpdateActorRecord(
-        actorListValue_t* a_entry,
+    void UINodeConfig::UpdateNodeData(
+        SKSE::ObjectHandle a_handle,
         const std::string& a_node,
-        const actorEntryValue_t::mapped_type& a_rec)
+        const NodeProfile::base_type::mapped_type& a_data)
     {
-        auto& nodeConfig = a_entry ?
-            IConfig::GetOrCreateActorNodeConfig(a_entry->first) :
-            IConfig::GetNodeConfig();
+        if (a_handle) {
+            auto& nodeConfig = IConfig::GetOrCreateActorNodeConfig(a_handle);
+            nodeConfig.insert_or_assign(a_node, a_data);
+        }
+        else {
+            DCBP::MarkForSave(Serialization::kGlobalProfile);
+        }
 
-        nodeConfig.insert_or_assign(a_node, a_rec);
-
-        DCBP::MarkForSave(Serialization::kGlobalProfile);
         DCBP::ResetActors();
     }
 
     void UIContext::UISimComponentActor::AddSimComponentSlider(
         SKSE::ObjectHandle a_handle,
         configComponents_t& a_data,
-        configComponentsValue_t& a_pair)
+        configComponentsValue_t& a_pair,
+        const componentValueDescMap_t::value_type& a_desc)
     {
-        ADD_SIM_COMPONENT_SLIDERS(ADD_ACTOR_SIM_COMPONENT_SLIDER);
+        auto& globalConfig = IConfig::GetGlobalConfig();
+
+        auto addr = reinterpret_cast<uintptr_t>(std::addressof(a_pair.second)) + a_desc.second.offset;
+        float* pValue = reinterpret_cast<float*>(addr);
+
+        if (ImGui::SliderFloat(a_desc.first.c_str(), pValue, a_desc.second.min, a_desc.second.max)) {
+            if (globalConfig.ui.clampValuesMain)
+                *pValue = std::clamp(*pValue, a_desc.second.min, a_desc.second.max);
+
+            auto& actorConf = IConfig::GetOrCreateActorConf(a_handle);
+            auto& entry = actorConf.at(a_pair.first);
+
+            addr = reinterpret_cast<uintptr_t>(std::addressof(entry)) + a_desc.second.offset;
+            *reinterpret_cast<float*>(addr) = *pValue;
+
+            Propagate(a_data, std::addressof(actorConf), a_pair.first, a_desc.first, *pValue);
+
+            if (a_desc.second.counterpart.size() &&
+                globalConfig.ui.syncWeightSlidersMain)
+            {
+                a_pair.second.Set(a_desc.second.counterpart, *pValue);
+                entry.Set(a_desc.second.counterpart, *pValue);
+                Propagate(a_data, std::addressof(actorConf), a_pair.first, a_desc.second.counterpart, *pValue);
+            }
+
+            DCBP::DispatchActorTask(a_handle, UTTask::kActionUpdateConfig);
+
+        }
+        ImGui::SameLine(); UICommon::HelpMarker(a_desc.second.helpText);
     }
 
     bool UIContext::UISimComponentActor::ShouldDrawComponent(
@@ -1749,12 +1772,33 @@ namespace CBP
     void UIContext::UISimComponentGlobal::AddSimComponentSlider(
         SKSE::ObjectHandle a_handle,
         configComponents_t& a_data,
-        configComponentsValue_t& a_pair)
+        configComponentsValue_t& a_pair,
+        const componentValueDescMap_t::value_type& a_desc)
     {
-        ADD_SIM_COMPONENT_SLIDERS(ADD_GLOBAL_SIM_COMPONENT_SLIDER);
+        auto& globalConfig = IConfig::GetGlobalConfig();
+
+        auto addr = reinterpret_cast<uintptr_t>(std::addressof(a_pair.second)) + a_desc.second.offset;
+        float* pValue = reinterpret_cast<float*>(addr);
+
+        if (ImGui::SliderFloat(a_desc.first.c_str(), pValue, a_desc.second.min, a_desc.second.max))
+        {
+            if (globalConfig.ui.clampValuesMain)
+                *pValue = std::clamp(*pValue, a_desc.second.min, a_desc.second.max);
+
+            Propagate(a_data, nullptr, a_pair.first, a_desc.first, *pValue);
+
+            if (a_desc.second.counterpart.size() && globalConfig.ui.syncWeightSlidersMain) {
+                a_pair.second.Set(a_desc.second.counterpart, *pValue);
+                Propagate(a_data, nullptr, a_pair.first, a_desc.second.counterpart, *pValue);
+            }
+
+            DCBP::UpdateConfigOnAllActors();
+
+        }
+        ImGui::SameLine(); UICommon::HelpMarker(a_desc.second.helpText);
     }
 
-    void UIContext::ApplyProfile(actorListValue_t* a_data, const Profile& a_profile)
+    void UIContext::ApplyProfile(actorListValue_t* a_data, const SimProfile& a_profile)
     {
         auto& profileData = a_profile.Data();
 
@@ -1769,7 +1813,7 @@ namespace CBP
         }
     }
 
-    const configComponents_t& UIContext::GetComponentData(const actorListValue_t* a_data) const
+    const SimProfile::base_type& UIContext::GetData(const actorListValue_t* a_data) const
     {
         return !a_data ? IConfig::GetGlobalProfile() : a_data->second.second;
     }
@@ -1821,7 +1865,7 @@ namespace CBP
         configComponents_t& a_dl,
         configComponents_t* a_dg,
         const std::string& a_comp,
-        std::string a_key,
+        const std::string& a_key,
         float a_val)
     {
         auto& globalConfig = IConfig::GetGlobalConfig();
@@ -1833,8 +1877,6 @@ namespace CBP
         auto it = itm->second.find(a_comp);
         if (it == itm->second.end())
             return;
-
-        transform(a_key.begin(), a_key.end(), a_key.begin(), ::tolower);
 
         for (auto& e : it->second) {
             if (!e.second)
@@ -1907,10 +1949,66 @@ namespace CBP
                     ImGui::EndPopup();
                 }
 
-                AddSimComponentSlider(a_handle, a_data, p);
+                DrawSliders(a_handle, a_data, p);
 
                 ImGui::PopID();
             }
+        }
+    }
+
+    template <class T, int ID>
+    void UISimComponent<T, ID>::DrawSliders(
+        T a_handle,
+        configComponents_t& a_data,
+        configComponentsValue_t& a_pair
+    )
+    {
+        for (const auto& e : configComponent_t::descMap)
+            AddSimComponentSlider(a_handle, a_data, a_pair, e);
+    }
+
+    template <class T, int ID>
+    bool UISimComponent<T, ID>::ShouldDrawComponent(
+        T m_handle,
+        const configComponents_t::value_type& a_comp)
+    {
+        return true;
+    }
+
+    template <class T, int ID>
+    void UINode<T, ID>::DrawNodes(
+        T a_handle,
+        configNodes_t& a_data)
+    {
+        auto& nodeMap = IConfig::GetNodeMap();
+
+        for (const auto& e : nodeMap)
+        {
+            ImGui::PushID(static_cast<const void*>(std::addressof(e)));
+
+            if (ImGui::CollapsingHeader(e.first.c_str(), ImGuiTreeNodeFlags_DefaultOpen))
+            {
+                auto& conf = a_data[e.first];
+
+                bool changed = false;
+
+                ImGui::Columns(2, nullptr, false);
+
+                changed |= ImGui::Checkbox("Female movement", &conf.femaleMovement);
+                changed |= ImGui::Checkbox("Female collisions", &conf.femaleCollisions);
+
+                ImGui::NextColumn();
+
+                changed |= ImGui::Checkbox("Male movement", &conf.maleMovement);
+                changed |= ImGui::Checkbox("Male collisions", &conf.maleCollisions);
+
+                ImGui::Columns(1);
+
+                if (changed)
+                    UpdateNodeData(a_handle, e.first, conf);
+            }
+
+            ImGui::PopID();
         }
     }
 

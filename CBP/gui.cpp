@@ -262,7 +262,7 @@ namespace CBP
         }
     }
 
-    void DUI::AddCallback(uint32_t id, uiDrawCallback_t f) 
+    void DUI::AddCallback(uint32_t id, const uiDrawCallback_t f)
     {
         m_Instance.m_lock.Enter();
         m_Instance.m_drawCallbacks.insert_or_assign(id, f);

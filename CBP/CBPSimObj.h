@@ -31,7 +31,7 @@ namespace CBP
         SimObject(const SimObject& a_rhs) = delete;
         SimObject(SimObject&& a_rhs) = delete;
 
-        void Update(Actor* actor, uint32_t a_step);
+        void Update(Actor* a_actor, uint32_t a_step);
         void UpdateConfig(Actor* a_actor, const configComponents_t& a_config);
         void Reset(Actor* a_actor);
 

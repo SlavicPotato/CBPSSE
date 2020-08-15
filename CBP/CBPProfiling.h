@@ -20,7 +20,7 @@ namespace CBP
         void SetInterval(long long a_interval);
         void Reset();
 
-        inline const auto &Current() {
+        inline const auto& Current() const {
             return m_current;
         }
 

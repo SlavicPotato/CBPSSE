@@ -109,9 +109,11 @@ namespace CBP
     };
 
     enum UIEditorID : int {
-        kProfileEditor = 0,
+        kProfileEditorSim = 0,
         kRaceEditor,
-        kMainEditor
+        kMainEditor,
+        kProfileEditorNode,
+        kNodeEditor
     };
 
     enum MiscHelpText
@@ -121,6 +123,14 @@ namespace CBP
         kHT_colMaxPenetrationDepth,
         kHT_showAllActors,
     };
+
+
+    typedef std::pair<const std::string, configComponents_t> actorEntryBaseConf_t;
+    typedef std::map<SKSE::ObjectHandle, actorEntryBaseConf_t> actorListBaseConf_t;
+
+    typedef std::pair<const std::string, configNodes_t> actorEntryNodeConf_t;
+    typedef std::map<SKSE::ObjectHandle, actorEntryNodeConf_t> actorListNodeConf_t;
+
 
     class UIBase
     {
@@ -147,17 +157,25 @@ namespace CBP
             T a_handle,
             configComponents_t& a_data);
 
+        void DrawSliders(
+            T a_handle,
+            configComponents_t& a_data,
+            configComponentsValue_t& a_pair
+        );
+
         virtual void AddSimComponentSlider(
             T a_handle,
             configComponents_t& a_data,
-            configComponentsValue_t& a_pair) = 0;
+            configComponentsValue_t& a_pair,
+            const componentValueDescMap_t::value_type &a_desc
+            ) = 0;
 
     protected:
         void Propagate(
             configComponents_t& a_dl,
             configComponents_t* a_dg,
             const std::string& a_comp,
-            std::string a_key,
+            const std::string& a_key,
             float a_val);
 
         [[nodiscard]] inline std::string GetCSID(
@@ -168,9 +186,37 @@ namespace CBP
             return ss.str();
         }
     private:
-        virtual bool ShouldDrawComponent(T m_handle, const configComponents_t::value_type& a_comp) {
-            return true;
-        }
+        virtual bool ShouldDrawComponent(
+            T m_handle,
+            const configComponents_t::value_type& a_comp);
+    };
+
+    template <class T, int ID>
+    class UINode :
+        virtual protected UIBase
+    {
+    public:
+        UINode() = default;
+        virtual ~UINode() = default;
+
+        void DrawNodes(
+            T a_handle,
+            configNodes_t& a_data);
+
+    protected:
+        
+        virtual void UpdateNodeData(
+            T a_handle, 
+            const std::string &a_node,
+            const configNode_t& a_data) = 0;
+
+        [[nodiscard]] inline std::string GetCSID(
+            const std::string& a_name)
+        {
+            std::ostringstream ss;
+            ss << "UIND#" << ID << "#" << a_name;
+            return ss.str();
+        }    
     };
 
     class UIGenericFilter
@@ -208,16 +254,16 @@ namespace CBP
         bool m_searchOpen;
     };
 
-    template <class T>
-    class UIComponentBase
+    template <class T, class C>
+    class UIDataBase
     {
     protected:
-        [[nodiscard]] virtual const configComponents_t& GetComponentData(const T* a_data) const = 0;
+        [[nodiscard]] virtual const C& GetData(const T* a_data) const = 0;
     };
 
-    template <class T>
+    template <class T, class P>
     class UIProfileSelector :
-        UIComponentBase<T>
+        UIDataBase<T, typename P::base_type>
     {
     protected:
         UIProfileSelector() = default;
@@ -227,7 +273,7 @@ namespace CBP
 
         virtual void ApplyProfile(
             T* a_data,
-            const Profile& a_profile) = 0;
+            const P& a_profile) = 0;
 
     private:
         UISelectedItem<std::string> m_selectedProfile;
@@ -237,7 +283,7 @@ namespace CBP
     template <class T>
     class UIApplyForce :
         virtual protected UIBase,
-        UIComponentBase<T>
+        UIDataBase<T, configComponents_t>
     {
         static constexpr float FORCE_MIN = -1000.0f;
         static constexpr float FORCE_MAX = 1000.0f;
@@ -258,19 +304,18 @@ namespace CBP
             UISelectedItem<std::string> selected;
         } m_forceState;
     };
-
-    class UIProfileEditor :
-        UISimComponent<int, UIEditorID::kProfileEditor>
+    template <class T>
+    class UIProfileEditorBase
     {
     public:
+        UIProfileEditorBase(const char* a_name);
+        virtual ~UIProfileEditorBase() noexcept = default;
 
         void Draw(bool* a_active);
-    private:
+    protected:
 
-        virtual void AddSimComponentSlider(
-            int,
-            configComponents_t& a_data,
-            configComponentsValue_t& a_pair);
+        virtual void DrawItem(T& a_profile) = 0;
+    private:
 
         struct {
             UISelectedItem<std::string> selected;
@@ -280,6 +325,40 @@ namespace CBP
         } state;
 
         UIGenericFilter m_filter;
+
+        const char *m_name;
+    };
+
+    class UIProfileEditorSim :
+        public UIProfileEditorBase<SimProfile>,
+        UISimComponent<int, UIEditorID::kProfileEditorSim>
+    {
+    public:
+        UIProfileEditorSim(const char *a_name) :
+            UIProfileEditorBase<SimProfile>(a_name) {}
+    private:
+        virtual void DrawItem(SimProfile& a_profile);
+
+        virtual void AddSimComponentSlider(
+            int,
+            typename SimProfile::base_type& a_data,
+            typename SimProfile::base_type::value_type& a_pair,
+            const componentValueDescMap_t::value_type& a_desc);
+    };
+
+    class UIProfileEditorNode :
+        public UIProfileEditorBase<NodeProfile>,
+        UINode<int, UIEditorID::kProfileEditorNode>
+    {
+    public:
+        UIProfileEditorNode(const char* a_name) :
+            UIProfileEditorBase<NodeProfile>(a_name) {}
+    private:
+        virtual void DrawItem(NodeProfile& a_profile);
+        virtual void UpdateNodeData(
+            int, 
+            const std::string& a_node,
+            const NodeProfile::base_type::mapped_type& a_data);
     };
 
     class UIOptions :
@@ -295,12 +374,6 @@ namespace CBP
             const keyDesc_t& a_dmap,
             UInt32& a_out);
     };
-
-    typedef std::pair<const std::string, configComponents_t> actorEntryBaseConf_t;
-    typedef std::map<SKSE::ObjectHandle, actorEntryBaseConf_t> actorListBaseConf_t;
-
-    typedef std::pair<const std::string, nodeConfigHolder_t> actorEntryNodeConf_t;
-    typedef std::map<SKSE::ObjectHandle, actorEntryNodeConf_t> actorListNodeConf_t;
 
     template <class T>
     class UIActorList
@@ -353,26 +426,31 @@ namespace CBP
     };
 
     class UINodeConfig :
-        UIActorList<actorListNodeConf_t>
+        UIActorList<actorListNodeConf_t>,
+        UIProfileSelector<actorListNodeConf_t::value_type, NodeProfile>,
+        UINode<SKSE::ObjectHandle, UIEditorID::kNodeEditor>
     {
     public:
         void Draw(bool* a_active);
         void Reset();
     private:
         virtual void ResetAllActorValues(SKSE::ObjectHandle a_handle);
-        virtual const actorEntryValue_t& GetData(SKSE::ObjectHandle a_handle);
+        [[nodiscard]] virtual const actorEntryValue_t& GetData(SKSE::ObjectHandle a_handle);
+        [[nodiscard]] virtual const NodeProfile::base_type& GetData(const actorListValue_t* a_data) const;
 
-        void UpdateActorRecord(
-            actorListValue_t* a_entry,
+        virtual void ApplyProfile(actorListValue_t* a_data, const NodeProfile& a_profile);
+
+        virtual void UpdateNodeData(
+            SKSE::ObjectHandle a_handle,
             const std::string& a_node,
-            const actorEntryValue_t::mapped_type& a_rec);
+            const NodeProfile::base_type::mapped_type& a_data);
     };
 
     typedef std::pair<const std::string, configComponents_t> raceEntry_t;
     typedef std::map<SKSE::FormID, raceEntry_t> raceList_t;
 
     class UIRaceEditor :
-        UIProfileSelector<raceList_t::value_type>,
+        UIProfileSelector<raceList_t::value_type, SimProfile>,
         UISimComponent<SKSE::FormID, UIEditorID::kRaceEditor>
     {
         using raceListValue_t = raceList_t::value_type;
@@ -399,13 +477,14 @@ namespace CBP
         void UpdateRaceList();
         void ResetAllRaceValues(SKSE::FormID a_formid, raceListValue_t* a_data);
 
-        virtual void ApplyProfile(raceListValue_t* a_data, const Profile& m_profile);
-        [[nodiscard]] virtual const configComponents_t& GetComponentData(const raceListValue_t* a_data) const;
+        virtual void ApplyProfile(raceListValue_t* a_data, const SimProfile& a_profile);
+        [[nodiscard]] virtual const configComponents_t& GetData(const raceListValue_t* a_data) const;
 
         virtual void AddSimComponentSlider(
             SKSE::FormID a_handle,
             configComponents_t& a_data,
-            configComponentsValue_t& a_pair);
+            configComponentsValue_t& a_pair,
+            const componentValueDescMap_t::value_type& a_desc);
 
         inline void MarkChanged() { m_changed = true; }
 
@@ -433,7 +512,7 @@ namespace CBP
     class UIContext :
         virtual UIBase,
         UIActorList<actorListBaseConf_t>,
-        UIProfileSelector<actorListBaseConf_t::value_type>,
+        UIProfileSelector<actorListBaseConf_t::value_type, SimProfile>,
         UIApplyForce<actorListBaseConf_t::value_type>
     {
         using actorListValue_t = actorListBaseConf_t::value_type;
@@ -445,7 +524,8 @@ namespace CBP
             virtual void AddSimComponentSlider(
                 SKSE::ObjectHandle a_handle,
                 configComponents_t& a_data,
-                configComponentsValue_t& a_pair);
+                configComponentsValue_t& a_pair,
+                const componentValueDescMap_t::value_type& a_desc);
         private:
             virtual bool ShouldDrawComponent(
                 SKSE::ObjectHandle a_handle,
@@ -460,7 +540,8 @@ namespace CBP
             virtual void AddSimComponentSlider(
                 SKSE::ObjectHandle a_handle,
                 configComponents_t& a_data,
-                configComponentsValue_t& a_pair);
+                configComponentsValue_t& a_pair,
+                const componentValueDescMap_t::value_type& a_desc);
         };
 
     public:
@@ -480,8 +561,8 @@ namespace CBP
 
     private:
 
-        virtual void ApplyProfile(actorListValue_t* a_data, const Profile& m_profile);
-        [[nodiscard]] virtual const configComponents_t& GetComponentData(const actorListValue_t* a_data) const;
+        virtual void ApplyProfile(actorListValue_t* a_data, const SimProfile& m_peComponents);
+        [[nodiscard]] virtual const SimProfile::base_type& GetData(const actorListValue_t* a_data) const;
 
         virtual void ApplyForce(
             actorListValue_t* a_data,
@@ -493,7 +574,7 @@ namespace CBP
         void UpdateActorValues(SKSE::ObjectHandle a_handle);
         void UpdateActorValues(actorListValue_t* a_data);
 
-        virtual const actorEntryValue_t& GetData(SKSE::ObjectHandle a_handle);
+        [[nodiscard]] virtual const actorEntryValue_t& GetData(SKSE::ObjectHandle a_handle);
 
         bool m_nextUpdateCurrentActor;
 
@@ -503,7 +584,8 @@ namespace CBP
         struct {
             struct {
                 bool options;
-                bool profile;
+                bool profileSim;
+                bool profileNodes;
                 bool race;
                 bool collisionGroups;
                 bool nodeConf;
@@ -513,7 +595,8 @@ namespace CBP
             std::exception lastException;
         } state;
 
-        UIProfileEditor m_profile;
+        UIProfileEditorSim m_peComponents;
+        UIProfileEditorNode m_peNodes;
         UIRaceEditor m_raceEditor;
         UIOptions m_options;
         UICollisionGroups m_colGroups;
