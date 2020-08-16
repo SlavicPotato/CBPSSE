@@ -163,11 +163,12 @@ namespace CBP
             configComponentsValue_t& a_pair
         );
 
-        virtual void AddSimComponentSlider(
+        virtual void OnSimSliderChange(
             T a_handle,
             configComponents_t& a_data,
             configComponentsValue_t& a_pair,
-            const componentValueDescMap_t::value_type &a_desc
+            const componentValueDescMap_t::value_type &a_desc,
+            float *a_val
             ) = 0;
 
     protected:
@@ -339,11 +340,12 @@ namespace CBP
     private:
         virtual void DrawItem(SimProfile& a_profile);
 
-        virtual void AddSimComponentSlider(
+        virtual void OnSimSliderChange(
             int,
             typename SimProfile::base_type& a_data,
             typename SimProfile::base_type::value_type& a_pair,
-            const componentValueDescMap_t::value_type& a_desc);
+            const componentValueDescMap_t::value_type& a_desc,
+            float* a_val);
     };
 
     class UIProfileEditorNode :
@@ -480,11 +482,12 @@ namespace CBP
         virtual void ApplyProfile(raceListValue_t* a_data, const SimProfile& a_profile);
         [[nodiscard]] virtual const configComponents_t& GetData(const raceListValue_t* a_data) const;
 
-        virtual void AddSimComponentSlider(
+        virtual void OnSimSliderChange(
             SKSE::FormID a_handle,
             configComponents_t& a_data,
             configComponentsValue_t& a_pair,
-            const componentValueDescMap_t::value_type& a_desc);
+            const componentValueDescMap_t::value_type& a_desc,
+            float* a_val);
 
         inline void MarkChanged() { m_changed = true; }
 
@@ -521,11 +524,12 @@ namespace CBP
             public UISimComponent<SKSE::ObjectHandle, UIEditorID::kMainEditor>
         {
         public:
-            virtual void AddSimComponentSlider(
+            virtual void OnSimSliderChange(
                 SKSE::ObjectHandle a_handle,
                 configComponents_t& a_data,
                 configComponentsValue_t& a_pair,
-                const componentValueDescMap_t::value_type& a_desc);
+                const componentValueDescMap_t::value_type& a_desc,
+                float* a_val);
         private:
             virtual bool ShouldDrawComponent(
                 SKSE::ObjectHandle a_handle,
@@ -537,11 +541,12 @@ namespace CBP
             public UISimComponent<SKSE::ObjectHandle, UIEditorID::kMainEditor>
         {
         public:
-            virtual void AddSimComponentSlider(
+            virtual void OnSimSliderChange(
                 SKSE::ObjectHandle a_handle,
                 configComponents_t& a_data,
                 configComponentsValue_t& a_pair,
-                const componentValueDescMap_t::value_type& a_desc);
+                const componentValueDescMap_t::value_type& a_desc,
+                float* a_val);
         };
 
     public:

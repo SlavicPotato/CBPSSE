@@ -2,6 +2,7 @@
 
 namespace CBP
 {
+
     Renderer::Renderer(
         ID3D11Device* a_pDevice,
         ID3D11DeviceContext* a_pImmediateContext)

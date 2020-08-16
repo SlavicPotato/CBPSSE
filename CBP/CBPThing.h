@@ -28,6 +28,7 @@ namespace CBP
             bool Create();
             bool Destroy();
             void Update();
+            void Reset();
 
             inline void SetRadius(r3d::decimal a_val) {
                 m_radius = a_val;
@@ -35,8 +36,9 @@ namespace CBP
             }
 
             inline void UpdateRadius() {
-                if (m_nodeScale > 0.0f)
-                    m_sphereShape->setRadius(m_radius * m_nodeScale);
+                auto rad = m_radius * m_nodeScale;
+                if (rad > 0.0f)
+                    m_sphereShape->setRadius(rad);
             }
 
             inline void SetSphereOffset(const NiPoint3& a_offset) {
@@ -147,8 +149,8 @@ namespace CBP
 
             NiPoint3 d(a_vel.x, a_vel.y, a_vel.z);
 
-            velocity = (velocity - (d * globalConf.phys.timeStep)) - 
-                (velocity * ((conf.damping * globalConf.phys.timeStep) * dampingMul));
+            SetVelocity((velocity - (d * globalConf.phys.timeStep)) -
+                (velocity * ((conf.damping * globalConf.phys.timeStep) * dampingMul)));
         }
         
         [[nodiscard]] inline const auto& GetVelocity() const {

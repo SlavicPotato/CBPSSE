@@ -16,16 +16,16 @@ namespace CBP
 
         Profile(const std::string& a_path) :
             m_path(a_path),
-            m_id(0)
+            m_id(0),
         {
-            _init();
+            m_name = m_path.stem().string();
         }
 
         Profile(const std::filesystem::path& a_path) :
             m_path(a_path),
             m_id(0)
         {
-            _init();
+            m_name = m_path.stem().string();
         }
 
         virtual ~Profile() noexcept = default;
@@ -92,14 +92,11 @@ namespace CBP
             m_id = a_id;
         }
 
-        inline void SetDefaults() {
+        inline void SetDefaults() noexcept {
             GetDefault(m_conf);
         }
 
     private:
-        inline void _init() {
-            m_name = m_path.stem().string();
-        }
 
         std::filesystem::path m_path;
         std::string m_name;

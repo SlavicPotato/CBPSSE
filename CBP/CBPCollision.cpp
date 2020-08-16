@@ -105,7 +105,7 @@ namespace CBP
         auto magb = len + (depth * dmb);
 
         auto Ja = (normal * (maga * depth));
-        auto Jb = (normal * (magb * -depth));
+        auto Jb = (normal * (-magb * depth));
 
         vaf = Ja;
         vbf = Jb;

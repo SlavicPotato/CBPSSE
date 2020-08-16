@@ -203,6 +203,8 @@ namespace CBP
                 globalConfig.ui.clampValuesRace = ui.get("clampValuesRace", true).asBool();
                 globalConfig.ui.rlPlayableOnly = ui.get("rlPlayableOnly", true).asBool();
                 globalConfig.ui.rlShowEditorIDs = ui.get("rlShowEditorIDs", true).asBool();
+                globalConfig.ui.syncWeightSlidersMain = ui.get("syncWeightSlidersMain", false).asBool();
+                globalConfig.ui.syncWeightSlidersRace = ui.get("syncWeightSlidersRace", false).asBool();
                 globalConfig.ui.comboKey = static_cast<UInt32>(ui.get("comboKey", DIK_LSHIFT).asUInt());
                 globalConfig.ui.showKey = static_cast<UInt32>(ui.get("showKey", DIK_END).asUInt());
                 globalConfig.ui.lastActor = static_cast<SKSE::ObjectHandle>(ui.get("lastActor", 0).asUInt64());
@@ -363,6 +365,8 @@ namespace CBP
             ui["clampValuesRace"] = globalConfig.ui.clampValuesRace;
             ui["rlPlayableOnly"] = globalConfig.ui.rlPlayableOnly;
             ui["rlShowEditorIDs"] = globalConfig.ui.rlShowEditorIDs;
+            ui["syncWeightSlidersMain"] = globalConfig.ui.syncWeightSlidersMain;
+            ui["clampValuesRace"] = globalConfig.ui.clampValuesRace;
             ui["comboKey"] = static_cast<uint32_t>(globalConfig.ui.comboKey);
             ui["showKey"] = static_cast<uint32_t>(globalConfig.ui.showKey);
             ui["lastActor"] = static_cast<uint64_t>(globalConfig.ui.lastActor);

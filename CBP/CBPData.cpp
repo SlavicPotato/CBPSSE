@@ -63,15 +63,15 @@ namespace CBP
         for (const auto& e : a_list)
         {
             auto actor = SKSE::ResolveObject<Actor>(e.first, Actor::kTypeID);
-            if (actor == nullptr) 
+            if (actor == nullptr)
                 continue;
-            
+
             std::ostringstream ss;
             ss << "[" << std::uppercase << std::setfill('0') <<
                 std::setw(8) << std::hex << actor->formID << "] ";
             ss << CALL_MEMBER_FN(actor, GetReferenceName)();
 
-            actorCache.emplace(e.first, 
+            actorCache.emplace(e.first,
                 actorCacheEntry_t{ true, std::move(ss.str()) });
         }
 
@@ -79,7 +79,7 @@ namespace CBP
         {
             AddExtraActorEntry(e.first);
         }
-        
+
         for (const auto& e : IConfig::GetActorNodeConfigHolder())
         {
             AddExtraActorEntry(e.first);
@@ -115,7 +115,7 @@ namespace CBP
         if (!dh)
             return false;
 
-        for (UInt32 i = 0; i < dh->races.count; i++) 
+        for (UInt32 i = 0; i < dh->races.count; i++)
         {
             auto race = dh->races[i];
             if (race == nullptr)

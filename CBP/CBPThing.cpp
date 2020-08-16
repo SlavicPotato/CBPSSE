@@ -89,6 +89,13 @@ namespace CBP
         }
     }
 
+    void SimComponent::Collider::Reset()
+    {
+        if (m_created) {
+            m_body->setTransform(r3d::Transform::identity());
+        }
+    }
+
     SimComponent::SimComponent(
         Actor* a_actor,
         NiAVObject* a_obj,
