@@ -514,6 +514,7 @@
     <None Include="Config\CBP.ini" />
     <None Include="Config\CBPData\CollisionGroups.json" />
     <None Include="Config\CBPData\GlobalProfile.json" />
+    <None Include="Config\CBPNodeProfiles\UNP Basic.json" />
     <None Include="Config\CBPNodes.json" />
     <None Include="exports.def" />
   </ItemGroup>

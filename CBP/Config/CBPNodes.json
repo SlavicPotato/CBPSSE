@@ -18,6 +18,14 @@
 	"extra breast right 3": ["R Breast03"],
 	"genitals 1": ["NPC Genitals01 [Gen01]"],
 	"genitals 2": ["NPC Genitals02 [Gen02]"],
+	"genitals 3": ["NPC Genitals02 [Gen03]"],
 	"genitals 4": ["NPC Genitals04 [Gen04]"],
-	"genitals 6": ["NPC Genitals06 [Gen06]"]
+	"genitals 5": ["NPC Genitals05 [Gen05]"],
+	"genitals 6": ["NPC Genitals06 [Gen06]"],
+	"front thigh left": ["NPC L FrontThigh"],
+	"front thigh right": ["NPC R FrontThigh"],
+	"rear thigh left": ["NPC L RearThigh"],
+	"rear thigh right": ["NPC R RearThigh"],
+	"rear calf left": ["NPC L RearCalf [LrClf]"],
+	"rear calf right": ["NPC R RearCalf [RrClf]"]
 }

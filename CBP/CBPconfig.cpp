@@ -231,7 +231,11 @@ namespace CBP
     {
         try
         {
-            std::ifstream ifs(PLUGIN_CBP_CONFIG, std::ifstream::in);
+            std::filesystem::path path(PLUGIN_CBP_CONFIG);
+            if (!std::filesystem::exists(path))
+                return false;
+
+            std::ifstream ifs(path, std::ifstream::in);
 
             if (!ifs.is_open())
                 throw std::system_error(errno, std::system_category());

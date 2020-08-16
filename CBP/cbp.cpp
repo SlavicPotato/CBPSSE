@@ -303,10 +303,10 @@ namespace CBP
     {
         auto info = static_cast<D3D11CreateEventPost*>(data);
 
-        m_Instance.m_renderer = std::make_unique<CBP::Renderer>(
-            info->m_pDevice, info->m_pImmediateContext);
+        if (m_Instance.conf.debug_renderer)
+            m_Instance.m_renderer = std::make_unique<CBP::Renderer>(
+                info->m_pDevice, info->m_pImmediateContext);
     }
-
 
     void DCBP::Present_Pre()
     {
@@ -411,8 +411,7 @@ namespace CBP
 
         auto& globalConf = CBP::IConfig::GetGlobalConfig();
 
-        if (GetDriverConfig().debug_renderer &&
-            globalConf.debugRenderer.enabled)
+        if (GetDriverConfig().debug_renderer)
         {
             GetRenderer()->Clear();
         }
