@@ -366,7 +366,7 @@ namespace CBP
             ui["rlPlayableOnly"] = globalConfig.ui.rlPlayableOnly;
             ui["rlShowEditorIDs"] = globalConfig.ui.rlShowEditorIDs;
             ui["syncWeightSlidersMain"] = globalConfig.ui.syncWeightSlidersMain;
-            ui["clampValuesRace"] = globalConfig.ui.clampValuesRace;
+            ui["syncWeightSlidersRace"] = globalConfig.ui.syncWeightSlidersRace;
             ui["comboKey"] = static_cast<uint32_t>(globalConfig.ui.comboKey);
             ui["showKey"] = static_cast<uint32_t>(globalConfig.ui.showKey);
             ui["lastActor"] = static_cast<uint64_t>(globalConfig.ui.lastActor);
