@@ -147,16 +147,16 @@ namespace CBP
         auto& cgMap = CBP::IConfig::GetConfigGroupMap();
         auto itc = cgMap.find(a_cg);
         if (itc == cgMap.end())
-            return true;
+            return false;
 
         for (const auto& e : itc->second) {
             CBP::configNode_t tmp;
             if (CBP::IConfig::GetActorNodeConfig(a_handle, e, tmp))
-                if (!tmp)
-                    return false;
+                if (tmp)
+                    return true;
         }
 
-        return true;
+        return false;
     }
 
 
@@ -167,16 +167,15 @@ namespace CBP
         if (itc == cgMap.end())
             return true;
 
-        for (const auto& e : itc->second)
-        {
+        for (const auto& e : itc->second) {
             CBP::configNode_t tmp;
             if (CBP::IConfig::GetGlobalNodeConfig(e, tmp)) {
-                if (!tmp)
-                    return false;
+                if (tmp)
+                    return true;
             }
         }
 
-        return true;
+        return false;
     }
 
     void DCBP::UIQueueUpdateCurrentActor()
