@@ -71,17 +71,10 @@ namespace CBP
             }
         }
 
-        auto& rot = m_parent.m_obj->m_worldTransform.rot;
-
-        m_mat[0][0] = rot.data[0][0]; m_mat[0][1] = rot.data[0][1]; m_mat[0][2] = rot.data[0][2];
-        m_mat[1][0] = rot.data[1][0]; m_mat[1][1] = rot.data[1][1]; m_mat[1][2] = rot.data[1][2];
-        m_mat[2][0] = rot.data[2][0]; m_mat[2][1] = rot.data[2][1]; m_mat[2][2] = rot.data[2][2];
-
         auto pos = m_parent.m_obj->m_worldTransform * m_sphereOffset;
 
-        m_pos.x = pos.x; m_pos.y = pos.y; m_pos.z = pos.z;
-
-        m_body->setTransform(r3d::Transform(m_pos, m_mat));
+        m_transform.setPosition(r3d::Vector3(pos.x, pos.y, pos.z));
+        m_body->setTransform(m_transform);
 
         if (nodeScale != m_nodeScale) {
             m_nodeScale = nodeScale;

@@ -59,8 +59,7 @@ namespace CBP
             float m_nodeScale;
             float m_radius;
 
-            r3d::Matrix3x3 m_mat;
-            r3d::Vector3 m_pos;
+            r3d::Transform m_transform;
 
             bool m_created;
             bool m_active;
