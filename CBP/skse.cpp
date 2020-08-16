@@ -2,7 +2,7 @@
 
 namespace SKSE
 {
-    constexpr size_t MAX_TRAMPOLINE_BRANCH = 128;
+    constexpr size_t MAX_TRAMPOLINE_BRANCH = 70;
 
     PluginHandle g_pluginHandle = kPluginHandle_Invalid;
 
@@ -10,6 +10,8 @@ namespace SKSE
     SKSEMessagingInterface* g_messaging;
     SKSEPapyrusInterface* g_papyrus;
     SKSESerializationInterface* g_serialization;
+
+    size_t branchTrampolineSize = 0;
 
     bool GetHandle(void* src, UInt32 typeID, ObjectHandle& out)
     {
@@ -123,8 +125,8 @@ namespace SKSE
             return false;
         }
 
-
-        if (!g_branchTrampoline.Create(Hook::GetAlignedTrampolineSize(MAX_TRAMPOLINE_BRANCH)))
+        branchTrampolineSize = Hook::InitBranchTrampoline(skse, MAX_TRAMPOLINE_BRANCH);
+        if (!branchTrampolineSize)
         {
             _FATALERROR("Could not create branch trampoline.");
             return false;

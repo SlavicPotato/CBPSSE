@@ -52,6 +52,8 @@ namespace CBP
 
         FlushInstructionCache(GetCurrentProcess(), NULL, 0);
 
+       // _DMESSAGE(">> %zu", SKSE::branchTrampolineSize - g_branchTrampoline.Remain());
+
         MainInitHook_O();
     }
 

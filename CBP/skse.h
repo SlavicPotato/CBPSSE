@@ -13,6 +13,8 @@ namespace SKSE
     extern SKSEPapyrusInterface* g_papyrus;
     extern SKSESerializationInterface* g_serialization;
 
+    extern size_t branchTrampolineSize;
+
     extern bool Query(const SKSEInterface* skse, PluginInfo* info);
     extern bool Initialize(const SKSEInterface* skse);
 
