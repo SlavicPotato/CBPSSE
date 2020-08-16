@@ -180,9 +180,11 @@ namespace CBP
         static void ResetActors();
         static void UpdateDebugRendererState();
         static void UpdateDebugRendererSettings();
+        static void UpdateProfilerSettings();
         static void ApplyForce(SKSE::ObjectHandle a_handle, uint32_t a_steps, const std::string& a_component, const NiPoint3& a_force);
         [[nodiscard]] static bool ActorHasNode(SKSE::ObjectHandle a_handle, const std::string& a_node);
         [[nodiscard]] static bool ActorHasConfigGroup(SKSE::ObjectHandle a_handle, const std::string& a_cg);
+        [[nodiscard]] static bool GlobalHasConfigGroup(const std::string& a_cg);
 
         static bool SaveAll();
 

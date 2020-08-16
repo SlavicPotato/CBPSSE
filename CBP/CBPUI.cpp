@@ -1766,6 +1766,13 @@ namespace CBP
         DCBP::UpdateConfigOnAllActors();
     }
 
+    bool UIContext::UISimComponentGlobal::ShouldDrawComponent(
+        SKSE::ObjectHandle a_handle,
+        const configComponents_t::value_type& a_comp)
+    {
+        return DCBP::GlobalHasConfigGroup(a_comp.first);
+    }
+
     void UIContext::ApplyProfile(actorListValue_t* a_data, const SimProfile& a_profile)
     {
         auto& profileData = a_profile.Data();
@@ -1894,6 +1901,9 @@ namespace CBP
                     for (const auto& e : a_data)
                     {
                         if (e.first == p.first)
+                            continue;
+
+                        if (!ShouldDrawComponent(a_handle, e))
                             continue;
 
                         auto headerName = e.first;

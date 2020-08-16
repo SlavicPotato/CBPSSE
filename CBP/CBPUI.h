@@ -547,6 +547,10 @@ namespace CBP
                 configComponentsValue_t& a_pair,
                 const componentValueDescMap_t::value_type& a_desc,
                 float* a_val);
+
+            virtual bool ShouldDrawComponent(
+                SKSE::ObjectHandle a_handle,
+                const configComponents_t::value_type& a_comp);
         };
 
     public:

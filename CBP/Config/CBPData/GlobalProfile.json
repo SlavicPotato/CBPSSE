@@ -136,6 +136,168 @@
 			"stiffness" : 4.5,
 			"stiffness2" : 9.5
 		},
+		"extra breast left 1" : 
+		{
+			"cogOffset" : 5.0,
+			"colDampingCoef" : 2.0,
+			"colDepthMul" : 100.0,
+			"colSphereOffsetXMax" : 0.0,
+			"colSphereOffsetXMin" : 0.0,
+			"colSphereOffsetYMax" : 0.0,
+			"colSphereOffsetYMin" : 0.0,
+			"colSphereOffsetZMax" : 0.0,
+			"colSphereOffsetZMin" : 0.0,
+			"colSphereRadMax" : 4.0,
+			"colSphereRadMin" : 4.0,
+			"colStiffnessCoef" : 0.0,
+			"damping" : 0.94999998807907104,
+			"gravityBias" : 0.0,
+			"gravityCorrection" : 0.0,
+			"linearX" : 0.5,
+			"linearY" : 0.10000000149011612,
+			"linearZ" : 0.25,
+			"maxOffset" : 20.0,
+			"rotationalX" : 0.0,
+			"rotationalY" : 0.0,
+			"rotationalZ" : 0.0,
+			"stiffness" : 10.0,
+			"stiffness2" : 10.0
+		},
+		"extra breast left 2" : 
+		{
+			"cogOffset" : 5.0,
+			"colDampingCoef" : 2.0,
+			"colDepthMul" : 100.0,
+			"colSphereOffsetXMax" : 0.0,
+			"colSphereOffsetXMin" : 0.0,
+			"colSphereOffsetYMax" : 0.0,
+			"colSphereOffsetYMin" : 0.0,
+			"colSphereOffsetZMax" : 0.0,
+			"colSphereOffsetZMin" : 0.0,
+			"colSphereRadMax" : 4.0,
+			"colSphereRadMin" : 4.0,
+			"colStiffnessCoef" : 0.0,
+			"damping" : 0.94999998807907104,
+			"gravityBias" : 0.0,
+			"gravityCorrection" : 0.0,
+			"linearX" : 0.5,
+			"linearY" : 0.10000000149011612,
+			"linearZ" : 0.25,
+			"maxOffset" : 20.0,
+			"rotationalX" : 0.0,
+			"rotationalY" : 0.0,
+			"rotationalZ" : 0.0,
+			"stiffness" : 10.0,
+			"stiffness2" : 10.0
+		},
+		"extra breast left 3" : 
+		{
+			"cogOffset" : 5.0,
+			"colDampingCoef" : 2.0,
+			"colDepthMul" : 100.0,
+			"colSphereOffsetXMax" : 0.0,
+			"colSphereOffsetXMin" : 0.0,
+			"colSphereOffsetYMax" : 0.0,
+			"colSphereOffsetYMin" : 0.0,
+			"colSphereOffsetZMax" : 0.0,
+			"colSphereOffsetZMin" : 0.0,
+			"colSphereRadMax" : 4.0,
+			"colSphereRadMin" : 4.0,
+			"colStiffnessCoef" : 0.0,
+			"damping" : 0.94999998807907104,
+			"gravityBias" : 0.0,
+			"gravityCorrection" : 0.0,
+			"linearX" : 0.5,
+			"linearY" : 0.10000000149011612,
+			"linearZ" : 0.25,
+			"maxOffset" : 20.0,
+			"rotationalX" : 0.0,
+			"rotationalY" : 0.0,
+			"rotationalZ" : 0.0,
+			"stiffness" : 10.0,
+			"stiffness2" : 10.0
+		},
+		"extra breast right 1" : 
+		{
+			"cogOffset" : 5.0,
+			"colDampingCoef" : 2.0,
+			"colDepthMul" : 100.0,
+			"colSphereOffsetXMax" : 0.0,
+			"colSphereOffsetXMin" : 0.0,
+			"colSphereOffsetYMax" : 0.0,
+			"colSphereOffsetYMin" : 0.0,
+			"colSphereOffsetZMax" : 0.0,
+			"colSphereOffsetZMin" : 0.0,
+			"colSphereRadMax" : 4.0,
+			"colSphereRadMin" : 4.0,
+			"colStiffnessCoef" : 0.0,
+			"damping" : 0.94999998807907104,
+			"gravityBias" : 0.0,
+			"gravityCorrection" : 0.0,
+			"linearX" : 0.5,
+			"linearY" : 0.10000000149011612,
+			"linearZ" : 0.25,
+			"maxOffset" : 20.0,
+			"rotationalX" : 0.0,
+			"rotationalY" : 0.0,
+			"rotationalZ" : 0.0,
+			"stiffness" : 10.0,
+			"stiffness2" : 10.0
+		},
+		"extra breast right 2" : 
+		{
+			"cogOffset" : 5.0,
+			"colDampingCoef" : 2.0,
+			"colDepthMul" : 100.0,
+			"colSphereOffsetXMax" : 0.0,
+			"colSphereOffsetXMin" : 0.0,
+			"colSphereOffsetYMax" : 0.0,
+			"colSphereOffsetYMin" : 0.0,
+			"colSphereOffsetZMax" : 0.0,
+			"colSphereOffsetZMin" : 0.0,
+			"colSphereRadMax" : 4.0,
+			"colSphereRadMin" : 4.0,
+			"colStiffnessCoef" : 0.0,
+			"damping" : 0.94999998807907104,
+			"gravityBias" : 0.0,
+			"gravityCorrection" : 0.0,
+			"linearX" : 0.5,
+			"linearY" : 0.10000000149011612,
+			"linearZ" : 0.25,
+			"maxOffset" : 20.0,
+			"rotationalX" : 0.0,
+			"rotationalY" : 0.0,
+			"rotationalZ" : 0.0,
+			"stiffness" : 10.0,
+			"stiffness2" : 10.0
+		},
+		"extra breast right 3" : 
+		{
+			"cogOffset" : 5.0,
+			"colDampingCoef" : 2.0,
+			"colDepthMul" : 100.0,
+			"colSphereOffsetXMax" : 0.0,
+			"colSphereOffsetXMin" : 0.0,
+			"colSphereOffsetYMax" : 0.0,
+			"colSphereOffsetYMin" : 0.0,
+			"colSphereOffsetZMax" : 0.0,
+			"colSphereOffsetZMin" : 0.0,
+			"colSphereRadMax" : 4.0,
+			"colSphereRadMin" : 4.0,
+			"colStiffnessCoef" : 0.0,
+			"damping" : 0.94999998807907104,
+			"gravityBias" : 0.0,
+			"gravityCorrection" : 0.0,
+			"linearX" : 0.5,
+			"linearY" : 0.10000000149011612,
+			"linearZ" : 0.25,
+			"maxOffset" : 20.0,
+			"rotationalX" : 0.0,
+			"rotationalY" : 0.0,
+			"rotationalZ" : 0.0,
+			"stiffness" : 10.0,
+			"stiffness2" : 10.0
+		},
 		"forearm left" : 
 		{
 			"cogOffset" : 5.0,
@@ -177,6 +339,114 @@
 			"colSphereRadMax" : 4.0,
 			"colSphereRadMin" : 4.0,
 			"colStiffnessCoef" : 0.10000000149011612,
+			"damping" : 0.94999998807907104,
+			"gravityBias" : 0.0,
+			"gravityCorrection" : 0.0,
+			"linearX" : 0.5,
+			"linearY" : 0.10000000149011612,
+			"linearZ" : 0.25,
+			"maxOffset" : 20.0,
+			"rotationalX" : 0.0,
+			"rotationalY" : 0.0,
+			"rotationalZ" : 0.0,
+			"stiffness" : 10.0,
+			"stiffness2" : 10.0
+		},
+		"genitals 1" : 
+		{
+			"cogOffset" : 5.0,
+			"colDampingCoef" : 2.0,
+			"colDepthMul" : 100.0,
+			"colSphereOffsetXMax" : 0.0,
+			"colSphereOffsetXMin" : 0.0,
+			"colSphereOffsetYMax" : 0.0,
+			"colSphereOffsetYMin" : 0.0,
+			"colSphereOffsetZMax" : 0.0,
+			"colSphereOffsetZMin" : 0.0,
+			"colSphereRadMax" : 4.0,
+			"colSphereRadMin" : 4.0,
+			"colStiffnessCoef" : 0.0,
+			"damping" : 0.94999998807907104,
+			"gravityBias" : 0.0,
+			"gravityCorrection" : 0.0,
+			"linearX" : 0.5,
+			"linearY" : 0.10000000149011612,
+			"linearZ" : 0.25,
+			"maxOffset" : 20.0,
+			"rotationalX" : 0.0,
+			"rotationalY" : 0.0,
+			"rotationalZ" : 0.0,
+			"stiffness" : 10.0,
+			"stiffness2" : 10.0
+		},
+		"genitals 2" : 
+		{
+			"cogOffset" : 5.0,
+			"colDampingCoef" : 2.0,
+			"colDepthMul" : 100.0,
+			"colSphereOffsetXMax" : 0.0,
+			"colSphereOffsetXMin" : 0.0,
+			"colSphereOffsetYMax" : 0.0,
+			"colSphereOffsetYMin" : 0.0,
+			"colSphereOffsetZMax" : 0.0,
+			"colSphereOffsetZMin" : 0.0,
+			"colSphereRadMax" : 4.0,
+			"colSphereRadMin" : 4.0,
+			"colStiffnessCoef" : 0.0,
+			"damping" : 0.94999998807907104,
+			"gravityBias" : 0.0,
+			"gravityCorrection" : 0.0,
+			"linearX" : 0.5,
+			"linearY" : 0.10000000149011612,
+			"linearZ" : 0.25,
+			"maxOffset" : 20.0,
+			"rotationalX" : 0.0,
+			"rotationalY" : 0.0,
+			"rotationalZ" : 0.0,
+			"stiffness" : 10.0,
+			"stiffness2" : 10.0
+		},
+		"genitals 4" : 
+		{
+			"cogOffset" : 5.0,
+			"colDampingCoef" : 2.0,
+			"colDepthMul" : 100.0,
+			"colSphereOffsetXMax" : 0.0,
+			"colSphereOffsetXMin" : 0.0,
+			"colSphereOffsetYMax" : 0.0,
+			"colSphereOffsetYMin" : 0.0,
+			"colSphereOffsetZMax" : 0.0,
+			"colSphereOffsetZMin" : 0.0,
+			"colSphereRadMax" : 4.0,
+			"colSphereRadMin" : 4.0,
+			"colStiffnessCoef" : 0.0,
+			"damping" : 0.94999998807907104,
+			"gravityBias" : 0.0,
+			"gravityCorrection" : 0.0,
+			"linearX" : 0.5,
+			"linearY" : 0.10000000149011612,
+			"linearZ" : 0.25,
+			"maxOffset" : 20.0,
+			"rotationalX" : 0.0,
+			"rotationalY" : 0.0,
+			"rotationalZ" : 0.0,
+			"stiffness" : 10.0,
+			"stiffness2" : 10.0
+		},
+		"genitals 6" : 
+		{
+			"cogOffset" : 5.0,
+			"colDampingCoef" : 2.0,
+			"colDepthMul" : 100.0,
+			"colSphereOffsetXMax" : 0.0,
+			"colSphereOffsetXMin" : 0.0,
+			"colSphereOffsetYMax" : 0.0,
+			"colSphereOffsetYMin" : 0.0,
+			"colSphereOffsetZMax" : 0.0,
+			"colSphereOffsetZMin" : 0.0,
+			"colSphereRadMax" : 4.0,
+			"colSphereRadMin" : 4.0,
+			"colStiffnessCoef" : 0.0,
 			"damping" : 0.94999998807907104,
 			"gravityBias" : 0.0,
 			"gravityCorrection" : 0.0,
@@ -308,6 +578,55 @@
 			"maleCollisions" : false,
 			"maleMovement" : false
 		},
+		"L Breast01" : 
+		{
+			"femaleCollisions" : false,
+			"femaleMovement" : false,
+			"maleCollisions" : false,
+			"maleMovement" : false
+		},
+		"L Breast02" : 
+		{
+			"femaleCollisions" : false,
+			"femaleMovement" : false,
+			"maleCollisions" : false,
+			"maleMovement" : false
+		},
+		"L Breast03" : 
+		{
+			"femaleCollisions" : false,
+			"femaleMovement" : false,
+			"maleCollisions" : false,
+			"maleMovement" : false
+		},
+		"NPC Genitals01 [Gen01]" : 
+		{
+			"femaleCollisions" : false,
+			"femaleMovement" : false,
+			"maleCollisions" : false,
+			"maleMovement" : false
+		},
+		"NPC Genitals02 [Gen02]" : 
+		{
+			"femaleCollisions" : false,
+			"femaleMovement" : false,
+			"maleCollisions" : false,
+			"maleMovement" : false
+		},
+		"NPC Genitals04 [Gen04]" : 
+		{
+			"femaleCollisions" : false,
+			"femaleMovement" : false,
+			"maleCollisions" : false,
+			"maleMovement" : false
+		},
+		"NPC Genitals06 [Gen06]" : 
+		{
+			"femaleCollisions" : false,
+			"femaleMovement" : false,
+			"maleCollisions" : false,
+			"maleMovement" : false
+		},
 		"NPC L Breast" : 
 		{
 			"femaleCollisions" : true,
@@ -372,6 +691,27 @@
 			"maleMovement" : false
 		},
 		"NPC R Hand [RHnd]" : 
+		{
+			"femaleCollisions" : false,
+			"femaleMovement" : false,
+			"maleCollisions" : false,
+			"maleMovement" : false
+		},
+		"R Breast01" : 
+		{
+			"femaleCollisions" : false,
+			"femaleMovement" : false,
+			"maleCollisions" : false,
+			"maleMovement" : false
+		},
+		"R Breast02" : 
+		{
+			"femaleCollisions" : false,
+			"femaleMovement" : false,
+			"maleCollisions" : false,
+			"maleMovement" : false
+		},
+		"R Breast03" : 
 		{
 			"femaleCollisions" : false,
 			"femaleMovement" : false,

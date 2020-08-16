@@ -9,6 +9,7 @@ namespace CBP
     configGlobal_t IConfig::globalConfig;
     IConfig::vKey_t IConfig::validSimComponents;
     nodeMap_t IConfig::nodeMap;
+    configGroupMap_t IConfig::configGroupMap;
 
     collisionGroups_t IConfig::collisionGroups;
     nodeCollisionGroupMap_t IConfig::nodeCollisionGroupMap;
@@ -289,8 +290,10 @@ namespace CBP
         else
             nodeMap = defaultNodeMap;
 
-        for (const auto& v : nodeMap)
+        for (const auto& v : nodeMap) {
             validSimComponents.insert(v.second);
+            configGroupMap[v.second].push_back(v.first);
+        }
 
         for (const auto& v : validSimComponents)
             if (!thingGlobalConfig.contains(v))

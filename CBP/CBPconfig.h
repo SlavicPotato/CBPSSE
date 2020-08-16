@@ -160,9 +160,10 @@ namespace CBP
     typedef std::unordered_map<SKSE::ObjectHandle, configComponents_t> actorConfigComponentsHolder_t;
     typedef std::unordered_map<SKSE::FormID, configComponents_t> raceConfigComponentsHolder_t;
     typedef std::map<std::string, std::string> nodeMap_t;
+    typedef std::unordered_map<std::string, std::vector<std::string>> configGroupMap_t;
 
     typedef std::set<uint64_t> collisionGroups_t;
-    typedef std::unordered_map<std::string, uint64_t> nodeCollisionGroupMap_t;
+    typedef std::map<std::string, uint64_t> nodeCollisionGroupMap_t;
 
     struct configNode_t
     {
@@ -180,6 +181,10 @@ namespace CBP
                 a_collisionsOut = femaleCollisions;
                 a_movementOut = femaleMovement;
             }
+        }
+
+        [[nodiscard]] inline explicit operator bool() const noexcept {
+            return femaleMovement || femaleCollisions || maleMovement || maleCollisions;
         }
     };
 
@@ -358,6 +363,10 @@ namespace CBP
             actorNodeConfigHolder.clear();
         }
 
+        inline static const auto& GetConfigGroupMap() {
+            return configGroupMap;
+        }
+
     private:
 
         static bool LoadNodeMap(nodeMap_t& a_out);
@@ -371,6 +380,7 @@ namespace CBP
         static vKey_t validSimComponents;
 
         static nodeMap_t nodeMap;
+        static configGroupMap_t configGroupMap;
         static const nodeMap_t defaultNodeMap;
 
         static collisionGroups_t collisionGroups;

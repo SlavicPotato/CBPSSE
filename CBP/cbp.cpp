@@ -102,6 +102,15 @@ namespace CBP
             globalConf.debugRenderer.contactNormalLength);
     }
 
+    void DCBP::UpdateProfilerSettings()
+    {
+        auto& globalConf = CBP::IConfig::GetGlobalConfig();
+        auto& profiler = GetProfiler();
+
+        profiler.SetInterval(static_cast<long long>(
+            max(globalConf.general.profilingInterval, 100)) * 1000);
+    }
+
     void DCBP::ApplyForce(
         SKSE::ObjectHandle a_handle,
         uint32_t a_steps,
@@ -132,10 +141,42 @@ namespace CBP
     {
         auto& actors = GetSimActorList();
         auto it = actors.find(a_handle);
-        if (it == actors.end())
+        if (it != actors.end())
+            return it->second.HasConfigGroup(a_cg);
+
+        auto& cgMap = CBP::IConfig::GetConfigGroupMap();
+        auto itc = cgMap.find(a_cg);
+        if (itc == cgMap.end())
             return true;
 
-        return it->second.HasConfigGroup(a_cg);
+        for (const auto& e : itc->second) {
+            CBP::configNode_t tmp;
+            if (CBP::IConfig::GetActorNodeConfig(a_handle, e, tmp))
+                if (!tmp)
+                    return false;
+        }
+
+        return true;
+    }
+
+
+    bool DCBP::GlobalHasConfigGroup(const std::string& a_cg)
+    {
+        auto& cgMap = CBP::IConfig::GetConfigGroupMap();
+        auto itc = cgMap.find(a_cg);
+        if (itc == cgMap.end())
+            return true;
+
+        for (const auto& e : itc->second)
+        {
+            CBP::configNode_t tmp;
+            if (CBP::IConfig::GetGlobalNodeConfig(e, tmp)) {
+                if (!tmp)
+                    return false;
+            }
+        }
+
+        return true;
     }
 
     void DCBP::UIQueueUpdateCurrentActor()
@@ -328,17 +369,14 @@ namespace CBP
 
         UpdateDebugRendererState();
         UpdateDebugRendererSettings();
+        UpdateProfilerSettings();
 
         GetUpdateTask().ResetTime();
 
         auto& globalConf = CBP::IConfig::GetGlobalConfig();
-        auto& profiler = GetProfiler();
-
-        profiler.SetInterval(static_cast<long long>(
-            max(globalConf.general.profilingInterval, 100)) * 1000);
 
         if (globalConf.general.enableProfiling) {
-            profiler.Reset();
+            GetProfiler().Reset();
         }
 
         Unlock();

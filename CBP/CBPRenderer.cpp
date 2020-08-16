@@ -2,7 +2,6 @@
 
 namespace CBP
 {
-
     Renderer::Renderer(
         ID3D11Device* a_pDevice,
         ID3D11DeviceContext* a_pImmediateContext)
@@ -19,7 +18,7 @@ namespace CBP
             CreateInputLayoutFromEffect<VertexType>(a_pDevice, m_effect.get(),
                 m_inputLayout.ReleaseAndGetAddressOf())
         );
-        
+
         m_batch = std::make_unique<DirectX::PrimitiveBatch<VertexType>>(a_pImmediateContext);
     }
 
@@ -38,7 +37,6 @@ namespace CBP
 
             m_lines.emplace_back(item);
         }
-
     }
 
     void Renderer::GenerateTris(const r3d::DebugRenderer& a_dr)
