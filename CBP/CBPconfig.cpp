@@ -19,141 +19,164 @@ namespace CBP
 
     IConfig::IConfigLog IConfig::log;
 
-    const componentValueDescMap_t configComponent_t::descMap = {
+    const componentValueDescMap_t configComponent_t::descMap({
         {"stiffness", {
             offsetof(configComponent_t, stiffness),
             "",
             0.0f, 100.0f,
-            "Linear spring stiffness"
+            "Linear spring stiffness",
+            "Linear stiffness"
         }},
         {"stiffness2", {
             offsetof(configComponent_t, stiffness2),
             "", 0.0f, 100.0f,
-            "Quadratic spring stiffness"
+            "Quadratic spring stiffness",
+            "Quadratic stiffness"
         }},
         {"damping", {
             offsetof(configComponent_t, damping),
             "",
             0.0f, 10.0f,
-            "Velocity removed/tick 1.0 would be all velocity removed"
+            "Velocity removed/tick 1.0 would be all velocity removed",
+            "Velocity damping"
         }},
         {"maxoffset", {
             offsetof(configComponent_t, maxOffset),
             "", 0.0f, 100.0f,
-            "Maximum amount the bone is allowed to move from target"
+            "Maximum amount the bone is allowed to move from target",
+            "Max. offset"
         }},
         {"linearx", {
             offsetof(configComponent_t, linearX),
             "",
             0.0f, 10.0f,
-            "Scale of the side to side motion"
+            "Scale of the side to side motion",
+            "Linear scale X"
         }},
         {"lineary", {
             offsetof(configComponent_t, linearY),
             "", 0.0f, 10.0f,
-            "Scale of the front to back motion"
+            "Scale of the front to back motion",
+            "Linear scale Y"
         }},
         {"linearz", {
             offsetof(configComponent_t, linearZ),
             "", 0.0f, 10.0f ,
-            "Scale of the up and down motion"
+            "Scale of the up and down motion",
+            "Linear scale Z"
         }},
         {"rotationalx", {
             offsetof(configComponent_t, rotationalX),
             "", 0.0f, 1.0f,
-            "Scale of the bones rotation around the X axis"
+            "Scale of the bones rotation around the X axis",
+            "Rotational scale X"
         }},
         {"rotationaly", {
             offsetof(configComponent_t, rotationalY),
             "",
             0.0f, 1.0f,
-            "Scale of the bones rotation around the Y axis"
+            "Scale of the bones rotation around the Y axis",
+            "Rotational scale Y"
         }},
         {"rotationalz", {
             offsetof(configComponent_t, rotationalZ),
             "",
             0.0f, 1.0f,
-            "Scale of the bones rotation around the Z axis"
+            "Scale of the bones rotation around the Z axis",
+            "Rotational scale Z"
         }},
         {"gravitybias", {
             offsetof(configComponent_t, gravityBias),
             "",
             -300.0f, 300.0f,
-            "This is in effect the gravity coefficient, a constant force acting down * the mass of the object"
+            "This is in effect the gravity coefficient, a constant force acting down * the mass of the object",
+            "Gravity bias"
         }},
         {"gravitycorrection", {
             offsetof(configComponent_t, gravityCorrection),
             "",
             -100.0f, 100.0f,
-            "Amount to move the target point up to counteract the neutral effect of gravityBias"
+            "Amount to move the target point up to counteract the neutral effect of gravityBias",
+            "Gravity correction"
         }},
         {"cogoffset", {
             offsetof(configComponent_t, cogOffset),
             "",
             0.0f, 100.0f,
-            "The ammount that the COG is forwards of the bone root, changes how rotation will impact motion"
+            "The ammount that the COG is forwards of the bone root, changes how rotation will impact motion",
+            "COG offset"
         }},
         {"colsphereradmin", {
             offsetof(configComponent_t, colSphereRadMin),
             "colsphereradmax",
             0.0f, 100.0,
-            "Collision sphere radius (weigth 100)"
+            "Collision sphere radius (weigth 100)",
+            "Col. sphere radius min"
         }},
         {"colsphereradmax", {
             offsetof(configComponent_t, colSphereRadMax),
             "colsphereradmin",
             0.0f, 100.0f,
-            "Collision sphere radius (weight 0)"
+            "Collision sphere radius (weight 0)",
+            "Col. sphere radius max"
         }},
         {"colsphereoffsetxmin", {
             offsetof(configComponent_t, colSphereOffsetXMin),
             "colsphereoffsetxmax",
             -50.0f, 50.0f,
-            "Collision sphere X offset (weigth 0)"
+            "Collision sphere X offset (weigth 0)",
+            "Col. sphere min offset X"
         }},
         {"colsphereoffsetxmax", {
             offsetof(configComponent_t, colSphereOffsetXMax),
             "colsphereoffsetxmin",
             -50.0f, 50.0f,
-            "Collision sphere X offset (weigth 100)"
+            "Collision sphere X offset (weigth 100)",
+            "Col. sphere max offset X"
         }},
         {"colsphereoffsetymin", {
             offsetof(configComponent_t, colSphereOffsetYMin),
             "colsphereoffsetymax",
             -50.0f, 50.0f,
-            "Collision sphere Y offset (weigth 0)"
+            "Collision sphere Y offset (weigth 0)",
+            "Col. sphere min offset Y"
         }},
         {"colsphereoffsetymax", {
             offsetof(configComponent_t, colSphereOffsetYMax),
             "colsphereoffsetymin",
             -50.0f, 50.0f,
-            "Collision sphere Y offset (weigth 100)"
+            "Collision sphere Y offset (weigth 100)",
+            "Col. sphere max offset Y"
         }},
         {"colsphereoffsetzmin", {
             offsetof(configComponent_t, colSphereOffsetZMin),
             "colsphereoffsetzmax",
             -50.0f, 50.0f,
-            "Collision sphere Z offset (weigth 0)"
+            "Collision sphere Z offset (weigth 0)",
+            "Col. sphere min offset Z"
         }},
         {"colsphereoffsetzmax", {
             offsetof(configComponent_t, colSphereOffsetZMax),
             "colsphereoffsetzmin",
             -50.0f, 50.0f,
-            "Collision sphere Z offset (weigth 100)"
+            "Collision sphere Z offset (weigth 100)",
+            "Col. sphere max offset Z"
         }},
         {"coldampingcoef", {
             offsetof(configComponent_t, colDampingCoef),
             "",
             0.0f, 10.0f,
-            "Velocity damping scale when nodes are colliding"
+            "Velocity damping scale when nodes are colliding",
+            "Col. damping coef"
         }},
         {"coldepthmul", {
             offsetof(configComponent_t, colDepthMul),
             "",
             1.0f, 1000.0f,
-            ""
-        }},
-    };
+            "",
+            "Col. depth mul"
+        }}
+    });
 
     const nodeMap_t IConfig::defaultNodeMap = {
         {"NPC L Breast", "breast"},

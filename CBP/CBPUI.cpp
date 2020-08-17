@@ -149,10 +149,10 @@ namespace CBP
         auto& io = ImGui::GetIO();
 
         ImGui::SetNextWindowPos(ImVec2(min(420.0f, io.DisplaySize.x - 40.0f), 20.0f), ImGuiCond_FirstUseEver);
-        ImGui::SetNextWindowSize(ImVec2(380.0f, io.DisplaySize.y), ImGuiCond_FirstUseEver);
+        ImGui::SetNextWindowSize(ImVec2(450.0f, io.DisplaySize.y), ImGuiCond_FirstUseEver);
 
         ImVec2 sizeMin(min(300.0f, io.DisplaySize.x - 40.0f), min(200.0f, io.DisplaySize.y - 40.0f));
-        ImVec2 sizeMax(min(400.0f, io.DisplaySize.x), max(io.DisplaySize.y - 40.0f, sizeMin.y));
+        ImVec2 sizeMax(min(450.0f, io.DisplaySize.x), max(io.DisplaySize.y - 40.0f, sizeMin.y));
 
         ImGui::SetNextWindowSizeConstraints(sizeMin, sizeMax);
 
@@ -160,7 +160,7 @@ namespace CBP
 
         if (ImGui::Begin(m_name, a_active))
         {
-            ImGui::PushItemWidth(ImGui::GetFontSize() * -12.5f);
+            ImGui::PushItemWidth(ImGui::GetFontSize() * -15.0f);
 
             auto& data = GlobalProfileManager::GetSingleton<T>().Data();
 
@@ -343,7 +343,7 @@ namespace CBP
         int,
         SimProfile::base_type& a_data,
         SimProfile::base_type::value_type& a_pair,
-        const componentValueDescMap_t::value_type& a_desc,
+        const componentValueDescMap_t::vec_value_type& a_desc,
         float* a_val)
     {
         auto& globalConfig = IConfig::GetGlobalConfig();
@@ -412,10 +412,10 @@ namespace CBP
         auto& io = ImGui::GetIO();
 
         ImGui::SetNextWindowPos(ImVec2(min(820.0f, io.DisplaySize.x - 40.0f), 20.0f), ImGuiCond_FirstUseEver);
-        ImGui::SetNextWindowSize(ImVec2(380.0f, io.DisplaySize.y), ImGuiCond_FirstUseEver);
+        ImGui::SetNextWindowSize(ImVec2(450.0f, io.DisplaySize.y), ImGuiCond_FirstUseEver);
 
         ImVec2 sizeMin(min(300.0f, io.DisplaySize.x - 40.0f), min(200.0f, io.DisplaySize.y - 40.0f));
-        ImVec2 sizeMax(min(400.0f, io.DisplaySize.x), max(io.DisplaySize.y - 40.0f, sizeMin.y));
+        ImVec2 sizeMax(min(450.0f, io.DisplaySize.x), max(io.DisplaySize.y - 40.0f, sizeMin.y));
 
         ImGui::SetNextWindowSizeConstraints(sizeMin, sizeMax);
 
@@ -488,7 +488,7 @@ namespace CBP
 
             if (m_currentRace)
             {
-                ImGui::PushItemWidth(ImGui::GetFontSize() * -12.5f);
+                ImGui::PushItemWidth(ImGui::GetFontSize() * -15.0f);
 
                 auto& rlEntry = IData::GetRaceListEntry(m_currentRace);
                 ImGui::Text("Playable: %s", rlEntry.playable ? "yes" : "no");
@@ -566,7 +566,7 @@ namespace CBP
             else
                 ss << e.second.fullname;
 
-            m_raceList.try_emplace(e.first, 
+            m_raceList.try_emplace(e.first,
                 std::move(ss.str()), IConfig::GetRaceConf(e.first));
         }
 
@@ -620,7 +620,7 @@ namespace CBP
         SKSE::FormID a_formid,
         configComponents_t& a_data,
         configComponentsValue_t& a_pair,
-        const componentValueDescMap_t::value_type& a_desc,
+        const componentValueDescMap_t::vec_value_type& a_desc,
         float* a_val)
     {
         auto& globalConfig = IConfig::GetGlobalConfig();
@@ -1116,10 +1116,10 @@ namespace CBP
         }
 
         ImGui::SetNextWindowPos(ImVec2(20.0f, 20.0f), ImGuiCond_FirstUseEver);
-        ImGui::SetNextWindowSize(ImVec2(380.0f, io.DisplaySize.y), ImGuiCond_FirstUseEver);
+        ImGui::SetNextWindowSize(ImVec2(450.0f, io.DisplaySize.y), ImGuiCond_FirstUseEver);
 
         ImVec2 sizeMin(min(300.0f, io.DisplaySize.x - 40.0f), min(200.0f, io.DisplaySize.y - 40.0f));
-        ImVec2 sizeMax(min(400.0f, io.DisplaySize.x), max(io.DisplaySize.y - 40.0f, sizeMin.y));
+        ImVec2 sizeMax(min(450.0f, io.DisplaySize.x), max(io.DisplaySize.y - 40.0f, sizeMin.y));
 
         ImGui::SetNextWindowSizeConstraints(sizeMin, sizeMax);
 
@@ -1128,7 +1128,7 @@ namespace CBP
         if (ImGui::Begin("CBP Config Editor", a_active, ImGuiWindowFlags_MenuBar))
         {
             ImGui::PushID(static_cast<const void*>(this));
-            ImGui::PushItemWidth(ImGui::GetFontSize() * -12.5f);
+            ImGui::PushItemWidth(ImGui::GetFontSize() * -15.0f);
 
             bool saveAllFailed = false;
 
@@ -1717,7 +1717,7 @@ namespace CBP
         SKSE::ObjectHandle a_handle,
         configComponents_t& a_data,
         configComponentsValue_t& a_pair,
-        const componentValueDescMap_t::value_type& a_desc,
+        const componentValueDescMap_t::vec_value_type& a_desc,
         float* a_val)
     {
         auto& globalConfig = IConfig::GetGlobalConfig();
@@ -1755,7 +1755,7 @@ namespace CBP
         SKSE::ObjectHandle a_handle,
         configComponents_t& a_data,
         configComponentsValue_t& a_pair,
-        const componentValueDescMap_t::value_type& a_desc,
+        const componentValueDescMap_t::vec_value_type& a_desc,
         float* a_val)
     {
         auto& globalConfig = IConfig::GetGlobalConfig();
@@ -1953,9 +1953,9 @@ namespace CBP
             auto addr = reinterpret_cast<uintptr_t>(std::addressof(a_pair.second)) + e.second.offset;
             float* pValue = reinterpret_cast<float*>(addr);
 
-            if (ImGui::SliderFloat(e.first.c_str(), pValue, e.second.min, e.second.max))            
+            if (ImGui::SliderFloat(e.second.descTag, pValue, e.second.min, e.second.max))
                 OnSimSliderChange(a_handle, a_data, a_pair, e, pValue);
-            
+
             ImGui::SameLine(); UICommon::HelpMarker(e.second.helpText);
         }
     }

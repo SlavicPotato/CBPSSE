@@ -2,6 +2,80 @@
 
 namespace CBP
 {
+    template <typename K, typename V>
+    class KVStorage
+    {
+        typedef std::unordered_map<K, const V&> keyMap_t;
+        typedef std::vector<std::pair<const K, const V>> keyVec_t;
+
+        using iterator = typename keyVec_t::iterator;
+        using const_iterator = typename keyVec_t::const_iterator;
+
+        using map_iterator = typename keyMap_t::iterator;
+        using map_const_iterator = typename keyMap_t::const_iterator;
+
+    public:
+
+        using vec_value_type = typename keyVec_t::value_type;
+        using key_type = typename keyMap_t::key_type;
+        using mapped_type = typename keyMap_t::mapped_type;
+
+        KVStorage(const keyVec_t& a_in) :
+            m_vec(a_in)
+        {
+            _init();
+        }
+
+        KVStorage(keyVec_t&& a_in) :
+            m_vec(std::forward<keyVec_t>(a_in))
+        {
+            _init();
+        }
+
+        iterator begin() = delete;
+        iterator end() = delete;
+
+        [[nodiscard]] inline const_iterator begin() const noexcept {
+            return m_vec.begin();
+        }
+        [[nodiscard]] inline const_iterator end() const noexcept {
+            return m_vec.end();
+        }
+
+        [[nodiscard]] inline map_const_iterator map_begin() const noexcept {
+            return m_map.begin();
+        }
+        [[nodiscard]] inline map_const_iterator map_end() const noexcept {
+            return m_map.end();
+        }
+
+        [[nodiscard]] inline map_const_iterator find(const key_type& a_key) const {
+            return m_map.find(a_key);
+        }
+
+        [[nodiscard]] inline bool contains(const key_type& a_key) const {
+            return m_map.contains(a_key);
+        }
+
+        [[nodiscard]] inline const mapped_type &at(const key_type& a_key) const {
+            return m_map.at(a_key);
+        }
+        
+        [[nodiscard]] inline const keyMap_t* operator->() const {
+            return std::addressof(m_map);
+        }
+
+    private:
+        inline void _init() 
+        {
+            for (const auto& p : m_vec)
+                m_map.emplace(p.first, p.second);
+        }
+
+        keyMap_t m_map;
+        const keyVec_t m_vec;
+    };
+
     struct configForce_t
     {
         NiPoint3 force{ 0.0f, 0.0f, 0.0f };
@@ -79,9 +153,10 @@ namespace CBP
         float min;
         float max;
         const char* helpText;
+        const char* descTag;
     };
 
-    typedef std::map<std::string, const componentValueDesc_t> componentValueDescMap_t;
+    typedef KVStorage<std::string, componentValueDesc_t> componentValueDescMap_t;
 
     struct configComponent_t
     {
@@ -89,7 +164,7 @@ namespace CBP
         [[nodiscard]] inline bool Get(const std::string& a_key, float& a_out) const
         {
             const auto it = descMap.find(a_key);
-            if (it == descMap.end())
+            if (it == descMap.map_end())
                 return false;
 
             auto addr = reinterpret_cast<uintptr_t>(this) + it->second.offset;
@@ -107,7 +182,7 @@ namespace CBP
         inline bool Set(const std::string& a_key, float a_value)
         {
             const auto it = descMap.find(a_key);
-            if (it == descMap.end())
+            if (it == descMap.map_end())
                 return false;
 
             auto addr = reinterpret_cast<uintptr_t>(this) + it->second.offset;

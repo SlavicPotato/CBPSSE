@@ -59,9 +59,6 @@ namespace CBP
             float m_nodeScale;
             float m_radius;
 
-            /*r3d::Matrix3x3 m_mat;
-            r3d::Vector3 m_pos;*/
-
             r3d::Transform m_transform;
 
             bool m_created;
@@ -74,12 +71,12 @@ namespace CBP
         void UpdateMovement(Actor* a_actor);
         bool UpdateWeightData(Actor* a_actor, const configComponent_t& a_config);
 
-        NiPoint3 npCogOffset;
-        NiPoint3 npGravityCorrection;
-        NiPoint3 npZero;
+        NiPoint3 m_npCogOffset;
+        NiPoint3 m_npGravityCorrection;
+        NiPoint3 m_npZero;
 
-        NiPoint3 oldWorldPos;
-        NiPoint3 velocity;
+        NiPoint3 m_oldWorldPos;
+        NiPoint3 m_velocity;
 
         Collider m_collisionData;
 
@@ -87,22 +84,24 @@ namespace CBP
 
         std::string m_configGroupName;
 
-        configComponent_t conf;
+        configComponent_t m_conf;
 
         bool m_collisions;
         bool m_movement;
 
-        float colSphereRad = 1.0f;
-        float colSphereOffsetX = 0.0f;
-        float colSphereOffsetY = 0.0f;
-        float colSphereOffsetZ = 0.0f;
+        float m_colSphereRad = 1.0f;
+        float m_colSphereOffsetX = 0.0f;
+        float m_colSphereOffsetY = 0.0f;
+        float m_colSphereOffsetZ = 0.0f;
 
         uint64_t m_groupId;
         uint64_t m_parentId;
 
         NiAVObject* m_obj;
-        BSFixedString boneName;
+        BSFixedString m_boneName;
 
+        float m_dampingMul;
+        bool m_inContact;
     public:
         SimComponent(
             Actor* a_actor,
@@ -135,28 +134,28 @@ namespace CBP
 
         inline void ClampVelocity() 
         {
-            float len = velocity.Length();
+            float len = m_velocity.Length();
             if (len < _EPSILON)
                 return;
 
-            velocity.x /= len;
-            velocity.y /= len;
-            velocity.z /= len;
-            velocity *= std::clamp(len, 0.0f, 1000.0f);
+            m_velocity.x /= len;
+            m_velocity.y /= len;
+            m_velocity.z /= len;
+            m_velocity *= std::clamp(len, 0.0f, 1000.0f);
         }
 
         inline void SetVelocity(const r3d::Vector3& a_vel) {
-            velocity.x = a_vel.x;
-            velocity.y = a_vel.y;
-            velocity.z = a_vel.z;
+            m_velocity.x = a_vel.x;
+            m_velocity.y = a_vel.y;
+            m_velocity.z = a_vel.z;
             ClampVelocity();
         }
 
         inline void SetVelocity(const NiPoint3& a_vel) 
         {
-            velocity.x = a_vel.x;
-            velocity.y = a_vel.y;
-            velocity.z = a_vel.z;
+            m_velocity.x = a_vel.x;
+            m_velocity.y = a_vel.y;
+            m_velocity.z = a_vel.z;
             ClampVelocity();
         }
         
@@ -164,16 +163,16 @@ namespace CBP
 
             auto& globalConf = IConfig::GetGlobalConfig();
 
-            SetVelocity((velocity - (a_vel * globalConf.phys.timeStep)) -
-                (velocity * ((conf.damping * globalConf.phys.timeStep) * dampingMul)));
+            SetVelocity((m_velocity - (a_vel * globalConf.phys.timeStep)) -
+                (m_velocity * ((m_conf.damping * globalConf.phys.timeStep) * m_dampingMul)));
         }
         
         [[nodiscard]] inline const auto& GetVelocity() const {
-            return velocity;
+            return m_velocity;
         }
 
         [[nodiscard]] inline const auto& GetConfig() const {
-            return conf;
+            return m_conf;
         }
 
         [[nodiscard]] inline const auto& GetConfigGroupName() const {
@@ -181,8 +180,8 @@ namespace CBP
         }
 
         inline void ResetOverrides() {
-            dampingMul = 1.0f;
-            inContact = false;
+            m_dampingMul = 1.0f;
+            m_inContact = false;
         }
 
         [[nodiscard]] inline bool IsSameGroup(const SimComponent& a_rhs) const {
@@ -204,7 +203,12 @@ namespace CBP
             return m_collisions;
         }
 
-        float dampingMul;
-        bool inContact;
+        inline void SetDampingMul(float a_val) {
+            m_dampingMul = a_val;
+        }
+
+        inline void SetInContact(bool a_val) {
+            m_inContact = a_val;
+        }
     };
 }

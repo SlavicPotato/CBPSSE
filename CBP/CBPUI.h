@@ -2,51 +2,6 @@
 
 namespace CBP
 {
-    template <typename K, typename V>
-    class KVStorage
-    {
-        typedef std::unordered_map<K, V> keyMap_t;
-        typedef std::vector<typename keyMap_t::value_type> keyVec_t;
-
-        using iterator = typename keyVec_t::iterator;
-        using const_iterator = typename keyVec_t::const_iterator;
-    public:
-
-        KVStorage(const keyVec_t& a_in) :
-            m_vec(a_in)
-        {
-            _init();
-        }
-
-        KVStorage(keyVec_t&& a_in) :
-            m_vec(std::forward<keyVec_t>(a_in))
-        {
-            _init();
-        }
-
-        iterator begin() = delete;
-        iterator end() = delete;
-
-        [[nodiscard]] inline const_iterator begin() const noexcept {
-            return m_vec.begin();
-        }
-        [[nodiscard]] inline const_iterator end() const noexcept {
-            return m_vec.end();
-        }
-
-        [[nodiscard]] inline const keyMap_t* operator->() const {
-            return std::addressof(m_map);
-        }
-
-    private:
-        inline void _init() {
-            for (const auto& p : m_vec)
-                m_map.emplace(p);
-        }
-
-        keyMap_t m_map;
-        keyVec_t m_vec;
-    };
 
     typedef KVStorage<UInt32, const char*> keyDesc_t;
 
@@ -165,9 +120,9 @@ namespace CBP
             T a_handle,
             configComponents_t& a_data,
             configComponentsValue_t& a_pair,
-            const componentValueDescMap_t::value_type &a_desc,
-            float *a_val
-            ) = 0;
+            const componentValueDescMap_t::vec_value_type& a_desc,
+            float* a_val
+        ) = 0;
 
     protected:
         void Propagate(
@@ -203,10 +158,10 @@ namespace CBP
             configNodes_t& a_data);
 
     protected:
-        
+
         virtual void UpdateNodeData(
-            T a_handle, 
-            const std::string &a_node,
+            T a_handle,
+            const std::string& a_node,
             const configNode_t& a_data) = 0;
 
         [[nodiscard]] inline std::string GetCSID(
@@ -215,7 +170,7 @@ namespace CBP
             std::ostringstream ss;
             ss << "UIND#" << ID << "#" << a_name;
             return ss.str();
-        }    
+        }
     };
 
     class UIGenericFilter
@@ -325,7 +280,7 @@ namespace CBP
 
         UIGenericFilter m_filter;
 
-        const char *m_name;
+        const char* m_name;
     };
 
     class UIProfileEditorSim :
@@ -333,7 +288,7 @@ namespace CBP
         UISimComponent<int, UIEditorID::kProfileEditorSim>
     {
     public:
-        UIProfileEditorSim(const char *a_name) :
+        UIProfileEditorSim(const char* a_name) :
             UIProfileEditorBase<SimProfile>(a_name) {}
     private:
         virtual void DrawItem(SimProfile& a_profile);
@@ -342,7 +297,7 @@ namespace CBP
             int,
             typename SimProfile::base_type& a_data,
             typename SimProfile::base_type::value_type& a_pair,
-            const componentValueDescMap_t::value_type& a_desc,
+            const componentValueDescMap_t::vec_value_type& a_desc,
             float* a_val);
     };
 
@@ -356,7 +311,7 @@ namespace CBP
     private:
         virtual void DrawItem(NodeProfile& a_profile);
         virtual void UpdateNodeData(
-            int, 
+            int,
             const std::string& a_node,
             const NodeProfile::base_type::mapped_type& a_data);
     };
@@ -388,7 +343,7 @@ namespace CBP
         UIActorList();
         virtual ~UIActorList() noexcept = default;
 
-        actorListValue_t*  GetSelectedEntry() ;
+        actorListValue_t* GetSelectedEntry();
 
         void DrawActorList(actorListValue_t*& a_entry, const char*& a_curSelName);
         void SetCurrentActor(SKSE::ObjectHandle a_handle);
@@ -484,7 +439,7 @@ namespace CBP
             SKSE::FormID a_handle,
             configComponents_t& a_data,
             configComponentsValue_t& a_pair,
-            const componentValueDescMap_t::value_type& a_desc,
+            const componentValueDescMap_t::vec_value_type& a_desc,
             float* a_val);
 
         inline void MarkChanged() { m_changed = true; }
@@ -526,7 +481,7 @@ namespace CBP
                 SKSE::ObjectHandle a_handle,
                 configComponents_t& a_data,
                 configComponentsValue_t& a_pair,
-                const componentValueDescMap_t::value_type& a_desc,
+                const componentValueDescMap_t::vec_value_type& a_desc,
                 float* a_val);
         private:
             virtual bool ShouldDrawComponent(
@@ -543,7 +498,7 @@ namespace CBP
                 SKSE::ObjectHandle a_handle,
                 configComponents_t& a_data,
                 configComponentsValue_t& a_pair,
-                const componentValueDescMap_t::value_type& a_desc,
+                const componentValueDescMap_t::vec_value_type& a_desc,
                 float* a_val);
 
             virtual bool ShouldDrawComponent(
