@@ -23,7 +23,7 @@ namespace CBP
 
         struct
         {
-            float timeStep = 1.0f / 60.0f;
+            float timeStep = 1.0f / 120.0f;
             float timeScale = 1.0f;
             float colMaxPenetrationDepth = 35.0f;
 
