@@ -101,9 +101,9 @@ namespace CBP
         uint64_t m_parentId;
 
         NiAVObject* m_obj;
+        BSFixedString boneName;
 
     public:
-        BSFixedString boneName;
         SimComponent(
             Actor* a_actor,
             NiAVObject* m_obj,
@@ -182,8 +182,7 @@ namespace CBP
 
         inline void ResetOverrides() {
             dampingMul = 1.0f;
-            /*stiffnes2Mul = 1.0f;
-            stiffnesMul = 1.0f;*/
+            inContact = false;
         }
 
         [[nodiscard]] inline bool IsSameGroup(const SimComponent& a_rhs) const {
@@ -205,8 +204,7 @@ namespace CBP
             return m_collisions;
         }
 
-        float dampingMul = 1.0f;
-        /*float stiffnesMul = 1.0f;
-        float stiffnes2Mul = 1.0f;*/
+        float dampingMul;
+        bool inContact;
     };
 }

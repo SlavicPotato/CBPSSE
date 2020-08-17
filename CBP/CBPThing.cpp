@@ -108,7 +108,9 @@ namespace CBP
         m_collisionData(*this),
         m_obj(a_obj),
         m_parentId(a_parentId),
-        m_groupId(a_groupId)
+        m_groupId(a_groupId),
+        dampingMul(1.0f),
+        inContact(false)
     {
         UpdateConfig(a_actor, a_config, a_collisions, a_movement);
         m_collisionData.Update();
@@ -213,7 +215,7 @@ namespace CBP
             return;
         }
 
-        if (dampingMul > 1.0f)
+        if (!inContact && dampingMul > 1.0f)
             dampingMul = max(dampingMul / (globalConf.phys.timeStep + 1.0f), 1.0f);
 
         auto newPos = oldWorldPos;

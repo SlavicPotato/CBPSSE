@@ -65,6 +65,9 @@ namespace CBP
                         vbf
                     );
 
+                    sc1->inContact = true;
+                    sc2->inContact = true;
+
                     if (sc1->HasMovement()) {
                         sc1->dampingMul = std::clamp(dampingMul * conf1.colDampingCoef, 1.0f, 100.0f);
                         sc1->SetVelocity2(vaf);
@@ -78,10 +81,10 @@ namespace CBP
 
             }
             break;
-            /*case EventType::ContactExit:
-                sc1->ResetOverrides();
-                sc2->ResetOverrides();
-                break;*/
+            case EventType::ContactExit:
+                sc1->inContact = false;
+                sc2->inContact = false;
+                break;
             }
 
         }
