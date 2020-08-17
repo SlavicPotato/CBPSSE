@@ -110,14 +110,14 @@ namespace CBP
             offsetof(configComponent_t, colSphereRadMin),
             "colsphereradmax",
             0.0f, 100.0,
-            "Collision sphere radius (weigth 100)",
+            "Collision sphere radius (weigth 0)",
             "Col. sphere radius min"
         }},
         {"colsphereradmax", {
             offsetof(configComponent_t, colSphereRadMax),
             "colsphereradmin",
             0.0f, 100.0f,
-            "Collision sphere radius (weight 0)",
+            "Collision sphere radius (weight 100)",
             "Col. sphere radius max"
         }},
         {"colsphereoffsetxmin", {
