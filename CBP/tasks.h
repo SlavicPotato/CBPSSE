@@ -13,8 +13,6 @@ namespace CBP
     private:
         DTasks() = default;
 
-        static void RTTaskEnter_Hook();
-
         static void TaskInterface1_Hook(BSTaskPool* taskpool);
         static void TaskInterface2_Hook(BSTaskPool* taskpool);
 
