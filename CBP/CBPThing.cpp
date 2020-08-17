@@ -213,11 +213,15 @@ namespace CBP
             return;
         }
 
+        if (dampingMul > 1.0f)
+            dampingMul = max(dampingMul / 1.2f, 1.0f);
+
         auto newPos = oldWorldPos;
 
         // Compute the "Spring" Force
         NiPoint3 diff2(diff.x * diff.x * sgn(diff.x), diff.y * diff.y * sgn(diff.y), diff.z * diff.z * sgn(diff.z));
-        NiPoint3 force = (diff * (conf.stiffness * stiffnesMul)) + (diff2 * (conf.stiffness2 * stiffnes2Mul));
+        NiPoint3 force = (diff * (conf.stiffness)) + (diff2 * (conf.stiffness2 ));
+        
         force.z -= conf.gravityBias;
 
         if (m_applyForceQueue.size())
@@ -238,6 +242,7 @@ namespace CBP
         // Assume mass is 1, so Accelleration is Force, can vary mass by changing force
         SetVelocity((velocity + (force * globalConf.phys.timeStep)) -
             (velocity * ((conf.damping * globalConf.phys.timeStep) * dampingMul)));
+
         newPos += velocity * globalConf.phys.timeStep;
 
         diff = newPos - target;

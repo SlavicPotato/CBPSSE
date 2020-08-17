@@ -12,6 +12,7 @@ namespace CBP
     constexpr char* CKEY_SHOWKEY = "ToggleKey";
     constexpr char* CKEY_UIENABLED = "UIEnabled";
     constexpr char* CKEY_DEBUGRENDERER = "DebugRenderer";
+    constexpr char* CKEY_FORCEINIKEYS = "ForceINIKeys";
 
     inline static bool ActorValid(const Actor* actor)
     {
@@ -211,6 +212,8 @@ namespace CBP
     uint32_t DCBP::ConfigGetComboKey(int32_t param)
     {
         switch (param) {
+        case 0:
+            return 0;
         case 1:
             return DIK_LSHIFT;
         case 2:
@@ -242,12 +245,13 @@ namespace CBP
     {
         conf.ui_enabled = GetConfigValue(SECTION_CBP, CKEY_UIENABLED, true);
         conf.debug_renderer = GetConfigValue(SECTION_CBP, CKEY_DEBUGRENDERER, false);
+        conf.force_ini_keys = GetConfigValue(SECTION_CBP, CKEY_FORCEINIKEYS, false);
 
         auto& globalConfig = CBP::IConfig::GetGlobalConfig();
 
         globalConfig.general.femaleOnly = GetConfigValue(SECTION_CBP, CKEY_CBPFEMALEONLY, true);
-        globalConfig.ui.comboKey = ConfigGetComboKey(GetConfigValue(SECTION_CBP, CKEY_COMBOKEY, 1));
-        globalConfig.ui.showKey = std::clamp<UInt32>(
+        globalConfig.ui.comboKey = conf.comboKey = ConfigGetComboKey(GetConfigValue(SECTION_CBP, CKEY_COMBOKEY, 1));
+        globalConfig.ui.showKey = conf.showKey = std::clamp<UInt32>(
             GetConfigValue<UInt32>(SECTION_CBP, CKEY_SHOWKEY, DIK_END),
             1, InputMap::kMacro_NumKeyboardKeys - 1);
     }
@@ -303,9 +307,13 @@ namespace CBP
     {
         auto info = static_cast<D3D11CreateEventPost*>(data);
 
-        if (m_Instance.conf.debug_renderer)
+        if (m_Instance.conf.debug_renderer) 
+        {
             m_Instance.m_renderer = std::make_unique<CBP::Renderer>(
                 info->m_pDevice, info->m_pImmediateContext);
+
+            m_Instance.Debug("Renderer initialized");
+        }
     }
 
     void DCBP::Present_Pre()
@@ -353,10 +361,10 @@ namespace CBP
 
         auto& iface = m_Instance.m_serialization;
 
-        Lock();
-
         PerfTimer pt;
         pt.Start();
+
+        Lock();
 
         iface.LoadGlobals();
         iface.LoadGlobalProfile();
@@ -364,21 +372,16 @@ namespace CBP
         iface.LoadRaceProfiles(intfc);
         iface.LoadCollisionGroups();
 
-        m_Instance.Debug("%s: %f", __FUNCTION__, pt.Stop());
-
         UpdateDebugRendererState();
         UpdateDebugRendererSettings();
         UpdateProfilerSettings();
 
         GetUpdateTask().ResetTime();
-
-        auto& globalConf = CBP::IConfig::GetGlobalConfig();
-
-        if (globalConf.general.enableProfiling) {
-            GetProfiler().Reset();
-        }
+        GetProfiler().Reset();
 
         Unlock();
+
+        m_Instance.Debug("%s: %f", __FUNCTION__, pt.Stop());
 
         ResetActors();
     }
@@ -387,10 +390,10 @@ namespace CBP
     {
         auto& iface = m_Instance.m_serialization;
 
-        Lock();
-
         PerfTimer pt;
         pt.Start();
+
+        Lock();
 
         iface.SaveGlobals();
         iface.SaveGlobalProfile();
@@ -398,9 +401,9 @@ namespace CBP
         iface.SaveRaceProfiles();
         iface.SaveCollisionGroups();
 
-        m_Instance.Debug("%s: %f", __FUNCTION__, pt.Stop());
-
         Unlock();
+
+        m_Instance.Debug("%s: %f", __FUNCTION__, pt.Stop());
     }
 
     void DCBP::RevertHandler(Event m_code, void* args)
@@ -412,9 +415,7 @@ namespace CBP
         auto& globalConf = CBP::IConfig::GetGlobalConfig();
 
         if (GetDriverConfig().debug_renderer)
-        {
             GetRenderer()->Clear();
-        }
 
         m_Instance.m_loadInstance++;
 
@@ -949,19 +950,29 @@ namespace CBP
 
     void DCBP::KeyPressHandler::ReceiveEvent(KeyEvent ev, UInt32 keyCode)
     {
+        auto& globalConfig = CBP::IConfig::GetGlobalConfig();
+        auto& driverConf = GetDriverConfig();
+
+        UInt32 comboKey;
+        UInt32 showKey;
+
+        if (driverConf.force_ini_keys) {
+            comboKey = driverConf.comboKey;
+            showKey = driverConf.showKey;
+        }
+        else {
+            comboKey = globalConfig.ui.comboKey;
+            showKey = globalConfig.ui.showKey;
+        }
+
         switch (ev)
         {
         case KeyEvent::KeyDown:
-        {
-            auto& globalConfig = CBP::IConfig::GetGlobalConfig();
-
-            if (globalConfig.ui.comboKey &&
-                keyCode == globalConfig.ui.comboKey)
-            {
+            if (comboKey && keyCode == comboKey) {
                 combo_down = true;
             }
-            else if (keyCode == globalConfig.ui.showKey) {
-                if (globalConfig.ui.comboKey && !combo_down)
+            else if (keyCode == showKey) {
+                if (comboKey && !combo_down)
                     break;
 
                 auto mm = MenuManager::GetSingleton();
@@ -970,46 +981,46 @@ namespace CBP
 
                 DTasks::AddTask(&m_Instance.m_taskToggle);
             }
-        }
-        break;
+            break;
         case KeyEvent::KeyUp:
-        {
-            auto& globalConfig = CBP::IConfig::GetGlobalConfig();
-
-            if (globalConfig.ui.comboKey &&
-                keyCode == globalConfig.ui.comboKey)
-            {
+            if (comboKey && keyCode == comboKey)
                 combo_down = false;
-            }
-        }
-        break;
+            break;
         }
     }
 
     void DCBP::ToggleUITask::Run()
     {
-        Lock();
+        switch (Toggle())
+        {
+        case ToggleResult::kResultEnabled:
+            DUI::AddCallback(1, UICallback);
+            break;
+        case ToggleResult::kResultDisabled:
+            DUI::RemoveCallback(1);
+            break;
+        }
+    }
+
+    auto DCBP::ToggleUITask::Toggle() ->
+        ToggleResult
+    {
+        IScopedCriticalSection m(std::addressof(DCBP::GetLock()));
 
         if (m_Instance.uiState.show) {
             m_Instance.uiState.show = false;
             m_Instance.DisableUI();
-
-            Unlock();
-
-            DUI::RemoveCallback(1);
+            return ToggleResult::kResultDisabled;
         }
         else {
             if (m_Instance.RunEnableUIChecks()) {
                 m_Instance.uiState.show = true;
                 m_Instance.EnableUI();
-
-                Unlock();
-
-                DUI::AddCallback(1, UICallback);
+                return ToggleResult::kResultEnabled;
             }
-            else
-                Unlock();
         }
+
+        return ToggleResult::kResultNone;
     }
 
     void DCBP::SwitchUITask::Run()

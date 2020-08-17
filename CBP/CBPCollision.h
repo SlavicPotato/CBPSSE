@@ -22,14 +22,14 @@ namespace CBP
         virtual void onContact(const CollisionCallback::CallbackData& callbackData);
 
         static void ResolveCollision(
-            float ma,
-            float mb,
+            float dma,
+            float dmb,
             float depth,
-            const r3d::Vector3& normal,
-            const r3d::Vector3& vai,
-            const r3d::Vector3& vbi,
-            r3d::Vector3& vaf,
-            r3d::Vector3& vbf
+            const NiPoint3& normal,
+            const NiPoint3& vai,
+            const NiPoint3& vbi,
+            NiPoint3& vaf,
+            NiPoint3& vbf
         );
 
         static ICollision m_Instance;

@@ -49,32 +49,31 @@ namespace CBP
 
                     auto& v1 = sc1->GetVelocity();
                     auto& v2 = sc2->GetVelocity();
+                    
+                    auto& normal = contactPoint.getWorldNormal();
 
-                    r3d::Vector3 vaf, vbf;
+                    NiPoint3 vaf, vbf;
 
                     ResolveCollision(
                         conf1.colDepthMul,
                         conf2.colDepthMul,
                         depth,
-                        contactPoint.getWorldNormal(),
-                        r3d::Vector3(v1.x, v1.y, v1.z),
-                        r3d::Vector3(v2.x, v2.y, v2.z),
+                        NiPoint3(normal.x, normal.y, normal.z),
+                        v1,
+                        v2,
                         vaf,
                         vbf
                     );
 
-                    sc1->stiffnes2Mul = sc1->stiffnesMul =
-                        1.0f / max(dampingMul * conf1.colStiffnessCoef, 1.0f);
-                    sc2->stiffnes2Mul = sc2->stiffnesMul =
-                        1.0f / max(dampingMul * conf2.colStiffnessCoef, 1.0f);
-
-                    sc1->dampingMul = std::clamp(dampingMul * conf1.colDampingCoef, 1.0f, 15.0f);
-                    sc2->dampingMul = std::clamp(dampingMul * conf2.colDampingCoef, 1.0f, 15.0f);
-
-                    if (sc1->HasMovement())
+                    if (sc1->HasMovement()) {
+                        sc1->dampingMul = std::clamp(dampingMul * conf1.colDampingCoef, 1.0f, 100.0f);
                         sc1->SetVelocity2(vaf);
-                    if (sc2->HasMovement())
+                    }
+
+                    if (sc2->HasMovement()) {
+                        sc2->dampingMul = std::clamp(dampingMul * conf2.colDampingCoef, 1.0f, 100.0f);
                         sc2->SetVelocity2(vbf);
+                    }
                 }
 
             }
@@ -92,14 +91,14 @@ namespace CBP
         float dma,
         float dmb,
         float depth,
-        const r3d::Vector3& normal,
-        const r3d::Vector3& vai,
-        const r3d::Vector3& vbi,
-        r3d::Vector3& vaf,
-        r3d::Vector3& vbf
+        const NiPoint3& normal,
+        const NiPoint3& vai,
+        const NiPoint3& vbi,
+        NiPoint3& vaf,
+        NiPoint3& vbf
     )
     {
-        auto len = (vai - vbi).length();
+        auto len = (vai - vbi).Length();
 
         auto maga = len + (depth * dma);
         auto magb = len + (depth * dmb);

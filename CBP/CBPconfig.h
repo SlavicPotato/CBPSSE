@@ -147,13 +147,12 @@ namespace CBP
         float colSphereOffsetZMin = 0.0f;
         float colSphereOffsetZMax = 0.0f;
         float colDampingCoef = 2.0f;
-        float colStiffnessCoef = 0.0f;
         float colDepthMul = 100.0f;
 
         static const componentValueDescMap_t descMap;
     };
 
-    static_assert(sizeof(configComponent_t) == 0x60);
+    static_assert(sizeof(configComponent_t) == 0x5C);
 
     typedef std::map<std::string, configComponent_t> configComponents_t;
     typedef configComponents_t::value_type configComponentsValue_t;

@@ -147,12 +147,6 @@ namespace CBP
             0.0f, 10.0f,
             "Velocity damping scale when nodes are colliding"
         }},
-        {"colstiffnesscoef", {
-            offsetof(configComponent_t, colStiffnessCoef),
-            "",
-            0.0f, 1.0f,
-            ""
-        }},
         {"coldepthmul", {
             offsetof(configComponent_t, colDepthMul),
             "",
@@ -232,7 +226,7 @@ namespace CBP
         try
         {
             std::filesystem::path path(PLUGIN_CBP_CONFIG);
-            if (!std::filesystem::exists(path))
+            if (!std::filesystem::is_regular_file(path))
                 return false;
 
             std::ifstream ifs(path, std::ifstream::in);
@@ -301,7 +295,7 @@ namespace CBP
 
         for (const auto& v : validSimComponents)
             if (!thingGlobalConfig.contains(v))
-                thingGlobalConfig.emplace(v, configComponent_t());
+                thingGlobalConfig.try_emplace(v);
 
         configComponents_t cc(thingGlobalConfig);
         if (CompatLoadOldConf(cc))
@@ -396,7 +390,6 @@ namespace CBP
     {
         actorNodeConfigHolder.insert_or_assign(a_handle, std::forward<configNodes_t>(a_conf));
     }
-
 
     configComponents_t& IConfig::GetOrCreateActorConf(SKSE::ObjectHandle a_handle)
     {

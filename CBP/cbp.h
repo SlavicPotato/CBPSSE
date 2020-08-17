@@ -112,8 +112,16 @@ namespace CBP
         class ToggleUITask :
             public TaskDelegateStatic
         {
+            enum class ToggleResult
+            {
+                kResultNone,
+                kResultEnabled,
+                kResultDisabled
+            };
         public:
             virtual void Run();
+        private:
+            ToggleResult Toggle();
         };
         
         class SwitchUITask :
@@ -252,7 +260,7 @@ namespace CBP
             return m_Instance.m_lock;
         }
 
-        [[nodiscard]] inline static auto& GetDriverConfig()
+        [[nodiscard]] inline static const auto& GetDriverConfig()
         {
             return m_Instance.conf;
         }
@@ -290,6 +298,10 @@ namespace CBP
         {
             bool ui_enabled;
             bool debug_renderer;
+            bool force_ini_keys;
+
+            UInt32 comboKey;
+            UInt32 showKey;
         } conf;
 
         KeyPressHandler inputEventHandler;

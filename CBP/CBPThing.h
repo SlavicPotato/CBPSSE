@@ -59,6 +59,9 @@ namespace CBP
             float m_nodeScale;
             float m_radius;
 
+            /*r3d::Matrix3x3 m_mat;
+            r3d::Vector3 m_pos;*/
+
             r3d::Transform m_transform;
 
             bool m_created;
@@ -130,25 +133,38 @@ namespace CBP
 
         void ApplyForce(uint32_t a_steps, const NiPoint3& a_force);
 
-        inline void SetVelocity(const r3d::Vector3& a_vel) {
-            velocity.x = std::clamp(a_vel.x, -100000.0f, 100000.0f);
-            velocity.y = std::clamp(a_vel.y, -100000.0f, 100000.0f);
-            velocity.z = std::clamp(a_vel.z, -100000.0f, 100000.0f);
+        inline void ClampVelocity() 
+        {
+            float len = velocity.Length();
+            if (len < _EPSILON)
+                return;
+
+            velocity.x /= len;
+            velocity.y /= len;
+            velocity.z /= len;
+            velocity *= std::clamp(len, 0.0f, 1000.0f);
         }
 
-        inline void SetVelocity(const NiPoint3& a_vel) {
-            velocity.x = std::clamp(a_vel.x, -100000.0f, 100000.0f);
-            velocity.y = std::clamp(a_vel.y, -100000.0f, 100000.0f);
-            velocity.z = std::clamp(a_vel.z, -100000.0f, 100000.0f);
+        inline void SetVelocity(const r3d::Vector3& a_vel) {
+            velocity.x = a_vel.x;
+            velocity.y = a_vel.y;
+            velocity.z = a_vel.z;
+            ClampVelocity();
+        }
+
+        inline void SetVelocity(const NiPoint3& a_vel) 
+        {
+            velocity.x = a_vel.x;
+            velocity.y = a_vel.y;
+            velocity.z = a_vel.z;
+            ClampVelocity();
         }
         
-        inline void SetVelocity2(const r3d::Vector3& a_vel) {
+        inline void SetVelocity2(const NiPoint3& a_vel) {
 
             auto& globalConf = IConfig::GetGlobalConfig();
 
-            NiPoint3 d(a_vel.x, a_vel.y, a_vel.z);
-
-            SetVelocity((velocity - (d * globalConf.phys.timeStep)) -
+            SetVelocity((velocity - (a_vel * globalConf.phys.timeStep)) -
                 (velocity * ((conf.damping * globalConf.phys.timeStep) * dampingMul)));
         }
         

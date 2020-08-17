@@ -96,7 +96,6 @@ namespace CBP
             simComponent["colSphereOffsetZMin"] = v.second.colSphereOffsetZMin;
             simComponent["colSphereOffsetZMax"] = v.second.colSphereOffsetZMax;
             simComponent["colDampingCoef"] = v.second.colDampingCoef;
-            simComponent["colStiffnessCoef"] = v.second.colStiffnessCoef;
             simComponent["colDepthMul"] = v.second.colDepthMul;
         }
     }

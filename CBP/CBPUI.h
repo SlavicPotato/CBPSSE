@@ -124,13 +124,11 @@ namespace CBP
         kHT_showAllActors,
     };
 
-
     typedef std::pair<const std::string, configComponents_t> actorEntryBaseConf_t;
     typedef std::map<SKSE::ObjectHandle, actorEntryBaseConf_t> actorListBaseConf_t;
 
     typedef std::pair<const std::string, configNodes_t> actorEntryNodeConf_t;
     typedef std::map<SKSE::ObjectHandle, actorEntryNodeConf_t> actorListNodeConf_t;
-
 
     class UIBase
     {

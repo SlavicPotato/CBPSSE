@@ -550,10 +550,9 @@ namespace CBP
 
         m_raceList.clear();
 
-        auto& rl = IData::GetRaceList();
         auto& globalConfig = IConfig::GetGlobalConfig();
 
-        for (const auto& e : rl)
+        for (const auto& e : IData::GetRaceList())
         {
             if (globalConfig.ui.rlPlayableOnly && !e.second.playable)
                 continue;
@@ -567,8 +566,8 @@ namespace CBP
             else
                 ss << e.second.fullname;
 
-            m_raceList.emplace(e.first, raceEntry_t(
-                std::move(ss.str()), IConfig::GetRaceConf(e.first)));
+            m_raceList.try_emplace(e.first, 
+                std::move(ss.str()), IConfig::GetRaceConf(e.first));
         }
 
         if (m_raceList.size() == 0) {
@@ -1314,6 +1313,14 @@ namespace CBP
         {
             if (CollapsingHeader("Options#Controls", "Controls"))
             {
+                if (DCBP::GetDriverConfig().force_ini_keys)
+                {
+                    ImGui::Spacing();
+                    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.66f, 0.13f, 1.0f));
+                    ImGui::TextWrapped("ForceINIKeys is enabled, keys configured here will have no effect");
+                    ImGui::PopStyleColor();
+                }
+
                 ImGui::Spacing();
 
                 DrawKeyOptions("Combo key", comboKeyDesc, globalConfig.ui.comboKey);
@@ -1982,13 +1989,17 @@ namespace CBP
 
                 ImGui::Columns(2, nullptr, false);
 
-                changed |= ImGui::Checkbox("Female movement", &conf.femaleMovement);
-                changed |= ImGui::Checkbox("Female collisions", &conf.femaleCollisions);
+                ImGui::Text("Female");
+                ImGui::Spacing();
+                changed |= ImGui::Checkbox("Movement", &conf.femaleMovement);
+                changed |= ImGui::Checkbox("Collisions", &conf.femaleCollisions);
 
                 ImGui::NextColumn();
 
-                changed |= ImGui::Checkbox("Male movement", &conf.maleMovement);
-                changed |= ImGui::Checkbox("Male collisions", &conf.maleCollisions);
+                ImGui::Text("Male");
+                ImGui::Spacing();
+                changed |= ImGui::Checkbox("Movement", &conf.maleMovement);
+                changed |= ImGui::Checkbox("Collisions", &conf.maleCollisions);
 
                 ImGui::Columns(1);
 

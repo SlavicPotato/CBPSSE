@@ -6,6 +6,8 @@ namespace CBP
         virtual protected ILog
     {
     public:
+        FN_NAMEPROC("Parser")
+    public:
         void Create(const configComponents_t& a_data, Json::Value& a_out);
         [[nodiscard]] bool Parse(const Json::Value& a_data, configComponents_t& a_out);
 
