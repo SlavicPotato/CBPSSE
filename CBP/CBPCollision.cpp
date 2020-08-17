@@ -78,10 +78,10 @@ namespace CBP
 
             }
             break;
-            case EventType::ContactExit:
+            /*case EventType::ContactExit:
                 sc1->ResetOverrides();
                 sc2->ResetOverrides();
-                break;
+                break;*/
             }
 
         }

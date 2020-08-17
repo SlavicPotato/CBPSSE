@@ -214,14 +214,14 @@ namespace CBP
         }
 
         if (dampingMul > 1.0f)
-            dampingMul = max(dampingMul / 1.2f, 1.0f);
+            dampingMul = max(dampingMul / (globalConf.phys.timeStep + 1.0f), 1.0f);
 
         auto newPos = oldWorldPos;
 
         // Compute the "Spring" Force
         NiPoint3 diff2(diff.x * diff.x * sgn(diff.x), diff.y * diff.y * sgn(diff.y), diff.z * diff.z * sgn(diff.z));
-        NiPoint3 force = (diff * (conf.stiffness)) + (diff2 * (conf.stiffness2 ));
-        
+        NiPoint3 force = (diff * conf.stiffness) + (diff2 * conf.stiffness2);
+
         force.z -= conf.gravityBias;
 
         if (m_applyForceQueue.size())

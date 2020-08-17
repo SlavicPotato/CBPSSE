@@ -182,8 +182,8 @@ namespace CBP
 
         inline void ResetOverrides() {
             dampingMul = 1.0f;
-            stiffnes2Mul = 1.0f;
-            stiffnesMul = 1.0f;
+            /*stiffnes2Mul = 1.0f;
+            stiffnesMul = 1.0f;*/
         }
 
         [[nodiscard]] inline bool IsSameGroup(const SimComponent& a_rhs) const {
@@ -206,7 +206,7 @@ namespace CBP
         }
 
         float dampingMul = 1.0f;
-        float stiffnesMul = 1.0f;
-        float stiffnes2Mul = 1.0f;
+        /*float stiffnesMul = 1.0f;
+        float stiffnes2Mul = 1.0f;*/
     };
 }
