@@ -1459,12 +1459,13 @@ namespace CBP
         ImVec2 sizeMax(min(400.0f, io.DisplaySize.x), max(io.DisplaySize.y - 40.0f, sizeMin.y));
 
         ImGui::SetNextWindowSizeConstraints(sizeMin, sizeMax);
+        ImGui::SetNextWindowSize(ImVec2(400.0f, io.DisplaySize.y), ImGuiCond_FirstUseEver);
 
         ImGui::PushID(static_cast<const void*>(a_active));
 
         if (ImGui::Begin("Collision groups", a_active))
         {
-            ImGui::PushItemWidth(ImGui::GetFontSize() * -11.0f);
+            ImGui::PushItemWidth(ImGui::GetFontSize() * -14.0f);
 
             auto& colGroups = IConfig::GetCollisionGroups();
             auto& nodeColGroupMap = IConfig::GetNodeCollisionGroupMap();
