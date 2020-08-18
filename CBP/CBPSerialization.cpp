@@ -599,14 +599,20 @@ namespace CBP
 
                 SKSE::ObjectHandle newHandle = 0;
 
-                if (!SKSE::ResolveHandle(intfc, handle, &newHandle)) {
-                    Error("0x%llX: Couldn't resolve handle, discarding", handle);
-                    continue;
-                }
+                if (intfc != nullptr)
+                {
+                    if (!SKSE::ResolveHandle(intfc, handle, &newHandle)) {
+                        Error("0x%llX: Couldn't resolve handle, discarding", handle);
+                        continue;
+                    }
 
-                if (newHandle == 0) {
-                    Error("0x%llX: newHandle == 0", handle);
-                    continue;
+                    if (newHandle == 0) {
+                        Error("0x%llX: newHandle == 0", handle);
+                        continue;
+                    }
+                }
+                else {
+                    newHandle = handle;
                 }
 
                 configComponents_t componentData;
@@ -678,14 +684,20 @@ namespace CBP
 
                 SKSE::FormID newFormID = 0;
 
-                if (!SKSE::ResolveRaceForm(intfc, formID, &newFormID)) {
-                    Error("0x%lX: Couldn't resolve handle, discarding", formID);
-                    continue;
-                }
+                if (intfc != nullptr)
+                {
+                    if (!SKSE::ResolveRaceForm(intfc, formID, &newFormID)) {
+                        Error("0x%lX: Couldn't resolve handle, discarding", formID);
+                        continue;
+                    }
 
-                if (newFormID == 0) {
-                    Error("0x%lX: newFormID == 0", formID);
-                    continue;
+                    if (newFormID == 0) {
+                        Error("0x%lX: newFormID == 0", formID);
+                        continue;
+                    }
+                }
+                else {
+                    newFormID = formID;
                 }
 
                 if (!IData::GetRaceList().contains(newFormID)) {

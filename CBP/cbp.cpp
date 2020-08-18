@@ -307,7 +307,7 @@ namespace CBP
     {
         auto info = static_cast<D3D11CreateEventPost*>(data);
 
-        if (m_Instance.conf.debug_renderer) 
+        if (m_Instance.conf.debug_renderer)
         {
             m_Instance.m_renderer = std::make_unique<CBP::Renderer>(
                 info->m_pDevice, info->m_pImmediateContext);
@@ -338,27 +338,24 @@ namespace CBP
         switch (message->type)
         {
         case SKSEMessagingInterface::kMessage_InputLoaded:
-        {
             GetEventDispatcherList()->objectLoadedDispatcher.AddEventSink(EventHandler::GetSingleton());
             m_Instance.Debug("Object loaded event sink added");
-        }
-        break;
+            break;
         case SKSEMessagingInterface::kMessage_DataLoaded:
-        {
             GetEventDispatcherList()->initScriptDispatcher.AddEventSink(EventHandler::GetSingleton());
             m_Instance.Debug("Init script event sink added");
 
             if (CBP::IData::PopulateRaceList())
                 m_Instance.Debug("%zu TESRace forms found", CBP::IData::RaceListSize());
-        }
-        break;
+            break;
+        case SKSEMessagingInterface::kMessage_NewGame:
+            DoLoad(nullptr);
+            break;
         }
     }
 
-    void DCBP::LoadGameHandler(Event, void* args)
+    void DCBP::DoLoad(SKSESerializationInterface* intfc)
     {
-        auto intfc = static_cast<SKSESerializationInterface*>(args);
-
         auto& iface = m_Instance.m_serialization;
 
         PerfTimer pt;
@@ -384,6 +381,11 @@ namespace CBP
         m_Instance.Debug("%s: %f", __FUNCTION__, pt.Stop());
 
         ResetActors();
+    }
+
+    void DCBP::LoadGameHandler(Event, void* args)
+    {
+        DoLoad(static_cast<SKSESerializationInterface*>(args));
     }
 
     void DCBP::SaveGameHandler(Event, void*)
@@ -544,7 +546,7 @@ namespace CBP
             }
 
             if (globalConf.debugRenderer.enabled &&
-                DCBP::GetDriverConfig().debug_renderer) 
+                DCBP::GetDriverConfig().debug_renderer)
             {
                 DCBP::GetRenderer()->Update(DCBP::GetWorld()->getDebugRenderer());
             }

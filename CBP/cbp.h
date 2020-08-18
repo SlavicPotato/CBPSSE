@@ -283,6 +283,8 @@ namespace CBP
         static void LoadGameHandler(Event m_code, void* args);
         static void SaveGameHandler(Event m_code, void* args);
 
+        static void DoLoad(SKSESerializationInterface* intfc);
+
         static void OnD3D11PostCreate_CBP(Event code, void* data);
         static void Present_Pre();
 
