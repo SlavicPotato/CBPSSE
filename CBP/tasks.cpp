@@ -25,7 +25,7 @@ namespace CBP
 
     void DTasks::RunTasks()
     {
-        s_tasks.ProcessTasks();
+        //s_tasks.ProcessTasks();
 
         for (auto cmd : s_tasks_fixed)
             cmd->Run();
@@ -64,6 +64,7 @@ namespace CBP
 
     void DTasks::AddTask(TaskDelegate* cmd)
     {
-        s_tasks.AddTask(cmd);
+        //s_tasks.AddTask(cmd);
+        SKSE::g_taskInterface->AddTask(cmd);
     }
 }

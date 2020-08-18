@@ -347,8 +347,7 @@ namespace CBP
 
             if (CBP::IData::PopulateRaceList())
                 m_Instance.Debug("%zu TESRace forms found", CBP::IData::RaceListSize());
-            break;
-        case SKSEMessagingInterface::kMessage_NewGame:
+
             DoLoad(nullptr);
             break;
         }
