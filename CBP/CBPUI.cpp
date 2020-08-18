@@ -138,6 +138,41 @@ namespace CBP
     }
 
     template <class T>
+    void UIProfileBase<T>::DrawCreateNew()
+    {
+        if (UICommon::TextInputDialog("New profile", "Enter the profile name:",
+            state.new_input, sizeof(state.new_input)))
+        {
+            if (strlen(state.new_input))
+            {
+                T profile;
+
+                auto& pm = GlobalProfileManager::GetSingleton<T>();
+
+                if (pm.CreateProfile(state.new_input, profile))
+                {
+                    std::string name(profile.Name());
+                    if (pm.AddProfile(std::move(profile))) {
+                        state.selected = std::move(name);
+                    }
+                    else {
+                        state.lastException = pm.GetLastException();
+                        ImGui::OpenPopup("Add Error");
+                    }
+                }
+                else {
+                    state.lastException = pm.GetLastException();
+                    ImGui::OpenPopup("Create Error");
+                }
+            }
+        }
+
+        UICommon::MessageDialog("Create Error", "Could not create the profile\n\n%s", state.lastException.what());
+        UICommon::MessageDialog("Add Error", "Could not add the profile\n\n%s", state.lastException.what());
+
+    }
+
+    template <class T>
     UIProfileEditorBase<T>::UIProfileEditorBase(const char* a_name) :
         m_name(a_name)
     {
@@ -223,7 +258,7 @@ namespace CBP
 
             ImGui::SameLine(ImGui::GetWindowContentRegionMax().x - 30.0f);
             if (ImGui::Button("New")) {
-                ImGui::OpenPopup("New");
+                ImGui::OpenPopup("New profile");
                 state.new_input[0] = 0;
             }
 
@@ -231,34 +266,7 @@ namespace CBP
 
             ImGui::PopItemWidth();
 
-            if (UICommon::TextInputDialog("New", "Enter the profile name:",
-                state.new_input, sizeof(state.new_input)))
-            {
-                if (strlen(state.new_input)) {
-                    T profile;
-
-                    auto& pm = GlobalProfileManager::GetSingleton<T>();
-
-                    if (pm.CreateProfile(state.new_input, profile))
-                    {
-                        std::string name(profile.Name());
-                        if (pm.AddProfile(std::move(profile))) {
-                            state.selected = std::move(name);
-                        }
-                        else {
-                            state.lastException = pm.GetLastException();
-                            ImGui::OpenPopup("Add Error");
-                        }
-                    }
-                    else {
-                        state.lastException = pm.GetLastException();
-                        ImGui::OpenPopup("Create Error");
-                    }
-                }
-            }
-
-            UICommon::MessageDialog("Create Error", "Could not create the profile\n\n%s", state.lastException.what());
-            UICommon::MessageDialog("Add Error", "Could not add the profile\n\n%s", state.lastException.what());
+            DrawCreateNew();
 
             if (state.selected)
             {
@@ -281,7 +289,7 @@ namespace CBP
                 ImGui::SameLine();
                 if (ImGui::Button("Rename")) {
                     ImGui::OpenPopup("Rename");
-                    _snprintf_s(state.ren_input, _TRUNCATE, "%s", (*state.selected).c_str());
+                    _snprintf_s(ex_state.ren_input, _TRUNCATE, "%s", (*state.selected).c_str());
                 }
 
                 if (UICommon::ConfirmDialog(
@@ -298,10 +306,10 @@ namespace CBP
                     }
                 }
                 else if (UICommon::TextInputDialog("Rename", "Enter the new profile name:",
-                    state.ren_input, sizeof(state.ren_input)))
+                    ex_state.ren_input, sizeof(ex_state.ren_input)))
                 {
                     auto& pm = GlobalProfileManager::GetSingleton<T>();
-                    std::string newName(state.ren_input);
+                    std::string newName(ex_state.ren_input);
 
                     if (pm.RenameProfile(*state.selected, newName)) {
                         state.selected = newName;
@@ -657,11 +665,11 @@ namespace CBP
         ImGui::PushID(std::addressof(pm));
 
         const char* curSelName = nullptr;
-        if (m_selectedProfile) {
-            if (data.contains(*m_selectedProfile))
-                curSelName = m_selectedProfile->c_str();
+        if (state.selected) {
+            if (data.contains(*state.selected))
+                curSelName = state.selected->c_str();
             else
-                m_selectedProfile.Clear();
+                state.selected.Clear();
         }
 
         if (ImGui::BeginCombo("Profile", curSelName, ImGuiComboFlags_HeightLarge))
@@ -670,14 +678,14 @@ namespace CBP
             {
                 ImGui::PushID(reinterpret_cast<const void*>(std::addressof(e.second)));
 
-                bool selected = m_selectedProfile &&
-                    e.first == *m_selectedProfile;
+                bool selected = state.selected &&
+                    e.first == *state.selected;
 
                 if (selected)
                     if (ImGui::IsWindowAppearing()) ImGui::SetScrollHereY();
 
                 if (ImGui::Selectable(e.second.Name().c_str(), selected)) {
-                    m_selectedProfile = e.first;
+                    state.selected = e.first;
                 }
 
                 ImGui::PopID();
@@ -685,11 +693,19 @@ namespace CBP
             ImGui::EndCombo();
         }
 
-        if (m_selectedProfile)
-        {
-            auto& profile = data.at(*m_selectedProfile);
+        ImGui::SameLine(ImGui::GetWindowContentRegionMax().x - 30.0f);
+        if (ImGui::Button("New")) {
+            ImGui::OpenPopup("New profile");
+            state.new_input[0] = 0;
+        }
 
-            ImGui::SameLine(ImGui::GetWindowContentRegionMax().x - 43.0f);
+        DrawCreateNew();
+
+        if (state.selected)
+        {
+            auto& profile = data.at(*state.selected);
+
+            ImGui::SameLine(ImGui::GetWindowContentRegionMax().x - 77.0f);
             if (ImGui::Button("Apply")) {
                 ImGui::OpenPopup("Apply from profile");
             }
@@ -702,7 +718,7 @@ namespace CBP
                 ApplyProfile(a_data, profile);
             }
 
-            ImGui::SameLine(ImGui::GetWindowContentRegionMax().x - 83.0f);
+            ImGui::SameLine(ImGui::GetWindowContentRegionMax().x - 117.0f);
             if (ImGui::Button("Save")) {
                 ImGui::OpenPopup("Save to profile");
             }
@@ -714,14 +730,14 @@ namespace CBP
             {
                 auto& data = GetData(a_data);
                 if (!profile.Save(data, true)) {
-                    m_lastException = profile.GetLastException();
+                    state.lastException = profile.GetLastException();
                     ImGui::OpenPopup("Save to profile error");
                 }
             }
 
             UICommon::MessageDialog("Save to profile error",
                 "Error saving to profile '%s'\n\n%s", profile.Name().c_str(),
-                m_lastException.what());
+                state.lastException.what());
         }
 
         ImGui::PopID();
@@ -1080,7 +1096,7 @@ namespace CBP
         m_nextUpdateCurrentActor(false),
         m_activeLoadInstance(0),
         m_tsNoActors(PerfCounter::Query()),
-        m_peComponents("Sim Profile Editor"),
+        m_peComponents("Physics Profile Editor"),
         m_peNodes("Node Profile Editor"),
         state({ .windows{false, false, false, false, false, false, false } })
     {
@@ -1152,13 +1168,15 @@ namespace CBP
 
                 if (ImGui::BeginMenu("Tools"))
                 {
-                    ImGui::MenuItem("Race editor", nullptr, &state.windows.race);
-                    ImGui::MenuItem("Sim profile editor", nullptr, &state.windows.profileSim);
-                    ImGui::MenuItem("Node profile editor", nullptr, &state.windows.profileNodes);
+                    ImGui::MenuItem("Race config", nullptr, &state.windows.race);
+                    ImGui::MenuItem("Node config", nullptr, &state.windows.nodeConf);
 
                     ImGui::Separator();
-                    ImGui::MenuItem("Node config", nullptr, &state.windows.nodeConf);
                     ImGui::MenuItem("Collision groups", nullptr, &state.windows.collisionGroups);
+
+                    ImGui::Separator();
+                    ImGui::MenuItem(m_peComponents.GetName(), nullptr, &state.windows.profileSim);
+                    ImGui::MenuItem(m_peNodes.GetName(), nullptr, &state.windows.profileNodes);
 
                     ImGui::Separator();
                     ImGui::MenuItem("Stats", nullptr, &state.windows.profiling);
@@ -1456,7 +1474,7 @@ namespace CBP
         ImGui::SetNextWindowPos(center, ImGuiCond_FirstUseEver, ImVec2(0.5f, 0.5f));
 
         ImVec2 sizeMin(min(300.0f, io.DisplaySize.x - 40.0f), min(100.0f, io.DisplaySize.y - 40.0f));
-        ImVec2 sizeMax(min(400.0f, io.DisplaySize.x), max(io.DisplaySize.y - 40.0f, sizeMin.y));
+        ImVec2 sizeMax(min(450.0f, io.DisplaySize.x), max(io.DisplaySize.y - 40.0f, sizeMin.y));
 
         ImGui::SetNextWindowSizeConstraints(sizeMin, sizeMax);
         ImGui::SetNextWindowSize(ImVec2(400.0f, io.DisplaySize.y), ImGuiCond_FirstUseEver);
@@ -1630,9 +1648,17 @@ namespace CBP
 
             DrawActorList(entry, curSelName);
 
-            if (entry) {
+            if (entry) 
+            {
                 if (ImGui::Button("Reset"))
+                    ImGui::OpenPopup("Reset Node");
+
+                if (UICommon::ConfirmDialog(
+                    "Reset Node",
+                    "Reset all values for '%s'?\n\n", curSelName))
+                {
                     ResetAllActorValues(entry->first);
+                }
 
                 ImGui::SameLine();
             }
@@ -1642,7 +1668,11 @@ namespace CBP
 
             ImGui::Spacing();
 
+            ImGui::PushItemWidth(ImGui::GetFontSize() * -14.0f);
+
             DrawProfileSelector(entry);
+
+            ImGui::PopItemWidth();
 
             ImGui::Spacing();
 

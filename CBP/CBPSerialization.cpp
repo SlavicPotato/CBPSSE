@@ -684,8 +684,7 @@ namespace CBP
 
                 SKSE::FormID newFormID = 0;
 
-                if (intfc != nullptr)
-                {
+                if (intfc != nullptr) {
                     if (!SKSE::ResolveRaceForm(intfc, formID, &newFormID)) {
                         Error("0x%lX: Couldn't resolve handle, discarding", formID);
                         continue;
@@ -699,6 +698,7 @@ namespace CBP
                 else {
                     newFormID = formID;
                 }
+
 
                 if (!IData::GetRaceList().contains(newFormID)) {
                     Warning("0x%lX: race record not found", newFormID);

@@ -215,9 +215,26 @@ namespace CBP
         [[nodiscard]] virtual const C& GetData(const T* a_data) const = 0;
     };
 
+    template <class T>
+    class UIProfileBase
+    {
+    protected:
+        UIProfileBase() = default;
+        virtual ~UIProfileBase() = default;
+
+        void DrawCreateNew();
+
+        struct {
+            char new_input[60];
+            UISelectedItem<std::string> selected;
+            std::exception lastException;
+        } state;
+    };
+
     template <class T, class P>
     class UIProfileSelector :
-        UIDataBase<T, typename P::base_type>
+        UIDataBase<T, typename P::base_type>,
+        UIProfileBase<P>
     {
     protected:
         UIProfileSelector() = default;
@@ -230,8 +247,6 @@ namespace CBP
             const P& a_profile) = 0;
 
     private:
-        UISelectedItem<std::string> m_selectedProfile;
-        std::exception m_lastException;
     };
 
     template <class T>
@@ -258,25 +273,28 @@ namespace CBP
             UISelectedItem<std::string> selected;
         } m_forceState;
     };
+
     template <class T>
-    class UIProfileEditorBase
+    class UIProfileEditorBase :
+        UIProfileBase<T>
     {
     public:
         UIProfileEditorBase(const char* a_name);
         virtual ~UIProfileEditorBase() noexcept = default;
 
         void Draw(bool* a_active);
+
+        inline constexpr const char* GetName() const {
+            return m_name;
+        }
     protected:
 
         virtual void DrawItem(T& a_profile) = 0;
     private:
 
         struct {
-            UISelectedItem<std::string> selected;
-            char new_input[60];
             char ren_input[60];
-            std::exception lastException;
-        } state;
+        } ex_state;
 
         UIGenericFilter m_filter;
 

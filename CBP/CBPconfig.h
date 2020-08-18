@@ -241,8 +241,8 @@ namespace CBP
 
     struct configNode_t
     {
-        bool femaleMovement = true;
-        bool femaleCollisions = true;
+        bool femaleMovement = false;
+        bool femaleCollisions = false;
         bool maleMovement = false;
         bool maleCollisions = false;
 
