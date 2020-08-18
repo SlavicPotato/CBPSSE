@@ -114,6 +114,7 @@ namespace CBP
             bool clampValuesRace = true;
             bool syncWeightSlidersMain = false;
             bool syncWeightSlidersRace = false;
+            bool selectCrosshairActor = false;
 
             UInt32 comboKey = DIK_LSHIFT;
             UInt32 showKey = DIK_END;

@@ -1329,6 +1329,12 @@ namespace CBP
 
         if (ImGui::Begin("Options", a_active, ImGuiWindowFlags_AlwaysAutoResize))
         {
+            if (CollapsingHeader("Options#General", "General")) 
+            {
+                if (ImGui::Checkbox("Select actor in crosshairs on open", &globalConfig.ui.selectCrosshairActor))
+                    DCBP::MarkGlobalsForSave();
+            }
+
             if (CollapsingHeader("Options#Controls", "Controls"))
             {
                 if (DCBP::GetDriverConfig().force_ini_keys)

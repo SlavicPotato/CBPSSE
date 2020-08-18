@@ -204,6 +204,7 @@ namespace CBP
                 globalConfig.ui.rlShowEditorIDs = ui.get("rlShowEditorIDs", true).asBool();
                 globalConfig.ui.syncWeightSlidersMain = ui.get("syncWeightSlidersMain", false).asBool();
                 globalConfig.ui.syncWeightSlidersRace = ui.get("syncWeightSlidersRace", false).asBool();
+                globalConfig.ui.selectCrosshairActor = ui.get("selectCrosshairActor", false).asBool();
                 globalConfig.ui.comboKey = static_cast<UInt32>(ui.get("comboKey", DIK_LSHIFT).asUInt());
                 globalConfig.ui.showKey = static_cast<UInt32>(ui.get("showKey", DIK_END).asUInt());
                 globalConfig.ui.lastActor = static_cast<SKSE::ObjectHandle>(ui.get("lastActor", 0).asUInt64());
@@ -366,6 +367,7 @@ namespace CBP
             ui["rlShowEditorIDs"] = globalConfig.ui.rlShowEditorIDs;
             ui["syncWeightSlidersMain"] = globalConfig.ui.syncWeightSlidersMain;
             ui["syncWeightSlidersRace"] = globalConfig.ui.syncWeightSlidersRace;
+            ui["selectCrosshairActor"] = globalConfig.ui.selectCrosshairActor;
             ui["comboKey"] = static_cast<uint32_t>(globalConfig.ui.comboKey);
             ui["showKey"] = static_cast<uint32_t>(globalConfig.ui.showKey);
             ui["lastActor"] = static_cast<uint64_t>(globalConfig.ui.lastActor);
