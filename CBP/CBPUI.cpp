@@ -583,7 +583,7 @@ namespace CBP
             return;
         }
 
-        if (!isFirstUpdate) {
+        if (globalConfig.ui.selectCrosshairActor && !isFirstUpdate) {
             auto crosshairRef = IData::GetCrosshairRef();
             if (crosshairRef)
             {
@@ -877,7 +877,7 @@ namespace CBP
 
         _snprintf_s(m_strBuf1, _TRUNCATE, "%zu actors", m_actorList.size());
 
-        if (!isFirstUpdate) {
+        if (globalConfig.ui.selectCrosshairActor && !isFirstUpdate) {
             auto crosshairRef = IData::GetCrosshairRef();
             if (crosshairRef) {
                 if (m_actorList.contains(crosshairRef)) {
