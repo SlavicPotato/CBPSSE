@@ -27,6 +27,32 @@
 			"stiffness" : 5.0,
 			"stiffness2" : 5.0
 		},
+		"belly2" : 
+		{
+			"cogOffset" : 5.0,
+			"colDampingCoef" : 2.0,
+			"colDepthMul" : 100.0,
+			"colSphereOffsetXMax" : 0.0,
+			"colSphereOffsetXMin" : 0.0,
+			"colSphereOffsetYMax" : 0.0,
+			"colSphereOffsetYMin" : 0.0,
+			"colSphereOffsetZMax" : 0.0,
+			"colSphereOffsetZMin" : 0.0,
+			"colSphereRadMax" : 4.0,
+			"colSphereRadMin" : 4.0,
+			"damping" : 0.94999998807907104,
+			"gravityBias" : 0.0,
+			"gravityCorrection" : 0.0,
+			"linearX" : 0.5,
+			"linearY" : 0.10000000149011612,
+			"linearZ" : 0.25,
+			"maxOffset" : 20.0,
+			"rotationalX" : 0.0,
+			"rotationalY" : 0.0,
+			"rotationalZ" : 0.0,
+			"stiffness" : 10.0,
+			"stiffness2" : 10.0
+		},
 		"breast left" : 
 		{
 			"cogOffset" : 5.0,
@@ -651,6 +677,32 @@
 			"stiffness" : 16.5,
 			"stiffness2" : 16.0
 		},
+		"pelvis" : 
+		{
+			"cogOffset" : 5.0,
+			"colDampingCoef" : 2.0,
+			"colDepthMul" : 100.0,
+			"colSphereOffsetXMax" : 0.0,
+			"colSphereOffsetXMin" : 0.0,
+			"colSphereOffsetYMax" : 0.0,
+			"colSphereOffsetYMin" : 0.0,
+			"colSphereOffsetZMax" : 0.0,
+			"colSphereOffsetZMin" : 0.0,
+			"colSphereRadMax" : 4.0,
+			"colSphereRadMin" : 4.0,
+			"damping" : 0.94999998807907104,
+			"gravityBias" : 0.0,
+			"gravityCorrection" : 0.0,
+			"linearX" : 0.5,
+			"linearY" : 0.10000000149011612,
+			"linearZ" : 0.25,
+			"maxOffset" : 20.0,
+			"rotationalX" : 0.0,
+			"rotationalY" : 0.0,
+			"rotationalZ" : 0.0,
+			"stiffness" : 10.0,
+			"stiffness2" : 10.0
+		},
 		"rear calf left" : 
 		{
 			"cogOffset" : 5.0,
@@ -786,6 +838,13 @@
 			"maleCollisions" : false,
 			"maleMovement" : false
 		},
+		"NPC Belly" : 
+		{
+			"femaleCollisions" : false,
+			"femaleMovement" : false,
+			"maleCollisions" : false,
+			"maleMovement" : false
+		},
 		"NPC Genitals01 [Gen01]" : 
 		{
 			"femaleCollisions" : false,
@@ -878,6 +937,13 @@
 			"maleMovement" : false
 		},
 		"NPC L RearThigh" : 
+		{
+			"femaleCollisions" : false,
+			"femaleMovement" : false,
+			"maleCollisions" : false,
+			"maleMovement" : false
+		},
+		"NPC Pelvis [Pelv]" : 
 		{
 			"femaleCollisions" : false,
 			"femaleMovement" : false,

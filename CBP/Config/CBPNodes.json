@@ -4,6 +4,8 @@
 	"butt left" : ["NPC L Butt"],
 	"butt right" : ["NPC R Butt"],
 	"belly" : ["HDT Belly"],
+	"belly2" : ["NPC Belly"],
+	"pelvis": ["NPC Pelvis [Pelv]"],
 	"hand left": ["NPC L Hand [LHnd]"],	
 	"hand right": ["NPC R Hand [RHnd]"],
 	"forearm left": ["NPC L Forearm [LLar]"],
