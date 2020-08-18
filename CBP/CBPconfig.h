@@ -2,6 +2,15 @@
 
 namespace CBP
 {
+    enum class UIEditorID : int
+    {
+        kProfileEditorSim = 0,
+        kRaceEditor,
+        kMainEditor,
+        kProfileEditorNode,
+        kNodeEditor
+    };
+
     template <typename K, typename V>
     class KVStorage
     {
@@ -121,7 +130,7 @@ namespace CBP
 
             SKSE::ObjectHandle lastActor = 0;
             configForceMap_t forceActor;
-            std::unordered_map<int, configMirrorMap_t> mirror;
+            std::unordered_map<UIEditorID, configMirrorMap_t> mirror;
             collapsibleStates_t colStates;
             std::string forceActorSelected;
 

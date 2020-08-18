@@ -461,6 +461,7 @@
     <ClInclude Include="imgui_impl_dx11.h" />
     <ClInclude Include="imgui_impl_win32.h" />
     <ClInclude Include="input.h" />
+    <ClInclude Include="misc.h" />
     <ClInclude Include="plugin.h" />
     <ClInclude Include="logging.h" />
     <ClInclude Include="macro_helpers.h" />

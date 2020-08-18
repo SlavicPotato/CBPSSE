@@ -71,6 +71,7 @@ namespace r3d = reactphysics3d;
 
 #include "plugin.h"
 #include "common.h"
+#include "misc.h"
 #include "logging.h"
 #include "skse.h"
 #include "game.h"

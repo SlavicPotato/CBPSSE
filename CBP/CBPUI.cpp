@@ -4,10 +4,17 @@ namespace CBP
 {
     const std::unordered_map<MiscHelpText, const char*> UIBase::m_helpText =
     {
-        {kHT_timeStep, "Update rate in Hz. Higher values produce smoother motion but cost more CPU time. It's not recommended to set this below 60."},
-        {kHT_timeScale, "Simulation rate, speeds up or slows down time"},
-        {kHT_colMaxPenetrationDepth, "Maximum penetration depth during collisions"},
-        {kHT_showAllActors, "Checked: Show all known actors\nUnchecked: Only show actors currently simulated"}
+        {MiscHelpText::timeStep, "Update rate in Hz. Higher values produce smoother motion but cost more CPU time. It's not recommended to set this below 60."},
+        {MiscHelpText::timeScale, "Simulation rate, speeds up or slows down time"},
+        {MiscHelpText::colMaxPenetrationDepth, "Maximum penetration depth during collisions"},
+        {MiscHelpText::showAllActors, "Checked: Show all known actors\nUnchecked: Only show actors currently simulated"},
+        {MiscHelpText::clampValues, "Clamp slider values to the default range."},
+        {MiscHelpText::syncMinMax, "Move weight 0/100 sliders together."},
+        {MiscHelpText::rescanActors, "Scan for nearby actors and update list."},
+        {MiscHelpText::resetConfOnActor, "Clear configuration for currently selected actor."},
+        {MiscHelpText::resetConfOnRace, "Clear configuration for currently selected race."},
+        {MiscHelpText::showEDIDs, "Show editor ID's instead of names."},
+        {MiscHelpText::playableOnly, "Show playable races only."},
     };
 
     static const keyDesc_t comboKeyDesc({
@@ -508,23 +515,30 @@ namespace CBP
                     QueueUpdateRaceList();
                     DCBP::MarkGlobalsForSave();
                 }
+                HelpMarker(MiscHelpText::playableOnly);
 
                 ImGui::Spacing();
                 if (ImGui::Checkbox("Editor IDs", &globalConfig.ui.rlShowEditorIDs)) {
                     QueueUpdateRaceList();
                     DCBP::MarkGlobalsForSave();
                 }
+                HelpMarker(MiscHelpText::showEDIDs);
+
                 ImGui::Spacing();
+
                 if (ImGui::Checkbox("Clamp values", &globalConfig.ui.clampValuesRace))
                     DCBP::MarkGlobalsForSave();
+                HelpMarker(MiscHelpText::clampValues);
 
                 ImGui::Spacing();
                 if (ImGui::Checkbox("Sync min/max weight sliders", &globalConfig.ui.syncWeightSlidersRace))
                     DCBP::MarkGlobalsForSave();
+                HelpMarker(MiscHelpText::syncMinMax);
 
                 ImGui::SameLine(ImGui::GetWindowContentRegionMax().x - 43.0f);
                 if (ImGui::Button("Reset"))
                     ImGui::OpenPopup("Reset");
+                HelpMarker(MiscHelpText::resetConfOnRace);
 
                 if (UICommon::ConfirmDialog(
                     "Reset",
@@ -1231,23 +1245,27 @@ namespace CBP
                 DCBP::QueueActorCacheUpdate();
                 DCBP::MarkGlobalsForSave();
             }
-            HelpMarker(kHT_showAllActors);
+            HelpMarker(MiscHelpText::showAllActors);
 
             ImGui::SameLine(ImGui::GetWindowContentRegionMax().x - 50.0f);
             if (ImGui::Button("Rescan"))
                 DCBP::QueueActorCacheUpdate();
+            HelpMarker(MiscHelpText::rescanActors);
 
             ImGui::Spacing();
             if (ImGui::Checkbox("Clamp values", &globalConfig.ui.clampValuesMain))
                 DCBP::MarkGlobalsForSave();
+            HelpMarker(MiscHelpText::clampValues);
 
             ImGui::SameLine(ImGui::GetWindowContentRegionMax().x - 43.0f);
             if (ImGui::Button("Reset"))
                 ImGui::OpenPopup("Reset");
+            HelpMarker(MiscHelpText::resetConfOnActor);
 
             ImGui::Spacing();
             if (ImGui::Checkbox("Sync min/max weight sliders", &globalConfig.ui.syncWeightSlidersMain))
                 DCBP::MarkGlobalsForSave();
+            HelpMarker(MiscHelpText::syncMinMax);
 
             if (UICommon::ConfirmDialog(
                 "Reset",
@@ -1329,7 +1347,7 @@ namespace CBP
 
         if (ImGui::Begin("Options", a_active, ImGuiWindowFlags_AlwaysAutoResize))
         {
-            if (CollapsingHeader("Options#General", "General")) 
+            if (CollapsingHeader("Options#General", "General"))
             {
                 if (ImGui::Checkbox("Select actor in crosshairs on open", &globalConfig.ui.selectCrosshairActor))
                     DCBP::MarkGlobalsForSave();
@@ -1375,19 +1393,19 @@ namespace CBP
                     globalConfig.phys.timeStep = 1.0f / std::clamp(timeStep, 30.0f, 240.0f);
                     DCBP::MarkGlobalsForSave();
                 }
-                HelpMarker(kHT_timeStep);
+                HelpMarker(MiscHelpText::timeStep);
 
                 if (ImGui::SliderFloat("timeScale", &globalConfig.phys.timeScale, 0.05f, 10.0f)) {
                     globalConfig.phys.timeScale = std::clamp(globalConfig.phys.timeScale, 0.05f, 10.0f);
                     DCBP::MarkGlobalsForSave();
                 }
-                HelpMarker(kHT_timeScale);
+                HelpMarker(MiscHelpText::timeScale);
 
                 if (ImGui::SliderFloat("colMaxPenetrationDepth", &globalConfig.phys.colMaxPenetrationDepth, 0.5f, 100.0f)) {
                     globalConfig.phys.colMaxPenetrationDepth = std::clamp(globalConfig.phys.colMaxPenetrationDepth, 0.05f, 500.0f);
                     DCBP::MarkGlobalsForSave();
                 }
-                HelpMarker(kHT_colMaxPenetrationDepth);
+                HelpMarker(MiscHelpText::colMaxPenetrationDepth);
             }
 
             if (DCBP::GetDriverConfig().debug_renderer)
@@ -1671,6 +1689,7 @@ namespace CBP
 
             if (ImGui::Button("Rescan"))
                 DCBP::QueueActorCacheUpdate();
+            HelpMarker(MiscHelpText::rescanActors);
 
             ImGui::Spacing();
 
@@ -1879,7 +1898,7 @@ namespace CBP
         DCBP::ApplyForce(handle, a_steps, a_component, a_force);
     }
 
-    template <class T, int ID>
+    template <class T, UIEditorID ID>
     void UISimComponent<T, ID>::Propagate(
         configComponents_t& a_dl,
         configComponents_t* a_dg,
@@ -1913,7 +1932,7 @@ namespace CBP
         }
     }
 
-    template <class T, int ID>
+    template <class T, UIEditorID ID>
     void UISimComponent<T, ID>::DrawSimComponents(T a_handle, configComponents_t& a_data)
     {
         auto& globalConfig = IConfig::GetGlobalConfig();
@@ -1978,7 +1997,7 @@ namespace CBP
         }
     }
 
-    template <class T, int ID>
+    template <class T, UIEditorID ID>
     void UISimComponent<T, ID>::DrawSliders(
         T a_handle,
         configComponents_t& a_data,
@@ -1997,7 +2016,7 @@ namespace CBP
         }
     }
 
-    template <class T, int ID>
+    template <class T, UIEditorID ID>
     bool UISimComponent<T, ID>::ShouldDrawComponent(
         T m_handle,
         const configComponents_t::value_type& a_comp)
@@ -2005,7 +2024,7 @@ namespace CBP
         return true;
     }
 
-    template <class T, int ID>
+    template <class T, UIEditorID ID>
     void UINode<T, ID>::DrawNodes(
         T a_handle,
         configNodes_t& a_data)

@@ -63,20 +63,20 @@ namespace CBP
         bool m_isSelected;
     };
 
-    enum UIEditorID : int {
-        kProfileEditorSim = 0,
-        kRaceEditor,
-        kMainEditor,
-        kProfileEditorNode,
-        kNodeEditor
-    };
-
-    enum MiscHelpText
+    enum class MiscHelpText : int
     {
-        kHT_timeStep,
-        kHT_timeScale,
-        kHT_colMaxPenetrationDepth,
-        kHT_showAllActors,
+        timeStep,
+        timeScale,
+        colMaxPenetrationDepth,
+        showAllActors,
+        profileSelect,
+        clampValues,
+        syncMinMax,
+        rescanActors,
+        resetConfOnActor,
+        resetConfOnRace,
+        showEDIDs,
+        playableOnly,
     };
 
     typedef std::pair<const std::string, configComponents_t> actorEntryBaseConf_t;
@@ -98,7 +98,7 @@ namespace CBP
         static const std::unordered_map<MiscHelpText, const char*> m_helpText;
     };
 
-    template <class T, int ID>
+    template <class T, UIEditorID ID>
     class UISimComponent :
         virtual protected UIBase
     {
@@ -136,7 +136,7 @@ namespace CBP
             const std::string& a_name)
         {
             std::ostringstream ss;
-            ss << "UISC#" << ID << "#" << a_name;
+            ss << "UISC#" << Misc::Underlying(ID) << "#" << a_name;
             return ss.str();
         }
     private:
@@ -145,7 +145,7 @@ namespace CBP
             const configComponents_t::value_type& a_comp);
     };
 
-    template <class T, int ID>
+    template <class T, UIEditorID ID>
     class UINode :
         virtual protected UIBase
     {
@@ -168,7 +168,7 @@ namespace CBP
             const std::string& a_name)
         {
             std::ostringstream ss;
-            ss << "UIND#" << ID << "#" << a_name;
+            ss << "UIND#" << Misc::Underlying(ID) << "#" << a_name;
             return ss.str();
         }
     };

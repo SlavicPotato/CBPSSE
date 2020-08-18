@@ -260,9 +260,9 @@ namespace CBP
                             if (!it1->isObject())
                                 continue;
 
-                            int ki;
+                            UIEditorID ki;
                             try {
-                                ki = std::stoi(it1.key().asString());
+                                ki = static_cast<UIEditorID>(std::stoi(it1.key().asString()));
                             }
                             catch (...) {
                                 continue;
@@ -389,7 +389,7 @@ namespace CBP
             auto& mirror = ui["mirror"];
             for (const auto& e : globalConfig.ui.mirror)
             {
-                auto& je = mirror[std::to_string(e.first)];
+                auto& je = mirror[std::to_string(Misc::Underlying(e.first))];
 
                 for (const auto& k : e.second)
                 {
