@@ -15,6 +15,7 @@ namespace CBP
         {MiscHelpText::resetConfOnRace, "Clear configuration for currently selected race."},
         {MiscHelpText::showEDIDs, "Show editor ID's instead of names."},
         {MiscHelpText::playableOnly, "Show playable races only."},
+        {MiscHelpText::colGroupEditor, "Nodes assigned to the same group will not collide with eachother. This applies only to nodes on the same actor."},
     };
 
     static const keyDesc_t comboKeyDesc({
@@ -189,12 +190,13 @@ namespace CBP
     void UIProfileEditorBase<T>::Draw(bool* a_active)
     {
         auto& io = ImGui::GetIO();
+        auto& globalConfig = IConfig::GetGlobalConfig();
 
         ImGui::SetNextWindowPos(ImVec2(min(420.0f, io.DisplaySize.x - 40.0f), 20.0f), ImGuiCond_FirstUseEver);
         ImGui::SetNextWindowSize(ImVec2(450.0f, io.DisplaySize.y), ImGuiCond_FirstUseEver);
 
         ImVec2 sizeMin(min(300.0f, io.DisplaySize.x - 40.0f), min(200.0f, io.DisplaySize.y - 40.0f));
-        ImVec2 sizeMax(min(450.0f, io.DisplaySize.x), max(io.DisplaySize.y - 40.0f, sizeMin.y));
+        ImVec2 sizeMax(min(1920.0f, io.DisplaySize.x), max(io.DisplaySize.y - 40.0f, sizeMin.y));
 
         ImGui::SetNextWindowSizeConstraints(sizeMin, sizeMax);
 
@@ -202,6 +204,8 @@ namespace CBP
 
         if (ImGui::Begin(m_name, a_active))
         {
+            ImGui::SetWindowFontScale(globalConfig.ui.fontScale);
+
             ImGui::PushItemWidth(ImGui::GetFontSize() * -15.0f);
 
             auto& data = GlobalProfileManager::GetSingleton<T>().Data();
@@ -263,8 +267,10 @@ namespace CBP
             ImGui::SameLine();
             m_filter.DrawButton();
 
-            ImGui::SameLine(ImGui::GetWindowContentRegionMax().x - 30.0f);
-            if (ImGui::Button("New")) {
+            
+            ClearTextOffset();
+            ImGui::SameLine(ImGui::GetWindowContentRegionMax().x - GetNextTextOffset("New"));
+            if (ButtonRight("New")) {
                 ImGui::OpenPopup("New profile");
                 state.new_input[0] = 0;
             }
@@ -425,19 +431,22 @@ namespace CBP
         }
 
         auto& io = ImGui::GetIO();
+        auto& globalConfig = IConfig::GetGlobalConfig();
 
         ImGui::SetNextWindowPos(ImVec2(min(820.0f, io.DisplaySize.x - 40.0f), 20.0f), ImGuiCond_FirstUseEver);
         ImGui::SetNextWindowSize(ImVec2(450.0f, io.DisplaySize.y), ImGuiCond_FirstUseEver);
 
         ImVec2 sizeMin(min(300.0f, io.DisplaySize.x - 40.0f), min(200.0f, io.DisplaySize.y - 40.0f));
-        ImVec2 sizeMax(min(450.0f, io.DisplaySize.x), max(io.DisplaySize.y - 40.0f, sizeMin.y));
+        ImVec2 sizeMax(min(1920.0f, io.DisplaySize.x), max(io.DisplaySize.y - 40.0f, sizeMin.y));
 
         ImGui::SetNextWindowSizeConstraints(sizeMin, sizeMax);
 
         ImGui::PushID(static_cast<const void*>(a_active));
 
-        if (ImGui::Begin("Race Editor", a_active))
+        if (ImGui::Begin("Race physics", a_active))
         {
+            ImGui::SetWindowFontScale(globalConfig.ui.fontScale);
+
             auto entry = GetSelectedEntry();
 
             const char* curSelName;
@@ -535,10 +544,10 @@ namespace CBP
                     DCBP::MarkGlobalsForSave();
                 HelpMarker(MiscHelpText::syncMinMax);
 
-                ImGui::SameLine(ImGui::GetWindowContentRegionMax().x - 43.0f);
-                if (ImGui::Button("Reset"))
+                ClearTextOffset();
+                ImGui::SameLine(ImGui::GetWindowContentRegionMax().x - GetNextTextOffset("Reset"));
+                if (ButtonRight("Reset"))
                     ImGui::OpenPopup("Reset");
-                HelpMarker(MiscHelpText::resetConfOnRace);
 
                 if (UICommon::ConfirmDialog(
                     "Reset",
@@ -707,11 +716,16 @@ namespace CBP
             ImGui::EndCombo();
         }
 
-        ImGui::SameLine(ImGui::GetWindowContentRegionMax().x - 30.0f);
-        if (ImGui::Button("New")) {
+        auto wcm = ImGui::GetWindowContentRegionMax();
+        ClearTextOffset();
+
+        ImGui::SameLine(wcm.x - GetNextTextOffset("New"));
+        if (ButtonRight("New")) {
             ImGui::OpenPopup("New profile");
             state.new_input[0] = 0;
         }
+
+        //UpdateNextItemOffset();
 
         DrawCreateNew();
 
@@ -719,8 +733,8 @@ namespace CBP
         {
             auto& profile = data.at(*state.selected);
 
-            ImGui::SameLine(ImGui::GetWindowContentRegionMax().x - 77.0f);
-            if (ImGui::Button("Apply")) {
+            ImGui::SameLine(wcm.x - GetNextTextOffset("Apply"));
+            if (ButtonRight("Apply")) {
                 ImGui::OpenPopup("Apply from profile");
             }
 
@@ -732,8 +746,8 @@ namespace CBP
                 ApplyProfile(a_data, profile);
             }
 
-            ImGui::SameLine(ImGui::GetWindowContentRegionMax().x - 117.0f);
-            if (ImGui::Button("Save")) {
+            ImGui::SameLine(wcm.x - GetNextTextOffset("Save"));
+            if (ButtonRight("Save")) {
                 ImGui::OpenPopup("Save to profile");
             }
 
@@ -816,8 +830,11 @@ namespace CBP
                 ImGui::EndCombo();
             }
 
-            ImGui::SameLine(ImGui::GetWindowContentRegionMax().x - 43.0f);
-            if (ImGui::Button("Apply"))
+            auto wcm = ImGui::GetWindowContentRegionMax();
+
+            ClearTextOffset();
+            ImGui::SameLine(wcm.x - GetNextTextOffset("Apply"));
+            if (ButtonRight("Apply"))
                 for (const auto& e : globalConfig.ui.forceActor)
                     ApplyForce(a_data, e.second.steps, e.first, e.second.force);
 
@@ -830,8 +847,9 @@ namespace CBP
                 if (ImGui::SliderFloat("X", std::addressof(e.force.x), FORCE_MIN, FORCE_MAX, "%.0f"))
                     DCBP::MarkGlobalsForSave();
 
-                ImGui::SameLine(ImGui::GetWindowContentRegionMax().x - 43.0f);
-                if (ImGui::Button("Reset")) {
+                ClearTextOffset();
+                ImGui::SameLine(wcm.x - GetNextTextOffset("Reset"));
+                if (ButtonRight("Reset")) {
                     e = configForce_t();
                     DCBP::MarkGlobalsForSave();
                 }
@@ -1110,8 +1128,8 @@ namespace CBP
         m_nextUpdateCurrentActor(false),
         m_activeLoadInstance(0),
         m_tsNoActors(PerfCounter::Query()),
-        m_peComponents("Physics Profile Editor"),
-        m_peNodes("Node Profile Editor"),
+        m_peComponents("Physics profile editor"),
+        m_peNodes("Node profile editor"),
         state({ .windows{false, false, false, false, false, false, false } })
     {
     }
@@ -1129,6 +1147,7 @@ namespace CBP
     void UIContext::Draw(bool* a_active)
     {
         auto& io = ImGui::GetIO();
+        auto& globalConfig = IConfig::GetGlobalConfig();
 
         ActorListTick();
 
@@ -1149,7 +1168,7 @@ namespace CBP
         ImGui::SetNextWindowSize(ImVec2(450.0f, io.DisplaySize.y), ImGuiCond_FirstUseEver);
 
         ImVec2 sizeMin(min(300.0f, io.DisplaySize.x - 40.0f), min(200.0f, io.DisplaySize.y - 40.0f));
-        ImVec2 sizeMax(min(450.0f, io.DisplaySize.x), max(io.DisplaySize.y - 40.0f, sizeMin.y));
+        ImVec2 sizeMax(min(1920.0f, io.DisplaySize.x), max(io.DisplaySize.y - 40.0f, sizeMin.y));
 
         ImGui::SetNextWindowSizeConstraints(sizeMin, sizeMax);
 
@@ -1157,6 +1176,8 @@ namespace CBP
 
         if (ImGui::Begin("CBP Config Editor", a_active, ImGuiWindowFlags_MenuBar))
         {
+            ImGui::SetWindowFontScale(globalConfig.ui.fontScale);
+
             ImGui::PushID(static_cast<const void*>(this));
             ImGui::PushItemWidth(ImGui::GetFontSize() * -15.0f);
 
@@ -1182,21 +1203,24 @@ namespace CBP
 
                 if (ImGui::BeginMenu("Tools"))
                 {
-                    ImGui::MenuItem("Race config", nullptr, &state.windows.race);
-                    ImGui::MenuItem("Node config", nullptr, &state.windows.nodeConf);
+                    ImGui::MenuItem("Actor nodes", nullptr, &state.windows.nodeConf);
+                    ImGui::MenuItem("Node collision groups", nullptr, &state.windows.collisionGroups);
 
                     ImGui::Separator();
-                    ImGui::MenuItem("Collision groups", nullptr, &state.windows.collisionGroups);
+                    ImGui::MenuItem("Race physics", nullptr, &state.windows.race);
 
                     ImGui::Separator();
-                    ImGui::MenuItem(m_peComponents.GetName(), nullptr, &state.windows.profileSim);
-                    ImGui::MenuItem(m_peNodes.GetName(), nullptr, &state.windows.profileNodes);
+                    if (ImGui::BeginMenu("Profile editors"))
+                    {
+                        ImGui::MenuItem("Physics", nullptr, &state.windows.profileSim);
+                        ImGui::MenuItem("Node", nullptr, &state.windows.profileNodes);
 
-                    ImGui::Separator();
-                    ImGui::MenuItem("Stats", nullptr, &state.windows.profiling);
+                        ImGui::EndMenu();
+                    }
 
                     ImGui::Separator();
                     ImGui::MenuItem("Options", nullptr, &state.windows.options);
+                    ImGui::MenuItem("Stats", nullptr, &state.windows.profiling);
 
                     ImGui::EndMenu();
                 }
@@ -1238,7 +1262,7 @@ namespace CBP
                 ImGui::Text("Config in use: %s", classText);
             }
 
-            auto& globalConfig = IConfig::GetGlobalConfig();
+            auto wcm = ImGui::GetWindowContentRegionMax();
 
             ImGui::Spacing();
             if (ImGui::Checkbox("Show all actors", &globalConfig.ui.showAllActors)) {
@@ -1247,20 +1271,20 @@ namespace CBP
             }
             HelpMarker(MiscHelpText::showAllActors);
 
-            ImGui::SameLine(ImGui::GetWindowContentRegionMax().x - 50.0f);
-            if (ImGui::Button("Rescan"))
+            ClearTextOffset();
+            ImGui::SameLine(wcm.x - GetNextTextOffset("Rescan"));
+            if (ButtonRight("Rescan"))
                 DCBP::QueueActorCacheUpdate();
-            HelpMarker(MiscHelpText::rescanActors);
 
             ImGui::Spacing();
             if (ImGui::Checkbox("Clamp values", &globalConfig.ui.clampValuesMain))
                 DCBP::MarkGlobalsForSave();
             HelpMarker(MiscHelpText::clampValues);
 
-            ImGui::SameLine(ImGui::GetWindowContentRegionMax().x - 43.0f);
-            if (ImGui::Button("Reset"))
+            ClearTextOffset();
+            ImGui::SameLine(wcm.x - GetNextTextOffset("Reset"));
+            if (ButtonRight("Reset"))
                 ImGui::OpenPopup("Reset");
-            HelpMarker(MiscHelpText::resetConfOnActor);
 
             ImGui::Spacing();
             if (ImGui::Checkbox("Sync min/max weight sliders", &globalConfig.ui.syncWeightSlidersMain))
@@ -1347,10 +1371,26 @@ namespace CBP
 
         if (ImGui::Begin("Options", a_active, ImGuiWindowFlags_AlwaysAutoResize))
         {
+            ImGui::SetWindowFontScale(globalConfig.ui.fontScale);
+
             if (CollapsingHeader("Options#General", "General"))
             {
+                ImGui::Spacing();
+
                 if (ImGui::Checkbox("Select actor in crosshairs on open", &globalConfig.ui.selectCrosshairActor))
                     DCBP::MarkGlobalsForSave();
+
+                ImGui::Spacing();
+            }
+
+            if (CollapsingHeader("Options#UI", "UI"))
+            {
+                ImGui::Spacing();
+
+                if (ImGui::SliderFloat("Font scale", &globalConfig.ui.fontScale, 0.5f, 3.0f))
+                    DCBP::MarkGlobalsForSave();
+
+                ImGui::Spacing();
             }
 
             if (CollapsingHeader("Options#Controls", "Controls"))
@@ -1372,6 +1412,8 @@ namespace CBP
 
                 if (ImGui::Checkbox("Lock game controls while UI active", &globalConfig.ui.lockControls))
                     DCBP::MarkGlobalsForSave();
+
+                ImGui::Spacing();
             }
 
             if (CollapsingHeader("Options#Simulation", "Simulation"))
@@ -1406,6 +1448,8 @@ namespace CBP
                     DCBP::MarkGlobalsForSave();
                 }
                 HelpMarker(MiscHelpText::colMaxPenetrationDepth);
+
+                ImGui::Spacing();
             }
 
             if (DCBP::GetDriverConfig().debug_renderer)
@@ -1435,6 +1479,8 @@ namespace CBP
                         DCBP::UpdateDebugRendererSettings();
                         DCBP::MarkGlobalsForSave();
                     }
+
+                    ImGui::Spacing();
                 }
             }
         }
@@ -1492,21 +1538,23 @@ namespace CBP
     {
 
         auto& io = ImGui::GetIO();
-        //auto& globalConfig = IConfig::GetGlobalConfig();
+        auto& globalConfig = IConfig::GetGlobalConfig();
 
         ImVec2 center(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f);
         ImGui::SetNextWindowPos(center, ImGuiCond_FirstUseEver, ImVec2(0.5f, 0.5f));
 
         ImVec2 sizeMin(min(300.0f, io.DisplaySize.x - 40.0f), min(100.0f, io.DisplaySize.y - 40.0f));
-        ImVec2 sizeMax(min(450.0f, io.DisplaySize.x), max(io.DisplaySize.y - 40.0f, sizeMin.y));
+        ImVec2 sizeMax(min(1920.0f, io.DisplaySize.x), max(io.DisplaySize.y - 40.0f, sizeMin.y));
 
         ImGui::SetNextWindowSizeConstraints(sizeMin, sizeMax);
         ImGui::SetNextWindowSize(ImVec2(400.0f, io.DisplaySize.y), ImGuiCond_FirstUseEver);
 
         ImGui::PushID(static_cast<const void*>(a_active));
 
-        if (ImGui::Begin("Collision groups", a_active))
+        if (ImGui::Begin("Node collision groups", a_active))
         {
+            ImGui::SetWindowFontScale(globalConfig.ui.fontScale);
+
             ImGui::PushItemWidth(ImGui::GetFontSize() * -14.0f);
 
             auto& colGroups = IConfig::GetCollisionGroups();
@@ -1538,9 +1586,13 @@ namespace CBP
 
                 ImGui::EndCombo();
             }
+            HelpMarker(MiscHelpText::colGroupEditor);
 
-            ImGui::SameLine();
-            if (ImGui::Button("New")) {
+            auto wcm = ImGui::GetWindowContentRegionMax();
+
+            ClearTextOffset();
+            ImGui::SameLine(wcm.x - GetNextTextOffset("New"));
+            if (ButtonRight("New")) {
                 ImGui::OpenPopup("New group");
                 m_input = 0;
             }
@@ -1556,8 +1608,8 @@ namespace CBP
                 }
             }
 
-            ImGui::SameLine();
-            if (ImGui::Button("Delete")) {
+            ImGui::SameLine(wcm.x - GetNextTextOffset("Delete"));
+            if (ButtonRight("Delete")) {
                 if (m_selected)
                     ImGui::OpenPopup("Delete");
             }
@@ -1652,19 +1704,22 @@ namespace CBP
         ActorListTick();
 
         auto& io = ImGui::GetIO();
+        auto& globalConfig = IConfig::GetGlobalConfig();
 
         ImVec2 center(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f);
         ImGui::SetNextWindowPos(center, ImGuiCond_FirstUseEver, ImVec2(0.5f, 0.5f));
 
         ImVec2 sizeMin(min(300.0f, io.DisplaySize.x - 40.0f), min(100.0f, io.DisplaySize.y - 40.0f));
-        ImVec2 sizeMax(min(400.0f, io.DisplaySize.x), max(io.DisplaySize.y - 40.0f, sizeMin.y));
+        ImVec2 sizeMax(min(1920.0f, io.DisplaySize.x), max(io.DisplaySize.y - 40.0f, sizeMin.y));
 
         ImGui::SetNextWindowSizeConstraints(sizeMin, sizeMax);
 
         ImGui::PushID(static_cast<const void*>(a_active));
 
-        if (ImGui::Begin("Node config", a_active))
+        if (ImGui::Begin("Actor nodes", a_active))
         {
+            ImGui::SetWindowFontScale(globalConfig.ui.fontScale);
+
             ImGui::PushItemWidth(ImGui::GetFontSize() * -12.0f);
 
             auto entry = GetSelectedEntry();
@@ -1672,7 +1727,7 @@ namespace CBP
 
             DrawActorList(entry, curSelName);
 
-            if (entry) 
+            if (entry)
             {
                 if (ImGui::Button("Reset"))
                     ImGui::OpenPopup("Reset Node");
@@ -2046,16 +2101,26 @@ namespace CBP
                 ImGui::Columns(2, nullptr, false);
 
                 ImGui::Text("Female");
+
+                ImGui::PushID(1);
+
                 ImGui::Spacing();
                 changed |= ImGui::Checkbox("Movement", &conf.femaleMovement);
                 changed |= ImGui::Checkbox("Collisions", &conf.femaleCollisions);
 
+                ImGui::PopID();
+
                 ImGui::NextColumn();
 
                 ImGui::Text("Male");
+
+                ImGui::PushID(2);
+
                 ImGui::Spacing();
                 changed |= ImGui::Checkbox("Movement", &conf.maleMovement);
                 changed |= ImGui::Checkbox("Collisions", &conf.maleCollisions);
+
+                ImGui::PopID();
 
                 ImGui::Columns(1);
 
@@ -2082,6 +2147,8 @@ namespace CBP
 
         if (ImGui::Begin("Stats", a_active, ImGuiWindowFlags_AlwaysAutoResize))
         {
+            ImGui::SetWindowFontScale(globalConfig.ui.fontScale);
+
             if (globalConfig.general.enableProfiling)
             {
                 auto& stats = DCBP::GetProfiler().Current();

@@ -77,6 +77,7 @@ namespace CBP
         resetConfOnRace,
         showEDIDs,
         playableOnly,
+        colGroupEditor
     };
 
     typedef std::pair<const std::string, configComponents_t> actorEntryBaseConf_t;
@@ -94,7 +95,37 @@ namespace CBP
             bool a_default = true) const;
 
         void HelpMarker(MiscHelpText a_id) const;
+
+        inline float GetNextTextOffset(const char* a_text) 
+        {
+            auto& globalConf = IConfig::GetGlobalConfig();
+
+            auto it = m_ctlPositions.find(a_text);
+            if (it != m_ctlPositions.end())
+                return (m_posOffset += it->second + 5.f);            
+
+            return (m_posOffset += ImGui::CalcTextSize(a_text).x + 5.0f);
+        }
+
+        inline void ClearTextOffset() {
+            m_posOffset = 0.0f;
+        }
+
+        inline bool ButtonRight(const char* a_text)
+        {
+            bool res = ImGui::Button(a_text);
+
+            m_ctlPositions[a_text] = ImGui::GetItemRectSize().x;
+
+            return res;
+        }
+
     private:
+
+        float m_posOffset = 0.0f;
+
+        std::unordered_map<std::string, float> m_ctlPositions;
+
         static const std::unordered_map<MiscHelpText, const char*> m_helpText;
     };
 
@@ -233,6 +264,7 @@ namespace CBP
 
     template <class T, class P>
     class UIProfileSelector :
+        virtual protected UIBase,
         UIDataBase<T, typename P::base_type>,
         UIProfileBase<P>
     {
@@ -276,6 +308,7 @@ namespace CBP
 
     template <class T>
     class UIProfileEditorBase :
+        virtual protected UIBase,
         UIProfileBase<T>
     {
     public:
@@ -387,7 +420,8 @@ namespace CBP
         std::string m_globLabel;
     };
 
-    class UICollisionGroups
+    class UICollisionGroups :
+        virtual protected UIBase
     {
     public:
         UICollisionGroups() = default;

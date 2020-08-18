@@ -125,6 +125,8 @@ namespace CBP
             bool syncWeightSlidersRace = false;
             bool selectCrosshairActor = false;
 
+            float fontScale = 1.0f;
+
             UInt32 comboKey = DIK_LSHIFT;
             UInt32 showKey = DIK_END;
 
@@ -256,7 +258,8 @@ namespace CBP
         bool maleMovement = false;
         bool maleCollisions = false;
 
-        inline void Get(char a_sex, bool& a_collisionsOut, bool& a_movementOut) {
+        inline void Get(char a_sex, bool& a_collisionsOut, bool& a_movementOut) const noexcept
+        {
             if (a_sex == 0) {
                 a_collisionsOut = maleCollisions;
                 a_movementOut = maleMovement;

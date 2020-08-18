@@ -207,7 +207,8 @@ namespace CBP
                 globalConfig.ui.selectCrosshairActor = ui.get("selectCrosshairActor", false).asBool();
                 globalConfig.ui.comboKey = static_cast<UInt32>(ui.get("comboKey", DIK_LSHIFT).asUInt());
                 globalConfig.ui.showKey = static_cast<UInt32>(ui.get("showKey", DIK_END).asUInt());
-                globalConfig.ui.lastActor = static_cast<SKSE::ObjectHandle>(ui.get("lastActor", 0).asUInt64());
+                globalConfig.ui.lastActor = static_cast<SKSE::ObjectHandle>(ui.get("lastActor", 0ULL).asUInt64());
+                globalConfig.ui.fontScale = ui.get("fontScale", 1.0f).asFloat();
 
                 if (ui.isMember("force")) {
                     const auto& force = ui["force"];
@@ -371,6 +372,7 @@ namespace CBP
             ui["comboKey"] = static_cast<uint32_t>(globalConfig.ui.comboKey);
             ui["showKey"] = static_cast<uint32_t>(globalConfig.ui.showKey);
             ui["lastActor"] = static_cast<uint64_t>(globalConfig.ui.lastActor);
+            ui["fontScale"] = globalConfig.ui.fontScale;
 
             auto& force = ui["force"];
 

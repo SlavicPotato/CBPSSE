@@ -54,7 +54,7 @@ namespace CBP
 
                     NiPoint3 vaf, vbf;
 
-                    ResolveCollision(
+                    CollisionResponse(
                         conf1.colDepthMul,
                         conf2.colDepthMul,
                         depth,
@@ -90,7 +90,7 @@ namespace CBP
         }
     }
 
-    void ICollision::ResolveCollision(
+    void ICollision::CollisionResponse(
         float dma,
         float dmb,
         float depth,
@@ -106,10 +106,7 @@ namespace CBP
         auto maga = len + (depth * dma);
         auto magb = len + (depth * dmb);
 
-        auto Ja = (normal * (maga * depth));
-        auto Jb = (normal * (-magb * depth));
-
-        vaf = Ja;
-        vbf = Jb;
+        vaf = (normal * (maga * depth));
+        vbf = (normal * (-magb * depth));
     }
 }

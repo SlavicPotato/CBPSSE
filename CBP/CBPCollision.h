@@ -19,9 +19,9 @@ namespace CBP
     private:
         ICollision() = default;
 
-        virtual void onContact(const CollisionCallback::CallbackData& callbackData);
+        virtual void onContact(const CollisionCallback::CallbackData& callbackData) override;
 
-        static void ResolveCollision(
+        __forceinline static void CollisionResponse(
             float dma,
             float dmb,
             float depth,
