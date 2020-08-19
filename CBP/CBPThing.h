@@ -2,6 +2,19 @@
 
 namespace CBP
 {
+#ifdef _CBP_ENABLE_DEBUG
+    struct SimDebugInfo
+    {
+        NiTransform worldTransform;
+        NiTransform localTransform;
+
+        NiTransform worldTransformParent;
+        NiTransform localTransformParent;
+
+        std::string parentNodeName;
+    };
+#endif
+
     class SimComponent
     {
         struct Force
@@ -78,6 +91,9 @@ namespace CBP
         NiPoint3 m_oldWorldPos;
         NiPoint3 m_velocity;
 
+        NiPoint3 m_initialNodePos;
+        NiMatrix33 m_initialNodeRot;
+
         Collider m_collisionData;
 
         std::queue<Force> m_applyForceQueue;
@@ -102,6 +118,10 @@ namespace CBP
 
         float m_dampingMul;
         bool m_inContact;
+
+#ifdef _CBP_ENABLE_DEBUG
+        SimDebugInfo m_debugInfo;
+#endif
     public:
         SimComponent(
             Actor* a_actor,
@@ -131,6 +151,8 @@ namespace CBP
         void Reset(Actor* actor);
 
         void ApplyForce(uint32_t a_steps, const NiPoint3& a_force);
+
+        void UpdateDebugInfo(Actor *a_actor);
 
         inline void ClampVelocity() 
         {
@@ -210,5 +232,11 @@ namespace CBP
         inline void SetInContact(bool a_val) {
             m_inContact = a_val;
         }
+
+#ifdef _CBP_ENABLE_DEBUG
+        [[nodiscard]] inline const auto& GetDebugInfo() const {
+            return m_debugInfo;
+        }
+#endif
     };
 }

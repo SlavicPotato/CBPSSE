@@ -9,16 +9,26 @@ namespace CBP
         std::string nodeName;
         BSFixedString cs;
         NiAVObject* bone;
-        const std::string &confGroup;
-        const configComponent_t& conf;
+        std::string confGroup;
+        configComponent_t conf;
         bool collisions;
         bool movement;
     };
 
-    typedef std::vector< nodeDesc_t> nodeDescList_t;
+    typedef std::vector<nodeDesc_t> nodeDescList_t;
 
     class SimObject
     {
+        typedef 
+#ifdef _CBP_ENABLE_DEBUG
+            std::map
+#else
+            std::unordered_map
+#endif
+            <std::string, SimComponent> thingMap_t;
+
+        using iterator = typename thingMap_t::iterator;
+        using const_iterator = typename thingMap_t::const_iterator;
     public:
         SimObject(
             SKSE::ObjectHandle a_handle,
@@ -36,6 +46,11 @@ namespace CBP
         void Reset(Actor* a_actor);
 
         void ApplyForce(uint32_t a_steps, const std::string& a_component, const NiPoint3& a_force);
+        
+#ifdef _CBP_ENABLE_DEBUG
+        void UpdateDebugInfo(Actor* a_actor);
+#endif
+
         void UpdateGroupInfo();
 
         void Release();
@@ -57,9 +72,23 @@ namespace CBP
             nodeDescList_t &a_out) 
             -> nodeDescList_t::size_type;
 
+        [[nodiscard]] inline const_iterator begin() const noexcept {
+            return m_things.begin();
+        }
+
+        [[nodiscard]] inline const_iterator end() const noexcept {
+            return m_things.end();
+        }
+
+#ifdef _CBP_ENABLE_DEBUG
+        [[nodiscard]] inline const std::string& GetActorName() const noexcept {
+            return m_actorName;
+        }
+#endif
+
     private:
 
-        std::unordered_map<std::string, SimComponent> m_things;
+        thingMap_t m_things;
         std::unordered_set<std::string> m_configGroups;
 
         uint64_t m_Id;
@@ -67,8 +96,19 @@ namespace CBP
 
         char m_sex;
 
+
+#ifdef _CBP_ENABLE_DEBUG
+        std::string m_actorName;
+#endif
+
        // [[nodiscard]] static bool CheckNode(Actor *a_actor, const configComponents_t& a_config, const nodeMap_t::value_type &a_pair);
     };
 
-    typedef std::unordered_map<SKSE::ObjectHandle, SimObject> simActorList_t;
+    typedef 
+#ifdef _CBP_ENABLE_DEBUG
+        std::map
+#else
+        std::unordered_map
+#endif
+        <SKSE::ObjectHandle, SimObject> simActorList_t;
 }

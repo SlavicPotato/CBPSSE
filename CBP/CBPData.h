@@ -66,6 +66,8 @@ namespace CBP
             return ignoredRaces.contains(a_formid);
         }
 
+        static bool GetActorName(SKSE::ObjectHandle a_handle, std::string& a_out);
+
     private:
         static void AddExtraActorEntry(SKSE::ObjectHandle a_handle);
 

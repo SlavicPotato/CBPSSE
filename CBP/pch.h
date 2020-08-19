@@ -69,6 +69,8 @@
 
 namespace r3d = reactphysics3d;
 
+//#define _CBP_ENABLE_DEBUG
+
 #include "plugin.h"
 #include "common.h"
 #include "misc.h"

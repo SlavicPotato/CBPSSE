@@ -46,10 +46,17 @@ namespace CBP
         const nodeDescList_t& a_desc)
         :
         m_handle(a_handle),
+#ifndef _CBP_ENABLE_DEBUG
         m_things(a_desc.size()),
+#endif
         m_Id(a_Id),
         m_sex(a_sex)
     {
+
+#ifdef _CBP_ENABLE_DEBUG
+        m_actorName = CALL_MEMBER_FN(a_actor, GetReferenceName)();
+#endif
+
         for (const auto& e : a_desc)
         {
             m_things.try_emplace(
@@ -110,11 +117,19 @@ namespace CBP
                 p.second.ApplyForce(a_steps, a_force);
     }
 
+#ifdef _CBP_ENABLE_DEBUG
+    void SimObject::UpdateDebugInfo(Actor* a_actor)
+    {
+        for (auto& p : m_things)
+            p.second.UpdateDebugInfo(a_actor);
+    }
+#endif
+
     void SimObject::UpdateGroupInfo()
     {
-        for (auto& p : m_things) 
-            p.second.UpdateGroupInfo(m_Id, 
-                IConfig::GetNodeCollisionGroupId(p.first));        
+        for (auto& p : m_things)
+            p.second.UpdateGroupInfo(m_Id,
+                IConfig::GetNodeCollisionGroupId(p.first));
     }
 
     void SimObject::Release() {

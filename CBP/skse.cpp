@@ -2,7 +2,7 @@
 
 namespace SKSE
 {
-    constexpr size_t MAX_TRAMPOLINE_BRANCH = 70;
+    constexpr size_t MAX_TRAMPOLINE_BRANCH = 128;
 
     PluginHandle g_pluginHandle = kPluginHandle_Invalid;
 

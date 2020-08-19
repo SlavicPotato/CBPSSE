@@ -1,7 +1,7 @@
 #pragma once
 
 //#define _CBP_MEASURE_PERF
-//#define _CBP_SHOW_STATS
+#define _CBP_SHOW_STATS
 
 namespace CBP
 {

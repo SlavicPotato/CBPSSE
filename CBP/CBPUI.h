@@ -517,6 +517,21 @@ namespace CBP
         void Draw(bool* a_active);
     };
 
+#ifdef _CBP_ENABLE_DEBUG
+    class UIDebugInfo :
+        UIBase
+    {
+    public:
+        void Draw(bool *a_active);
+    private:
+        const char* ParseFloat(float v);
+        std::string TransformToStr(const NiTransform& a_transform);
+
+        bool m_sized = false;
+        char m_buffer[64];
+    };
+#endif
+
     class UIContext :
         virtual UIBase,
         UIActorList<actorListBaseConf_t>,
@@ -604,6 +619,7 @@ namespace CBP
                 bool collisionGroups;
                 bool nodeConf;
                 bool profiling;
+                bool debug;
             } windows;
 
             std::exception lastException;
@@ -616,6 +632,9 @@ namespace CBP
         UICollisionGroups m_colGroups;
         UINodeConfig m_nodeConfig;
         UIProfiling m_profiling;
+#ifdef _CBP_ENABLE_DEBUG
+        UIDebugInfo m_debug;
+#endif
 
         UISimComponentActor m_scActor;
         UISimComponentGlobal m_scGlobal;

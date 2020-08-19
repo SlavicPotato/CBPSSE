@@ -267,7 +267,7 @@ namespace CBP
             ImGui::SameLine();
             m_filter.DrawButton();
 
-            
+
             ClearTextOffset();
             ImGui::SameLine(ImGui::GetWindowContentRegionMax().x - GetNextTextOffset("New"));
             if (ButtonRight("New")) {
@@ -1130,7 +1130,7 @@ namespace CBP
         m_tsNoActors(PerfCounter::Query()),
         m_peComponents("Physics profile editor"),
         m_peNodes("Node profile editor"),
-        state({ .windows{false, false, false, false, false, false, false } })
+        state({ .windows{false, false, false, false, false, false, false, false } })
     {
     }
 
@@ -1212,6 +1212,8 @@ namespace CBP
                     ImGui::Separator();
                     if (ImGui::BeginMenu("Profile editors"))
                     {
+                        ImGui::SetWindowFontScale(globalConfig.ui.fontScale);
+
                         ImGui::MenuItem("Physics", nullptr, &state.windows.profileSim);
                         ImGui::MenuItem("Node", nullptr, &state.windows.profileNodes);
 
@@ -1221,6 +1223,11 @@ namespace CBP
                     ImGui::Separator();
                     ImGui::MenuItem("Options", nullptr, &state.windows.options);
                     ImGui::MenuItem("Stats", nullptr, &state.windows.profiling);
+
+#ifdef _CBP_ENABLE_DEBUG
+                    ImGui::Separator();
+                    ImGui::MenuItem("Debug info", nullptr, &state.windows.debug);
+#endif
 
                     ImGui::EndMenu();
                 }
@@ -1356,6 +1363,11 @@ namespace CBP
 
         if (state.windows.profiling)
             m_profiling.Draw(&state.windows.profiling);
+
+#ifdef _CBP_ENABLE_DEBUG
+        if (state.windows.debug)
+            m_debug.Draw(&state.windows.debug);
+#endif
     }
 
     void UIOptions::Draw(bool* a_active)
@@ -2209,4 +2221,108 @@ namespace CBP
 
         ImGui::PopID();
     }
+
+#ifdef _CBP_ENABLE_DEBUG
+
+    const char* UIDebugInfo::ParseFloat(float v)
+    {
+        _snprintf_s(m_buffer, _TRUNCATE, "%.4f", v);
+        return m_buffer;
+    }
+
+    std::string UIDebugInfo::TransformToStr(const NiTransform& a_transform)
+    {
+        std::ostringstream ss;
+
+        ss << "X: " << std::setw(12) << ParseFloat(a_transform.pos.x) <<
+            ", Y: " << std::setw(12) << ParseFloat(a_transform.pos.y) <<
+            ", Z: " << std::setw(12) << ParseFloat(a_transform.pos.z) <<
+            ", S: " << a_transform.scale;
+
+        return ss.str();
+    }
+
+    void UIDebugInfo::Draw(bool* a_active)
+    {
+        auto& io = ImGui::GetIO();
+        auto& globalConfig = IConfig::GetGlobalConfig();
+
+        ImVec2 center(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f);
+        ImGui::SetNextWindowPos(center, ImGuiCond_FirstUseEver, ImVec2(0.5f, 0.5f));
+
+        ImVec2 sizeMin(min(300.0f, io.DisplaySize.x - 40.0f), min(100.0f, io.DisplaySize.y - 40.0f));
+        ImVec2 sizeMax(min(1920.0f, io.DisplaySize.x), max(io.DisplaySize.y - 40.0f, sizeMin.y));
+
+        ImGui::SetNextWindowSizeConstraints(sizeMin, sizeMax);
+        ImGui::SetNextWindowSize(ImVec2(400.0f, 600.0f), ImGuiCond_FirstUseEver);
+
+        ImGui::PushID(static_cast<const void*>(a_active));
+
+        if (ImGui::Begin("Debug info", a_active))
+        {
+            ImGui::SetWindowFontScale(globalConfig.ui.fontScale);
+
+            auto& actors = DCBP::GetSimActorList();
+
+            for (const auto& obj : actors)
+            {
+                std::ostringstream ss;
+                ss << std::uppercase << std::setfill('0') <<
+                    std::setw(16) << std::hex << obj.first <<
+                    " " << obj.second.GetActorName();
+
+                if (ImGui::CollapsingHeader(ss.str().c_str()))
+                {
+                    ImGui::Columns(3);
+                    if (!m_sized)
+                        ImGui::SetColumnWidth(0, ImGui::GetFontSize() * 17.0f);
+                    ImGui::Text("Nodes");
+                    ImGui::NextColumn();
+                    ImGui::Text("World");
+                    ImGui::NextColumn();
+                    ImGui::Text("Local");
+                    ImGui::Columns(1);
+                    ImGui::Separator();
+
+                    for (const auto& c : obj.second)
+                    {
+                        ImGui::Columns(3);
+
+                        auto& info = c.second.GetDebugInfo();
+
+                        if (!m_sized)
+                            ImGui::SetColumnWidth(0, ImGui::GetFontSize() * 17.0f);
+
+                        std::string nodeDesc(("Node:   " + c.first + "\n") + "Parent: " + info.parentNodeName);
+                        ImGui::Text(nodeDesc.c_str());
+
+                        ImGui::NextColumn();
+
+                        std::string objW((TransformToStr(info.worldTransform) + "\n") +
+                            (TransformToStr(info.worldTransformParent)));
+
+                        ImGui::Text(objW.c_str());
+
+                        ImGui::NextColumn();
+
+                        std::string objL((TransformToStr(info.localTransform) + "\n") +
+                            (TransformToStr(info.localTransformParent)));
+
+                        ImGui::Text(objL.c_str());
+
+                        ImGui::Columns(1);
+                        ImGui::Separator();
+                    }
+
+                    if (!m_sized)
+                        m_sized = true;
+                }
+            }
+        }
+
+        ImGui::End();
+
+        ImGui::PopID();
+    }
+#endif
 }

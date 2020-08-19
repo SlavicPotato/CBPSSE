@@ -147,4 +147,14 @@ namespace CBP
         return true;
     }
 
+    bool IData::GetActorName(SKSE::ObjectHandle a_handle, std::string &a_out)
+    {
+        auto it = actorCache.find(a_handle);
+        if (it != actorCache.end()) {
+            a_out = it->second.name;
+            return true;
+        }
+        return false;
+    }
+
 }

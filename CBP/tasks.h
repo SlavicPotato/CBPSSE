@@ -21,8 +21,6 @@ namespace CBP
         static void RunTasks();
 
         static std::vector<TaskDelegateFixed*> s_tasks_fixed;
-        static TaskQueue s_tasks;
-
-        static RTTaskEnter_t RTTaskEnter_O;
+        //static TaskQueue s_tasks;
     };
 }

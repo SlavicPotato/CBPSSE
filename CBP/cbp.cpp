@@ -532,6 +532,9 @@ namespace CBP
                 for (uint32_t i = 0; i < numSteps; i++)
                     it->second.Update(actor, i);
 
+#ifdef _CBP_ENABLE_DEBUG
+                it->second.UpdateDebugInfo(actor);
+#endif
                 numProcessed++;
                 ++it;
             }
@@ -543,6 +546,7 @@ namespace CBP
                 world->update(globalConf.phys.timeStep);
                 i--;
             }
+
 
             if (globalConf.debugRenderer.enabled &&
                 DCBP::GetDriverConfig().debug_renderer)
@@ -678,6 +682,10 @@ namespace CBP
             if (ActorValid(actor))
                 e.second.Reset(actor);
 
+#ifdef _CBP_SHOW_STATS
+            _DMESSAGE("Removing %llX (%s)", e.first, actor ? CALL_MEMBER_FN(actor, GetReferenceName)() : "nullptr");
+#endif
+
             e.second.Release();
         }
 
@@ -694,7 +702,7 @@ namespace CBP
         GatherActors(handles);
 
         ClearActors();
-        for (const auto e : handles)
+        for (auto e : handles)
             AddActor(e);
     }
 

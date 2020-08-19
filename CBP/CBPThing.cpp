@@ -2,8 +2,8 @@
 
 namespace CBP
 {
-    inline static int sgn(float val) {
-        return (0.0f < val) - (val < 0.0f);
+    inline static float sgn(float val) {
+        return float((0.0f < val) - (val < 0.0f));
     }
 
     bool SimComponent::Collider::Create()
@@ -103,6 +103,8 @@ namespace CBP
         m_boneName(a_name),
         m_configGroupName(a_configGroupName),
         m_oldWorldPos(a_obj->m_worldTransform.pos),
+        m_initialNodePos(a_obj->m_localTransform.pos),
+        m_initialNodeRot(a_obj->m_localTransform.rot),
         m_velocity(NiPoint3(0.0f, 0.0f, 0.0f)),
         m_npZero(NiPoint3(0.0f, 0.0f, 0.0f)),
         m_collisionData(*this),
@@ -189,9 +191,9 @@ namespace CBP
         {
             auto obj = actor->loadedState->node->GetObjectByName(&m_boneName.data);
             if (obj != nullptr) {
-                obj->m_localTransform.pos = m_npZero;
-                obj->m_localTransform.rot.Identity();
-                m_oldWorldPos = obj->m_worldTransform.pos;
+                obj->m_localTransform.pos = m_initialNodePos;
+                obj->m_localTransform.rot = m_initialNodeRot;
+                //m_oldWorldPos = obj->m_worldTransform.pos;
             }
         }
 
@@ -200,18 +202,18 @@ namespace CBP
         m_applyForceQueue.swap(decltype(m_applyForceQueue)());
     }
 
-    void SimComponent::UpdateMovement(Actor* actor)
+    void SimComponent::UpdateMovement(Actor* a_actor)
     {
         auto& globalConf = IConfig::GetGlobalConfig();
 
         //Offset to move Center of Mass make rotaional motion more significant  
-        auto target = m_obj->m_parent->m_worldTransform * m_npCogOffset;
+        NiPoint3 target(m_obj->m_parent->m_worldTransform * m_npCogOffset);
 
         NiPoint3 diff(target - m_oldWorldPos);
 
         if (fabs(diff.x) > 120.0f || fabs(diff.y) > 120.0f || fabs(diff.z) > 120.0f)
         {
-            Reset(actor);
+            Reset(a_actor);
             return;
         }
 
@@ -257,9 +259,9 @@ namespace CBP
 
         m_oldWorldPos = (m_obj->m_parent->m_worldTransform.rot * ldiff) + target;
 
-        m_obj->m_localTransform.pos.x = ldiff.x * m_conf.linearX;
-        m_obj->m_localTransform.pos.y = ldiff.y * m_conf.linearY;
-        m_obj->m_localTransform.pos.z = ldiff.z * m_conf.linearZ;
+        m_obj->m_localTransform.pos.x = m_initialNodePos.x + (ldiff.x * m_conf.linearX);
+        m_obj->m_localTransform.pos.y = m_initialNodePos.y + (ldiff.y * m_conf.linearY);
+        m_obj->m_localTransform.pos.z = m_initialNodePos.z + (ldiff.z * m_conf.linearZ);
 
         m_obj->m_localTransform.pos += invRot * m_npGravityCorrection;
 
@@ -269,14 +271,14 @@ namespace CBP
             ldiff.z * m_conf.rotationalZ);
     }
 
-    void SimComponent::Update(Actor* actor, uint32_t a_step)
+    void SimComponent::Update(Actor* a_actor, uint32_t a_step)
     {
-        m_obj = actor->loadedState->node->GetObjectByName(&m_boneName.data);
+        m_obj = a_actor->loadedState->node->GetObjectByName(&m_boneName.data);
         if (m_obj == nullptr)
             return;
 
         if (m_movement) {
-            UpdateMovement(actor);
+            UpdateMovement(a_actor);
         }
         else if (a_step == 0) {
             auto newPos = m_obj->m_worldTransform.pos;
@@ -299,4 +301,21 @@ namespace CBP
             Force{ a_steps, a_force }
         );
     }
+
+#ifdef _CBP_ENABLE_DEBUG
+    void SimComponent::UpdateDebugInfo(Actor* a_actor)
+    {
+        m_obj = a_actor->loadedState->node->GetObjectByName(&m_boneName.data);
+        if (m_obj == nullptr)
+            return;
+
+        m_debugInfo.worldTransform = m_obj->m_worldTransform;
+        m_debugInfo.localTransform = m_obj->m_localTransform;
+
+        m_debugInfo.worldTransformParent = m_obj->m_parent->m_worldTransform;
+        m_debugInfo.localTransformParent = m_obj->m_parent->m_localTransform;
+
+        m_debugInfo.parentNodeName = m_obj->m_parent->m_name;
+    }
+#endif
 }
