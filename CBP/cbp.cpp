@@ -325,7 +325,9 @@ namespace CBP
         if (globalConf.debugRenderer.enabled &&
             globalConf.phys.collisions)
         {
-            m_Instance.m_renderer->Draw();
+            auto mm = MenuManager::GetSingleton();
+            if (!mm || !mm->InPausedMenu())
+                m_Instance.m_renderer->Draw();
         }
 
         Unlock();
@@ -527,7 +529,7 @@ namespace CBP
 #endif
                 it->second.Release();
                 it = m_actors.erase(it);
-            }
+        }
             else {
                 for (uint32_t i = 0; i < numSteps; i++)
                     it->second.Update(actor, i);
@@ -538,7 +540,7 @@ namespace CBP
                 numProcessed++;
                 ++it;
             }
-        }
+    }
 
         if (globalConf.phys.collisions) {
             uint32_t i = numSteps;
@@ -560,7 +562,7 @@ namespace CBP
         }
 
         DCBP::Unlock();
-    }
+}
 
     std::atomic<uint64_t> UpdateTask::m_nextGroupId = 0;
 
@@ -620,7 +622,7 @@ namespace CBP
 #endif
             it->second.Release();
             m_actors.erase(it);
-        }
+    }
     }
 
     void UpdateTask::UpdateGroupInfoOnAllActors()
