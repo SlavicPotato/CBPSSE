@@ -193,7 +193,7 @@ namespace CBP
             if (obj != nullptr) {
                 obj->m_localTransform.pos = m_initialNodePos;
                 obj->m_localTransform.rot = m_initialNodeRot;
-                //m_oldWorldPos = obj->m_worldTransform.pos;
+                m_oldWorldPos = obj->m_worldTransform.pos;
             }
         }
 
