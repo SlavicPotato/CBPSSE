@@ -240,6 +240,10 @@ namespace CBP
             return m_Instance.m_serialization.SavePending();
         }
 
+        inline static bool SaveToDefaultGlobalProfile() {
+            return m_Instance.m_serialization.SaveToDefaultGlobalProfile();
+        }
+
         [[nodiscard]] inline static const auto& GetLastSerializationException() {
             return m_Instance.m_serialization.GetLastException();
         }

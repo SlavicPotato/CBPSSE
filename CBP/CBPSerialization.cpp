@@ -834,6 +834,28 @@ namespace CBP
         }
     }
 
+    bool Serialization::SaveToDefaultGlobalProfile()
+    {
+        try
+        {
+            Json::Value root;
+
+            m_componentParser.Create(IConfig::GetGlobalPhysicsConfig(), root);
+            m_nodeParser.Create(IConfig::GetGlobalNodeConfig(), root);
+
+            WriteJsonData(PLUGIN_CBP_GLOBPROFILE_DEFAULT_DATA, root);
+
+            return true;
+        }
+        catch (const std::exception& e)
+        {
+            m_lastException = e;
+            Error("%s: %s", __FUNCTION__, e.what());
+
+            return false;
+        }
+    }
+
     size_t Serialization::SerializeRaceProfiles(std::ostringstream& a_out)
     {
         try

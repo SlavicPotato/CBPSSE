@@ -1183,6 +1183,7 @@ namespace CBP
             ImGui::PushItemWidth(ImGui::GetFontSize() * -15.0f);
 
             bool saveAllFailed = false;
+            bool saveToDefaultGlob = false;
 
             if (ImGui::BeginMenuBar())
             {
@@ -1194,6 +1195,15 @@ namespace CBP
                             state.lastException =
                                 DCBP::GetLastSerializationException();
                         }
+
+                    if (ImGui::BeginMenu("Misc"))
+                    {
+                        ImGui::SetWindowFontScale(globalConfig.ui.fontScale);
+
+                        saveToDefaultGlob = ImGui::MenuItem("Store default profile");
+
+                        ImGui::EndMenu();
+                    }
 
                     ImGui::Separator();
                     if (ImGui::MenuItem("Exit"))
@@ -1320,6 +1330,8 @@ namespace CBP
 
             if (saveAllFailed)
                 ImGui::OpenPopup("Save failed");
+            else if (saveToDefaultGlob)
+                ImGui::OpenPopup("Store global");
 
             ImGui::Spacing();
 
@@ -1338,7 +1350,22 @@ namespace CBP
                 m_scGlobal.DrawSimComponents(0, IConfig::GetGlobalPhysicsConfig());
             }
 
-            UICommon::MessageDialog("Save failed", "Saving one or more files failed.\nThe last exception was:\n\n%s", state.lastException.what());
+            UICommon::MessageDialog(
+                "Save failed", 
+                "Saving one or more files failed.\nThe last exception was:\n\n%s", 
+                state.lastException.what());
+            
+            if (UICommon::ConfirmDialog("Store global", "Are you sure you want to save current global physics and node configuration as the default?")) {
+                if (!DCBP::SaveToDefaultGlobalProfile()) {
+                    state.lastException = DCBP::GetLastSerializationException();
+                    ImGui::OpenPopup("Store global failed");
+                }
+            }
+
+            UICommon::MessageDialog(
+                "Store global failed", 
+                "Could not save current globals to the default profile.\nThe last exception was:\n\n%s", 
+                state.lastException.what());
 
             ImGui::PopItemWidth();
             ImGui::PopID();

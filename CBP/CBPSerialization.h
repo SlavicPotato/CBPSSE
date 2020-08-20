@@ -40,6 +40,7 @@ namespace CBP
         size_t LoadGlobalProfile(SKSESerializationInterface* intfc, const char* a_data, UInt32 a_len);
         bool LoadDefaultGlobalProfile();
         size_t SerializeGlobalProfile(std::ostringstream& a_out);
+        bool SaveToDefaultGlobalProfile();
 
         size_t LoadRaceProfiles(SKSESerializationInterface* intfc, const char* a_data, UInt32 a_len);
         size_t SerializeRaceProfiles(std::ostringstream& a_out);
