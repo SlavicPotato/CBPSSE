@@ -295,6 +295,14 @@ namespace CBP
             FN_NAMEPROC("IConfig");
         };
 
+        struct combinedData_t
+        {
+            configComponents_t components;
+            configNodes_t nodes;
+
+            bool stored = false;
+        };
+
     public:
         typedef std::unordered_set<std::string> vKey_t;
 
@@ -341,7 +349,7 @@ namespace CBP
         }
 
         inline static void CopyToGlobalNodeConfig(const configNodes_t& a_rhs) {
-            CopyNodes(a_rhs, nodeConfigHolder);
+            CopyNodes(a_rhs, globalNodeConfigHolder);
         }
 
         [[nodiscard]] inline static const auto& GetThingGlobalConfigDefaults() {
@@ -447,19 +455,19 @@ namespace CBP
         }
 
         [[nodiscard]] inline static auto& GetGlobalNodeConfig() {
-            return nodeConfigHolder;
+            return globalNodeConfigHolder;
         }
 
         inline static void SetGlobalNodeConfig(const configNodes_t& a_rhs) noexcept {
-            nodeConfigHolder = a_rhs;
+            globalNodeConfigHolder = a_rhs;
         }
         
         inline static void SetGlobalNodeConfig(configNodes_t&& a_rhs) noexcept {
-            nodeConfigHolder = std::forward<configNodes_t>(a_rhs);
+            globalNodeConfigHolder = std::forward<configNodes_t>(a_rhs);
         }
 
         inline static void ClearGlobalNodeConfig() {
-            nodeConfigHolder.clear();
+            globalNodeConfigHolder.clear();
         }
 
         static bool GetGlobalNodeConfig(const std::string& a_node, configNode_t& a_out);
@@ -504,6 +512,16 @@ namespace CBP
             loadState.racePhys = a_newState;
         }
 
+        inline static void StoreDefaultGlobalProfile() {
+            defaultGlobalProfileStorage.components = thingGlobalConfig;
+            defaultGlobalProfileStorage.nodes = globalNodeConfigHolder;
+            defaultGlobalProfileStorage.stored = true;
+        }
+
+        [[nodiscard]] inline static auto& GetDefaultGlobalProfile() {
+            return defaultGlobalProfileStorage;
+        }
+
     private:
 
         static bool LoadNodeMap(nodeMap_t& a_out);
@@ -523,7 +541,7 @@ namespace CBP
         static collisionGroups_t collisionGroups;
         static nodeCollisionGroupMap_t nodeCollisionGroupMap;
 
-        static configNodes_t nodeConfigHolder;
+        static configNodes_t globalNodeConfigHolder;
         static actorConfigNodesHolder_t actorNodeConfigHolder;
 
         static struct configLoadStates_t {
@@ -531,6 +549,8 @@ namespace CBP
             bool actorNode;
             bool racePhys;
         } loadState;
+
+        static combinedData_t defaultGlobalProfileStorage;
 
         static IConfigLog log;
     };

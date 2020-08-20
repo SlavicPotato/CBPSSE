@@ -14,10 +14,12 @@ namespace CBP
     collisionGroups_t IConfig::collisionGroups;
     nodeCollisionGroupMap_t IConfig::nodeCollisionGroupMap;
 
-    configNodes_t IConfig::nodeConfigHolder;
+    configNodes_t IConfig::globalNodeConfigHolder;
     actorConfigNodesHolder_t IConfig::actorNodeConfigHolder;
 
     IConfig::configLoadStates_t IConfig::loadState{ false, false, false };
+
+    IConfig::combinedData_t IConfig::defaultGlobalProfileStorage;
 
     IConfig::IConfigLog IConfig::log;
 

@@ -365,7 +365,8 @@ namespace CBP
 
             iface.LoadGlobals();
             iface.LoadCollisionGroups();
-            iface.LoadDefaultGlobalProfile();
+            if (iface.LoadDefaultGlobalProfile())
+                CBP::IConfig::StoreDefaultGlobalProfile();
 
             UpdateDebugRendererState();
             UpdateDebugRendererSettings();
@@ -532,11 +533,21 @@ namespace CBP
         CBP::IConfig::ClearActorConfigHolder();
         CBP::IConfig::ClearActorNodeConfigHolder();
         CBP::IConfig::ClearRaceConfigHolder();
-        CBP::IConfig::ClearGlobalPhysicsConfig();
-        CBP::IConfig::ClearGlobalNodeConfig();
 
         auto& iface = m_Instance.m_serialization;
-        iface.LoadDefaultGlobalProfile();
+        auto& dgp = CBP::IConfig::GetDefaultGlobalProfile();
+
+        if (dgp.stored) {
+            CBP::IConfig::SetGlobalPhysicsConfig(dgp.components);
+            CBP::IConfig::SetGlobalNodeConfig(dgp.nodes);
+        }
+        else {
+            CBP::IConfig::ClearGlobalPhysicsConfig();
+            CBP::IConfig::ClearGlobalNodeConfig();
+
+            if (iface.LoadDefaultGlobalProfile())
+                CBP::IConfig::StoreDefaultGlobalProfile();
+        }
 
         GetUpdateTask().ClearActors();
 
