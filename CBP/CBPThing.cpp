@@ -275,7 +275,7 @@ namespace CBP
     {
         m_obj = a_actor->loadedState->node->GetObjectByName(&m_boneName.data);
         if (m_obj == nullptr)
-            return;        
+            return;
 
         if (m_movement) {
             UpdateMovement(a_actor);

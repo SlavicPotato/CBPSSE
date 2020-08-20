@@ -541,6 +541,7 @@ namespace CBP
         catch (const std::exception& e)
         {
             Error("%s (Load): %s", __FUNCTION__, e.what());
+            return;
         }
 
         try
