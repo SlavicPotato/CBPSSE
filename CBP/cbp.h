@@ -19,6 +19,8 @@ namespace CBP
             kActionPhysicsReset,
             kActionNiNodeUpdate,
             kActionNiNodeUpdateAll,
+            kActionWeightUpdate,
+            kActionWeightUpdateAll
         };
 
         UTTAction m_action;
@@ -30,6 +32,19 @@ namespace CBP
         ILog
     {
         typedef std::unordered_set<SKSE::ObjectHandle> handleSet_t;
+
+        class UpdateWeightTask :
+            public TaskDelegate
+        {
+        public:
+            UpdateWeightTask(SKSE::ObjectHandle a_handle);
+
+            virtual void Run();
+            virtual void Dispose();
+        private:
+            SKSE::ObjectHandle m_handle;
+        };
+
     public:
         UpdateTask();
 
@@ -45,7 +60,9 @@ namespace CBP
         void Reset();
         void PhysicsReset();
         void NiNodeUpdate(SKSE::ObjectHandle a_handle);
+        void WeightUpdate(SKSE::ObjectHandle a_handle);
         void NiNodeUpdateAll();
+        void WeightUpdateAll();
 
         void AddTask(const UTTask& task);
         void AddTask(UTTask&& task);
@@ -185,6 +202,7 @@ namespace CBP
         static void ResetPhysics();
         static void NiNodeUpdate();
         static void NiNodeUpdate(SKSE::ObjectHandle a_handle);
+        static void WeightUpdate();
         static void ResetActors();
         static void UpdateDebugRendererState();
         static void UpdateDebugRendererSettings();

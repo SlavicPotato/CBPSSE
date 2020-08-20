@@ -69,6 +69,12 @@ namespace CBP
             CBP::UTTask::kActionNiNodeUpdate, a_handle);
     }
 
+    void DCBP::WeightUpdate()
+    {
+        m_Instance.m_updateTask.AddTask(
+            CBP::UTTask::kActionWeightUpdateAll);
+    }
+
     void DCBP::ResetActors()
     {
         m_Instance.m_updateTask.AddTask(
@@ -718,19 +724,34 @@ namespace CBP
         }
     }
 
+    void UpdateTask::WeightUpdate(SKSE::ObjectHandle a_handle)
+    {
+        auto actor = SKSE::ResolveObject<Actor>(a_handle, Actor::kTypeID);
+        if (ActorValid(actor)) {
+            CALL_MEMBER_FN(actor, QueueNiNodeUpdate)(true);
+            DTasks::AddTask(new UpdateWeightTask(a_handle));
+        }
+    }
+
+    void UpdateTask::WeightUpdateAll()
+    {
+        for (const auto& e : m_actors)
+            WeightUpdate(e.first);
+    }
+
     void UpdateTask::NiNodeUpdate(SKSE::ObjectHandle a_handle)
     {
         auto actor = SKSE::ResolveObject<Actor>(a_handle, Actor::kTypeID);
-        if (ActorValid(actor))
+        if (ActorValid(actor)) {
             CALL_MEMBER_FN(actor, QueueNiNodeUpdate)(true);
+        }
     }
 
     void UpdateTask::NiNodeUpdateAll()
     {
-        for (auto& e : m_actors)
+        for (const auto& e : m_actors)
             NiNodeUpdate(e.first);
     }
-
 
     void UpdateTask::AddTask(const UTTask& task)
     {
@@ -809,6 +830,12 @@ namespace CBP
             case UTTask::kActionNiNodeUpdateAll:
                 NiNodeUpdateAll();
                 break;
+            case UTTask::kActionWeightUpdate:
+                WeightUpdate(task.m_handle);
+                break;
+            case UTTask::kActionWeightUpdateAll:
+                WeightUpdateAll();
+                break;
             }
         }
     }
@@ -848,6 +875,41 @@ namespace CBP
 
             a_out.emplace(handle);
         }
+    }
+    
+    UpdateTask::UpdateWeightTask::UpdateWeightTask(
+        SKSE::ObjectHandle a_handle)
+        :
+        m_handle(a_handle)
+    {
+    }
+
+    void UpdateTask::UpdateWeightTask::Run()
+    {
+        auto actor = SKSE::ResolveObject<Actor>(m_handle, Actor::kTypeID);
+        if (!actor)
+            return;
+
+        TESNPC* npc = DYNAMIC_CAST(actor->baseForm, TESForm, TESNPC);
+        if (npc)
+        {
+            BSFaceGenNiNode* faceNode = actor->GetFaceGenNiNode();
+            if (faceNode) {
+                CALL_MEMBER_FN(faceNode, AdjustHeadMorph)(BSFaceGenNiNode::kAdjustType_Neck, 0, 0.0f);
+                UpdateModelFace(faceNode);
+            }
+
+            if (actor->actorState.IsWeaponDrawn()) {
+                actor->DrawSheatheWeapon(false);
+                actor->DrawSheatheWeapon(true);
+            }
+
+
+        }
+    }
+
+    void UpdateTask::UpdateWeightTask::Dispose() {
+        delete this;
     }
 
     static UInt32 controlDisableFlags =

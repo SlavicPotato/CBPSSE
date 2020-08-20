@@ -111,8 +111,16 @@ namespace CBP
         static_assert(offsetof(Vector3, y) == offsetof(NiPoint3, y));
         static_assert(offsetof(Vector3, z) == offsetof(NiPoint3, z));
 
-        if (!WorldPtToScreenPt3_Internal(g_worldToCamMatrix, g_viewPort, (NiPoint3*)(std::addressof(a_pos)), &a_out.position.x, &a_out.position.y, &a_out.position.z, 1e-5f))
+        if (!WorldPtToScreenPt3_Internal(
+            g_worldToCamMatrix, g_viewPort,
+            (NiPoint3*)(std::addressof(a_pos)),
+            &a_out.position.x, 
+            &a_out.position.y,
+            &a_out.position.z, 
+            1e-5f))
+        {
             return false;
+        }
 
         if (a_out.position.x < -0.05f || a_out.position.y < -0.05f || a_out.position.z < -0.05f ||
             a_out.position.x > 1.05f || a_out.position.y > 1.05f || a_out.position.z > 1.05f)

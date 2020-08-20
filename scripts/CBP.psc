@@ -1,12 +1,13 @@
 Scriptname CBP Hidden
 
 Int Function GetScriptVersion() global
-	return 2
+	return 3
 EndFunction
 
 Int Function GetVersion() native global
 
 Function UpdateAllActors() native global
+Function ResetAllActors() native global
 
 ; Set and apply config value globally
 Bool Function SetGlobalConfig(String section, String key, Float value) native global

@@ -159,7 +159,7 @@ namespace CBP
 
     void Serialization::LoadGlobals()
     {
-        auto& globalConfig = IConfig::GetGlobalConfig();
+        configGlobal_t globalConfig;
 
         try
         {
@@ -220,9 +220,7 @@ namespace CBP
                             if (!it->isObject())
                                 continue;
 
-                            auto k = it.key();
-
-                            std::string key(k.asString());
+                            std::string key(it.key().asString());
                             transform(key.begin(), key.end(), key.begin(), ::tolower);
 
                             if (!IConfig::IsValidSimComponent(key))
@@ -329,10 +327,11 @@ namespace CBP
                     globalConfig.debugRenderer.contactNormalLength = debugRenderer.get("contactNormalLength", 2.0f).asFloat();
                 }
             }
+
+            IConfig::SetGlobalConfig(std::move(globalConfig));
         }
         catch (const std::exception& e)
         {
-            IConfig::ResetGlobalConfig();
             Error("%s: %s", __FUNCTION__, e.what());
         }
     }
@@ -431,11 +430,8 @@ namespace CBP
     {
         try
         {
-            auto& colGroups = IConfig::GetCollisionGroups();
-            auto& nodeColGroupMap = IConfig::GetNodeCollisionGroupMap();
-
-            colGroups.clear();
-            nodeColGroupMap.clear();
+            collisionGroups_t colGroups = IConfig::GetCollisionGroups();
+            nodeCollisionGroupMap_t nodeColGroupMap = IConfig::GetNodeCollisionGroupMap();
 
             Json::Value root;
             if (!ReadJsonData(PLUGIN_CBP_CG_DATA, root))
@@ -484,11 +480,12 @@ namespace CBP
                     }
                 }
             }
+
+            IConfig::SetCollisionGroups(std::move(colGroups));
+            IConfig::SetNodeCollisionGroupMap(std::move(nodeColGroupMap));
         }
         catch (const std::exception& e)
         {
-            IConfig::ClearCollisionGroups();
-            IConfig::ClearNodeCollisionGroupMap();
             Error("%s: %s", __FUNCTION__, e.what());
         }
     }
@@ -528,10 +525,10 @@ namespace CBP
 
     void Serialization::LoadGlobalProfile()
     {
+        Json::Value root;
+
         try
         {
-            Json::Value root;
-
             if (!ReadJsonData(PLUGIN_CBP_GLOBPROFILE_DATA, root))
                 return;
 
@@ -540,22 +537,34 @@ namespace CBP
 
             if (!root.isObject())
                 throw std::exception("Expected an object");
-
-            configComponents_t componentData;
-
-            if (m_componentParser.Parse(root, componentData))
-                IConfig::SetGlobalProfile(componentData);
-
-            configNodes_t nodeData;
-
-            if (m_nodeParser.Parse(root, nodeData))
-                IConfig::SetGlobalNodeConfig(nodeData);
         }
         catch (const std::exception& e)
         {
-            IConfig::ClearGlobalProfile();
-            IConfig::ClearNodeConfig();
-            Error("%s: %s", __FUNCTION__, e.what());
+            Error("%s (Load): %s", __FUNCTION__, e.what());
+        }
+
+        try
+        {
+            configComponents_t componentData;
+
+            if (m_componentParser.Parse(root, componentData))
+                IConfig::SetGlobalProfile(std::move(componentData));
+        }
+        catch (const std::exception& e)
+        {
+            Error("%s (Components): %s", __FUNCTION__, e.what());
+        }
+
+        try
+        {
+            configNodes_t nodeData;
+
+            if (m_nodeParser.Parse(root, nodeData))
+                IConfig::SetGlobalNodeConfig(std::move(nodeData));
+        }
+        catch (const std::exception& e)
+        {
+            Error("%s (Nodes): %s", __FUNCTION__, e.what());
         }
     }
 
@@ -563,6 +572,9 @@ namespace CBP
     {
         try
         {
+            actorConfigComponentsHolder_t actorConfigComponents;
+            actorConfigNodesHolder_t actorConfigNodes;
+
             PerfTimer pt;
             pt.Start();
 
@@ -622,24 +634,25 @@ namespace CBP
                 configComponents_t componentData;
 
                 if (m_componentParser.Parse(*it, componentData)) {
-                    IConfig::GetActorConfigHolder().emplace(newHandle, std::move(componentData));
+                    actorConfigComponents.emplace(newHandle, std::move(componentData));
                     IData::UpdateActorRaceMap(newHandle);
                 }
 
                 configNodes_t nodeData;
 
-                if (m_nodeParser.Parse(*it, nodeData)) {
-                    IConfig::GetActorNodeConfigHolder().emplace(newHandle, std::move(nodeData));
-                }
+                if (m_nodeParser.Parse(*it, nodeData))
+                    actorConfigNodes.emplace(newHandle, std::move(nodeData));
 
                 c++;
             }
+
+            IConfig::SetActorConfigHolder(std::move(actorConfigComponents));
+            IConfig::SetActorNodeConfigHolder(std::move(actorConfigNodes));
 
             Debug("Loaded %zu actor record(s) %.4fs", c, pt.Stop());
         }
         catch (const std::exception& e)
         {
-            IConfig::ClearActorConfigHolder();
             Error("%s: %s", __FUNCTION__, e.what());
         }
     }
@@ -648,6 +661,8 @@ namespace CBP
     {
         try
         {
+            raceConfigComponentsHolder_t raceConfigComponents;
+
             PerfTimer pt;
             pt.Start();
 
@@ -703,7 +718,6 @@ namespace CBP
                     newFormID = formID;
                 }
 
-
                 if (!IData::GetRaceList().contains(newFormID)) {
                     Warning("0x%lX: race record not found", newFormID);
                     continue;
@@ -714,16 +728,17 @@ namespace CBP
                 if (!m_componentParser.Parse(*it, data))
                     continue;
 
-                IConfig::GetRaceConfigHolder().emplace(newFormID, std::move(data));
+                raceConfigComponents.emplace(newFormID, std::move(data));
 
                 c++;
             }
+
+            IConfig::SetRaceConfigHolder(std::move(raceConfigComponents));
 
             Debug("Loaded %zu race record(s) %.4fs", c, pt.Stop());
         }
         catch (const std::exception& e)
         {
-            IConfig::ClearRaceConfHolder();
             Error("%s: %s", __FUNCTION__, e.what());
         }
     }

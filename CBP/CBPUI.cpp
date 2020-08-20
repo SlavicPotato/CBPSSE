@@ -1236,8 +1236,13 @@ namespace CBP
                 {
                     if (ImGui::MenuItem("Reset actors"))
                         DCBP::ResetActors();
+
+                    ImGui::Separator();
+
                     if (ImGui::MenuItem("NiNode update"))
                         DCBP::NiNodeUpdate();
+                    if (ImGui::MenuItem("Weight update"))
+                        DCBP::WeightUpdate();
 
                     ImGui::EndMenu();
                 }

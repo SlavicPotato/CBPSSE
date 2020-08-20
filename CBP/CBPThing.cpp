@@ -211,7 +211,7 @@ namespace CBP
 
         NiPoint3 diff(target - m_oldWorldPos);
 
-        if (fabs(diff.x) > 120.0f || fabs(diff.y) > 120.0f || fabs(diff.z) > 120.0f)
+        if (fabs(diff.x) > 150.0f || fabs(diff.y) > 150.0f || fabs(diff.z) > 150.0f)
         {
             Reset(a_actor);
             return;
@@ -275,7 +275,7 @@ namespace CBP
     {
         m_obj = a_actor->loadedState->node->GetObjectByName(&m_boneName.data);
         if (m_obj == nullptr)
-            return;
+            return;        
 
         if (m_movement) {
             UpdateMovement(a_actor);

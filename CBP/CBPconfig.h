@@ -66,16 +66,16 @@ namespace CBP
             return m_map.contains(a_key);
         }
 
-        [[nodiscard]] inline const mapped_type &at(const key_type& a_key) const {
+        [[nodiscard]] inline const mapped_type& at(const key_type& a_key) const {
             return m_map.at(a_key);
         }
-        
+
         [[nodiscard]] inline const keyMap_t* operator->() const {
             return std::addressof(m_map);
         }
 
     private:
-        inline void _init() 
+        inline void _init()
         {
             for (const auto& p : m_vec)
                 m_map.emplace(p.first, p.second);
@@ -328,20 +328,20 @@ namespace CBP
             return thingGlobalConfig;
         }
 
-        inline static void SetGlobalProfile(const configComponents_t& a_lhs) {
-            thingGlobalConfig = a_lhs;
+        inline static void SetGlobalProfile(const configComponents_t& a_rhs) noexcept {
+            thingGlobalConfig = a_rhs;
         }
 
-        inline static void CopyToGlobalProfile(const configComponents_t& a_lhs) {
-            CopyComponents(a_lhs, thingGlobalConfig);
+        inline static void SetGlobalProfile(configComponents_t&& a_rhs) noexcept {
+            thingGlobalConfig = std::forward<configComponents_t>(a_rhs);
         }
 
-        inline static void CopyToGlobalNodeProfile(const configNodes_t& a_lhs) {
-            CopyNodes(a_lhs, nodeConfigHolder);
+        inline static void CopyToGlobalProfile(const configComponents_t& a_rhs) {
+            CopyComponents(a_rhs, thingGlobalConfig);
         }
 
-        inline static void SetGlobalProfile(configComponents_t&& a_lhs) {
-            thingGlobalConfig = std::forward<configComponents_t>(a_lhs);
+        inline static void CopyToGlobalNodeProfile(const configNodes_t& a_rhs) {
+            CopyNodes(a_rhs, nodeConfigHolder);
         }
 
         [[nodiscard]] inline static const auto& GetThingGlobalConfigDefaults() {
@@ -352,8 +352,16 @@ namespace CBP
             return actorConfHolder;
         }
 
+       inline static void SetActorConfigHolder(actorConfigComponentsHolder_t &&a_rhs) noexcept {
+            actorConfHolder = std::forward<actorConfigComponentsHolder_t>(a_rhs);
+        }
+
         [[nodiscard]] inline static auto& GetRaceConfigHolder() {
             return raceConfHolder;
+        }
+        
+        inline static void SetRaceConfigHolder(raceConfigComponentsHolder_t &&a_rhs) noexcept {
+            raceConfHolder = std::forward<raceConfigComponentsHolder_t>(a_rhs);
         }
 
         inline static void ClearActorConfigHolder() {
@@ -368,12 +376,12 @@ namespace CBP
             return globalConfig;
         }
 
-        inline static void SetGlobalConfig(const configGlobal_t& a_lhs) {
-            globalConfig = a_lhs;
+        inline static void SetGlobalConfig(const configGlobal_t& a_rhs) noexcept {
+            globalConfig = a_rhs;
         }
 
-        inline static void SetGlobalConfig(configGlobal_t&& a_lhs) {
-            globalConfig = std::forward<configGlobal_t>(a_lhs);
+        inline static void SetGlobalConfig(configGlobal_t&& a_rhs) noexcept {
+            globalConfig = std::forward<configGlobal_t>(a_rhs);
         }
 
         inline static void ResetGlobalConfig() {
@@ -381,7 +389,7 @@ namespace CBP
         }
 
         inline static void ClearGlobalProfile() {
-            thingGlobalConfig = thingGlobalConfigDefaults;;
+            thingGlobalConfig = thingGlobalConfigDefaults;
         }
 
         [[nodiscard]] inline static const auto& GetNodeMap() {
@@ -404,12 +412,28 @@ namespace CBP
             return collisionGroups;
         }
 
+        inline static void SetCollisionGroups(collisionGroups_t& a_rhs) noexcept {
+            collisionGroups = a_rhs;
+        }
+
+        inline static void SetCollisionGroups(collisionGroups_t&& a_rhs) noexcept {
+            collisionGroups = std::forward<collisionGroups_t>(a_rhs);
+        }
+
         inline static void ClearCollisionGroups() {
             collisionGroups.clear();
         }
 
         [[nodiscard]] inline static auto& GetNodeCollisionGroupMap() {
             return nodeCollisionGroupMap;
+        }
+
+        inline static void SetNodeCollisionGroupMap(nodeCollisionGroupMap_t& a_rhs) noexcept {
+            nodeCollisionGroupMap = a_rhs;
+        }
+
+        inline static void SetNodeCollisionGroupMap(nodeCollisionGroupMap_t&& a_rhs) noexcept {
+            nodeCollisionGroupMap = std::forward<nodeCollisionGroupMap_t>(a_rhs);
         }
 
         [[nodiscard]] static uint64_t GetNodeCollisionGroupId(const std::string& a_node);
@@ -422,8 +446,12 @@ namespace CBP
             return nodeConfigHolder;
         }
 
-        inline static void SetGlobalNodeConfig(configNodes_t& a_rhs) {
+        inline static void SetGlobalNodeConfig(const configNodes_t& a_rhs) noexcept {
             nodeConfigHolder = a_rhs;
+        }
+        
+        inline static void SetGlobalNodeConfig(configNodes_t&& a_rhs) noexcept {
+            nodeConfigHolder = std::forward<configNodes_t>(a_rhs);
         }
 
         inline static void ClearNodeConfig() {
@@ -434,6 +462,10 @@ namespace CBP
 
         [[nodiscard]] inline static auto& GetActorNodeConfigHolder() {
             return actorNodeConfigHolder;
+        }
+        
+        inline static void SetActorNodeConfigHolder(actorConfigNodesHolder_t &&a_rhs) noexcept {
+            actorNodeConfigHolder = std::forward<actorConfigNodesHolder_t>(a_rhs);
         }
 
         static const configNodes_t& GetActorNodeConfig(SKSE::ObjectHandle a_handle);
