@@ -2,9 +2,7 @@
 
 namespace CBP
 {
-    namespace fs = std::filesystem;
-
-    bool Parser::Parse(const Json::Value& a_data, configComponents_t& a_outData)
+    bool Parser::Parse(const Json::Value& a_data, configComponents_t& a_outData, bool a_allowUntracked)
     {
         auto& conf = a_data["data"];
 
@@ -31,12 +29,14 @@ namespace CBP
                 return false;
             }
 
-            std::string simComponentName = k.asString();
+            std::string simComponentName(k.asString());
             transform(simComponentName.begin(), simComponentName.end(), simComponentName.begin(), ::tolower);
 
-            if (!IConfig::IsValidSimComponent(simComponentName)) {
-                Error("Untracked sim component: %s", simComponentName.c_str());
-                return false;
+            if (!a_allowUntracked) {
+                if (!IConfig::IsValidSimComponent(simComponentName)) {
+                    Error("Untracked sim component: %s", simComponentName.c_str());
+                    return false;
+                }
             }
 
             configComponent_t tmp;
@@ -114,7 +114,7 @@ namespace CBP
         }
     }
 
-    bool Parser::Parse(const Json::Value& a_data, configNodes_t& a_out)
+    bool Parser::Parse(const Json::Value& a_data, configNodes_t& a_out, bool a_allowUntracked)
     {
         auto& nodes = a_data["nodes"];
 
@@ -522,32 +522,13 @@ namespace CBP
         }
     }
 
-
-    size_t Serialization::LoadGlobalProfile(SKSESerializationInterface* intfc, const char* a_data, UInt32 a_len)
+    size_t Serialization::_LoadGlobalProfile(const Json::Value& a_root)
     {
-        Json::Value root;
-
-        try
-        {
-            std::string errors;
-
-            Json::CharReaderBuilder builder;
-            const std::unique_ptr<Json::CharReader> reader(builder.newCharReader());
-
-            if (!reader->parse(a_data, a_data + a_len, &root, &errors))
-                throw std::exception("Parser failed");
-
-            if (root.empty())
-                return 0;
-
-            if (!root.isObject())
-                throw std::exception("Expected an object");
-        }
-        catch (const std::exception& e)
-        {
-            Error("%s (Load): %s", __FUNCTION__, e.what());
+        if (a_root.empty())
             return 0;
-        }
+
+        if (!a_root.isObject())
+            throw std::exception("Expected an object");
 
         size_t c = 0;
 
@@ -555,8 +536,8 @@ namespace CBP
         {
             configComponents_t componentData;
 
-            if (m_componentParser.Parse(root, componentData))
-                IConfig::SetGlobalProfile(std::move(componentData));
+            if (m_componentParser.Parse(a_root, componentData))
+                IConfig::SetGlobalPhysicsConfig(std::move(componentData));
 
             c++;
         }
@@ -569,7 +550,7 @@ namespace CBP
         {
             configNodes_t nodeData;
 
-            if (m_nodeParser.Parse(root, nodeData))
+            if (m_nodeParser.Parse(a_root, nodeData))
                 IConfig::SetGlobalNodeConfig(std::move(nodeData));
 
             c++;
@@ -580,6 +561,47 @@ namespace CBP
         }
 
         return c;
+    }
+
+    size_t Serialization::LoadGlobalProfile(SKSESerializationInterface* intfc, const char* a_data, UInt32 a_len)
+    {
+        try
+        {
+            Json::Value root;
+
+            std::string errors;
+
+            Json::CharReaderBuilder builder;
+            const std::unique_ptr<Json::CharReader> reader(builder.newCharReader());
+
+            if (!reader->parse(a_data, a_data + a_len, &root, &errors))
+                throw std::exception("Parser failed");
+
+            return _LoadGlobalProfile(root);
+        }
+        catch (const std::exception& e)
+        {
+            Error("%s (Load): %s", __FUNCTION__, e.what());
+            return 0;
+        }
+    }
+
+    bool Serialization::LoadDefaultGlobalProfile()
+    {
+        try
+        {
+            Json::Value root;
+
+            if (!ReadJsonData(PLUGIN_CBP_GLOBPROFILE_DEFAULT_DATA, root))
+                throw std::exception("Couldn't load the default profile");
+
+            return _LoadGlobalProfile(root) != 0;
+        }
+        catch (const std::exception& e)
+        {
+            Error("%s (Load): %s", __FUNCTION__, e.what());
+            return false;
+        }
     }
 
     size_t Serialization::LoadActorProfiles(SKSESerializationInterface* intfc, const char* a_data, UInt32 a_len)
@@ -796,7 +818,7 @@ namespace CBP
         {
             Json::Value root;
 
-            m_componentParser.Create(IConfig::GetGlobalProfile(), root);
+            m_componentParser.Create(IConfig::GetGlobalPhysicsConfig(), root);
             m_nodeParser.Create(IConfig::GetGlobalNodeConfig(), root);
 
             a_out << root;

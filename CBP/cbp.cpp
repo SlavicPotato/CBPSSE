@@ -365,6 +365,7 @@ namespace CBP
 
             iface.LoadGlobals();
             iface.LoadCollisionGroups();
+            iface.LoadDefaultGlobalProfile();
 
             UpdateDebugRendererState();
             UpdateDebugRendererSettings();
@@ -531,6 +532,11 @@ namespace CBP
         CBP::IConfig::ClearActorConfigHolder();
         CBP::IConfig::ClearActorNodeConfigHolder();
         CBP::IConfig::ClearRaceConfigHolder();
+        CBP::IConfig::ClearGlobalPhysicsConfig();
+        CBP::IConfig::ClearGlobalNodeConfig();
+
+        auto& iface = m_Instance.m_serialization;
+        iface.LoadDefaultGlobalProfile();
 
         GetUpdateTask().ClearActors();
 
@@ -597,7 +603,7 @@ namespace CBP
         auto deltaT = PerfCounter::delta(m_lTime, newTime);
         m_lTime = newTime;
 
-        if (deltaT > 1.0f) 
+        if (deltaT > 1.0f)
         {
             PhysicsReset();
             DCBP::Unlock();
@@ -613,7 +619,7 @@ namespace CBP
             m_timeAccum -= globalConf.phys.timeStep;
         }
 
-        if (numSteps == 0) 
+        if (numSteps == 0)
         {
             if (globalConf.phys.collisions)
                 UpdateDebugRenderer();

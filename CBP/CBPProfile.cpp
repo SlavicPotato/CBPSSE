@@ -62,7 +62,7 @@ namespace CBP
 
             m_conf.clear();
 
-            if (!Parse(root, m_conf))
+            if (!Parse(root, m_conf, true))
                 throw std::exception("Parser error");
 
             auto& id = root["id"];

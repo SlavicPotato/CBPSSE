@@ -45,7 +45,7 @@ namespace CBP
         return false;
     }
 
-    static void PP_ResetAllActors(StaticFunctionTag* base)
+    static void PP_ResetActors(StaticFunctionTag* base)
     {
         DCBP::ResetActors();
     }
@@ -57,7 +57,7 @@ namespace CBP
         registry->RegisterFunction(
             new NativeFunction0<StaticFunctionTag, void>("UpdateAllActors", "CBP", PP_UpdateAllActors, registry));
         registry->RegisterFunction(
-            new NativeFunction0<StaticFunctionTag, void>("ResetAllActors", "CBP", PP_ResetAllActors, registry));
+            new NativeFunction0<StaticFunctionTag, void>("ResetAllActors", "CBP", PP_ResetActors, registry));
         registry->RegisterFunction(
             new NativeFunction3<StaticFunctionTag, bool, BSFixedString, BSFixedString, float>("SetGlobalConfig", "CBP", PP_SetGlobalConfig, registry));
         registry->RegisterFunction(
@@ -135,7 +135,7 @@ namespace CBP
                     m_handle, UTTask::kActionUpdateConfig);            
         }
         else {
-            auto& globalConfig = IConfig::GetGlobalProfile();
+            auto& globalConfig = IConfig::GetGlobalPhysicsConfig();
 
             auto it = globalConfig.find(m_sect);
             if (it == globalConfig.end())

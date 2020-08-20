@@ -96,13 +96,13 @@ namespace CBP
 
         void HelpMarker(MiscHelpText a_id) const;
 
-        inline float GetNextTextOffset(const char* a_text) 
+        inline float GetNextTextOffset(const char* a_text)
         {
             auto& globalConf = IConfig::GetGlobalConfig();
 
             auto it = m_ctlPositions.find(a_text);
             if (it != m_ctlPositions.end())
-                return (m_posOffset += it->second + 5.f);            
+                return (m_posOffset += it->second + 5.f);
 
             return (m_posOffset += ImGui::CalcTextSize(a_text).x + 5.0f);
         }
@@ -522,7 +522,7 @@ namespace CBP
         UIBase
     {
     public:
-        void Draw(bool *a_active);
+        void Draw(bool* a_active);
     private:
         const char* ParseFloat(float v);
         std::string TransformToStr(const NiTransform& a_transform);
@@ -531,6 +531,46 @@ namespace CBP
         char m_buffer[64];
     };
 #endif
+
+    class UIFileSelector :
+        virtual protected UIBase
+    {
+
+    protected:
+        UIFileSelector(const fs::path& a_path);
+
+        void DrawFileSelector();
+        bool UpdateFileList();
+
+        inline const auto& GetSelected() const {
+            return m_selected;
+        }
+
+        inline void SetPath(const fs::path& a_path) {
+            m_root = a_path;
+        }
+
+        inline const auto& GetLastException() const {
+            return m_lastExcept;
+        }
+
+    private:
+        UISelectedItem<fs::path> m_selected;
+        std::vector<fs::path> m_files;
+        fs::path m_root;
+
+        std::exception m_lastExcept;
+    };
+
+    class UIDialogueImport :
+        UIFileSelector
+    {
+    public:
+        UIDialogueImport(const fs::path& a_path);
+
+        void Draw();
+
+    };
 
     class UIContext :
         virtual UIBase,
@@ -632,6 +672,7 @@ namespace CBP
         UICollisionGroups m_colGroups;
         UINodeConfig m_nodeConfig;
         UIProfiling m_profiling;
+        UIDialogueImport m_importDialogue;
 #ifdef _CBP_ENABLE_DEBUG
         UIDebugInfo m_debug;
 #endif

@@ -629,7 +629,7 @@ namespace CBP
     void UIRaceEditor::ResetAllRaceValues(SKSE::FormID a_formid, raceListValue_t* a_data)
     {
         IConfig::EraseRaceConf(a_formid);
-        a_data->second.second = IConfig::GetGlobalProfile();
+        a_data->second.second = IConfig::GetGlobalPhysicsConfig();
         MarkChanged();
         DCBP::UpdateConfigOnAllActors();
     }
@@ -1130,6 +1130,7 @@ namespace CBP
         m_tsNoActors(PerfCounter::Query()),
         m_peComponents("Physics profile editor"),
         m_peNodes("Node profile editor"),
+        m_importDialogue("test"),
         state({ .windows{false, false, false, false, false, false, false, false } })
     {
     }
@@ -1312,7 +1313,7 @@ namespace CBP
                     DCBP::DispatchActorTask(m_currentActor, UTTask::kActionUpdateConfig);
                 }
                 else {
-                    IConfig::ClearGlobalProfile();
+                    IConfig::ClearGlobalPhysicsConfig();
                     DCBP::UpdateConfigOnAllActors();
                 }
             }
@@ -1334,7 +1335,7 @@ namespace CBP
                 m_scActor.DrawSimComponents(m_currentActor, entry->second.second);
             }
             else {
-                m_scGlobal.DrawSimComponents(0, IConfig::GetGlobalProfile());
+                m_scGlobal.DrawSimComponents(0, IConfig::GetGlobalPhysicsConfig());
             }
 
             UICommon::MessageDialog("Save failed", "Saving one or more files failed.\nThe last exception was:\n\n%s", state.lastException.what());
@@ -1806,7 +1807,7 @@ namespace CBP
         auto& profileData = a_profile.Data();
 
         if (!a_data) {
-            IConfig::CopyToGlobalNodeProfile(profileData);
+            IConfig::CopyToGlobalNodeConfig(profileData);
         }
         else {
             IConfig::CopyNodes(profileData, a_data->second.second);
@@ -1913,7 +1914,7 @@ namespace CBP
         auto& profileData = a_profile.Data();
 
         if (!a_data) {
-            IConfig::CopyToGlobalProfile(profileData);
+            IConfig::CopyToGlobalPhysicsConfig(profileData);
             DCBP::UpdateConfigOnAllActors();
         }
         else {
@@ -1925,7 +1926,7 @@ namespace CBP
 
     const SimProfile::base_type& UIContext::GetData(const actorListValue_t* a_data) const
     {
-        return !a_data ? IConfig::GetGlobalProfile() : a_data->second.second;
+        return !a_data ? IConfig::GetGlobalPhysicsConfig() : a_data->second.second;
     }
 
     void UIContext::ResetAllActorValues(SKSE::ObjectHandle a_handle)
@@ -2330,4 +2331,51 @@ namespace CBP
         ImGui::PopID();
     }
 #endif
+
+
+    UIFileSelector::UIFileSelector(const fs::path& a_path)
+    {
+        SetPath(a_path);
+    }
+
+    void UIFileSelector::DrawFileSelector()
+    {
+
+    }
+
+    bool UIFileSelector::UpdateFileList()
+    {
+        try
+        {
+            m_files.clear();
+
+            for (const auto& entry : fs::directory_iterator(m_root))
+            {
+                if (!entry.is_regular_file())
+                    continue;
+
+                auto& path = entry.path();
+
+                m_files.emplace_back(path.filename());
+            }
+
+            return true;
+        }
+        catch (const std::exception& e) {
+            m_lastExcept = e;
+            return false;
+        }
+    }
+
+    UIDialogueImport::UIDialogueImport(const fs::path& a_path) :
+        UIFileSelector(a_path)
+    {
+
+    }
+
+    void UIDialogueImport::Draw()
+    {
+
+    }
+
 }

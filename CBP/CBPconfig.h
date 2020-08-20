@@ -324,23 +324,23 @@ namespace CBP
         static void CopyComponents(const configComponents_t& a_lhs, configComponents_t& a_rhs);
         static void CopyNodes(const configNodes_t& a_lhs, configNodes_t& a_rhs);
 
-        [[nodiscard]] inline static auto& GetGlobalProfile() {
+        [[nodiscard]] inline static auto& GetGlobalPhysicsConfig() {
             return thingGlobalConfig;
         }
 
-        inline static void SetGlobalProfile(const configComponents_t& a_rhs) noexcept {
+        inline static void SetGlobalPhysicsConfig(const configComponents_t& a_rhs) noexcept {
             thingGlobalConfig = a_rhs;
         }
 
-        inline static void SetGlobalProfile(configComponents_t&& a_rhs) noexcept {
+        inline static void SetGlobalPhysicsConfig(configComponents_t&& a_rhs) noexcept {
             thingGlobalConfig = std::forward<configComponents_t>(a_rhs);
         }
 
-        inline static void CopyToGlobalProfile(const configComponents_t& a_rhs) {
+        inline static void CopyToGlobalPhysicsConfig(const configComponents_t& a_rhs) {
             CopyComponents(a_rhs, thingGlobalConfig);
         }
 
-        inline static void CopyToGlobalNodeProfile(const configNodes_t& a_rhs) {
+        inline static void CopyToGlobalNodeConfig(const configNodes_t& a_rhs) {
             CopyNodes(a_rhs, nodeConfigHolder);
         }
 
@@ -392,7 +392,7 @@ namespace CBP
             globalConfig = CBP::configGlobal_t();
         }
 
-        inline static void ClearGlobalProfile() {
+        inline static void ClearGlobalPhysicsConfig() {
             thingGlobalConfig = thingGlobalConfigDefaults;
         }
 
@@ -458,7 +458,7 @@ namespace CBP
             nodeConfigHolder = std::forward<configNodes_t>(a_rhs);
         }
 
-        inline static void ClearNodeConfig() {
+        inline static void ClearGlobalNodeConfig() {
             nodeConfigHolder.clear();
         }
 

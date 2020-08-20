@@ -9,10 +9,10 @@ namespace CBP
         FN_NAMEPROC("Parser")
     public:
         void Create(const configComponents_t& a_data, Json::Value& a_out);
-        [[nodiscard]] bool Parse(const Json::Value& a_data, configComponents_t& a_out);
+        [[nodiscard]] bool Parse(const Json::Value& a_data, configComponents_t& a_out, bool a_allowUntracked = false);
 
         void Create(const configNodes_t& a_data, Json::Value& a_out);
-        [[nodiscard]] bool Parse(const Json::Value& a_data, configNodes_t& a_out);
+        [[nodiscard]] bool Parse(const Json::Value& a_data, configNodes_t& a_out, bool a_allowUntracked = false);
 
         void GetDefault(configComponents_t& a_out);
         void GetDefault(configNodes_t& a_out);
@@ -38,6 +38,7 @@ namespace CBP
         size_t SerializeActorProfiles(std::ostringstream& a_out);
 
         size_t LoadGlobalProfile(SKSESerializationInterface* intfc, const char* a_data, UInt32 a_len);
+        bool LoadDefaultGlobalProfile();
         size_t SerializeGlobalProfile(std::ostringstream& a_out);
 
         size_t LoadRaceProfiles(SKSESerializationInterface* intfc, const char* a_data, UInt32 a_len);
@@ -59,6 +60,8 @@ namespace CBP
 
         FN_NAMEPROC("Serialization")
     private:
+        size_t _LoadGlobalProfile(const Json::Value& a_root);
+
         [[nodiscard]] bool ReadJsonData(const std::filesystem::path& a_path, Json::Value& a_out);
         void WriteJsonData(const std::filesystem::path& a_path, const Json::Value& a_root);
 

@@ -69,6 +69,11 @@
 
 namespace r3d = reactphysics3d;
 
+namespace CBP
+{
+    namespace fs = std::filesystem;
+}
+
 //#define _CBP_ENABLE_DEBUG
 
 #include "plugin.h"
