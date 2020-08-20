@@ -96,12 +96,9 @@ namespace CBP
 
         char m_sex;
 
-
 #ifdef _CBP_ENABLE_DEBUG
         std::string m_actorName;
 #endif
-
-       // [[nodiscard]] static bool CheckNode(Actor *a_actor, const configComponents_t& a_config, const nodeMap_t::value_type &a_pair);
     };
 
     typedef 

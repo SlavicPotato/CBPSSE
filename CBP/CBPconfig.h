@@ -368,7 +368,7 @@ namespace CBP
             actorConfHolder.clear();
         }
 
-        inline static void ClearRaceConfHolder() {
+        inline static void ClearRaceConfigHolder() {
             raceConfHolder.clear();
         }
 

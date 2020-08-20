@@ -206,4 +206,9 @@ namespace SKSE
     {
         return *s_processLists;
     }
+
+    bool ProcessLists::GuardsPursuing(Actor* a_actor)
+    {
+        return CALL_MEMBER_FN(this, _GuardsPursuing)(a_actor, 0x15, 0) != 0;
+    }
 }

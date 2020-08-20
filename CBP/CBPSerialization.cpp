@@ -430,8 +430,8 @@ namespace CBP
     {
         try
         {
-            collisionGroups_t colGroups = IConfig::GetCollisionGroups();
-            nodeCollisionGroupMap_t nodeColGroupMap = IConfig::GetNodeCollisionGroupMap();
+            collisionGroups_t colGroups;
+            nodeCollisionGroupMap_t nodeColGroupMap;
 
             Json::Value root;
             if (!ReadJsonData(PLUGIN_CBP_CG_DATA, root))

@@ -350,12 +350,34 @@ namespace CBP
             m_Instance.Debug("Object loaded event sink added");
             break;
         case SKSEMessagingInterface::kMessage_DataLoaded:
+        {
             GetEventDispatcherList()->initScriptDispatcher.AddEventSink(EventHandler::GetSingleton());
             m_Instance.Debug("Init script event sink added");
 
             if (CBP::IData::PopulateRaceList())
                 m_Instance.Debug("%zu TESRace forms found", CBP::IData::RaceListSize());
 
+            auto& iface = m_Instance.m_serialization;
+
+            PerfTimer pt;
+            pt.Start();
+
+            Lock();
+
+            iface.LoadGlobals();
+            iface.LoadGlobalProfile();
+            iface.LoadCollisionGroups();
+
+            UpdateDebugRendererState();
+            UpdateDebugRendererSettings();
+            UpdateProfilerSettings();
+
+            Unlock();
+
+            m_Instance.Debug("%s: data loaded (%f)", __FUNCTION__, pt.Stop());
+        }
+        break;
+        case SKSEMessagingInterface::kMessage_NewGame:
             DoLoad(nullptr);
             break;
         }
@@ -370,15 +392,8 @@ namespace CBP
 
         Lock();
 
-        iface.LoadGlobals();
-        iface.LoadGlobalProfile();
         iface.LoadActorProfiles(intfc);
         iface.LoadRaceProfiles(intfc);
-        iface.LoadCollisionGroups();
-
-        UpdateDebugRendererState();
-        UpdateDebugRendererSettings();
-        UpdateProfilerSettings();
 
         GetUpdateTask().ResetTime();
         GetProfiler().Reset();
@@ -406,9 +421,9 @@ namespace CBP
 
         iface.SaveGlobals();
         iface.SaveGlobalProfile();
+        iface.SaveCollisionGroups();
         iface.SaveActorProfiles();
         iface.SaveRaceProfiles();
-        iface.SaveCollisionGroups();
 
         Unlock();
 
@@ -428,14 +443,9 @@ namespace CBP
 
         m_Instance.m_loadInstance++;
 
-        CBP::IConfig::ResetGlobalConfig();
-        CBP::IConfig::ClearGlobalProfile();
         CBP::IConfig::ClearActorConfigHolder();
-        CBP::IConfig::ClearRaceConfHolder();
-        CBP::IConfig::ClearCollisionGroups();
-        CBP::IConfig::ClearNodeCollisionGroupMap();
-        CBP::IConfig::ClearNodeConfig();
         CBP::IConfig::ClearActorNodeConfigHolder();
+        CBP::IConfig::ClearRaceConfigHolder();
 
         GetUpdateTask().ClearActors();
 
@@ -535,7 +545,7 @@ namespace CBP
 #endif
                 it->second.Release();
                 it = m_actors.erase(it);
-        }
+            }
             else {
                 for (uint32_t i = 0; i < numSteps; i++)
                     it->second.Update(actor, i);
@@ -546,7 +556,7 @@ namespace CBP
                 numProcessed++;
                 ++it;
             }
-    }
+        }
 
         if (globalConf.phys.collisions) {
             uint32_t i = numSteps;
@@ -568,7 +578,7 @@ namespace CBP
         }
 
         DCBP::Unlock();
-}
+    }
 
     std::atomic<uint64_t> UpdateTask::m_nextGroupId = 0;
 
@@ -628,7 +638,7 @@ namespace CBP
 #endif
             it->second.Release();
             m_actors.erase(it);
-    }
+        }
     }
 
     void UpdateTask::UpdateGroupInfoOnAllActors()
@@ -876,7 +886,7 @@ namespace CBP
             a_out.emplace(handle);
         }
     }
-    
+
     UpdateTask::UpdateWeightTask::UpdateWeightTask(
         SKSE::ObjectHandle a_handle)
         :
@@ -1006,9 +1016,27 @@ namespace CBP
         }
 
         auto player = *g_thePlayer;
-        if (player) {
+        if (player)
+        {
             if (player->IsInCombat()) {
                 Game::Debug::Notification("CBP UI not available while in combat");
+                return false;
+            }
+
+            auto pl = SKSE::ProcessLists::GetSingleton();
+            if (pl && pl->GuardsPursuing(player)) {
+                Game::Debug::Notification("CBP UI not available while pursued by guards");
+                return false;
+            }
+
+            auto tm = MenuTopicManager::GetSingleton();
+            if (tm && tm->GetDialogueTarget() != nullptr) {
+                Game::Debug::Notification("CBP UI not available while in a conversation");
+                return false;
+            }
+
+            if (player->unkBDA & PlayerCharacter::FlagBDA::kAIDriven) {
+                Game::Debug::Notification("CBP UI unavailable while player is AI driven");
                 return false;
             }
 
@@ -1016,9 +1044,11 @@ namespace CBP
                 Game::Debug::Notification("CBP UI currently unavailable");
                 return false;
             }
+
+            return true;
         }
 
-        return true;
+        return false;
     }
 
     void DCBP::KeyPressHandler::ReceiveEvent(KeyEvent ev, UInt32 keyCode)

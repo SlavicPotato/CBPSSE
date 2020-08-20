@@ -36,6 +36,8 @@ namespace SKSE
 
         static ProcessLists* GetSingleton();
 
+        bool GuardsPursuing(Actor* a_actor);
+
         bool                                    runDetection;                                  // 001
         bool                                    showDetectionStats;                            // 002
         uint8_t                                 pad003;                                        // 003
@@ -60,6 +62,13 @@ namespace SKSE
         tArray<ActorHandle>                     middleLowActorHandles;                         // 078
         tArray<ActorHandle>* allProcesses[4];                               // 090
         uint8_t pad[0x140];
+
+    private:
+
+        MEMBER_FN_PREFIX(ProcessLists);
+        DEFINE_MEMBER_FN(_GuardsPursuing, uint32_t, offset1, Actor* a_actor, int p2, char p3);
+
+        inline static auto offset1 = IAL::Offset(40314);
     };
 
     static_assert(sizeof(ProcessLists) == 0x1F0);
