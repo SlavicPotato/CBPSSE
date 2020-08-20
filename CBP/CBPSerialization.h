@@ -34,14 +34,14 @@ namespace CBP
         void LoadGlobals();
         bool SaveGlobals();
 
-        void LoadActorProfiles(SKSESerializationInterface* intfc);
-        void SaveActorProfiles();
+        size_t LoadActorProfiles(SKSESerializationInterface* intfc, const char *a_data, UInt32 a_len);
+        size_t SerializeActorProfiles(std::ostringstream& a_out);
 
-        void LoadGlobalProfile();
-        bool SaveGlobalProfile();
+        size_t LoadGlobalProfile(SKSESerializationInterface* intfc, const char* a_data, UInt32 a_len);
+        size_t SerializeGlobalProfile(std::ostringstream& a_out);
 
-        void LoadRaceProfiles(SKSESerializationInterface* intfc);
-        void SaveRaceProfiles();
+        size_t LoadRaceProfiles(SKSESerializationInterface* intfc, const char* a_data, UInt32 a_len);
+        size_t SerializeRaceProfiles(std::ostringstream& a_out);
 
         void LoadCollisionGroups();
         bool SaveCollisionGroups();

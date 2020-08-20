@@ -45,7 +45,7 @@ namespace CBP
         return false;
     }
 
-    static void PP_ResetAllActors(StaticFunctionTag* base)
+    static void PP_ResetActors(StaticFunctionTag* base)
     {
         DCBP::ResetActors();
     }
@@ -57,7 +57,7 @@ namespace CBP
         registry->RegisterFunction(
             new NativeFunction0<StaticFunctionTag, void>("UpdateAllActors", "CBP", PP_UpdateAllActors, registry));
         registry->RegisterFunction(
-            new NativeFunction0<StaticFunctionTag, void>("ResetAllActors", "CBP", PP_ResetAllActors, registry));
+            new NativeFunction0<StaticFunctionTag, void>("ResetActors", "CBP", PP_ResetActors, registry));
         registry->RegisterFunction(
             new NativeFunction3<StaticFunctionTag, bool, BSFixedString, BSFixedString, float>("SetGlobalConfig", "CBP", PP_SetGlobalConfig, registry));
         registry->RegisterFunction(

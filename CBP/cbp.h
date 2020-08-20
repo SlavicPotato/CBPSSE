@@ -64,6 +64,8 @@ namespace CBP
         void NiNodeUpdateAll();
         void WeightUpdateAll();
 
+        void UpdateDebugRenderer();
+
         void AddTask(const UTTask& task);
         void AddTask(UTTask&& task);
         void AddTask(UTTask::UTTAction a_action);
@@ -104,6 +106,10 @@ namespace CBP
         ILog,
         IConfigINI
     {
+        enum SerializationVersion {
+            kDataVersion1 = 1
+        };
+
         class KeyPressHandler : public KeyEventHandler
         {
         public:
@@ -298,10 +304,13 @@ namespace CBP
         static void MessageHandler(Event m_code, void* args);
 
         static void RevertHandler(Event m_code, void* args);
-        static void LoadGameHandler(Event m_code, void* args);
+        static void LoadGameHandler(SKSESerializationInterface* intfc, UInt32 type, UInt32 length, UInt32 version);
         static void SaveGameHandler(Event m_code, void* args);
 
-        static void DoLoad(SKSESerializationInterface* intfc);
+        template <typename T>
+        static bool SaveRecord(SKSESerializationInterface* intfc, UInt32 a_type, T a_func);
+        template <typename T>
+        static bool LoadRecord(SKSESerializationInterface* intfc, UInt32 a_type, T a_func);
 
         static void OnD3D11PostCreate_CBP(Event code, void* data);
         static void Present_Pre();

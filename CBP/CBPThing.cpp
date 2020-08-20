@@ -274,8 +274,8 @@ namespace CBP
     void SimComponent::Update(Actor* a_actor, uint32_t a_step)
     {
         m_obj = a_actor->loadedState->node->GetObjectByName(&m_boneName.data);
-        if (m_obj == nullptr)
-            return;
+        if (m_obj == nullptr) 
+            return;        
 
         if (m_movement) {
             UpdateMovement(a_actor);

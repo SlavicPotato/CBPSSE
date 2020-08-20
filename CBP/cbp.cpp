@@ -199,7 +199,6 @@ namespace CBP
         bool failed = false;
 
         failed |= !iface.SaveGlobals();
-        failed |= !iface.SaveGlobalProfile();
         failed |= !iface.SaveCollisionGroups();
 
         return !failed;
@@ -270,7 +269,7 @@ namespace CBP
 
         IEvents::RegisterForEvent(Event::OnMessage, MessageHandler);
         IEvents::RegisterForEvent(Event::OnRevert, RevertHandler);
-        IEvents::RegisterForEvent(Event::OnGameLoad, LoadGameHandler);
+        IEvents::RegisterForLoadGameEvent('DPBC', LoadGameHandler);
         IEvents::RegisterForEvent(Event::OnGameSave, SaveGameHandler);
 
         SKSE::g_papyrus->Register(RegisterFuncs);
@@ -365,7 +364,6 @@ namespace CBP
             Lock();
 
             iface.LoadGlobals();
-            iface.LoadGlobalProfile();
             iface.LoadCollisionGroups();
 
             UpdateDebugRendererState();
@@ -378,22 +376,81 @@ namespace CBP
         }
         break;
         case SKSEMessagingInterface::kMessage_NewGame:
-            DoLoad(nullptr);
+            ResetActors();
             break;
         }
     }
 
-    void DCBP::DoLoad(SKSESerializationInterface* intfc)
+    template <typename T>
+    bool DCBP::LoadRecord(SKSESerializationInterface* intfc, UInt32 a_type, T a_func)
     {
-        auto& iface = m_Instance.m_serialization;
-
         PerfTimer pt;
         pt.Start();
 
+        UInt32 actorsLength;
+        if (!intfc->ReadRecordData(&actorsLength, sizeof(actorsLength)))
+        {
+            m_Instance.Error("[%.4s]: Couldn't read record data length", &a_type);
+            return false;
+        }
+
+        if (actorsLength == 0)
+        {
+            m_Instance.Error("[%.4s]: Record data length == 0", &a_type);
+            return false;
+        }
+
+        std::unique_ptr<char[]> data(new char[actorsLength]);
+
+        if (!intfc->ReadRecordData(data.get(), actorsLength)) {
+            m_Instance.Error("[%.4s]: Couldn't read record data", &a_type);
+            return false;
+        }
+
+        auto& iface = m_Instance.m_serialization;
+        auto& func = std::bind(
+            a_func,
+            std::addressof(iface),
+            std::placeholders::_1,
+            std::placeholders::_2,
+            std::placeholders::_3);
+
+        size_t num = func(intfc, data.get(), actorsLength);
+
+        m_Instance.Debug("%s [%.4s]: %zu record(s), %f s", __FUNCTION__, &a_type, num, pt.Stop());
+
+        return true;
+    }
+
+    void DCBP::LoadGameHandler(SKSESerializationInterface* intfc, UInt32, UInt32, UInt32 version)
+    {
+        PerfTimer pt;
+        pt.Start();
+
+        UInt32 type, length, currentVersion;
+
         Lock();
 
-        iface.LoadActorProfiles(intfc);
-        iface.LoadRaceProfiles(intfc);
+        while (intfc->GetNextRecordInfo(&type, &currentVersion, &length))
+        {
+            if (!length)
+                continue;
+
+            switch (type) {
+            case 'GPBC':
+                LoadRecord(intfc, type, &Serialization::LoadGlobalProfile);
+                break;
+            case 'APBC':
+                LoadRecord(intfc, type, &Serialization::LoadActorProfiles);
+                break;
+            case 'RPBC':
+                LoadRecord(intfc, type, &Serialization::LoadRaceProfiles);
+                break;
+            default:
+                m_Instance.Warning("Unknown record '%.4s'", &type);
+                break;
+            }
+        }
 
         GetUpdateTask().ResetTime();
         GetProfiler().Reset();
@@ -405,13 +462,38 @@ namespace CBP
         ResetActors();
     }
 
-    void DCBP::LoadGameHandler(Event, void* args)
+    template <typename T>
+    bool DCBP::SaveRecord(SKSESerializationInterface* intfc, UInt32 a_type, T a_func)
     {
-        DoLoad(static_cast<SKSESerializationInterface*>(args));
+        PerfTimer pt;
+        pt.Start();
+
+        auto& iface = m_Instance.m_serialization;
+
+        std::ostringstream data;
+        UInt32 length;
+
+        intfc->OpenRecord(a_type, kDataVersion1);
+
+        size_t num = std::bind(a_func, std::addressof(iface), std::placeholders::_1)(data);
+        if (num == 0)
+            return false;
+
+        std::string strData(data.str());
+
+        length = static_cast<UInt32>(strData.length()) + 1;
+
+        intfc->WriteRecordData(&length, sizeof(length));
+        intfc->WriteRecordData(strData.c_str(), length);
+
+        m_Instance.Debug("%s [%.4s]: %zu record(s), %f s", __FUNCTION__, &a_type, num, pt.Stop());
+
+        return true;
     }
 
-    void DCBP::SaveGameHandler(Event, void*)
+    void DCBP::SaveGameHandler(Event, void* args)
     {
+        auto intfc = static_cast<SKSESerializationInterface*>(args);
         auto& iface = m_Instance.m_serialization;
 
         PerfTimer pt;
@@ -420,17 +502,20 @@ namespace CBP
         Lock();
 
         iface.SaveGlobals();
-        iface.SaveGlobalProfile();
         iface.SaveCollisionGroups();
-        iface.SaveActorProfiles();
-        iface.SaveRaceProfiles();
+
+        intfc->OpenRecord('DPBC', kDataVersion1);
+
+        SaveRecord(intfc, 'GPBC', &Serialization::SerializeGlobalProfile);
+        SaveRecord(intfc, 'APBC', &Serialization::SerializeActorProfiles);
+        SaveRecord(intfc, 'RPBC', &Serialization::SerializeRaceProfiles);
 
         Unlock();
 
         m_Instance.Debug("%s: %f", __FUNCTION__, pt.Stop());
     }
 
-    void DCBP::RevertHandler(Event m_code, void* args)
+    void DCBP::RevertHandler(Event, void*)
     {
         m_Instance.Debug("Reverting..");
 
@@ -483,6 +568,8 @@ namespace CBP
         return kEvent_Continue;
     }
 
+    std::atomic<uint64_t> UpdateTask::m_nextGroupId = 0;
+
     UpdateTask::UpdateTask() :
         m_lTime(PerfCounter::Query()),
         m_timeAccum(0.0f),
@@ -510,7 +597,8 @@ namespace CBP
         auto deltaT = PerfCounter::delta(m_lTime, newTime);
         m_lTime = newTime;
 
-        if (deltaT > 1.0f) {
+        if (deltaT > 1.0f) 
+        {
             PhysicsReset();
             DCBP::Unlock();
             return;
@@ -525,7 +613,11 @@ namespace CBP
             m_timeAccum -= globalConf.phys.timeStep;
         }
 
-        if (numSteps == 0) {
+        if (numSteps == 0) 
+        {
+            if (globalConf.phys.collisions)
+                UpdateDebugRenderer();
+
             DCBP::Unlock();
             return;
         }
@@ -565,12 +657,7 @@ namespace CBP
                 i--;
             }
 
-
-            if (globalConf.debugRenderer.enabled &&
-                DCBP::GetDriverConfig().debug_renderer)
-            {
-                DCBP::GetRenderer()->Update(DCBP::GetWorld()->getDebugRenderer());
-            }
+            UpdateDebugRenderer();
         }
 
         if (globalConf.general.enableProfiling) {
@@ -580,7 +667,16 @@ namespace CBP
         DCBP::Unlock();
     }
 
-    std::atomic<uint64_t> UpdateTask::m_nextGroupId = 0;
+    void UpdateTask::UpdateDebugRenderer()
+    {
+        auto& globalConf = IConfig::GetGlobalConfig();
+
+        if (globalConf.debugRenderer.enabled &&
+            DCBP::GetDriverConfig().debug_renderer)
+        {
+            DCBP::GetRenderer()->Update(DCBP::GetWorld()->getDebugRenderer());
+        }
+    }
 
     void UpdateTask::AddActor(SKSE::ObjectHandle a_handle)
     {
@@ -732,6 +828,10 @@ namespace CBP
             if (ActorValid(actor))
                 e.second.Reset(actor);
         }
+
+        auto& globalConf = IConfig::GetGlobalConfig();
+        if (globalConf.phys.collisions)
+            UpdateDebugRenderer();
     }
 
     void UpdateTask::WeightUpdate(SKSE::ObjectHandle a_handle)

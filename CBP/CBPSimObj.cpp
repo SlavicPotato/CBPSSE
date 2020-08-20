@@ -14,7 +14,7 @@ namespace CBP
         for (const auto& b : a_nodeMap)
         {
             BSFixedString cs(b.first.c_str());
-
+            
             auto bone = a_actor->loadedState->node->GetObjectByName(&cs.data);
             if (bone == nullptr)
                 continue;

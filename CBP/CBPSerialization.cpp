@@ -523,17 +523,22 @@ namespace CBP
     }
 
 
-    void Serialization::LoadGlobalProfile()
+    size_t Serialization::LoadGlobalProfile(SKSESerializationInterface* intfc, const char* a_data, UInt32 a_len)
     {
         Json::Value root;
 
         try
         {
-            if (!ReadJsonData(PLUGIN_CBP_GLOBPROFILE_DATA, root))
-                return;
+            std::string errors;
+
+            Json::CharReaderBuilder builder;
+            const std::unique_ptr<Json::CharReader> reader(builder.newCharReader());
+
+            if (!reader->parse(a_data, a_data + a_len, &root, &errors))
+                throw std::exception("Parser failed");
 
             if (root.empty())
-                return;
+                return 0;
 
             if (!root.isObject())
                 throw std::exception("Expected an object");
@@ -541,8 +546,10 @@ namespace CBP
         catch (const std::exception& e)
         {
             Error("%s (Load): %s", __FUNCTION__, e.what());
-            return;
+            return 0;
         }
+
+        size_t c = 0;
 
         try
         {
@@ -550,6 +557,8 @@ namespace CBP
 
             if (m_componentParser.Parse(root, componentData))
                 IConfig::SetGlobalProfile(std::move(componentData));
+
+            c++;
         }
         catch (const std::exception& e)
         {
@@ -562,30 +571,35 @@ namespace CBP
 
             if (m_nodeParser.Parse(root, nodeData))
                 IConfig::SetGlobalNodeConfig(std::move(nodeData));
+
+            c++;
         }
         catch (const std::exception& e)
         {
             Error("%s (Nodes): %s", __FUNCTION__, e.what());
         }
+
+        return c;
     }
 
-    void Serialization::LoadActorProfiles(SKSESerializationInterface* intfc)
+    size_t Serialization::LoadActorProfiles(SKSESerializationInterface* intfc, const char* a_data, UInt32 a_len)
     {
         try
         {
             actorConfigComponentsHolder_t actorConfigComponents;
             actorConfigNodesHolder_t actorConfigNodes;
 
-            PerfTimer pt;
-            pt.Start();
-
             Json::Value root;
+            std::string errors;
 
-            if (!ReadJsonData(PLUGIN_CBP_ACTOR_DATA, root))
-                return;
+            Json::CharReaderBuilder builder;
+            const std::unique_ptr<Json::CharReader> reader(builder.newCharReader());
+
+            if (!reader->parse(a_data, a_data + a_len, &root, &errors))
+                throw std::exception("Parser failed");
 
             if (root.empty())
-                return;
+                return 0;
 
             if (!root.isObject())
                 throw std::exception("Expected an object");
@@ -650,30 +664,32 @@ namespace CBP
             IConfig::SetActorConfigHolder(std::move(actorConfigComponents));
             IConfig::SetActorNodeConfigHolder(std::move(actorConfigNodes));
 
-            Debug("Loaded %zu actor record(s) %.4fs", c, pt.Stop());
+            return c;
         }
         catch (const std::exception& e)
         {
             Error("%s: %s", __FUNCTION__, e.what());
+            return 0;
         }
     }
 
-    void Serialization::LoadRaceProfiles(SKSESerializationInterface* intfc)
+    size_t Serialization::LoadRaceProfiles(SKSESerializationInterface* intfc, const char* a_data, UInt32 a_len)
     {
         try
         {
             raceConfigComponentsHolder_t raceConfigComponents;
 
-            PerfTimer pt;
-            pt.Start();
-
             Json::Value root;
+            std::string errors;
 
-            if (!ReadJsonData(PLUGIN_CBP_RACE_DATA, root))
-                return;
+            Json::CharReaderBuilder builder;
+            const std::unique_ptr<Json::CharReader> reader(builder.newCharReader());
+
+            if (!reader->parse(a_data, a_data + a_len, &root, &errors))
+                throw std::exception("Parser failed");
 
             if (root.empty())
-                return;
+                return 0;
 
             if (!root.isObject())
                 throw std::exception("Expected an object");
@@ -736,21 +752,19 @@ namespace CBP
 
             IConfig::SetRaceConfigHolder(std::move(raceConfigComponents));
 
-            Debug("Loaded %zu race record(s) %.4fs", c, pt.Stop());
+            return c;
         }
         catch (const std::exception& e)
         {
             Error("%s: %s", __FUNCTION__, e.what());
+            return 0;
         }
     }
 
-    void Serialization::SaveActorProfiles()
+    size_t Serialization::SerializeActorProfiles(std::ostringstream& a_out)
     {
         try
         {
-            PerfTimer pt;
-            pt.Start();
-
             Json::Value root;
 
             for (const auto& e : IConfig::GetActorConfigHolder()) {
@@ -763,29 +777,9 @@ namespace CBP
                 m_nodeParser.Create(e.second, actor);
             }
 
-            WriteJsonData(PLUGIN_CBP_ACTOR_DATA, root);
+            a_out << root;
 
-            Debug("Saved %zu actor record(s) (%.4fs)", static_cast<size_t>(root.size()), pt.Stop());
-        }
-        catch (const std::exception& e)
-        {
-            m_lastException = e;
-            Error("%s: %s", __FUNCTION__, e.what());
-        }
-    }
-
-    bool Serialization::SaveGlobalProfile()
-    {
-        try
-        {
-            Json::Value root;
-
-            m_componentParser.Create(IConfig::GetGlobalProfile(), root);
-            m_nodeParser.Create(IConfig::GetGlobalNodeConfig(), root);
-
-            WriteJsonData(PLUGIN_CBP_GLOBPROFILE_DATA, root);
-
-            return true;
+            return static_cast<size_t>(root.size());
         }
         catch (const std::exception& e)
         {
@@ -796,13 +790,32 @@ namespace CBP
         }
     }
 
-    void Serialization::SaveRaceProfiles()
+    size_t Serialization::SerializeGlobalProfile(std::ostringstream& a_out)
     {
         try
         {
-            PerfTimer pt;
-            pt.Start();
+            Json::Value root;
 
+            m_componentParser.Create(IConfig::GetGlobalProfile(), root);
+            m_nodeParser.Create(IConfig::GetGlobalNodeConfig(), root);
+
+            a_out << root;
+
+            return static_cast<size_t>(root.size());
+        }
+        catch (const std::exception& e)
+        {
+            m_lastException = e;
+            Error("%s: %s", __FUNCTION__, e.what());
+
+            return 0;
+        }
+    }
+
+    size_t Serialization::SerializeRaceProfiles(std::ostringstream& a_out)
+    {
+        try
+        {
             Json::Value root;
 
             for (const auto& e : IConfig::GetRaceConfigHolder()) {
@@ -810,14 +823,16 @@ namespace CBP
                 m_componentParser.Create(e.second, race);
             }
 
-            WriteJsonData(PLUGIN_CBP_RACE_DATA, root);
+            a_out << root;
 
-            Debug("Saved %zu race record(s) (%.4fs)", static_cast<size_t>(root.size()), pt.Stop());
+            return static_cast<size_t>(root.size());
         }
         catch (const std::exception& e)
         {
             m_lastException = e;
             Error("%s: %s", __FUNCTION__, e.what());
+
+            return 0;
         }
     }
 
@@ -862,7 +877,6 @@ namespace CBP
         bool failed = false;
 
         failed |= !DoPendingSave(Group::kGlobals, &Serialization::SaveGlobals);
-        failed |= !DoPendingSave(Group::kGlobalProfile, &Serialization::SaveGlobalProfile);
         failed |= !DoPendingSave(Group::kCollisionGroups, &Serialization::SaveCollisionGroups);
 
         return !failed;

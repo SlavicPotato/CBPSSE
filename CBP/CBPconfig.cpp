@@ -17,6 +17,8 @@ namespace CBP
     configNodes_t IConfig::nodeConfigHolder;
     actorConfigNodesHolder_t IConfig::actorNodeConfigHolder;
 
+    IConfig::configLoadStates_t IConfig::loadState{ false, false, false };
+
     IConfig::IConfigLog IConfig::log;
 
     const componentValueDescMap_t configComponent_t::descMap({

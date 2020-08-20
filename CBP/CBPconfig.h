@@ -354,6 +354,7 @@ namespace CBP
 
        inline static void SetActorConfigHolder(actorConfigComponentsHolder_t &&a_rhs) noexcept {
             actorConfHolder = std::forward<actorConfigComponentsHolder_t>(a_rhs);
+            loadState.actorPhys = true;
         }
 
         [[nodiscard]] inline static auto& GetRaceConfigHolder() {
@@ -362,14 +363,17 @@ namespace CBP
         
         inline static void SetRaceConfigHolder(raceConfigComponentsHolder_t &&a_rhs) noexcept {
             raceConfHolder = std::forward<raceConfigComponentsHolder_t>(a_rhs);
+            loadState.racePhys = true;
         }
 
         inline static void ClearActorConfigHolder() {
             actorConfHolder.clear();
+            loadState.actorPhys = false;
         }
 
         inline static void ClearRaceConfigHolder() {
             raceConfHolder.clear();
+            loadState.racePhys = false;
         }
 
         [[nodiscard]] inline static auto& GetGlobalConfig() {
@@ -466,6 +470,7 @@ namespace CBP
         
         inline static void SetActorNodeConfigHolder(actorConfigNodesHolder_t &&a_rhs) noexcept {
             actorNodeConfigHolder = std::forward<actorConfigNodesHolder_t>(a_rhs);
+            loadState.actorNode = true;
         }
 
         static const configNodes_t& GetActorNodeConfig(SKSE::ObjectHandle a_handle);
@@ -480,10 +485,23 @@ namespace CBP
 
         inline static void ClearActorNodeConfigHolder() {
             actorNodeConfigHolder.clear();
+            loadState.actorNode = false;
         }
 
         inline static const auto& GetConfigGroupMap() {
             return configGroupMap;
+        }
+
+        inline static void SetActorPhysLoadState(bool a_newState) {
+            loadState.actorPhys = a_newState;
+        }
+        
+        inline static void SetActorNodeLoadState(bool a_newState) {
+            loadState.actorNode = a_newState;
+        }
+        
+        inline static void SetRacePhysLoadState(bool a_newState) {
+            loadState.racePhys = a_newState;
         }
 
     private:
@@ -507,6 +525,12 @@ namespace CBP
 
         static configNodes_t nodeConfigHolder;
         static actorConfigNodesHolder_t actorNodeConfigHolder;
+
+        static struct configLoadStates_t {
+            bool actorPhys;
+            bool actorNode;
+            bool racePhys;
+        } loadState;
 
         static IConfigLog log;
     };
