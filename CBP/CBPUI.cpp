@@ -2097,7 +2097,12 @@ namespace CBP
 
                         auto i = d.try_emplace(e.first, false);
                         if (ImGui::MenuItem(headerName.c_str(), nullptr, std::addressof(i.first->second)))
+                        {
+                            auto f = mirrorTo.try_emplace(e.first);
+                            f.first->second.insert_or_assign(p.first, i.first->second);
+
                             DCBP::MarkGlobalsForSave();
+                        }
                     }
 
                     if (d.size()) {
@@ -2539,7 +2544,7 @@ namespace CBP
 
         UICommon::MessageDialog(
             "Import failed",
-            "\nThe last exception was:\n\n%s",
+            "Something went wrong during the import\nThe last exception was:\n\n%s",
             DCBP::GetLastSerializationException().what());
 
         UICommon::MessageDialog(

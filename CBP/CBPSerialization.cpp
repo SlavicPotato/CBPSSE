@@ -7,7 +7,7 @@ namespace CBP
         auto& conf = a_data["data"];
 
         if (conf.empty())
-            return false;
+            return false;        
 
         if (!conf.isObject()) {
             Error("Expected an object");
@@ -720,9 +720,10 @@ namespace CBP
             throw std::exception("Empty root object");
 
         if (!a_out.isMember("actors") ||
-            !a_out.isMember("races"))
+            !a_out.isMember("races") ||
+            !a_out.isMember("global"))
         {
-            throw std::exception("Expected members not found");
+            throw std::exception("One or more expected members not found");
         }
     }
 
@@ -758,12 +759,24 @@ namespace CBP
             actorConfigNodesHolder_t actorConfigNodes;
             raceConfigComponentsHolder_t raceConfigComponents;
 
+            configComponents_t globalComponentData;
+            configNodes_t globalNodeData;
+
             _LoadActorProfiles(intfc, root["actors"], actorConfigComponents, actorConfigNodes);
             _LoadRaceProfiles(intfc, root["races"], raceConfigComponents);
+
+            if (!m_componentParser.Parse(root["global"], globalComponentData))
+                throw std::exception("Error while parsing global component data");
+
+            if (!m_nodeParser.Parse(root["global"], globalNodeData))
+                throw std::exception("Error while parsing global node data");
 
             IConfig::SetActorConfigHolder(std::move(actorConfigComponents));
             IConfig::SetActorNodeConfigHolder(std::move(actorConfigNodes));
             IConfig::SetRaceConfigHolder(std::move(raceConfigComponents));
+
+            IConfig::SetGlobalPhysicsConfig(std::move(globalComponentData));
+            IConfig::SetGlobalNodeConfig(std::move(globalNodeData));
 
             return true;
         }
@@ -771,7 +784,7 @@ namespace CBP
         {
             m_lastException = e;
             Error("%s: %s", __FUNCTION__, e.what());
-            return true;
+            return false;
         }
     }
 
@@ -799,6 +812,11 @@ namespace CBP
                 auto& race = races[std::to_string(e.first)];
                 m_componentParser.Create(e.second, race);
             }
+
+            auto& global = root["global"];
+
+            m_componentParser.Create(IConfig::GetGlobalPhysicsConfig(), global);
+            m_nodeParser.Create(IConfig::GetGlobalNodeConfig(), global);
 
             WriteJsonData(a_path, root);
 
