@@ -6,19 +6,28 @@ namespace CBP
         virtual protected ILog
     {
     public:
+        virtual ~Parser() noexcept = default;
+
         FN_NAMEPROC("Parser")
     public:
         void Create(const configComponents_t& a_data, Json::Value& a_out);
-        [[nodiscard]] bool Parse(const Json::Value& a_data, configComponents_t& a_out, bool a_allowUntracked = false);
+        [[nodiscard]] bool Parse(const Json::Value& a_data, configComponents_t& a_out, bool a_allowUnknown = false);
 
         void Create(const configNodes_t& a_data, Json::Value& a_out);
-        [[nodiscard]] bool Parse(const Json::Value& a_data, configNodes_t& a_out, bool a_allowUntracked = false);
+        [[nodiscard]] bool Parse(const Json::Value& a_data, configNodes_t& a_out, bool a_allowUnknown = false);
 
         void GetDefault(configComponents_t& a_out);
         void GetDefault(configNodes_t& a_out);
     };
 
-    class Serialization :
+    struct importInfo_t
+    {
+        size_t numActors;
+        size_t numRaces;
+        std::exception except;
+    };
+
+    class ISerialization :
         ILog
     {
     public:
@@ -38,8 +47,9 @@ namespace CBP
         size_t SerializeActorProfiles(std::ostringstream& a_out);
 
         size_t LoadGlobalProfile(SKSESerializationInterface* intfc, const char* a_data, UInt32 a_len);
-        bool LoadDefaultGlobalProfile();
         size_t SerializeGlobalProfile(std::ostringstream& a_out);
+
+        bool LoadDefaultGlobalProfile();
         bool SaveToDefaultGlobalProfile();
 
         size_t LoadRaceProfiles(SKSESerializationInterface* intfc, const char* a_data, UInt32 a_len);
@@ -47,6 +57,11 @@ namespace CBP
 
         void LoadCollisionGroups();
         bool SaveCollisionGroups();
+
+        bool Import(SKSESerializationInterface* intfc, const fs::path& a_path);
+        bool Export(const fs::path& a_path);
+
+        bool ImportGetInfo(const fs::path& a_path, importInfo_t &a_out);
 
         inline void MarkForSave(Group a_grp) {
             m_pendingSave[a_grp] = true;
@@ -58,9 +73,21 @@ namespace CBP
 
         bool SavePending();
 
-
         FN_NAMEPROC("Serialization")
     private:
+        void ReadImportData(const fs::path& a_path, Json::Value& a_out);
+
+        size_t _LoadActorProfiles(
+            SKSESerializationInterface* intfc, 
+            const Json::Value& a_root,
+            actorConfigComponentsHolder_t& a_actorConfigComponents,
+            actorConfigNodesHolder_t& a_nodeData);
+
+        size_t _LoadRaceProfiles(
+            SKSESerializationInterface* intfc,
+            const Json::Value& a_root, 
+            raceConfigComponentsHolder_t &a_raceConfigComponents);
+
         size_t _LoadGlobalProfile(const Json::Value& a_root);
 
         [[nodiscard]] bool ReadJsonData(const std::filesystem::path& a_path, Json::Value& a_out);

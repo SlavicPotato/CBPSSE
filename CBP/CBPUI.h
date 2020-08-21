@@ -49,6 +49,10 @@ namespace CBP
         [[nodiscard]] inline const T* operator->() const {
             return std::addressof(m_item);
         }
+        
+        [[nodiscard]] inline T* operator->() {
+            return std::addressof(m_item);
+        }
 
         [[nodiscard]] inline bool Has() const noexcept {
             return m_isSelected;
@@ -399,6 +403,10 @@ namespace CBP
         void DrawActorList(actorListValue_t*& a_entry, const char*& a_curSelName);
         void SetCurrentActor(SKSE::ObjectHandle a_handle);
 
+        inline void ClearActorList() {
+            m_actorList.clear();
+        }
+
         T m_actorList;
         SKSE::ObjectHandle m_currentActor;
 
@@ -535,7 +543,18 @@ namespace CBP
     class UIFileSelector :
         virtual protected UIBase
     {
+        class SelectedFile
+        {
+        public:
+            SelectedFile();
+            SelectedFile(const fs::path& a_path);
 
+            void UpdateInfo();
+
+            fs::path m_path;
+            importInfo_t m_info;
+            bool m_infoResult;
+        };
     protected:
         UIFileSelector(const fs::path& a_path);
 
@@ -548,28 +567,58 @@ namespace CBP
 
         inline void SetPath(const fs::path& a_path) {
             m_root = a_path;
+            m_rootString = a_path.string();
         }
 
         inline const auto& GetLastException() const {
             return m_lastExcept;
         }
+        
+        inline const auto& GetRoot() const {
+            return m_root;
+        }
+        
+        inline const auto& GetRootStr() const {
+            return m_rootString;
+        }
 
     private:
-        UISelectedItem<fs::path> m_selected;
+        UISelectedItem<SelectedFile> m_selected;
         std::vector<fs::path> m_files;
         fs::path m_root;
+        std::string m_rootString;
 
         std::exception m_lastExcept;
     };
 
-    class UIDialogueImport :
+    class UIDialogImport :
         UIFileSelector
     {
     public:
-        UIDialogueImport(const fs::path& a_path);
+        UIDialogImport(const fs::path& a_path);
+
+        bool Draw();
+        void Open();
+
+    };
+
+    class UIDialogExport
+    {
+    public:
+        UIDialogExport(const fs::path& a_path);
 
         void Draw();
+        void Open();
 
+    private:
+
+        void OnFileInput();
+
+        fs::path m_path;
+        fs::path m_lastTargetPath;
+        std::regex m_rFileCheck;
+
+        char m_buf[32];
     };
 
     class UIContext :
@@ -672,7 +721,8 @@ namespace CBP
         UICollisionGroups m_colGroups;
         UINodeConfig m_nodeConfig;
         UIProfiling m_profiling;
-        UIDialogueImport m_importDialogue;
+        UIDialogImport m_importDialog;
+        UIDialogExport m_exportDialog;
 #ifdef _CBP_ENABLE_DEBUG
         UIDebugInfo m_debug;
 #endif

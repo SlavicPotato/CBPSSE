@@ -2,7 +2,7 @@
 
 namespace CBP
 {
-    bool Parser::Parse(const Json::Value& a_data, configComponents_t& a_outData, bool a_allowUntracked)
+    bool Parser::Parse(const Json::Value& a_data, configComponents_t& a_outData, bool a_allowUnknown)
     {
         auto& conf = a_data["data"];
 
@@ -29,13 +29,13 @@ namespace CBP
                 return false;
             }
 
-            std::string simComponentName(k.asString());
-            transform(simComponentName.begin(), simComponentName.end(), simComponentName.begin(), ::tolower);
+            std::string componentName(k.asString());
+            transform(componentName.begin(), componentName.end(), componentName.begin(), ::tolower);
 
-            if (!a_allowUntracked) {
-                if (!IConfig::IsValidSimComponent(simComponentName)) {
-                    Error("Untracked sim component: %s", simComponentName.c_str());
-                    return false;
+            if (!a_allowUnknown) {
+                if (!IConfig::IsValidSimComponent(componentName)) {
+                    Warning("Discarding unknown sim component: %s", componentName.c_str());
+                    continue;
                 }
             }
 
@@ -44,13 +44,13 @@ namespace CBP
             for (auto it2 = it1->begin(); it2 != it1->end(); ++it2)
             {
                 if (!it2->isNumeric()) {
-                    Error("(%s) Bad value, expected number", simComponentName.c_str());
+                    Error("(%s) Bad value, expected number", componentName.c_str());
                     return false;
                 }
 
                 auto k = it2.key();
                 if (!k.isString()) {
-                    Error("(%s) Bad key, expected string", simComponentName.c_str());
+                    Error("(%s) Bad key, expected string", componentName.c_str());
                     return false;
                 }
 
@@ -58,10 +58,10 @@ namespace CBP
                 transform(valName.begin(), valName.end(), valName.begin(), ::tolower);
 
                 if (!tmp.Set(valName, it2->asFloat()))
-                    Warning("(%s) Unknown value: %s", simComponentName.c_str(), valName.c_str());
+                    Warning("(%s) Unknown value: %s", componentName.c_str(), valName.c_str());
             }
 
-            a_outData.insert_or_assign(simComponentName, std::move(tmp));
+            a_outData.insert_or_assign(componentName, std::move(tmp));
         }
 
         return true;
@@ -114,7 +114,7 @@ namespace CBP
         }
     }
 
-    bool Parser::Parse(const Json::Value& a_data, configNodes_t& a_out, bool a_allowUntracked)
+    bool Parser::Parse(const Json::Value& a_data, configNodes_t& a_out, bool a_allowUnknown)
     {
         auto& nodes = a_data["nodes"];
 
@@ -133,13 +133,17 @@ namespace CBP
 
             std::string k(it.key().asString());
 
-            if (!IConfig::IsValidNode(k))
-                continue;
+            if (!a_allowUnknown) {
+                if (!IConfig::IsValidNode(k)) {
+                    Warning("Discarding unknown node: %s", k.c_str());
+                    continue;
+                }
+            }
 
             auto& nc = a_out[k];
 
-            nc.femaleMovement = it->get("femaleMovement", true).asBool();
-            nc.femaleCollisions = it->get("femaleCollisions", true).asBool();
+            nc.femaleMovement = it->get("femaleMovement", false).asBool();
+            nc.femaleCollisions = it->get("femaleCollisions", false).asBool();
             nc.maleMovement = it->get("maleMovement", false).asBool();
             nc.maleCollisions = it->get("maleCollisions", false).asBool();
         }
@@ -157,7 +161,7 @@ namespace CBP
         a_out = IConfig::GetGlobalNodeConfig();
     }
 
-    void Serialization::LoadGlobals()
+    void ISerialization::LoadGlobals()
     {
         configGlobal_t globalConfig;
 
@@ -336,7 +340,7 @@ namespace CBP
         }
     }
 
-    bool Serialization::SaveGlobals()
+    bool ISerialization::SaveGlobals()
     {
         try
         {
@@ -426,7 +430,7 @@ namespace CBP
         }
     }
 
-    void Serialization::LoadCollisionGroups()
+    void ISerialization::LoadCollisionGroups()
     {
         try
         {
@@ -490,7 +494,7 @@ namespace CBP
         }
     }
 
-    bool Serialization::SaveCollisionGroups()
+    bool ISerialization::SaveCollisionGroups()
     {
         try
         {
@@ -522,7 +526,7 @@ namespace CBP
         }
     }
 
-    size_t Serialization::_LoadGlobalProfile(const Json::Value& a_root)
+    size_t ISerialization::_LoadGlobalProfile(const Json::Value& a_root)
     {
         if (a_root.empty())
             return 0;
@@ -563,7 +567,7 @@ namespace CBP
         return c;
     }
 
-    size_t Serialization::LoadGlobalProfile(SKSESerializationInterface* intfc, const char* a_data, UInt32 a_len)
+    size_t ISerialization::LoadGlobalProfile(SKSESerializationInterface* intfc, const char* a_data, UInt32 a_len)
     {
         try
         {
@@ -586,7 +590,7 @@ namespace CBP
         }
     }
 
-    bool Serialization::LoadDefaultGlobalProfile()
+    bool ISerialization::LoadDefaultGlobalProfile()
     {
         try
         {
@@ -604,13 +608,83 @@ namespace CBP
         }
     }
 
-    size_t Serialization::LoadActorProfiles(SKSESerializationInterface* intfc, const char* a_data, UInt32 a_len)
+    size_t ISerialization::_LoadActorProfiles(
+        SKSESerializationInterface* intfc,
+        const Json::Value& a_root,
+        actorConfigComponentsHolder_t& a_actorConfigComponents,
+        actorConfigNodesHolder_t& a_nodeData
+    )
+    {
+        if (a_root.empty())
+            return 0;
+
+        if (!a_root.isObject())
+            throw std::exception("Expected an object");
+
+        size_t c = 0;
+
+        for (auto it = a_root.begin(); it != a_root.end(); ++it)
+        {
+            if (!it->isObject()) {
+                Error("Expected an object");
+                continue;
+            }
+
+            SKSE::ObjectHandle handle;
+
+            try {
+                handle = static_cast<SKSE::ObjectHandle>(std::stoull(it.key().asString()));
+            }
+            catch (...) {
+                Error("Exception while trying to convert handle");
+                continue;
+            }
+
+            if (handle == 0) {
+                Warning("handle == 0");
+                continue;
+            }
+
+            SKSE::ObjectHandle newHandle = 0;
+
+            if (intfc != nullptr)
+            {
+                if (!SKSE::ResolveHandle(intfc, handle, &newHandle)) {
+                    Error("0x%llX: Couldn't resolve handle, discarding", handle);
+                    continue;
+                }
+
+                if (newHandle == 0) {
+                    Error("0x%llX: newHandle == 0", handle);
+                    continue;
+                }
+            }
+            else {
+                newHandle = handle;
+            }
+
+            configComponents_t componentData;
+
+            if (m_componentParser.Parse(*it, componentData)) {
+                a_actorConfigComponents.emplace(newHandle, std::move(componentData));
+                IData::UpdateActorRaceMap(newHandle);
+            }
+
+            configNodes_t nodeData;
+
+            if (m_nodeParser.Parse(*it, nodeData))
+                a_nodeData.emplace(newHandle, std::move(nodeData));
+
+            c++;
+        }
+
+        return c;
+    }
+
+    size_t ISerialization::LoadActorProfiles(SKSESerializationInterface* intfc, const char* a_data, UInt32 a_len)
     {
         try
         {
-            actorConfigComponentsHolder_t actorConfigComponents;
-            actorConfigNodesHolder_t actorConfigNodes;
-
             Json::Value root;
             std::string errors;
 
@@ -620,73 +694,15 @@ namespace CBP
             if (!reader->parse(a_data, a_data + a_len, &root, &errors))
                 throw std::exception("Parser failed");
 
-            if (root.empty())
-                return 0;
+            actorConfigComponentsHolder_t actorConfigComponents;
+            actorConfigNodesHolder_t actorConfigNodes;
 
-            if (!root.isObject())
-                throw std::exception("Expected an object");
-
-            size_t c = 0;
-
-            for (auto it = root.begin(); it != root.end(); ++it)
-            {
-                if (!it->isObject()) {
-                    Error("Expected an object");
-                    continue;
-                }
-
-                SKSE::ObjectHandle handle;
-
-                try {
-                    handle = static_cast<SKSE::ObjectHandle>(std::stoull(it.key().asString()));
-                }
-                catch (...) {
-                    Error("Exception while trying to convert handle");
-                    continue;
-                }
-
-                if (handle == 0) {
-                    Warning("handle == 0");
-                    continue;
-                }
-
-                SKSE::ObjectHandle newHandle = 0;
-
-                if (intfc != nullptr)
-                {
-                    if (!SKSE::ResolveHandle(intfc, handle, &newHandle)) {
-                        Error("0x%llX: Couldn't resolve handle, discarding", handle);
-                        continue;
-                    }
-
-                    if (newHandle == 0) {
-                        Error("0x%llX: newHandle == 0", handle);
-                        continue;
-                    }
-                }
-                else {
-                    newHandle = handle;
-                }
-
-                configComponents_t componentData;
-
-                if (m_componentParser.Parse(*it, componentData)) {
-                    actorConfigComponents.emplace(newHandle, std::move(componentData));
-                    IData::UpdateActorRaceMap(newHandle);
-                }
-
-                configNodes_t nodeData;
-
-                if (m_nodeParser.Parse(*it, nodeData))
-                    actorConfigNodes.emplace(newHandle, std::move(nodeData));
-
-                c++;
-            }
+            size_t res = _LoadActorProfiles(intfc, root, actorConfigComponents, actorConfigNodes);
 
             IConfig::SetActorConfigHolder(std::move(actorConfigComponents));
             IConfig::SetActorNodeConfigHolder(std::move(actorConfigNodes));
 
-            return c;
+            return res;
         }
         catch (const std::exception& e)
         {
@@ -695,12 +711,182 @@ namespace CBP
         }
     }
 
-    size_t Serialization::LoadRaceProfiles(SKSESerializationInterface* intfc, const char* a_data, UInt32 a_len)
+    void ISerialization::ReadImportData(const fs::path& a_path, Json::Value& a_out)
+    {
+        if (!ReadJsonData(a_path, a_out))
+            throw std::exception("Couldn't read data");
+
+        if (a_out.empty())
+            throw std::exception("Empty root object");
+
+        if (!a_out.isMember("actors") ||
+            !a_out.isMember("races"))
+        {
+            throw std::exception("Expected members not found");
+        }
+    }
+
+    bool ISerialization::ImportGetInfo(const fs::path& a_path, importInfo_t& a_out)
     {
         try
         {
+            Json::Value root;
+           
+            ReadImportData(a_path, root);
+
+            a_out.numActors = static_cast<size_t>(root["actors"].size());
+            a_out.numRaces = static_cast<size_t>(root["races"].size());
+
+            return true;
+        }
+        catch (const std::exception& e)
+        {
+            a_out.except = e;
+            return false;
+        }
+    }
+
+    bool ISerialization::Import(SKSESerializationInterface* intfc, const fs::path& a_path)
+    {
+        try
+        {
+            Json::Value root;
+
+            ReadImportData(a_path, root);
+
+            actorConfigComponentsHolder_t actorConfigComponents;
+            actorConfigNodesHolder_t actorConfigNodes;
             raceConfigComponentsHolder_t raceConfigComponents;
 
+            _LoadActorProfiles(intfc, root["actors"], actorConfigComponents, actorConfigNodes);
+            _LoadRaceProfiles(intfc, root["races"], raceConfigComponents);
+
+            IConfig::SetActorConfigHolder(std::move(actorConfigComponents));
+            IConfig::SetActorNodeConfigHolder(std::move(actorConfigNodes));
+            IConfig::SetRaceConfigHolder(std::move(raceConfigComponents));
+
+            return true;
+        }
+        catch (const std::exception& e)
+        {
+            m_lastException = e;
+            Error("%s: %s", __FUNCTION__, e.what());
+            return true;
+        }
+    }
+
+    bool ISerialization::Export(const fs::path& a_path)
+    {
+        try
+        {
+            Json::Value root;
+
+            auto& actors = root["actors"];
+
+            for (const auto& e : IConfig::GetActorConfigHolder()) {
+                auto& actor = actors[std::to_string(e.first)];
+                m_componentParser.Create(e.second, actor);
+            }
+
+            for (const auto& e : IConfig::GetActorNodeConfigHolder()) {
+                auto& actor = actors[std::to_string(e.first)];
+                m_nodeParser.Create(e.second, actor);
+            }
+
+            auto& races = root["races"];
+
+            for (const auto& e : IConfig::GetRaceConfigHolder()) {
+                auto& race = races[std::to_string(e.first)];
+                m_componentParser.Create(e.second, race);
+            }
+
+            WriteJsonData(a_path, root);
+
+            return true;
+        }
+        catch (const std::exception& e)
+        {
+            m_lastException = e;
+            Error("%s: %s", __FUNCTION__, e.what());
+            return false;
+        }
+    }
+
+    size_t ISerialization::_LoadRaceProfiles(
+        SKSESerializationInterface* intfc, 
+        const Json::Value& a_root, 
+        raceConfigComponentsHolder_t &a_raceConfigComponents)
+    {
+        if (a_root.empty())
+            return 0;
+
+        if (!a_root.isObject())
+            throw std::exception("Expected an object");
+
+        size_t c = 0;
+
+        for (auto it = a_root.begin(); it != a_root.end(); ++it)
+        {
+            if (!it->isObject()) {
+                Error("Expected an object");
+                continue;
+            }
+
+            SKSE::FormID formID;
+
+            try {
+                formID = static_cast<SKSE::FormID>(std::stoul(it.key().asString()));
+            }
+            catch (...) {
+                Error("Exception while trying to convert formID");
+                continue;
+            }
+
+            if (formID == 0) {
+                Error("formID == 0");
+                continue;
+            }
+
+            SKSE::FormID newFormID = 0;
+
+            if (intfc != nullptr) {
+                if (!SKSE::ResolveRaceForm(intfc, formID, &newFormID)) {
+                    Error("0x%lX: Couldn't resolve handle, discarding", formID);
+                    continue;
+                }
+
+                if (newFormID == 0) {
+                    Error("0x%lX: newFormID == 0", formID);
+                    continue;
+                }
+            }
+            else {
+                newFormID = formID;
+            }
+
+            if (!IData::GetRaceList().contains(newFormID)) {
+                Warning("0x%lX: race record not found", newFormID);
+                continue;
+            }
+
+            configComponents_t data;
+
+            if (!m_componentParser.Parse(*it, data))
+                continue;
+
+            a_raceConfigComponents.emplace(newFormID, std::move(data));
+
+            c++;
+        }
+
+
+        return c;
+    }
+
+    size_t ISerialization::LoadRaceProfiles(SKSESerializationInterface* intfc, const char* a_data, UInt32 a_len)
+    {
+        try
+        {
             Json::Value root;
             std::string errors;
 
@@ -710,71 +896,13 @@ namespace CBP
             if (!reader->parse(a_data, a_data + a_len, &root, &errors))
                 throw std::exception("Parser failed");
 
-            if (root.empty())
-                return 0;
+            raceConfigComponentsHolder_t raceConfigComponents;
 
-            if (!root.isObject())
-                throw std::exception("Expected an object");
-
-            size_t c = 0;
-
-            for (auto it = root.begin(); it != root.end(); ++it)
-            {
-                if (!it->isObject()) {
-                    Error("Expected an object");
-                    continue;
-                }
-
-                SKSE::FormID formID;
-
-                try {
-                    formID = static_cast<SKSE::FormID>(std::stoul(it.key().asString()));
-                }
-                catch (...) {
-                    Error("Exception while trying to convert formID");
-                    continue;
-                }
-
-                if (formID == 0) {
-                    Error("formID == 0");
-                    continue;
-                }
-
-                SKSE::FormID newFormID = 0;
-
-                if (intfc != nullptr) {
-                    if (!SKSE::ResolveRaceForm(intfc, formID, &newFormID)) {
-                        Error("0x%lX: Couldn't resolve handle, discarding", formID);
-                        continue;
-                    }
-
-                    if (newFormID == 0) {
-                        Error("0x%lX: newFormID == 0", formID);
-                        continue;
-                    }
-                }
-                else {
-                    newFormID = formID;
-                }
-
-                if (!IData::GetRaceList().contains(newFormID)) {
-                    Warning("0x%lX: race record not found", newFormID);
-                    continue;
-                }
-
-                configComponents_t data;
-
-                if (!m_componentParser.Parse(*it, data))
-                    continue;
-
-                raceConfigComponents.emplace(newFormID, std::move(data));
-
-                c++;
-            }
+            size_t res = _LoadRaceProfiles(intfc, root, raceConfigComponents);
 
             IConfig::SetRaceConfigHolder(std::move(raceConfigComponents));
 
-            return c;
+            return res;
         }
         catch (const std::exception& e)
         {
@@ -783,7 +911,7 @@ namespace CBP
         }
     }
 
-    size_t Serialization::SerializeActorProfiles(std::ostringstream& a_out)
+    size_t ISerialization::SerializeActorProfiles(std::ostringstream& a_out)
     {
         try
         {
@@ -807,12 +935,11 @@ namespace CBP
         {
             m_lastException = e;
             Error("%s: %s", __FUNCTION__, e.what());
-
             return false;
         }
     }
 
-    size_t Serialization::SerializeGlobalProfile(std::ostringstream& a_out)
+    size_t ISerialization::SerializeGlobalProfile(std::ostringstream& a_out)
     {
         try
         {
@@ -829,12 +956,11 @@ namespace CBP
         {
             m_lastException = e;
             Error("%s: %s", __FUNCTION__, e.what());
-
             return 0;
         }
     }
 
-    bool Serialization::SaveToDefaultGlobalProfile()
+    bool ISerialization::SaveToDefaultGlobalProfile()
     {
         try
         {
@@ -851,12 +977,11 @@ namespace CBP
         {
             m_lastException = e;
             Error("%s: %s", __FUNCTION__, e.what());
-
             return false;
         }
     }
 
-    size_t Serialization::SerializeRaceProfiles(std::ostringstream& a_out)
+    size_t ISerialization::SerializeRaceProfiles(std::ostringstream& a_out)
     {
         try
         {
@@ -875,12 +1000,11 @@ namespace CBP
         {
             m_lastException = e;
             Error("%s: %s", __FUNCTION__, e.what());
-
             return 0;
         }
     }
 
-    bool Serialization::ReadJsonData(const fs::path& a_path, Json::Value& a_root)
+    bool ISerialization::ReadJsonData(const fs::path& a_path, Json::Value& a_root)
     {
         if (!fs::exists(a_path) || !fs::is_regular_file(a_path))
             return false;
@@ -896,7 +1020,7 @@ namespace CBP
         return true;
     }
 
-    void Serialization::WriteJsonData(const fs::path& a_path, const Json::Value& a_root)
+    void ISerialization::WriteJsonData(const fs::path& a_path, const Json::Value& a_root)
     {
         auto base = a_path.parent_path();
 
@@ -916,12 +1040,12 @@ namespace CBP
         ofs << a_root << std::endl;
     }
 
-    bool Serialization::SavePending()
+    bool ISerialization::SavePending()
     {
         bool failed = false;
 
-        failed |= !DoPendingSave(Group::kGlobals, &Serialization::SaveGlobals);
-        failed |= !DoPendingSave(Group::kCollisionGroups, &Serialization::SaveCollisionGroups);
+        failed |= !DoPendingSave(Group::kGlobals, &ISerialization::SaveGlobals);
+        failed |= !DoPendingSave(Group::kCollisionGroups, &ISerialization::SaveCollisionGroups);
 
         return !failed;
     }

@@ -286,6 +286,14 @@ namespace CBP
         kConfigActor
     };
 
+    struct combinedData_t
+    {
+        configComponents_t components;
+        configNodes_t nodes;
+
+        bool stored = false;
+    };
+
     class IConfig
     {
         class IConfigLog
@@ -293,14 +301,6 @@ namespace CBP
         {
         public:
             FN_NAMEPROC("IConfig");
-        };
-
-        struct combinedData_t
-        {
-            configComponents_t components;
-            configNodes_t nodes;
-
-            bool stored = false;
         };
 
     public:
@@ -360,7 +360,7 @@ namespace CBP
             return actorConfHolder;
         }
 
-       inline static void SetActorConfigHolder(actorConfigComponentsHolder_t &&a_rhs) noexcept {
+        inline static void SetActorConfigHolder(actorConfigComponentsHolder_t&& a_rhs) noexcept {
             actorConfHolder = std::forward<actorConfigComponentsHolder_t>(a_rhs);
             loadState.actorPhys = true;
         }
@@ -368,8 +368,8 @@ namespace CBP
         [[nodiscard]] inline static auto& GetRaceConfigHolder() {
             return raceConfHolder;
         }
-        
-        inline static void SetRaceConfigHolder(raceConfigComponentsHolder_t &&a_rhs) noexcept {
+
+        inline static void SetRaceConfigHolder(raceConfigComponentsHolder_t&& a_rhs) noexcept {
             raceConfHolder = std::forward<raceConfigComponentsHolder_t>(a_rhs);
             loadState.racePhys = true;
         }
@@ -461,7 +461,7 @@ namespace CBP
         inline static void SetGlobalNodeConfig(const configNodes_t& a_rhs) noexcept {
             globalNodeConfigHolder = a_rhs;
         }
-        
+
         inline static void SetGlobalNodeConfig(configNodes_t&& a_rhs) noexcept {
             globalNodeConfigHolder = std::forward<configNodes_t>(a_rhs);
         }
@@ -475,8 +475,8 @@ namespace CBP
         [[nodiscard]] inline static auto& GetActorNodeConfigHolder() {
             return actorNodeConfigHolder;
         }
-        
-        inline static void SetActorNodeConfigHolder(actorConfigNodesHolder_t &&a_rhs) noexcept {
+
+        inline static void SetActorNodeConfigHolder(actorConfigNodesHolder_t&& a_rhs) noexcept {
             actorNodeConfigHolder = std::forward<actorConfigNodesHolder_t>(a_rhs);
             loadState.actorNode = true;
         }
@@ -503,11 +503,11 @@ namespace CBP
         inline static void SetActorPhysLoadState(bool a_newState) {
             loadState.actorPhys = a_newState;
         }
-        
+
         inline static void SetActorNodeLoadState(bool a_newState) {
             loadState.actorNode = a_newState;
         }
-        
+
         inline static void SetRacePhysLoadState(bool a_newState) {
             loadState.racePhys = a_newState;
         }

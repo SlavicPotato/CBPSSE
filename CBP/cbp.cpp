@@ -192,6 +192,29 @@ namespace CBP
                 UTTask::kActionUIUpdateCurrentActor });
     }
 
+    bool DCBP::ExportData(const std::filesystem::path& a_path)
+    {
+        auto& iface = m_Instance.m_serialization;
+        return iface.Export(a_path);
+    }
+
+    bool DCBP::ImportData(const std::filesystem::path& a_path)
+    {
+        auto& iface = m_Instance.m_serialization;
+
+        bool res = iface.Import(SKSE::g_serialization, a_path);
+        if (res)
+            ResetActors();
+
+        return res;
+    }
+
+    bool DCBP::ImportGetInfo(const std::filesystem::path& a_path, CBP::importInfo_t& a_out)
+    {
+        auto& iface = m_Instance.m_serialization;
+        return iface.ImportGetInfo(a_path, a_out);
+    }
+
     bool DCBP::SaveAll()
     {
         auto& iface = m_Instance.m_serialization;
@@ -440,13 +463,13 @@ namespace CBP
 
             switch (type) {
             case 'GPBC':
-                LoadRecord(intfc, type, &Serialization::LoadGlobalProfile);
+                LoadRecord(intfc, type, &ISerialization::LoadGlobalProfile);
                 break;
             case 'APBC':
-                LoadRecord(intfc, type, &Serialization::LoadActorProfiles);
+                LoadRecord(intfc, type, &ISerialization::LoadActorProfiles);
                 break;
             case 'RPBC':
-                LoadRecord(intfc, type, &Serialization::LoadRaceProfiles);
+                LoadRecord(intfc, type, &ISerialization::LoadRaceProfiles);
                 break;
             default:
                 m_Instance.Warning("Unknown record '%.4s'", &type);
@@ -508,9 +531,9 @@ namespace CBP
 
         intfc->OpenRecord('DPBC', kDataVersion1);
 
-        SaveRecord(intfc, 'GPBC', &Serialization::SerializeGlobalProfile);
-        SaveRecord(intfc, 'APBC', &Serialization::SerializeActorProfiles);
-        SaveRecord(intfc, 'RPBC', &Serialization::SerializeRaceProfiles);
+        SaveRecord(intfc, 'GPBC', &ISerialization::SerializeGlobalProfile);
+        SaveRecord(intfc, 'APBC', &ISerialization::SerializeActorProfiles);
+        SaveRecord(intfc, 'RPBC', &ISerialization::SerializeRaceProfiles);
 
         Unlock();
 
@@ -835,6 +858,8 @@ namespace CBP
         ClearActors();
         for (auto e : handles)
             AddActor(e);
+
+        CBP::IData::UpdateActorCache(m_actors);
     }
 
     void UpdateTask::PhysicsReset()

@@ -225,10 +225,10 @@ namespace CBP
         }
 
         inline static void MarkGlobalsForSave() {
-            m_Instance.m_serialization.MarkForSave(CBP::Serialization::kGlobals);
+            m_Instance.m_serialization.MarkForSave(CBP::ISerialization::kGlobals);
         }
 
-        inline static void MarkForSave(CBP::Serialization::Group a_grp) {
+        inline static void MarkForSave(CBP::ISerialization::Group a_grp) {
             m_Instance.m_serialization.MarkForSave(a_grp);
         }
 
@@ -243,6 +243,10 @@ namespace CBP
         inline static bool SaveToDefaultGlobalProfile() {
             return m_Instance.m_serialization.SaveToDefaultGlobalProfile();
         }
+
+        static bool ExportData(const std::filesystem::path& a_path);
+        static bool ImportData(const std::filesystem::path& a_path);
+        static bool ImportGetInfo(const std::filesystem::path& a_path, CBP::importInfo_t& a_out);
 
         [[nodiscard]] inline static const auto& GetLastSerializationException() {
             return m_Instance.m_serialization.GetLastException();
@@ -350,7 +354,7 @@ namespace CBP
             bool lockControls;
         } uiState;
 
-        Serialization m_serialization;
+        ISerialization m_serialization;
         std::unique_ptr<CBP::Renderer> m_renderer;
 
         r3d::PhysicsWorld* m_world;

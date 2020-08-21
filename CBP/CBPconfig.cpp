@@ -16,10 +16,9 @@ namespace CBP
 
     configNodes_t IConfig::globalNodeConfigHolder;
     actorConfigNodesHolder_t IConfig::actorNodeConfigHolder;
+    combinedData_t IConfig::defaultGlobalProfileStorage;
 
     IConfig::configLoadStates_t IConfig::loadState{ false, false, false };
-
-    IConfig::combinedData_t IConfig::defaultGlobalProfileStorage;
 
     IConfig::IConfigLog IConfig::log;
 

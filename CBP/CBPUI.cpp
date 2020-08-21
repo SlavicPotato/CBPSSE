@@ -1130,7 +1130,8 @@ namespace CBP
         m_tsNoActors(PerfCounter::Query()),
         m_peComponents("Physics profile editor"),
         m_peNodes("Node profile editor"),
-        m_importDialogue("test"),
+        m_importDialog(PLUGIN_CBP_EXPORTS_PATH),
+        m_exportDialog(PLUGIN_CBP_EXPORTS_PATH),
         state({ .windows{false, false, false, false, false, false, false, false } })
     {
     }
@@ -1175,11 +1176,15 @@ namespace CBP
 
         auto entry = GetSelectedEntry();
 
+        bool openImportDialog = false;
+        bool openExportDialog = false;
+
+        ImGui::PushID(static_cast<const void*>(this));
+
         if (ImGui::Begin("CBP Config Editor", a_active, ImGuiWindowFlags_MenuBar))
         {
             ImGui::SetWindowFontScale(globalConfig.ui.fontScale);
 
-            ImGui::PushID(static_cast<const void*>(this));
             ImGui::PushItemWidth(ImGui::GetFontSize() * -15.0f);
 
             bool saveAllFailed = false;
@@ -1206,6 +1211,12 @@ namespace CBP
                     }
 
                     ImGui::Separator();
+
+                    openImportDialog = ImGui::MenuItem("Import");
+                    openExportDialog = ImGui::MenuItem("Export");
+
+                    ImGui::Separator();
+
                     if (ImGui::MenuItem("Exit"))
                         *a_active = false;
 
@@ -1331,7 +1342,7 @@ namespace CBP
             if (saveAllFailed)
                 ImGui::OpenPopup("Save failed");
             else if (saveToDefaultGlob)
-                ImGui::OpenPopup("Store global");
+                ImGui::OpenPopup("Store global");             
 
             ImGui::Spacing();
 
@@ -1351,10 +1362,10 @@ namespace CBP
             }
 
             UICommon::MessageDialog(
-                "Save failed", 
-                "Saving one or more files failed.\nThe last exception was:\n\n%s", 
+                "Save failed",
+                "Saving one or more files failed.\nThe last exception was:\n\n%s",
                 state.lastException.what());
-            
+
             if (UICommon::ConfirmDialog("Store global", "Are you sure you want to save current global physics and node configuration as the default?")) {
                 if (!DCBP::SaveToDefaultGlobalProfile()) {
                     state.lastException = DCBP::GetLastSerializationException();
@@ -1363,12 +1374,12 @@ namespace CBP
             }
 
             UICommon::MessageDialog(
-                "Store global failed", 
-                "Could not save current globals to the default profile.\nThe last exception was:\n\n%s", 
+                "Store global failed",
+                "Could not save current globals to the default profile.\nThe last exception was:\n\n%s",
                 state.lastException.what());
 
             ImGui::PopItemWidth();
-            ImGui::PopID();
+
         }
 
         ImGui::End();
@@ -1401,6 +1412,17 @@ namespace CBP
         if (state.windows.debug)
             m_debug.Draw(&state.windows.debug);
 #endif
+        if (openImportDialog)
+            m_importDialog.Open();
+        else if (openExportDialog)
+            m_exportDialog.Open();
+
+        m_exportDialog.Draw();
+        
+        if (m_importDialog.Draw())
+            ClearActorList();
+
+        ImGui::PopID();
     }
 
     void UIOptions::Draw(bool* a_active)
@@ -1789,7 +1811,7 @@ namespace CBP
 
             if (ImGui::Button("Rescan"))
                 DCBP::QueueActorCacheUpdate();
-            HelpMarker(MiscHelpText::rescanActors);
+            //HelpMarker(MiscHelpText::rescanActors);
 
             ImGui::Spacing();
 
@@ -1849,7 +1871,7 @@ namespace CBP
         IConfig::EraseActorNodeConfig(a_handle);
         m_actorList.at(a_handle).second = IConfig::GetActorNodeConfig(a_handle);
 
-        DCBP::MarkForSave(Serialization::kGlobalProfile);
+        DCBP::MarkForSave(ISerialization::kGlobalProfile);
         DCBP::ResetActors();
     }
 
@@ -1863,7 +1885,7 @@ namespace CBP
             nodeConfig.insert_or_assign(a_node, a_data);
         }
         else {
-            DCBP::MarkForSave(Serialization::kGlobalProfile);
+            DCBP::MarkForSave(ISerialization::kGlobalProfile);
         }
 
         DCBP::ResetActors();
@@ -2137,7 +2159,9 @@ namespace CBP
         {
             ImGui::PushID(static_cast<const void*>(std::addressof(e)));
 
-            if (CollapsingHeader(GetCSID(e.first), e.first.c_str()))
+            std::string label = (e.first + " - " + e.second);
+
+            if (CollapsingHeader(GetCSID(e.first), label.c_str()))
             {
                 auto& conf = a_data[e.first];
 
@@ -2359,6 +2383,20 @@ namespace CBP
     }
 #endif
 
+    UIFileSelector::SelectedFile::SelectedFile() :
+        m_infoResult(false)
+    {        
+    }
+
+    UIFileSelector::SelectedFile::SelectedFile(const fs::path& a_path) :
+        m_path(a_path)
+    {        
+    }
+
+    void UIFileSelector::SelectedFile::UpdateInfo()
+    {
+        m_infoResult = DCBP::ImportGetInfo(m_path, m_info);
+    }
 
     UIFileSelector::UIFileSelector(const fs::path& a_path)
     {
@@ -2367,7 +2405,40 @@ namespace CBP
 
     void UIFileSelector::DrawFileSelector()
     {
+        std::string curSelName;
+        if (m_selected) {
+            curSelName = m_selected->m_path.filename().string();
+        }
 
+        ImGui::PushItemWidth(ImGui::GetFontSize() * -8.0f);
+
+        if (ImGui::BeginCombo(
+            "Files",
+            curSelName.length() ? curSelName.c_str() : nullptr,
+            ImGuiComboFlags_HeightLarge))
+        {
+            for (auto& e : m_files)
+            {
+                ImGui::PushID(static_cast<const void*>(std::addressof(e)));
+
+                bool selected = e == m_selected->m_path;
+                if (selected)
+                    if (ImGui::IsWindowAppearing()) ImGui::SetScrollHereY();
+
+                auto str = e.filename().string();
+
+                if (ImGui::Selectable(str.c_str(), selected)) {
+                    m_selected = e;
+                    m_selected->UpdateInfo();
+                }
+
+                ImGui::PopID();
+            }
+
+            ImGui::EndCombo();
+        }
+
+        ImGui::PopItemWidth();
     }
 
     bool UIFileSelector::UpdateFileList()
@@ -2375,15 +2446,19 @@ namespace CBP
         try
         {
             m_files.clear();
+            m_selected.Clear();
 
             for (const auto& entry : fs::directory_iterator(m_root))
             {
                 if (!entry.is_regular_file())
                     continue;
 
-                auto& path = entry.path();
+                m_files.emplace_back(entry.path());
+            }
 
-                m_files.emplace_back(path.filename());
+            if (m_files.size()) {
+                m_selected = *m_files.begin();
+                m_selected->UpdateInfo();
             }
 
             return true;
@@ -2394,15 +2469,178 @@ namespace CBP
         }
     }
 
-    UIDialogueImport::UIDialogueImport(const fs::path& a_path) :
+    UIDialogImport::UIDialogImport(const fs::path& a_path) :
         UIFileSelector(a_path)
     {
-
     }
 
-    void UIDialogueImport::Draw()
+    bool UIDialogImport::Draw()
     {
+        auto& io = ImGui::GetIO();
 
+        ImVec2 center(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f);
+        ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+
+        bool res = false;
+        bool failed = false;
+
+        ImGui::PushID(static_cast<const void*>(this));
+
+        if (ImGui::BeginPopupModal("Select file to import", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+        {
+            DrawFileSelector();
+
+            ImGui::Separator();
+
+            auto& selected = GetSelected();
+
+            if (selected) 
+            {
+                ImGui::PushTextWrapPos(ImGui::GetFontSize() * 50.0f);
+
+                if (selected->m_infoResult)
+                {
+                    ImGui::Text("Actors: %zu\nRaces: %zu", 
+                        selected->m_info.numActors,
+                        selected->m_info.numRaces);
+                }
+                else 
+                    ImGui::Text("Error: %s", selected->m_info.except.what());
+
+                ImGui::PopTextWrapPos();
+            }            
+
+            ImGui::Separator();
+
+            if (ImGui::Button("Import", ImVec2(120, 0))) 
+            {
+                if (selected && selected->m_infoResult)
+                {
+                    if (DCBP::ImportData(selected->m_path)) {
+                        res = true;
+                        ImGui::CloseCurrentPopup();
+                    }
+                    else {
+                        failed = true;
+                    }
+                }
+            }
+
+            ImGui::SetItemDefaultFocus();
+            ImGui::SameLine();
+            if (ImGui::Button("Cancel", ImVec2(120, 0)))
+                ImGui::CloseCurrentPopup();
+
+            ImGui::EndPopup();
+        }
+
+        if (failed)
+            ImGui::OpenPopup("Import failed");
+
+        UICommon::MessageDialog(
+            "Import failed",
+            "\nThe last exception was:\n\n%s",
+            DCBP::GetLastSerializationException().what());
+
+        UICommon::MessageDialog(
+            "Load failed",
+            "Could not show files in '%s'\nThe last exception was:\n\n%s",
+            GetRootStr().c_str(),
+            GetLastException().what());
+
+        ImGui::PopID();
+
+        return res;
     }
 
+    void UIDialogImport::Open()
+    {
+        ImGui::PushID(static_cast<const void*>(this));
+
+        if (!UpdateFileList())
+            ImGui::OpenPopup("Load failed");
+        else
+            ImGui::OpenPopup("Select file to import");
+
+        ImGui::PopID();
+    }
+
+    UIDialogExport::UIDialogExport(const fs::path& a_path) :
+        m_path(a_path),
+        m_rFileCheck("^[a-zA-Z0-9_\\- ]+$",
+            std::regex_constants::ECMAScript)
+    {
+        m_buf[0] = 0x0;
+    }
+
+    void UIDialogExport::OnFileInput()
+    {
+        if (!std::regex_match(m_buf, m_rFileCheck))
+        {
+            m_buf[0] = 0x0;
+            ImGui::OpenPopup("Illegal filename");
+            return;
+        }
+
+        m_lastTargetPath = m_path;
+        m_lastTargetPath /= m_buf;
+        m_lastTargetPath += ".json";
+
+        m_buf[0] = 0x0;
+
+        if (fs::exists(m_lastTargetPath)) 
+        {
+            if (!fs::is_regular_file(m_lastTargetPath)) {
+                ImGui::OpenPopup("Operation failed");
+                return;
+            }
+            else {
+                ImGui::OpenPopup("Overwrite");
+                return;
+            }
+        }
+
+        if (!DCBP::ExportData(m_lastTargetPath))
+            ImGui::OpenPopup("Export failed");
+    }
+
+    void UIDialogExport::Draw()
+    {
+        ImGui::PushID(static_cast<const void*>(this));
+
+        if (UICommon::TextInputDialog("Export to file", "Enter filename", m_buf, sizeof(m_buf)))
+            OnFileInput();
+
+        if (UICommon::ConfirmDialog(
+            "Overwrite",
+            "File already exists, do you want to overwrite?\n"))
+        {
+            if (!DCBP::ExportData(m_lastTargetPath))
+                ImGui::OpenPopup("Export failed");
+        }
+
+        UICommon::MessageDialog(
+            "Illegal filename",
+            "Filename contains illegal characters");
+        
+        UICommon::MessageDialog(
+            "Operation failed",
+            "Path exists and is not a regular file");
+
+        UICommon::MessageDialog(
+            "Export failed",
+            "\nThe last exception was:\n\n%s",
+            DCBP::GetLastSerializationException().what());
+
+        ImGui::PopID();
+    }
+
+    void UIDialogExport::Open()
+    {
+        ImGui::PushID(static_cast<const void*>(this));
+
+        ImGui::OpenPopup("Export to file");
+
+        ImGui::PopID();
+    }
 }

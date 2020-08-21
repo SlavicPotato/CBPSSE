@@ -18,8 +18,8 @@ namespace CBP
 
             std::ofstream fs;
             fs.open(m_path, std::ofstream::out | std::ofstream::binary | std::ofstream::trunc);
-            if (!fs.is_open()) 
-                throw std::exception("Could not open file for writing");            
+            if (!fs.is_open())
+                throw std::exception("Could not open file for writing");
 
             Json::Value root;
 
@@ -29,9 +29,8 @@ namespace CBP
 
             fs << root << std::endl;
 
-            if (a_store) {
+            if (a_store)
                 m_conf = a_data;
-            }
 
             return true;
         }
@@ -47,15 +46,13 @@ namespace CBP
     {
         try
         {
-            if (m_path.empty()) {
+            if (m_path.empty())
                 throw std::exception("Bad path");
-            }
 
             std::ifstream fs;
             fs.open(m_path, std::ifstream::in | std::ifstream::binary);
-            if (!fs.is_open()) {
+            if (!fs.is_open())
                 throw std::exception("Could not open file for reading");
-            }
 
             Json::Value root;
             fs >> root;
@@ -66,12 +63,10 @@ namespace CBP
                 throw std::exception("Parser error");
 
             auto& id = root["id"];
-            if (!id.isNumeric()) {
+            if (!id.isNumeric())
                 m_id = 0;
-            }
-            else {
+            else
                 m_id = static_cast<uint64_t>(id.asUInt64());
-            }
 
             return true;
         }
@@ -87,7 +82,7 @@ namespace CBP
     ProfileManager<T>::ProfileManager(const std::string& a_fc) :
         m_isInitialized(false),
         m_rFileCheck(a_fc,
-            std::regex_constants::ECMAScript | std::regex_constants::icase)
+            std::regex_constants::ECMAScript)
     {
     }
 
@@ -162,7 +157,7 @@ namespace CBP
     }
 
     template <class T>
-    bool ProfileManager<T>::CreateProfile(const std::string &a_name, T& a_out)
+    bool ProfileManager<T>::CreateProfile(const std::string& a_name, T& a_out)
     {
         try
         {
@@ -215,7 +210,7 @@ namespace CBP
                 throw std::exception("Not initialized");
             }
 
-            auto &key = a_in.Name();
+            auto& key = a_in.Name();
 
             CheckProfileKey(key);
 
@@ -238,7 +233,7 @@ namespace CBP
                 throw std::exception("Not initialized");
             }
 
-            auto &key = a_in.Name();
+            auto& key = a_in.Name();
 
             CheckProfileKey(key);
 
@@ -255,11 +250,11 @@ namespace CBP
     template <class T>
     void ProfileManager<T>::CheckProfileKey(const std::string& a_key) const
     {
-        if (m_storage.contains(a_key)) 
-            throw std::exception("Profile already exists");        
+        if (m_storage.contains(a_key))
+            throw std::exception("Profile already exists");
 
-        if (!std::regex_match(a_key, m_rFileCheck)) 
-            throw std::exception("Invalid characters in profile name");        
+        if (!std::regex_match(a_key, m_rFileCheck))
+            throw std::exception("Invalid characters in profile name");
     }
 
     template <class T>
