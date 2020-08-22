@@ -16,8 +16,8 @@ namespace CBP
         {MiscHelpText::showEDIDs, "Show editor ID's instead of names."},
         {MiscHelpText::playableOnly, "Show playable races only."},
         {MiscHelpText::colGroupEditor, "Nodes assigned to the same group will not collide with eachother. This applies only to nodes on the same actor."},
-        {MiscHelpText::importDialog, "Imports and apply actor, race and global settings from the selected file."},
-        {MiscHelpText::exportDialog, "Exports actor, race and global settings."}
+        {MiscHelpText::importDialog, "Import and apply actor, race and global settings from the selected file."},
+        {MiscHelpText::exportDialog, "Export actor, race and global settings."}
     };
 
     static const keyDesc_t comboKeyDesc({

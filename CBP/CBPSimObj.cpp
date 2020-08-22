@@ -32,7 +32,7 @@ namespace CBP
             if (!collisions && !movement)
                 continue;
 
-            a_out.emplace_back(nodeDesc_t{ b.first, cs, bone, it->first, it->second, collisions, movement });
+            a_out.emplace_back(nodeDesc_t{ b.first, bone, it->first, it->second, collisions, movement });
         }
 
         return a_out.size();

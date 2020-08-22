@@ -7,7 +7,6 @@ namespace CBP
     struct nodeDesc_t
     {
         std::string nodeName;
-        BSFixedString cs;
         NiAVObject* bone;
         std::string confGroup;
         configComponent_t conf;

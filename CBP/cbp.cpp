@@ -702,6 +702,10 @@ namespace CBP
 
     void UpdateTask::PhysicsTick()
     {
+        auto mm = MenuManager::GetSingleton();
+        if (mm && mm->InPausedMenu())
+            return;
+
         float interval = *frameTimerSlowTime;
 
         if (interval < _EPSILON)
