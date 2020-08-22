@@ -113,6 +113,9 @@ namespace CBP
         m_objParent(a_obj->m_parent),
         m_updateCtx({ 0.0f, 0 })
     {
+#ifdef _CBP_ENABLE_DEBUG
+        m_debugInfo.parentNodeName = a_obj->m_parent->m_name;
+#endif
         UpdateConfig(a_actor, a_config, a_collisions, a_movement);
         m_collisionData.Update();
     }
@@ -190,8 +193,12 @@ namespace CBP
         {
             m_obj->m_localTransform.pos = m_initialNodePos;
             m_obj->m_localTransform.rot = m_initialNodeRot;
+            m_obj->UpdateWorldData(&m_updateCtx);
+
             m_oldWorldPos = m_obj->m_worldTransform.pos;
         }
+
+        m_collisionData.Update();
 
         m_velocity = m_npZero;
 
@@ -303,19 +310,13 @@ namespace CBP
     }
 
 #ifdef _CBP_ENABLE_DEBUG
-    void SimComponent::UpdateDebugInfo(Actor* a_actor)
+    void SimComponent::UpdateDebugInfo()
     {
-        m_obj = m_node->GetObjectByName(&m_boneName.data);
-        if (m_obj == nullptr)
-            return;
-
         m_debugInfo.worldTransform = m_obj->m_worldTransform;
         m_debugInfo.localTransform = m_obj->m_localTransform;
 
         m_debugInfo.worldTransformParent = m_objParent->m_worldTransform;
         m_debugInfo.localTransformParent = m_objParent->m_localTransform;
-
-        m_debugInfo.parentNodeName = m_objParent->m_name;
     }
 #endif
 }

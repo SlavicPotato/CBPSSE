@@ -49,7 +49,7 @@ namespace CBP
         void ApplyForce(uint32_t a_steps, const std::string& a_component, const NiPoint3& a_force);
 
 #ifdef _CBP_ENABLE_DEBUG
-        void UpdateDebugInfo(Actor* a_actor);
+        void UpdateDebugInfo();
 #endif
 
         void UpdateGroupInfo();

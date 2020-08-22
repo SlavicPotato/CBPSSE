@@ -287,7 +287,6 @@ namespace CBP
 
     void DCBP::MainLoop_Hook(void* p1) {
         m_Instance.mainLoopUpdateFunc_o(p1);
-        //DTasks::AddTask(&m_Instance.m_updateTask);
         m_Instance.m_updateTask.PhysicsTick();
     }
 
@@ -394,7 +393,11 @@ namespace CBP
             break;
         case SKSEMessagingInterface::kMessage_DataLoaded:
         {
-            GetEventDispatcherList()->initScriptDispatcher.AddEventSink(EventHandler::GetSingleton());
+            auto edl = GetEventDispatcherList();
+
+            edl->initScriptDispatcher.AddEventSink(EventHandler::GetSingleton());
+            edl->fastTravelEndEventDispatcher.AddEventSink(EventHandler::GetSingleton());
+
             m_Instance.Debug("Init script event sink added");
 
             if (CBP::IData::PopulateRaceList())
@@ -630,6 +633,14 @@ namespace CBP
         return kEvent_Continue;
     }
 
+    auto DCBP::EventHandler::ReceiveEvent(TESFastTravelEndEvent* evn, EventDispatcher<TESFastTravelEndEvent>*)
+        -> EventResult
+    {
+        ResetPhysics();
+
+        return kEvent_Continue;
+    }
+
     std::atomic<uint64_t> UpdateTask::m_nextGroupId = 0;
 
     UpdateTask::UpdateTask() :
@@ -659,45 +670,53 @@ namespace CBP
             e.second.UpdateVelocity();
     }
 
-    void UpdateTask::UpdateActorsPhase2(float timeStep)
+    void UpdateTask::UpdateActorsPhase2(float a_timeStep)
     {
         for (auto& e : m_actors)
-            e.second.UpdateMovement(timeStep);
+            e.second.UpdateMovement(a_timeStep);
     }
 
-    void UpdateTask::UpdatePhase2(float timeStep, float timeTick, float maxTime)
+    void UpdateTask::UpdatePhase2(float a_timeStep, float a_timeTick, float a_maxTime)
     {
-        while (timeStep >= maxTime)
+        while (a_timeStep >= a_maxTime)
         {
-            UpdateActorsPhase2(timeTick);
-            timeStep -= timeTick;
+            UpdateActorsPhase2(a_timeTick);
+            a_timeStep -= a_timeTick;
         }
 
-        UpdateActorsPhase2(timeStep);
+        UpdateActorsPhase2(a_timeStep);
     }
 
-    void UpdateTask::UpdatePhase2Collisions(float timeStep, float timeTick, float maxTime)
+#ifdef _CBP_ENABLE_DEBUG
+    void UpdateTask::UpdatePhase3()
+    {
+        for (auto& e : m_actors)
+            e.second.UpdateDebugInfo();
+    }
+#endif
+
+    void UpdateTask::UpdatePhase2Collisions(float a_timeStep, float a_timeTick, float a_maxTime)
     {
         auto world = DCBP::GetWorld();
 
         bool debugRendererEnabled = world->getIsDebugRenderingEnabled();
         world->setIsDebugRenderingEnabled(false);
 
-        ICollision::SetTimeStep(timeTick);
+        ICollision::SetTimeStep(a_timeTick);
 
-        while (timeStep >= maxTime)
+        while (a_timeStep >= a_maxTime)
         {
-            UpdateActorsPhase2(timeTick);
-            world->update(timeTick);
-            timeStep -= timeTick;
+            UpdateActorsPhase2(a_timeTick);
+            world->update(a_timeTick);
+            a_timeStep -= a_timeTick;
         }
 
-        UpdateActorsPhase2(timeStep);
+        UpdateActorsPhase2(a_timeStep);
 
-        ICollision::SetTimeStep(timeStep);
+        ICollision::SetTimeStep(a_timeStep);
 
         world->setIsDebugRenderingEnabled(debugRendererEnabled);
-        world->update(timeStep);
+        world->update(a_timeStep);
     }
 
     void UpdateTask::PhysicsTick()
@@ -730,11 +749,8 @@ namespace CBP
 
         if (m_timeAccum > timeTick * 0.25f)
         {
-            float timeStep = min(m_timeAccum, timeTick * 5.0f);
             float maxTimeStep = timeTick * 5.0f;
-
-            if (timeStep > maxTimeStep)
-                timeStep = maxTimeStep;
+            float timeStep = min(m_timeAccum, maxTimeStep);
 
             float maxTime = timeTick * 1.25f;
 
@@ -744,6 +760,10 @@ namespace CBP
                 UpdatePhase2Collisions(timeStep, timeTick, maxTime);
             else
                 UpdatePhase2(timeStep, timeTick, maxTime);
+
+#ifdef _CBP_ENABLE_DEBUG
+            UpdatePhase3();
+#endif
 
             m_timeAccum = 0.0f;
         }

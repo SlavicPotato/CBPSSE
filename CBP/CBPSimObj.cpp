@@ -132,10 +132,10 @@ namespace CBP
     }
 
 #ifdef _CBP_ENABLE_DEBUG
-    void SimObject::UpdateDebugInfo(Actor* a_actor)
+    void SimObject::UpdateDebugInfo()
     {
         for (auto& p : m_things)
-            p.second.UpdateDebugInfo(a_actor);
+            p.second.UpdateDebugInfo();
     }
 #endif
 

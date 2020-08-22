@@ -155,7 +155,9 @@ namespace CBP
 
         void ApplyForce(uint32_t a_steps, const NiPoint3& a_force);
 
-        void UpdateDebugInfo(Actor* a_actor);
+#ifdef _CBP_ENABLE_DEBUG
+        void UpdateDebugInfo();
+#endif
 
         inline void ClampVelocity()
         {

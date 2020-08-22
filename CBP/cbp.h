@@ -50,13 +50,17 @@ namespace CBP
 
         virtual void Run();
 
-        void CullActors();
+        __forceinline void CullActors();
 
-        void UpdatePhase1();
-        void UpdateActorsPhase2(float timeStep);
+        __forceinline void UpdatePhase1();
+        __forceinline void UpdateActorsPhase2(float a_timeStep);
 
-        void UpdatePhase2(float timeStep, float timeTick, float maxTime);
-        void UpdatePhase2Collisions(float timeStep, float timeTick, float maxTime);
+        __forceinline void UpdatePhase2(float a_timeStep, float a_timeTick, float a_maxTime);
+        __forceinline void UpdatePhase2Collisions(float a_timeStep, float a_timeTick, float a_maxTime);
+
+#ifdef _CBP_ENABLE_DEBUG
+        void UpdatePhase3();
+#endif
 
         void PhysicsTick();
 
@@ -176,11 +180,13 @@ namespace CBP
 
         class EventHandler :
             public BSTEventSink <TESObjectLoadedEvent>,
-            public BSTEventSink <TESInitScriptEvent>
+            public BSTEventSink <TESInitScriptEvent>,
+            public BSTEventSink <TESFastTravelEndEvent>
         {
         protected:
             virtual EventResult	ReceiveEvent(TESObjectLoadedEvent* evn, EventDispatcher<TESObjectLoadedEvent>* dispatcher) override;
             virtual EventResult	ReceiveEvent(TESInitScriptEvent* evn, EventDispatcher<TESInitScriptEvent>* dispatcher) override;
+            virtual EventResult	ReceiveEvent(TESFastTravelEndEvent* evn, EventDispatcher<TESFastTravelEndEvent>* dispatcher) override;
         public:
             static EventHandler* GetSingleton() {
                 static EventHandler handler;
