@@ -8,7 +8,8 @@ namespace CBP
 		OnGameLoad,
 		OnFormDelete,
 		OnRevert,
-		OnD3D11PostCreate
+		OnD3D11PostCreate,
+		OnLogMessage
 	};
 
 	typedef void (*EventCallback)(Event, void* );

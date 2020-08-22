@@ -11,6 +11,10 @@ namespace CBP
             return m_Instance;
         }
 
+        inline static void SetTimeStep(float a_timeStep) {
+            m_Instance.m_timeStep = a_timeStep;
+        }
+
         ICollision(const ICollision&) = delete;
         ICollision(ICollision&&) = delete;
         ICollision& operator=(const ICollision&) = delete;
@@ -31,6 +35,8 @@ namespace CBP
             NiPoint3& vaf,
             NiPoint3& vbf
         );
+
+        float m_timeStep = 1.0f / 60.0f;
 
         static ICollision m_Instance;
     };

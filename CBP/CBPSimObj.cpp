@@ -14,7 +14,7 @@ namespace CBP
         for (const auto& b : a_nodeMap)
         {
             BSFixedString cs(b.first.c_str());
-            
+
             auto bone = a_actor->loadedState->node->GetObjectByName(&cs.data);
             if (bone == nullptr)
                 continue;
@@ -63,7 +63,6 @@ namespace CBP
                 e.nodeName,
                 a_actor,
                 e.bone,
-                e.cs,
                 e.confGroup,
                 e.conf,
                 m_Id,
@@ -74,17 +73,32 @@ namespace CBP
 
             m_configGroups.emplace(e.confGroup);
         }
+
+        m_actor = a_actor;
     }
 
-    void SimObject::Reset(Actor* a_actor)
+    void SimObject::Reset()
     {
         for (auto& p : m_things)
-            p.second.Reset(a_actor);
+            p.second.Reset();
     }
 
-    void SimObject::Update(Actor* a_actor, uint32_t a_step) {
+    void SimObject::UpdateMovement(float timeStep)
+    {
         for (auto& p : m_things)
-            p.second.Update(a_actor, a_step);
+            p.second.UpdateMovement(timeStep);
+    }
+
+    void SimObject::UpdateVelocity()
+    {
+        for (auto& p : m_things)
+            p.second.UpdateVelocity();
+    }
+
+    void SimObject::UpdateColliderData()
+    {
+        for (auto& p : m_things)
+            p.second.UpdateColliderData();
     }
 
     void SimObject::UpdateConfig(Actor* a_actor, const configComponents_t& a_config)

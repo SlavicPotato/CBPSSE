@@ -8,7 +8,6 @@ namespace CBP
         m_perfTimer(a_interval),
         m_current({ 0, 0, 0.0 }),
         m_numActorsAccum(0),
-        m_numStepsAccum(0),
         m_runCount(0)
     {
     }
@@ -18,22 +17,17 @@ namespace CBP
         m_perfTimer.Begin();
     }
 
-    void Profiler::End(uint32_t a_actors, uint32_t a_steps)
+    void Profiler::End(uint32_t a_actors)
     {
         m_runCount++;
         m_numActorsAccum += a_actors;
-        m_numStepsAccum += a_steps;
 
         if (m_perfTimer.End(m_current.avgTime)) 
         {
             m_current.avgActorCount = m_numActorsAccum / m_runCount;
-            m_current.avgUpdateRate = 
-                static_cast<double>(m_numStepsAccum) /
-                (static_cast<double>(m_perfTimer.GetIntervalTime()) / 1000000.0);
-
+            
             m_runCount = 0;
             m_numActorsAccum = 0;
-            m_numStepsAccum = 0;
         }
     }
 
@@ -47,7 +41,6 @@ namespace CBP
         m_perfTimer.Reset();
         m_runCount = 0;
         m_numActorsAccum = 0;
-        m_numStepsAccum = 0;
         m_current.avgActorCount = 0;
         m_current.avgTime = 0;
         m_current.avgUpdateRate = 0.0;

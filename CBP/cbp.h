@@ -50,6 +50,16 @@ namespace CBP
 
         virtual void Run();
 
+        void CullActors();
+
+        void UpdatePhase1();
+        void UpdateActorsPhase2(float timeStep);
+
+        void UpdatePhase2(float timeStep, float timeTick, float maxTime);
+        void UpdatePhase2Collisions(float timeStep, float timeTick, float maxTime);
+
+        void PhysicsTick();
+
         void AddActor(SKSE::ObjectHandle handle);
         void RemoveActor(SKSE::ObjectHandle handle);
         void UpdateConfigOnAllActors();
@@ -75,12 +85,12 @@ namespace CBP
             return m_actors;
         }
 
-        inline void ResetTime() {
-            m_lTime = PerfCounter::Query();
-        }
-
         inline auto& GetProfiler() {
             return m_profiler;
+        }
+
+        inline void UpdateTimeTick(float a_val) {
+            m_averageInterval = a_val;
         }
 
         FN_NAMEPROC("UpdateTask")
@@ -95,7 +105,7 @@ namespace CBP
         ICriticalSection m_taskLock;
 
         float m_timeAccum;
-        long long m_lTime;
+        float m_averageInterval;
 
         static std::atomic<uint64_t> m_nextGroupId;
 
@@ -106,6 +116,52 @@ namespace CBP
         ILog,
         IConfigINI
     {
+        class BackLog
+        {
+            typedef std::vector<std::string> vec_t;
+
+            using iterator = typename vec_t::iterator;
+            using const_iterator = typename vec_t::const_iterator;
+
+        public:
+
+            BackLog(size_t a_limit) :
+                m_limit(a_limit)
+            {
+            }
+
+            [[nodiscard]] inline const_iterator begin() const noexcept {
+                return m_data.begin();
+            }
+            [[nodiscard]] inline const_iterator end() const noexcept {
+                return m_data.end();
+            }
+
+            inline void Lock() {
+                m_lock.Enter();
+            }
+
+            inline void Unlock() {
+                m_lock.Leave();
+            }
+
+            inline void Add(const char* a_string)
+            {
+                m_lock.Enter();
+
+                m_data.emplace_back(a_string);
+                if (m_data.size() > m_limit)
+                    m_data.erase(m_data.begin());
+
+                m_lock.Leave();
+            }
+
+            ICriticalSection m_lock;
+            std::vector<std::string> m_data;
+
+            size_t m_limit;
+        };
+
         enum SerializationVersion {
             kDataVersion1 = 1
         };
@@ -193,8 +249,13 @@ namespace CBP
             virtual void Run();
         };
 
+        typedef void (*mainLoopUpdateFunc_t)(void* p1);
+
     public:
+
         static void Initialize();
+
+        static void MainLoop_Hook(void* p1);
 
         static void DispatchActorTask(Actor* actor, UTTask::UTTAction action);
         static void DispatchActorTask(SKSE::ObjectHandle handle, UTTask::UTTAction action);
@@ -301,6 +362,10 @@ namespace CBP
             return m_Instance.m_renderer;
         }
 
+        [[nodiscard]] inline static auto& GetBackLog() {
+            return m_Instance.m_backlog;
+        }
+
         FN_NAMEPROC("CBP")
     private:
         DCBP();
@@ -310,6 +375,7 @@ namespace CBP
         bool ProcessUICallbackImpl();
 
         static void MessageHandler(Event m_code, void* args);
+        static void OnLogMessage(Event, void* args);
 
         static void RevertHandler(Event m_code, void* args);
         static void LoadGameHandler(SKSESerializationInterface* intfc, UInt32 type, UInt32 length, UInt32 version);
@@ -359,6 +425,10 @@ namespace CBP
 
         r3d::PhysicsWorld* m_world;
         r3d::PhysicsCommon m_physicsCommon;
+
+        mainLoopUpdateFunc_t mainLoopUpdateFunc_o;
+
+        BackLog m_backlog;
 
         ICriticalSection m_lock;
 

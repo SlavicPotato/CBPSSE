@@ -33,41 +33,32 @@ public:
         LogMessage(_FATALERROR, "FATAL", fmt, args...);
     }
 
-    void LogPatchBegin(const char* id)
-    {
-        LogMessage(_DMESSAGE, nullptr, "[Patch] [%s] Writing..", id);
-    }
-
-    void LogPatchEnd(const char* id)
-    {
-        LogMessage(_DMESSAGE, nullptr, "[Patch] [%s] OK", id);
-    }
-
     static IDebugLog::LogLevel TranslateLogLevel(const std::string& level);
 
     FN_NAMEPROC("ILog")
 private:
+    typedef std::unordered_map<std::string, IDebugLog::LogLevel> logLevelMap_t;
 
-    typedef std::unordered_map<std::string, IDebugLog::LogLevel> LLMap;
-    static LLMap LogLevelMap;
-
-    typedef void (*SKSE_MsgProc)(const char* fmt, ...);
-
-    template<typename... Args>
-    void LogMessage(SKSE_MsgProc proc, const char* pfix, const char* fmt, Args... args)
+    template<typename F, typename... Args>
+    void LogMessage(F a_proc, const char* a_pfix, const char* a_fmt, Args... a_args)
     {
         m_logMutex.Enter();
+
         std::ostringstream _fmt;
-        if (pfix != nullptr) {
-            _fmt << "<" << pfix << "> ";
-        }
-        _fmt << "[" << ModuleName() << "] " << fmt;
-        proc(_fmt.str().c_str(), args...);
+        if (a_pfix != nullptr)
+            _fmt << "<" << a_pfix << "> ";
+        _fmt << "[" << ModuleName() << "] " << a_fmt;
+
+        auto str = _fmt.str();
+        a_proc(str.c_str(), a_args...);
+
         m_logMutex.Leave();
+
+        std::unique_ptr<char[]> b(new char[8192]);
+        _snprintf_s(b.get(), 8192, _TRUNCATE, str.c_str(), a_args...);
+        CBP::IEvents::TriggerEvent(CBP::Event::OnLogMessage, b.get());
     }
 
+    static logLevelMap_t LogLevelMap;
     static ICriticalSection m_logMutex;
-protected:
-    ILog() = default;
-    virtual ~ILog() = default;
 };

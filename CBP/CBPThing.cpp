@@ -51,8 +51,7 @@ namespace CBP
         auto nodeScale = m_parent.m_obj->m_worldTransform.scale;
 
         if (!m_active) {
-            if (globalConfig.phys.collisions &&
-                nodeScale > 0.0f)
+            if (nodeScale > 0.0f)
             {
                 m_active = true;
                 m_body->setIsActive(true);
@@ -61,8 +60,7 @@ namespace CBP
                 return;
         }
         else {
-            if (!globalConfig.phys.collisions ||
-                nodeScale <= 0.0f)
+            if (nodeScale <= 0.0f)
             {
                 m_active = false;
                 m_body->setIsActive(false);
@@ -92,7 +90,6 @@ namespace CBP
     SimComponent::SimComponent(
         Actor* a_actor,
         NiAVObject* a_obj,
-        const BSFixedString& a_name,
         const std::string& a_configGroupName,
         const configComponent_t& a_config,
         uint32_t a_parentId,
@@ -100,7 +97,6 @@ namespace CBP
         bool a_collisions,
         bool a_movement)
         :
-        m_boneName(a_name),
         m_configGroupName(a_configGroupName),
         m_oldWorldPos(a_obj->m_worldTransform.pos),
         m_initialNodePos(a_obj->m_localTransform.pos),
@@ -108,11 +104,14 @@ namespace CBP
         m_velocity(NiPoint3(0.0f, 0.0f, 0.0f)),
         m_npZero(NiPoint3(0.0f, 0.0f, 0.0f)),
         m_collisionData(*this),
-        m_obj(a_obj),
         m_parentId(a_parentId),
         m_groupId(a_groupId),
         m_inContact(false),
-        m_dampingMul(0.0f)
+        m_dampingMul(0.0f),
+        m_node(a_actor->loadedState->node),
+        m_obj(a_obj),
+        m_objParent(a_obj->m_parent),
+        m_updateCtx({ 0.0f, 0 })
     {
         UpdateConfig(a_actor, a_config, a_collisions, a_movement);
         m_collisionData.Update();
@@ -185,16 +184,13 @@ namespace CBP
         m_npGravityCorrection = NiPoint3(0.0f, 0.0f, m_conf.gravityCorrection);
     }
 
-    void SimComponent::Reset(Actor* actor)
+    void SimComponent::Reset()
     {
         if (m_movement)
         {
-            auto obj = actor->loadedState->node->GetObjectByName(&m_boneName.data);
-            if (obj != nullptr) {
-                obj->m_localTransform.pos = m_initialNodePos;
-                obj->m_localTransform.rot = m_initialNodeRot;
-                m_oldWorldPos = obj->m_worldTransform.pos;
-            }
+            m_obj->m_localTransform.pos = m_initialNodePos;
+            m_obj->m_localTransform.rot = m_initialNodeRot;
+            m_oldWorldPos = m_obj->m_worldTransform.pos;
         }
 
         m_velocity = m_npZero;
@@ -202,91 +198,95 @@ namespace CBP
         m_applyForceQueue.swap(decltype(m_applyForceQueue)());
     }
 
-    void SimComponent::UpdateMovement(Actor* a_actor)
+    void SimComponent::UpdateMovement(float timeStep)
     {
-        auto& globalConf = IConfig::GetGlobalConfig();
-
-        //Offset to move Center of Mass make rotaional motion more significant  
-        NiPoint3 target(m_obj->m_parent->m_worldTransform * m_npCogOffset);
-
-        NiPoint3 diff(target - m_oldWorldPos);
-
-        if (fabs(diff.x) > 150.0f || fabs(diff.y) > 150.0f || fabs(diff.z) > 150.0f)
+        if (m_movement)
         {
-            Reset(a_actor);
-            return;
-        }
+            auto& globalConf = IConfig::GetGlobalConfig();
 
-        if (!m_inContact && m_dampingMul > 1.0f)
-            m_dampingMul = max(m_dampingMul / (globalConf.phys.timeStep + 1.0f), 1.0f);
+            //Offset to move Center of Mass make rotaional motion more significant  
+            NiPoint3 target(m_objParent->m_worldTransform * m_npCogOffset);
 
-        auto newPos = m_oldWorldPos;
+            NiPoint3 diff(target - m_oldWorldPos);
 
-        // Compute the "Spring" Force
-        NiPoint3 diff2(diff.x * diff.x * sgn(diff.x), diff.y * diff.y * sgn(diff.y), diff.z * diff.z * sgn(diff.z));
-        NiPoint3 force = (diff * m_conf.stiffness) + (diff2 * m_conf.stiffness2);
+            if (fabs(diff.x) > 150.0f || fabs(diff.y) > 150.0f || fabs(diff.z) > 150.0f)
+            {
+                Reset();
+                return;
+            }
 
-        force.z -= m_conf.gravityBias;
+            if (!m_inContact && m_dampingMul > 1.0f)
+                m_dampingMul = max(m_dampingMul / (timeStep + 1.0f), 1.0f);
 
-        if (m_applyForceQueue.size())
-        {
-            auto& current = m_applyForceQueue.front();
+            auto newPos = m_oldWorldPos;
 
-            auto vD = m_obj->m_parent->m_worldTransform * current.force;
-            auto vP = m_obj->m_parent->m_worldTransform.pos;
+            // Compute the "Spring" Force
+            NiPoint3 diff2(diff.x * diff.x * sgn(diff.x), diff.y * diff.y * sgn(diff.y), diff.z * diff.z * sgn(diff.z));
+            NiPoint3 force = (diff * m_conf.stiffness) + (diff2 * m_conf.stiffness2);
 
-            force += (vD - vP) / globalConf.phys.timeStep;
+            force.z -= m_conf.gravityBias;
 
-            current.steps--;
+            if (m_applyForceQueue.size())
+            {
+                auto& current = m_applyForceQueue.front();
 
-            if (!current.steps)
-                m_applyForceQueue.pop();
-        }
+                auto vD = m_objParent->m_worldTransform * current.force;
+                auto vP = m_objParent->m_worldTransform.pos;
 
-        // Assume mass is 1, so Accelleration is Force, can vary mass by changing force
-        SetVelocity((m_velocity + (force * globalConf.phys.timeStep)) -
-            (m_velocity * ((m_conf.damping * globalConf.phys.timeStep) * m_dampingMul)));
+                force += (vD - vP) / timeStep;
 
-        newPos += m_velocity * globalConf.phys.timeStep;
+                current.steps--;
 
-        diff = newPos - target;
-        diff.x = std::clamp(diff.x, -m_conf.maxOffset, m_conf.maxOffset);
-        diff.y = std::clamp(diff.y, -m_conf.maxOffset, m_conf.maxOffset);
-        diff.z = std::clamp(diff.z, -m_conf.maxOffset, m_conf.maxOffset);
+                if (!current.steps)
+                    m_applyForceQueue.pop();
+            }
 
-        auto invRot = m_obj->m_parent->m_worldTransform.rot.Transpose();
-        auto ldiff = invRot * diff;
+            // Assume mass is 1, so Accelleration is Force, can vary mass by changing force
+            SetVelocity((m_velocity + (force * timeStep)) -
+                (m_velocity * ((m_conf.damping * timeStep) * m_dampingMul)));
 
-        m_oldWorldPos = (m_obj->m_parent->m_worldTransform.rot * ldiff) + target;
+            newPos += m_velocity * timeStep;
 
-        m_obj->m_localTransform.pos.x = m_initialNodePos.x + (ldiff.x * m_conf.linearX);
-        m_obj->m_localTransform.pos.y = m_initialNodePos.y + (ldiff.y * m_conf.linearY);
-        m_obj->m_localTransform.pos.z = m_initialNodePos.z + (ldiff.z * m_conf.linearZ);
+            diff = newPos - target;
+            diff.x = std::clamp(diff.x, -m_conf.maxOffset, m_conf.maxOffset);
+            diff.y = std::clamp(diff.y, -m_conf.maxOffset, m_conf.maxOffset);
+            diff.z = std::clamp(diff.z, -m_conf.maxOffset, m_conf.maxOffset);
 
-        m_obj->m_localTransform.pos += invRot * m_npGravityCorrection;
+            auto invRot = m_objParent->m_worldTransform.rot.Transpose();
+            auto ldiff = invRot * diff;
 
-        m_obj->m_localTransform.rot.SetEulerAngles(
-            ldiff.x * m_conf.rotationalX,
-            ldiff.y * m_conf.rotationalY,
-            ldiff.z * m_conf.rotationalZ);
-    }
+            m_oldWorldPos = (m_objParent->m_worldTransform.rot * ldiff) + target;
 
-    void SimComponent::Update(Actor* a_actor, uint32_t a_step)
-    {
-        m_obj = a_actor->loadedState->node->GetObjectByName(&m_boneName.data);
-        if (m_obj == nullptr) 
-            return;        
+            m_obj->m_localTransform.pos.x = m_initialNodePos.x + (ldiff.x * m_conf.linearX);
+            m_obj->m_localTransform.pos.y = m_initialNodePos.y + (ldiff.y * m_conf.linearY);
+            m_obj->m_localTransform.pos.z = m_initialNodePos.z + (ldiff.z * m_conf.linearZ);
 
-        if (m_movement) {
-            UpdateMovement(a_actor);
-        }
-        else if (a_step == 0) {
-            auto newPos = m_obj->m_worldTransform.pos;
-            m_velocity = newPos - m_oldWorldPos;
-            m_oldWorldPos = newPos;
+            m_obj->m_localTransform.pos += invRot * m_npGravityCorrection;
+
+            m_obj->m_localTransform.rot.SetEulerAngles(
+                ldiff.x * m_conf.rotationalX,
+                ldiff.y * m_conf.rotationalY,
+                ldiff.z * m_conf.rotationalZ);
+
+            m_obj->UpdateWorldData(&m_updateCtx);
         }
 
         m_collisionData.Update();
+    }
+
+    void SimComponent::UpdateVelocity()
+    {
+        if (m_movement)
+            return;
+
+        auto newPos = m_obj->m_worldTransform.pos;
+        m_velocity = newPos - m_oldWorldPos;
+        m_oldWorldPos = newPos;
+    }
+
+    void SimComponent::UpdateColliderData()
+    {
+        
     }
 
     void SimComponent::ApplyForce(uint32_t a_steps, const NiPoint3& a_force)
@@ -305,17 +305,17 @@ namespace CBP
 #ifdef _CBP_ENABLE_DEBUG
     void SimComponent::UpdateDebugInfo(Actor* a_actor)
     {
-        m_obj = a_actor->loadedState->node->GetObjectByName(&m_boneName.data);
+        m_obj = m_node->GetObjectByName(&m_boneName.data);
         if (m_obj == nullptr)
             return;
 
         m_debugInfo.worldTransform = m_obj->m_worldTransform;
         m_debugInfo.localTransform = m_obj->m_localTransform;
 
-        m_debugInfo.worldTransformParent = m_obj->m_parent->m_worldTransform;
-        m_debugInfo.localTransformParent = m_obj->m_parent->m_localTransform;
+        m_debugInfo.worldTransformParent = m_objParent->m_worldTransform;
+        m_debugInfo.localTransformParent = m_objParent->m_localTransform;
 
-        m_debugInfo.parentNodeName = m_obj->m_parent->m_name;
+        m_debugInfo.parentNodeName = m_objParent->m_name;
     }
 #endif
 }

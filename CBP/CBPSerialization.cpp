@@ -7,7 +7,7 @@ namespace CBP
         auto& conf = a_data["data"];
 
         if (conf.empty())
-            return false;        
+            return false;
 
         if (!conf.isObject()) {
             Error("Expected an object");
@@ -190,8 +190,7 @@ namespace CBP
             {
                 const auto& phys = root["physics"];
 
-                globalConfig.phys.timeStep = phys.get("timeStep", 1.0f / 60.0f).asFloat();
-                globalConfig.phys.timeScale = phys.get("timeScale", 1.0f).asFloat();
+                globalConfig.phys.timeTick = phys.get("timeTick", 1.0f / 60.0f).asFloat();
                 globalConfig.phys.colMaxPenetrationDepth = phys.get("colMaxPenetrationDepth", 15.0f).asFloat();
                 globalConfig.phys.collisions = phys.get("collisions", true).asBool();
             }
@@ -356,8 +355,7 @@ namespace CBP
 
             auto& phys = root["physics"];
 
-            phys["timeStep"] = globalConfig.phys.timeStep;
-            phys["timeScale"] = globalConfig.phys.timeScale;
+            phys["timeTick"] = globalConfig.phys.timeTick;
             phys["colMaxPenetrationDepth"] = globalConfig.phys.colMaxPenetrationDepth;
             phys["collisions"] = globalConfig.phys.collisions;
 
@@ -732,7 +730,7 @@ namespace CBP
         try
         {
             Json::Value root;
-           
+
             ReadImportData(a_path, root);
 
             a_out.numActors = static_cast<size_t>(root["actors"].size());
@@ -831,9 +829,9 @@ namespace CBP
     }
 
     size_t ISerialization::_LoadRaceProfiles(
-        SKSESerializationInterface* intfc, 
-        const Json::Value& a_root, 
-        raceConfigComponentsHolder_t &a_raceConfigComponents)
+        SKSESerializationInterface* intfc,
+        const Json::Value& a_root,
+        raceConfigComponentsHolder_t& a_raceConfigComponents)
     {
         if (a_root.empty())
             return 0;

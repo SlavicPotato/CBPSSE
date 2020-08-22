@@ -15,7 +15,7 @@ namespace CBP
         Profiler(long long a_interval);
 
         void Begin();
-        void End(uint32_t a_actors, uint32_t a_steps);
+        void End(uint32_t a_actors);
 
         void SetInterval(long long a_interval);
         void Reset();

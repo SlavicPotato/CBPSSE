@@ -41,9 +41,11 @@ namespace CBP
         SimObject(const SimObject& a_rhs) = delete;
         SimObject(SimObject&& a_rhs) = delete;
 
-        void Update(Actor* a_actor, uint32_t a_step);
-        void UpdateConfig(Actor* a_actor, const configComponents_t& a_config);
-        void Reset(Actor* a_actor);
+        void UpdateMovement(float timeStep);
+        void UpdateVelocity();
+        void UpdateColliderData();
+        void UpdateConfig(Actor *a_actor, const configComponents_t& a_config);
+        void Reset();
 
         void ApplyForce(uint32_t a_steps, const std::string& a_component, const NiPoint3& a_force);
 
@@ -86,6 +88,10 @@ namespace CBP
         }
 #endif
 
+        [[nodiscard]] inline auto& GetActor() {
+            return m_actor;
+        }
+
     private:
 
         thingMap_t m_things;
@@ -93,6 +99,7 @@ namespace CBP
 
         uint64_t m_Id;
         SKSE::ObjectHandle m_handle;
+        NiPointer<Actor> m_actor;
 
         char m_sex;
 

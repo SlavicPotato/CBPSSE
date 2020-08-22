@@ -69,7 +69,7 @@ namespace CBP
 
     enum class MiscHelpText : int
     {
-        timeStep,
+        timeTick,
         timeScale,
         colMaxPenetrationDepth,
         showAllActors,
@@ -81,7 +81,9 @@ namespace CBP
         resetConfOnRace,
         showEDIDs,
         playableOnly,
-        colGroupEditor
+        colGroupEditor,
+        importDialog,
+        exportDialog
     };
 
     typedef std::pair<const std::string, configComponents_t> actorEntryBaseConf_t;
@@ -602,7 +604,8 @@ namespace CBP
 
     };
 
-    class UIDialogExport
+    class UIDialogExport :
+        UIBase
     {
     public:
         UIDialogExport(const fs::path& a_path);
@@ -619,6 +622,27 @@ namespace CBP
         std::regex m_rFileCheck;
 
         char m_buf[32];
+    };
+
+    class UILog :
+        UIBase
+    {
+    public:
+        UILog() :
+            m_doScrollBottom(true),
+            m_initialScroll(false)
+        {
+        }
+
+        void Draw(bool *a_active);
+
+        inline void SetScrollBottom() {
+            m_doScrollBottom = true;
+        }
+
+    private:
+        bool m_doScrollBottom;
+        bool m_initialScroll;
     };
 
     class UIContext :
@@ -677,6 +701,10 @@ namespace CBP
             return m_activeLoadInstance;
         }
 
+        inline void LogNotify() {
+            m_log.SetScrollBottom();
+        }
+
     private:
 
         virtual void ApplyProfile(actorListValue_t* a_data, const SimProfile& m_peComponents);
@@ -709,6 +737,7 @@ namespace CBP
                 bool nodeConf;
                 bool profiling;
                 bool debug;
+                bool log;
             } windows;
 
             std::exception lastException;
@@ -723,6 +752,7 @@ namespace CBP
         UIProfiling m_profiling;
         UIDialogImport m_importDialog;
         UIDialogExport m_exportDialog;
+        UILog m_log;
 #ifdef _CBP_ENABLE_DEBUG
         UIDebugInfo m_debug;
 #endif

@@ -70,12 +70,12 @@ namespace CBP
 
                     if (sc1->HasMovement()) {
                         sc1->SetDampingMul(std::clamp(dampingMul * conf1.colDampingCoef, 1.0f, 100.0f));
-                        sc1->SetVelocity2(vaf);
+                        sc1->SetVelocity2(vaf, m_timeStep);
                     }
 
                     if (sc2->HasMovement()) {
                         sc2->SetDampingMul(std::clamp(dampingMul * conf2.colDampingCoef, 1.0f, 100.0f));
-                        sc2->SetVelocity2(vbf);
+                        sc2->SetVelocity2(vbf, m_timeStep);
                     }
                 }
 

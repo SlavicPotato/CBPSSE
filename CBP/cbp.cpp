@@ -265,7 +265,8 @@ namespace CBP
 
     DCBP::DCBP() :
         m_loadInstance(0),
-        uiState({ false, false })
+        uiState({ false, false }),
+        m_backlog(1000)
     {
     }
 
@@ -284,9 +285,20 @@ namespace CBP
             1, InputMap::kMacro_NumKeyboardKeys - 1);
     }
 
+    void DCBP::MainLoop_Hook(void* p1) {
+        m_Instance.mainLoopUpdateFunc_o(p1);
+        //DTasks::AddTask(&m_Instance.m_updateTask);
+        m_Instance.m_updateTask.PhysicsTick();
+    }
+
     void DCBP::Initialize()
     {
         m_Instance.LoadConfig();
+
+        ASSERT(Hook::Call5(
+            IAL::Addr(35551, 0x11f),
+            reinterpret_cast<uintptr_t>(MainLoop_Hook),
+            m_Instance.mainLoopUpdateFunc_o));
 
         DTasks::AddTaskFixed(&m_Instance.m_updateTask);
 
@@ -294,6 +306,7 @@ namespace CBP
         IEvents::RegisterForEvent(Event::OnRevert, RevertHandler);
         IEvents::RegisterForLoadGameEvent('DPBC', LoadGameHandler);
         IEvents::RegisterForEvent(Event::OnGameSave, SaveGameHandler);
+        IEvents::RegisterForEvent(Event::OnLogMessage, OnLogMessage);
 
         SKSE::g_papyrus->Register(RegisterFuncs);
 
@@ -361,6 +374,14 @@ namespace CBP
         Unlock();
     }
 
+    void DCBP::OnLogMessage(Event, void* args)
+    {
+        auto str = static_cast<const char*>(args);
+
+        m_Instance.m_backlog.Add(str);
+        m_Instance.m_uiContext.LogNotify();
+    }
+
     void DCBP::MessageHandler(Event, void* args)
     {
         auto message = static_cast<SKSEMessagingInterface::Message*>(args);
@@ -394,6 +415,8 @@ namespace CBP
             UpdateDebugRendererState();
             UpdateDebugRendererSettings();
             UpdateProfilerSettings();
+
+            DCBP::GetUpdateTask().UpdateTimeTick(CBP::IConfig::GetGlobalConfig().phys.timeTick);
 
             Unlock();
 
@@ -477,7 +500,6 @@ namespace CBP
             }
         }
 
-        GetUpdateTask().ResetTime();
         GetProfiler().Reset();
 
         Unlock();
@@ -611,100 +633,10 @@ namespace CBP
     std::atomic<uint64_t> UpdateTask::m_nextGroupId = 0;
 
     UpdateTask::UpdateTask() :
-        m_lTime(PerfCounter::Query()),
         m_timeAccum(0.0f),
+        m_averageInterval(1.0f / 60.0f),
         m_profiler(1000000)
     {
-    }
-
-    void UpdateTask::Run()
-    {
-        auto player = *g_thePlayer;
-        if (!player || !player->loadedState || !player->parentCell)
-            return;
-
-        DCBP::Lock();
-
-        // Process our tasks only when the player is loaded and attached to a cell
-        ProcessTasks();
-
-        auto& globalConf = IConfig::GetGlobalConfig();
-
-        if (globalConf.general.enableProfiling)
-            m_profiler.Begin();
-
-        auto newTime = PerfCounter::Query();
-        auto deltaT = PerfCounter::delta(m_lTime, newTime);
-        m_lTime = newTime;
-
-        if (deltaT > 1.0f)
-        {
-            PhysicsReset();
-            DCBP::Unlock();
-            return;
-        }
-
-        m_timeAccum += deltaT * globalConf.phys.timeScale;
-
-        uint32_t numSteps = 0;
-        while (m_timeAccum >= globalConf.phys.timeStep)
-        {
-            numSteps++;
-            m_timeAccum -= globalConf.phys.timeStep;
-        }
-
-        if (numSteps == 0)
-        {
-            if (globalConf.phys.collisions)
-                UpdateDebugRenderer();
-
-            DCBP::Unlock();
-            return;
-        }
-
-        auto world = DCBP::GetWorld();
-
-        uint32_t numProcessed = 0;
-
-        auto it = m_actors.begin();
-        while (it != m_actors.end())
-        {
-            auto actor = SKSE::ResolveObject<Actor>(it->first, Actor::kTypeID);
-
-            if (!ActorValid(actor)) {
-#ifdef _CBP_SHOW_STATS
-                Debug("Actor 0x%llX (%s) no longer valid", it->first, actor ? CALL_MEMBER_FN(actor, GetReferenceName)() : nullptr);
-#endif
-                it->second.Release();
-                it = m_actors.erase(it);
-            }
-            else {
-                for (uint32_t i = 0; i < numSteps; i++)
-                    it->second.Update(actor, i);
-
-#ifdef _CBP_ENABLE_DEBUG
-                it->second.UpdateDebugInfo(actor);
-#endif
-                numProcessed++;
-                ++it;
-            }
-        }
-
-        if (globalConf.phys.collisions) {
-            uint32_t i = numSteps;
-            while (i) {
-                world->update(globalConf.phys.timeStep);
-                i--;
-            }
-
-            UpdateDebugRenderer();
-        }
-
-        if (globalConf.general.enableProfiling) {
-            m_profiler.End(numProcessed, numSteps);
-        }
-
-        DCBP::Unlock();
     }
 
     void UpdateTask::UpdateDebugRenderer()
@@ -714,7 +646,138 @@ namespace CBP
         if (globalConf.debugRenderer.enabled &&
             DCBP::GetDriverConfig().debug_renderer)
         {
-            DCBP::GetRenderer()->Update(DCBP::GetWorld()->getDebugRenderer());
+            DCBP::GetRenderer()->Update(
+                DCBP::GetWorld()->getDebugRenderer());
+        }
+    }
+
+    static auto frameTimerSlowTime = IAL::Addr<float*>(523660);
+
+    void UpdateTask::UpdatePhase1()
+    {
+        for (auto& e : m_actors)
+            e.second.UpdateVelocity();
+    }
+
+    void UpdateTask::UpdateActorsPhase2(float timeStep)
+    {
+        for (auto& e : m_actors)
+            e.second.UpdateMovement(timeStep);
+    }
+
+    void UpdateTask::UpdatePhase2(float timeStep, float timeTick, float maxTime)
+    {
+        while (timeStep >= maxTime)
+        {
+            UpdateActorsPhase2(timeTick);
+            timeStep -= timeTick;
+        }
+
+        UpdateActorsPhase2(timeStep);
+    }
+
+    void UpdateTask::UpdatePhase2Collisions(float timeStep, float timeTick, float maxTime)
+    {
+        auto world = DCBP::GetWorld();
+
+        bool debugRendererEnabled = world->getIsDebugRenderingEnabled();
+        world->setIsDebugRenderingEnabled(false);
+
+        ICollision::SetTimeStep(timeTick);
+
+        while (timeStep >= maxTime)
+        {
+            UpdateActorsPhase2(timeTick);
+            world->update(timeTick);
+            timeStep -= timeTick;
+        }
+
+        UpdateActorsPhase2(timeStep);
+
+        ICollision::SetTimeStep(timeStep);
+
+        world->setIsDebugRenderingEnabled(debugRendererEnabled);
+        world->update(timeStep);
+    }
+
+    void UpdateTask::PhysicsTick()
+    {
+        float interval = *frameTimerSlowTime;
+
+        if (interval < _EPSILON)
+            return;
+
+        DCBP::Lock();
+
+        auto& globalConf = IConfig::GetGlobalConfig();
+
+        if (globalConf.phys.collisions)
+            UpdateDebugRenderer();
+
+        if (globalConf.general.enableProfiling)
+            m_profiler.Begin();
+
+        m_averageInterval = m_averageInterval * 0.875f + interval * 0.125f;
+        auto timeTick = min(m_averageInterval, globalConf.phys.timeTick);
+
+        m_timeAccum += interval;
+
+        if (m_timeAccum > timeTick * 0.25f)
+        {
+            float timeStep = min(m_timeAccum, timeTick * 5.0f);
+            float maxTimeStep = timeTick * 5.0f;
+
+            if (timeStep > maxTimeStep)
+                timeStep = maxTimeStep;
+
+            float maxTime = timeTick * 1.25f;
+
+            UpdatePhase1();
+
+            if (globalConf.phys.collisions)
+                UpdatePhase2Collisions(timeStep, timeTick, maxTime);
+            else
+                UpdatePhase2(timeStep, timeTick, maxTime);
+
+            m_timeAccum = 0.0f;
+        }
+
+        if (globalConf.general.enableProfiling)
+            m_profiler.End(m_actors.size());
+
+        DCBP::Unlock();
+    }
+
+    void UpdateTask::Run()
+    {
+        DCBP::Lock();
+
+        CullActors();
+
+        auto player = *g_thePlayer;
+        if (player && player->loadedState && player->parentCell)
+            ProcessTasks();
+
+        DCBP::Unlock();
+    }
+
+    void UpdateTask::CullActors()
+    {
+        auto it = m_actors.begin();
+        while (it != m_actors.end())
+        {
+            auto actor = SKSE::ResolveObject<Actor>(it->first, Actor::kTypeID);
+
+            if (!ActorValid(actor))
+            {
+#ifdef _CBP_SHOW_STATS
+                Debug("Actor 0x%llX (%s) no longer valid", it->first, actor ? CALL_MEMBER_FN(actor, GetReferenceName)() : nullptr);
+#endif
+                it->second.Release();
+                it = m_actors.erase(it);
+            }
+            else
+                ++it;
         }
     }
 
@@ -770,7 +833,7 @@ namespace CBP
         {
 #ifdef _CBP_SHOW_STATS
             auto actor = SKSE::ResolveObject<Actor>(handle, Actor::kTypeID);
-            _DMESSAGE("Removing %llX (%s)", handle, actor ? CALL_MEMBER_FN(actor, GetReferenceName)() : "nullptr");
+            Debug("Removing %llX (%s)", handle, actor ? CALL_MEMBER_FN(actor, GetReferenceName)() : "nullptr");
 #endif
             it->second.Release();
             m_actors.erase(it);
@@ -782,11 +845,13 @@ namespace CBP
         for (auto& a : m_actors)
             a.second.UpdateGroupInfo();
     }
+
     void UpdateTask::UpdateConfigOnAllActors()
     {
         for (auto& e : m_actors)
         {
             auto actor = SKSE::ResolveObject<Actor>(e.first, Actor::kTypeID);
+
             if (!ActorValid(actor))
                 continue;
 
@@ -802,7 +867,8 @@ namespace CBP
         if (it == m_actors.end())
             return;
 
-        auto actor = SKSE::ResolveObject<Actor>(handle, Actor::kTypeID);
+        auto actor = SKSE::ResolveObject<Actor>(it->first, Actor::kTypeID);
+
         if (!ActorValid(actor))
             return;
 
@@ -833,11 +899,12 @@ namespace CBP
         for (auto& e : m_actors)
         {
             auto actor = SKSE::ResolveObject<Actor>(e.first, Actor::kTypeID);
+
             if (ActorValid(actor))
-                e.second.Reset(actor);
+                e.second.Reset();
 
 #ifdef _CBP_SHOW_STATS
-            _DMESSAGE("Removing %llX (%s)", e.first, actor ? CALL_MEMBER_FN(actor, GetReferenceName)() : "nullptr");
+            Debug("CLR: Removing %llX (%s)", e.first, actor ? CALL_MEMBER_FN(actor, GetReferenceName)() : "nullptr");
 #endif
 
             e.second.Release();
@@ -856,7 +923,7 @@ namespace CBP
         GatherActors(handles);
 
         ClearActors();
-        for (auto e : handles)
+        for (const auto e : handles)
             AddActor(e);
 
         CBP::IData::UpdateActorCache(m_actors);
@@ -865,13 +932,10 @@ namespace CBP
     void UpdateTask::PhysicsReset()
     {
         for (auto& e : m_actors)
-        {
-            auto actor = SKSE::ResolveObject<Actor>(e.first, Actor::kTypeID);
-            if (ActorValid(actor))
-                e.second.Reset(actor);
-        }
+            e.second.Reset();
 
         auto& globalConf = IConfig::GetGlobalConfig();
+
         if (globalConf.phys.collisions)
             UpdateDebugRenderer();
     }
@@ -894,9 +958,8 @@ namespace CBP
     void UpdateTask::NiNodeUpdate(SKSE::ObjectHandle a_handle)
     {
         auto actor = SKSE::ResolveObject<Actor>(a_handle, Actor::kTypeID);
-        if (ActorValid(actor)) {
+        if (ActorValid(actor))
             CALL_MEMBER_FN(actor, QueueNiNodeUpdate)(true);
-        }
     }
 
     void UpdateTask::NiNodeUpdateAll()

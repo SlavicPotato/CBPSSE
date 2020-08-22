@@ -81,7 +81,6 @@ namespace CBP
         };
 
     private:
-        void UpdateMovement(Actor* a_actor);
         bool UpdateWeightData(Actor* a_actor, const configComponent_t& a_config);
 
         NiPoint3 m_npCogOffset;
@@ -113,11 +112,14 @@ namespace CBP
         uint64_t m_groupId;
         uint64_t m_parentId;
 
-        NiAVObject* m_obj;
-        BSFixedString m_boneName;
-
         float m_dampingMul;
         bool m_inContact;
+
+        NiPointer<NiAVObject> m_obj;
+        NiPointer<NiAVObject> m_objParent;
+        NiPointer<NiNode> m_node;
+
+        NiAVObject::ControllerUpdateContext m_updateCtx;
 
 #ifdef _CBP_ENABLE_DEBUG
         SimDebugInfo m_debugInfo;
@@ -126,7 +128,6 @@ namespace CBP
         SimComponent(
             Actor* a_actor,
             NiAVObject* m_obj,
-            const BSFixedString& name,
             const std::string& a_configBoneName,
             const configComponent_t& config,
             uint32_t a_parentId,
@@ -142,19 +143,21 @@ namespace CBP
         void Release();
 
         void UpdateConfig(
-            Actor *a_actor,
+            Actor* a_actor,
             const configComponent_t& centry,
             bool a_collisions,
             bool a_movement) noexcept;
 
-        void Update(Actor* actor, uint32_t a_step);
-        void Reset(Actor* actor);
+        void UpdateMovement(float timeStep);
+        void UpdateVelocity();
+        void UpdateColliderData();
+        void Reset();
 
         void ApplyForce(uint32_t a_steps, const NiPoint3& a_force);
 
-        void UpdateDebugInfo(Actor *a_actor);
+        void UpdateDebugInfo(Actor* a_actor);
 
-        inline void ClampVelocity() 
+        inline void ClampVelocity()
         {
             float len = m_velocity.Length();
             if (len < _EPSILON)
@@ -173,22 +176,19 @@ namespace CBP
             ClampVelocity();
         }
 
-        inline void SetVelocity(const NiPoint3& a_vel) 
+        inline void SetVelocity(const NiPoint3& a_vel)
         {
             m_velocity.x = a_vel.x;
             m_velocity.y = a_vel.y;
             m_velocity.z = a_vel.z;
             ClampVelocity();
         }
-        
-        inline void SetVelocity2(const NiPoint3& a_vel) {
 
-            auto& globalConf = IConfig::GetGlobalConfig();
-
-            SetVelocity((m_velocity - (a_vel * globalConf.phys.timeStep)) -
-                (m_velocity * ((m_conf.damping * globalConf.phys.timeStep) * m_dampingMul)));
+        inline void SetVelocity2(const NiPoint3& a_vel, float a_timeStep) {
+            SetVelocity((m_velocity - (a_vel * a_timeStep)) -
+                (m_velocity * ((m_conf.damping * a_timeStep) * m_dampingMul)));
         }
-        
+
         [[nodiscard]] inline const auto& GetVelocity() const {
             return m_velocity;
         }

@@ -4,7 +4,7 @@ namespace CBP
 {
     const std::unordered_map<MiscHelpText, const char*> UIBase::m_helpText =
     {
-        {MiscHelpText::timeStep, "Update rate in Hz. Higher values produce smoother motion but cost more CPU time. It's not recommended to set this below 60."},
+        {MiscHelpText::timeTick, "Set to ~ minimum framerate"},
         {MiscHelpText::timeScale, "Simulation rate, speeds up or slows down time"},
         {MiscHelpText::colMaxPenetrationDepth, "Maximum penetration depth during collisions"},
         {MiscHelpText::showAllActors, "Checked: Show all known actors\nUnchecked: Only show actors currently simulated"},
@@ -16,6 +16,8 @@ namespace CBP
         {MiscHelpText::showEDIDs, "Show editor ID's instead of names."},
         {MiscHelpText::playableOnly, "Show playable races only."},
         {MiscHelpText::colGroupEditor, "Nodes assigned to the same group will not collide with eachother. This applies only to nodes on the same actor."},
+        {MiscHelpText::importDialog, "Imports and apply actor, race and global settings from the selected file."},
+        {MiscHelpText::exportDialog, "Exports actor, race and global settings."}
     };
 
     static const keyDesc_t comboKeyDesc({
@@ -200,7 +202,7 @@ namespace CBP
 
         ImGui::SetNextWindowSizeConstraints(sizeMin, sizeMax);
 
-        ImGui::PushID(static_cast<const void*>(a_active));
+        ImGui::PushID(static_cast<const void*>(this));
 
         if (ImGui::Begin(m_name, a_active))
         {
@@ -441,7 +443,7 @@ namespace CBP
 
         ImGui::SetNextWindowSizeConstraints(sizeMin, sizeMax);
 
-        ImGui::PushID(static_cast<const void*>(a_active));
+        ImGui::PushID(static_cast<const void*>(this));
 
         if (ImGui::Begin("Race physics", a_active))
         {
@@ -1132,7 +1134,7 @@ namespace CBP
         m_peNodes("Node profile editor"),
         m_importDialog(PLUGIN_CBP_EXPORTS_PATH),
         m_exportDialog(PLUGIN_CBP_EXPORTS_PATH),
-        state({ .windows{false, false, false, false, false, false, false, false } })
+        state({ .windows{false, false, false, false, false, false, false, false, false} })
     {
     }
 
@@ -1251,6 +1253,9 @@ namespace CBP
                     ImGui::MenuItem("Debug info", nullptr, &state.windows.debug);
 #endif
 
+                    ImGui::Separator();
+                    ImGui::MenuItem("Log", nullptr, &state.windows.log);
+
                     ImGui::EndMenu();
                 }
 
@@ -1342,7 +1347,7 @@ namespace CBP
             if (saveAllFailed)
                 ImGui::OpenPopup("Save failed");
             else if (saveToDefaultGlob)
-                ImGui::OpenPopup("Store global");             
+                ImGui::OpenPopup("Store global");
 
             ImGui::Spacing();
 
@@ -1408,6 +1413,9 @@ namespace CBP
         if (state.windows.profiling)
             m_profiling.Draw(&state.windows.profiling);
 
+        if (state.windows.log)
+            m_log.Draw(&state.windows.log);
+
 #ifdef _CBP_ENABLE_DEBUG
         if (state.windows.debug)
             m_debug.Draw(&state.windows.debug);
@@ -1418,7 +1426,7 @@ namespace CBP
             m_exportDialog.Open();
 
         m_exportDialog.Draw();
-        
+
         if (m_importDialog.Draw())
             ClearActorList();
 
@@ -1434,7 +1442,7 @@ namespace CBP
         ImGui::SetNextWindowPos(center, ImGuiCond_FirstUseEver, ImVec2(0.5f, 0.5f));
         ImGui::SetNextWindowSizeConstraints(ImVec2(400.0f, 100.0f), ImVec2(800.0f, 800.0f));
 
-        ImGui::PushID(static_cast<const void*>(a_active));
+        ImGui::PushID(static_cast<const void*>(this));
 
         if (ImGui::Begin("Options", a_active, ImGuiWindowFlags_AlwaysAutoResize))
         {
@@ -1492,23 +1500,26 @@ namespace CBP
                     DCBP::MarkGlobalsForSave();
                 }
 
-                if (ImGui::Checkbox("Enable collisions", &globalConfig.phys.collisions))
+                if (ImGui::Checkbox("Enable collisions", &globalConfig.phys.collisions)) {
+                    DCBP::ResetActors();
                     DCBP::MarkGlobalsForSave();
+                }
 
                 ImGui::Spacing();
 
-                float timeStep = 1.0f / globalConfig.phys.timeStep;
-                if (ImGui::SliderFloat("timeStep", &timeStep, 30.0f, 240.0f, "%.0f")) {
-                    globalConfig.phys.timeStep = 1.0f / std::clamp(timeStep, 30.0f, 240.0f);
+                float timeTick = 1.0f / globalConfig.phys.timeTick;
+                if (ImGui::SliderFloat("timeTick", &timeTick, 1.0f, 240.0f, "%.0f")) {
+                    globalConfig.phys.timeTick = 1.0f / std::clamp(timeTick, 1.0f, 240.0f);
+                    DCBP::GetUpdateTask().UpdateTimeTick(globalConfig.phys.timeTick);
                     DCBP::MarkGlobalsForSave();
                 }
-                HelpMarker(MiscHelpText::timeStep);
+                HelpMarker(MiscHelpText::timeTick);
 
-                if (ImGui::SliderFloat("timeScale", &globalConfig.phys.timeScale, 0.05f, 10.0f)) {
+                /*if (ImGui::SliderFloat("timeScale", &globalConfig.phys.timeScale, 0.05f, 10.0f)) {
                     globalConfig.phys.timeScale = std::clamp(globalConfig.phys.timeScale, 0.05f, 10.0f);
                     DCBP::MarkGlobalsForSave();
                 }
-                HelpMarker(MiscHelpText::timeScale);
+                HelpMarker(MiscHelpText::timeScale);*/
 
                 if (ImGui::SliderFloat("colMaxPenetrationDepth", &globalConfig.phys.colMaxPenetrationDepth, 0.5f, 100.0f)) {
                     globalConfig.phys.colMaxPenetrationDepth = std::clamp(globalConfig.phys.colMaxPenetrationDepth, 0.05f, 500.0f);
@@ -1616,7 +1627,7 @@ namespace CBP
         ImGui::SetNextWindowSizeConstraints(sizeMin, sizeMax);
         ImGui::SetNextWindowSize(ImVec2(400.0f, io.DisplaySize.y), ImGuiCond_FirstUseEver);
 
-        ImGui::PushID(static_cast<const void*>(a_active));
+        ImGui::PushID(static_cast<const void*>(this));
 
         if (ImGui::Begin("Node collision groups", a_active))
         {
@@ -1781,7 +1792,7 @@ namespace CBP
 
         ImGui::SetNextWindowSizeConstraints(sizeMin, sizeMax);
 
-        ImGui::PushID(static_cast<const void*>(a_active));
+        ImGui::PushID(static_cast<const void*>(this));
 
         if (ImGui::Begin("Actor nodes", a_active))
         {
@@ -2390,12 +2401,12 @@ namespace CBP
 
     UIFileSelector::SelectedFile::SelectedFile() :
         m_infoResult(false)
-    {        
+    {
     }
 
     UIFileSelector::SelectedFile::SelectedFile(const fs::path& a_path) :
         m_path(a_path)
-    {        
+    {
     }
 
     void UIFileSelector::SelectedFile::UpdateInfo()
@@ -2494,30 +2505,32 @@ namespace CBP
         if (ImGui::BeginPopupModal("Select file to import", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
         {
             DrawFileSelector();
+            HelpMarker(MiscHelpText::importDialog);
 
-            ImGui::Separator();
+            ImGui::PushTextWrapPos(ImGui::GetFontSize() * 50.0f);
 
             auto& selected = GetSelected();
 
-            if (selected) 
+            if (selected)
             {
-                ImGui::PushTextWrapPos(ImGui::GetFontSize() * 50.0f);
+                ImGui::Separator();
 
                 if (selected->m_infoResult)
                 {
-                    ImGui::Text("Actors: %zu\nRaces: %zu", 
+                    ImGui::TextWrapped("Actors: %zu\nRaces: %zu",
                         selected->m_info.numActors,
                         selected->m_info.numRaces);
                 }
-                else 
-                    ImGui::Text("Error: %s", selected->m_info.except.what());
+                else
+                    ImGui::TextWrapped("Error: %s", selected->m_info.except.what());
 
-                ImGui::PopTextWrapPos();
-            }            
+            }
+
+            ImGui::PopTextWrapPos();
 
             ImGui::Separator();
 
-            if (ImGui::Button("Import", ImVec2(120, 0))) 
+            if (ImGui::Button("Import", ImVec2(120, 0)))
             {
                 if (selected && selected->m_infoResult)
                 {
@@ -2593,16 +2606,14 @@ namespace CBP
 
         m_buf[0] = 0x0;
 
-        if (fs::exists(m_lastTargetPath)) 
+        if (fs::exists(m_lastTargetPath))
         {
-            if (!fs::is_regular_file(m_lastTargetPath)) {
+            if (!fs::is_regular_file(m_lastTargetPath))
                 ImGui::OpenPopup("Operation failed");
-                return;
-            }
-            else {
+            else
                 ImGui::OpenPopup("Overwrite");
-                return;
-            }
+
+            return;
         }
 
         if (!DCBP::ExportData(m_lastTargetPath))
@@ -2627,7 +2638,7 @@ namespace CBP
         UICommon::MessageDialog(
             "Illegal filename",
             "Filename contains illegal characters");
-        
+
         UICommon::MessageDialog(
             "Operation failed",
             "Path exists and is not a regular file");
@@ -2645,6 +2656,61 @@ namespace CBP
         ImGui::PushID(static_cast<const void*>(this));
 
         ImGui::OpenPopup("Export to file");
+
+        ImGui::PopID();
+    }
+
+    void UILog::Draw(bool* a_active)
+    {
+        auto& io = ImGui::GetIO();
+        auto& globalConfig = IConfig::GetGlobalConfig();
+
+        ImGui::SetNextWindowPos(ImVec2(20.0f, 20.0f), ImGuiCond_FirstUseEver);
+        ImGui::SetNextWindowSize(ImVec2(450.0f, io.DisplaySize.y), ImGuiCond_FirstUseEver);
+
+        ImVec2 sizeMin(min(300.0f, io.DisplaySize.x - 40.0f), min(200.0f, io.DisplaySize.y - 40.0f));
+        ImVec2 sizeMax(min(1920.0f, io.DisplaySize.x), max(io.DisplaySize.y - 40.0f, sizeMin.y));
+
+        ImGui::SetNextWindowSizeConstraints(sizeMin, sizeMax);
+
+        ImGui::PushID(static_cast<const void*>(this));
+
+        if (ImGui::Begin("Log", a_active))
+        {
+            ImGui::SetWindowFontScale(globalConfig.ui.fontScale);
+
+            //ImGui::PushTextWrapPos(ImGui::GetFontSize() * 50.0f);
+
+            //ImGui::BeginChild("LogRegion", ImVec2(0, 0), false, ImGuiWindowFlags_HorizontalScrollbar);
+
+            auto& backlog = DCBP::GetBackLog();
+
+            backlog.Lock();
+
+            for (const auto& e : backlog)
+                ImGui::TextWrapped(e.c_str());            
+
+            backlog.Unlock();
+
+            if (m_doScrollBottom) 
+            {
+                if (!m_initialScroll || ImGui::GetScrollY() > ImGui::GetScrollMaxY() - 50.0f)
+                    ImGui::SetScrollHereY(0.0f);
+
+                m_doScrollBottom = false;
+                m_initialScroll = true;
+            }
+
+            ImGui::Dummy(ImVec2(0,0));
+
+            /*ImGui::EndChild();
+
+            ImGui::Spacing();*/
+
+            //ImGui::PopTextWrapPos();
+        }
+
+        ImGui::End();
 
         ImGui::PopID();
     }
