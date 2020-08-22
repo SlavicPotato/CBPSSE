@@ -711,6 +711,8 @@ namespace CBP
         if (interval < _EPSILON)
             return;
 
+        _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
+
         DCBP::Lock();
 
         auto& globalConf = IConfig::GetGlobalConfig();
