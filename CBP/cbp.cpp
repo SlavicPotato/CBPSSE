@@ -426,6 +426,7 @@ namespace CBP
             UpdateProfilerSettings();
 
             DCBP::GetUpdateTask().UpdateTimeTick(CBP::IConfig::GetGlobalConfig().phys.timeTick);
+            UpdateKeys();
 
             Unlock();
 

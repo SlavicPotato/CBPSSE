@@ -2,8 +2,6 @@
 
 namespace CBP
 {
-
-    
     class DCBP :
         ILog,
         IConfigINI
