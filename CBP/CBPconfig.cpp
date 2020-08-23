@@ -193,9 +193,9 @@ namespace CBP
     {
         try
         {
-            std::ifstream ifs(PLUGIN_BASE_PATH "CBPNodes.json", std::ifstream::in | std::ifstream::binary);
+            std::ifstream ifs(PLUGIN_CBP_NODE_DATA, std::ifstream::in | std::ifstream::binary);
             if (!ifs.is_open())
-                throw std::system_error(errno, std::system_category(), PLUGIN_BASE_PATH "CBPNodes.json");
+                throw std::system_error(errno, std::system_category(), PLUGIN_CBP_NODE_DATA);
 
             Json::Value root;
             ifs >> root;

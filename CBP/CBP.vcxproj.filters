@@ -37,14 +37,20 @@
     <Filter Include="Scripts">
       <UniqueIdentifier>{9771a003-fdd2-47f6-9146-e435901816a4}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Config\CBPData">
-      <UniqueIdentifier>{e0cb373c-14d7-4ef0-b085-ca058bedd21f}</UniqueIdentifier>
+    <Filter Include="Config\CBP">
+      <UniqueIdentifier>{965121b5-20d0-4160-ba74-446eb2231f99}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Config\CBPNodeProfiles">
-      <UniqueIdentifier>{b9c8c6df-1dae-4738-ba7d-bca76e2c0df4}</UniqueIdentifier>
+    <Filter Include="Config\CBP\Profiles">
+      <UniqueIdentifier>{8b9e4c7d-9a31-4f9f-91ef-543867d8ca46}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Config\CBPProfiles">
-      <UniqueIdentifier>{583c8d1c-0972-4eeb-b8a8-191e9e7efe02}</UniqueIdentifier>
+    <Filter Include="Config\CBP\Settings">
+      <UniqueIdentifier>{0f32a766-9f65-4ae7-8e6e-fbfa4b146012}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Config\CBP\Profiles\Physics">
+      <UniqueIdentifier>{0b96ddd8-c58e-4bf2-a8ba-5917da57b842}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Config\CBP\Profiles\Node">
+      <UniqueIdentifier>{ce412327-bf33-4fb8-8390-b95912fd258f}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -225,26 +231,26 @@
   <ItemGroup>
     <None Include="exports.def" />
     <None Include="..\README.md" />
-    <None Include="Config\CBPNodes.json">
-      <Filter>Config</Filter>
-    </None>
     <None Include="..\scripts\CBP.psc">
       <Filter>Scripts</Filter>
     </None>
     <None Include="Config\CBP.ini">
       <Filter>Config</Filter>
     </None>
-    <None Include="Config\CBPData\CollisionGroups.json">
-      <Filter>Config\CBPData</Filter>
+    <None Include="Config\CBP\Profiles\Node\UNP Basic.json">
+      <Filter>Config\CBP\Profiles\Node</Filter>
     </None>
-    <None Include="Config\CBPData\GlobalProfile.json">
-      <Filter>Config\CBPData</Filter>
+    <None Include="Config\CBP\Profiles\Physics\UNP Basic.json">
+      <Filter>Config\CBP\Profiles\Physics</Filter>
     </None>
-    <None Include="Config\CBPNodeProfiles\UNP Basic.json">
-      <Filter>Config\CBPNodeProfiles</Filter>
+    <None Include="Config\CBP\Settings\CollisionGroups.json">
+      <Filter>Config\CBP\Settings</Filter>
     </None>
-    <None Include="Config\CBPProfiles\UNP Basic.json">
-      <Filter>Config\CBPProfiles</Filter>
+    <None Include="Config\CBP\Default.json">
+      <Filter>Config\CBP</Filter>
+    </None>
+    <None Include="Config\CBP\Nodes.json">
+      <Filter>Config\CBP</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
