@@ -330,7 +330,7 @@ namespace CBP
         thingGlobalConfigDefaults = thingGlobalConfig;
     }
 
-    ConfigClass IConfig::GetActorConfigClass(SKSE::ObjectHandle a_handle)
+    ConfigClass IConfig::GetActorPhysicsConfigClass(SKSE::ObjectHandle a_handle)
     {
         if (actorConfHolder.contains(a_handle))
             return ConfigClass::kConfigActor;
@@ -340,6 +340,14 @@ namespace CBP
         if (it != rm.end())
             if (raceConfHolder.contains(it->second))
                 return ConfigClass::kConfigRace;
+
+        return ConfigClass::kConfigGlobal;
+    }
+
+    ConfigClass IConfig::GetActorNodeConfigClass(SKSE::ObjectHandle a_handle)
+    {
+        if (actorNodeConfigHolder.contains(a_handle))
+            return ConfigClass::kConfigActor;
 
         return ConfigClass::kConfigGlobal;
     }

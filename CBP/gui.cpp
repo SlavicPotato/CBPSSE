@@ -309,7 +309,7 @@ namespace CBP
 
             if (ImGui::BeginPopupModal(name, nullptr, ImGuiWindowFlags_AlwaysAutoResize))
             {
-                ImGui::PushTextWrapPos(ImGui::GetFontSize() * 20.0f);
+                ImGui::PushTextWrapPos(ImGui::GetFontSize() * 50.0f);
                 ImGui::Text(text, args...);
                 ImGui::PopTextWrapPos();
                 ImGui::Separator();
@@ -374,7 +374,7 @@ namespace CBP
 
             if (ImGui::BeginPopupModal(a_name, nullptr, ImGuiWindowFlags_AlwaysAutoResize))
             {
-                ImGui::PushTextWrapPos(ImGui::GetFontSize() * 20.0f);
+                ImGui::PushTextWrapPos(ImGui::GetFontSize() * 50.0f);
                 ImGui::Text(a_text, args...);
                 ImGui::PopTextWrapPos();
 

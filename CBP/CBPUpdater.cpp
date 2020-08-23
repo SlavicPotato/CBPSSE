@@ -135,8 +135,8 @@ namespace CBP
 
         if (m_timeAccum > timeTick * 0.25f)
         {
-            float maxTimeStep = timeTick * globalConf.phys.maxSubSteps;
-            float timeStep = min(m_timeAccum, maxTimeStep);
+            float timeStep = min(m_timeAccum, 
+                timeTick * globalConf.phys.maxSubSteps);
 
             float maxTime = timeTick * 1.25f;
 

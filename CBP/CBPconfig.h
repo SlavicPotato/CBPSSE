@@ -307,7 +307,8 @@ namespace CBP
 
         static void LoadConfig();
 
-        [[nodiscard]] static ConfigClass GetActorConfigClass(SKSE::ObjectHandle a_handle);
+        [[nodiscard]] static ConfigClass GetActorPhysicsConfigClass(SKSE::ObjectHandle a_handle);
+        [[nodiscard]] static ConfigClass GetActorNodeConfigClass(SKSE::ObjectHandle a_handle);
 
         // Not guaranteed to be actual actor conf storage
         [[nodiscard]] static const configComponents_t& GetActorConf(SKSE::ObjectHandle handle);

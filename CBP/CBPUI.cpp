@@ -3,7 +3,7 @@
 namespace CBP
 {
     const std::unordered_map<MiscHelpText, const char*> UIBase::m_helpText({
-        {MiscHelpText::timeTick, "Controls the update rate"},
+        {MiscHelpText::timeTick, "Target update rate"},
         {MiscHelpText::maxSubSteps, ""},
         {MiscHelpText::timeScale, "Simulation rate, speeds up or slows down time"},
         {MiscHelpText::colMaxPenetrationDepth, "Maximum penetration depth during collisions"},
@@ -1302,7 +1302,7 @@ namespace CBP
             ImGui::Spacing();
 
             if (m_currentActor) {
-                auto confClass = IConfig::GetActorConfigClass(m_currentActor);
+                auto confClass = IConfig::GetActorPhysicsConfigClass(m_currentActor);
                 const char* classText;
                 switch (confClass)
                 {
@@ -1823,9 +1823,42 @@ namespace CBP
 
             DrawActorList(entry, curSelName);
 
+            ImGui::Spacing();
+
+            if (m_currentActor)
+            {
+                auto confClass = CBP::IConfig::GetActorNodeConfigClass(m_currentActor);
+                const char* classText;
+                switch (confClass)
+                {
+                case ConfigClass::kConfigActor:
+                    classText = "actor";
+                    break;
+                default:
+                    classText = "global";
+                    break;
+                }
+                ImGui::Text("Config in use: %s", classText);
+            }
+
+            ImGui::Spacing();
+            if (ImGui::Checkbox("Show all actors", &globalConfig.ui.showAllActors)) {
+                DCBP::QueueActorCacheUpdate();
+                DCBP::MarkGlobalsForSave();
+            }
+            HelpMarker(MiscHelpText::showAllActors);
+
+            auto wcm = ImGui::GetWindowContentRegionMax();
+
+            ClearTextOffset();
+            ImGui::SameLine(wcm.x - GetNextTextOffset("Rescan"));
+            if (ButtonRight("Rescan"))
+                DCBP::QueueActorCacheUpdate();
+
             if (entry)
             {
-                if (ImGui::Button("Reset"))
+                ImGui::SameLine(wcm.x - GetNextTextOffset("Reset"));
+                if (ButtonRight("Reset"))
                     ImGui::OpenPopup("Reset Node");
 
                 if (UICommon::ConfirmDialog(
@@ -1834,13 +1867,7 @@ namespace CBP
                 {
                     ResetAllActorValues(entry->first);
                 }
-
-                ImGui::SameLine();
             }
-
-            if (ImGui::Button("Rescan"))
-                DCBP::QueueActorCacheUpdate();
-            //HelpMarker(MiscHelpText::rescanActors);
 
             ImGui::Spacing();
 

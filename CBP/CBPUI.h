@@ -106,11 +106,9 @@ namespace CBP
 
         inline float GetNextTextOffset(const char* a_text)
         {
-            auto& globalConf = IConfig::GetGlobalConfig();
-
             auto it = m_ctlPositions.find(a_text);
             if (it != m_ctlPositions.end())
-                return (m_posOffset += it->second + 5.f);
+                return (m_posOffset += it->second + (m_posOffset == 0.0f ? 0.0f : 5.0f));
 
             return (m_posOffset += ImGui::CalcTextSize(a_text).x + 5.0f);
         }
@@ -122,9 +120,7 @@ namespace CBP
         inline bool ButtonRight(const char* a_text)
         {
             bool res = ImGui::Button(a_text);
-
             m_ctlPositions[a_text] = ImGui::GetItemRectSize().x;
-
             return res;
         }
 
