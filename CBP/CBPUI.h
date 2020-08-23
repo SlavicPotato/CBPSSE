@@ -552,6 +552,7 @@ namespace CBP
             void UpdateInfo();
 
             fs::path m_path;
+            std::string m_filenameStr;
             importInfo_t m_info;
             bool m_infoResult;
         };

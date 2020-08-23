@@ -270,7 +270,6 @@ namespace CBP
             ImGui::SameLine();
             m_filter.DrawButton();
 
-
             ClearTextOffset();
             ImGui::SameLine(ImGui::GetWindowContentRegionMax().x - GetNextTextOffset("New"));
             if (ButtonRight("New")) {
@@ -287,8 +286,6 @@ namespace CBP
             if (state.selected)
             {
                 auto& profile = data.at(*state.selected);
-
-                ImGui::Spacing();
 
                 if (ImGui::Button("Save")) {
                     if (!profile.Save()) {
@@ -338,7 +335,7 @@ namespace CBP
                 else {
 
                     UICommon::MessageDialog("Save", "Saving profile '%s' to '%s' failed\n\n%s",
-                        profile.Name().c_str(), profile.Path().string().c_str(), state.lastException.what());
+                        profile.Name().c_str(), profile.PathStr().c_str(), state.lastException.what());
 
                     ImGui::Separator();
 
@@ -2465,7 +2462,8 @@ namespace CBP
     }
 
     UIFileSelector::SelectedFile::SelectedFile(const fs::path& a_path) :
-        m_path(a_path)
+        m_path(a_path),
+        m_filenameStr(a_path.filename().string())
     {
     }
 
@@ -2481,15 +2479,17 @@ namespace CBP
 
     void UIFileSelector::DrawFileSelector()
     {
-        std::string curSelName;
+        const char* curSelName;
         if (m_selected)
-            curSelName = m_selected->m_path.filename().string();        
+            curSelName = m_selected->m_filenameStr.c_str();
+        else
+            curSelName = nullptr;
 
         ImGui::PushItemWidth(ImGui::GetFontSize() * -8.0f);
 
         if (ImGui::BeginCombo(
             "Files",
-            curSelName.length() ? curSelName.c_str() : nullptr,
+            curSelName,
             ImGuiComboFlags_HeightLarge))
         {
             for (auto& e : m_files)
@@ -2612,7 +2612,7 @@ namespace CBP
                 if (UICommon::ConfirmDialog(
                     "Confirm delete",
                     "Are you sure you wish to delete '%s'?\n",
-                    selected->m_path.string().c_str()))
+                    selected->m_filenameStr.c_str()))
                 {
                     if (DeleteExport(selected->m_path))
                         UpdateFileList();

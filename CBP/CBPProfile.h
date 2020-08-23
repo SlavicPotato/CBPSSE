@@ -16,6 +16,7 @@ namespace CBP
 
         Profile(const std::string& a_path) :
             m_path(a_path),
+            m_pathStr(a_path.string()),
             m_id(0),
             m_name(a_path.stem().string())
         {
@@ -23,6 +24,7 @@ namespace CBP
 
         Profile(const std::filesystem::path& a_path) :
             m_path(a_path),
+            m_pathStr(a_path.string()),
             m_id(0),
             m_name(a_path.stem().string())
         {
@@ -48,6 +50,10 @@ namespace CBP
 
         [[nodiscard]] inline const std::filesystem::path& Path() const noexcept {
             return m_path;
+        }
+
+        [[nodiscard]] inline const std::string& PathStr() const noexcept {
+            return m_pathStr;
         }
 
         [[nodiscard]] inline T& Data() noexcept {
@@ -99,6 +105,7 @@ namespace CBP
     private:
 
         std::filesystem::path m_path;
+        std::string m_pathStr;
         std::string m_name;
         uint64_t m_id;
         T m_conf;
