@@ -17,15 +17,15 @@ namespace CBP
         Profile(const std::string& a_path) :
             m_path(a_path),
             m_id(0),
+            m_name(a_path.stem().string())
         {
-            m_name = m_path.stem().string();
         }
 
         Profile(const std::filesystem::path& a_path) :
             m_path(a_path),
-            m_id(0)
+            m_id(0),
+            m_name(a_path.stem().string())
         {
-            m_name = m_path.stem().string();
         }
 
         virtual ~Profile() noexcept = default;

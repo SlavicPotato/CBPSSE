@@ -112,7 +112,7 @@ namespace CBP
 
         std::map<uint32_t, uiDrawCallback_t> m_drawCallbacks;
 
-        KeyPressHandler inputEventHandler;
+        KeyPressHandler m_inputEventHandler;
 
         bool m_isRunning;
         HWND m_WindowHandle;

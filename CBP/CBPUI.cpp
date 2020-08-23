@@ -2,14 +2,14 @@
 
 namespace CBP
 {
-    const std::unordered_map<MiscHelpText, const char*> UIBase::m_helpText =
-    {
-        {MiscHelpText::timeTick, "Set to ~ minimum framerate"},
+    const std::unordered_map<MiscHelpText, const char*> UIBase::m_helpText({
+        {MiscHelpText::timeTick, "Controls the update rate"},
+        {MiscHelpText::maxSubSteps, ""},
         {MiscHelpText::timeScale, "Simulation rate, speeds up or slows down time"},
         {MiscHelpText::colMaxPenetrationDepth, "Maximum penetration depth during collisions"},
         {MiscHelpText::showAllActors, "Checked: Show all known actors\nUnchecked: Only show actors currently simulated"},
         {MiscHelpText::clampValues, "Clamp slider values to the default range."},
-        {MiscHelpText::syncMinMax, "Move weight 0/100 sliders together."},
+        {MiscHelpText::syncMinMax, "Move weighted sliders together."},
         {MiscHelpText::rescanActors, "Scan for nearby actors and update list."},
         {MiscHelpText::resetConfOnActor, "Clear configuration for currently selected actor."},
         {MiscHelpText::resetConfOnRace, "Clear configuration for currently selected race."},
@@ -17,8 +17,9 @@ namespace CBP
         {MiscHelpText::playableOnly, "Show playable races only."},
         {MiscHelpText::colGroupEditor, "Nodes assigned to the same group will not collide with eachother. This applies only to nodes on the same actor."},
         {MiscHelpText::importDialog, "Import and apply actor, race and global settings from the selected file."},
-        {MiscHelpText::exportDialog, "Export actor, race and global settings."}
-    };
+        {MiscHelpText::exportDialog, "Export actor, race and global settings."},
+        {MiscHelpText::simRate, "If this value isn't equal to framerate the simulation speed is affected. Adjust timeTick to get proper results."}
+        });
 
     static const keyDesc_t comboKeyDesc({
         {0, "None"},
@@ -1271,6 +1272,23 @@ namespace CBP
                     if (ImGui::MenuItem("Weight update"))
                         DCBP::WeightUpdate();
 
+                    if (entry)
+                    {
+                        ImGui::Separator();
+
+                        if (ImGui::BeginMenu(entry->second.first.c_str()))
+                        {
+                            ImGui::SetWindowFontScale(globalConfig.ui.fontScale);
+
+                            if (ImGui::MenuItem("NiNode update"))
+                                DCBP::NiNodeUpdate(entry->first);
+                            if (ImGui::MenuItem("Weight update"))
+                                DCBP::WeightUpdate(entry->first);
+
+                            ImGui::EndMenu();
+                        }
+                    }
+
                     ImGui::EndMenu();
                 }
 
@@ -1508,18 +1526,17 @@ namespace CBP
                 ImGui::Spacing();
 
                 float timeTick = 1.0f / globalConfig.phys.timeTick;
-                if (ImGui::SliderFloat("timeTick", &timeTick, 1.0f, 240.0f, "%.0f")) {
-                    globalConfig.phys.timeTick = 1.0f / std::clamp(timeTick, 1.0f, 240.0f);
-                    DCBP::GetUpdateTask().UpdateTimeTick(globalConfig.phys.timeTick);
+                if (ImGui::SliderFloat("timeTick", &timeTick, 1.0f, 300.0f, "%.0f")) {
+                    globalConfig.phys.timeTick = 1.0f / std::clamp(timeTick, 1.0f, 300.0f);
                     DCBP::MarkGlobalsForSave();
                 }
                 HelpMarker(MiscHelpText::timeTick);
 
-                /*if (ImGui::SliderFloat("timeScale", &globalConfig.phys.timeScale, 0.05f, 10.0f)) {
-                    globalConfig.phys.timeScale = std::clamp(globalConfig.phys.timeScale, 0.05f, 10.0f);
+                if (ImGui::SliderFloat("maxSubSteps", &globalConfig.phys.maxSubSteps, 1.0f, 20.0f, "%.0f")) {
+                    globalConfig.phys.maxSubSteps = std::clamp(globalConfig.phys.maxSubSteps, 1.0f, 20.0f);
                     DCBP::MarkGlobalsForSave();
                 }
-                HelpMarker(MiscHelpText::timeScale);*/
+                HelpMarker(MiscHelpText::maxSubSteps);
 
                 if (ImGui::SliderFloat("colMaxPenetrationDepth", &globalConfig.phys.colMaxPenetrationDepth, 0.5f, 100.0f)) {
                     globalConfig.phys.colMaxPenetrationDepth = std::clamp(globalConfig.phys.colMaxPenetrationDepth, 0.05f, 500.0f);
@@ -1601,6 +1618,7 @@ namespace CBP
                 if (ImGui::Selectable(e.second, selected)) {
                     if (a_out != e.first) {
                         a_out = e.first;
+                        DCBP::UpdateKeys();
                         DCBP::MarkGlobalsForSave();
                     }
                 }
@@ -2240,15 +2258,19 @@ namespace CBP
 
                 ImGui::Columns(2, nullptr, false);
 
-                ImGui::Text("Avg. time:");
-                ImGui::Text("Avg. actors:");
-                ImGui::Text("Avg. rate:");
+                ImGui::Text("Time/frame:");
+                ImGui::Text("Step rate:");
+                ImGui::Text("Sim. rate:");
+                HelpMarker(MiscHelpText::simRate);
+                ImGui::Text("Actors:");
 
                 ImGui::NextColumn();
 
                 ImGui::Text("%lld us", stats.avgTime);
+                ImGui::Text("%lld/s (%u/frame)", stats.avgStepRate, stats.avgStepsPerUpdate);
+                ImGui::Text("%lld", stats.avgStepsPerUpdate > 0
+                    ? stats.avgStepRate / stats.avgStepsPerUpdate : 0);
                 ImGui::Text("%u", stats.avgActorCount);
-                ImGui::Text("%.1f", stats.avgUpdateRate);
 
                 ImGui::Columns(1);
 
@@ -2688,11 +2710,11 @@ namespace CBP
             backlog.Lock();
 
             for (const auto& e : backlog)
-                ImGui::TextWrapped(e.c_str());            
+                ImGui::TextWrapped(e.c_str());
 
             backlog.Unlock();
 
-            if (m_doScrollBottom) 
+            if (m_doScrollBottom)
             {
                 if (!m_initialScroll || ImGui::GetScrollY() > ImGui::GetScrollMaxY() - 50.0f)
                     ImGui::SetScrollHereY(0.0f);
@@ -2701,7 +2723,7 @@ namespace CBP
                 m_initialScroll = true;
             }
 
-            ImGui::Dummy(ImVec2(0,0));
+            ImGui::Dummy(ImVec2(0, 0));
 
             /*ImGui::EndChild();
 

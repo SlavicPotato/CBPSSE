@@ -49,7 +49,7 @@ namespace CBP
         [[nodiscard]] inline const T* operator->() const {
             return std::addressof(m_item);
         }
-        
+
         [[nodiscard]] inline T* operator->() {
             return std::addressof(m_item);
         }
@@ -70,6 +70,7 @@ namespace CBP
     enum class MiscHelpText : int
     {
         timeTick,
+        maxSubSteps,
         timeScale,
         colMaxPenetrationDepth,
         showAllActors,
@@ -83,7 +84,8 @@ namespace CBP
         playableOnly,
         colGroupEditor,
         importDialog,
-        exportDialog
+        exportDialog,
+        simRate
     };
 
     typedef std::pair<const std::string, configComponents_t> actorEntryBaseConf_t;
@@ -575,11 +577,11 @@ namespace CBP
         inline const auto& GetLastException() const {
             return m_lastExcept;
         }
-        
+
         inline const auto& GetRoot() const {
             return m_root;
         }
-        
+
         inline const auto& GetRootStr() const {
             return m_rootString;
         }
@@ -634,7 +636,7 @@ namespace CBP
         {
         }
 
-        void Draw(bool *a_active);
+        void Draw(bool* a_active);
 
         inline void SetScrollBottom() {
             m_doScrollBottom = true;

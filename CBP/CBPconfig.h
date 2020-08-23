@@ -107,7 +107,8 @@ namespace CBP
         struct
         {
             float colMaxPenetrationDepth = 35.0f;
-            float timeTick = 1 / 60.0f;
+            float timeTick = 1.0f / 60.0f;
+            float maxSubSteps = 5.0f;
             bool collisions = true;
         } phys;
 

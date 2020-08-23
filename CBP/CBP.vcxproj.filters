@@ -135,6 +135,9 @@
     <ClInclude Include="misc.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="CBPUpdater.h">
+      <Filter>Header Files\CBP</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp">
@@ -210,6 +213,9 @@
       <Filter>Source Files\CBP</Filter>
     </ClCompile>
     <ClCompile Include="CBPProfiling.cpp">
+      <Filter>Source Files\CBP</Filter>
+    </ClCompile>
+    <ClCompile Include="CBPUpdater.cpp">
       <Filter>Source Files\CBP</Filter>
     </ClCompile>
   </ItemGroup>

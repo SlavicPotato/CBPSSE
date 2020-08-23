@@ -179,7 +179,7 @@ namespace CBP
             "",
             "Col. depth mul"
         }}
-    });
+        });
 
     const nodeMap_t IConfig::defaultNodeMap = {
         {"NPC L Breast", "breast"},

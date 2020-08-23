@@ -191,7 +191,8 @@ namespace CBP
                 const auto& phys = root["physics"];
 
                 globalConfig.phys.timeTick = phys.get("timeTick", 1.0f / 60.0f).asFloat();
-                globalConfig.phys.colMaxPenetrationDepth = phys.get("colMaxPenetrationDepth", 15.0f).asFloat();
+                globalConfig.phys.maxSubSteps = phys.get("maxSubSteps", 5.0f).asFloat();
+                globalConfig.phys.colMaxPenetrationDepth = phys.get("colMaxPenetrationDepth", 50.0f).asFloat();
                 globalConfig.phys.collisions = phys.get("collisions", true).asBool();
             }
 
@@ -356,6 +357,7 @@ namespace CBP
             auto& phys = root["physics"];
 
             phys["timeTick"] = globalConfig.phys.timeTick;
+            phys["maxSubSteps"] = globalConfig.phys.maxSubSteps;
             phys["colMaxPenetrationDepth"] = globalConfig.phys.colMaxPenetrationDepth;
             phys["collisions"] = globalConfig.phys.collisions;
 

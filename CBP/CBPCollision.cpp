@@ -27,8 +27,13 @@ namespace CBP
             if (sc1->IsSameGroup(*sc2))
                 continue;
 
-            switch (contactPair.getEventType()) {
-            case EventType::ContactStart:
+            auto type = contactPair.getEventType();
+
+            switch (type) 
+            {
+            case EventType::ContactStart:                
+                sc1->SetInContact(true);
+                sc2->SetInContact(true);
             case EventType::ContactStay:
             {
                 auto& conf1 = sc1->GetConfig();
@@ -49,7 +54,7 @@ namespace CBP
 
                     auto& v1 = sc1->GetVelocity();
                     auto& v2 = sc2->GetVelocity();
-                    
+
                     auto& normal = contactPoint.getWorldNormal();
 
                     NiPoint3 vaf, vbf;
@@ -65,18 +70,21 @@ namespace CBP
                         vbf
                     );
 
-                    sc1->SetInContact(true);
-                    sc2->SetInContact(true);
+                    if (type == EventType::ContactStart)
+                    {
+                        if (sc1->HasMovement())
+                            sc1->SetDampingMul(std::clamp(dampingMul * conf1.colDampingCoef, 1.0f, 100.0f));
 
-                    if (sc1->HasMovement()) {
-                        sc1->SetDampingMul(std::clamp(dampingMul * conf1.colDampingCoef, 1.0f, 100.0f));
+                        if (sc2->HasMovement())
+                            sc2->SetDampingMul(std::clamp(dampingMul * conf2.colDampingCoef, 1.0f, 100.0f));
+                    }
+
+                    if (sc1->HasMovement())
                         sc1->SetVelocity2(vaf, m_timeStep);
-                    }
 
-                    if (sc2->HasMovement()) {
-                        sc2->SetDampingMul(std::clamp(dampingMul * conf2.colDampingCoef, 1.0f, 100.0f));
-                        sc2->SetVelocity2(vbf, m_timeStep);
-                    }
+                    if (sc2->HasMovement()) 
+                        sc2->SetVelocity2(vbf, m_timeStep);                    
+
                 }
 
             }

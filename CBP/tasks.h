@@ -4,7 +4,6 @@ namespace CBP
 {
     class DTasks 
     {
-        typedef void (*RTTaskEnter_t)(void);
     public:
         static void AddTaskFixed(TaskDelegateFixed* cmd);
         static void AddTask(TaskDelegate* cmd);
@@ -21,6 +20,5 @@ namespace CBP
         static void RunTasks();
 
         static std::vector<TaskDelegateFixed*> s_tasks_fixed;
-        //static TaskQueue s_tasks;
     };
 }

@@ -43,7 +43,7 @@ namespace CBP
 
         std::vector<KeyEventHandler*> callbacks;
 
-        KeyPressHandler inputEventHandler;
+        KeyPressHandler m_inputEventHandler;
 
         static DInput m_Instance;
     };

@@ -3,18 +3,17 @@
 namespace CBP
 {
     std::vector<TaskDelegateFixed*> DTasks::s_tasks_fixed;
-    //TaskQueue DTasks::s_tasks;
 
-    typedef void (*_MainInitHook)(void);
-    typedef void(*BSTaskPoolProc_T)(BSTaskPool*);
+    typedef void (*mainInitHook_t)(void);
+    typedef void(*BSTaskPoolProc_t)(BSTaskPool*);
 
     static auto MainInitHook_Target = IAL::Addr(35548, 0xFE);
     static auto BSTaskPool_Enter1 = IAL::Addr(35565, 0x6B8);
     static auto BSTaskPool_Enter2 = IAL::Addr(35582, 0x1C);
 
-    static _MainInitHook MainInitHook_O;
-    static BSTaskPoolProc_T SKSE_BSTaskPoolProc1_O;
-    static BSTaskPoolProc_T SKSE_BSTaskPoolProc2_O;
+    static mainInitHook_t MainInitHook_O;
+    static BSTaskPoolProc_t SKSE_BSTaskPoolProc1_O;
+    static BSTaskPoolProc_t SKSE_BSTaskPoolProc2_O;
 
     bool DTasks::Initialize()
     {
@@ -48,7 +47,7 @@ namespace CBP
 
         FlushInstructionCache(GetCurrentProcess(), NULL, 0);
 
-       // _DMESSAGE(">> %zu", SKSE::branchTrampolineSize - g_branchTrampoline.Remain());
+        // _DMESSAGE(">> %zu", SKSE::branchTrampolineSize - g_branchTrampoline.Remain());
 
         MainInitHook_O();
     }

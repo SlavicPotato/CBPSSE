@@ -453,6 +453,7 @@
     <ClInclude Include="CBPSimObj.h" />
     <ClInclude Include="CBPThing.h" />
     <ClInclude Include="CBPUI.h" />
+    <ClInclude Include="CBPUpdater.h" />
     <ClInclude Include="common.h" />
     <ClInclude Include="config.h" />
     <ClInclude Include="events.h" />
@@ -485,6 +486,7 @@
     <ClCompile Include="CBPSimObj.cpp" />
     <ClCompile Include="CBPThing.cpp" />
     <ClCompile Include="CBPUI.cpp" />
+    <ClCompile Include="CBPUpdater.cpp" />
     <ClCompile Include="config.cpp" />
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="events.cpp" />

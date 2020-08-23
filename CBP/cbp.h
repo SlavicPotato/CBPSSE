@@ -1,121 +1,9 @@
 #pragma once
 
-//#define _CBP_MEASURE_PERF
-//#define _CBP_SHOW_STATS
-
 namespace CBP
 {
 
-    struct UTTask
-    {
-        enum UTTAction : uint32_t {
-            kActionAdd,
-            kActionRemove,
-            kActionUpdateConfig,
-            kActionUpdateConfigAll,
-            kActionReset,
-            kActionUIUpdateCurrentActor,
-            kActionUpdateGroupInfoAll,
-            kActionPhysicsReset,
-            kActionNiNodeUpdate,
-            kActionNiNodeUpdateAll,
-            kActionWeightUpdate,
-            kActionWeightUpdateAll
-        };
-
-        UTTAction m_action;
-        SKSE::ObjectHandle m_handle;
-    };
-
-    class UpdateTask :
-        public TaskDelegateFixed,
-        ILog
-    {
-        typedef std::unordered_set<SKSE::ObjectHandle> handleSet_t;
-
-        class UpdateWeightTask :
-            public TaskDelegate
-        {
-        public:
-            UpdateWeightTask(SKSE::ObjectHandle a_handle);
-
-            virtual void Run();
-            virtual void Dispose();
-        private:
-            SKSE::ObjectHandle m_handle;
-        };
-
-    public:
-        UpdateTask();
-
-        virtual void Run();
-
-        __forceinline void CullActors();
-
-        __forceinline void UpdatePhase1();
-        __forceinline void UpdateActorsPhase2(float a_timeStep);
-
-        __forceinline void UpdatePhase2(float a_timeStep, float a_timeTick, float a_maxTime);
-        __forceinline void UpdatePhase2Collisions(float a_timeStep, float a_timeTick, float a_maxTime);
-
-#ifdef _CBP_ENABLE_DEBUG
-        void UpdatePhase3();
-#endif
-
-        void PhysicsTick();
-
-        void AddActor(SKSE::ObjectHandle handle);
-        void RemoveActor(SKSE::ObjectHandle handle);
-        void UpdateConfigOnAllActors();
-        void UpdateGroupInfoOnAllActors();
-        void UpdateConfig(SKSE::ObjectHandle handle);
-        void ApplyForce(SKSE::ObjectHandle a_handle, uint32_t a_steps, const std::string& a_component, const NiPoint3& a_force);
-        void ClearActors();
-        void Reset();
-        void PhysicsReset();
-        void NiNodeUpdate(SKSE::ObjectHandle a_handle);
-        void WeightUpdate(SKSE::ObjectHandle a_handle);
-        void NiNodeUpdateAll();
-        void WeightUpdateAll();
-
-        void UpdateDebugRenderer();
-
-        void AddTask(const UTTask& task);
-        void AddTask(UTTask&& task);
-        void AddTask(UTTask::UTTAction a_action);
-        void AddTask(UTTask::UTTAction a_action, SKSE::ObjectHandle a_handle);
-
-        inline const auto& GetSimActorList() {
-            return m_actors;
-        }
-
-        inline auto& GetProfiler() {
-            return m_profiler;
-        }
-
-        inline void UpdateTimeTick(float a_val) {
-            m_averageInterval = a_val;
-        }
-
-        FN_NAMEPROC("UpdateTask")
-    private:
-        bool IsTaskQueueEmpty();
-        void ProcessTasks();
-        void GatherActors(handleSet_t& a_out);
-
-        simActorList_t m_actors;
-        std::queue<UTTask> m_taskQueue;
-
-        ICriticalSection m_taskLock;
-
-        float m_timeAccum;
-        float m_averageInterval;
-
-        static std::atomic<uint64_t> m_nextGroupId;
-
-        Profiler m_profiler;
-    };
-
+    
     class DCBP :
         ILog,
         IConfigINI
@@ -160,6 +48,7 @@ namespace CBP
                 m_lock.Leave();
             }
 
+        private:
             ICriticalSection m_lock;
             std::vector<std::string> m_data;
 
@@ -174,8 +63,14 @@ namespace CBP
         {
         public:
             virtual void ReceiveEvent(KeyEvent, UInt32) override;
+
+            void UpdateKeys();
         private:
+
             bool combo_down;
+
+            UInt32 m_comboKey;
+            UInt32 m_showKey;
         };
 
         class EventHandler :
@@ -276,6 +171,7 @@ namespace CBP
         static void NiNodeUpdate();
         static void NiNodeUpdate(SKSE::ObjectHandle a_handle);
         static void WeightUpdate();
+        static void WeightUpdate(SKSE::ObjectHandle a_handle);
         static void ResetActors();
         static void UpdateDebugRendererState();
         static void UpdateDebugRendererSettings();
@@ -372,6 +268,10 @@ namespace CBP
             return m_Instance.m_backlog;
         }
 
+        inline static void UpdateKeys() {
+            m_Instance.m_inputEventHandler.UpdateKeys();
+        }
+
         FN_NAMEPROC("CBP")
     private:
         DCBP();
@@ -413,7 +313,7 @@ namespace CBP
             UInt32 showKey;
         } conf;
 
-        KeyPressHandler inputEventHandler;
+        KeyPressHandler m_inputEventHandler;
         UIContext m_uiContext;
         uint32_t m_loadInstance;
 

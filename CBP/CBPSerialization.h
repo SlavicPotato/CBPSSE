@@ -43,7 +43,7 @@ namespace CBP
         void LoadGlobals();
         bool SaveGlobals();
 
-        size_t LoadActorProfiles(SKSESerializationInterface* intfc, const char *a_data, UInt32 a_len);
+        size_t LoadActorProfiles(SKSESerializationInterface* intfc, const char* a_data, UInt32 a_len);
         size_t SerializeActorProfiles(std::ostringstream& a_out);
 
         size_t LoadGlobalProfile(SKSESerializationInterface* intfc, const char* a_data, UInt32 a_len);
@@ -61,7 +61,7 @@ namespace CBP
         bool Import(SKSESerializationInterface* intfc, const fs::path& a_path);
         bool Export(const fs::path& a_path);
 
-        bool ImportGetInfo(const fs::path& a_path, importInfo_t &a_out);
+        bool ImportGetInfo(const fs::path& a_path, importInfo_t& a_out);
 
         inline void MarkForSave(Group a_grp) {
             m_pendingSave[a_grp] = true;
@@ -78,15 +78,15 @@ namespace CBP
         void ReadImportData(const fs::path& a_path, Json::Value& a_out);
 
         size_t _LoadActorProfiles(
-            SKSESerializationInterface* intfc, 
+            SKSESerializationInterface* intfc,
             const Json::Value& a_root,
             actorConfigComponentsHolder_t& a_actorConfigComponents,
             actorConfigNodesHolder_t& a_nodeData);
 
         size_t _LoadRaceProfiles(
             SKSESerializationInterface* intfc,
-            const Json::Value& a_root, 
-            raceConfigComponentsHolder_t &a_raceConfigComponents);
+            const Json::Value& a_root,
+            raceConfigComponentsHolder_t& a_raceConfigComponents);
 
         size_t _LoadGlobalProfile(const Json::Value& a_root);
 

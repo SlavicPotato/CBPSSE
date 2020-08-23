@@ -8,14 +8,15 @@ namespace CBP
         {
             long long avgTime;
             uint32_t avgActorCount;
-            double avgUpdateRate;
+            long long avgStepRate;
+            uint32_t avgStepsPerUpdate;
         };
 
     public:
         Profiler(long long a_interval);
 
         void Begin();
-        void End(uint32_t a_actors);
+        void End(uint32_t a_actors, uint32_t a_steps);
 
         void SetInterval(long long a_interval);
         void Reset();

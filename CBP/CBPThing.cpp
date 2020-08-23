@@ -6,6 +6,16 @@ namespace CBP
         return float((0.0f < val) - (val < 0.0f));
     }
 
+    SimComponent::Collider::Collider(
+        SimComponent& a_parent)
+        :
+        m_created(false),
+        m_active(true),
+        m_nodeScale(1.0f),
+        m_radius(1.0f),
+        m_parent(a_parent)
+    {}
+
     bool SimComponent::Collider::Create()
     {
         if (m_created)
@@ -47,7 +57,6 @@ namespace CBP
         if (!m_created)
             return;
 
-        auto& globalConfig = IConfig::GetGlobalConfig();
         auto nodeScale = m_parent.m_obj->m_worldTransform.scale;
 
         if (!m_active) {
@@ -156,7 +165,11 @@ namespace CBP
     {
         m_conf = a_config;
         m_collisions = a_collisions;
-        m_movement = a_movement;
+
+        if (a_movement != m_movement) {
+            m_movement = a_movement;
+            m_applyForceQueue.swap(decltype(m_applyForceQueue)());
+        }
 
         if (!UpdateWeightData(a_actor, a_config)) {
             m_colSphereRad = a_config.colSphereRadMax;
@@ -205,7 +218,7 @@ namespace CBP
         m_applyForceQueue.swap(decltype(m_applyForceQueue)());
     }
 
-    void SimComponent::UpdateMovement(float timeStep)
+    void SimComponent::UpdateMovement(float a_timeStep)
     {
         if (m_movement)
         {
@@ -223,7 +236,7 @@ namespace CBP
             }
 
             if (!m_inContact && m_dampingMul > 1.0f)
-                m_dampingMul = max(m_dampingMul / (timeStep + 1.0f), 1.0f);
+                m_dampingMul = max(m_dampingMul / (a_timeStep + 1.0f), 1.0f);
 
             auto newPos = m_oldWorldPos;
 
@@ -240,7 +253,7 @@ namespace CBP
                 auto vD = m_objParent->m_worldTransform * current.force;
                 auto vP = m_objParent->m_worldTransform.pos;
 
-                force += (vD - vP) / timeStep;
+                force += (vD - vP) / a_timeStep;
 
                 current.steps--;
 
@@ -249,10 +262,10 @@ namespace CBP
             }
 
             // Assume mass is 1, so Accelleration is Force, can vary mass by changing force
-            SetVelocity((m_velocity + (force * timeStep)) -
-                (m_velocity * ((m_conf.damping * timeStep) * m_dampingMul)));
+            SetVelocity((m_velocity + (force * a_timeStep)) -
+                (m_velocity * ((m_conf.damping * a_timeStep) * m_dampingMul)));
 
-            newPos += m_velocity * timeStep;
+            newPos += m_velocity * a_timeStep;
 
             diff = newPos - target;
             diff.x = std::clamp(diff.x, -m_conf.maxOffset, m_conf.maxOffset);
@@ -293,12 +306,12 @@ namespace CBP
 
     void SimComponent::UpdateColliderData()
     {
-        
+
     }
 
     void SimComponent::ApplyForce(uint32_t a_steps, const NiPoint3& a_force)
     {
-        if (!a_steps)
+        if (!a_steps || !m_movement)
             return;
 
         /*if (m_applyForceQueue.size() > 100)

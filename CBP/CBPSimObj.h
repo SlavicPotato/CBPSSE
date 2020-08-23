@@ -40,10 +40,10 @@ namespace CBP
         SimObject(const SimObject& a_rhs) = delete;
         SimObject(SimObject&& a_rhs) = delete;
 
-        void UpdateMovement(float timeStep);
+        void UpdateMovement(float a_timeStep);
         void UpdateVelocity();
         void UpdateColliderData();
-        void UpdateConfig(Actor *a_actor, const configComponents_t& a_config);
+        void UpdateConfig(Actor* a_actor, const configComponents_t& a_config);
         void Reset();
 
         void ApplyForce(uint32_t a_steps, const std::string& a_component, const NiPoint3& a_force);
@@ -71,7 +71,7 @@ namespace CBP
             const configComponents_t& a_config,
             const nodeMap_t& a_nodeMap,
             nodeDescList_t& a_out)
-            -> nodeDescList_t::size_type;
+            ->nodeDescList_t::size_type;
 
         [[nodiscard]] inline const_iterator begin() const noexcept {
             return m_things.begin();

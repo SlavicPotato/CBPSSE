@@ -28,7 +28,7 @@ namespace CBP
 
             auto inputEventDispatcher = InputEventDispatcher::GetSingleton();
             if (inputEventDispatcher) {
-                inputEventDispatcher->AddEventSink(&m_Instance.inputEventHandler);
+                inputEventDispatcher->AddEventSink(&m_Instance.m_inputEventHandler);
                 m_Instance.Debug("Added input event sink");
             }
             else {

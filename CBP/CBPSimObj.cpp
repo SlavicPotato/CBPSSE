@@ -83,10 +83,10 @@ namespace CBP
             p.second.Reset();
     }
 
-    void SimObject::UpdateMovement(float timeStep)
+    void SimObject::UpdateMovement(float a_timeStep)
     {
         for (auto& p : m_things)
-            p.second.UpdateMovement(timeStep);
+            p.second.UpdateMovement(a_timeStep);
     }
 
     void SimObject::UpdateVelocity()

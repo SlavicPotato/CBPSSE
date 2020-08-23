@@ -99,6 +99,7 @@ namespace CBP
 #include "CBPPapyrus.h"
 #include "CBPRenderer.h"
 #include "CBPProfiling.h"
+#include "CBPUpdater.h"
 #include "cbp.h"
 
 #endif //PCH_H

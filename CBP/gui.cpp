@@ -12,7 +12,7 @@ namespace CBP
 
     bool DUI::Initialize()
     {
-        DInput::RegisterForKeyEvents(&m_Instance.inputEventHandler);
+        DInput::RegisterForKeyEvents(&m_Instance.m_inputEventHandler);
 
         IEvents::RegisterForEvent(Event::OnD3D11PostCreate, OnD3D11PostCreate_DUI);
         DRender::AddPresentCallback(Present_Pre);

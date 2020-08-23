@@ -26,13 +26,7 @@ namespace CBP
         class Collider
         {
         public:
-            Collider(SimComponent& a_parent) :
-                m_created(false),
-                m_active(true),
-                m_nodeScale(1.0f),
-                m_radius(1.0f),
-                m_parent(a_parent)
-            {}
+            Collider(SimComponent& a_parent);
 
             Collider() = delete;
             Collider(const Collider& a_rhs) = delete;
@@ -115,8 +109,8 @@ namespace CBP
         float m_dampingMul;
         bool m_inContact;
 
-        NiPointer<NiAVObject> m_obj;
-        NiPointer<NiAVObject> m_objParent;
+        NiPointer <NiAVObject> m_obj;
+        NiPointer <NiAVObject> m_objParent;
         NiPointer<NiNode> m_node;
 
         NiAVObject::ControllerUpdateContext m_updateCtx;
@@ -124,6 +118,18 @@ namespace CBP
 #ifdef _CBP_ENABLE_DEBUG
         SimDebugInfo m_debugInfo;
 #endif
+
+        inline void ClampVelocity()
+        {
+            float len = m_velocity.Length();
+            if (len <= 1000.0f)
+                return;
+
+            m_velocity.x /= len;
+            m_velocity.y /= len;
+            m_velocity.z /= len;
+            m_velocity *= 1000.0f;
+        }
     public:
         SimComponent(
             Actor* a_actor,
@@ -158,18 +164,6 @@ namespace CBP
 #ifdef _CBP_ENABLE_DEBUG
         void UpdateDebugInfo();
 #endif
-
-        inline void ClampVelocity()
-        {
-            float len = m_velocity.Length();
-            if (len < _EPSILON)
-                return;
-
-            m_velocity.x /= len;
-            m_velocity.y /= len;
-            m_velocity.z /= len;
-            m_velocity *= std::clamp(len, 0.0f, 1000.0f);
-        }
 
         inline void SetVelocity(const r3d::Vector3& a_vel) {
             m_velocity.x = a_vel.x;
