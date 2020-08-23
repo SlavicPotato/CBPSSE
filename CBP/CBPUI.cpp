@@ -2583,7 +2583,7 @@ namespace CBP
 
         if (ImGui::Begin("Select file to import", a_active, ImGuiWindowFlags_AlwaysAutoResize))
         {
-            ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+            ImGui::SetWindowFontScale(globalConfig.ui.fontScale);
 
             DrawFileSelector();
             HelpMarker(MiscHelpText::importDialog);
