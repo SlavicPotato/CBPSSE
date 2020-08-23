@@ -43,6 +43,9 @@
     <Filter Include="Config\CBPNodeProfiles">
       <UniqueIdentifier>{b9c8c6df-1dae-4738-ba7d-bca76e2c0df4}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Config\CBPProfiles">
+      <UniqueIdentifier>{583c8d1c-0972-4eeb-b8a8-191e9e7efe02}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">
@@ -239,6 +242,9 @@
     </None>
     <None Include="Config\CBPNodeProfiles\UNP Basic.json">
       <Filter>Config\CBPNodeProfiles</Filter>
+    </None>
+    <None Include="Config\CBPProfiles\UNP Basic.json">
+      <Filter>Config\CBPProfiles</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>

@@ -518,6 +518,7 @@
     <None Include="Config\CBPData\GlobalProfile.json" />
     <None Include="Config\CBPNodeProfiles\UNP Basic.json" />
     <None Include="Config\CBPNodes.json" />
+    <None Include="Config\CBPProfiles\UNP Basic.json" />
     <None Include="exports.def" />
   </ItemGroup>
   <ItemGroup>
