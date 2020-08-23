@@ -555,11 +555,13 @@ namespace CBP
             importInfo_t m_info;
             bool m_infoResult;
         };
+    public:
+        bool UpdateFileList();
     protected:
         UIFileSelector(const fs::path& a_path);
 
         void DrawFileSelector();
-        bool UpdateFileList();
+        bool DeleteExport(const fs::path &a_file);
 
         inline const auto& GetSelected() const {
             return m_selected;
@@ -592,13 +594,13 @@ namespace CBP
     };
 
     class UIDialogImport :
-        UIFileSelector
+        public UIFileSelector
     {
     public:
         UIDialogImport(const fs::path& a_path);
 
-        bool Draw();
-        void Open();
+        bool Draw(bool *a_active);
+        void OnOpen();
 
     };
 
@@ -608,12 +610,12 @@ namespace CBP
     public:
         UIDialogExport(const fs::path& a_path);
 
-        void Draw();
+        bool Draw();
         void Open();
 
     private:
 
-        void OnFileInput();
+        bool OnFileInput();
 
         fs::path m_path;
         fs::path m_lastTargetPath;
@@ -736,6 +738,7 @@ namespace CBP
                 bool profiling;
                 bool debug;
                 bool log;
+                bool importDialog;
             } windows;
 
             std::exception lastException;
