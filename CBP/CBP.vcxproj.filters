@@ -252,6 +252,9 @@
     <None Include="Config\CBP\Nodes.json">
       <Filter>Config\CBP</Filter>
     </None>
+    <None Include="Config\CBP\Profiles\Node\Blank.json">
+      <Filter>Config\CBP\Profiles\Node</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Text Include="Config\CBPConfig.txt">

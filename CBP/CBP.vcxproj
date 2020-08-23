@@ -516,6 +516,7 @@
     <None Include="Config\CBP.ini" />
     <None Include="Config\CBP\Default.json" />
     <None Include="Config\CBP\Nodes.json" />
+    <None Include="Config\CBP\Profiles\Node\Blank.json" />
     <None Include="Config\CBP\Profiles\Node\UNP Basic.json" />
     <None Include="Config\CBP\Profiles\Physics\UNP Basic.json" />
     <None Include="Config\CBP\Settings\CollisionGroups.json" />
