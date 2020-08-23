@@ -208,7 +208,7 @@ namespace CBP
     {
         auto& iface = m_Instance.m_serialization;
 
-        bool res = iface.Import(SKSE::g_serialization, a_path);
+        bool res = iface.Import(nullptr, a_path);
         if (res)
             ResetActors();
 
