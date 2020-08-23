@@ -2572,6 +2572,7 @@ namespace CBP
     bool UIDialogImport::Draw(bool* a_active)
     {
         auto& io = ImGui::GetIO();
+        auto& globalConfig = IConfig::GetGlobalConfig();
 
         ImVec2 center(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f);
         ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
@@ -2582,6 +2583,8 @@ namespace CBP
 
         if (ImGui::Begin("Select file to import", a_active, ImGuiWindowFlags_AlwaysAutoResize))
         {
+            ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+
             DrawFileSelector();
             HelpMarker(MiscHelpText::importDialog);
 
@@ -2720,9 +2723,13 @@ namespace CBP
 
     bool UIDialogExport::Draw()
     {
+        auto& globalConfig = IConfig::GetGlobalConfig();
+
         bool res = false;
 
         ImGui::PushID(static_cast<const void*>(this));
+
+        ImGui::SetWindowFontScale(globalConfig.ui.fontScale);
 
         if (UICommon::TextInputDialog("Export to file", "Enter filename", m_buf, sizeof(m_buf)))
             res = OnFileInput();
