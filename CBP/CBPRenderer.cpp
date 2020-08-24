@@ -24,8 +24,6 @@ namespace CBP
 
     void Renderer::GenerateLines(const r3d::DebugRenderer& a_dr)
     {
-        m_lines.clear();
-
         for (const auto& line : a_dr.getLines())
         {
             ItemLine item;
@@ -41,8 +39,6 @@ namespace CBP
 
     void Renderer::GenerateTris(const r3d::DebugRenderer& a_dr)
     {
-        m_tris.clear();
-
         for (const auto& tri : a_dr.getTriangles())
         {
             ItemTri item;
@@ -58,10 +54,30 @@ namespace CBP
         }
     }
 
+    void Renderer::GenerateMovingNodes(const simActorList_t& a_actorList, float a_radius)
+    {
+        for (const auto& e : a_actorList)
+        {
+            for (const auto& n : e.second)
+            {
+                if (n.second.HasActiveCollider())
+                    continue;
+
+                GenerateSphere(n.second.GetPos(), a_radius, MOVING_NODES_COL);
+            }
+        }
+    }
+
     void Renderer::Update(const r3d::DebugRenderer& a_dr)
     {
+        Clear();
         GenerateLines(a_dr);
         GenerateTris(a_dr);
+    }
+
+    void Renderer::UpdateMovingNodes(const simActorList_t& a_actorList, float a_radius)
+    {
+        GenerateMovingNodes(a_actorList, a_radius);
     }
 
     void Renderer::Clear()
@@ -139,6 +155,95 @@ namespace CBP
         a_out.color.w = static_cast<float>(b[3]);
 
         return true;
+    }
+
+    bool Renderer::GetScreenPt2(const NiPoint3& a_pos, const DirectX::XMFLOAT4& a_col, VertexType& a_out)
+    {
+        if (!WorldPtToScreenPt3_Internal(
+            g_worldToCamMatrix,
+            g_viewPort,
+            (NiPoint3*)(std::addressof(a_pos)),
+            &a_out.position.x,
+            &a_out.position.y,
+            &a_out.position.z,
+            1e-5f))
+        {
+            return false;
+        }
+
+        if (a_out.position.x < -0.05f || a_out.position.y < -0.05f || a_out.position.z < -0.05f ||
+            a_out.position.x > 1.05f || a_out.position.y > 1.05f || a_out.position.z > 1.05f)
+            return false;
+
+        a_out.position.x = (a_out.position.x * 2.0f) - 1.0f;
+        a_out.position.y = (a_out.position.y * 2.0f) - 1.0f;
+        a_out.position.z = (a_out.position.z * 2.0f) - 1.0f;
+
+        a_out.color = a_col;
+
+        return true;
+    }
+
+    void Renderer::GenerateSphere(const NiPoint3& a_pos, float a_radius, const DirectX::XMFLOAT4& a_col)
+    {
+        NiPoint3 vertices[(NB_SECTORS_SPHERE + 1) * (NB_STACKS_SPHERE + 1) + (NB_SECTORS_SPHERE + 1)];
+
+        // Vertices
+        const float sectorStep = 2 * float(MATH_PI) / NB_SECTORS_SPHERE;
+        const float stackStep = float(MATH_PI) / NB_STACKS_SPHERE;
+
+        for (uint32_t i = 0; i <= NB_STACKS_SPHERE; i++) {
+
+            const float stackAngle = float(MATH_PI) / 2 - i * stackStep;
+            const float radiusCosStackAngle = a_radius * std::cos(stackAngle);
+            const float z = a_radius * std::sin(stackAngle);
+
+            for (uint32_t j = 0; j <= NB_SECTORS_SPHERE; j++) {
+
+                const float sectorAngle = j * sectorStep;
+                const float x = radiusCosStackAngle * std::cos(sectorAngle);
+                const float y = radiusCosStackAngle * std::sin(sectorAngle);
+
+                vertices[i * (NB_SECTORS_SPHERE + 1) + j] = a_pos + NiPoint3(x, y, z);
+            }
+        }
+
+        // Faces
+        for (uint32_t i = 0; i < NB_STACKS_SPHERE; i++) {
+
+            uint32_t a1 = i * (NB_SECTORS_SPHERE + 1);
+            uint32_t a2 = a1 + NB_SECTORS_SPHERE + 1;
+
+            for (r3d::uint j = 0; j < NB_SECTORS_SPHERE; j++, a1++, a2++) {
+
+                // 2 triangles per sector except for the first and last stacks
+
+                if (i != 0)
+                {
+                    ItemTri item;
+
+                    if (GetScreenPt2(vertices[a1], a_col, item.pos1) &&
+                        GetScreenPt2(vertices[a2], a_col, item.pos2) &&
+                        GetScreenPt2(vertices[a1 + 1], a_col, item.pos3))
+                    {
+                        m_tris.emplace_back(item);
+                    }
+
+                }
+
+                if (i != (NB_STACKS_SPHERE - 1))
+                {
+                    ItemTri item;
+
+                    if (GetScreenPt2(vertices[a1 + 1], a_col, item.pos1) &&
+                        GetScreenPt2(vertices[a2], a_col, item.pos2) &&
+                        GetScreenPt2(vertices[a2 + 1], a_col, item.pos3))
+                    {
+                        m_tris.emplace_back(item);
+                    }
+                }
+            }
+        }
     }
 
 }

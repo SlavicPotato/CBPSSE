@@ -58,6 +58,10 @@ namespace CBP
                 m_sphereOffset.z = a_z;
             }
 
+            [[nodiscard]] inline bool IsActive() const {
+                return m_created && m_active;
+            }
+
         private:
             r3d::CollisionBody* m_body;
             r3d::SphereShape* m_sphereShape;
@@ -217,6 +221,10 @@ namespace CBP
             return m_movement;
         }
 
+        [[nodiscard]] inline bool HasActiveCollider() const {
+            return m_collisionData.IsActive();
+        }
+
         [[nodiscard]] inline bool HasCollision() const {
             return m_collisions;
         }
@@ -227,6 +235,10 @@ namespace CBP
 
         inline void SetInContact(bool a_val) {
             m_inContact = a_val;
+        }
+
+        [[nodiscard]] inline const auto& GetPos() const {
+            return m_obj->m_worldTransform.pos;
         }
 
 #ifdef _CBP_ENABLE_DEBUG

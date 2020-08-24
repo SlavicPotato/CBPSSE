@@ -31,8 +31,14 @@ namespace CBP
         if (globalConf.debugRenderer.enabled &&
             DCBP::GetDriverConfig().debug_renderer)
         {
-            DCBP::GetRenderer()->Update(
+            auto& renderer = DCBP::GetRenderer();
+
+            renderer->Update(
                 DCBP::GetWorld()->getDebugRenderer());
+
+            if (globalConf.debugRenderer.enableMovingNodes)
+                renderer->UpdateMovingNodes(GetSimActorList(),
+                    globalConf.debugRenderer.movingNodesRadius);
         }
     }
 

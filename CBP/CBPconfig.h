@@ -143,6 +143,8 @@ namespace CBP
             bool wireframe = true;
             float contactPointSphereRadius = 0.5f;
             float contactNormalLength = 2.0f;
+            bool enableMovingNodes = false;
+            float movingNodesRadius = 0.5f;
         } debugRenderer;
 
         inline bool& GetColState(

@@ -1593,6 +1593,17 @@ namespace CBP
                     }
 
                     ImGui::Spacing();
+
+                    if (ImGui::Checkbox("Draw moving nodes", &globalConfig.debugRenderer.enableMovingNodes)) {
+                        DCBP::MarkGlobalsForSave();
+                    }
+
+                    if (ImGui::SliderFloat("Moving nodes sphere radius", &globalConfig.debugRenderer.movingNodesRadius, 0.1f, 10.0f, "%.2f")) {
+                        globalConfig.debugRenderer.movingNodesRadius = std::clamp(globalConfig.debugRenderer.movingNodesRadius, 0.1f, 10.0f);
+                        DCBP::MarkGlobalsForSave();
+                    }
+
+                    ImGui::Spacing();
                 }
             }
         }

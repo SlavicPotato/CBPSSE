@@ -329,6 +329,8 @@ namespace CBP
                     globalConfig.debugRenderer.wireframe = debugRenderer.get("wireframe", true).asBool();
                     globalConfig.debugRenderer.contactPointSphereRadius = debugRenderer.get("contactPointSphereRadius", 0.5f).asFloat();
                     globalConfig.debugRenderer.contactNormalLength = debugRenderer.get("contactNormalLength", 2.0f).asFloat();
+                    globalConfig.debugRenderer.enableMovingNodes = debugRenderer.get("enableMovingNodes", false).asBool();
+                    globalConfig.debugRenderer.movingNodesRadius = debugRenderer.get("movingNodesRadius", 0.5f).asFloat();
                 }
             }
 
@@ -418,6 +420,8 @@ namespace CBP
             debugRenderer["wireframe"] = globalConfig.debugRenderer.wireframe;
             debugRenderer["contactPointSphereRadius"] = globalConfig.debugRenderer.contactPointSphereRadius;
             debugRenderer["contactNormalLength"] = globalConfig.debugRenderer.contactNormalLength;
+            debugRenderer["enableMovingNodes"] = globalConfig.debugRenderer.enableMovingNodes;
+            debugRenderer["movingNodesRadius"] = globalConfig.debugRenderer.movingNodesRadius;
 
             WriteJsonData(PLUGIN_CBP_GLOBAL_DATA, root);
 
