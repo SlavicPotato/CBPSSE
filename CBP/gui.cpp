@@ -363,7 +363,7 @@ namespace CBP
         template void MessageDialog<const char*, const char*, const char*>(const char*, const char*, const char*, const char*, const char*);
 
         template<typename... Args>
-        bool TextInputDialog(const char* a_name, const char* a_text, char* a_buf, size_t a_size, Args... args)
+        bool TextInputDialog(const char* a_name, const char* a_text, char* a_buf, size_t a_size, float a_scale, Args... args)
         {
             bool ret = false;
 
@@ -407,7 +407,7 @@ namespace CBP
             return ret;
         }
 
-        template bool TextInputDialog<>(const char*, const char*, char*, size_t);
+        template bool TextInputDialog<>(const char*, const char*, char*, size_t, float);
 
         void HelpMarker(const char* desc)
         {

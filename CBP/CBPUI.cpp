@@ -151,8 +151,10 @@ namespace CBP
     template <class T>
     void UIProfileBase<T>::DrawCreateNew()
     {
+        auto& globalConfig = IConfig::GetGlobalConfig();
+
         if (UICommon::TextInputDialog("New profile", "Enter the profile name:",
-            state.new_input, sizeof(state.new_input)))
+            state.new_input, sizeof(state.new_input), globalConfig.ui.fontScale))
         {
             if (strlen(state.new_input))
             {
@@ -319,7 +321,7 @@ namespace CBP
                     }
                 }
                 else if (UICommon::TextInputDialog("Rename", "Enter the new profile name:",
-                    ex_state.ren_input, sizeof(ex_state.ren_input)))
+                    ex_state.ren_input, sizeof(ex_state.ren_input), globalConfig.ui.fontScale))
                 {
                     auto& pm = GlobalProfileManager::GetSingleton<T>();
                     std::string newName(ex_state.ren_input);
@@ -1018,7 +1020,19 @@ namespace CBP
                 if (selected)
                     if (ImGui::IsWindowAppearing()) ImGui::SetScrollHereY();
 
-                if (ImGui::Selectable(e.second.first.c_str(), selected)) {
+                std::string label(e.second.first);
+
+                switch (GetActorClass(e.first))
+                {
+                case ConfigClass::kConfigActor:
+                    label += " [A]";
+                    break;
+                case ConfigClass::kConfigRace:
+                    label += " [R]";
+                    break;
+                }
+
+                if (ImGui::Selectable(label.c_str(), selected)) {
                     SetCurrentActor(e.first);
                     a_entry = std::addressof(e);
                     a_curSelName = e.second.first.c_str();
@@ -1212,9 +1226,7 @@ namespace CBP
 
                     ImGui::Separator();
 
-                    if (ImGui::MenuItem("Import", nullptr, &state.windows.importDialog))
-                        openImportDialog = true;
-
+                    openImportDialog = ImGui::MenuItem("Import", nullptr, &state.windows.importDialog);
                     openExportDialog = ImGui::MenuItem("Export");
 
                     ImGui::Separator();
@@ -1447,10 +1459,8 @@ namespace CBP
         {
             if (openImportDialog)
                 m_importDialog.OnOpen();
-            else if (exportRes) {
-                _DMESSAGE("upd");
-                m_importDialog.UpdateFileList();
-            }
+            else if (exportRes) 
+                m_importDialog.UpdateFileList();            
 
             if (m_importDialog.Draw(&state.windows.importDialog))
                 ClearActorList();
@@ -1640,7 +1650,6 @@ namespace CBP
 
     void UICollisionGroups::Draw(bool* a_active)
     {
-
         auto& io = ImGui::GetIO();
         auto& globalConfig = IConfig::GetGlobalConfig();
 
@@ -1702,7 +1711,7 @@ namespace CBP
             }
 
             if (UICommon::TextInputDialog("New group", "Enter group name:",
-                reinterpret_cast<char*>(&m_input), sizeof(m_input)))
+                reinterpret_cast<char*>(&m_input), sizeof(m_input), globalConfig.ui.fontScale))
             {
                 if (m_input) {
                     colGroups.emplace(m_input);
@@ -1955,6 +1964,11 @@ namespace CBP
         DCBP::ResetActors();
     }
 
+    ConfigClass UINodeConfig::GetActorClass(SKSE::ObjectHandle a_handle)
+    {
+        return IConfig::GetActorNodeConfigClass(a_handle);
+    }
+
     void UIContext::UISimComponentActor::OnSimSliderChange(
         SKSE::ObjectHandle a_handle,
         configComponents_t& a_data,
@@ -2064,6 +2078,11 @@ namespace CBP
         const actorEntryValue_t&
     {
         return IConfig::GetActorConf(a_handle);
+    }
+
+    ConfigClass UIContext::GetActorClass(SKSE::ObjectHandle a_handle)
+    {
+        return IConfig::GetActorPhysicsConfigClass(a_handle);
     }
 
     void UIContext::ApplyForce(
@@ -2729,9 +2748,7 @@ namespace CBP
 
         ImGui::PushID(static_cast<const void*>(this));
 
-        ImGui::SetWindowFontScale(globalConfig.ui.fontScale);
-
-        if (UICommon::TextInputDialog("Export to file", "Enter filename", m_buf, sizeof(m_buf)))
+        if (UICommon::TextInputDialog("Export to file", "Enter filename", m_buf, sizeof(m_buf), globalConfig.ui.fontScale))
             res = OnFileInput();
 
         if (UICommon::ConfirmDialog(

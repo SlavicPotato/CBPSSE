@@ -398,6 +398,8 @@ namespace CBP
         UIActorList();
         virtual ~UIActorList() noexcept = default;
 
+        virtual ConfigClass GetActorClass(SKSE::ObjectHandle a_handle) = 0;
+
         actorListValue_t* GetSelectedEntry();
 
         void DrawActorList(actorListValue_t*& a_entry, const char*& a_curSelName);
@@ -459,6 +461,8 @@ namespace CBP
             SKSE::ObjectHandle a_handle,
             const std::string& a_node,
             const NodeProfile::base_type::mapped_type& a_data);
+
+        virtual ConfigClass GetActorClass(SKSE::ObjectHandle a_handle);
     };
 
     typedef std::pair<const std::string, configComponents_t> raceEntry_t;
@@ -562,7 +566,7 @@ namespace CBP
         UIFileSelector(const fs::path& a_path);
 
         void DrawFileSelector();
-        bool DeleteExport(const fs::path &a_file);
+        bool DeleteExport(const fs::path& a_file);
 
         inline const auto& GetSelected() const {
             return m_selected;
@@ -600,7 +604,7 @@ namespace CBP
     public:
         UIDialogImport(const fs::path& a_path);
 
-        bool Draw(bool *a_active);
+        bool Draw(bool* a_active);
         void OnOpen();
 
     };
@@ -718,10 +722,11 @@ namespace CBP
             const NiPoint3& a_force);
 
         virtual void ResetAllActorValues(SKSE::ObjectHandle a_handle);
+        [[nodiscard]] virtual const actorEntryValue_t& GetData(SKSE::ObjectHandle a_handle);
+        virtual ConfigClass GetActorClass(SKSE::ObjectHandle a_handle);
+
         void UpdateActorValues(SKSE::ObjectHandle a_handle);
         void UpdateActorValues(actorListValue_t* a_data);
-
-        [[nodiscard]] virtual const actorEntryValue_t& GetData(SKSE::ObjectHandle a_handle);
 
         bool m_nextUpdateCurrentActor;
 
