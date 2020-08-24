@@ -235,7 +235,7 @@ namespace CBP
                             e.force.x = it->get("x", 0.0f).asFloat();
                             e.force.y = it->get("y", 0.0f).asFloat();
                             e.force.z = it->get("z", 0.0f).asFloat();
-                            e.steps = max(it->get("steps", 0).asInt(), 0);
+                            e.steps = std::max(it->get("steps", 0).asInt(), 0);
                         }
                     }
                 }
@@ -388,7 +388,7 @@ namespace CBP
                 fe["x"] = e.second.force.x;
                 fe["y"] = e.second.force.y;
                 fe["z"] = e.second.force.z;
-                fe["steps"] = max(e.second.steps, 0);
+                fe["steps"] = std::max(e.second.steps, 0);
             }
 
             ui["forceSelected"] = globalConfig.ui.forceActorSelected;

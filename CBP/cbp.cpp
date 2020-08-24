@@ -121,7 +121,7 @@ namespace CBP
         auto& profiler = GetProfiler();
 
         profiler.SetInterval(static_cast<long long>(
-            max(globalConf.general.profilingInterval, 100)) * 1000);
+            std::max(globalConf.general.profilingInterval, 100)) * 1000);
     }
 
     void DCBP::ApplyForce(

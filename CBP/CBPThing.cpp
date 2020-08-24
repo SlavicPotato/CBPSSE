@@ -149,7 +149,7 @@ namespace CBP
 
         float weight = std::clamp(npc->weight, 0.0f, 100.0f);
 
-        m_colSphereRad = max(mmw(weight, a_config.colSphereRadMin, a_config.colSphereRadMax), 0.0f);
+        m_colSphereRad = std::max(mmw(weight, a_config.colSphereRadMin, a_config.colSphereRadMax), 0.0f);
         m_colSphereOffsetX = mmw(weight, a_config.colSphereOffsetXMin, a_config.colSphereOffsetXMax);
         m_colSphereOffsetY = mmw(weight, a_config.colSphereOffsetYMin, a_config.colSphereOffsetYMax);
         m_colSphereOffsetZ = mmw(weight, a_config.colSphereOffsetZMin, a_config.colSphereOffsetZMax);
@@ -236,7 +236,7 @@ namespace CBP
             }
 
             if (!m_inContact && m_dampingMul > 1.0f)
-                m_dampingMul = max(m_dampingMul / (a_timeStep + 1.0f), 1.0f);
+                m_dampingMul = std::max(m_dampingMul / (a_timeStep + 1.0f), 1.0f);
 
             auto newPos = m_oldWorldPos;
 

@@ -157,7 +157,7 @@ namespace CBP
         return true;
     }
 
-    bool Renderer::GetScreenPt2(const NiPoint3& a_pos, const DirectX::XMFLOAT4& a_col, VertexType& a_out)
+    bool Renderer::GetScreenPt(const NiPoint3& a_pos, const DirectX::XMFLOAT4& a_col, VertexType& a_out)
     {
         if (!WorldPtToScreenPt3_Internal(
             g_worldToCamMatrix,
@@ -184,6 +184,7 @@ namespace CBP
         return true;
     }
 
+    // Adapted from https://github.com/DanielChappuis/reactphysics3d/blob/master/src/utils/DebugRenderer.cpp#L122
     void Renderer::GenerateSphere(const NiPoint3& a_pos, float a_radius, const DirectX::XMFLOAT4& a_col)
     {
         NiPoint3 vertices[(NB_SECTORS_SPHERE + 1) * (NB_STACKS_SPHERE + 1) + (NB_SECTORS_SPHERE + 1)];
@@ -222,9 +223,9 @@ namespace CBP
                 {
                     ItemTri item;
 
-                    if (GetScreenPt2(vertices[a1], a_col, item.pos1) &&
-                        GetScreenPt2(vertices[a2], a_col, item.pos2) &&
-                        GetScreenPt2(vertices[a1 + 1], a_col, item.pos3))
+                    if (GetScreenPt(vertices[a1], a_col, item.pos1) &&
+                        GetScreenPt(vertices[a2], a_col, item.pos2) &&
+                        GetScreenPt(vertices[a1 + 1], a_col, item.pos3))
                     {
                         m_tris.emplace_back(item);
                     }
@@ -235,9 +236,9 @@ namespace CBP
                 {
                     ItemTri item;
 
-                    if (GetScreenPt2(vertices[a1 + 1], a_col, item.pos1) &&
-                        GetScreenPt2(vertices[a2], a_col, item.pos2) &&
-                        GetScreenPt2(vertices[a2 + 1], a_col, item.pos3))
+                    if (GetScreenPt(vertices[a1 + 1], a_col, item.pos1) &&
+                        GetScreenPt(vertices[a2], a_col, item.pos2) &&
+                        GetScreenPt(vertices[a2 + 1], a_col, item.pos3))
                     {
                         m_tris.emplace_back(item);
                     }

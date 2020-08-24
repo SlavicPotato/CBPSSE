@@ -57,6 +57,6 @@ namespace CBP
         void GenerateSphere(const NiPoint3& a_pos, float a_radius, const DirectX::XMFLOAT4& a_col);
 
         __forceinline bool GetScreenPt(const r3d::Vector3& a_pos, r3d::uint32 a_col, VertexType& a_out);
-        __forceinline bool GetScreenPt2(const NiPoint3& a_pos, const DirectX::XMFLOAT4& a_col, VertexType& a_out);
+        __forceinline bool GetScreenPt(const NiPoint3& a_pos, const DirectX::XMFLOAT4& a_col, VertexType& a_out);
     };
 }

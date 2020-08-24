@@ -64,9 +64,6 @@
 
 #include "INIReader.h"
 
-#define max(a,b) (((a) > (b)) ? (a) : (b))
-#define min(a,b) (((a) < (b)) ? (a) : (b))
-
 namespace r3d = reactphysics3d;
 
 namespace CBP

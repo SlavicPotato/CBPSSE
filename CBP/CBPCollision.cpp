@@ -47,10 +47,10 @@ namespace CBP
                 {
                     auto contactPoint = contactPair.getContactPoint(c);
 
-                    auto depth = min(contactPoint.getPenetrationDepth(),
+                    auto depth = std::min(contactPoint.getPenetrationDepth(),
                         globalConf.phys.colMaxPenetrationDepth);
 
-                    dampingMul = max(depth, dampingMul);
+                    dampingMul = std::max(depth, dampingMul);
 
                     auto& v1 = sc1->GetVelocity();
                     auto& v2 = sc2->GetVelocity();

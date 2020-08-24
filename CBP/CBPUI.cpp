@@ -197,11 +197,11 @@ namespace CBP
         auto& io = ImGui::GetIO();
         auto& globalConfig = IConfig::GetGlobalConfig();
 
-        ImGui::SetNextWindowPos(ImVec2(min(420.0f, io.DisplaySize.x - 40.0f), 20.0f), ImGuiCond_FirstUseEver);
+        ImGui::SetNextWindowPos(ImVec2(std::min(420.0f, io.DisplaySize.x - 40.0f), 20.0f), ImGuiCond_FirstUseEver);
         ImGui::SetNextWindowSize(ImVec2(450.0f, io.DisplaySize.y), ImGuiCond_FirstUseEver);
 
-        ImVec2 sizeMin(min(300.0f, io.DisplaySize.x - 40.0f), min(200.0f, io.DisplaySize.y - 40.0f));
-        ImVec2 sizeMax(min(1920.0f, io.DisplaySize.x), max(io.DisplaySize.y - 40.0f, sizeMin.y));
+        ImVec2 sizeMin(std::min(300.0f, io.DisplaySize.x - 40.0f), std::min(200.0f, io.DisplaySize.y - 40.0f));
+        ImVec2 sizeMax(std::min(1920.0f, io.DisplaySize.x), std::max(io.DisplaySize.y - 40.0f, sizeMin.y));
 
         ImGui::SetNextWindowSizeConstraints(sizeMin, sizeMax);
 
@@ -435,11 +435,11 @@ namespace CBP
         auto& io = ImGui::GetIO();
         auto& globalConfig = IConfig::GetGlobalConfig();
 
-        ImGui::SetNextWindowPos(ImVec2(min(820.0f, io.DisplaySize.x - 40.0f), 20.0f), ImGuiCond_FirstUseEver);
+        ImGui::SetNextWindowPos(ImVec2(std::min(820.0f, io.DisplaySize.x - 40.0f), 20.0f), ImGuiCond_FirstUseEver);
         ImGui::SetNextWindowSize(ImVec2(450.0f, io.DisplaySize.y), ImGuiCond_FirstUseEver);
 
-        ImVec2 sizeMin(min(300.0f, io.DisplaySize.x - 40.0f), min(200.0f, io.DisplaySize.y - 40.0f));
-        ImVec2 sizeMax(min(1920.0f, io.DisplaySize.x), max(io.DisplaySize.y - 40.0f, sizeMin.y));
+        ImVec2 sizeMin(std::min(300.0f, io.DisplaySize.x - 40.0f), std::min(200.0f, io.DisplaySize.y - 40.0f));
+        ImVec2 sizeMax(std::min(1920.0f, io.DisplaySize.x), std::max(io.DisplaySize.y - 40.0f, sizeMin.y));
 
         ImGui::SetNextWindowSizeConstraints(sizeMin, sizeMax);
 
@@ -865,7 +865,7 @@ namespace CBP
                 ImGui::Spacing();
 
                 if (ImGui::SliderInt("Steps", std::addressof(e.steps), 0, 100)) {
-                    e.steps = max(e.steps, 0);
+                    e.steps = std::max(e.steps, 0);
                     DCBP::MarkGlobalsForSave();
                 }
             }
@@ -1183,8 +1183,8 @@ namespace CBP
         ImGui::SetNextWindowPos(ImVec2(20.0f, 20.0f), ImGuiCond_FirstUseEver);
         ImGui::SetNextWindowSize(ImVec2(450.0f, io.DisplaySize.y), ImGuiCond_FirstUseEver);
 
-        ImVec2 sizeMin(min(300.0f, io.DisplaySize.x - 40.0f), min(200.0f, io.DisplaySize.y - 40.0f));
-        ImVec2 sizeMax(min(1920.0f, io.DisplaySize.x), max(io.DisplaySize.y - 40.0f, sizeMin.y));
+        ImVec2 sizeMin(std::min(300.0f, io.DisplaySize.x - 40.0f), std::min(200.0f, io.DisplaySize.y - 40.0f));
+        ImVec2 sizeMax(std::min(1920.0f, io.DisplaySize.x), std::max(io.DisplaySize.y - 40.0f, sizeMin.y));
 
         ImGui::SetNextWindowSizeConstraints(sizeMin, sizeMax);
 
@@ -1666,8 +1666,8 @@ namespace CBP
         ImVec2 center(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f);
         ImGui::SetNextWindowPos(center, ImGuiCond_FirstUseEver, ImVec2(0.5f, 0.5f));
 
-        ImVec2 sizeMin(min(300.0f, io.DisplaySize.x - 40.0f), min(100.0f, io.DisplaySize.y - 40.0f));
-        ImVec2 sizeMax(min(1920.0f, io.DisplaySize.x), max(io.DisplaySize.y - 40.0f, sizeMin.y));
+        ImVec2 sizeMin(std::min(300.0f, io.DisplaySize.x - 40.0f), std::min(100.0f, io.DisplaySize.y - 40.0f));
+        ImVec2 sizeMax(std::min(1920.0f, io.DisplaySize.x), std::max(io.DisplaySize.y - 40.0f, sizeMin.y));
 
         ImGui::SetNextWindowSizeConstraints(sizeMin, sizeMax);
         ImGui::SetNextWindowSize(ImVec2(400.0f, io.DisplaySize.y), ImGuiCond_FirstUseEver);
@@ -1832,8 +1832,8 @@ namespace CBP
         ImVec2 center(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f);
         ImGui::SetNextWindowPos(center, ImGuiCond_FirstUseEver, ImVec2(0.5f, 0.5f));
 
-        ImVec2 sizeMin(min(300.0f, io.DisplaySize.x - 40.0f), min(100.0f, io.DisplaySize.y - 40.0f));
-        ImVec2 sizeMax(min(1920.0f, io.DisplaySize.x), max(io.DisplaySize.y - 40.0f, sizeMin.y));
+        ImVec2 sizeMin(std::min(300.0f, io.DisplaySize.x - 40.0f), std::min(100.0f, io.DisplaySize.y - 40.0f));
+        ImVec2 sizeMax(std::min(1920.0f, io.DisplaySize.x), std::max(io.DisplaySize.y - 40.0f, sizeMin.y));
 
         ImGui::SetNextWindowSizeConstraints(sizeMin, sizeMax);
 
@@ -2309,8 +2309,8 @@ namespace CBP
         ImVec2 center(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f);
         ImGui::SetNextWindowPos(center, ImGuiCond_FirstUseEver, ImVec2(0.5f, 0.5f));
 
-        ImVec2 sizeMin(min(300.0f, io.DisplaySize.x - 40.0f), min(200.0f, io.DisplaySize.y - 40.0f));
-        ImVec2 sizeMax(min(1920.0f, io.DisplaySize.x), max(io.DisplaySize.y - 40.0f, sizeMin.y));
+        ImVec2 sizeMin(std::min(300.0f, io.DisplaySize.x - 40.0f), std::min(200.0f, io.DisplaySize.y - 40.0f));
+        ImVec2 sizeMax(std::min(1920.0f, io.DisplaySize.x), std::max(io.DisplaySize.y - 40.0f, sizeMin.y));
 
         ImGui::SetNextWindowSizeConstraints(sizeMin, sizeMax);
 
@@ -2813,8 +2813,8 @@ namespace CBP
         ImGui::SetNextWindowPos(ImVec2(20.0f, 20.0f), ImGuiCond_FirstUseEver);
         ImGui::SetNextWindowSize(ImVec2(450.0f, io.DisplaySize.y), ImGuiCond_FirstUseEver);
 
-        ImVec2 sizeMin(min(300.0f, io.DisplaySize.x - 40.0f), min(200.0f, io.DisplaySize.y - 40.0f));
-        ImVec2 sizeMax(min(1920.0f, io.DisplaySize.x), max(io.DisplaySize.y - 40.0f, sizeMin.y));
+        ImVec2 sizeMin(std::min(300.0f, io.DisplaySize.x - 40.0f), std::min(200.0f, io.DisplaySize.y - 40.0f));
+        ImVec2 sizeMax(std::min(1920.0f, io.DisplaySize.x), std::max(io.DisplaySize.y - 40.0f, sizeMin.y));
 
         ImGui::SetNextWindowSizeConstraints(sizeMin, sizeMax);
 
