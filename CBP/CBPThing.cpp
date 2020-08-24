@@ -116,7 +116,7 @@ namespace CBP
         m_parentId(a_parentId),
         m_groupId(a_groupId),
         m_inContact(false),
-        m_dampingMul(0.0f),
+        m_dampingMul(1.0f),
         m_node(a_actor->loadedState->node),
         m_obj(a_obj),
         m_objParent(a_obj->m_parent),
