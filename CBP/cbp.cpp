@@ -710,14 +710,13 @@ namespace CBP
 
     void DCBP::DisableUI()
     {
+        SavePending();
         ImGui::SaveIniSettingsToDisk(PLUGIN_IMGUI_INI_FILE);
 
         auto& io = ImGui::GetIO();
         if (io.WantSaveIniSettings) {
             io.WantSaveIniSettings = false;
         }
-
-        SavePending();
 
         m_uiContext.Reset(m_loadInstance);
 

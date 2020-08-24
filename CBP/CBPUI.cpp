@@ -1418,6 +1418,7 @@ namespace CBP
         }
 
         ImGui::End();
+        ImGui::PopID();
 
         if (state.windows.options)
             m_options.Draw(&state.windows.options);
@@ -1465,8 +1466,6 @@ namespace CBP
             if (m_importDialog.Draw(&state.windows.importDialog))
                 ClearActorList();
         }
-
-        ImGui::PopID();
     }
 
     void UIOptions::Draw(bool* a_active)
@@ -2298,13 +2297,18 @@ namespace CBP
 
         ImVec2 center(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f);
         ImGui::SetNextWindowPos(center, ImGuiCond_FirstUseEver, ImVec2(0.5f, 0.5f));
-        ImGui::SetNextWindowSizeConstraints(ImVec2(300.0f, 50.0f), ImVec2(400.0f, 500.0f));
+
+        ImVec2 sizeMin(min(300.0f, io.DisplaySize.x - 40.0f), min(200.0f, io.DisplaySize.y - 40.0f));
+        ImVec2 sizeMax(min(1920.0f, io.DisplaySize.x), max(io.DisplaySize.y - 40.0f, sizeMin.y));
+
+        ImGui::SetNextWindowSizeConstraints(sizeMin, sizeMax);
 
         ImGui::PushID(static_cast<const void*>(a_active));
 
-        if (ImGui::Begin("Stats", a_active, ImGuiWindowFlags_AlwaysAutoResize))
+        if (ImGui::Begin("Stats", a_active))
         {
             ImGui::SetWindowFontScale(globalConfig.ui.fontScale);
+            //ImGui::PushItemWidth(ImGui::GetFontSize() * -15.0f);
 
             if (globalConfig.general.enableProfiling)
             {
@@ -2364,6 +2368,9 @@ namespace CBP
 
                 ImGui::PopItemWidth();
             }
+
+            //ImGui::PopItemWidth();
+
         }
 
         ImGui::End();
