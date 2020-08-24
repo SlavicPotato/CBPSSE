@@ -33,12 +33,14 @@ namespace CBP
         {
             auto& renderer = DCBP::GetRenderer();
 
-            renderer->Update(
-                DCBP::GetWorld()->getDebugRenderer());
+            renderer->Clear();
 
             if (globalConf.debugRenderer.enableMovingNodes)
                 renderer->UpdateMovingNodes(GetSimActorList(),
                     globalConf.debugRenderer.movingNodesRadius);
+
+            renderer->Update(
+                DCBP::GetWorld()->getDebugRenderer());
         }
     }
 

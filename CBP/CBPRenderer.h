@@ -35,8 +35,7 @@ namespace CBP
         static constexpr int NB_SECTORS_SPHERE = 18;
         static constexpr int NB_STACKS_SPHERE = 10;
 
-        static constexpr DirectX::XMFLOAT4 MOVING_NODES_COL = DirectX::XMFLOAT4(1.0f, 0.0f, 0.0f, 0.9f);
-        static constexpr float MOVING_NODES_RAD = 0.5f;
+        static constexpr auto MOVING_NODES_COL = DirectX::XMFLOAT4(1.0f, 0.0f, 0.0f, 0.75f);
 
         std::unique_ptr<DirectX::BasicEffect> m_effect;
         std::unique_ptr<DirectX::CommonStates> m_states;

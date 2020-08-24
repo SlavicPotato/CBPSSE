@@ -70,7 +70,6 @@ namespace CBP
 
     void Renderer::Update(const r3d::DebugRenderer& a_dr)
     {
-        Clear();
         GenerateLines(a_dr);
         GenerateTris(a_dr);
     }

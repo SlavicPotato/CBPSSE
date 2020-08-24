@@ -144,7 +144,7 @@ namespace CBP
             float contactPointSphereRadius = 0.5f;
             float contactNormalLength = 2.0f;
             bool enableMovingNodes = false;
-            float movingNodesRadius = 0.5f;
+            float movingNodesRadius = 0.75f;
         } debugRenderer;
 
         inline bool& GetColState(
