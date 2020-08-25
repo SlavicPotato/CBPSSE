@@ -185,8 +185,7 @@ namespace CBP
         }
 
         inline void SetVelocity2(const NiPoint3& a_vel, float a_timeStep) {
-            SetVelocity((m_velocity - (a_vel * a_timeStep)) -
-                (m_velocity * ((m_conf.damping * a_timeStep) * m_dampingMul)));
+            SetVelocity(m_velocity - (a_vel * a_timeStep));
         }
 
         [[nodiscard]] inline const auto& GetVelocity() const {
