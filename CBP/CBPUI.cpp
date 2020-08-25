@@ -2783,9 +2783,7 @@ namespace CBP
         bool res = false;
 
         ImGui::PushID(static_cast<const void*>(this));
-        //Kwek - font scaling in the export dialog
-        ImGui::SetWindowFontScale(globalConfig.ui.fontScale);
-
+       
         if (UICommon::TextInputDialog("Export to file", "Enter filename", m_buf, sizeof(m_buf), globalConfig.ui.fontScale))
             res = OnFileInput();
 

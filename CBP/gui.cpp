@@ -374,6 +374,9 @@ namespace CBP
 
             if (ImGui::BeginPopupModal(a_name, nullptr, ImGuiWindowFlags_AlwaysAutoResize))
             {
+                //kwek - fix for font scaling per SlavicPotato
+                ImGui::SetWindowFontScale(a_scale);
+
                 ImGui::PushTextWrapPos(ImGui::GetFontSize() * 30.0f);
                 ImGui::Text(a_text, args...);
                 ImGui::PopTextWrapPos();
