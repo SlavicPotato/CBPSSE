@@ -211,6 +211,8 @@ namespace CBP
                 globalConfig.ui.selectCrosshairActor = ui.get("selectCrosshairActor", false).asBool();
                 globalConfig.ui.comboKey = static_cast<UInt32>(ui.get("comboKey", DIK_LSHIFT).asUInt());
                 globalConfig.ui.showKey = static_cast<UInt32>(ui.get("showKey", DIK_END).asUInt());
+                globalConfig.ui.comboKeyDR = static_cast<UInt32>(ui.get("comboKeyDR", DIK_LSHIFT).asUInt());
+                globalConfig.ui.showKeyDR = static_cast<UInt32>(ui.get("showKeyDR", DIK_PGDN).asUInt());
                 globalConfig.ui.lastActor = static_cast<SKSE::ObjectHandle>(ui.get("lastActor", 0ULL).asUInt64());
                 globalConfig.ui.fontScale = ui.get("fontScale", 1.0f).asFloat();
 
@@ -330,7 +332,7 @@ namespace CBP
                     globalConfig.debugRenderer.contactPointSphereRadius = debugRenderer.get("contactPointSphereRadius", 0.5f).asFloat();
                     globalConfig.debugRenderer.contactNormalLength = debugRenderer.get("contactNormalLength", 2.0f).asFloat();
                     globalConfig.debugRenderer.enableMovingNodes = debugRenderer.get("enableMovingNodes", false).asBool();
-                    globalConfig.debugRenderer.movingNodesRadius = debugRenderer.get("movingNodesRadius", 0.5f).asFloat();
+                    globalConfig.debugRenderer.movingNodesRadius = debugRenderer.get("movingNodesRadius", 0.75f).asFloat();
                 }
             }
 
@@ -376,6 +378,8 @@ namespace CBP
             ui["selectCrosshairActor"] = globalConfig.ui.selectCrosshairActor;
             ui["comboKey"] = static_cast<uint32_t>(globalConfig.ui.comboKey);
             ui["showKey"] = static_cast<uint32_t>(globalConfig.ui.showKey);
+            ui["comboKeyDR"] = static_cast<uint32_t>(globalConfig.ui.comboKeyDR);
+            ui["showKeyDR"] = static_cast<uint32_t>(globalConfig.ui.showKeyDR);
             ui["lastActor"] = static_cast<uint64_t>(globalConfig.ui.lastActor);
             ui["fontScale"] = globalConfig.ui.fontScale;
 

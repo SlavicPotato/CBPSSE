@@ -95,6 +95,10 @@ namespace CBP
             m_averageInterval = a_val;
         }
 
+        inline void SetMarkedActor(SKSE::ObjectHandle a_handle) {
+            m_markedActor = a_handle;
+        }
+
         FN_NAMEPROC("UpdateTask")
     private:
         bool IsTaskQueueEmpty();
@@ -102,6 +106,8 @@ namespace CBP
         void GatherActors(handleSet_t& a_out);
 
         simActorList_t m_actors;
+        SKSE::ObjectHandle m_markedActor;
+
         std::queue<UTTask> m_taskQueue;
 
         ICriticalSection m_taskLock;

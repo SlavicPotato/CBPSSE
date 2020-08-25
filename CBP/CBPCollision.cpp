@@ -29,7 +29,7 @@ namespace CBP
 
             auto type = contactPair.getEventType();
 
-            switch (type)
+            switch (type) 
             {
             case EventType::ContactStart:
                 sc1->SetInContact(true);

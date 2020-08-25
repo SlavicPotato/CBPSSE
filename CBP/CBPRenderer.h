@@ -28,7 +28,7 @@ namespace CBP
 
         void Draw();
         void Update(const r3d::DebugRenderer& a_dr);
-        void UpdateMovingNodes(const simActorList_t& a_actorList, float a_radius);
+        void UpdateMovingNodes(const simActorList_t& a_actorList, float a_radius, SKSE::ObjectHandle a_markedHandle);
         void Clear();
 
     private:
@@ -36,6 +36,7 @@ namespace CBP
         static constexpr int NB_STACKS_SPHERE = 10;
 
         static constexpr auto MOVING_NODES_COL = DirectX::XMFLOAT4(1.0f, 0.0f, 0.0f, 0.75f);
+        static constexpr auto ACTOR_MARKER_COL = DirectX::XMFLOAT4(0.921f, 0.596f, 0.203f, 0.75f);
 
         std::unique_ptr<DirectX::BasicEffect> m_effect;
         std::unique_ptr<DirectX::CommonStates> m_states;
@@ -51,7 +52,7 @@ namespace CBP
 
         void GenerateLines(const r3d::DebugRenderer& a_dr);
         void GenerateTris(const r3d::DebugRenderer& a_dr);
-        void GenerateMovingNodes(const simActorList_t& a_actorList, float a_radius);
+        void GenerateMovingNodes(const simActorList_t& a_actorList, float a_radius, SKSE::ObjectHandle a_markedHandle);
 
         void GenerateSphere(const NiPoint3& a_pos, float a_radius, const DirectX::XMFLOAT4& a_col);
 

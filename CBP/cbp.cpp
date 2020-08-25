@@ -790,6 +790,12 @@ namespace CBP
             m_comboKey = globalConfig.ui.comboKey;
             m_showKey = globalConfig.ui.showKey;
         }
+
+        m_comboKeyDR = globalConfig.ui.comboKeyDR;
+        m_showKeyDR = globalConfig.ui.showKeyDR;
+
+        combo_down = false;
+        combo_downDR = false;
     }
 
     void DCBP::KeyPressHandler::ReceiveEvent(KeyEvent ev, UInt32 keyCode)
@@ -797,9 +803,10 @@ namespace CBP
         switch (ev)
         {
         case KeyEvent::KeyDown:
-            if (m_comboKey && keyCode == m_comboKey) {
+            if (m_comboKey && keyCode == m_comboKey)
                 combo_down = true;
-            }
+            else if (m_comboKeyDR && keyCode == m_comboKeyDR)
+                combo_downDR = true;
             else if (keyCode == m_showKey) {
                 if (m_comboKey && !combo_down)
                     break;
@@ -810,10 +817,26 @@ namespace CBP
 
                 DTasks::AddTask(&m_Instance.m_taskToggle);
             }
+            else if (keyCode == m_showKeyDR) {
+                if (m_comboKeyDR && !combo_downDR)
+                    break;
+
+                Lock();
+
+                auto& globalConfig = CBP::IConfig::GetGlobalConfig();
+                globalConfig.debugRenderer.enabled = !globalConfig.debugRenderer.enabled;
+
+                UpdateDebugRendererState();
+
+                Unlock();
+            }
             break;
         case KeyEvent::KeyUp:
             if (m_comboKey && keyCode == m_comboKey)
                 combo_down = false;
+            else if (m_comboKeyDR && keyCode == m_comboKeyDR)
+                combo_downDR = false;
+
             break;
         }
     }

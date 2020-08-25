@@ -75,6 +75,9 @@ namespace CBP
         }
 
         m_actor = a_actor;
+
+        BSFixedString n("NPC Head [Head]");
+        m_objHead = a_actor->loadedState->node->GetObjectByName(&n.data);
     }
 
     void SimObject::Reset()

@@ -91,6 +91,14 @@ namespace CBP
             return m_actor;
         }
 
+        [[nodiscard]] inline bool GetHeadTransform(NiTransform &a_out) const {
+            if (m_objHead != nullptr) {
+                a_out = m_objHead->m_worldTransform;
+                return true;
+            }
+            return false;
+        }
+
     private:
 
         thingMap_t m_things;
@@ -98,7 +106,9 @@ namespace CBP
 
         uint64_t m_Id;
         SKSE::ObjectHandle m_handle;
+
         NiPointer<Actor> m_actor;
+        NiPointer<NiAVObject> m_objHead;
 
         char m_sex;
 

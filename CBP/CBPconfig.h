@@ -117,9 +117,9 @@ namespace CBP
             bool lockControls = true;
             bool showAllActors = false;
             bool clampValuesMain = true;
+            bool clampValuesRace = true;
             bool rlPlayableOnly = true;
             bool rlShowEditorIDs = true;
-            bool clampValuesRace = true;
             bool syncWeightSlidersMain = false;
             bool syncWeightSlidersRace = false;
             bool selectCrosshairActor = false;
@@ -128,6 +128,9 @@ namespace CBP
 
             UInt32 comboKey = DIK_LSHIFT;
             UInt32 showKey = DIK_END;
+
+            UInt32 comboKeyDR = DIK_LSHIFT;
+            UInt32 showKeyDR = DIK_PGDN;
 
             SKSE::ObjectHandle lastActor = 0;
             configForceMap_t forceActor;

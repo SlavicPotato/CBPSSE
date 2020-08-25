@@ -14,13 +14,13 @@ namespace CBP
     }
 
     std::atomic<uint64_t> UpdateTask::m_nextGroupId = 0;
-
     static auto frameTimer = IAL::Addr<float*>(523660);
 
     UpdateTask::UpdateTask() :
         m_timeAccum(0.0f),
         m_averageInterval(1.0f / 60.0f),
-        m_profiler(1000000)
+        m_profiler(1000000),
+        m_markedActor(0)
     {
     }
 
@@ -36,8 +36,12 @@ namespace CBP
             renderer->Clear();
 
             if (globalConf.debugRenderer.enableMovingNodes)
-                renderer->UpdateMovingNodes(GetSimActorList(),
-                    globalConf.debugRenderer.movingNodesRadius);
+            {
+                renderer->UpdateMovingNodes(
+                    GetSimActorList(),
+                    globalConf.debugRenderer.movingNodesRadius,
+                    m_markedActor);
+            }
 
             renderer->Update(
                 DCBP::GetWorld()->getDebugRenderer());

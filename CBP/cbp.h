@@ -65,10 +65,14 @@ namespace CBP
             void UpdateKeys();
         private:
 
-            bool combo_down;
+            bool combo_down = false;
+            bool combo_downDR = false;
 
             UInt32 m_comboKey;
             UInt32 m_showKey;
+
+            UInt32 m_comboKeyDR;
+            UInt32 m_showKeyDR;
         };
 
         class EventHandler :
@@ -268,6 +272,10 @@ namespace CBP
 
         inline static void UpdateKeys() {
             m_Instance.m_inputEventHandler.UpdateKeys();
+        }
+
+        inline static void SetMarkedActor(SKSE::ObjectHandle a_handle) {
+            m_Instance.m_updateTask.SetMarkedActor(a_handle);
         }
 
         FN_NAMEPROC("CBP")

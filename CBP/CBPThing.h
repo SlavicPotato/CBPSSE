@@ -113,8 +113,8 @@ namespace CBP
         float m_dampingMul;
         bool m_inContact;
 
-        NiPointer <NiAVObject> m_obj;
-        NiPointer <NiAVObject> m_objParent;
+        NiPointer<NiAVObject> m_obj;
+        NiPointer<NiAVObject> m_objParent;
         NiPointer<NiNode> m_node;
 
         NiAVObject::ControllerUpdateContext m_updateCtx;
@@ -220,7 +220,7 @@ namespace CBP
         [[nodiscard]] inline bool HasMovement() const {
             return m_movement;
         }
-
+        
         [[nodiscard]] inline bool HasActiveCollider() const {
             return m_collisionData.IsActive();
         }

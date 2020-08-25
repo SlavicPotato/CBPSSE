@@ -395,14 +395,14 @@ namespace CBP
         using actorListValue_t = typename T::value_type;
         using actorEntryValue_t = typename T::value_type::second_type::second_type;
 
-        UIActorList();
+        UIActorList(bool a_mark);
         virtual ~UIActorList() noexcept = default;
 
         virtual ConfigClass GetActorClass(SKSE::ObjectHandle a_handle) = 0;
 
         actorListValue_t* GetSelectedEntry();
 
-        void DrawActorList(actorListValue_t*& a_entry, const char*& a_curSelName);
+        void DrawActorList(actorListValue_t*& a_entry, const char*& a_curSelName = false);
         void SetCurrentActor(SKSE::ObjectHandle a_handle);
 
         inline void ClearActorList() {
@@ -415,6 +415,7 @@ namespace CBP
         uint64_t m_lastCacheUpdateId;
 
         bool m_firstUpdate;
+        bool m_markActor;
     private:
         void UpdateActorList();
 
@@ -448,6 +449,8 @@ namespace CBP
         UINode<SKSE::ObjectHandle, UIEditorID::kNodeEditor>
     {
     public:
+        UINodeConfig();
+
         void Draw(bool* a_active);
         void Reset();
     private:

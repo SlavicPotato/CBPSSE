@@ -875,11 +875,12 @@ namespace CBP
     }
 
     template <typename T>
-    UIActorList<T>::UIActorList() :
+    UIActorList<T>::UIActorList(bool a_mark) :
         m_currentActor(0),
         m_globLabel("Global"),
         m_lastCacheUpdateId(0),
-        m_firstUpdate(false)
+        m_firstUpdate(false),
+        m_markActor(a_mark)
     {
         m_strBuf1[0] = 0x0;
     }
@@ -966,6 +967,9 @@ namespace CBP
             globalConfig.ui.lastActor = a_handle;
             DCBP::MarkGlobalsForSave();
         }
+
+        if (m_markActor)
+            DCBP::SetMarkedActor(a_handle);
     }
 
     template <class T>
@@ -981,7 +985,9 @@ namespace CBP
     }
 
     template <class T>
-    void UIActorList<T>::DrawActorList(actorListValue_t*& a_entry, const char*& a_curSelName)
+    void UIActorList<T>::DrawActorList(
+        actorListValue_t*& a_entry, 
+        const char*& a_curSelName)
     {
         if (a_entry) {
             a_curSelName = a_entry->second.first.c_str();
@@ -1146,7 +1152,8 @@ namespace CBP
         m_peNodes("Node profile editor"),
         m_importDialog(PLUGIN_CBP_EXPORTS_PATH),
         m_exportDialog(PLUGIN_CBP_EXPORTS_PATH),
-        state({ .windows{false, false, false, false, false, false, false, false, false, false} })
+        state({ .windows{false, false, false, false, false, false, false, false, false, false} }),
+        UIActorList<actorListBaseConf_t>(true)
     {
     }
 
@@ -1454,14 +1461,14 @@ namespace CBP
         if (openExportDialog)
             m_exportDialog.Open();
 
-        bool exportRes = m_exportDialog.Draw();            
+        bool exportRes = m_exportDialog.Draw();
 
-        if (state.windows.importDialog) 
+        if (state.windows.importDialog)
         {
             if (openImportDialog)
                 m_importDialog.OnOpen();
-            else if (exportRes) 
-                m_importDialog.UpdateFileList();            
+            else if (exportRes)
+                m_importDialog.UpdateFileList();
 
             if (m_importDialog.Draw(&state.windows.importDialog))
                 ClearActorList();
@@ -1577,6 +1584,15 @@ namespace CBP
 
                     if (ImGui::Checkbox("Wireframe", &globalConfig.debugRenderer.wireframe))
                         DCBP::MarkGlobalsForSave();
+
+                    ImGui::Spacing();
+
+                    ImGui::PushID(1);
+
+                    DrawKeyOptions("Combo key", comboKeyDesc, globalConfig.ui.comboKeyDR);
+                    DrawKeyOptions("Key", keyDesc, globalConfig.ui.showKeyDR);
+
+                    ImGui::PopID();
 
                     ImGui::Spacing();
 
@@ -1815,6 +1831,12 @@ namespace CBP
         ImGui::End();
 
         ImGui::PopID();
+    }
+
+
+    UINodeConfig::UINodeConfig() :
+        UIActorList<actorListNodeConf_t>(false)
+    {
     }
 
     void UINodeConfig::Reset()
@@ -2309,7 +2331,7 @@ namespace CBP
         ImVec2 center(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f);
         ImGui::SetNextWindowPos(center, ImGuiCond_FirstUseEver, ImVec2(0.5f, 0.5f));
 
-        ImVec2 sizeMin(std::min(300.0f, io.DisplaySize.x - 40.0f), std::min(200.0f, io.DisplaySize.y - 40.0f));
+        ImVec2 sizeMin(std::min(300.0f, io.DisplaySize.x - 40.0f), std::min(100.0f, io.DisplaySize.y - 40.0f));
         ImVec2 sizeMax(std::min(1920.0f, io.DisplaySize.x), std::max(io.DisplaySize.y - 40.0f, sizeMin.y));
 
         ImGui::SetNextWindowSizeConstraints(sizeMin, sizeMax);
@@ -2319,7 +2341,6 @@ namespace CBP
         if (ImGui::Begin("Stats", a_active))
         {
             ImGui::SetWindowFontScale(globalConfig.ui.fontScale);
-            //ImGui::PushItemWidth(ImGui::GetFontSize() * -15.0f);
 
             if (globalConfig.general.enableProfiling)
             {
@@ -2379,9 +2400,6 @@ namespace CBP
 
                 ImGui::PopItemWidth();
             }
-
-            //ImGui::PopItemWidth();
-
         }
 
         ImGui::End();
@@ -2418,7 +2436,7 @@ namespace CBP
         ImGui::SetNextWindowPos(center, ImGuiCond_FirstUseEver, ImVec2(0.5f, 0.5f));
 
         ImVec2 sizeMin(min(300.0f, io.DisplaySize.x - 40.0f), min(100.0f, io.DisplaySize.y - 40.0f));
-        ImVec2 sizeMax(min(1920.0f, io.DisplaySize.x), max(io.DisplaySize.y - 40.0f, sizeMin.y));
+        ImVec2 sizeMax(min(1920.0f, io.DisplaySize.x), std::max(io.DisplaySize.y - 40.0f, sizeMin.y));
 
         ImGui::SetNextWindowSizeConstraints(sizeMin, sizeMax);
         ImGui::SetNextWindowSize(ImVec2(400.0f, 600.0f), ImGuiCond_FirstUseEver);
@@ -2672,8 +2690,8 @@ namespace CBP
                     if (DCBP::ImportData(selected->m_path)) {
                         *a_active = false;
                         res = true;
-                    }             
-                    else 
+                    }
+                    else
                         ImGui::OpenPopup("Import failed");
                 }
             }
