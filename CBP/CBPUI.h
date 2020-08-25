@@ -402,7 +402,7 @@ namespace CBP
 
         actorListValue_t* GetSelectedEntry();
 
-        void DrawActorList(actorListValue_t*& a_entry, const char*& a_curSelName = false);
+        void DrawActorList(actorListValue_t*& a_entry, const char*& a_curSelName);
         void SetCurrentActor(SKSE::ObjectHandle a_handle);
 
         inline void ClearActorList() {
