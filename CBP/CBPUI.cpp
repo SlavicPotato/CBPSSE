@@ -2636,7 +2636,7 @@ namespace CBP
 
         ImGui::PushID(static_cast<const void*>(this));
 
-        if (ImGui::Begin("Select file to import", a_active, ImGuiWindowFlags_AlwaysAutoResize))
+        if (ImGui::Begin("Select file to import", a_active)) //kwek: removed Imgui window flags to allow for user resizing by default
         {
             ImGui::SetWindowFontScale(globalConfig.ui.fontScale);
 
