@@ -575,19 +575,13 @@ namespace CBP
         return c;
     }
 
-    size_t ISerialization::LoadGlobalProfile(SKSESerializationInterface* intfc, const char* a_data, UInt32 a_len)
+    size_t ISerialization::LoadGlobalProfile(SKSESerializationInterface* intfc, std::stringstream &a_data)
     {
         try
         {
             Json::Value root;
 
-            std::string errors;
-
-            Json::CharReaderBuilder builder;
-            const std::unique_ptr<Json::CharReader> reader(builder.newCharReader());
-
-            if (!reader->parse(a_data, a_data + a_len, &root, &errors))
-                throw std::exception("Parser failed");
+            a_data >> root;
 
             return _LoadGlobalProfile(root);
         }
@@ -689,18 +683,13 @@ namespace CBP
         return c;
     }
 
-    size_t ISerialization::LoadActorProfiles(SKSESerializationInterface* intfc, const char* a_data, UInt32 a_len)
+    size_t ISerialization::LoadActorProfiles(SKSESerializationInterface* intfc, std::stringstream& a_data)
     {
         try
         {
             Json::Value root;
-            std::string errors;
-
-            Json::CharReaderBuilder builder;
-            const std::unique_ptr<Json::CharReader> reader(builder.newCharReader());
-
-            if (!reader->parse(a_data, a_data + a_len, &root, &errors))
-                throw std::exception("Parser failed");
+            
+            a_data >> root;
 
             actorConfigComponentsHolder_t actorConfigComponents;
             actorConfigNodesHolder_t actorConfigNodes;
@@ -909,18 +898,13 @@ namespace CBP
         return c;
     }
 
-    size_t ISerialization::LoadRaceProfiles(SKSESerializationInterface* intfc, const char* a_data, UInt32 a_len)
+    size_t ISerialization::LoadRaceProfiles(SKSESerializationInterface* intfc, std::stringstream& a_data)
     {
         try
         {
             Json::Value root;
-            std::string errors;
-
-            Json::CharReaderBuilder builder;
-            const std::unique_ptr<Json::CharReader> reader(builder.newCharReader());
-
-            if (!reader->parse(a_data, a_data + a_len, &root, &errors))
-                throw std::exception("Parser failed");
+            
+            a_data >> root;
 
             raceConfigComponentsHolder_t raceConfigComponents;
 
@@ -937,7 +921,7 @@ namespace CBP
         }
     }
 
-    size_t ISerialization::SerializeActorProfiles(std::ostringstream& a_out)
+    size_t ISerialization::SerializeActorProfiles(std::stringstream& a_out)
     {
         try
         {
@@ -965,7 +949,7 @@ namespace CBP
         }
     }
 
-    size_t ISerialization::SerializeGlobalProfile(std::ostringstream& a_out)
+    size_t ISerialization::SerializeGlobalProfile(std::stringstream& a_out)
     {
         try
         {
@@ -1007,7 +991,7 @@ namespace CBP
         }
     }
 
-    size_t ISerialization::SerializeRaceProfiles(std::ostringstream& a_out)
+    size_t ISerialization::SerializeRaceProfiles(std::stringstream& a_out)
     {
         try
         {

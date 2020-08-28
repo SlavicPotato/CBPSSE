@@ -4,7 +4,8 @@ namespace CBP
 {
     __forceinline static bool ActorValid(const Actor* actor)
     {
-        if (actor == nullptr || actor->loadedState == nullptr ||
+        if (actor == nullptr || 
+            actor->loadedState == nullptr ||
             actor->loadedState->node == nullptr ||
             (actor->flags & TESForm::kFlagIsDeleted))
         {

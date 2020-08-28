@@ -314,6 +314,7 @@ namespace CBP
             bool ui_enabled;
             bool debug_renderer;
             bool force_ini_keys;
+            int compression_level;
 
             UInt32 comboKey;
             UInt32 showKey;

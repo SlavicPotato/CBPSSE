@@ -3,13 +3,13 @@ Modified version of [CBP Physics for Skyrim SE](https://github.com/cbpphysics/CB
 
 ## Changes
 * Decouple simulation speed from framerate
-* Use a real-time, high-resolution monotonic timer in physics calculations
 * Track all loaded actors instead of just those in the player cell
 * Track actors via events, no polling (cell/process lists scanning)
 * Version independent (requires [Address Library for SKSE Plugins](https://www.nexusmods.com/skyrimspecialedition/mods/32444))
 * Simulate any valid node
-* Per actor/race configuration via [in-game UI](https://i.imgur.com/qFOTDmH.png) (ImGUI)
+* Per actor/race physics and node configuration via [in-game UI](https://i.imgur.com/v8MZLIr.png) (ImGUI)
 * Collisions (reactphysics3d)
+* Renderer to aid in configuring collision bodies
 
 ## Build deps
 * [sse-build-resources](https://github.com/SlavicPotato/sse-build-resources)
@@ -17,6 +17,4 @@ Modified version of [CBP Physics for Skyrim SE](https://github.com/cbpphysics/CB
 * [JsonCpp](https://github.com/open-source-parsers/jsoncpp)
 * [reactphysics3d](https://github.com/DanielChappuis/reactphysics3d)
 * [DirectXTK](https://github.com/Microsoft/DirectXTK)
-
-#
-The old version is [here](https://github.com/SlavicPotato/CBPSSE/tree/old)
+* [boost](https://github.com/boostorg/boost)

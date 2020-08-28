@@ -153,17 +153,18 @@
     <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
   <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='ReleaseAVX2 MT|x64'">
-    <VcpkgTriplet>x64-windows-avx2-static</VcpkgTriplet>
+    <VcpkgTriplet>$(VcpkgUserTriplet)</VcpkgTriplet>
     <VcpkgConfiguration>Release</VcpkgConfiguration>
+    <VcpkgUseStatic>true</VcpkgUseStatic>
   </PropertyGroup>
   <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='PreRelease MT|x64'">
     <VcpkgUseStatic>true</VcpkgUseStatic>
     <VcpkgConfiguration>Debug</VcpkgConfiguration>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='PreReleaseAVX2 MT|x64'" Label="Vcpkg">
-    <VcpkgUseStatic>false</VcpkgUseStatic>
+    <VcpkgUseStatic>true</VcpkgUseStatic>
     <VcpkgConfiguration>Debug</VcpkgConfiguration>
-    <VcpkgTriplet>x64-windows-avx2-static</VcpkgTriplet>
+    <VcpkgTriplet>$(VcpkgUserTriplet)</VcpkgTriplet>
   </PropertyGroup>
   <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Release MT|x64'">
     <VcpkgConfiguration>Release</VcpkgConfiguration>
