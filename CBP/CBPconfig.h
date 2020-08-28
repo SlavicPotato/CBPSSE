@@ -237,7 +237,7 @@ namespace CBP
         float colSphereOffsetYMax = 0.0f;
         float colSphereOffsetZMin = 0.0f;
         float colSphereOffsetZMax = 0.0f;
-        float colDampingCoef = 2.0f;
+        float colDampingCoef = 1.5f;
         float colDepthMul = 100.0f;
 
         static const componentValueDescMap_t descMap;

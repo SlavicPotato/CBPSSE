@@ -6,24 +6,14 @@ namespace CBP
 
     DCBP DCBP::m_Instance;
 
-    constexpr char* SECTION_CBP = "CBP";
-    constexpr char* CKEY_CBPFEMALEONLY = "FemaleOnly";
-    constexpr char* CKEY_COMBOKEY = "ComboKey";
-    constexpr char* CKEY_SHOWKEY = "ToggleKey";
-    constexpr char* CKEY_UIENABLED = "UIEnabled";
-    constexpr char* CKEY_DEBUGRENDERER = "DebugRenderer";
-    constexpr char* CKEY_FORCEINIKEYS = "ForceINIKeys";
-
-    inline static bool ActorValid(const Actor* actor)
-    {
-        if (actor == nullptr || actor->loadedState == nullptr ||
-            actor->loadedState->node == nullptr ||
-            (actor->flags & TESForm::kFlagIsDeleted))
-        {
-            return false;
-        }
-        return true;
-    }
+    constexpr const char* SECTION_CBP = "CBP";
+    constexpr const char* CKEY_CBPFEMALEONLY = "FemaleOnly";
+    constexpr const char* CKEY_COMBOKEY = "ComboKey";
+    constexpr const char* CKEY_SHOWKEY = "ToggleKey";
+    constexpr const char* CKEY_UIENABLED = "UIEnabled";
+    constexpr const char* CKEY_DEBUGRENDERER = "DebugRenderer";
+    constexpr const char* CKEY_FORCEINIKEYS = "ForceINIKeys";
+    constexpr const char* CKEY_COMPLEVEL = "CompressionLevel";
 
     void DCBP::DispatchActorTask(Actor* actor, UTTask::UTTAction action)
     {
@@ -281,6 +271,7 @@ namespace CBP
         conf.ui_enabled = GetConfigValue(SECTION_CBP, CKEY_UIENABLED, true);
         conf.debug_renderer = GetConfigValue(SECTION_CBP, CKEY_DEBUGRENDERER, false);
         conf.force_ini_keys = GetConfigValue(SECTION_CBP, CKEY_FORCEINIKEYS, false);
+        conf.compression_level = std::clamp(GetConfigValue(SECTION_CBP, CKEY_COMPLEVEL, 1), 0, 9);
 
         auto& globalConfig = CBP::IConfig::GetGlobalConfig();
 
@@ -445,23 +436,54 @@ namespace CBP
         PerfTimer pt;
         pt.Start();
 
-        UInt32 actorsLength;
-        if (!intfc->ReadRecordData(&actorsLength, sizeof(actorsLength)))
+        UInt32 dataLength;
+        if (!intfc->ReadRecordData(&dataLength, sizeof(dataLength)))
         {
             m_Instance.Error("[%.4s]: Couldn't read record data length", &a_type);
             return false;
         }
 
-        if (actorsLength == 0)
+        if (dataLength == 0)
         {
             m_Instance.Error("[%.4s]: Record data length == 0", &a_type);
             return false;
         }
 
-        std::unique_ptr<char[]> data(new char[actorsLength]);
+        std::unique_ptr<char[]> data(new char[dataLength]);
 
-        if (!intfc->ReadRecordData(data.get(), actorsLength)) {
+        if (!intfc->ReadRecordData(data.get(), dataLength)) {
             m_Instance.Error("[%.4s]: Couldn't read record data", &a_type);
+            return false;
+        }
+
+        std::stringstream out;
+        std::streamsize length;
+
+        try
+        {
+            using namespace boost::iostreams;
+
+            typedef basic_array_source<char> Device;
+            stream<Device> stream(data.get(), dataLength);
+
+            filtering_streambuf<input> in;
+            in.push(gzip_decompressor(zlib::default_window_bits, 1024 * 128));
+            in.push(stream);
+            length = copy(in, out);
+        }
+        catch (const boost::iostreams::gzip_error& e)
+        {
+            m_Instance.Error("[%.4s]: %s: %d", &a_type, e.what(), e.error());
+            return false;
+        }
+        catch (const std::exception& e)
+        {
+            m_Instance.Error("[%.4s]: %s", &a_type, e.what());
+            return false;
+        }
+
+        if (!length) {
+            m_Instance.Error("[%.4s]: No data was decompressed", &a_type);
             return false;
         }
 
@@ -470,12 +492,11 @@ namespace CBP
             a_func,
             std::addressof(iface),
             std::placeholders::_1,
-            std::placeholders::_2,
-            std::placeholders::_3);
+            std::placeholders::_2);
 
-        size_t num = func(intfc, data.get(), actorsLength);
+        size_t num = func(intfc, out);
 
-        m_Instance.Debug("%s [%.4s]: %zu record(s), %f s", __FUNCTION__, &a_type, num, pt.Stop());
+        m_Instance.Debug("%s [%.4s]: %zu record(s), %fs (%u/%lld)", __FUNCTION__, &a_type, num, pt.Stop(), dataLength, length);
 
         return true;
     }
@@ -522,28 +543,69 @@ namespace CBP
     template <typename T>
     bool DCBP::SaveRecord(SKSESerializationInterface* intfc, UInt32 a_type, T a_func)
     {
+        struct strsink : public boost::iostreams::sink
+        {
+            strsink(std::string& a_dataHolder) :
+                data(a_dataHolder)
+            {}
+
+            std::streamsize write(
+                const char* a_data,
+                std::streamsize a_len)
+            {
+                data.append(a_data, a_len);
+                return a_len;
+            }
+
+            std::string& data;
+        };
+
         PerfTimer pt;
         pt.Start();
 
         auto& iface = m_Instance.m_serialization;
 
-        std::ostringstream data;
+        std::stringstream data;
+        std::string compressed;
+        strsink out(compressed);
         UInt32 length;
-
-        intfc->OpenRecord(a_type, kDataVersion1);
 
         size_t num = std::bind(a_func, std::addressof(iface), std::placeholders::_1)(data);
         if (num == 0)
             return false;
 
-        std::string strData(data.str());
+        auto& driverConf = GetDriverConfig();
 
-        length = static_cast<UInt32>(strData.length()) + 1;
+        try
+        {
+            using namespace boost::iostreams;
 
+            filtering_streambuf<input> in;
+            in.push(gzip_compressor(gzip_params(driverConf.compression_level), 1024 * 128));
+            in.push(data);
+            length = static_cast<UInt32>(copy(in, out));
+        }
+        catch (const boost::iostreams::gzip_error& e)
+        {
+            m_Instance.Error("[%.4s]: %s: %d", &a_type, e.what(), e.error());
+            return false;
+        }
+        catch (const std::exception& e)
+        {
+            m_Instance.Error("[%.4s]: %s", &a_type, e.what());
+            return false;
+        }
+
+        if (!length) {
+            m_Instance.Error("[%.4s]: no data was compressed", &a_type);
+            return false;
+        }
+
+        intfc->OpenRecord(a_type, kDataVersion1);
         intfc->WriteRecordData(&length, sizeof(length));
-        intfc->WriteRecordData(strData.c_str(), length);
+        intfc->WriteRecordData(compressed.data(), length);
 
-        m_Instance.Debug("%s [%.4s]: %zu record(s), %f s", __FUNCTION__, &a_type, num, pt.Stop());
+        m_Instance.Debug("%s [%.4s]: %zu record(s), %fs (%u)", __FUNCTION__, &a_type, num, pt.Stop(), length);
 
         return true;
     }

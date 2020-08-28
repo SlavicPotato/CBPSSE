@@ -30,6 +30,12 @@
 #include <Inc/DirectXHelpers.h>
 #include <Src/PlatformHelpers.h>
 
+#include <boost/iostreams/device/array.hpp>
+#include <boost/iostreams/stream.hpp>
+#include <boost/iostreams/filtering_streambuf.hpp>
+#include <boost/iostreams/copy.hpp>
+#include <boost/iostreams/filter/gzip.hpp>
+
 #include "json/json.h"
 
 #define DIRECTINPUT_VERSION 0x0800
