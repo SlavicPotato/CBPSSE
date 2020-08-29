@@ -83,8 +83,15 @@ namespace CBP
             return;
 
         auto& globalConf = CBP::IConfig::GetGlobalConfig();
-        m_Instance.m_world->setIsDebugRenderingEnabled(
-            globalConf.debugRenderer.enabled);
+        auto& debugRenderer = m_Instance.m_world->getDebugRenderer();
+
+        if (m_Instance.m_world->getIsDebugRenderingEnabled() !=
+            globalConf.debugRenderer.enabled)
+        {
+            m_Instance.m_world->setIsDebugRenderingEnabled(
+                globalConf.debugRenderer.enabled);
+            debugRenderer.reset();
+        }
     }
 
     void DCBP::UpdateDebugRendererSettings()
