@@ -144,8 +144,10 @@ namespace CBP
 
     void UIBase::HelpMarker(MiscHelpText a_id) const
     {
+        //kwek - font scaling extended to help popups
+        auto& globalConfig = IConfig::GetGlobalConfig();
         ImGui::SameLine();
-        UICommon::HelpMarker(m_helpText.at(a_id));
+        UICommon::HelpMarker(m_helpText.at(a_id), globalConfig.ui.fontScale);
     }
 
     template <class T>
@@ -2254,7 +2256,9 @@ namespace CBP
             if (ImGui::SliderFloat(e.second.descTag, pValue, e.second.min, e.second.max))
                 OnSimSliderChange(a_handle, a_data, a_pair, e, pValue);
 
-            ImGui::SameLine(); UICommon::HelpMarker(e.second.helpText);
+            //kwek - font scaling extended to help popups
+            auto& globalConfig = IConfig::GetGlobalConfig();
+            ImGui::SameLine(); UICommon::HelpMarker(e.second.helpText, globalConfig.ui.fontScale);
         }
     }
 
@@ -2636,7 +2640,7 @@ namespace CBP
 
         ImGui::PushID(static_cast<const void*>(this));
 
-        if (ImGui::Begin("Select file to import", a_active, ImGuiWindowFlags_AlwaysAutoResize))
+        if (ImGui::Begin("Select file to import", a_active)) //kwek: removed Imgui window flags to allow for user resizing by default
         {
             ImGui::SetWindowFontScale(globalConfig.ui.fontScale);
 

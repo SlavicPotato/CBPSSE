@@ -137,7 +137,7 @@ namespace CBP
         template<typename... Args>
         bool TextInputDialog(const char* name, const char* text, char* buf, size_t size, float a_scale, Args... args);
 
-        void HelpMarker(const char* desc);
+        void HelpMarker(const char* desc, float a_scale);
     };
 
 }
