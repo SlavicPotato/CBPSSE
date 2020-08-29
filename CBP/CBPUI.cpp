@@ -1488,7 +1488,7 @@ namespace CBP
 
         ImGui::PushID(static_cast<const void*>(this));
 
-        if (ImGui::Begin("Options", a_active, ImGuiWindowFlags_AlwaysAutoResize))
+        if (ImGui::Begin("Options", a_active))
         {
             ImGui::SetWindowFontScale(globalConfig.ui.fontScale);
 
