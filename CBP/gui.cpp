@@ -412,13 +412,15 @@ namespace CBP
 
         template bool TextInputDialog<>(const char*, const char*, char*, size_t, float);
 
-        void HelpMarker(const char* desc)
+        void HelpMarker(const char* desc, float a_scale)
         {
+            //kwek - font scaling extended to help popups
             ImGui::TextDisabled("[?]");
             if (ImGui::IsItemHovered())
             {
                 ImGui::BeginTooltip();
-                ImGui::PushTextWrapPos(ImGui::GetFontSize() * 35.0f);
+                ImGui::SetWindowFontScale(a_scale); 
+                ImGui::PushTextWrapPos(ImGui::GetFontSize() * a_scale * 35.0f);
                 ImGui::TextUnformatted(desc);
                 ImGui::PopTextWrapPos();
                 ImGui::EndTooltip();
