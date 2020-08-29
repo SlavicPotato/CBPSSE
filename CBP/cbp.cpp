@@ -83,11 +83,8 @@ namespace CBP
             return;
 
         auto& globalConf = CBP::IConfig::GetGlobalConfig();
-        if (globalConf.debugRenderer.enabled) {
-            m_Instance.m_world->setIsDebugRenderingEnabled(true);
-        }
-        else
-            m_Instance.m_world->setIsDebugRenderingEnabled(false);
+        m_Instance.m_world->setIsDebugRenderingEnabled(
+            globalConf.debugRenderer.enabled);
     }
 
     void DCBP::UpdateDebugRendererSettings()
@@ -103,6 +100,10 @@ namespace CBP
             globalConf.debugRenderer.contactPointSphereRadius);
         debugRenderer.setContactNormalLength(
             globalConf.debugRenderer.contactNormalLength);
+
+        debugRenderer.setIsDebugItemDisplayed(
+            r3d::DebugRenderer::DebugItem::COLLIDER_AABB,
+            globalConf.debugRenderer.drawAABB);
     }
 
     void DCBP::UpdateProfilerSettings()

@@ -148,6 +148,7 @@ namespace CBP
             float contactNormalLength = 2.0f;
             bool enableMovingNodes = false;
             float movingNodesRadius = 0.75f;
+            bool drawAABB = false;
         } debugRenderer;
 
         inline bool& GetColState(
