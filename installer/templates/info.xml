@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<fomod>
+    <Name>$name</Name>
+
+    <Author>SlavicPotato</Author>
+
+    <Version MachineVersion="$version">
+        $version
+    </Version>
+
+    <Description>
+       PotatoCBP is a advanced version of CBP Physics for Skyrim SE by polygonhell
+    </Description>
+
+    <Website>
+        https://github.com/SlavicPotato/CBPSSE
+    </Website>
+</fomod>
