@@ -333,6 +333,7 @@ namespace CBP
                     globalConfig.debugRenderer.contactNormalLength = debugRenderer.get("contactNormalLength", 2.0f).asFloat();
                     globalConfig.debugRenderer.enableMovingNodes = debugRenderer.get("enableMovingNodes", false).asBool();
                     globalConfig.debugRenderer.movingNodesRadius = debugRenderer.get("movingNodesRadius", 0.75f).asFloat();
+                    globalConfig.debugRenderer.drawAABB = debugRenderer.get("drawAABB", false).asBool();
                 }
             }
 
@@ -426,6 +427,7 @@ namespace CBP
             debugRenderer["contactNormalLength"] = globalConfig.debugRenderer.contactNormalLength;
             debugRenderer["enableMovingNodes"] = globalConfig.debugRenderer.enableMovingNodes;
             debugRenderer["movingNodesRadius"] = globalConfig.debugRenderer.movingNodesRadius;
+            debugRenderer["drawAABB"] = globalConfig.debugRenderer.drawAABB;
 
             WriteJsonData(PLUGIN_CBP_GLOBAL_DATA, root);
 

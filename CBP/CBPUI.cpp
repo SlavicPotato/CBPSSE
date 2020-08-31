@@ -988,7 +988,7 @@ namespace CBP
 
     template <class T>
     void UIActorList<T>::DrawActorList(
-        actorListValue_t*& a_entry, 
+        actorListValue_t*& a_entry,
         const char*& a_curSelName)
     {
         if (a_entry) {
@@ -1488,7 +1488,7 @@ namespace CBP
 
         ImGui::PushID(static_cast<const void*>(this));
 
-        if (ImGui::Begin("Options", a_active, ImGuiWindowFlags_AlwaysAutoResize))
+        if (ImGui::Begin("Options", a_active))
         {
             ImGui::SetWindowFontScale(globalConfig.ui.fontScale);
 
@@ -1612,9 +1612,8 @@ namespace CBP
 
                     ImGui::Spacing();
 
-                    if (ImGui::Checkbox("Draw moving nodes", &globalConfig.debugRenderer.enableMovingNodes)) {
+                    if (ImGui::Checkbox("Draw moving nodes", &globalConfig.debugRenderer.enableMovingNodes))
                         DCBP::MarkGlobalsForSave();
-                    }
 
                     if (ImGui::SliderFloat("Moving nodes sphere radius", &globalConfig.debugRenderer.movingNodesRadius, 0.1f, 10.0f, "%.2f")) {
                         globalConfig.debugRenderer.movingNodesRadius = std::clamp(globalConfig.debugRenderer.movingNodesRadius, 0.1f, 10.0f);
@@ -1622,6 +1621,11 @@ namespace CBP
                     }
 
                     ImGui::Spacing();
+
+                    if (ImGui::Checkbox("Draw AABB", &globalConfig.debugRenderer.drawAABB)) {
+                        DCBP::UpdateDebugRendererSettings();
+                        DCBP::MarkGlobalsForSave();
+                    }
                 }
             }
         }
@@ -2787,7 +2791,7 @@ namespace CBP
         bool res = false;
 
         ImGui::PushID(static_cast<const void*>(this));
-       
+
         if (UICommon::TextInputDialog("Export to file", "Enter filename", m_buf, sizeof(m_buf), globalConfig.ui.fontScale))
             res = OnFileInput();
 
