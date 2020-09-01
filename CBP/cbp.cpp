@@ -299,7 +299,7 @@ namespace CBP
     {
         m_Instance.LoadConfig();
 
-        ASSERT(Hook::Call5(
+        _assert(Hook::Call5(
             IAL::Addr(35551, 0x11f),
             reinterpret_cast<uintptr_t>(MainLoop_Hook),
             m_Instance.mainLoopUpdateFunc_o));

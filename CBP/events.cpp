@@ -15,6 +15,8 @@ namespace CBP
         SKSE::g_serialization->SetLoadCallback(SKSE::g_pluginHandle, LoadGameHandler);
         SKSE::g_serialization->SetFormDeleteCallback(SKSE::g_pluginHandle, FormDeleteHandler);
 
+        gLogger.SetWriteCallback(OnLogWrite);
+
         return true;
     }
 
@@ -80,6 +82,10 @@ namespace CBP
         TriggerEvent(Event::OnRevert, static_cast<void*>(intfc));
     }
 
+    void IEvents::OnLogWrite(char* a_buffer)
+    {
+        TriggerEvent(CBP::OnLogMessage, a_buffer);
+    }
 }
 
 

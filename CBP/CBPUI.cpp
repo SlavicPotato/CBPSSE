@@ -1492,6 +1492,8 @@ namespace CBP
         {
             ImGui::SetWindowFontScale(globalConfig.ui.fontScale);
 
+            ImGui::PushItemWidth(ImGui::GetFontSize() * -14.5f);
+
             if (CollapsingHeader("Options#General", "General"))
             {
                 ImGui::Spacing();
@@ -1628,6 +1630,8 @@ namespace CBP
                     }
                 }
             }
+
+            ImGui::PopItemWidth();
         }
 
         ImGui::End();

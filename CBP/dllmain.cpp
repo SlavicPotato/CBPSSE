@@ -3,12 +3,12 @@
 static bool Initialize(const SKSEInterface* skse)
 {
     if (!IAL::IsLoaded()) {
-        _FATALERROR("Could not load the address library");
+        gLogger.FatalError("Could not load the address library");
         return false;
     }
 
     if (IAL::HasBadQuery()) {
-        _FATALERROR("One or more addresses could not be retrieved from the database");
+        gLogger.FatalError("One or more addresses could not be retrieved from the database");
         return false;
     }
 
@@ -17,12 +17,12 @@ static bool Initialize(const SKSEInterface* skse)
     }
 
     if (!CBP::DTasks::Initialize()) {
-        _FATALERROR("Couldn't initialize task interface");
+        gLogger.FatalError("Couldn't initialize task interface");
         return false;
     }
 
     if (IConfigINI::Load() != 0) {
-        _WARNING("Couldn't load %s", PLUGIN_INI_FILE);
+        gLogger.Warning("Couldn't load %s", PLUGIN_INI_FILE);
     }
 
     CBP::IEvents::Initialize();
@@ -42,7 +42,7 @@ extern "C"
 
     bool SKSEPlugin_Load(const SKSEInterface* skse)
     {
-        _MESSAGE("Initializing %s version %s (runtime %u.%u.%u.%u)",
+        gLogger.Message("Initializing %s version %s (runtime %u.%u.%u.%u)",
             PLUGIN_NAME, PLUGIN_VERSION_VERSTRING,
             GET_EXE_VERSION_MAJOR(skse->runtimeVersion),
             GET_EXE_VERSION_MINOR(skse->runtimeVersion),

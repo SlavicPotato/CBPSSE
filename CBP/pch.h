@@ -80,9 +80,7 @@ namespace CBP
 //#define _CBP_ENABLE_DEBUG
 
 #include "plugin.h"
-#include "common.h"
 #include "misc.h"
-#include "logging.h"
 #include "skse.h"
 #include "game.h"
 #include "config.h"

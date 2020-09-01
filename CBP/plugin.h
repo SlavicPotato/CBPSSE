@@ -9,7 +9,7 @@
 #define CBP_DATA_BASE_PATH          "Data\\SKSE\\Plugins\\CBP\\"
 
 constexpr const char* PLUGIN_INI_FILE = PLUGIN_BASE_PATH "CBP.ini";
-constexpr const char* PLUGIN_LOG_PATH = "\\My Games\\Skyrim Special Edition\\SKSE\\" PLUGIN_NAME ".log";
+constexpr const char* PLUGIN_LOG_PATH = "My Games\\Skyrim Special Edition\\SKSE\\" PLUGIN_NAME ".log";
 constexpr const char* PLUGIN_CBP_CONFIG = PLUGIN_BASE_PATH "CBPConfig.txt";
 constexpr const char* PLUGIN_CBP_PROFILE_PATH = CBP_DATA_BASE_PATH "Profiles\\Physics";
 constexpr const char* PLUGIN_CBP_PROFILE_NODE_PATH = CBP_DATA_BASE_PATH "Profiles\\Node";

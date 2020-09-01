@@ -319,7 +319,7 @@ namespace CBP
             }
 
             auto newPath = it->second.Path();
-            ASSERT(newPath.has_filename());
+            _assert(newPath.has_filename());
             newPath.replace_filename(newFilename);
 
             if (fs::exists(newPath)) {

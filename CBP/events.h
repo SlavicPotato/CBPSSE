@@ -53,6 +53,8 @@ namespace CBP
 		static void LoadGameHandler(SKSESerializationInterface* intfc);
 		static void RevertHandler(SKSESerializationInterface* intfc);
 
+		static void OnLogWrite(char* a_buffer);
+
 		std::unordered_map<Event, std::vector<_EventTriggerDescriptor>> m_events;
 		std::unordered_map<UInt32, LoadGameEventCallback> m_loadgame_events;
 

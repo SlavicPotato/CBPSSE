@@ -455,7 +455,6 @@
     <ClInclude Include="CBPThing.h" />
     <ClInclude Include="CBPUI.h" />
     <ClInclude Include="CBPUpdater.h" />
-    <ClInclude Include="common.h" />
     <ClInclude Include="config.h" />
     <ClInclude Include="events.h" />
     <ClInclude Include="game.h" />
@@ -465,7 +464,6 @@
     <ClInclude Include="input.h" />
     <ClInclude Include="misc.h" />
     <ClInclude Include="plugin.h" />
-    <ClInclude Include="logging.h" />
     <ClInclude Include="macro_helpers.h" />
     <ClInclude Include="patching.h" />
     <ClInclude Include="pch.h" />
@@ -496,7 +494,6 @@
     <ClCompile Include="imgui_impl_dx11.cpp" />
     <ClCompile Include="imgui_impl_win32.cpp" />
     <ClCompile Include="input.cpp" />
-    <ClCompile Include="logging.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
