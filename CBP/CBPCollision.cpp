@@ -2,9 +2,12 @@
 
 namespace CBP
 {
-    namespace r3d = reactphysics3d;
-
     ICollision ICollision::m_Instance;
+
+    void ICollision::Initialize(r3d::PhysicsWorld* a_world)
+    {
+        a_world->setCollisionCheckCallback(collisionCheckFunc);
+    }
 
     void ICollision::onContact(const CollisionCallback::CallbackData& callbackData)
     {
@@ -23,9 +26,6 @@ namespace CBP
 
             auto sc1 = static_cast<SimComponent*>(col1->getUserData());
             auto sc2 = static_cast<SimComponent*>(col2->getUserData());
-
-            if (sc1->IsSameGroup(*sc2))
-                continue;
 
             auto type = contactPair.getEventType();
 
@@ -109,5 +109,16 @@ namespace CBP
 
         vaf = (normal * (maga * depth));
         vbf = (normal * (-magb * depth));
+    }
+
+    bool ICollision::collisionCheckFunc(r3d::Collider* a_lhs, r3d::Collider* a_rhs)
+    {
+        auto sc1 = static_cast<SimComponent*>(a_lhs->getUserData());
+        auto sc2 = static_cast<SimComponent*>(a_rhs->getUserData());
+
+        if (!sc1->HasMovement() && !sc2->HasMovement())
+            return false;
+
+        return !sc1->IsSameGroup(*sc2);
     }
 }

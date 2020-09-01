@@ -15,6 +15,8 @@ namespace CBP
             m_Instance.m_timeStep = a_timeStep;
         }
 
+        static void Initialize(r3d::PhysicsWorld *a_world);
+
         ICollision(const ICollision&) = delete;
         ICollision(ICollision&&) = delete;
         ICollision& operator=(const ICollision&) = delete;
@@ -35,6 +37,8 @@ namespace CBP
             NiPoint3& vaf,
             NiPoint3& vbf
         );
+
+        static bool collisionCheckFunc(r3d::Collider* a_lhs, r3d::Collider* a_rhs);
 
         float m_timeStep = 1.0f / 60.0f;
 

@@ -317,6 +317,8 @@ namespace CBP
         m_Instance.m_world = m_Instance.m_physicsCommon.createPhysicsWorld();
         m_Instance.m_world->setEventListener(std::addressof(CBP::ICollision::GetSingleton()));
 
+        ICollision::Initialize(m_Instance.m_world);
+
         if (m_Instance.conf.debug_renderer) {
             IEvents::RegisterForEvent(Event::OnD3D11PostCreate, OnD3D11PostCreate_CBP);
 
