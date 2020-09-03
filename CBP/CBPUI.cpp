@@ -2293,54 +2293,61 @@ namespace CBP
     {
         auto& nodeMap = IConfig::GetNodeMap();
 
-        ImGui::PushItemWidth(ImGui::GetFontSize() * -10.0f);
+        const float width = ImGui::GetWindowContentRegionMax().x;
 
-        for (const auto& e : nodeMap)
+        if (ImGui::BeginChild("ncc_area", ImVec2(width, 0.0f), 0.0f))
         {
-            ImGui::PushID(static_cast<const void*>(std::addressof(e)));
+            ImGui::PushItemWidth(ImGui::GetFontSize() * -10.0f);
 
-            std::string label = (e.first + " - " + e.second);
-
-            if (CollapsingHeader(GetCSID(e.first), label.c_str()))
+            for (const auto& e : nodeMap)
             {
-                auto& conf = a_data[e.first];
+                ImGui::PushID(static_cast<const void*>(std::addressof(e)));
 
-                bool changed = false;
+                std::string label = (e.first + " - " + e.second);
 
-                ImGui::Columns(2, nullptr, false);
+                if (CollapsingHeader(GetCSID(e.first), label.c_str()))
+                {
+                    auto& conf = a_data[e.first];
 
-                ImGui::Text("Female");
+                    bool changed = false;
 
-                ImGui::PushID(1);
+                    ImGui::Columns(2, nullptr, false);
 
-                ImGui::Spacing();
-                changed |= ImGui::Checkbox("Movement", &conf.femaleMovement);
-                changed |= ImGui::Checkbox("Collisions", &conf.femaleCollisions);
+                    ImGui::Text("Female");
+
+                    ImGui::PushID(1);
+
+                    ImGui::Spacing();
+                    changed |= ImGui::Checkbox("Movement", &conf.femaleMovement);
+                    changed |= ImGui::Checkbox("Collisions", &conf.femaleCollisions);
+
+                    ImGui::PopID();
+
+                    ImGui::NextColumn();
+
+                    ImGui::Text("Male");
+
+                    ImGui::PushID(2);
+
+                    ImGui::Spacing();
+                    changed |= ImGui::Checkbox("Movement", &conf.maleMovement);
+                    changed |= ImGui::Checkbox("Collisions", &conf.maleCollisions);
+
+                    ImGui::PopID();
+
+                    ImGui::Columns(1);
+
+                    if (changed)
+                        UpdateNodeData(a_handle, e.first, conf);
+                }
 
                 ImGui::PopID();
-
-                ImGui::NextColumn();
-
-                ImGui::Text("Male");
-
-                ImGui::PushID(2);
-
-                ImGui::Spacing();
-                changed |= ImGui::Checkbox("Movement", &conf.maleMovement);
-                changed |= ImGui::Checkbox("Collisions", &conf.maleCollisions);
-
-                ImGui::PopID();
-
-                ImGui::Columns(1);
-
-                if (changed)
-                    UpdateNodeData(a_handle, e.first, conf);
             }
 
-            ImGui::PopID();
+            ImGui::PopItemWidth();
         }
 
-        ImGui::PopItemWidth();
+        ImGui::EndChild();
     }
 
     void UIProfiling::Draw(bool* a_active)
