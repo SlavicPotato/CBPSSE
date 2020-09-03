@@ -369,8 +369,7 @@ namespace CBP
 
         auto& globalConf = IConfig::GetGlobalConfig();
 
-        if (globalConf.debugRenderer.enabled &&
-            globalConf.phys.collisions)
+        if (globalConf.debugRenderer.enabled)
         {
             auto mm = MenuManager::GetSingleton();
             if (!mm || !mm->InPausedMenu()) {

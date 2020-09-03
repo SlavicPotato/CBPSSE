@@ -63,8 +63,8 @@ namespace CBP
         {
             for (const auto& n : e.second)
             {
-                if (n.second.HasActiveCollider())
-                    continue;
+                /*if (n.second.HasActiveCollider())
+                    continue;*/
 
                 GenerateSphere(n.second.GetPos(), a_radius, MOVING_NODES_COL);
             }

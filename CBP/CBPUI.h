@@ -178,6 +178,11 @@ namespace CBP
         virtual bool ShouldDrawComponent(
             T m_handle,
             const configComponents_t::value_type& a_comp);
+
+        void DrawMirrorContextMenu(
+            T a_handle,
+            configComponents_t& a_data,
+            configComponents_t::value_type& a_entry);
     };
 
     template <class T, UIEditorID ID>

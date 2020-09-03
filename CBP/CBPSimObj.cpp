@@ -8,6 +8,7 @@ namespace CBP
         char a_sex,
         const configComponents_t& a_config,
         const nodeMap_t& a_nodeMap,
+        bool a_collisions,
         nodeDescList_t& a_out)
         -> nodeDescList_t::size_type
     {
@@ -32,7 +33,14 @@ namespace CBP
             if (!collisions && !movement)
                 continue;
 
-            a_out.emplace_back(nodeDesc_t{ b.first, bone, it->first, it->second, collisions, movement });
+            a_out.emplace_back(
+                nodeDesc_t{
+                    b.first, 
+                    bone, 
+                    it->first, 
+                    it->second, 
+                    a_collisions && collisions, 
+                    movement });
         }
 
         return a_out.size();
@@ -98,13 +106,7 @@ namespace CBP
             p.second.UpdateVelocity();
     }
 
-    void SimObject::UpdateColliderData()
-    {
-        for (auto& p : m_things)
-            p.second.UpdateColliderData();
-    }
-
-    void SimObject::UpdateConfig(Actor* a_actor, const configComponents_t& a_config)
+    void SimObject::UpdateConfig(Actor* a_actor, bool a_collisions, const configComponents_t& a_config)
     {
         for (auto& p : m_things)
         {
@@ -121,7 +123,7 @@ namespace CBP
             p.second.UpdateConfig(
                 a_actor,
                 it2->second,
-                collisions,
+                a_collisions && collisions,
                 movement
             );
         }

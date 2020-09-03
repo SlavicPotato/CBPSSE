@@ -2206,41 +2206,7 @@ namespace CBP
 
                     if (ImGui::BeginPopup("mirror_popup"))
                     {
-                        auto& mirrorTo = globalConfig.ui.mirror[ID];
-
-                        auto c = mirrorTo.try_emplace(p.first);
-                        auto& d = c.first->second;
-
-                        for (const auto& e : a_data)
-                        {
-                            if (e.first == p.first)
-                                continue;
-
-                            if (!ShouldDrawComponent(a_handle, e))
-                                continue;
-
-                            auto headerName = e.first;
-                            if (headerName.size() != 0)
-                                headerName[0] = std::toupper(headerName[0]);
-
-                            auto i = d.try_emplace(e.first, false);
-                            if (ImGui::MenuItem(headerName.c_str(), nullptr, std::addressof(i.first->second)))
-                            {
-                                auto f = mirrorTo.try_emplace(e.first);
-                                f.first->second.insert_or_assign(p.first, i.first->second);
-
-                                DCBP::MarkGlobalsForSave();
-                            }
-                        }
-
-                        if (d.size()) {
-                            ImGui::Separator();
-
-                            if (ImGui::MenuItem("Clear")) {
-                                mirrorTo.erase(p.first);
-                                DCBP::MarkGlobalsForSave();
-                            }
-                        }
+                        DrawMirrorContextMenu(a_handle, a_data, p);
 
                         ImGui::EndPopup();
                     }
@@ -2255,6 +2221,52 @@ namespace CBP
         }
 
         ImGui::EndChild();
+    }
+
+
+    template <class T, UIEditorID ID>
+    void UISimComponent<T, ID>::DrawMirrorContextMenu(
+        T a_handle,
+        configComponents_t& a_data,
+        configComponents_t::value_type& a_entry)
+    {
+        auto& globalConfig = IConfig::GetGlobalConfig();
+
+        auto& mirrorTo = globalConfig.ui.mirror[ID];
+
+        auto c = mirrorTo.try_emplace(a_entry.first);
+        auto& d = c.first->second;
+
+        for (const auto& e : a_data)
+        {
+            if (e.first == a_entry.first)
+                continue;
+
+            if (!ShouldDrawComponent(a_handle, e))
+                continue;
+
+            auto headerName = e.first;
+            if (headerName.size() != 0)
+                headerName[0] = std::toupper(headerName[0]);
+
+            auto i = d.try_emplace(e.first, false);
+            if (ImGui::MenuItem(headerName.c_str(), nullptr, std::addressof(i.first->second)))
+            {
+                auto f = mirrorTo.try_emplace(e.first);
+                f.first->second.insert_or_assign(a_entry.first, i.first->second);
+
+                DCBP::MarkGlobalsForSave();
+            }
+        }
+
+        if (d.size()) {
+            ImGui::Separator();
+
+            if (ImGui::MenuItem("Clear")) {
+                mirrorTo.erase(a_entry.first);
+                DCBP::MarkGlobalsForSave();
+            }
+        }
     }
 
     template <class T, UIEditorID ID>

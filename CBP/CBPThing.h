@@ -160,7 +160,6 @@ namespace CBP
 
         void UpdateMovement(float timeStep);
         void UpdateVelocity();
-        void UpdateColliderData();
         void Reset();
 
         void ApplyForce(uint32_t a_steps, const NiPoint3& a_force);

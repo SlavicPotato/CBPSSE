@@ -42,8 +42,7 @@ namespace CBP
 
         void UpdateMovement(float a_timeStep);
         void UpdateVelocity();
-        void UpdateColliderData();
-        void UpdateConfig(Actor* a_actor, const configComponents_t& a_config);
+        void UpdateConfig(Actor* a_actor, bool a_collisions, const configComponents_t& a_config);
         void Reset();
 
         void ApplyForce(uint32_t a_steps, const std::string& a_component, const NiPoint3& a_force);
@@ -70,6 +69,7 @@ namespace CBP
             char a_sex,
             const configComponents_t& a_config,
             const nodeMap_t& a_nodeMap,
+            bool a_collisions,
             nodeDescList_t& a_out)
             ->nodeDescList_t::size_type;
 

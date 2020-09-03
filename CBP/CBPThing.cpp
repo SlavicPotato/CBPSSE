@@ -22,7 +22,7 @@ namespace CBP
             return false;
 
         auto world = DCBP::GetWorld();
-        auto& physicsCommon = DCBP::GetPhysicsCommon();
+        auto &physicsCommon = DCBP::GetPhysicsCommon();
 
         m_body = world->createCollisionBody(r3d::Transform::identity());
         m_sphereShape = physicsCommon.createSphereShape(m_parent.m_conf.colSphereRadMax);
@@ -41,7 +41,7 @@ namespace CBP
             return false;
 
         auto world = DCBP::GetWorld();
-        auto& physicsCommon = DCBP::GetPhysicsCommon();
+        auto &physicsCommon = DCBP::GetPhysicsCommon();
 
         m_body->removeCollider(m_collider);
         physicsCommon.destroySphereShape(m_sphereShape);
@@ -224,7 +224,7 @@ namespace CBP
         {
             auto& globalConf = IConfig::GetGlobalConfig();
 
-            //Offset to move Center of Mass make rotaional motion more significant  
+            //Offset to move Center of Mass make rotational motion more significant  
             NiPoint3 target(m_objParent->m_worldTransform * m_npCogOffset);
 
             NiPoint3 diff(target - m_oldWorldPos);
@@ -268,6 +268,7 @@ namespace CBP
             newPos += m_velocity * a_timeStep;
 
             diff = newPos - target;
+
             diff.x = std::clamp(diff.x, -m_conf.maxOffset, m_conf.maxOffset);
             diff.y = std::clamp(diff.y, -m_conf.maxOffset, m_conf.maxOffset);
             diff.z = std::clamp(diff.z, -m_conf.maxOffset, m_conf.maxOffset);
@@ -302,11 +303,6 @@ namespace CBP
         auto newPos = m_obj->m_worldTransform.pos;
         m_velocity = newPos - m_oldWorldPos;
         m_oldWorldPos = newPos;
-    }
-
-    void SimComponent::UpdateColliderData()
-    {
-
     }
 
     void SimComponent::ApplyForce(uint32_t a_steps, const NiPoint3& a_force)

@@ -133,8 +133,7 @@ namespace CBP
 
         auto& globalConf = IConfig::GetGlobalConfig();
 
-        if (globalConf.phys.collisions)
-            UpdateDebugRenderer();
+        UpdateDebugRenderer();
 
         if (globalConf.general.enableProfiling)
             m_profiler.Begin();
@@ -242,8 +241,17 @@ namespace CBP
         auto& nodeMap = IConfig::GetNodeMap();
 
         nodeDescList_t descList;
-        if (!SimObject::CreateNodeDescriptorList(a_handle, actor, sex, actorConf, nodeMap, descList))
+        if (!SimObject::CreateNodeDescriptorList(
+            a_handle,
+            actor,
+            sex,
+            actorConf,
+            nodeMap,
+            globalConfig.phys.collisions,
+            descList))
+        {
             return;
+        }
 
         IData::UpdateActorRaceMap(a_handle, actor);
 
@@ -276,6 +284,8 @@ namespace CBP
 
     void UpdateTask::UpdateConfigOnAllActors()
     {
+        auto& globalConfig = IConfig::GetGlobalConfig();
+
         for (auto& e : m_actors)
         {
             auto actor = SKSE::ResolveObject<Actor>(e.first, Actor::kTypeID);
@@ -285,6 +295,7 @@ namespace CBP
 
             e.second.UpdateConfig(
                 actor,
+                globalConfig.phys.collisions,
                 CBP::IConfig::GetActorConf(e.first));
         }
     }
@@ -300,8 +311,11 @@ namespace CBP
         if (!ActorValid(actor))
             return;
 
+        auto& globalConfig = IConfig::GetGlobalConfig();
+
         it->second.UpdateConfig(
             actor,
+            globalConfig.phys.collisions,
             CBP::IConfig::GetActorConf(it->first));
     }
 
@@ -356,7 +370,13 @@ namespace CBP
         for (const auto e : handles)
             AddActor(e);
 
-        CBP::IData::UpdateActorCache(m_actors);
+        IData::UpdateActorCache(m_actors);
+
+        if (DCBP::GetDriverConfig().debug_renderer)
+        {
+            DCBP::GetRenderer()->Clear();
+            DCBP::GetWorld()->getDebugRenderer().reset();
+        }
     }
 
     void UpdateTask::PhysicsReset()
