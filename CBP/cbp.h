@@ -190,10 +190,10 @@ namespace CBP
         }
 
         inline static void MarkGlobalsForSave() {
-            m_Instance.m_serialization.MarkForSave(CBP::ISerialization::kGlobals);
+            m_Instance.m_serialization.MarkForSave(ISerialization::kGlobals);
         }
 
-        inline static void MarkForSave(CBP::ISerialization::Group a_grp) {
+        inline static void MarkForSave(ISerialization::Group a_grp) {
             m_Instance.m_serialization.MarkForSave(a_grp);
         }
 
@@ -211,7 +211,7 @@ namespace CBP
 
         static bool ExportData(const std::filesystem::path& a_path);
         static bool ImportData(const std::filesystem::path& a_path);
-        static bool ImportGetInfo(const std::filesystem::path& a_path, CBP::importInfo_t& a_out);
+        static bool ImportGetInfo(const std::filesystem::path& a_path, importInfo_t& a_out);
 
         [[nodiscard]] inline static const auto& GetLastSerializationException() {
             return m_Instance.m_serialization.GetLastException();
@@ -334,7 +334,7 @@ namespace CBP
         } uiState;
 
         ISerialization m_serialization;
-        std::unique_ptr<CBP::Renderer> m_renderer;
+        std::unique_ptr<Renderer> m_renderer;
 
         r3d::PhysicsWorld* m_world;
         r3d::PhysicsCommon m_physicsCommon;

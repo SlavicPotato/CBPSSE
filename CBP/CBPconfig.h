@@ -403,7 +403,7 @@ namespace CBP
         }
 
         inline static void ResetGlobalConfig() {
-            globalConfig = CBP::configGlobal_t();
+            globalConfig = configGlobal_t();
         }
 
         inline static void ClearGlobalPhysicsConfig() {

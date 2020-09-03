@@ -38,7 +38,7 @@ namespace CBP
     void DCBP::UpdateGroupInfoOnAllActors()
     {
         m_Instance.m_updateTask.AddTask(
-            CBP::UTTask::kActionUpdateGroupInfoAll);
+            UTTask::kActionUpdateGroupInfoAll);
     }
 
     void DCBP::ResetPhysics()
@@ -50,25 +50,25 @@ namespace CBP
     void DCBP::NiNodeUpdate()
     {
         m_Instance.m_updateTask.AddTask(
-            CBP::UTTask::kActionNiNodeUpdateAll);
+            UTTask::kActionNiNodeUpdateAll);
     }
 
     void DCBP::NiNodeUpdate(SKSE::ObjectHandle a_handle)
     {
         m_Instance.m_updateTask.AddTask(
-            CBP::UTTask::kActionNiNodeUpdate, a_handle);
+            UTTask::kActionNiNodeUpdate, a_handle);
     }
 
     void DCBP::WeightUpdate()
     {
         m_Instance.m_updateTask.AddTask(
-            CBP::UTTask::kActionWeightUpdateAll);
+            UTTask::kActionWeightUpdateAll);
     }
 
     void DCBP::WeightUpdate(SKSE::ObjectHandle a_handle)
     {
         m_Instance.m_updateTask.AddTask(
-            CBP::UTTask::kActionWeightUpdate, a_handle);
+            UTTask::kActionWeightUpdate, a_handle);
     }
 
     void DCBP::ResetActors()
@@ -82,7 +82,7 @@ namespace CBP
         if (!m_Instance.conf.debug_renderer)
             return;
 
-        auto& globalConf = CBP::IConfig::GetGlobalConfig();
+        auto& globalConf = IConfig::GetGlobalConfig();
         auto& debugRenderer = m_Instance.m_world->getDebugRenderer();
 
         if (m_Instance.m_world->getIsDebugRenderingEnabled() !=
@@ -99,7 +99,7 @@ namespace CBP
         if (!m_Instance.conf.debug_renderer)
             return;
 
-        auto& globalConf = CBP::IConfig::GetGlobalConfig();
+        auto& globalConf = IConfig::GetGlobalConfig();
 
         auto& debugRenderer = m_Instance.m_world->getDebugRenderer();
 
@@ -115,7 +115,7 @@ namespace CBP
 
     void DCBP::UpdateProfilerSettings()
     {
-        auto& globalConf = CBP::IConfig::GetGlobalConfig();
+        auto& globalConf = IConfig::GetGlobalConfig();
         auto& profiler = GetProfiler();
 
         profiler.SetInterval(static_cast<long long>(
@@ -155,14 +155,14 @@ namespace CBP
         if (it != actors.end())
             return it->second.HasConfigGroup(a_cg);
 
-        auto& cgMap = CBP::IConfig::GetConfigGroupMap();
+        auto& cgMap = IConfig::GetConfigGroupMap();
         auto itc = cgMap.find(a_cg);
         if (itc == cgMap.end())
             return false;
 
         for (const auto& e : itc->second) {
-            CBP::configNode_t tmp;
-            if (CBP::IConfig::GetActorNodeConfig(a_handle, e, tmp))
+            configNode_t tmp;
+            if (IConfig::GetActorNodeConfig(a_handle, e, tmp))
                 if (tmp)
                     return true;
         }
@@ -173,14 +173,14 @@ namespace CBP
 
     bool DCBP::GlobalHasConfigGroup(const std::string& a_cg)
     {
-        auto& cgMap = CBP::IConfig::GetConfigGroupMap();
+        auto& cgMap = IConfig::GetConfigGroupMap();
         auto itc = cgMap.find(a_cg);
         if (itc == cgMap.end())
             return true;
 
         for (const auto& e : itc->second) {
-            CBP::configNode_t tmp;
-            if (CBP::IConfig::GetGlobalNodeConfig(e, tmp)) {
+            configNode_t tmp;
+            if (IConfig::GetGlobalNodeConfig(e, tmp)) {
                 if (tmp)
                     return true;
             }
@@ -213,7 +213,7 @@ namespace CBP
         return res;
     }
 
-    bool DCBP::ImportGetInfo(const std::filesystem::path& a_path, CBP::importInfo_t& a_out)
+    bool DCBP::ImportGetInfo(const std::filesystem::path& a_path, importInfo_t& a_out)
     {
         auto& iface = m_Instance.m_serialization;
         return iface.ImportGetInfo(a_path, a_out);
@@ -281,7 +281,7 @@ namespace CBP
         conf.force_ini_keys = GetConfigValue(SECTION_CBP, CKEY_FORCEINIKEYS, false);
         conf.compression_level = std::clamp(GetConfigValue(SECTION_CBP, CKEY_COMPLEVEL, 1), 0, 9);
 
-        auto& globalConfig = CBP::IConfig::GetGlobalConfig();
+        auto& globalConfig = IConfig::GetGlobalConfig();
 
         globalConfig.general.femaleOnly = GetConfigValue(SECTION_CBP, CKEY_CBPFEMALEONLY, true);
         globalConfig.ui.comboKey = conf.comboKey = ConfigGetComboKey(GetConfigValue(SECTION_CBP, CKEY_COMBOKEY, 1));
@@ -315,7 +315,7 @@ namespace CBP
         SKSE::g_papyrus->Register(RegisterFuncs);
 
         m_Instance.m_world = m_Instance.m_physicsCommon.createPhysicsWorld();
-        m_Instance.m_world->setEventListener(std::addressof(CBP::ICollision::GetSingleton()));
+        m_Instance.m_world->setEventListener(std::addressof(ICollision::GetSingleton()));
 
         ICollision::Initialize(m_Instance.m_world);
 
@@ -343,10 +343,10 @@ namespace CBP
 
         IConfig::LoadConfig();
 
-        auto& pms = CBP::GlobalProfileManager::GetSingleton<CBP::SimProfile>();
+        auto& pms = GlobalProfileManager::GetSingleton<SimProfile>();
         pms.Load(PLUGIN_CBP_PROFILE_PATH);
 
-        auto& pmn = CBP::GlobalProfileManager::GetSingleton<CBP::NodeProfile>();
+        auto& pmn = GlobalProfileManager::GetSingleton<NodeProfile>();
         pmn.Load(PLUGIN_CBP_PROFILE_NODE_PATH);
     }
 
@@ -356,7 +356,7 @@ namespace CBP
 
         if (m_Instance.conf.debug_renderer)
         {
-            m_Instance.m_renderer = std::make_unique<CBP::Renderer>(
+            m_Instance.m_renderer = std::make_unique<Renderer>(
                 info->m_pDevice, info->m_pImmediateContext);
 
             m_Instance.Debug("Renderer initialized");
@@ -367,14 +367,21 @@ namespace CBP
     {
         Lock();
 
-        auto& globalConf = CBP::IConfig::GetGlobalConfig();
+        auto& globalConf = IConfig::GetGlobalConfig();
 
         if (globalConf.debugRenderer.enabled &&
             globalConf.phys.collisions)
         {
             auto mm = MenuManager::GetSingleton();
-            if (!mm || !mm->InPausedMenu())
-                m_Instance.m_renderer->Draw();
+            if (!mm || !mm->InPausedMenu()) {
+                try {
+                    m_Instance.m_renderer->Draw();
+                }
+                catch (const std::exception& e) {
+                    m_Instance.Error("%s: exception occurred during draw, disabling debug renderer: %s", __FUNCTION__, e.what());
+                    globalConf.debugRenderer.enabled = false;
+                }
+            }        
         }
 
         Unlock();
@@ -407,8 +414,8 @@ namespace CBP
 
             m_Instance.Debug("Init script event sink added");
 
-            if (CBP::IData::PopulateRaceList())
-                m_Instance.Debug("%zu TESRace forms found", CBP::IData::RaceListSize());
+            if (IData::PopulateRaceList())
+                m_Instance.Debug("%zu TESRace forms found", IData::RaceListSize());
 
             auto& iface = m_Instance.m_serialization;
 
@@ -420,13 +427,13 @@ namespace CBP
             iface.LoadGlobals();
             iface.LoadCollisionGroups();
             if (iface.LoadDefaultGlobalProfile())
-                CBP::IConfig::StoreDefaultGlobalProfile();
+                IConfig::StoreDefaultGlobalProfile();
 
             UpdateDebugRendererState();
             UpdateDebugRendererSettings();
             UpdateProfilerSettings();
 
-            DCBP::GetUpdateTask().UpdateTimeTick(CBP::IConfig::GetGlobalConfig().phys.timeTick);
+            GetUpdateTask().UpdateTimeTick(IConfig::GetGlobalConfig().phys.timeTick);
             UpdateKeys();
 
             Unlock();
@@ -650,30 +657,28 @@ namespace CBP
 
         Lock();
 
-        auto& globalConf = CBP::IConfig::GetGlobalConfig();
-
         if (GetDriverConfig().debug_renderer)
             GetRenderer()->Clear();
 
         m_Instance.m_loadInstance++;
 
-        CBP::IConfig::ClearActorConfigHolder();
-        CBP::IConfig::ClearActorNodeConfigHolder();
-        CBP::IConfig::ClearRaceConfigHolder();
+        IConfig::ClearActorConfigHolder();
+        IConfig::ClearActorNodeConfigHolder();
+        IConfig::ClearRaceConfigHolder();
 
         auto& iface = m_Instance.m_serialization;
-        auto& dgp = CBP::IConfig::GetDefaultGlobalProfile();
+        auto& dgp = IConfig::GetDefaultGlobalProfile();
 
         if (dgp.stored) {
-            CBP::IConfig::SetGlobalPhysicsConfig(dgp.components);
-            CBP::IConfig::SetGlobalNodeConfig(dgp.nodes);
+            IConfig::SetGlobalPhysicsConfig(dgp.components);
+            IConfig::SetGlobalNodeConfig(dgp.nodes);
         }
         else {
-            CBP::IConfig::ClearGlobalPhysicsConfig();
-            CBP::IConfig::ClearGlobalNodeConfig();
+            IConfig::ClearGlobalPhysicsConfig();
+            IConfig::ClearGlobalNodeConfig();
 
             if (iface.LoadDefaultGlobalProfile())
-                CBP::IConfig::StoreDefaultGlobalProfile();
+                IConfig::StoreDefaultGlobalProfile();
         }
 
         GetUpdateTask().ClearActors();
@@ -764,7 +769,7 @@ namespace CBP
             player->byCharGenFlag |= byChargenDisableFlags;
         }
 
-        auto& globalConf = CBP::IConfig::GetGlobalConfig();
+        auto& globalConf = IConfig::GetGlobalConfig();
 
         uiState.lockControls = globalConf.ui.lockControls;
 
@@ -777,7 +782,7 @@ namespace CBP
 
         m_uiContext.Reset(m_loadInstance);
 
-        CBP::IData::UpdateActorCache(GetSimActorList());
+        IData::UpdateActorCache(GetSimActorList());
     }
 
     void DCBP::DisableUI()
@@ -851,7 +856,7 @@ namespace CBP
 
     void DCBP::KeyPressHandler::UpdateKeys()
     {
-        auto& globalConfig = CBP::IConfig::GetGlobalConfig();
+        auto& globalConfig = IConfig::GetGlobalConfig();
         auto& driverConf = GetDriverConfig();
 
         if (driverConf.force_ini_keys) {
@@ -895,7 +900,7 @@ namespace CBP
 
                 Lock();
 
-                auto& globalConfig = CBP::IConfig::GetGlobalConfig();
+                auto& globalConfig = IConfig::GetGlobalConfig();
                 globalConfig.debugRenderer.enabled = !globalConfig.debugRenderer.enabled;
 
                 UpdateDebugRendererState();
@@ -977,7 +982,7 @@ namespace CBP
     void DCBP::UpdateActorCacheTask::Run()
     {
         Lock();
-        CBP::IData::UpdateActorCache(GetSimActorList());
+        IData::UpdateActorCache(GetSimActorList());
         Unlock();
     }
 }

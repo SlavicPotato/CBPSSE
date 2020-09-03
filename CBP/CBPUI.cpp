@@ -213,7 +213,7 @@ namespace CBP
         {
             ImGui::SetWindowFontScale(globalConfig.ui.fontScale);
 
-            ImGui::PushItemWidth(ImGui::GetFontSize() * -15.0f);
+            ImGui::PushItemWidth(ImGui::GetFontSize() * -16.0f);
 
             auto& data = GlobalProfileManager::GetSingleton<T>().Data();
 
@@ -516,12 +516,10 @@ namespace CBP
 
             if (m_currentRace)
             {
-                ImGui::PushItemWidth(ImGui::GetFontSize() * -15.0f);
+                ImGui::PushItemWidth(ImGui::GetFontSize() * -16.0f);
 
                 auto& rlEntry = IData::GetRaceListEntry(m_currentRace);
                 ImGui::Text("Playable: %s", rlEntry.playable ? "yes" : "no");
-
-                auto& globalConfig = IConfig::GetGlobalConfig();
 
                 ImGui::Spacing();
                 if (ImGui::Checkbox("Playable only", &globalConfig.ui.rlPlayableOnly)) {
@@ -787,7 +785,6 @@ namespace CBP
         if (CollapsingHeader(chKey, "Force"))
         {
             auto& data = GetData(a_data);
-            auto& globalConfig = IConfig::GetGlobalConfig();
 
             const char* curSelName = nullptr;
             if (m_forceState.selected) {
@@ -1208,7 +1205,7 @@ namespace CBP
         {
             ImGui::SetWindowFontScale(globalConfig.ui.fontScale);
 
-            ImGui::PushItemWidth(ImGui::GetFontSize() * -15.0f);
+            ImGui::PushItemWidth(ImGui::GetFontSize() * -16.0f);
 
             bool saveAllFailed = false;
             bool saveToDefaultGlob = false;
@@ -2182,71 +2179,82 @@ namespace CBP
     template <class T, UIEditorID ID>
     void UISimComponent<T, ID>::DrawSimComponents(T a_handle, configComponents_t& a_data)
     {
-        auto& globalConfig = IConfig::GetGlobalConfig();
+        const float width = ImGui::GetWindowContentRegionMax().x;
 
-        for (auto& p : a_data)
+        if (ImGui::BeginChild("scc_area", ImVec2(width, 0.0f), 0.0f))
         {
-            if (!ShouldDrawComponent(a_handle, p))
-                continue;
+            ImGui::PushItemWidth(ImGui::GetFontSize() * -16.0f);
 
-            auto headerName = p.first;
-            if (headerName.size() != 0) {
-                headerName[0] = std::toupper(headerName[0]);
-            }
+            auto& globalConfig = IConfig::GetGlobalConfig();
 
-            if (CollapsingHeader(GetCSID(p.first), headerName.c_str()))
+            for (auto& p : a_data)
             {
-                ImGui::PushID(static_cast<const void*>(std::addressof(p)));
+                if (!ShouldDrawComponent(a_handle, p))
+                    continue;
 
-                if (ImGui::Button("Mirroring >"))
-                    ImGui::OpenPopup("mirror_popup");
-
-                if (ImGui::BeginPopup("mirror_popup"))
-                {
-                    auto& mirrorTo = globalConfig.ui.mirror[ID];
-
-                    auto c = mirrorTo.try_emplace(p.first);
-                    auto& d = c.first->second;
-
-                    for (const auto& e : a_data)
-                    {
-                        if (e.first == p.first)
-                            continue;
-
-                        if (!ShouldDrawComponent(a_handle, e))
-                            continue;
-
-                        auto headerName = e.first;
-                        if (headerName.size() != 0)
-                            headerName[0] = std::toupper(headerName[0]);
-
-                        auto i = d.try_emplace(e.first, false);
-                        if (ImGui::MenuItem(headerName.c_str(), nullptr, std::addressof(i.first->second)))
-                        {
-                            auto f = mirrorTo.try_emplace(e.first);
-                            f.first->second.insert_or_assign(p.first, i.first->second);
-
-                            DCBP::MarkGlobalsForSave();
-                        }
-                    }
-
-                    if (d.size()) {
-                        ImGui::Separator();
-
-                        if (ImGui::MenuItem("Clear")) {
-                            mirrorTo.erase(p.first);
-                            DCBP::MarkGlobalsForSave();
-                        }
-                    }
-
-                    ImGui::EndPopup();
+                auto headerName = p.first;
+                if (headerName.size() != 0) {
+                    headerName[0] = std::toupper(headerName[0]);
                 }
 
-                DrawSliders(a_handle, a_data, p);
+                if (CollapsingHeader(GetCSID(p.first), headerName.c_str()))
+                {
+                    ImGui::PushID(static_cast<const void*>(std::addressof(p)));
 
-                ImGui::PopID();
+                    if (ImGui::Button("Mirroring >"))
+                        ImGui::OpenPopup("mirror_popup");
+
+                    if (ImGui::BeginPopup("mirror_popup"))
+                    {
+                        auto& mirrorTo = globalConfig.ui.mirror[ID];
+
+                        auto c = mirrorTo.try_emplace(p.first);
+                        auto& d = c.first->second;
+
+                        for (const auto& e : a_data)
+                        {
+                            if (e.first == p.first)
+                                continue;
+
+                            if (!ShouldDrawComponent(a_handle, e))
+                                continue;
+
+                            auto headerName = e.first;
+                            if (headerName.size() != 0)
+                                headerName[0] = std::toupper(headerName[0]);
+
+                            auto i = d.try_emplace(e.first, false);
+                            if (ImGui::MenuItem(headerName.c_str(), nullptr, std::addressof(i.first->second)))
+                            {
+                                auto f = mirrorTo.try_emplace(e.first);
+                                f.first->second.insert_or_assign(p.first, i.first->second);
+
+                                DCBP::MarkGlobalsForSave();
+                            }
+                        }
+
+                        if (d.size()) {
+                            ImGui::Separator();
+
+                            if (ImGui::MenuItem("Clear")) {
+                                mirrorTo.erase(p.first);
+                                DCBP::MarkGlobalsForSave();
+                            }
+                        }
+
+                        ImGui::EndPopup();
+                    }
+
+                    DrawSliders(a_handle, a_data, p);
+
+                    ImGui::PopID();
+                }
             }
+
+            ImGui::PopItemWidth();
         }
+
+        ImGui::EndChild();
     }
 
     template <class T, UIEditorID ID>

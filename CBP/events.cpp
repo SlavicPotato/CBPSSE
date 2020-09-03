@@ -84,7 +84,7 @@ namespace CBP
 
     void IEvents::OnLogWrite(char* a_buffer)
     {
-        TriggerEvent(CBP::OnLogMessage, a_buffer);
+        TriggerEvent(OnLogMessage, a_buffer);
     }
 }
 
