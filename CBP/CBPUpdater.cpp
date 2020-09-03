@@ -133,10 +133,10 @@ namespace CBP
 
         auto& globalConf = IConfig::GetGlobalConfig();
 
-        UpdateDebugRenderer();
-
         if (globalConf.general.enableProfiling)
             m_profiler.Begin();
+
+        UpdateDebugRenderer();
 
         m_averageInterval = m_averageInterval * 0.875f + interval * 0.125f;
         auto timeTick = std::min(m_averageInterval, globalConf.phys.timeTick);

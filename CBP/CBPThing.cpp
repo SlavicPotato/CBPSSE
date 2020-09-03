@@ -22,7 +22,7 @@ namespace CBP
             return false;
 
         auto world = DCBP::GetWorld();
-        auto &physicsCommon = DCBP::GetPhysicsCommon();
+        auto& physicsCommon = DCBP::GetPhysicsCommon();
 
         m_body = world->createCollisionBody(r3d::Transform::identity());
         m_sphereShape = physicsCommon.createSphereShape(m_parent.m_conf.colSphereRadMax);
@@ -41,7 +41,7 @@ namespace CBP
             return false;
 
         auto world = DCBP::GetWorld();
-        auto &physicsCommon = DCBP::GetPhysicsCommon();
+        auto& physicsCommon = DCBP::GetPhysicsCommon();
 
         m_body->removeCollider(m_collider);
         physicsCommon.destroySphereShape(m_sphereShape);
@@ -222,8 +222,6 @@ namespace CBP
     {
         if (m_movement)
         {
-            auto& globalConf = IConfig::GetGlobalConfig();
-
             //Offset to move Center of Mass make rotational motion more significant  
             NiPoint3 target(m_objParent->m_worldTransform * m_npCogOffset);
 
