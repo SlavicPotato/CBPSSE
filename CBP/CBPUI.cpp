@@ -2181,7 +2181,7 @@ namespace CBP
     {
         const float width = ImGui::GetWindowContentRegionMax().x;
 
-        if (ImGui::BeginChild("scc_area", ImVec2(width, 0.0f), 0.0f))
+        if (ImGui::BeginChild("scc_area", ImVec2(width, 0.0f)))
         {
             ImGui::PushItemWidth(ImGui::GetFontSize() * -16.0f);
 
@@ -2295,7 +2295,7 @@ namespace CBP
 
         const float width = ImGui::GetWindowContentRegionMax().x;
 
-        if (ImGui::BeginChild("ncc_area", ImVec2(width, 0.0f), 0.0f))
+        if (ImGui::BeginChild("ncc_area", ImVec2(width, 0.0f)))
         {
             ImGui::PushItemWidth(ImGui::GetFontSize() * -10.0f);
 
