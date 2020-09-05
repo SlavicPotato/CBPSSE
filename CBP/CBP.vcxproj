@@ -521,15 +521,14 @@
     <ClCompile Include="skse.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\config\CBP\Default.json" />
+    <None Include="..\config\CBP\Nodes.json" />
+    <None Include="..\config\CBP\Profiles\Node\Blank.json" />
+    <None Include="..\config\CBP\Profiles\Node\UNP Basic.json" />
+    <None Include="..\config\CBP\Profiles\Physics\UNP Basic.json" />
+    <None Include="..\config\CBP\Settings\CollisionGroups.json" />
     <None Include="..\README.md" />
     <None Include="..\scripts\CBP.psc" />
-    <None Include="Config\CBP.ini" />
-    <None Include="Config\CBP\Default.json" />
-    <None Include="Config\CBP\Nodes.json" />
-    <None Include="Config\CBP\Profiles\Node\Blank.json" />
-    <None Include="Config\CBP\Profiles\Node\UNP Basic.json" />
-    <None Include="Config\CBP\Profiles\Physics\UNP Basic.json" />
-    <None Include="Config\CBP\Settings\CollisionGroups.json" />
     <None Include="exports.def" />
   </ItemGroup>
   <ItemGroup>
@@ -551,9 +550,6 @@
     <ProjectReference Include="..\..\sse-build-resources\sse-build-resources.vcxproj">
       <Project>{c59e5569-e3f3-4da5-8313-12d90229b8c0}</Project>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <Text Include="Config\CBPConfig.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

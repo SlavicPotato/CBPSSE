@@ -237,31 +237,23 @@
     <None Include="..\scripts\CBP.psc">
       <Filter>Scripts</Filter>
     </None>
-    <None Include="Config\CBP.ini">
-      <Filter>Config</Filter>
-    </None>
-    <None Include="Config\CBP\Profiles\Node\UNP Basic.json">
+    <None Include="..\config\CBP\Profiles\Node\Blank.json">
       <Filter>Config\CBP\Profiles\Node</Filter>
     </None>
-    <None Include="Config\CBP\Profiles\Physics\UNP Basic.json">
+    <None Include="..\config\CBP\Profiles\Node\UNP Basic.json">
+      <Filter>Config\CBP\Profiles\Node</Filter>
+    </None>
+    <None Include="..\config\CBP\Profiles\Physics\UNP Basic.json">
       <Filter>Config\CBP\Profiles\Physics</Filter>
     </None>
-    <None Include="Config\CBP\Settings\CollisionGroups.json">
+    <None Include="..\config\CBP\Settings\CollisionGroups.json">
       <Filter>Config\CBP\Settings</Filter>
     </None>
-    <None Include="Config\CBP\Default.json">
+    <None Include="..\config\CBP\Default.json">
       <Filter>Config\CBP</Filter>
     </None>
-    <None Include="Config\CBP\Nodes.json">
+    <None Include="..\config\CBP\Nodes.json">
       <Filter>Config\CBP</Filter>
     </None>
-    <None Include="Config\CBP\Profiles\Node\Blank.json">
-      <Filter>Config\CBP\Profiles\Node</Filter>
-    </None>
-  </ItemGroup>
-  <ItemGroup>
-    <Text Include="Config\CBPConfig.txt">
-      <Filter>Config</Filter>
-    </Text>
   </ItemGroup>
 </Project>
