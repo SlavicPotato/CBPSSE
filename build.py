@@ -19,10 +19,6 @@ DLL='CBP.dll'
 REBUILD=True
 CONFIGS= ['ReleaseAVX2 MT', 'Release MT']
 
-def cleanup(p):
-    for f in os.scandir(p):
-         os.unlink(f)
-
 def prepare(p):
     if os.path.exists(p):
         if not os.path.isdir(p):
@@ -73,7 +69,6 @@ package_targets = []
 for e in CONFIGS:
     path = os.path.join(OUTPUT_PATH, e)
     safe_mkdir(path)
-    cleanup(path)
     build_solution(e, basecmd, path, REBUILD)
 
     dll = os.path.join(path, DLL)
