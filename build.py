@@ -4,23 +4,23 @@ import os
 import shutil
 import subprocess
 
-assert 'MSBUILD_PATH' in os.environ, 'MSBUILD_PATH environent variable not found' 
-assert 'CBP_SLN_ROOT' in os.environ, 'CBP_SLN_ROOT environent variable not found'
+assert 'MSBUILD_PATH' in os.environ
+assert 'CBP_SLN_ROOT' in os.environ
+
+assert os.path.isdir(os.environ['MSBUILD_PATH'])
+assert os.path.isdir(os.environ['CBP_SLN_ROOT'])
 
 MSBUILD_PATH = os.path.join(os.environ['MSBUILD_PATH'], 'msbuild.exe')
 SLN_ROOT = os.environ['CBP_SLN_ROOT']
 
-assert os.path.exists(MSBUILD_PATH)
-assert os.path.exists(SLN_ROOT)
-
 # relative to SLN_ROOT
-OUT='tmp'
-FOMOD='installer\\generateFomod.py'
+OUT = 'tmp'
+FOMOD = 'installer\\generateFomod.py'
 SLN = 'CBP.sln'
-DLL='CBP.dll'
 
-REBUILD=True
-CONFIGS= ['ReleaseAVX2 MT', 'Release MT']
+DLL = 'CBP.dll'
+REBUILD = True
+CONFIGS = ['ReleaseAVX2 MT', 'Release MT']
 
 assert len(CONFIGS)
 
@@ -45,17 +45,15 @@ def test_file(p):
     return os.path.exists(p) and os.path.isfile(p) 
 
 def make_package(fmscript, targets):
-    cmd = [ 'python', fmscript ]
+    cmd = ['python', fmscript]
     cmd.extend(targets)
-
-    print(cmd)
 
     r = subprocess.run(cmd)
     if r.returncode != 0:
         raise Exception('Could not build the package ({})'.format(r.returncode))
         
 def build_solution(cfg, bc, path, rebuild):
-    args = [ '-p:Configuration={};OutDir={}'.format(cfg, path) ]
+    args = ['-p:Configuration={};OutDir={}'.format(cfg, path)]
     if rebuild:
         args.append('-t:Rebuild')
 
@@ -78,6 +76,8 @@ package_targets = []
 for e in CONFIGS:
     path = os.path.join(OUTPUT_PATH, e)
     safe_mkdir(path)
+
+    assert os.path.isdir(path)
 
     build_solution(e, basecmd, path, REBUILD)
 
