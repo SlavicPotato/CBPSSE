@@ -2323,7 +2323,7 @@ namespace CBP
 
         ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.66f, 0.13f, 1.0f));
 
-        _snprintf_s(m_scBuffer1, _TRUNCATE, "%s [%u | %.3f]", "%.3f",
+        _snprintf_s(m_scBuffer1, _TRUNCATE, "%s [%u|%.3f]", "%.3f",
             it->second.first, GetActualSliderValue(it->second, *a_pValue));
 
         bool res = ImGui::SliderFloat(

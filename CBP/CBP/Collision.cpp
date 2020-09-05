@@ -57,27 +57,17 @@ namespace CBP
 
                     auto& normal = contactPoint.getWorldNormal();
 
-                    NiPoint3 vaf, vbf;
-
-                    CollisionResponse(
-                        conf1.colDepthMul,
-                        conf2.colDepthMul,
-                        depth,
-                        NiPoint3(normal.x, normal.y, normal.z),
-                        v1,
-                        v2,
-                        vaf,
-                        vbf
-                    );
+                    auto len = (v1 - v2).Length();
+                    auto n = NiPoint3(normal.x, normal.y, normal.z);
 
                     if (sc1->HasMovement()) {
                         sc1->SetDampingMul(std::clamp(dampingMul * conf1.colDampingCoef, 1.0f, 100.0f));
-                        sc1->SetVelocity2(vaf, m_timeStep);
+                        sc1->SetVelocity2(n * ((len + (depth * conf1.colDepthMul)) * depth), m_timeStep);
                     }
 
                     if (sc2->HasMovement()) {
                         sc2->SetDampingMul(std::clamp(dampingMul * conf2.colDampingCoef, 1.0f, 100.0f));
-                        sc2->SetVelocity2(vbf, m_timeStep);
+                        sc2->SetVelocity2(n * (-(len + (depth * conf2.colDepthMul)) * depth), m_timeStep);
                     }
                 }
             }
@@ -89,26 +79,6 @@ namespace CBP
             }
 
         }
-    }
-
-    void ICollision::CollisionResponse(
-        float dma,
-        float dmb,
-        float depth,
-        const NiPoint3& normal,
-        const NiPoint3& vai,
-        const NiPoint3& vbi,
-        NiPoint3& vaf,
-        NiPoint3& vbf
-    )
-    {
-        auto len = (vai - vbi).Length();
-
-        auto maga = len + (depth * dma);
-        auto magb = len + (depth * dmb);
-
-        vaf = normal * (maga * depth);
-        vbf = normal * (-magb * depth);
     }
 
     bool ICollision::collisionCheckFunc(r3d::Collider* a_lhs, r3d::Collider* a_rhs)
