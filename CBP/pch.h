@@ -42,13 +42,13 @@
 #include <dinput.h>
 
 #include "imgui.h"
-#include "imgui_impl_win32.h"
-#include "imgui_impl_dx11.h"
+#include "imgui/imgui_impl_win32.h"
+#include "imgui/imgui_impl_dx11.h"
 
 #include "ext/ICommon.h"
 #include "ext/IHook.h"
 #include "ext/ITasks.h"
-
+#include "ext/INIReader.h"
 #include "common/IMemPool.h"
 #include "common/ICriticalSection.h"
 #include "skse64/PluginAPI.h"
@@ -70,8 +70,6 @@
 #include "skse64/NiRenderer.h"
 #include "skse64/NiExtraData.h"
 
-#include "INIReader.h"
-
 namespace r3d = reactphysics3d;
 
 namespace CBP
@@ -82,7 +80,6 @@ namespace CBP
 //#define _CBP_ENABLE_DEBUG
 
 #include "plugin.h"
-#include "misc.h"
 #include "skse.h"
 #include "game.h"
 #include "config.h"

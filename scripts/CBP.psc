@@ -1,7 +1,7 @@
 Scriptname CBP Hidden
 
 Int Function GetScriptVersion() global
-	return 3
+    return 3
 EndFunction
 
 Int Function GetVersion() native global

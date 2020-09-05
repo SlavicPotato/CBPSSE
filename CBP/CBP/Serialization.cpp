@@ -400,7 +400,7 @@ namespace CBP
             auto& mirror = ui["mirror"];
             for (const auto& e : globalConfig.ui.mirror)
             {
-                auto& je = mirror[std::to_string(Misc::Underlying(e.first))];
+                auto& je = mirror[std::to_string(Enum::Underlying(e.first))];
 
                 for (const auto& k : e.second)
                 {
