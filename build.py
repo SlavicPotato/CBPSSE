@@ -20,7 +20,7 @@ SLN = 'CBP.sln'
 
 DLL = 'CBP.dll'
 REBUILD = True
-CONFIGS = ['ReleaseAVX2 MT', 'Release MT']
+CONFIGS = ['ReleaseAVX2 MT W7', 'Release MT']
 
 assert len(CONFIGS)
 
