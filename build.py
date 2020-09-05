@@ -4,11 +4,14 @@ import os
 import shutil
 import subprocess
 
+assert 'MSBUILD_PATH' in os.environ, 'MSBUILD_PATH environent variable not found' 
+assert 'CBP_SLN_ROOT' in os.environ, 'CBP_SLN_ROOT environent variable not found'
+
 MSBUILD_PATH = os.path.join(os.environ['MSBUILD_PATH'], 'msbuild.exe')
 SLN_ROOT = os.environ['CBP_SLN_ROOT']
 
-assert(os.path.exists(MSBUILD_PATH))
-assert(os.path.exists(SLN_ROOT))
+assert os.path.exists(MSBUILD_PATH)
+assert os.path.exists(SLN_ROOT)
 
 # relative to SLN_ROOT
 OUT='tmp'
@@ -18,6 +21,12 @@ DLL='CBP.dll'
 
 REBUILD=True
 CONFIGS= ['ReleaseAVX2 MT', 'Release MT']
+
+assert len(CONFIGS)
+
+##############################################################################
+##############################################################################
+##############################################################################
 
 def prepare(p):
     if os.path.exists(p):
@@ -69,6 +78,7 @@ package_targets = []
 for e in CONFIGS:
     path = os.path.join(OUTPUT_PATH, e)
     safe_mkdir(path)
+
     build_solution(e, basecmd, path, REBUILD)
 
     dll = os.path.join(path, DLL)
