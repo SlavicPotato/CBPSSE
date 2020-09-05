@@ -16,20 +16,17 @@ FOMOD='installer\\generateFomod.py'
 SLN = 'CBP.sln'
 DLL='CBP.dll'
 
-REBUILD=False
+REBUILD=True
 CONFIGS= ['ReleaseAVX2 MT', 'Release MT']
 
 def cleanup(p):
     for f in os.scandir(p):
-        try:
-            os.unlink(f)
-        except BaseException as e:
-            print('exception during cleanup: {}'.format(e))
+         os.unlink(f)
 
 def prepare(p):
     if os.path.exists(p):
         if not os.path.isdir(p):
-            raise Exception('Invalid output path')
+            raise Exception('Invalid output path: {}'.format(p))
     else:
         os.mkdir(p)
 
@@ -42,7 +39,7 @@ def safe_mkdir(p):
 def test_file(p):
     return os.path.exists(p) and os.path.isfile(p) 
 
-def build_package(fmscript, targets):
+def make_package(fmscript, targets):
     cmd = [ 'python', fmscript ]
     cmd.extend(targets)
 
@@ -50,9 +47,9 @@ def build_package(fmscript, targets):
 
     r = subprocess.run(cmd)
     if r.returncode != 0:
-        raise Exception('Could not build the package')
+        raise Exception('Could not build the package ({})'.format(r.returncode))
         
-def build(cfg, bc, path, rebuild):
+def build_solution(cfg, bc, path, rebuild):
     args = [ '-p:Configuration={};OutDir={}'.format(cfg, path) ]
     if rebuild:
         args.append('-t:Rebuild')
@@ -64,7 +61,7 @@ def build(cfg, bc, path, rebuild):
 
     r = subprocess.run(cmd)
     if r.returncode != 0:
-        raise Exception('Build failed')
+        raise Exception('Build failed: {}'.format(cfg))
 
 OUTPUT_PATH = os.path.join(SLN_ROOT, OUT)
 basecmd = [MSBUILD_PATH, os.path.join(SLN_ROOT, SLN)]
@@ -77,14 +74,14 @@ for e in CONFIGS:
     path = os.path.join(OUTPUT_PATH, e)
     safe_mkdir(path)
     cleanup(path)
-    build(e, basecmd, path, REBUILD)
+    build_solution(e, basecmd, path, REBUILD)
 
     dll = os.path.join(path, DLL)
     if not test_file(dll):
-        raise Exception('Couldn\'t find dll: {}'.format(dll))
+        raise Exception('Could not find dll: {}'.format(dll))
 
     package_targets.append('{}|{}'.format(e, dll))
 
-build_package(os.path.join(SLN_ROOT, FOMOD), package_targets)
+make_package(os.path.join(SLN_ROOT, FOMOD), package_targets)
 
 print('OK')
