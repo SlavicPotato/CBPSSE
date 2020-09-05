@@ -249,5 +249,6 @@
     <None Include="..\config\CBP\Nodes.json">
       <Filter>Config\CBP</Filter>
     </None>
+    <None Include="..\build.py" />
   </ItemGroup>
 </Project>
