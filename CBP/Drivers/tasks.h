@@ -2,7 +2,7 @@
 
 namespace CBP
 {
-    class DTasks 
+    class DTasks
     {
     public:
         static void AddTaskFixed(TaskDelegateFixed* cmd);

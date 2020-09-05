@@ -55,8 +55,8 @@ namespace CBP
     }
 
     void Renderer::GenerateMovingNodes(
-        const simActorList_t& a_actorList, 
-        float a_radius, 
+        const simActorList_t& a_actorList,
+        float a_radius,
         SKSE::ObjectHandle a_markedHandle)
     {
         for (const auto& e : a_actorList)
@@ -74,7 +74,7 @@ namespace CBP
                 NiTransform hT;
                 if (e.second.GetHeadTransform(hT))
                     GenerateSphere(
-                        hT * NiPoint3(0.0f, 0.0f, 20.0f), 
+                        hT * NiPoint3(0.0f, 0.0f, 20.0f),
                         2.0f, ACTOR_MARKER_COL);
             }
         }
@@ -87,8 +87,8 @@ namespace CBP
     }
 
     void Renderer::UpdateMovingNodes(
-        const simActorList_t& a_actorList, 
-        float a_radius, 
+        const simActorList_t& a_actorList,
+        float a_radius,
         SKSE::ObjectHandle a_markedHandle)
     {
         GenerateMovingNodes(a_actorList, a_radius, a_markedHandle);

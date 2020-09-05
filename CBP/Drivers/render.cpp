@@ -51,7 +51,7 @@ namespace CBP
     {
         m_Instance.UnkPresent_O(p1);
 
-        for (const auto f : 
+        for (const auto f :
             m_Instance.m_presentCallbacks)
         {
             f();

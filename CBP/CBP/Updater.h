@@ -69,7 +69,7 @@ namespace CBP
         void UpdateGroupInfoOnAllActors();
         void UpdateConfig(SKSE::ObjectHandle a_handle);
         void ApplyForce(SKSE::ObjectHandle a_handle, uint32_t a_steps, const std::string& a_component, const NiPoint3& a_force);
-        void ClearActors(bool a_reset = true);       
+        void ClearActors(bool a_reset = true);
         void Reset();
         void PhysicsReset();
         void NiNodeUpdate(SKSE::ObjectHandle a_handle);

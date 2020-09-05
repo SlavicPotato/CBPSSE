@@ -218,7 +218,7 @@ namespace CBP
         [[nodiscard]] inline bool HasMovement() const {
             return m_movement;
         }
-        
+
         [[nodiscard]] inline bool HasActiveCollider() const {
             return m_collisionData.IsActive();
         }

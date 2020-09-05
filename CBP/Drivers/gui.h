@@ -71,7 +71,7 @@ namespace CBP
             return m_Instance.m_drawCallbacks.contains(id);
         }
 
-        inline static const UIRect& GetBufferSize(){
+        inline static const UIRect& GetBufferSize() {
             return m_Instance.info.bufferSize;
         }
 
@@ -87,7 +87,6 @@ namespace CBP
         DUI();
 
         static void Present_Pre();
-        static void CreateD3D11_Hook();
 
         void Present_Pre_Impl();
 
@@ -101,8 +100,7 @@ namespace CBP
 
         WNDPROC pfnWndProc;
 
-        struct
-        {
+        struct {
             uint32_t active;
         } state;
 

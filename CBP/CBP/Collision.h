@@ -15,7 +15,7 @@ namespace CBP
             m_Instance.m_timeStep = a_timeStep;
         }
 
-        static void Initialize(r3d::PhysicsWorld *a_world);
+        static void Initialize(r3d::PhysicsWorld* a_world);
 
         ICollision(const ICollision&) = delete;
         ICollision(ICollision&&) = delete;

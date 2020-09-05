@@ -176,7 +176,7 @@ namespace CBP
             return ss.str();
         }
 
-        float GetActualSliderValue(const armorCacheValue_t &a_cacheval, float a_baseval);
+        float GetActualSliderValue(const armorCacheValue_t& a_cacheval, float a_baseval);
 
     private:
         virtual bool ShouldDrawComponent(
@@ -568,7 +568,7 @@ namespace CBP
 
         bool m_sized = false;
         char m_buffer[64];
-};
+    };
 #endif
 
     class UIFileSelector :

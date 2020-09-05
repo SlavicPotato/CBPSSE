@@ -8,6 +8,5 @@ namespace CBP
     {
     public:
         static bool FindOverrides(Actor* a_actor, armorOverrideResults_t& a_out);
-
     };
 }

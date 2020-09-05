@@ -10,6 +10,7 @@ Modified version of [CBP Physics for Skyrim SE](https://github.com/cbpphysics/CB
 * Per actor/race physics and node configuration via [in-game UI](https://i.imgur.com/v8MZLIr.png) (ImGUI)
 * Collisions (reactphysics3d)
 * Renderer to aid in configuring collision bodies
+* Physics configuration overrides for individual armors
 
 ## Build deps
 * [sse-build-resources](https://github.com/SlavicPotato/sse-build-resources)

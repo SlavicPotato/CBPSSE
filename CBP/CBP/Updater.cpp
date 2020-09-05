@@ -476,7 +476,7 @@ namespace CBP
         {
             auto entry = IData::GetArmorCacheEntry(e);
             if (!entry) {
-                Warning("[%llX] [%s] Couldn't read armor override data: %s", 
+                Warning("[%llX] [%s] Couldn't read armor override data: %s",
                     a_handle, e.c_str(), IData::GetLastException().what());
                 continue;
             }
@@ -517,8 +517,8 @@ namespace CBP
         else
             updateConfig = IConfig::RemoveArmorOverride(a_handle);
 
-        if (updateConfig) 
-            DoConfigUpdate(a_handle, actor, it->second); 
+        if (updateConfig)
+            DoConfigUpdate(a_handle, actor, it->second);
     }
 
     void UpdateTask::AddTask(const UTTask& task)

@@ -89,7 +89,7 @@ namespace CBP
         private:
             ToggleResult Toggle();
         };
-        
+
         class SwitchUITask :
             public TaskDelegate
         {
@@ -246,7 +246,7 @@ namespace CBP
             return m_Instance.conf;
         }
 
-        inline static auto &GetRenderer() {
+        inline static auto& GetRenderer() {
             return m_Instance.m_renderer;
         }
 

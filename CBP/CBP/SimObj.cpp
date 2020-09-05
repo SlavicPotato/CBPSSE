@@ -35,11 +35,11 @@ namespace CBP
 
             a_out.emplace_back(
                 nodeDesc_t{
-                    b.first, 
-                    bone, 
-                    it->first, 
-                    it->second, 
-                    a_collisions && collisions, 
+                    b.first,
+                    bone,
+                    it->first,
+                    it->second,
+                    a_collisions && collisions,
                     movement });
         }
 

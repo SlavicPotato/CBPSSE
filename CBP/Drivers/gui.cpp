@@ -133,7 +133,7 @@ namespace CBP
     void DUI::KeyPressHandler::ReceiveEvent(KeyEvent ev, UInt32 keyCode)
     {
         if (!m_Instance.m_isRunning)
-            return;        
+            return;
 
         switch (keyCode)
         {
@@ -270,7 +270,7 @@ namespace CBP
         m_Instance.m_lock.Leave();
     }
 
-    void DUI::RemoveCallback(uint32_t id) 
+    void DUI::RemoveCallback(uint32_t id)
     {
         m_Instance.m_lock.Enter();
         m_Instance.m_drawCallbacks.erase(id);
@@ -419,7 +419,7 @@ namespace CBP
             if (ImGui::IsItemHovered())
             {
                 ImGui::BeginTooltip();
-                ImGui::SetWindowFontScale(a_scale); 
+                ImGui::SetWindowFontScale(a_scale);
                 ImGui::PushTextWrapPos(ImGui::GetFontSize() * a_scale * 35.0f);
                 ImGui::TextUnformatted(desc);
                 ImGui::PopTextWrapPos();

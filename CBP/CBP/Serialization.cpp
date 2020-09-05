@@ -578,7 +578,7 @@ namespace CBP
         return c;
     }
 
-    size_t ISerialization::LoadGlobalProfile(SKSESerializationInterface* intfc, std::stringstream &a_data)
+    size_t ISerialization::LoadGlobalProfile(SKSESerializationInterface* intfc, std::stringstream& a_data)
     {
         try
         {
@@ -691,7 +691,7 @@ namespace CBP
         try
         {
             Json::Value root;
-            
+
             a_data >> root;
 
             actorConfigComponentsHolder_t actorConfigComponents;
@@ -906,7 +906,7 @@ namespace CBP
         try
         {
             Json::Value root;
-            
+
             a_data >> root;
 
             raceConfigComponentsHolder_t raceConfigComponents;
@@ -1028,7 +1028,7 @@ namespace CBP
         ifs.open(a_path, std::ifstream::in | std::ifstream::binary);
         if (!ifs.is_open())
             throw std::exception("Could not open file for reading");
-        
+
         ifs >> a_root;
 
         return true;

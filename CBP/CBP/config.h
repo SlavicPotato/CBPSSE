@@ -570,7 +570,7 @@ namespace CBP
         {
             auto it = armorOverrides.find(a_handle);
             if (it != armorOverrides.end())
-                return std::addressof(it->second); 
+                return std::addressof(it->second);
 
             return nullptr;
         }

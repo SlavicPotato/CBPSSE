@@ -42,7 +42,7 @@ namespace CBP
     void DInput::DispatchKeyEvent(KeyEvent ev, UInt32 key)
     {
         for (const auto h : callbacks) {
-           h->ReceiveEvent(ev, key);
+            h->ReceiveEvent(ev, key);
         }
     }
 
