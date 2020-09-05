@@ -1319,6 +1319,8 @@ namespace CBP
 
             ImGui::Spacing();
 
+            auto wcm = ImGui::GetWindowContentRegionMax();
+
             if (m_currentActor)
             {
                 auto confClass = IConfig::GetActorPhysicsConfigClass(m_currentActor);
@@ -1340,12 +1342,12 @@ namespace CBP
                 if (IConfig::HasArmorOverride(m_currentActor))
                 {
                     ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.66f, 0.13f, 1.0f));
+                    ClearTextOffset();
+                    ImGui::SameLine(wcm.x - GetNextTextOffset("Armor overrides active"));
                     ImGui::Text("Armor overrides active");
                     ImGui::PopStyleColor();
                 }
             }
-
-            auto wcm = ImGui::GetWindowContentRegionMax();
 
             ImGui::Spacing();
             if (ImGui::Checkbox("Show all actors", &globalConfig.ui.showAllActors)) {
