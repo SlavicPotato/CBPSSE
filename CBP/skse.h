@@ -60,7 +60,7 @@ namespace SKSE
         tArray<ActorHandle>                     lowActorHandles;                               // 048
         tArray<ActorHandle>                     middleHighActorHandles;                        // 060
         tArray<ActorHandle>                     middleLowActorHandles;                         // 078
-        tArray<ActorHandle>* allProcesses[4];                               // 090
+        tArray<ActorHandle>*                    allProcesses[4];                               // 090
         uint8_t pad[0x140];
 
     private:

@@ -57,16 +57,7 @@
     <ClInclude Include="pch.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="common.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="patching.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="skse.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="logging.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="version.h">
@@ -78,74 +69,77 @@
     <ClInclude Include="plugin.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="gui.h">
-      <Filter>Header Files\Drivers</Filter>
-    </ClInclude>
-    <ClInclude Include="input.h">
-      <Filter>Header Files\Drivers</Filter>
-    </ClInclude>
-    <ClInclude Include="events.h">
-      <Filter>Header Files\Drivers</Filter>
-    </ClInclude>
-    <ClInclude Include="imgui_impl_dx11.h">
-      <Filter>Header Files\ImGui</Filter>
-    </ClInclude>
-    <ClInclude Include="imgui_impl_win32.h">
-      <Filter>Header Files\ImGui</Filter>
-    </ClInclude>
     <ClInclude Include="game.h">
       <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="cbp.h">
-      <Filter>Header Files\Drivers</Filter>
     </ClInclude>
     <ClInclude Include="config.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="tasks.h">
+    <ClInclude Include="Drivers\cbp.h">
       <Filter>Header Files\Drivers</Filter>
     </ClInclude>
-    <ClInclude Include="CBPUI.h">
-      <Filter>Header Files\CBP</Filter>
-    </ClInclude>
-    <ClInclude Include="CBPconfig.h">
-      <Filter>Header Files\CBP</Filter>
-    </ClInclude>
-    <ClInclude Include="CBPData.h">
-      <Filter>Header Files\CBP</Filter>
-    </ClInclude>
-    <ClInclude Include="CBPPapyrus.h">
-      <Filter>Header Files\CBP</Filter>
-    </ClInclude>
-    <ClInclude Include="CBPProfile.h">
-      <Filter>Header Files\CBP</Filter>
-    </ClInclude>
-    <ClInclude Include="CBPSerialization.h">
-      <Filter>Header Files\CBP</Filter>
-    </ClInclude>
-    <ClInclude Include="CBPSimObj.h">
-      <Filter>Header Files\CBP</Filter>
-    </ClInclude>
-    <ClInclude Include="CBPThing.h">
-      <Filter>Header Files\CBP</Filter>
-    </ClInclude>
-    <ClInclude Include="CBPCollision.h">
-      <Filter>Header Files\CBP</Filter>
-    </ClInclude>
-    <ClInclude Include="render.h">
+    <ClInclude Include="Drivers\gui.h">
       <Filter>Header Files\Drivers</Filter>
     </ClInclude>
-    <ClInclude Include="CBPProfiling.h">
+    <ClInclude Include="Drivers\input.h">
+      <Filter>Header Files\Drivers</Filter>
+    </ClInclude>
+    <ClInclude Include="Drivers\render.h">
+      <Filter>Header Files\Drivers</Filter>
+    </ClInclude>
+    <ClInclude Include="Drivers\tasks.h">
+      <Filter>Header Files\Drivers</Filter>
+    </ClInclude>
+    <ClInclude Include="Drivers\events.h">
+      <Filter>Header Files\Drivers</Filter>
+    </ClInclude>
+    <ClInclude Include="CBP\Armor.h">
       <Filter>Header Files\CBP</Filter>
     </ClInclude>
-    <ClInclude Include="CBPRenderer.h">
+    <ClInclude Include="CBP\Collision.h">
       <Filter>Header Files\CBP</Filter>
     </ClInclude>
-    <ClInclude Include="misc.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="CBPUpdater.h">
+    <ClInclude Include="CBP\config.h">
       <Filter>Header Files\CBP</Filter>
+    </ClInclude>
+    <ClInclude Include="CBP\Data.h">
+      <Filter>Header Files\CBP</Filter>
+    </ClInclude>
+    <ClInclude Include="CBP\GameEventHandlers.h">
+      <Filter>Header Files\CBP</Filter>
+    </ClInclude>
+    <ClInclude Include="CBP\Papyrus.h">
+      <Filter>Header Files\CBP</Filter>
+    </ClInclude>
+    <ClInclude Include="CBP\Profile.h">
+      <Filter>Header Files\CBP</Filter>
+    </ClInclude>
+    <ClInclude Include="CBP\Profiling.h">
+      <Filter>Header Files\CBP</Filter>
+    </ClInclude>
+    <ClInclude Include="CBP\Renderer.h">
+      <Filter>Header Files\CBP</Filter>
+    </ClInclude>
+    <ClInclude Include="CBP\Serialization.h">
+      <Filter>Header Files\CBP</Filter>
+    </ClInclude>
+    <ClInclude Include="CBP\SimObj.h">
+      <Filter>Header Files\CBP</Filter>
+    </ClInclude>
+    <ClInclude Include="CBP\Thing.h">
+      <Filter>Header Files\CBP</Filter>
+    </ClInclude>
+    <ClInclude Include="CBP\UI.h">
+      <Filter>Header Files\CBP</Filter>
+    </ClInclude>
+    <ClInclude Include="CBP\Updater.h">
+      <Filter>Header Files\CBP</Filter>
+    </ClInclude>
+    <ClInclude Include="ImGui\imgui_impl_dx11.h">
+      <Filter>Header Files\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="ImGui\imgui_impl_win32.h">
+      <Filter>Header Files\ImGui</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -158,74 +152,77 @@
     <ClCompile Include="skse.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="logging.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="gui.cpp">
-      <Filter>Source Files\Drivers</Filter>
-    </ClCompile>
-    <ClCompile Include="input.cpp">
-      <Filter>Source Files\Drivers</Filter>
-    </ClCompile>
-    <ClCompile Include="events.cpp">
-      <Filter>Source Files\Drivers</Filter>
-    </ClCompile>
-    <ClCompile Include="imgui_impl_dx11.cpp">
-      <Filter>Source Files\ImGui</Filter>
-    </ClCompile>
-    <ClCompile Include="imgui_impl_win32.cpp">
-      <Filter>Source Files\ImGui</Filter>
-    </ClCompile>
     <ClCompile Include="game.cpp">
       <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="cbp.cpp">
-      <Filter>Source Files\Drivers</Filter>
     </ClCompile>
     <ClCompile Include="config.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="tasks.cpp">
+    <ClCompile Include="Drivers\cbp.cpp">
       <Filter>Source Files\Drivers</Filter>
     </ClCompile>
-    <ClCompile Include="CBPUI.cpp">
-      <Filter>Source Files\CBP</Filter>
-    </ClCompile>
-    <ClCompile Include="CBPconfig.cpp">
-      <Filter>Source Files\CBP</Filter>
-    </ClCompile>
-    <ClCompile Include="CBPData.cpp">
-      <Filter>Source Files\CBP</Filter>
-    </ClCompile>
-    <ClCompile Include="CBPPapyrus.cpp">
-      <Filter>Source Files\CBP</Filter>
-    </ClCompile>
-    <ClCompile Include="CBPProfile.cpp">
-      <Filter>Source Files\CBP</Filter>
-    </ClCompile>
-    <ClCompile Include="CBPSerialization.cpp">
-      <Filter>Source Files\CBP</Filter>
-    </ClCompile>
-    <ClCompile Include="CBPSimObj.cpp">
-      <Filter>Source Files\CBP</Filter>
-    </ClCompile>
-    <ClCompile Include="CBPThing.cpp">
-      <Filter>Source Files\CBP</Filter>
-    </ClCompile>
-    <ClCompile Include="CBPCollision.cpp">
-      <Filter>Source Files\CBP</Filter>
-    </ClCompile>
-    <ClCompile Include="render.cpp">
+    <ClCompile Include="Drivers\gui.cpp">
       <Filter>Source Files\Drivers</Filter>
     </ClCompile>
-    <ClCompile Include="CBPRenderer.cpp">
+    <ClCompile Include="Drivers\input.cpp">
+      <Filter>Source Files\Drivers</Filter>
+    </ClCompile>
+    <ClCompile Include="Drivers\render.cpp">
+      <Filter>Source Files\Drivers</Filter>
+    </ClCompile>
+    <ClCompile Include="Drivers\tasks.cpp">
+      <Filter>Source Files\Drivers</Filter>
+    </ClCompile>
+    <ClCompile Include="Drivers\events.cpp">
+      <Filter>Source Files\Drivers</Filter>
+    </ClCompile>
+    <ClCompile Include="CBP\Armor.cpp">
       <Filter>Source Files\CBP</Filter>
     </ClCompile>
-    <ClCompile Include="CBPProfiling.cpp">
+    <ClCompile Include="CBP\Collision.cpp">
       <Filter>Source Files\CBP</Filter>
     </ClCompile>
-    <ClCompile Include="CBPUpdater.cpp">
+    <ClCompile Include="CBP\config.cpp">
       <Filter>Source Files\CBP</Filter>
+    </ClCompile>
+    <ClCompile Include="CBP\Data.cpp">
+      <Filter>Source Files\CBP</Filter>
+    </ClCompile>
+    <ClCompile Include="CBP\GameEventHandlers.cpp">
+      <Filter>Source Files\CBP</Filter>
+    </ClCompile>
+    <ClCompile Include="CBP\Papyrus.cpp">
+      <Filter>Source Files\CBP</Filter>
+    </ClCompile>
+    <ClCompile Include="CBP\Profile.cpp">
+      <Filter>Source Files\CBP</Filter>
+    </ClCompile>
+    <ClCompile Include="CBP\Profiling.cpp">
+      <Filter>Source Files\CBP</Filter>
+    </ClCompile>
+    <ClCompile Include="CBP\Renderer.cpp">
+      <Filter>Source Files\CBP</Filter>
+    </ClCompile>
+    <ClCompile Include="CBP\Serialization.cpp">
+      <Filter>Source Files\CBP</Filter>
+    </ClCompile>
+    <ClCompile Include="CBP\SimObj.cpp">
+      <Filter>Source Files\CBP</Filter>
+    </ClCompile>
+    <ClCompile Include="CBP\Thing.cpp">
+      <Filter>Source Files\CBP</Filter>
+    </ClCompile>
+    <ClCompile Include="CBP\UI.cpp">
+      <Filter>Source Files\CBP</Filter>
+    </ClCompile>
+    <ClCompile Include="CBP\Updater.cpp">
+      <Filter>Source Files\CBP</Filter>
+    </ClCompile>
+    <ClCompile Include="ImGui\imgui_impl_dx11.cpp">
+      <Filter>Source Files\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="ImGui\imgui_impl_win32.cpp">
+      <Filter>Source Files\ImGui</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -234,31 +231,23 @@
     <None Include="..\scripts\CBP.psc">
       <Filter>Scripts</Filter>
     </None>
-    <None Include="Config\CBP.ini">
-      <Filter>Config</Filter>
-    </None>
-    <None Include="Config\CBP\Profiles\Node\UNP Basic.json">
+    <None Include="..\config\CBP\Profiles\Node\Blank.json">
       <Filter>Config\CBP\Profiles\Node</Filter>
     </None>
-    <None Include="Config\CBP\Profiles\Physics\UNP Basic.json">
+    <None Include="..\config\CBP\Profiles\Node\UNP Basic.json">
+      <Filter>Config\CBP\Profiles\Node</Filter>
+    </None>
+    <None Include="..\config\CBP\Profiles\Physics\UNP Basic.json">
       <Filter>Config\CBP\Profiles\Physics</Filter>
     </None>
-    <None Include="Config\CBP\Settings\CollisionGroups.json">
+    <None Include="..\config\CBP\Settings\CollisionGroups.json">
       <Filter>Config\CBP\Settings</Filter>
     </None>
-    <None Include="Config\CBP\Default.json">
+    <None Include="..\config\CBP\Default.json">
       <Filter>Config\CBP</Filter>
     </None>
-    <None Include="Config\CBP\Nodes.json">
+    <None Include="..\config\CBP\Nodes.json">
       <Filter>Config\CBP</Filter>
     </None>
-    <None Include="Config\CBP\Profiles\Node\Blank.json">
-      <Filter>Config\CBP\Profiles\Node</Filter>
-    </None>
-  </ItemGroup>
-  <ItemGroup>
-    <Text Include="Config\CBPConfig.txt">
-      <Filter>Config</Filter>
-    </Text>
   </ItemGroup>
 </Project>
