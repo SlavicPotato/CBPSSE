@@ -4,8 +4,11 @@ import os
 import shutil
 import subprocess
 
-MSBUILD_PATH = 'C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\MSBuild\\Current\\Bin\\msbuild.exe'
-SLN_ROOT = 'c:\\Users\\A\\Source\\repos\\CBP'
+MSBUILD_PATH = os.path.join(os.environ['MSBUILD_PATH'], 'msbuild.exe')
+SLN_ROOT = os.environ['CBP_SLN_ROOT']
+
+assert(os.path.exists(MSBUILD_PATH))
+assert(os.path.exists(SLN_ROOT))
 
 # relative to SLN_ROOT
 OUT='tmp'
@@ -19,11 +22,7 @@ CONFIGS= ['ReleaseAVX2 MT', 'Release MT']
 def cleanup(p):
     for f in os.scandir(p):
         try:
-            if os.path.isdir(f):
-                shutil.rmtree(f)
-            elif os.path.isfile(f) or os.path.islink(f):
-                os.unlink(f)
-
+            os.unlink(f)
         except BaseException as e:
             print('exception during cleanup: {}'.format(e))
 
@@ -31,8 +30,6 @@ def prepare(p):
     if os.path.exists(p):
         if not os.path.isdir(p):
             raise Exception('Invalid output path')
-
-        cleanup(p)
     else:
         os.mkdir(p)
 
@@ -79,6 +76,7 @@ package_targets = []
 for e in CONFIGS:
     path = os.path.join(OUTPUT_PATH, e)
     safe_mkdir(path)
+    cleanup(path)
     build(e, basecmd, path, REBUILD)
 
     dll = os.path.join(path, DLL)
