@@ -8,12 +8,15 @@ from string import Template
 
 #some boilerplate
 NAME = "PotatoCBP"
-RELEASE_DLL = "..\\x64\ReleaseAVX2 MT\CBP.dll"
+#targetPath is used to determine release path below
+RELEASE_DLL = "CBP.dll"
 VERSION_H = "..\\CBP\\version.h"
-CONFIG_DIR= "..\\CBP\\Config"
+CONFIG_DIR= "..\\Config"
 PLUGIN_VERSION_MAJOR = "PLUGIN_VERSION_MAJOR"
 PLUGIN_VERSION_MINOR = "PLUGIN_VERSION_MINOR"
 PLUGIN_VERSION_REVISION = "PLUGIN_VERSION_REVISION"
+
+#template
 INFO_XML = "info.xml"
 MODULECONFIG_XML = "moduleConfig.xml"
 TEMPLATE_DIR = "templates"
@@ -25,10 +28,17 @@ PLUGIN_DESTINATION ="base\\SKSE\Plugins"
 PLUGIN_FORMAT = "zip"
 
 
+
 #setup pathing - maybe tweak for post-build integration later
 scriptPath = os.path.abspath(os.path.dirname(sys.argv[0]))
+
+#read ${TargetPath}, which contains the released *.dll as passed in the sln
+releaseDllFile=os.path.abspath(os.path.dirname(sys.argv[1])+"\\"+RELEASE_DLL)
+if not os.path.exists(releaseDllFile):
+    print("no:"+releaseDllFile+"  \nAborting");
+    sys.exit(1)
+
 versionHeaderFile = os.path.abspath(scriptPath + "\\" + VERSION_H)
-releaseDllFile = os.path.abspath(scriptPath + "\\" + RELEASE_DLL)
 configPath = os.path.abspath(scriptPath + "\\" + CONFIG_DIR)
 templatePath = os.path.abspath(scriptPath+"\\"+TEMPLATE_DIR)
 
@@ -64,8 +74,8 @@ fomodInstallerFile = os.path.abspath(scriptPath+"\\"+NAME+"_"+version)
 
 
 #INSTALLER WORK
-#os.makedirs(basePluginPath, exist_ok=True)
-
+if os.path.exists(tempPath):
+    shutil.rmtree(tempPath)
 #move stuff over to the installer temp dir
 shutil.copytree(configPath,basePluginPath)
 shutil.copy2(releaseDllFile,basePluginPath)
