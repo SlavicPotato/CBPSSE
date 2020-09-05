@@ -48,13 +48,13 @@ namespace CBP
                     return false;
                 }
 
-                auto k = it2.key();
-                if (!k.isString()) {
+                auto kt = it2.key();
+                if (!kt.isString()) {
                     Error("(%s) Bad key, expected string", componentName.c_str());
                     return false;
                 }
 
-                std::string valName = k.asString();
+                std::string valName = kt.asString();
                 transform(valName.begin(), valName.end(), valName.begin(), ::tolower);
 
                 if (!tmp.Set(valName, it2->asFloat()))
@@ -298,8 +298,6 @@ namespace CBP
                                         continue;
 
                                     me[k] = it3->asBool();
-
-                                    //_DMESSAGE(":: %d : %s : %s : %d", ki, k.c_str(), kb.c_str(), it3->asBool());
                                 }
                             }
                         }
@@ -334,6 +332,7 @@ namespace CBP
                     globalConfig.debugRenderer.enableMovingNodes = debugRenderer.get("enableMovingNodes", false).asBool();
                     globalConfig.debugRenderer.movingNodesRadius = debugRenderer.get("movingNodesRadius", 0.75f).asFloat();
                     globalConfig.debugRenderer.drawAABB = debugRenderer.get("drawAABB", false).asBool();
+                    globalConfig.debugRenderer.drawBroadphaseAABB = debugRenderer.get("drawBroadphaseAABB", false).asBool();
                 }
             }
 
@@ -428,6 +427,7 @@ namespace CBP
             debugRenderer["enableMovingNodes"] = globalConfig.debugRenderer.enableMovingNodes;
             debugRenderer["movingNodesRadius"] = globalConfig.debugRenderer.movingNodesRadius;
             debugRenderer["drawAABB"] = globalConfig.debugRenderer.drawAABB;
+            debugRenderer["drawBroadphaseAABB"] = globalConfig.debugRenderer.drawBroadphaseAABB;
 
             WriteJsonData(PLUGIN_CBP_GLOBAL_DATA, root);
 
@@ -500,6 +500,7 @@ namespace CBP
         }
         catch (const std::exception& e)
         {
+            m_lastException = e;
             Error("%s: %s", __FUNCTION__, e.what());
         }
     }
@@ -918,6 +919,7 @@ namespace CBP
         }
         catch (const std::exception& e)
         {
+            m_lastException = e;
             Error("%s: %s", __FUNCTION__, e.what());
             return 0;
         }
@@ -1026,7 +1028,7 @@ namespace CBP
         ifs.open(a_path, std::ifstream::in | std::ifstream::binary);
         if (!ifs.is_open())
             throw std::exception("Could not open file for reading");
-
+        
         ifs >> a_root;
 
         return true;

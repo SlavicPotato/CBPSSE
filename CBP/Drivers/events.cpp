@@ -3,6 +3,8 @@
 
 namespace CBP
 {
+    static auto ExitGameAddr = IAL::Addr(35552, 0x1D);
+
     IEvents IEvents::m_Instance;
 
     bool IEvents::Initialize()
@@ -17,7 +19,23 @@ namespace CBP
 
         gLogger.SetWriteCallback(OnLogWrite);
 
+        if (!Hook::Call5(
+            ExitGameAddr,
+            reinterpret_cast<uintptr_t>(ExitGame_Hook),
+            m_Instance.exitPatch_o
+        ))
+        {
+            m_Instance.Error("Failed to install exit hook, the game will likely crash on quit");
+        }
+
         return true;
+    }
+
+
+    void IEvents::ExitGame_Hook()
+    {
+        TriggerEvent(Event::OnExit, nullptr);
+        m_Instance.exitPatch_o();
     }
 
     void IEvents::RegisterForEvent(Event a_code, EventCallback a_fn)

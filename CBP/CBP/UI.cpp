@@ -18,7 +18,8 @@ namespace CBP
         {MiscHelpText::colGroupEditor, "Nodes assigned to the same group will not collide with eachother. This applies only to nodes on the same actor."},
         {MiscHelpText::importDialog, "Import and apply actor, race and global settings from the selected file."},
         {MiscHelpText::exportDialog, "Export actor, race and global settings."},
-        {MiscHelpText::simRate, "If this value isn't equal to framerate the simulation speed is affected. Adjust timeTick to get proper results."}
+        {MiscHelpText::simRate, "If this value isn't equal to framerate the simulation speed is affected. Adjust timeTick to get proper results."},
+        {MiscHelpText::armorOverrides, ""}
         });
 
     static const keyDesc_t comboKeyDesc({
@@ -128,7 +129,7 @@ namespace CBP
         const char* a_label,
         bool a_default) const
     {
-        auto& globalConfig = IConfig::GetGlobalConfig();
+        auto& globalConfig = IConfig::GetGlobalConfig();;
 
         bool& state = globalConfig.GetColState(a_key, a_default);
         bool newState = ImGui::CollapsingHeader(a_label,
@@ -144,8 +145,8 @@ namespace CBP
 
     void UIBase::HelpMarker(MiscHelpText a_id) const
     {
-        //kwek - font scaling extended to help popups
-        auto& globalConfig = IConfig::GetGlobalConfig();
+        const auto& globalConfig = IConfig::GetGlobalConfig();;
+
         ImGui::SameLine();
         UICommon::HelpMarker(m_helpText.at(a_id), globalConfig.ui.fontScale);
     }
@@ -153,7 +154,7 @@ namespace CBP
     template <class T>
     void UIProfileBase<T>::DrawCreateNew()
     {
-        auto& globalConfig = IConfig::GetGlobalConfig();
+        const auto& globalConfig = IConfig::GetGlobalConfig();;
 
         if (UICommon::TextInputDialog("New profile", "Enter the profile name:",
             state.new_input, sizeof(state.new_input), globalConfig.ui.fontScale))
@@ -197,7 +198,7 @@ namespace CBP
     void UIProfileEditorBase<T>::Draw(bool* a_active)
     {
         auto& io = ImGui::GetIO();
-        auto& globalConfig = IConfig::GetGlobalConfig();
+        const auto& globalConfig = IConfig::GetGlobalConfig();;
 
         ImGui::SetNextWindowPos(ImVec2(std::min(420.0f, io.DisplaySize.x - 40.0f), 20.0f), ImGuiCond_FirstUseEver);
         ImGui::SetNextWindowSize(ImVec2(450.0f, io.DisplaySize.y), ImGuiCond_FirstUseEver);
@@ -213,7 +214,7 @@ namespace CBP
         {
             ImGui::SetWindowFontScale(globalConfig.ui.fontScale);
 
-            ImGui::PushItemWidth(ImGui::GetFontSize() * -16.0f);
+            ImGui::PushItemWidth(ImGui::GetFontSize() * -15.5f);
 
             auto& data = GlobalProfileManager::GetSingleton<T>().Data();
 
@@ -371,7 +372,7 @@ namespace CBP
         const componentValueDescMap_t::vec_value_type& a_desc,
         float* a_val)
     {
-        auto& globalConfig = IConfig::GetGlobalConfig();
+        const auto& globalConfig = IConfig::GetGlobalConfig();;
 
         if (globalConfig.ui.clampValuesMain)
             *a_val = std::clamp(*a_val, a_desc.second.min, a_desc.second.max);
@@ -435,7 +436,7 @@ namespace CBP
         }
 
         auto& io = ImGui::GetIO();
-        auto& globalConfig = IConfig::GetGlobalConfig();
+        auto& globalConfig = IConfig::GetGlobalConfig();;
 
         ImGui::SetNextWindowPos(ImVec2(std::min(820.0f, io.DisplaySize.x - 40.0f), 20.0f), ImGuiCond_FirstUseEver);
         ImGui::SetNextWindowSize(ImVec2(450.0f, io.DisplaySize.y), ImGuiCond_FirstUseEver);
@@ -516,7 +517,7 @@ namespace CBP
 
             if (m_currentRace)
             {
-                ImGui::PushItemWidth(ImGui::GetFontSize() * -16.0f);
+                ImGui::PushItemWidth(ImGui::GetFontSize() * -15.5f);
 
                 auto& rlEntry = IData::GetRaceListEntry(m_currentRace);
                 ImGui::Text("Playable: %s", rlEntry.playable ? "yes" : "no");
@@ -583,7 +584,7 @@ namespace CBP
 
         m_raceList.clear();
 
-        auto& globalConfig = IConfig::GetGlobalConfig();
+        const auto& globalConfig = IConfig::GetGlobalConfig();;
 
         for (const auto& e : IData::GetRaceList())
         {
@@ -656,7 +657,7 @@ namespace CBP
         const componentValueDescMap_t::vec_value_type& a_desc,
         float* a_val)
     {
-        auto& globalConfig = IConfig::GetGlobalConfig();
+        const auto& globalConfig = IConfig::GetGlobalConfig();;
 
         if (globalConfig.ui.clampValuesMain)
             *a_val = std::clamp(*a_val, a_desc.second.min, a_desc.second.max);
@@ -776,7 +777,7 @@ namespace CBP
     template<typename T>
     void UIApplyForce<T>::DrawForceSelector(T* a_data, configForceMap_t& a_forceData)
     {
-        auto& globalConfig = IConfig::GetGlobalConfig();
+        auto& globalConfig = IConfig::GetGlobalConfig();;
 
         ImGui::PushID(static_cast<const void*>(std::addressof(m_forceState)));
 
@@ -891,7 +892,7 @@ namespace CBP
 
         m_firstUpdate = true;
 
-        auto& globalConfig = IConfig::GetGlobalConfig();
+        const auto& globalConfig = IConfig::GetGlobalConfig();;
 
         m_actorList.clear();
 
@@ -955,7 +956,7 @@ namespace CBP
     template <typename T>
     void UIActorList<T>::SetCurrentActor(SKSE::ObjectHandle a_handle)
     {
-        auto& globalConfig = IConfig::GetGlobalConfig();
+        auto& globalConfig = IConfig::GetGlobalConfig();;
 
         m_currentActor = a_handle;
 
@@ -1169,7 +1170,7 @@ namespace CBP
     void UIContext::Draw(bool* a_active)
     {
         auto& io = ImGui::GetIO();
-        auto& globalConfig = IConfig::GetGlobalConfig();
+        auto& globalConfig = IConfig::GetGlobalConfig();;
 
         ActorListTick();
 
@@ -1205,7 +1206,7 @@ namespace CBP
         {
             ImGui::SetWindowFontScale(globalConfig.ui.fontScale);
 
-            ImGui::PushItemWidth(ImGui::GetFontSize() * -16.0f);
+            ImGui::PushItemWidth(ImGui::GetFontSize() * -15.5f);
 
             bool saveAllFailed = false;
             bool saveToDefaultGlob = false;
@@ -1335,6 +1336,13 @@ namespace CBP
                     break;
                 }
                 ImGui::Text("Config in use: %s", classText);
+
+                if (IConfig::HasArmorOverride(m_currentActor))
+                {
+                    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.66f, 0.13f, 1.0f));
+                    ImGui::Text("Armor overrides active");
+                    ImGui::PopStyleColor();
+                }
             }
 
             auto wcm = ImGui::GetWindowContentRegionMax();
@@ -1372,7 +1380,7 @@ namespace CBP
             {
                 if (m_currentActor) {
                     ResetAllActorValues(m_currentActor);
-                    DCBP::DispatchActorTask(m_currentActor, UTTask::kActionUpdateConfig);
+                    DCBP::DispatchActorTask(m_currentActor, UTTask::UTTAction::UpdateConfig);
                 }
                 else {
                     IConfig::ClearGlobalPhysicsConfig();
@@ -1477,7 +1485,7 @@ namespace CBP
     void UIOptions::Draw(bool* a_active)
     {
         auto& io = ImGui::GetIO();
-        auto& globalConfig = IConfig::GetGlobalConfig();
+        auto& globalConfig = IConfig::GetGlobalConfig();;
 
         ImVec2 center(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f);
         ImGui::SetNextWindowPos(center, ImGuiCond_FirstUseEver, ImVec2(0.5f, 0.5f));
@@ -1625,6 +1633,11 @@ namespace CBP
                         DCBP::UpdateDebugRendererSettings();
                         DCBP::MarkGlobalsForSave();
                     }
+
+                    if (ImGui::Checkbox("Draw broadphase AABB", &globalConfig.debugRenderer.drawBroadphaseAABB)) {
+                        DCBP::UpdateDebugRendererSettings();
+                        DCBP::MarkGlobalsForSave();
+                    }
                 }
             }
 
@@ -1684,7 +1697,7 @@ namespace CBP
     void UICollisionGroups::Draw(bool* a_active)
     {
         auto& io = ImGui::GetIO();
-        auto& globalConfig = IConfig::GetGlobalConfig();
+        const auto& globalConfig = IConfig::GetGlobalConfig();;
 
         ImVec2 center(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f);
         ImGui::SetNextWindowPos(center, ImGuiCond_FirstUseEver, ImVec2(0.5f, 0.5f));
@@ -1856,7 +1869,7 @@ namespace CBP
         ActorListTick();
 
         auto& io = ImGui::GetIO();
-        auto& globalConfig = IConfig::GetGlobalConfig();
+        auto& globalConfig = IConfig::GetGlobalConfig();;
 
         ImVec2 center(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f);
         ImGui::SetNextWindowPos(center, ImGuiCond_FirstUseEver, ImVec2(0.5f, 0.5f));
@@ -2015,7 +2028,7 @@ namespace CBP
         const componentValueDescMap_t::vec_value_type& a_desc,
         float* a_val)
     {
-        auto& globalConfig = IConfig::GetGlobalConfig();
+        const auto& globalConfig = IConfig::GetGlobalConfig();;
 
         if (globalConfig.ui.clampValuesMain)
             *a_val = std::clamp(*a_val, a_desc.second.min, a_desc.second.max);
@@ -2036,14 +2049,21 @@ namespace CBP
             Propagate(a_data, std::addressof(actorConf), a_pair.first, a_desc.second.counterpart, *a_val);
         }
 
-        DCBP::DispatchActorTask(a_handle, UTTask::kActionUpdateConfig);
+        DCBP::DispatchActorTask(a_handle, UTTask::UTTAction::UpdateConfig);
     }
 
     bool UIContext::UISimComponentActor::ShouldDrawComponent(
         SKSE::ObjectHandle a_handle,
-        const configComponents_t::value_type& a_comp)
+        const configComponents_t::value_type& a_comp) const
     {
         return DCBP::ActorHasConfigGroup(a_handle, a_comp.first);
+    }
+
+    const armorCacheEntry_t::mapped_type* UIContext::UISimComponentActor::GetArmorOverrideSection(
+        SKSE::ObjectHandle a_handle,
+        const std::string& a_comp) const
+    {
+        return IConfig::GetArmorOverrideSection(a_handle, a_comp);
     }
 
     void UIContext::UISimComponentGlobal::OnSimSliderChange(
@@ -2053,7 +2073,7 @@ namespace CBP
         const componentValueDescMap_t::vec_value_type& a_desc,
         float* a_val)
     {
-        auto& globalConfig = IConfig::GetGlobalConfig();
+        const auto& globalConfig = IConfig::GetGlobalConfig();;
 
         if (globalConfig.ui.clampValuesMain)
             *a_val = std::clamp(*a_val, a_desc.second.min, a_desc.second.max);
@@ -2070,7 +2090,7 @@ namespace CBP
 
     bool UIContext::UISimComponentGlobal::ShouldDrawComponent(
         SKSE::ObjectHandle a_handle,
-        const configComponents_t::value_type& a_comp)
+        const configComponents_t::value_type& a_comp) const
     {
         return DCBP::GlobalHasConfigGroup(a_comp.first);
     }
@@ -2086,7 +2106,7 @@ namespace CBP
         else {
             IConfig::CopyComponents(profileData, a_data->second.second);
             IConfig::SetActorConf(a_data->first, a_data->second.second);
-            DCBP::DispatchActorTask(a_data->first, UTTask::kActionUpdateConfig);
+            DCBP::DispatchActorTask(a_data->first, UTTask::UTTAction::UpdateConfig);
         }
     }
 
@@ -2150,7 +2170,7 @@ namespace CBP
         const std::string& a_key,
         float a_val)
     {
-        auto& globalConfig = IConfig::GetGlobalConfig();
+        const auto& globalConfig = IConfig::GetGlobalConfig();;
 
         auto itm = globalConfig.ui.mirror.find(ID);
         if (itm == globalConfig.ui.mirror.end())
@@ -2193,9 +2213,8 @@ namespace CBP
                     continue;
 
                 auto headerName = p.first;
-                if (headerName.size() != 0) {
+                if (headerName.size() != 0)
                     headerName[0] = std::toupper(headerName[0]);
-                }
 
                 if (CollapsingHeader(GetCSID(p.first), headerName.c_str()))
                 {
@@ -2222,7 +2241,6 @@ namespace CBP
 
         ImGui::EndChild();
     }
-
 
     template <class T, UIEditorID ID>
     void UISimComponent<T, ID>::DrawMirrorContextMenu(
@@ -2270,22 +2288,78 @@ namespace CBP
     }
 
     template <class T, UIEditorID ID>
+    float UISimComponent<T, ID>::GetActualSliderValue(
+        const armorCacheValue_t& a_cacheval,
+        float a_baseval)
+    {
+        switch (a_cacheval.first)
+        {
+        case 0:
+            return a_cacheval.second;
+        case 1:
+            return a_baseval * a_cacheval.second;
+        default:
+            return a_baseval;
+        }
+    }
+
+    template <class T, UIEditorID ID>
+    bool UISimComponent<T, ID>::DrawSlider(
+        const componentValueDescMap_t::vec_value_type& a_entry,
+        float* a_pValue)
+    {
+        return ImGui::SliderFloat(a_entry.second.descTag, a_pValue, a_entry.second.min, a_entry.second.max);
+    }
+
+    template <class T, UIEditorID ID>
+    bool UISimComponent<T, ID>::DrawSlider(
+        const componentValueDescMap_t::vec_value_type& a_entry,
+        float* a_pValue,
+        const armorCacheEntry_t::mapped_type* a_cacheEntry)
+    {
+        auto it = a_cacheEntry->find(a_entry.first);
+        if (it == a_cacheEntry->end())
+            return DrawSlider(a_entry, a_pValue);
+
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.66f, 0.13f, 1.0f));
+
+        _snprintf_s(m_scBuffer1, _TRUNCATE, "%s [%u | %.3f]", "%.3f", 
+            it->second.first, GetActualSliderValue(it->second, *a_pValue));
+
+        bool res = ImGui::SliderFloat(
+            a_entry.second.descTag, 
+            a_pValue, 
+            a_entry.second.min,
+            a_entry.second.max,
+            m_scBuffer1);
+
+        ImGui::PopStyleColor();
+
+        return res;
+    }
+
+    template <class T, UIEditorID ID>
     void UISimComponent<T, ID>::DrawSliders(
         T a_handle,
         configComponents_t& a_data,
         configComponentsValue_t& a_pair
     )
     {
+        const auto& globalConfig = IConfig::GetGlobalConfig();
+        auto aoSect = GetArmorOverrideSection(a_handle, a_pair.first);
+
         for (const auto& e : configComponent_t::descMap)
         {
             auto addr = reinterpret_cast<uintptr_t>(std::addressof(a_pair.second)) + e.second.offset;
             float* pValue = reinterpret_cast<float*>(addr);
 
-            if (ImGui::SliderFloat(e.second.descTag, pValue, e.second.min, e.second.max))
+            if (aoSect) {
+                if (DrawSlider(e, pValue, aoSect))
+                    OnSimSliderChange(a_handle, a_data, a_pair, e, pValue);
+            }
+            else if (DrawSlider(e, pValue))
                 OnSimSliderChange(a_handle, a_data, a_pair, e, pValue);
 
-            //kwek - font scaling extended to help popups
-            auto& globalConfig = IConfig::GetGlobalConfig();
             ImGui::SameLine(); UICommon::HelpMarker(e.second.helpText, globalConfig.ui.fontScale);
         }
     }
@@ -2293,9 +2367,17 @@ namespace CBP
     template <class T, UIEditorID ID>
     bool UISimComponent<T, ID>::ShouldDrawComponent(
         T m_handle,
-        const configComponents_t::value_type& a_comp)
+        const configComponents_t::value_type& a_comp) const
     {
         return true;
+    }
+
+    template <class T, UIEditorID ID>
+    const armorCacheEntry_t::mapped_type* UISimComponent<T, ID>::GetArmorOverrideSection(
+        T m_handle,
+        const std::string& a_comp) const
+    {
+        return nullptr;
     }
 
     template <class T, UIEditorID ID>
@@ -2360,12 +2442,13 @@ namespace CBP
         }
 
         ImGui::EndChild();
+
     }
 
     void UIProfiling::Draw(bool* a_active)
     {
         auto& io = ImGui::GetIO();
-        auto& globalConfig = IConfig::GetGlobalConfig();
+        auto& globalConfig = IConfig::GetGlobalConfig();;
 
         ImVec2 center(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f);
         ImGui::SetNextWindowPos(center, ImGuiCond_FirstUseEver, ImVec2(0.5f, 0.5f));
@@ -2469,7 +2552,7 @@ namespace CBP
     void UIDebugInfo::Draw(bool* a_active)
     {
         auto& io = ImGui::GetIO();
-        auto& globalConfig = IConfig::GetGlobalConfig();
+        const auto& globalConfig = IConfig::GetGlobalConfig();;
 
         ImVec2 center(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f);
         ImGui::SetNextWindowPos(center, ImGuiCond_FirstUseEver, ImVec2(0.5f, 0.5f));
@@ -2666,7 +2749,7 @@ namespace CBP
     bool UIDialogImport::Draw(bool* a_active)
     {
         auto& io = ImGui::GetIO();
-        auto& globalConfig = IConfig::GetGlobalConfig();
+        const auto& globalConfig = IConfig::GetGlobalConfig();;
 
         ImVec2 center(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f);
         ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
@@ -2675,7 +2758,7 @@ namespace CBP
 
         ImGui::PushID(static_cast<const void*>(this));
 
-        if (ImGui::Begin("Select file to import", a_active)) //kwek: removed Imgui window flags to allow for user resizing by default
+        if (ImGui::Begin("Select file to import", a_active))
         {
             ImGui::SetWindowFontScale(globalConfig.ui.fontScale);
 
@@ -2817,7 +2900,7 @@ namespace CBP
 
     bool UIDialogExport::Draw()
     {
-        auto& globalConfig = IConfig::GetGlobalConfig();
+        const auto& globalConfig = IConfig::GetGlobalConfig();;
 
         bool res = false;
 
@@ -2865,7 +2948,7 @@ namespace CBP
     void UILog::Draw(bool* a_active)
     {
         auto& io = ImGui::GetIO();
-        auto& globalConfig = IConfig::GetGlobalConfig();
+        const auto& globalConfig = IConfig::GetGlobalConfig();;
 
         ImGui::SetNextWindowPos(ImVec2(20.0f, 20.0f), ImGuiCond_FirstUseEver);
         ImGui::SetNextWindowSize(ImVec2(450.0f, io.DisplaySize.y), ImGuiCond_FirstUseEver);

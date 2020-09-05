@@ -149,6 +149,7 @@ namespace CBP
             bool enableMovingNodes = false;
             float movingNodesRadius = 0.75f;
             bool drawAABB = false;
+            bool drawBroadphaseAABB = false;
         } debugRenderer;
 
         inline bool& GetColState(
@@ -209,6 +210,19 @@ namespace CBP
             return true;
         }
 
+        inline bool Mul(const std::string& a_key, float a_multiplier)
+        {
+            const auto it = descMap.find(a_key);
+            if (it == descMap.map_end())
+                return false;
+
+            auto addr = reinterpret_cast<uintptr_t>(this) + it->second.offset;
+
+            *reinterpret_cast<float*>(addr) *= a_multiplier;
+
+            return true;
+        }
+
         [[nodiscard]] inline float& operator[](const std::string& a_key) const
         {
             auto addr = reinterpret_cast<uintptr_t>(this) +
@@ -255,6 +269,11 @@ namespace CBP
 
     typedef std::set<uint64_t> collisionGroups_t;
     typedef std::map<std::string, uint64_t> nodeCollisionGroupMap_t;
+
+    typedef std::pair<std::set<std::string>, armorCacheEntry_t> armorOverrideDescriptor_t;
+    typedef std::unordered_map<SKSE::ObjectHandle, armorOverrideDescriptor_t> armorOverrides_t;
+
+    typedef std::unordered_map<SKSE::ObjectHandle, configComponents_t> mergedConfCache_t;
 
     struct configNode_t
     {
@@ -318,16 +337,19 @@ namespace CBP
 
         // Not guaranteed to be actual actor conf storage
         [[nodiscard]] static const configComponents_t& GetActorConf(SKSE::ObjectHandle handle);
+
+        [[nodiscard]] static const configComponents_t& GetActorConfAO(SKSE::ObjectHandle handle);
         [[nodiscard]] static configComponents_t& GetOrCreateActorConf(SKSE::ObjectHandle handle);
         static void SetActorConf(SKSE::ObjectHandle a_handle, const configComponents_t& a_conf);
         static void SetActorConf(SKSE::ObjectHandle a_handle, configComponents_t&& a_conf);
-        //extern bool GetActorConf(SKSE::ObjectHandle handle, configComponents_t& out);
+
         inline static void EraseActorConf(SKSE::ObjectHandle handle) {
             actorConfHolder.erase(handle);
         }
 
         // Not guaranteed to be actual race conf storage
         [[nodiscard]] static const configComponents_t& GetRaceConf(SKSE::FormID a_formid);
+
         [[nodiscard]] static configComponents_t& GetOrCreateRaceConf(SKSE::FormID a_formid);
         static void SetRaceConf(SKSE::FormID a_formid, const configComponents_t& a_conf);
         static void SetRaceConf(SKSE::FormID a_formid, configComponents_t&& a_conf);
@@ -403,7 +425,7 @@ namespace CBP
         }
 
         inline static void ResetGlobalConfig() {
-            globalConfig = configGlobal_t();
+            globalConfig = CBP::configGlobal_t();
         }
 
         inline static void ClearGlobalPhysicsConfig() {
@@ -528,6 +550,39 @@ namespace CBP
             return defaultGlobalProfileStorage;
         }
 
+        [[nodiscard]] inline static bool HasArmorOverride(SKSE::ObjectHandle a_handle) {
+            return armorOverrides.contains(a_handle);
+        }
+
+        [[nodiscard]] static const armorCacheEntry_t::mapped_type* GetArmorOverrideSection(SKSE::ObjectHandle a_handle, const std::string& a_sk);
+
+        static void SetArmorOverride(SKSE::ObjectHandle a_handle, const armorOverrideDescriptor_t& a_entry)
+        {
+            armorOverrides.insert_or_assign(a_handle, a_entry);
+        }
+
+        static void SetArmorOverride(SKSE::ObjectHandle a_handle, armorOverrideDescriptor_t&& a_entry)
+        {
+            armorOverrides.insert_or_assign(a_handle, std::forward<armorOverrideDescriptor_t>(a_entry));
+        }
+
+        [[nodiscard]] static armorOverrideDescriptor_t* GetArmorOverride(SKSE::ObjectHandle a_handle)
+        {
+            auto it = armorOverrides.find(a_handle);
+            if (it != armorOverrides.end())
+                return std::addressof(it->second); 
+
+            return nullptr;
+        }
+
+        inline static bool RemoveArmorOverride(SKSE::ObjectHandle a_handle) {
+            return armorOverrides.erase(a_handle) == 1;
+        }
+
+        inline static void ClearArmorOverrides() {
+            armorOverrides.clear();
+        }
+
     private:
 
         static bool LoadNodeMap(nodeMap_t& a_out);
@@ -549,6 +604,9 @@ namespace CBP
 
         static configNodes_t globalNodeConfigHolder;
         static actorConfigNodesHolder_t actorNodeConfigHolder;
+
+        static armorOverrides_t armorOverrides;
+        static mergedConfCache_t mergedConfCache;
 
         static struct configLoadStates_t {
             bool actorPhys;

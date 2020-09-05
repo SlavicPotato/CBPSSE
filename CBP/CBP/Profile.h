@@ -86,7 +86,7 @@ namespace CBP
             m_conf = a_data;
         }
 
-        [[nodiscard]] const std::exception& GetLastException() const noexcept {
+        [[nodiscard]] inline const auto& GetLastException() const noexcept {
             return m_lastExcept;
         }
 
@@ -110,7 +110,7 @@ namespace CBP
         uint64_t m_id;
         T m_conf;
 
-        std::exception m_lastExcept;
+        except::descriptor m_lastExcept;
     };
 
     typedef Profile<configComponents_t> SimProfile;
@@ -146,7 +146,7 @@ namespace CBP
         [[nodiscard]] inline T& Get(const std::string& a_key) { return m_storage.at(a_key); };
         [[nodiscard]] inline const T& Get(const std::string& a_key) const { return m_storage.at(a_key); };
         [[nodiscard]] inline bool Contains(const std::string& a_key) const { return m_storage.contains(a_key); };
-        [[nodiscard]] inline const std::exception& GetLastException() const noexcept { return m_lastExcept; }
+        [[nodiscard]] inline const auto& GetLastException() const noexcept { return m_lastExcept; }
         [[nodiscard]] inline bool IsInitialized() const noexcept { return m_isInitialized; }
 
         //void MarkChanged(const std::string& a_key);
@@ -159,7 +159,7 @@ namespace CBP
         profileStorage_t m_storage;
         std::filesystem::path m_root;
         std::regex m_rFileCheck;
-        std::exception m_lastExcept;
+        except::descriptor m_lastExcept;
         bool m_isInitialized;
         bool m_toUpper;
     };

@@ -75,22 +75,6 @@ namespace CBP
             UInt32 m_showKeyDR;
         };
 
-        class EventHandler :
-            public BSTEventSink <TESObjectLoadedEvent>,
-            public BSTEventSink <TESInitScriptEvent>,
-            public BSTEventSink <TESFastTravelEndEvent>
-        {
-        protected:
-            virtual EventResult	ReceiveEvent(TESObjectLoadedEvent* evn, EventDispatcher<TESObjectLoadedEvent>* dispatcher) override;
-            virtual EventResult	ReceiveEvent(TESInitScriptEvent* evn, EventDispatcher<TESInitScriptEvent>* dispatcher) override;
-            virtual EventResult	ReceiveEvent(TESFastTravelEndEvent* evn, EventDispatcher<TESFastTravelEndEvent>* dispatcher) override;
-        public:
-            static EventHandler* GetSingleton() {
-                static EventHandler handler;
-                return &handler;
-            }
-        };
-
         class ToggleUITask :
             public TaskDelegateStatic
         {
@@ -288,6 +272,7 @@ namespace CBP
 
         static void MessageHandler(Event m_code, void* args);
         static void OnLogMessage(Event, void* args);
+        static void OnExit(Event, void* data);
 
         static void RevertHandler(Event m_code, void* args);
         static void LoadGameHandler(SKSESerializationInterface* intfc, UInt32 type, UInt32 length, UInt32 version);

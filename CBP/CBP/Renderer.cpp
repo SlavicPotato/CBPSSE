@@ -144,7 +144,8 @@ namespace CBP
         if (!WorldPtToScreenPt3_Internal(
             g_worldToCamMatrix,
             g_viewPort,
-            (NiPoint3*)(std::addressof(a_pos)),
+            reinterpret_cast<NiPoint3*>(
+                const_cast<r3d::Vector3*>(std::addressof(a_pos))),
             &a_out.position.x,
             &a_out.position.y,
             &a_out.position.z,
@@ -229,7 +230,7 @@ namespace CBP
             uint32_t a1 = i * (NB_SECTORS_SPHERE + 1);
             uint32_t a2 = a1 + NB_SECTORS_SPHERE + 1;
 
-            for (r3d::uint j = 0; j < NB_SECTORS_SPHERE; j++, a1++, a2++) {
+            for (uint32_t j = 0; j < NB_SECTORS_SPHERE; j++, a1++, a2++) {
 
                 // 2 triangles per sector except for the first and last stacks
 

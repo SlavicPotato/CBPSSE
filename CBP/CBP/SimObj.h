@@ -1,7 +1,5 @@
 #pragma once
 
-#include "CBPThing.h"
-
 namespace CBP
 {
     struct nodeDesc_t
@@ -117,11 +115,4 @@ namespace CBP
 #endif
     };
 
-    typedef
-#ifdef _CBP_ENABLE_DEBUG
-        std::map
-#else
-        std::unordered_map
-#endif
-        <SKSE::ObjectHandle, SimObject> simActorList_t;
 }

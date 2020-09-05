@@ -85,7 +85,8 @@ namespace CBP
         colGroupEditor,
         importDialog,
         exportDialog,
-        simRate
+        simRate,
+        armorOverrides
     };
 
     typedef std::pair<const std::string, configComponents_t> actorEntryBaseConf_t;
@@ -174,15 +175,33 @@ namespace CBP
             ss << "UISC#" << Misc::Underlying(ID) << "#" << a_name;
             return ss.str();
         }
+
+        float GetActualSliderValue(const armorCacheValue_t &a_cacheval, float a_baseval);
+
     private:
         virtual bool ShouldDrawComponent(
-            T m_handle,
-            const configComponents_t::value_type& a_comp);
+            T a_handle,
+            const configComponents_t::value_type& a_comp) const;
+
+        virtual const armorCacheEntry_t::mapped_type* GetArmorOverrideSection(
+            T a_handle,
+            const std::string& a_comp) const;
 
         void DrawMirrorContextMenu(
             T a_handle,
             configComponents_t& a_data,
             configComponents_t::value_type& a_entry);
+
+        __forceinline bool DrawSlider(
+            const componentValueDescMap_t::vec_value_type& a_entry,
+            float* a_pValue);
+
+        __forceinline bool DrawSlider(
+            const componentValueDescMap_t::vec_value_type& a_entry,
+            float* a_pValue,
+            const armorCacheEntry_t::mapped_type* a_cacheEntry);
+
+        char m_scBuffer1[64 + std::numeric_limits<float>::digits];
     };
 
     template <class T, UIEditorID ID>
@@ -267,7 +286,7 @@ namespace CBP
         struct {
             char new_input[60];
             UISelectedItem<std::string> selected;
-            std::exception lastException;
+            except::descriptor lastException;
         } state;
     };
 
@@ -517,7 +536,7 @@ namespace CBP
         inline void MarkChanged() { m_changed = true; }
 
         struct {
-            std::exception lastException;
+            except::descriptor lastException;
         } state;
 
         SKSE::FormID m_currentRace;
@@ -549,7 +568,7 @@ namespace CBP
 
         bool m_sized = false;
         char m_buffer[64];
-    };
+};
 #endif
 
     class UIFileSelector :
@@ -603,7 +622,7 @@ namespace CBP
         fs::path m_root;
         std::string m_rootString;
 
-        std::exception m_lastExcept;
+        except::descriptor m_lastExcept;
     };
 
     class UIDialogImport :
@@ -676,11 +695,15 @@ namespace CBP
                 configComponentsValue_t& a_pair,
                 const componentValueDescMap_t::vec_value_type& a_desc,
                 float* a_val);
+
         private:
             virtual bool ShouldDrawComponent(
                 SKSE::ObjectHandle a_handle,
-                const configComponents_t::value_type& a_comp);
+                const configComponents_t::value_type& a_comp) const;
 
+            virtual const armorCacheEntry_t::mapped_type* GetArmorOverrideSection(
+                SKSE::ObjectHandle a_handle,
+                const std::string& a_comp) const;
         };
 
         class UISimComponentGlobal :
@@ -696,7 +719,7 @@ namespace CBP
 
             virtual bool ShouldDrawComponent(
                 SKSE::ObjectHandle a_handle,
-                const configComponents_t::value_type& a_comp);
+                const configComponents_t::value_type& a_comp) const;
         };
 
     public:
@@ -755,7 +778,7 @@ namespace CBP
                 bool importDialog;
             } windows;
 
-            std::exception lastException;
+            except::descriptor lastException;
         } state;
 
         UIProfileEditorSim m_peComponents;

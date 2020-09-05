@@ -6,6 +6,8 @@ namespace CBP
 
     DCBP DCBP::m_Instance;
 
+    static auto MainLoopAddr = IAL::Addr(35551, 0x11f);
+
     constexpr const char* SECTION_CBP = "CBP";
     constexpr const char* CKEY_CBPFEMALEONLY = "FemaleOnly";
     constexpr const char* CKEY_COMBOKEY = "ComboKey";
@@ -32,49 +34,49 @@ namespace CBP
     void DCBP::UpdateConfigOnAllActors()
     {
         m_Instance.m_updateTask.AddTask(
-            UTTask::kActionUpdateConfigAll);
+            UTTask::UTTAction::UpdateConfigAll);
     }
 
     void DCBP::UpdateGroupInfoOnAllActors()
     {
         m_Instance.m_updateTask.AddTask(
-            UTTask::kActionUpdateGroupInfoAll);
+            UTTask::UTTAction::UpdateGroupInfoAll);
     }
 
     void DCBP::ResetPhysics()
     {
         m_Instance.m_updateTask.AddTask(
-            UTTask::kActionPhysicsReset);
+            UTTask::UTTAction::PhysicsReset);
     }
 
     void DCBP::NiNodeUpdate()
     {
         m_Instance.m_updateTask.AddTask(
-            UTTask::kActionNiNodeUpdateAll);
+            UTTask::UTTAction::NiNodeUpdateAll);
     }
 
     void DCBP::NiNodeUpdate(SKSE::ObjectHandle a_handle)
     {
         m_Instance.m_updateTask.AddTask(
-            UTTask::kActionNiNodeUpdate, a_handle);
+            UTTask::UTTAction::NiNodeUpdate, a_handle);
     }
 
     void DCBP::WeightUpdate()
     {
         m_Instance.m_updateTask.AddTask(
-            UTTask::kActionWeightUpdateAll);
+            UTTask::UTTAction::WeightUpdateAll);
     }
 
     void DCBP::WeightUpdate(SKSE::ObjectHandle a_handle)
     {
         m_Instance.m_updateTask.AddTask(
-            UTTask::kActionWeightUpdate, a_handle);
+            UTTask::UTTAction::WeightUpdate, a_handle);
     }
 
     void DCBP::ResetActors()
     {
         m_Instance.m_updateTask.AddTask(
-            UTTask::kActionReset);
+            UTTask::UTTAction::Reset);
     }
 
     void DCBP::UpdateDebugRendererState()
@@ -193,7 +195,7 @@ namespace CBP
     {
         if (m_Instance.conf.ui_enabled)
             m_Instance.m_updateTask.AddTask({
-                UTTask::kActionUIUpdateCurrentActor });
+                UTTask::UTTAction::UIUpdateCurrentActor });
     }
 
     bool DCBP::ExportData(const std::filesystem::path& a_path)
@@ -300,7 +302,7 @@ namespace CBP
         m_Instance.LoadConfig();
 
         _assert(Hook::Call5(
-            IAL::Addr(35551, 0x11f),
+            MainLoopAddr,
             reinterpret_cast<uintptr_t>(MainLoop_Hook),
             m_Instance.mainLoopUpdateFunc_o));
 
@@ -311,6 +313,7 @@ namespace CBP
         IEvents::RegisterForLoadGameEvent('DPBC', LoadGameHandler);
         IEvents::RegisterForEvent(Event::OnGameSave, SaveGameHandler);
         IEvents::RegisterForEvent(Event::OnLogMessage, OnLogMessage);
+        IEvents::RegisterForEvent(Event::OnExit, OnExit);
 
         SKSE::g_papyrus->Register(RegisterFuncs);
 
@@ -380,7 +383,7 @@ namespace CBP
                     m_Instance.Error("%s: exception occurred during draw, disabling debug renderer: %s", __FUNCTION__, e.what());
                     globalConf.debugRenderer.enabled = false;
                 }
-            }        
+            }
         }
 
         Unlock();
@@ -392,6 +395,14 @@ namespace CBP
 
         m_Instance.m_backlog.Add(str);
         m_Instance.m_uiContext.LogNotify();
+    }
+
+    void DCBP::OnExit(Event, void* data)
+    {
+        IScopedCriticalSection _(std::addressof(GetLock()));
+
+        m_Instance.m_updateTask.Clear();
+        m_Instance.Debug("Shutting down");
     }
 
     void DCBP::MessageHandler(Event, void* args)
@@ -407,9 +418,11 @@ namespace CBP
         case SKSEMessagingInterface::kMessage_DataLoaded:
         {
             auto edl = GetEventDispatcherList();
+            auto handler = EventHandler::GetSingleton();
 
-            edl->initScriptDispatcher.AddEventSink(EventHandler::GetSingleton());
-            edl->fastTravelEndEventDispatcher.AddEventSink(EventHandler::GetSingleton());
+            edl->initScriptDispatcher.AddEventSink(handler);
+            edl->fastTravelEndEventDispatcher.AddEventSink(handler);
+            edl->equipDispatcher.AddEventSink(handler);
 
             m_Instance.Debug("Init script event sink added");
 
@@ -684,46 +697,6 @@ namespace CBP
 
         Unlock();
     }
-
-    auto DCBP::EventHandler::ReceiveEvent(TESObjectLoadedEvent* evn, EventDispatcher<TESObjectLoadedEvent>* dispatcher)
-        -> EventResult
-    {
-        if (evn) {
-            auto form = LookupFormByID(evn->formId);
-            if (form != nullptr && form->formType == Actor::kTypeID) {
-                DispatchActorTask(
-                    DYNAMIC_CAST(form, TESForm, Actor),
-                    evn->loaded ?
-                    UTTask::kActionAdd :
-                    UTTask::kActionRemove);
-            }
-        }
-
-        return kEvent_Continue;
-    }
-
-    auto DCBP::EventHandler::ReceiveEvent(TESInitScriptEvent* evn, EventDispatcher<TESInitScriptEvent>* dispatcher)
-        -> EventResult
-    {
-        if (evn != nullptr && evn->reference != nullptr) {
-            if (evn->reference->formType == Actor::kTypeID) {
-                DispatchActorTask(
-                    DYNAMIC_CAST(evn->reference, TESObjectREFR, Actor),
-                    UTTask::kActionAdd);
-            }
-        }
-
-        return kEvent_Continue;
-    }
-
-    auto DCBP::EventHandler::ReceiveEvent(TESFastTravelEndEvent* evn, EventDispatcher<TESFastTravelEndEvent>*)
-        -> EventResult
-    {
-        ResetPhysics();
-
-        return kEvent_Continue;
-    }
-
 
     static UInt32 controlDisableFlags =
         USER_EVENT_FLAG::kAll;

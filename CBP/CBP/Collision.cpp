@@ -107,8 +107,8 @@ namespace CBP
         auto maga = len + (depth * dma);
         auto magb = len + (depth * dmb);
 
-        vaf = (normal * (maga * depth));
-        vbf = (normal * (-magb * depth));
+        vaf = normal * (maga * depth);
+        vbf = normal * (-magb * depth);
     }
 
     bool ICollision::collisionCheckFunc(r3d::Collider* a_lhs, r3d::Collider* a_rhs)

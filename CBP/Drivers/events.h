@@ -9,7 +9,8 @@ namespace CBP
 		OnFormDelete,
 		OnRevert,
 		OnD3D11PostCreate,
-		OnLogMessage
+		OnLogMessage,
+		OnExit
 	};
 
 	typedef void (*EventCallback)(Event, void* );
@@ -26,9 +27,12 @@ namespace CBP
 		C m_callback;
 	};
 
-	class IEvents
+	class IEvents :
+		public ILog
 	{
 		friend class MenuOpenCloseEventInitializer;
+
+		typedef void (*exitPatch_t)(void);
 	public:
 		typedef void(*inihookproc) (void);
 
@@ -53,7 +57,11 @@ namespace CBP
 		static void LoadGameHandler(SKSESerializationInterface* intfc);
 		static void RevertHandler(SKSESerializationInterface* intfc);
 
+		static void ExitGame_Hook();
+
 		static void OnLogWrite(char* a_buffer);
+
+		exitPatch_t exitPatch_o;
 
 		std::unordered_map<Event, std::vector<_EventTriggerDescriptor>> m_events;
 		std::unordered_map<UInt32, LoadGameEventCallback> m_loadgame_events;

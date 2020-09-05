@@ -1,9 +1,17 @@
 #pragma once
 
-#include "CBPSimObj.h"
-
 namespace CBP
 {
+    class SimObject;
+
+    typedef
+#ifdef _CBP_ENABLE_DEBUG
+        std::map
+#else
+        std::unordered_map
+#endif
+        <SKSE::ObjectHandle, SimObject> simActorList_t;
+
     struct raceCacheEntry_t
     {
         bool playable;
@@ -22,11 +30,19 @@ namespace CBP
         SKSE::ObjectHandle crosshairRef;
     };
 
+    typedef std::pair<uint32_t, float> armorCacheValue_t;
+    typedef std::unordered_map<std::string, std::unordered_map<std::string, armorCacheValue_t>> armorCacheEntry_t;
+    typedef std::unordered_map<std::string, armorCacheEntry_t> armorCache_t;
+
+    /*typedef std::pair<std::set<std::string>, std::unordered_map<std::string, std::unordered_map<std::string, float>>> mergedArmorCacheEntry_t;
+    typedef std::unordered_map<std::string, mergedArmorCacheEntry_t> mergedArmorCache_t;*/
+
     class IData
     {
         typedef std::unordered_map<SKSE::FormID, raceCacheEntry_t> raceList_t;
         typedef std::unordered_map<SKSE::ObjectHandle, SKSE::FormID> actorRaceMap_t;
         typedef std::unordered_map<SKSE::ObjectHandle, actorCacheEntry_t> actorCache_t;
+
     public:
         [[nodiscard]] static bool PopulateRaceList();
         static void UpdateActorRaceMap(SKSE::ObjectHandle a_handle, const Actor* a_actor);
@@ -68,6 +84,14 @@ namespace CBP
 
         static bool GetActorName(SKSE::ObjectHandle a_handle, std::string& a_out);
 
+        static bool HasArmorCacheEntry(const std::string& a_path);
+        static const armorCacheEntry_t* GetArmorCacheEntry(const std::string& a_path);
+        static bool UpdateArmorCache(const std::string& a_path, armorCacheEntry_t** a_out);
+
+        [[nodiscard]] inline static const auto& GetLastException() {
+            return lastException;
+        }
+
     private:
         static void AddExtraActorEntry(SKSE::ObjectHandle a_handle);
 
@@ -79,6 +103,10 @@ namespace CBP
 
         static uint64_t actorCacheUpdateId;
 
+        static armorCache_t armorCache;
+
         static std::unordered_set<SKSE::FormID> ignoredRaces;
+
+        static except::descriptor lastException;
     };
 }

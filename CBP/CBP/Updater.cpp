@@ -4,7 +4,7 @@ namespace CBP
 {
     __forceinline static bool ActorValid(const Actor* actor)
     {
-        if (actor == nullptr || 
+        if (actor == nullptr ||
             actor->loadedState == nullptr ||
             actor->loadedState->node == nullptr ||
             (actor->flags & TESForm::kFlagIsDeleted))
@@ -15,7 +15,6 @@ namespace CBP
     }
 
     std::atomic<uint64_t> UpdateTask::m_nextGroupId = 0;
-    static auto frameTimer = IAL::Addr<float*>(523660);
 
     UpdateTask::UpdateTask() :
         m_timeAccum(0.0f),
@@ -34,18 +33,22 @@ namespace CBP
         {
             auto& renderer = DCBP::GetRenderer();
 
-            renderer->Clear();
-
-            if (globalConf.debugRenderer.enableMovingNodes)
+            try
             {
-                renderer->UpdateMovingNodes(
-                    GetSimActorList(),
-                    globalConf.debugRenderer.movingNodesRadius,
-                    m_markedActor);
-            }
+                renderer->Clear();
 
-            renderer->Update(
-                DCBP::GetWorld()->getDebugRenderer());
+                if (globalConf.debugRenderer.enableMovingNodes)
+                {
+                    renderer->UpdateMovingNodes(
+                        GetSimActorList(),
+                        globalConf.debugRenderer.movingNodesRadius,
+                        m_markedActor);
+                }
+
+                renderer->Update(
+                    DCBP::GetWorld()->getDebugRenderer());
+            }
+            catch (...) {}
         }
     }
 
@@ -122,7 +125,7 @@ namespace CBP
         if (mm && mm->InPausedMenu())
             return;
 
-        float interval = *frameTimer;
+        float interval = *Game::frameTimerSlow;
 
         if (interval < _EPSILON)
             return;
@@ -179,11 +182,18 @@ namespace CBP
     {
         DCBP::Lock();
 
-        CullActors();
+        try {
 
-        auto player = *g_thePlayer;
-        if (player && player->loadedState && player->parentCell)
-            ProcessTasks();
+            CullActors();
+
+            auto player = *g_thePlayer;
+            if (player && player->loadedState && player->parentCell)
+                ProcessTasks();
+        }
+        catch (std::exception& e) {
+            FatalError("Exception in update task: %s", e.what());
+            abort();
+        }
 
         DCBP::Unlock();
     }
@@ -237,7 +247,17 @@ namespace CBP
         if (sex == 0 && globalConfig.general.femaleOnly)
             return;
 
-        auto& actorConf = IConfig::GetActorConf(a_handle);
+
+        //Debug("[%llX] 2222: IN", a_handle);
+
+        armorOverrideResults_t ovResult;
+        if (IArmor::FindOverrides(actor, ovResult))
+            ApplyArmorOverride(a_handle, ovResult);
+
+
+        //Debug("[%llX] 2222: OUT", a_handle);
+
+        auto& actorConf = IConfig::GetActorConfAO(a_handle);
         auto& nodeMap = IConfig::GetNodeMap();
 
         nodeDescList_t descList;
@@ -262,9 +282,9 @@ namespace CBP
         m_actors.try_emplace(a_handle, a_handle, actor, sex, m_nextGroupId++, descList);
     }
 
-    void UpdateTask::RemoveActor(SKSE::ObjectHandle handle)
+    void UpdateTask::RemoveActor(SKSE::ObjectHandle a_handle)
     {
-        auto it = m_actors.find(handle);
+        auto it = m_actors.find(a_handle);
         if (it != m_actors.end())
         {
 #ifdef _CBP_SHOW_STATS
@@ -273,6 +293,8 @@ namespace CBP
 #endif
             it->second.Release();
             m_actors.erase(it);
+
+            IConfig::RemoveArmorOverride(a_handle);
         }
     }
 
@@ -284,8 +306,6 @@ namespace CBP
 
     void UpdateTask::UpdateConfigOnAllActors()
     {
-        auto& globalConfig = IConfig::GetGlobalConfig();
-
         for (auto& e : m_actors)
         {
             auto actor = SKSE::ResolveObject<Actor>(e.first, Actor::kTypeID);
@@ -293,16 +313,13 @@ namespace CBP
             if (!ActorValid(actor))
                 continue;
 
-            e.second.UpdateConfig(
-                actor,
-                globalConfig.phys.collisions,
-                CBP::IConfig::GetActorConf(e.first));
+            DoConfigUpdate(e.first, actor, e.second);
         }
     }
 
-    void UpdateTask::UpdateConfig(SKSE::ObjectHandle handle)
+    void UpdateTask::UpdateConfig(SKSE::ObjectHandle a_handle)
     {
-        auto it = m_actors.find(handle);
+        auto it = m_actors.find(a_handle);
         if (it == m_actors.end())
             return;
 
@@ -311,12 +328,17 @@ namespace CBP
         if (!ActorValid(actor))
             return;
 
+        DoConfigUpdate(a_handle, actor, it->second);
+    }
+
+    void UpdateTask::DoConfigUpdate(SKSE::ObjectHandle a_handle, Actor* a_actor, SimObject& a_obj)
+    {
         auto& globalConfig = IConfig::GetGlobalConfig();
 
-        it->second.UpdateConfig(
-            actor,
+        a_obj.UpdateConfig(
+            a_actor,
             globalConfig.phys.collisions,
-            CBP::IConfig::GetActorConf(it->first));
+            CBP::IConfig::GetActorConfAO(a_handle));
     }
 
     void UpdateTask::ApplyForce(
@@ -340,14 +362,15 @@ namespace CBP
     {
         for (auto& e : m_actors)
         {
-            auto actor = SKSE::ResolveObject<Actor>(e.first, Actor::kTypeID);
-
-            if (a_reset) {
+            if (a_reset)
+            {
+                auto actor = SKSE::ResolveObject<Actor>(e.first, Actor::kTypeID);
                 if (ActorValid(actor))
                     e.second.Reset();
             }
 
 #ifdef _CBP_SHOW_STATS
+            auto actor = SKSE::ResolveObject<Actor>(e.first, Actor::kTypeID);
             Debug("CLR: Removing %llX (%s)", e.first, actor ? CALL_MEMBER_FN(actor, GetReferenceName)() : "nullptr");
 #endif
 
@@ -355,6 +378,18 @@ namespace CBP
         }
 
         m_actors.clear();
+
+        IConfig::ClearArmorOverrides();
+    }
+
+    void UpdateTask::Clear()
+    {
+        for (auto& e : m_actors)
+            e.second.Release();
+
+        m_actors.clear();
+
+        IConfig::ClearArmorOverrides();
     }
 
     void UpdateTask::Reset()
@@ -415,6 +450,77 @@ namespace CBP
             NiNodeUpdate(e.first);
     }
 
+    bool UpdateTask::ApplyArmorOverride(SKSE::ObjectHandle a_handle, const armorOverrideResults_t& a_desc)
+    {
+        auto current = IConfig::GetArmorOverride(a_handle);
+
+        if (current != nullptr)
+        {
+            if (current->first.size() == a_desc.size())
+            {
+                armorOverrideResults_t tmp;
+
+                std::set_symmetric_difference(
+                    current->first.begin(), current->first.end(),
+                    a_desc.begin(), a_desc.end(),
+                    std::inserter(tmp, tmp.begin()));
+
+                if (tmp.empty())
+                    return false;
+            }
+        }
+
+        armorOverrideDescriptor_t newEntry;
+
+        for (const auto& e : a_desc)
+        {
+            auto entry = IData::GetArmorCacheEntry(e);
+            if (!entry) {
+                Warning("[%llX] [%s] Couldn't read armor override data: %s", 
+                    a_handle, e.c_str(), IData::GetLastException().what());
+                continue;
+            }
+
+            newEntry.first.emplace(e);
+
+            for (const auto& ea : *entry)
+            {
+                auto r = newEntry.second.emplace(ea.first, ea.second);
+                for (const auto& eb : ea.second)
+                    r.first->second.insert_or_assign(eb.first, eb.second);
+            }
+        }
+
+        if (newEntry.first.empty())
+            return false;
+
+        IConfig::SetArmorOverride(a_handle, std::move(newEntry));
+
+        return true;
+    }
+
+    void UpdateTask::UpdateArmorOverride(SKSE::ObjectHandle a_handle)
+    {
+        auto it = m_actors.find(a_handle);
+        if (it == m_actors.end())
+            return;
+
+        auto actor = SKSE::ResolveObject<Actor>(a_handle, Actor::kTypeID);
+        if (!actor)
+            return;
+
+        bool updateConfig;
+
+        armorOverrideResults_t ovResult;
+        if (IArmor::FindOverrides(actor, ovResult))
+            updateConfig = ApplyArmorOverride(a_handle, ovResult);
+        else
+            updateConfig = IConfig::RemoveArmorOverride(a_handle);
+
+        if (updateConfig) 
+            DoConfigUpdate(a_handle, actor, it->second); 
+    }
+
     void UpdateTask::AddTask(const UTTask& task)
     {
         m_taskLock.Enter();
@@ -462,41 +568,44 @@ namespace CBP
 
             switch (task.m_action)
             {
-            case UTTask::kActionAdd:
+            case UTTask::UTTAction::Add:
                 AddActor(task.m_handle);
                 break;
-            case UTTask::kActionRemove:
+            case UTTask::UTTAction::Remove:
                 RemoveActor(task.m_handle);
                 break;
-            case UTTask::kActionUpdateConfig:
+            case UTTask::UTTAction::UpdateConfig:
                 UpdateConfig(task.m_handle);
                 break;
-            case UTTask::kActionUpdateConfigAll:
+            case UTTask::UTTAction::UpdateConfigAll:
                 UpdateConfigOnAllActors();
                 break;
-            case UTTask::kActionReset:
+            case UTTask::UTTAction::Reset:
                 Reset();
                 break;
-            case UTTask::kActionUIUpdateCurrentActor:
+            case UTTask::UTTAction::UIUpdateCurrentActor:
                 DCBP::UIQueueUpdateCurrentActorA();
                 break;
-            case UTTask::kActionUpdateGroupInfoAll:
+            case UTTask::UTTAction::UpdateGroupInfoAll:
                 UpdateGroupInfoOnAllActors();
                 break;
-            case UTTask::kActionPhysicsReset:
+            case UTTask::UTTAction::PhysicsReset:
                 PhysicsReset();
                 break;
-            case UTTask::kActionNiNodeUpdate:
+            case UTTask::UTTAction::NiNodeUpdate:
                 NiNodeUpdate(task.m_handle);
                 break;
-            case UTTask::kActionNiNodeUpdateAll:
+            case UTTask::UTTAction::NiNodeUpdateAll:
                 NiNodeUpdateAll();
                 break;
-            case UTTask::kActionWeightUpdate:
+            case UTTask::UTTAction::WeightUpdate:
                 WeightUpdate(task.m_handle);
                 break;
-            case UTTask::kActionWeightUpdateAll:
+            case UTTask::UTTAction::WeightUpdateAll:
                 WeightUpdateAll();
+                break;
+            case UTTask::UTTAction::UpdateArmorOverride:
+                UpdateArmorOverride(task.m_handle);
                 break;
             }
         }

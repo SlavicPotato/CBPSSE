@@ -24,7 +24,7 @@ namespace CBP
     {
         size_t numActors;
         size_t numRaces;
-        std::exception except;
+        except::descriptor except;
     };
 
     class ISerialization :
@@ -67,7 +67,7 @@ namespace CBP
             m_pendingSave[a_grp] = true;
         }
 
-        [[nodiscard]] inline const std::exception& GetLastException() const {
+        [[nodiscard]] inline const auto& GetLastException() const {
             return m_lastException;
         }
 
@@ -93,7 +93,7 @@ namespace CBP
         [[nodiscard]] bool ReadJsonData(const std::filesystem::path& a_path, Json::Value& a_out);
         void WriteJsonData(const std::filesystem::path& a_path, const Json::Value& a_root);
 
-        std::exception m_lastException;
+        except::descriptor m_lastException;
 
         template <typename T>
         bool DoPendingSave(Group a_grp, T a_call)

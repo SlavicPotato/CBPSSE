@@ -18,6 +18,9 @@ namespace CBP
     actorConfigNodesHolder_t IConfig::actorNodeConfigHolder;
     combinedData_t IConfig::defaultGlobalProfileStorage;
 
+    armorOverrides_t IConfig::armorOverrides;
+    mergedConfCache_t IConfig::mergedConfCache;
+
     IConfig::configLoadStates_t IConfig::loadState{ false, false, false };
 
     IConfig::IConfigLog IConfig::log;
@@ -457,6 +460,38 @@ namespace CBP
         return thingGlobalConfig;
     }
 
+    const configComponents_t& IConfig::GetActorConfAO(SKSE::ObjectHandle handle)
+    {
+        auto& conf = GetActorConf(handle);
+
+        auto it = armorOverrides.find(handle);
+        if (it == armorOverrides.end())
+            return conf;
+
+        auto& me = (mergedConfCache[handle] = conf);
+
+        for (const auto& components : it->second.second)
+        {
+            auto itc = me.find(components.first);
+            if (itc == me.end())
+                continue;
+
+            for (const auto& values : components.second) {
+                switch (values.second.first)
+                {
+                case 0:
+                    itc->second.Set(values.first, values.second.second);
+                    break;
+                case 1:
+                    itc->second.Mul(values.first, values.second.second);
+                    break;
+                }
+            }
+        }
+
+        return me;
+    }
+
     configComponents_t& IConfig::GetOrCreateRaceConf(SKSE::FormID a_formid)
     {
         auto it = raceConfHolder.find(a_formid);
@@ -499,5 +534,21 @@ namespace CBP
         for (const auto& e : a_lhs)
             if (a_rhs.contains(e.first))
                 a_rhs.insert_or_assign(e.first, e.second);
+    }
+
+    const armorCacheEntry_t::mapped_type* IConfig::GetArmorOverrideSection(
+        SKSE::ObjectHandle a_handle,
+        const std::string& a_sk)
+    {
+
+        auto entry = GetArmorOverride(a_handle);
+        if (!entry)
+            return nullptr;
+
+        auto its = entry->second.find(a_sk);
+        if (its != entry->second.end())
+            return std::addressof(its->second);
+
+        return nullptr;
     }
 }

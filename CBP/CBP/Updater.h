@@ -7,23 +7,24 @@ namespace CBP
 {
     struct UTTask
     {
-        enum UTTAction : uint32_t {
-            kActionAdd,
-            kActionRemove,
-            kActionUpdateConfig,
-            kActionUpdateConfigAll,
-            kActionReset,
-            kActionUIUpdateCurrentActor,
-            kActionUpdateGroupInfoAll,
-            kActionPhysicsReset,
-            kActionNiNodeUpdate,
-            kActionNiNodeUpdateAll,
-            kActionWeightUpdate,
-            kActionWeightUpdateAll
+        enum class UTTAction : uint32_t {
+            Add,
+            Remove,
+            UpdateConfig,
+            UpdateConfigAll,
+            Reset,
+            UIUpdateCurrentActor,
+            UpdateGroupInfoAll,
+            PhysicsReset,
+            NiNodeUpdate,
+            NiNodeUpdateAll,
+            WeightUpdate,
+            WeightUpdateAll,
+            UpdateArmorOverride
         };
 
         UTTAction m_action;
-        SKSE::ObjectHandle m_handle;
+        SKSE::ObjectHandle m_handle = 0;
     };
 
     class UpdateTask :
@@ -68,13 +69,14 @@ namespace CBP
         void UpdateGroupInfoOnAllActors();
         void UpdateConfig(SKSE::ObjectHandle a_handle);
         void ApplyForce(SKSE::ObjectHandle a_handle, uint32_t a_steps, const std::string& a_component, const NiPoint3& a_force);
-        void ClearActors(bool a_reset = true);
+        void ClearActors(bool a_reset = true);       
         void Reset();
         void PhysicsReset();
         void NiNodeUpdate(SKSE::ObjectHandle a_handle);
         void WeightUpdate(SKSE::ObjectHandle a_handle);
         void NiNodeUpdateAll();
         void WeightUpdateAll();
+        void UpdateArmorOverride(SKSE::ObjectHandle a_handle);
 
         void UpdateDebugRenderer();
 
@@ -99,11 +101,16 @@ namespace CBP
             m_markedActor = a_handle;
         }
 
+        void Clear();
+
         FN_NAMEPROC("UpdateTask")
     private:
         bool IsTaskQueueEmpty();
         void ProcessTasks();
         void GatherActors(handleSet_t& a_out);
+
+        bool ApplyArmorOverride(SKSE::ObjectHandle a_handle, const armorOverrideResults_t& a_entry);
+        __forceinline void DoConfigUpdate(SKSE::ObjectHandle a_handle, Actor* a_actor, SimObject& a_obj);
 
         simActorList_t m_actors;
         SKSE::ObjectHandle m_markedActor;

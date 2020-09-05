@@ -2,6 +2,9 @@
 
 namespace Game
 {
+    float* frameTimer = IAL::Addr<float*>(523661);
+    float* frameTimerSlow = IAL::Addr<float*>(523660);
+
     namespace Debug
     {
         typedef void(*notification_t)(const char*, const char*, bool);

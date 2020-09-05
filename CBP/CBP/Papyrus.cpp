@@ -4,7 +4,7 @@ namespace CBP
 {
     static IThreadSafeBasicMemPool<ConfigUpdateTask, 30> s_configUpdateTaskPool;
 
-    static UInt32 PP_GetVersion(StaticFunctionTag* base)
+    static UInt32 PP_GetVersion(StaticFunctionTag*)
     {
         return MAKE_PLUGIN_VERSION(
             PLUGIN_VERSION_MAJOR,
@@ -12,12 +12,12 @@ namespace CBP
             PLUGIN_VERSION_REVISION);
     }
 
-    static void PP_UpdateAllActors(StaticFunctionTag* base)
+    static void PP_UpdateAllActors(StaticFunctionTag*)
     {
         DCBP::UpdateConfigOnAllActors();
     }
 
-    static bool PP_SetGlobalConfig(StaticFunctionTag* base, BSFixedString sect, BSFixedString key, float val)
+    static bool PP_SetGlobalConfig(StaticFunctionTag*, BSFixedString sect, BSFixedString key, float val)
     {
         auto cmd = ConfigUpdateTask::Create(sect, key, val);
         if (cmd) {
@@ -27,7 +27,7 @@ namespace CBP
         return false;
     }
 
-    static bool PP_SetActorConfig(StaticFunctionTag* base, Actor* actor, BSFixedString sect, BSFixedString key, float val)
+    static bool PP_SetActorConfig(StaticFunctionTag*, Actor* actor, BSFixedString sect, BSFixedString key, float val)
     {
         if (!actor)
             return false;
@@ -45,7 +45,7 @@ namespace CBP
         return false;
     }
 
-    static void PP_ResetAllActors(StaticFunctionTag* base)
+    static void PP_ResetAllActors(StaticFunctionTag*)
     {
         DCBP::ResetActors();
     }
@@ -132,7 +132,7 @@ namespace CBP
 
             if (itt->second.Set(m_key, m_val))
                 DCBP::DispatchActorTask(
-                    m_handle, UTTask::kActionUpdateConfig);
+                    m_handle, UTTask::UTTAction::UpdateConfig);
         }
         else {
             auto& globalConfig = IConfig::GetGlobalPhysicsConfig();
