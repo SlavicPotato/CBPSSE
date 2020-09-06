@@ -4,26 +4,35 @@
     <moduleName>$name</moduleName>
 
     <installSteps order="Explicit">
-        <installStep name="Before We Begin">
-            <optionalFileGroups order="Explicit">
-                <group name="Select an option:" type="SelectAtLeastOne">
-                    <plugins order="Explicit">
+      <installStep name="Before We Begin">
+          <optionalFileGroups order="Explicit">
+              <group name="Select an option:" type="SelectAtLeastOne">
+                  <plugins order="Explicit">
 
-                        <plugin name="Yes I have both dependencies!">
-                            <description>
-                              Please make sure you have SKSE version larger than 1.5.23 and SKSE Address Library Installed!
-                            </description>
-                            <image path=""/>
-                            <files>
-              							    <folder source="base" destination=""/>
-              							</files>
-                            <typeDescriptor>
-                                <type name="Required"/>
-                            </typeDescriptor>
-                        </plugin>
-                    </plugins>
-                </group>
-            </optionalFileGroups>
-        </installStep>
+                      <plugin name="Yes I have both dependencies!">
+                          <description>
+                            Please make sure you have SKSE version larger than 1.5.23 and SKSE Address Library Installed!
+                          </description>
+                          <image path=""/>
+                          <files>
+                              <folder source="$moduleBase" destination=""/>
+                          </files>
+                          <typeDescriptor>
+                              <type name="Required"/>
+                          </typeDescriptor>
+                      </plugin>
+                  </plugins>
+              </group>
+          </optionalFileGroups>
+      </installStep>
+      <installStep name="Pick a runtime plugin--based on your CPU instruction set">
+          <optionalFileGroups order="Explicit">
+              <group name="Select an option:" type="SelectExactlyOne">
+                  <plugins order="Explicit">
+                    $plugins
+                  </plugins>
+              </group>
+          </optionalFileGroups>
+      </installStep>
     </installSteps>
 </config>
