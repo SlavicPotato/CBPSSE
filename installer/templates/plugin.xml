@@ -1,0 +1,12 @@
+                <plugin name="$pluginName">
+                    <description>
+                      $pluginDescription
+                    </description>
+                    <image path=""/>
+                    <files>
+                        <folder source="$pluginSource" destination="$pluginDestination"/>
+                    </files>
+                    <typeDescriptor>
+                        <type name="$isPluginRequired"/>
+                    </typeDescriptor>
+                </plugin>

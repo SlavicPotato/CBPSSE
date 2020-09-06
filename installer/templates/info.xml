@@ -2,7 +2,7 @@
 <fomod>
     <Name>$name</Name>
 
-    <Author>SlavicPotato</Author>
+    <Author>SlavicPotato(dev), KwekMaster(qa,FOMod)</Author>
 
     <Version MachineVersion="$version">
         $version
