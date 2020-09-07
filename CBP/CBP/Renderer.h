@@ -32,8 +32,8 @@ namespace CBP
         void Clear();
 
     private:
-        static constexpr int NB_SECTORS_SPHERE = 18;
-        static constexpr int NB_STACKS_SPHERE = 10;
+        static constexpr int NB_SECTORS_SPHERE = 9;
+        static constexpr int NB_STACKS_SPHERE = 5;
 
         static constexpr auto MOVING_NODES_COL = DirectX::XMFLOAT4(1.0f, 0.0f, 0.0f, 0.75f);
         static constexpr auto ACTOR_MARKER_COL = DirectX::XMFLOAT4(0.921f, 0.596f, 0.203f, 0.75f);
