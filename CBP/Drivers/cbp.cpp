@@ -781,7 +781,11 @@ namespace CBP
     {
         Lock();
 
-        if (m_loadInstance != m_uiContext.GetLoadInstance()) {
+        auto& io = ImGui::GetIO();
+
+        if (m_loadInstance != m_uiContext.GetLoadInstance() ||
+            io.KeysDown[VK_ESCAPE]) 
+        {
             uiState.show = false;
         }
         else {
