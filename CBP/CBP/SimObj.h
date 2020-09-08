@@ -54,11 +54,11 @@ namespace CBP
         void Release();
 
         [[nodiscard]] inline bool HasNode(const std::string& a_node) const {
-            return m_things.contains(a_node);
+            return m_things.find(a_node) != m_things.end();
         }
 
         [[nodiscard]] inline bool HasConfigGroup(const std::string& a_cg) const {
-            return m_configGroups.contains(a_cg);
+            return m_configGroups.find(a_cg) != m_configGroups.end();
         }
 
         [[nodiscard]] static auto CreateNodeDescriptorList(

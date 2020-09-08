@@ -367,3 +367,4 @@ FodyWeavers.xsd
 /x64_v142/common_1_5_97_vc14/Release MT
 /x64_v142/common_1_5_97_vc14/PreReleaseAVX2 MT
 /tmp
+/x64_Intel C++ Compiler 19.1/common_1_5_97_vc14/IntelRelAvx2MT

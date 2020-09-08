@@ -34,9 +34,6 @@ namespace CBP
     typedef std::unordered_map<std::string, std::unordered_map<std::string, armorCacheValue_t>> armorCacheEntry_t;
     typedef std::unordered_map<std::string, armorCacheEntry_t> armorCache_t;
 
-    /*typedef std::pair<std::set<std::string>, std::unordered_map<std::string, std::unordered_map<std::string, float>>> mergedArmorCacheEntry_t;
-    typedef std::unordered_map<std::string, mergedArmorCacheEntry_t> mergedArmorCache_t;*/
-
     class IData
     {
         typedef std::unordered_map<SKSE::FormID, raceCacheEntry_t> raceList_t;
@@ -79,7 +76,7 @@ namespace CBP
         }
 
         [[nodiscard]] inline static bool IsIgnoredRace(SKSE::FormID a_formid) {
-            return ignoredRaces.contains(a_formid);
+            return ignoredRaces.find(a_formid) != ignoredRaces.end();
         }
 
         static bool GetActorName(SKSE::ObjectHandle a_handle, std::string& a_out);

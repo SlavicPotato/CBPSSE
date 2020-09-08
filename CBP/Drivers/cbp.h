@@ -160,6 +160,8 @@ namespace CBP
         static void NiNodeUpdate(SKSE::ObjectHandle a_handle);
         static void WeightUpdate();
         static void WeightUpdate(SKSE::ObjectHandle a_handle);
+        static void ClearArmorOverrides();
+        static void UpdateArmorOverridesAll();
         static void ResetActors();
         static void UpdateDebugRendererState();
         static void UpdateDebugRendererSettings();

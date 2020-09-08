@@ -42,7 +42,7 @@ namespace CBP
     void IData::AddExtraActorEntry(
         SKSE::ObjectHandle a_handle)
     {
-        if (actorCache.contains(a_handle))
+        if (actorCache.find(a_handle) != actorCache.end())
             return;
 
         std::ostringstream ss;
@@ -162,7 +162,7 @@ namespace CBP
 
     bool IData::HasArmorCacheEntry(const std::string& a_path)
     {
-        return armorCache.contains(a_path);
+        return armorCache.find(a_path) != armorCache.end();
     }
 
     const armorCacheEntry_t* IData::GetArmorCacheEntry(const std::string& a_path)

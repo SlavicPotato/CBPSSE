@@ -63,7 +63,7 @@ namespace CBP
         }
 
         [[nodiscard]] inline bool contains(const key_type& a_key) const {
-            return m_map.contains(a_key);
+            return m_map.find(a_key) != m_map.end();
         }
 
         [[nodiscard]] inline const mapped_type& at(const key_type& a_key) const {
@@ -100,6 +100,7 @@ namespace CBP
         struct
         {
             bool femaleOnly = true;
+            bool armorOverrides = true;
             bool enableProfiling = false;
             int profilingInterval = 1000;
         } general;
@@ -437,7 +438,7 @@ namespace CBP
         }
 
         [[nodiscard]] inline static bool IsValidNode(const std::string& a_key) {
-            return nodeMap.contains(a_key);
+            return nodeMap.find(a_key) != nodeMap.end();
         }
 
         [[nodiscard]] inline static const auto& GetValidSimComponents() {
@@ -445,7 +446,7 @@ namespace CBP
         }
 
         [[nodiscard]] inline static bool IsValidSimComponent(const std::string& a_key) {
-            return validSimComponents.contains(a_key);
+            return validSimComponents.find(a_key) != validSimComponents.end();
         }
 
         [[nodiscard]] inline static auto& GetCollisionGroups() {
@@ -551,7 +552,7 @@ namespace CBP
         }
 
         [[nodiscard]] inline static bool HasArmorOverride(SKSE::ObjectHandle a_handle) {
-            return armorOverrides.contains(a_handle);
+            return armorOverrides.find(a_handle) != armorOverrides.end();
         }
 
         [[nodiscard]] static const armorCacheEntry_t::mapped_type* GetArmorOverrideSection(SKSE::ObjectHandle a_handle, const std::string& a_sk);
@@ -574,7 +575,7 @@ namespace CBP
 
             return nullptr;
         }
-
+        
         inline static bool RemoveArmorOverride(SKSE::ObjectHandle a_handle) {
             return armorOverrides.erase(a_handle) == 1;
         }

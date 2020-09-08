@@ -247,9 +247,11 @@ namespace CBP
         if (sex == 0 && globalConfig.general.femaleOnly)
             return;
 
-        armorOverrideResults_t ovResult;
-        if (IArmor::FindOverrides(actor, ovResult))
-            ApplyArmorOverride(a_handle, ovResult);
+        if (globalConfig.general.armorOverrides) {
+            armorOverrideResults_t ovResult;
+            if (IArmor::FindOverrides(actor, ovResult))
+                ApplyArmorOverride(a_handle, ovResult);
+        }
 
         auto& actorConf = IConfig::GetActorConfAO(a_handle);
         auto& nodeMap = IConfig::GetNodeMap();
@@ -282,8 +284,8 @@ namespace CBP
         if (it != m_actors.end())
         {
 #ifdef _CBP_SHOW_STATS
-            auto actor = SKSE::ResolveObject<Actor>(handle, Actor::kTypeID);
-            Debug("Removing %llX (%s)", handle, actor ? CALL_MEMBER_FN(actor, GetReferenceName)() : "nullptr");
+            auto actor = SKSE::ResolveObject<Actor>(a_handle, Actor::kTypeID);
+            Debug("Removing %llX (%s)", a_handle, actor ? CALL_MEMBER_FN(actor, GetReferenceName)() : "nullptr");
 #endif
             it->second.Release();
             m_actors.erase(it);
@@ -446,6 +448,10 @@ namespace CBP
 
     void UpdateTask::AddArmorOverride(SKSE::ObjectHandle a_handle, SKSE::FormID a_formid)
     {
+        auto& globalConfig = IConfig::GetGlobalConfig();
+        if (!globalConfig.general.armorOverrides)
+            return;
+
         auto it = m_actors.find(a_handle);
         if (it == m_actors.end())
             return;
@@ -488,6 +494,10 @@ namespace CBP
 
     void UpdateTask::UpdateArmorOverride(SKSE::ObjectHandle a_handle)
     {
+        auto& globalConfig = IConfig::GetGlobalConfig();
+        if (!globalConfig.general.armorOverrides)
+            return;
+
         auto it = m_actors.find(a_handle);
         if (it == m_actors.end())
             return;
@@ -496,16 +506,21 @@ namespace CBP
         if (!actor)
             return;
 
+        DoUpdateArmorOverride(*it, actor);
+    }
+
+    void UpdateTask::DoUpdateArmorOverride(simActorList_t::value_type &a_entry, Actor* a_actor)
+    {
         bool updateConfig;
 
         armorOverrideResults_t ovResult;
-        if (IArmor::FindOverrides(actor, ovResult))
-            updateConfig = ApplyArmorOverride(a_handle, ovResult);
+        if (IArmor::FindOverrides(a_actor, ovResult))
+            updateConfig = ApplyArmorOverride(a_entry.first, ovResult);
         else
-            updateConfig = IConfig::RemoveArmorOverride(a_handle);
+            updateConfig = IConfig::RemoveArmorOverride(a_entry.first);
 
         if (updateConfig)
-            DoConfigUpdate(a_handle, actor, it->second);
+            DoConfigUpdate(a_entry.first, a_actor, a_entry.second);
     }
 
     bool UpdateTask::ApplyArmorOverride(SKSE::ObjectHandle a_handle, const armorOverrideResults_t& a_desc)
@@ -562,6 +577,28 @@ namespace CBP
         }
 
         return !a_out.first.empty();
+    }
+
+    void UpdateTask::UpdateArmorOverridesAll()
+    {
+        auto& globalConfig = IConfig::GetGlobalConfig();
+        if (!globalConfig.general.armorOverrides)
+            return;
+
+        for (auto& e : m_actors) {
+
+            auto actor = SKSE::ResolveObject<Actor>(e.first, Actor::kTypeID);
+            if (!actor)
+                return;
+
+            DoUpdateArmorOverride(e, actor);
+        }
+    }
+
+    void UpdateTask::ClearArmorOverrides()
+    {
+        IConfig::ClearArmorOverrides();
+        UpdateConfigOnAllActors();
     }
 
     void UpdateTask::AddTask(const UTTask& task)
@@ -659,6 +696,12 @@ namespace CBP
                 break;
             case UTTask::UTTAction::UpdateArmorOverride:
                 UpdateArmorOverride(task.m_handle);
+                break;
+            case UTTask::UTTAction::UpdateArmorOverridesAll:
+                UpdateArmorOverridesAll();
+                break;
+            case UTTask::UTTAction::ClearArmorOverrides:
+                ClearArmorOverrides();
                 break;
             }
         }

@@ -15,7 +15,7 @@ namespace CBP
         m_effect->SetVertexColorEnabled(true);
 
         DirectX::ThrowIfFailed(
-            CreateInputLayoutFromEffect<VertexType>(a_pDevice, m_effect.get(),
+            DirectX::CreateInputLayoutFromEffect<VertexType>(a_pDevice, m_effect.get(),
                 m_inputLayout.ReleaseAndGetAddressOf())
         );
 

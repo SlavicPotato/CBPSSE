@@ -105,8 +105,11 @@ namespace CBP
 
         void HelpMarker(MiscHelpText a_id) const;
 
-        inline float GetNextTextOffset(const char* a_text)
+        inline float GetNextTextOffset(const char* a_text, bool a_clear = false)
         {
+            if (a_clear)
+                ClearTextOffset();
+
             auto it = m_ctlPositions.find(a_text);
             if (it != m_ctlPositions.end())
                 return (m_posOffset += it->second + (m_posOffset == 0.0f ? 0.0f : 5.0f));
@@ -402,7 +405,6 @@ namespace CBP
         void Draw(bool* a_active);
 
     private:
-
         void DrawKeyOptions(
             const char* a_desc,
             const keyDesc_t& a_dmap,

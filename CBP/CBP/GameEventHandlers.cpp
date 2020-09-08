@@ -11,8 +11,8 @@ namespace CBP
                 DCBP::DispatchActorTask(
                     DYNAMIC_CAST(form, TESForm, Actor),
                     evn->loaded ?
-                    CBP::UTTask::UTTAction::Add :
-                    CBP::UTTask::UTTAction::Remove);
+                    UTTask::UTTAction::Add :
+                    UTTask::UTTAction::Remove);
             }
         }
 
@@ -26,7 +26,7 @@ namespace CBP
             if (evn->reference->formType == Actor::kTypeID) {
                 DCBP::DispatchActorTask(
                     DYNAMIC_CAST(evn->reference, TESObjectREFR, Actor),
-                    CBP::UTTask::UTTAction::Add);
+                    UTTask::UTTAction::Add);
             }
         }
 
@@ -41,8 +41,11 @@ namespace CBP
         return kEvent_Continue;
     }
 
-    static void HandleEquipEvent(const TESEquipEvent* evn)
+    static void HandleEquipEvent(TESEquipEvent* evn)
     {
+        if (evn->actor->formType != Actor::kTypeID)
+            return;
+
         auto actor = DYNAMIC_CAST(evn->actor, TESObjectREFR, Actor);
         if (!actor)
             return;
@@ -58,16 +61,19 @@ namespace CBP
         if (form->formType != TESObjectARMO::kTypeID)
             return;
 
+        //SDT::gLogger.Debug(">>> unequip %X, %X", evn->actor->formID, form->formID);
+
         DCBP::DispatchActorTask(
-            handle, CBP::UTTask::UTTAction::UpdateArmorOverride);
+            handle, UTTask::UTTAction::UpdateArmorOverride);
     }
 
     auto EventHandler::ReceiveEvent(TESEquipEvent* evn, EventDispatcher<TESEquipEvent>*)
         -> EventResult
     {
-        if (evn && evn->actor)
+        if (evn && evn->actor && !evn->equipped)
             HandleEquipEvent(evn);
 
         return kEvent_Continue;
     }
+
 }

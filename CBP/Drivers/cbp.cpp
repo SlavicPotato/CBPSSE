@@ -80,6 +80,18 @@ namespace CBP
             UTTask::UTTAction::Reset);
     }
 
+    void DCBP::ClearArmorOverrides()
+    {
+        m_Instance.m_updateTask.AddTask(
+            UTTask::UTTAction::ClearArmorOverrides);
+    }
+
+    void DCBP::UpdateArmorOverridesAll()
+    {
+        m_Instance.m_updateTask.AddTask(
+            UTTask::UTTAction::UpdateArmorOverridesAll);
+    }
+
     void DCBP::UpdateDebugRendererState()
     {
         if (!m_Instance.conf.debug_renderer)

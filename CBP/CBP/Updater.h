@@ -22,6 +22,8 @@ namespace CBP
             WeightUpdateAll,
             AddArmorOverride,
             UpdateArmorOverride,
+            UpdateArmorOverridesAll,
+            ClearArmorOverrides
         };
 
         UTTAction m_action;
@@ -80,6 +82,8 @@ namespace CBP
         void WeightUpdateAll();
         void AddArmorOverride(SKSE::ObjectHandle a_handle, SKSE::FormID a_formid);
         void UpdateArmorOverride(SKSE::ObjectHandle a_handle);
+        void UpdateArmorOverridesAll();
+        void ClearArmorOverrides();
 
         void UpdateDebugRenderer();
 
@@ -114,7 +118,8 @@ namespace CBP
         void GatherActors(handleSet_t& a_out);
 
         bool ApplyArmorOverride(SKSE::ObjectHandle a_handle, const armorOverrideResults_t& a_entry);
-        bool BuildArmorOverride(SKSE::ObjectHandle a_handle, const armorOverrideResults_t& a_in, armorOverrideDescriptor_t &a_out);
+        bool BuildArmorOverride(SKSE::ObjectHandle a_handle, const armorOverrideResults_t& a_in, armorOverrideDescriptor_t& a_out);
+        void DoUpdateArmorOverride(simActorList_t::value_type& a_entry, Actor* a_actor);
         __forceinline void DoConfigUpdate(SKSE::ObjectHandle a_handle, Actor* a_actor, SimObject& a_obj);
 
         simActorList_t m_actors;

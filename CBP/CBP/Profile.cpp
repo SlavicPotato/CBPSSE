@@ -250,12 +250,12 @@ namespace CBP
     template <class T>
     void ProfileManager<T>::CheckProfileKey(const std::string& a_key) const
     {
-        if (m_storage.contains(a_key))
+        if (m_storage.find(a_key) != m_storage.end())
             throw std::exception("Profile already exists");
 
         if (!std::regex_match(a_key, m_rFileCheck))
             throw std::exception("Invalid characters in profile name");
-    }
+    } 
 
     template <class T>
     bool ProfileManager<T>::DeleteProfile(const std::string& a_name)
@@ -307,7 +307,7 @@ namespace CBP
                 throw std::exception("No such profile exists");
             }
 
-            if (m_storage.contains(a_newName)) {
+            if (m_storage.find(a_newName) != m_storage.end()) {
                 throw std::exception("A profile with that name already exists");
             }
 

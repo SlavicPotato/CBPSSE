@@ -220,7 +220,7 @@ namespace CBP
 
             const char* curSelName = nullptr;
             if (state.selected) {
-                if (data.contains(*state.selected))
+                if (data.find(*state.selected) != data.end())
                 {
                     curSelName = state.selected->c_str();
 
@@ -275,8 +275,7 @@ namespace CBP
             ImGui::SameLine();
             m_filter.DrawButton();
 
-            ClearTextOffset();
-            ImGui::SameLine(ImGui::GetWindowContentRegionMax().x - GetNextTextOffset("New"));
+            ImGui::SameLine(ImGui::GetWindowContentRegionMax().x - GetNextTextOffset("New", true));
             if (ButtonRight("New")) {
                 ImGui::OpenPopup("New profile");
                 state.new_input[0] = 0;
@@ -547,8 +546,7 @@ namespace CBP
                     DCBP::MarkGlobalsForSave();
                 HelpMarker(MiscHelpText::syncMinMax);
 
-                ClearTextOffset();
-                ImGui::SameLine(ImGui::GetWindowContentRegionMax().x - GetNextTextOffset("Reset"));
+                ImGui::SameLine(ImGui::GetWindowContentRegionMax().x - GetNextTextOffset("Reset", true));
                 if (ButtonRight("Reset"))
                     ImGui::OpenPopup("Reset");
 
@@ -616,7 +614,7 @@ namespace CBP
                 auto& actorRaceMap = IData::GetActorRaceMap();
                 auto it = actorRaceMap.find(crosshairRef);
                 if (it != actorRaceMap.end()) {
-                    if (m_raceList.contains(it->second)) {
+                    if (m_raceList.find(it->second) != m_raceList.end()) {
                         m_currentRace = it->second;
                         return;
                     }
@@ -625,7 +623,7 @@ namespace CBP
         }
 
         if (m_currentRace != 0)
-            if (!m_raceList.contains(m_currentRace))
+            if (m_raceList.find(m_currentRace) == m_raceList.end())
                 m_currentRace = 0;
     }
 
@@ -692,7 +690,7 @@ namespace CBP
 
         const char* curSelName = nullptr;
         if (state.selected) {
-            if (data.contains(*state.selected))
+            if (data.find(*state.selected) != data.end())
                 curSelName = state.selected->c_str();
             else
                 state.selected.Clear();
@@ -720,9 +718,8 @@ namespace CBP
         }
 
         auto wcm = ImGui::GetWindowContentRegionMax();
-        ClearTextOffset();
 
-        ImGui::SameLine(wcm.x - GetNextTextOffset("New"));
+        ImGui::SameLine(wcm.x - GetNextTextOffset("New", true));
         if (ButtonRight("New")) {
             ImGui::OpenPopup("New profile");
             state.new_input[0] = 0;
@@ -834,8 +831,7 @@ namespace CBP
 
             auto wcm = ImGui::GetWindowContentRegionMax();
 
-            ClearTextOffset();
-            ImGui::SameLine(wcm.x - GetNextTextOffset("Apply"));
+            ImGui::SameLine(wcm.x - GetNextTextOffset("Apply", true));
             if (ButtonRight("Apply"))
                 for (const auto& e : globalConfig.ui.forceActor)
                     ApplyForce(a_data, e.second.steps, e.first, e.second.force);
@@ -849,8 +845,7 @@ namespace CBP
                 if (ImGui::SliderFloat("X", std::addressof(e.force.x), FORCE_MIN, FORCE_MAX, "%.0f"))
                     DCBP::MarkGlobalsForSave();
 
-                ClearTextOffset();
-                ImGui::SameLine(wcm.x - GetNextTextOffset("Reset"));
+                ImGui::SameLine(wcm.x - GetNextTextOffset("Reset", true));
                 if (ButtonRight("Reset")) {
                     e = configForce_t();
                     DCBP::MarkGlobalsForSave();
@@ -915,7 +910,7 @@ namespace CBP
         if (globalConfig.ui.selectCrosshairActor && !isFirstUpdate) {
             auto crosshairRef = IData::GetCrosshairRef();
             if (crosshairRef) {
-                if (m_actorList.contains(crosshairRef)) {
+                if (m_actorList.find(crosshairRef) != m_actorList.end()) {
                     SetCurrentActor(crosshairRef);
                     return;
                 }
@@ -923,12 +918,12 @@ namespace CBP
         }
 
         if (m_currentActor != 0) {
-            if (!m_actorList.contains(m_currentActor))
+            if (m_actorList.find(m_currentActor) == m_actorList.end())
                 SetCurrentActor(0);
         }
         else {
             if (globalConfig.ui.lastActor &&
-                m_actorList.contains(globalConfig.ui.lastActor))
+                m_actorList.find(globalConfig.ui.lastActor) != m_actorList.end())
             {
                 m_currentActor = globalConfig.ui.lastActor;
             }
@@ -1152,7 +1147,7 @@ namespace CBP
         m_peNodes("Node profile editor"),
         m_importDialog(PLUGIN_CBP_EXPORTS_PATH),
         m_exportDialog(PLUGIN_CBP_EXPORTS_PATH),
-        state({ .windows{false, false, false, false, false, false, false, false, false, false} }),
+        state({ {false, false, false, false, false, false, false, false, false, false} }),
         UIActorList<actorListBaseConf_t>(true)
     {
     }
@@ -1342,8 +1337,7 @@ namespace CBP
                 if (IConfig::HasArmorOverride(m_currentActor))
                 {
                     ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.66f, 0.13f, 1.0f));
-                    ClearTextOffset();
-                    ImGui::SameLine(wcm.x - GetNextTextOffset("Armor overrides active"));
+                    ImGui::SameLine(wcm.x - GetNextTextOffset("Armor overrides active", true));
                     ImGui::Text("Armor overrides active");
                     ImGui::PopStyleColor();
                 }
@@ -1356,8 +1350,7 @@ namespace CBP
             }
             HelpMarker(MiscHelpText::showAllActors);
 
-            ClearTextOffset();
-            ImGui::SameLine(wcm.x - GetNextTextOffset("Rescan"));
+            ImGui::SameLine(wcm.x - GetNextTextOffset("Rescan", true));
             if (ButtonRight("Rescan"))
                 DCBP::QueueActorCacheUpdate();
 
@@ -1366,8 +1359,7 @@ namespace CBP
                 DCBP::MarkGlobalsForSave();
             HelpMarker(MiscHelpText::clampValues);
 
-            ClearTextOffset();
-            ImGui::SameLine(wcm.x - GetNextTextOffset("Reset"));
+            ImGui::SameLine(wcm.x - GetNextTextOffset("Reset", true));
             if (ButtonRight("Reset"))
                 ImGui::OpenPopup("Reset");
 
@@ -1507,6 +1499,17 @@ namespace CBP
 
                 if (ImGui::Checkbox("Select actor in crosshairs on open", &globalConfig.ui.selectCrosshairActor))
                     DCBP::MarkGlobalsForSave();
+
+                if (ImGui::Checkbox("Armor overrides", &globalConfig.general.armorOverrides))
+                {
+                    if (globalConfig.general.armorOverrides)
+                        DCBP::UpdateArmorOverridesAll();
+                    else
+                        DCBP::ClearArmorOverrides();
+                    
+
+                    DCBP::MarkGlobalsForSave();
+                }
 
                 ImGui::Spacing();
             }
@@ -1751,8 +1754,7 @@ namespace CBP
 
             auto wcm = ImGui::GetWindowContentRegionMax();
 
-            ClearTextOffset();
-            ImGui::SameLine(wcm.x - GetNextTextOffset("New"));
+            ImGui::SameLine(wcm.x - GetNextTextOffset("New", true));
             if (ButtonRight("New")) {
                 ImGui::OpenPopup("New group");
                 m_input = 0;
@@ -1921,8 +1923,7 @@ namespace CBP
 
             auto wcm = ImGui::GetWindowContentRegionMax();
 
-            ClearTextOffset();
-            ImGui::SameLine(wcm.x - GetNextTextOffset("Rescan"));
+            ImGui::SameLine(wcm.x - GetNextTextOffset("Rescan", true));
             if (ButtonRight("Rescan"))
                 DCBP::QueueActorCacheUpdate();
 

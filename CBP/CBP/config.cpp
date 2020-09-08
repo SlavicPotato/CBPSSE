@@ -267,7 +267,7 @@ namespace CBP
                 if (line.size() < 2 || line[0] == '#')
                     continue;
 
-                auto str = line.data();
+                char* str = line.data();
 
                 char* next_tok = nullptr;
 
@@ -281,7 +281,7 @@ namespace CBP
 
                     transform(sect.begin(), sect.end(), sect.begin(), ::tolower);
 
-                    if (!a_out.contains(sect))
+                    if (a_out.find(sect) == a_out.end())
                         continue;
 
                     transform(key.begin(), key.end(), key.begin(), ::tolower);
@@ -321,7 +321,7 @@ namespace CBP
         }
 
         for (const auto& v : validSimComponents)
-            if (!thingGlobalConfig.contains(v))
+            if (thingGlobalConfig.find(v) == thingGlobalConfig.end())
                 thingGlobalConfig.try_emplace(v);
 
         configComponents_t cc(thingGlobalConfig);
@@ -333,13 +333,13 @@ namespace CBP
 
     ConfigClass IConfig::GetActorPhysicsConfigClass(SKSE::ObjectHandle a_handle)
     {
-        if (actorConfHolder.contains(a_handle))
+        if (actorConfHolder.find(a_handle) != actorConfHolder.end())
             return ConfigClass::kConfigActor;
 
         auto& rm = IData::GetActorRaceMap();
         auto it = rm.find(a_handle);
         if (it != rm.end())
-            if (raceConfHolder.contains(it->second))
+            if (raceConfHolder.find(it->second) != raceConfHolder.end())
                 return ConfigClass::kConfigRace;
 
         return ConfigClass::kConfigGlobal;
@@ -347,7 +347,7 @@ namespace CBP
 
     ConfigClass IConfig::GetActorNodeConfigClass(SKSE::ObjectHandle a_handle)
     {
-        if (actorNodeConfigHolder.contains(a_handle))
+        if (actorNodeConfigHolder.find(a_handle) != actorNodeConfigHolder.end())
             return ConfigClass::kConfigActor;
 
         return ConfigClass::kConfigGlobal;
@@ -525,14 +525,14 @@ namespace CBP
     void IConfig::CopyComponents(const configComponents_t& a_lhs, configComponents_t& a_rhs)
     {
         for (const auto& e : a_lhs)
-            if (a_rhs.contains(e.first))
+            if (a_rhs.find(e.first) != a_rhs.end())
                 a_rhs.insert_or_assign(e.first, e.second);
     }
 
     void IConfig::CopyNodes(const configNodes_t& a_lhs, configNodes_t& a_rhs)
     {
         for (const auto& e : a_lhs)
-            if (a_rhs.contains(e.first))
+            if (a_rhs.find(e.first) != a_rhs.end())
                 a_rhs.insert_or_assign(e.first, e.second);
     }
 

@@ -487,7 +487,7 @@ namespace CBP
                         if (v == 0)
                             continue;
 
-                        if (!colGroups.contains(v))
+                        if (colGroups.find(v) == colGroups.end())
                             continue;
 
                         nodeColGroupMap.emplace(k, v);
@@ -882,7 +882,8 @@ namespace CBP
                 newFormID = formID;
             }
 
-            if (!IData::GetRaceList().contains(newFormID)) {
+            auto& rl = IData::GetRaceList();
+            if (rl.find(newFormID) == rl.end()) {
                 Warning("0x%lX: race record not found", newFormID);
                 continue;
             }
