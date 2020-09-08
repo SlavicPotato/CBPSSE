@@ -31,7 +31,6 @@ namespace CBP
         return true;
     }
 
-
     void IEvents::ExitGame_Hook()
     {
         TriggerEvent(Event::OnExit, nullptr);

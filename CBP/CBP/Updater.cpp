@@ -182,18 +182,11 @@ namespace CBP
     {
         DCBP::Lock();
 
-        try {
+        CullActors();
 
-            CullActors();
-
-            auto player = *g_thePlayer;
-            if (player && player->loadedState && player->parentCell)
-                ProcessTasks();
-        }
-        catch (std::exception& e) {
-            FatalError("Exception in update task: %s", e.what());
-            abort();
-        }
+        auto player = *g_thePlayer;
+        if (player && player->loadedState && player->parentCell)
+            ProcessTasks();
 
         DCBP::Unlock();
     }
@@ -216,7 +209,7 @@ namespace CBP
             else
                 ++it;
         }
-    }
+        }
 
     void UpdateTask::AddActor(SKSE::ObjectHandle a_handle)
     {
@@ -509,7 +502,7 @@ namespace CBP
         DoUpdateArmorOverride(*it, actor);
     }
 
-    void UpdateTask::DoUpdateArmorOverride(simActorList_t::value_type &a_entry, Actor* a_actor)
+    void UpdateTask::DoUpdateArmorOverride(simActorList_t::value_type& a_entry, Actor* a_actor)
     {
         bool updateConfig;
 
@@ -776,4 +769,4 @@ namespace CBP
     void UpdateTask::UpdateWeightTask::Dispose() {
         delete this;
     }
-}
+        }

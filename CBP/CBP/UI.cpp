@@ -1506,7 +1506,6 @@ namespace CBP
                         DCBP::UpdateArmorOverridesAll();
                     else
                         DCBP::ClearArmorOverrides();
-                    
 
                     DCBP::MarkGlobalsForSave();
                 }

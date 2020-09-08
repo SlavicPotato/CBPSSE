@@ -489,6 +489,8 @@ namespace CBP
         IScopedCriticalSection _(std::addressof(GetLock()));
 
         m_Instance.m_updateTask.Clear();
+        SavePending();
+
         m_Instance.Debug("Shutting down");
     }
 
@@ -966,6 +968,7 @@ namespace CBP
                 auto& globalConfig = IConfig::GetGlobalConfig();
                 globalConfig.debugRenderer.enabled = !globalConfig.debugRenderer.enabled;
 
+                MarkGlobalsForSave();
                 UpdateDebugRendererState();
 
                 Unlock();
