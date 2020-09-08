@@ -126,6 +126,9 @@ namespace CBP
         debugRenderer.setIsDebugItemDisplayed(
             r3d::DebugRenderer::DebugItem::COLLIDER_AABB,
             globalConf.debugRenderer.drawAABB);
+        debugRenderer.setIsDebugItemDisplayed(
+            r3d::DebugRenderer::DebugItem::COLLIDER_BROADPHASE_AABB,
+            globalConf.debugRenderer.drawBroadphaseAABB);
     }
 
     void DCBP::UpdateProfilerSettings()
