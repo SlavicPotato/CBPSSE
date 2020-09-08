@@ -20,11 +20,13 @@ namespace CBP
             NiNodeUpdateAll,
             WeightUpdate,
             WeightUpdateAll,
-            UpdateArmorOverride
+            AddArmorOverride,
+            UpdateArmorOverride,
         };
 
         UTTAction m_action;
         SKSE::ObjectHandle m_handle = 0;
+        SKSE::FormID m_formid = 0;
     };
 
     class UpdateTask :
@@ -76,6 +78,7 @@ namespace CBP
         void WeightUpdate(SKSE::ObjectHandle a_handle);
         void NiNodeUpdateAll();
         void WeightUpdateAll();
+        void AddArmorOverride(SKSE::ObjectHandle a_handle, SKSE::FormID a_formid);
         void UpdateArmorOverride(SKSE::ObjectHandle a_handle);
 
         void UpdateDebugRenderer();
@@ -84,6 +87,7 @@ namespace CBP
         void AddTask(UTTask&& a_task);
         void AddTask(UTTask::UTTAction a_action);
         void AddTask(UTTask::UTTAction a_action, SKSE::ObjectHandle a_handle);
+        void AddTask(UTTask::UTTAction a_action, SKSE::ObjectHandle a_handle, SKSE::FormID a_formid);
 
         inline const auto& GetSimActorList() {
             return m_actors;
@@ -110,6 +114,7 @@ namespace CBP
         void GatherActors(handleSet_t& a_out);
 
         bool ApplyArmorOverride(SKSE::ObjectHandle a_handle, const armorOverrideResults_t& a_entry);
+        bool BuildArmorOverride(SKSE::ObjectHandle a_handle, const armorOverrideResults_t& a_in, armorOverrideDescriptor_t &a_out);
         __forceinline void DoConfigUpdate(SKSE::ObjectHandle a_handle, Actor* a_actor, SimObject& a_obj);
 
         simActorList_t m_actors;

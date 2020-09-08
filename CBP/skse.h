@@ -14,6 +14,7 @@ namespace SKSE
     extern SKSESerializationInterface* g_serialization;
 
     extern size_t branchTrampolineSize;
+    extern size_t localTrampolineSize;
 
     extern bool Query(const SKSEInterface* skse, PluginInfo* info);
     extern bool Initialize(const SKSEInterface* skse);

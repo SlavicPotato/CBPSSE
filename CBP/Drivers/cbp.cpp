@@ -7,6 +7,7 @@ namespace CBP
     DCBP DCBP::m_Instance;
 
     static auto MainLoopAddr = IAL::Addr(35551, 0x11f);
+    static auto CreateArmorNodePost = IAL::Addr(15501, 0xB58);
 
     constexpr const char* SECTION_CBP = "CBP";
     constexpr const char* CKEY_CBPFEMALEONLY = "FemaleOnly";
@@ -297,6 +298,42 @@ namespace CBP
         m_Instance.m_updateTask.PhysicsTick();
     }
 
+    void DCBP::OnCreateArmorNode(TESObjectREFR* a_ref, BipedParam* a_params)
+    {
+        if (a_ref->formType != Actor::kTypeID)
+            return;
+
+        SKSE::ObjectHandle handle;
+        if (!SKSE::GetHandle(a_ref, a_ref->formType, handle))
+            return;
+
+        /*auto armor = a_params->data.armor;
+        if (armor && armor->formType == TESObjectARMO::kTypeID)
+            DCBP::DispatchActorTask(
+                handle, a_params->data.armor->formID,
+                CBP::UTTask::UTTAction::AddArmorOverride);
+        else
+            DCBP::DispatchActorTask(handle,
+                CBP::UTTask::UTTAction::UpdateArmorOverride);*/
+
+        DCBP::DispatchActorTask(handle,
+            CBP::UTTask::UTTAction::UpdateArmorOverride);
+
+    }
+
+    NiAVObject* DCBP::CreateArmorNode_Hook(NiAVObject* a_obj, Biped* a_info, BipedParam* a_params)
+    {
+        if (a_obj) {
+            NiPointer<TESObjectREFR> ref;
+            LookupREFRByHandle(a_info->handle, ref);
+
+            if (ref)
+                OnCreateArmorNode(ref, a_params);
+        }
+
+        return a_obj;
+    }
+
     void DCBP::Initialize()
     {
         m_Instance.LoadConfig();
@@ -305,6 +342,41 @@ namespace CBP
             MainLoopAddr,
             reinterpret_cast<uintptr_t>(MainLoop_Hook),
             m_Instance.mainLoopUpdateFunc_o));
+
+        struct CreateArmorNodeInject : JITASM::JITASM {
+            CreateArmorNodeInject(uintptr_t targetAddr
+            ) : JITASM()
+            {
+                Xbyak::Label callLabel;
+                Xbyak::Label nullLabel;
+                Xbyak::Label retnNullLabel;
+                Xbyak::Label retnOKLabel;
+
+                mov(rcx, rax);
+                mov(rdx, r13);
+                mov(r8, ptr[rsp + 0x78]);
+                call(ptr[rip + callLabel]);
+                test(rax, rax);
+                je(nullLabel);
+                jmp(ptr[rip + retnOKLabel]);
+                L(nullLabel);
+                jmp(ptr[rip + retnNullLabel]);
+
+                L(retnOKLabel);
+                dq(targetAddr + 0x5);
+
+                L(retnNullLabel);
+                dq(targetAddr + 0x12);
+
+                L(callLabel);
+                dq(uintptr_t(CreateArmorNode_Hook));
+            }
+        };
+
+        {
+            CreateArmorNodeInject code(CreateArmorNodePost);
+            g_branchTrampoline.Write5Branch(CreateArmorNodePost, code.get());
+        }
 
         DTasks::AddTaskFixed(&m_Instance.m_updateTask);
 

@@ -48,6 +48,7 @@
 #include "ext/ICommon.h"
 #include "ext/IHook.h"
 #include "ext/ITasks.h"
+#include "ext/JITASM.h"
 #include "ext/INIReader.h"
 #include "common/IMemPool.h"
 #include "common/ICriticalSection.h"

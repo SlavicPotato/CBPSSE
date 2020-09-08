@@ -3,6 +3,7 @@
 namespace SKSE
 {
     constexpr size_t MAX_TRAMPOLINE_BRANCH = 128;
+    constexpr size_t MAX_TRAMPOLINE_CODEGEN = 128;
 
     PluginHandle g_pluginHandle = kPluginHandle_Invalid;
 
@@ -12,6 +13,7 @@ namespace SKSE
     SKSESerializationInterface* g_serialization;
 
     size_t branchTrampolineSize = 0;
+    size_t localTrampolineSize = 0;
 
     bool GetHandle(void* src, UInt32 typeID, ObjectHandle& out)
     {
@@ -128,6 +130,13 @@ namespace SKSE
         if (!branchTrampolineSize)
         {
             gLogger.FatalError("Could not create branch trampoline.");
+            return false;
+        }
+        
+        localTrampolineSize = Hook::InitLocalTrampoline(skse, MAX_TRAMPOLINE_CODEGEN);
+        if (!localTrampolineSize)
+        {
+            gLogger.FatalError("Could not create codegen buffer.");
             return false;
         }
 

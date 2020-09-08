@@ -220,7 +220,7 @@ namespace CBP
 
     void UpdateTask::AddActor(SKSE::ObjectHandle a_handle)
     {
-        if (m_actors.contains(a_handle))
+        if (m_actors.find(a_handle) != m_actors.end())
             return;
 
         auto actor = SKSE::ResolveObject<Actor>(a_handle, Actor::kTypeID);
@@ -247,15 +247,9 @@ namespace CBP
         if (sex == 0 && globalConfig.general.femaleOnly)
             return;
 
-
-        //Debug("[%llX] 2222: IN", a_handle);
-
         armorOverrideResults_t ovResult;
         if (IArmor::FindOverrides(actor, ovResult))
             ApplyArmorOverride(a_handle, ovResult);
-
-
-        //Debug("[%llX] 2222: OUT", a_handle);
 
         auto& actorConf = IConfig::GetActorConfAO(a_handle);
         auto& nodeMap = IConfig::GetNodeMap();
@@ -338,7 +332,7 @@ namespace CBP
         a_obj.UpdateConfig(
             a_actor,
             globalConfig.phys.collisions,
-            CBP::IConfig::GetActorConfAO(a_handle));
+            IConfig::GetActorConfAO(a_handle));
     }
 
     void UpdateTask::ApplyForce(
@@ -450,53 +444,46 @@ namespace CBP
             NiNodeUpdate(e.first);
     }
 
-    bool UpdateTask::ApplyArmorOverride(SKSE::ObjectHandle a_handle, const armorOverrideResults_t& a_desc)
+    void UpdateTask::AddArmorOverride(SKSE::ObjectHandle a_handle, SKSE::FormID a_formid)
     {
+        auto it = m_actors.find(a_handle);
+        if (it == m_actors.end())
+            return;
+
+        auto actor = SKSE::ResolveObject<Actor>(a_handle, Actor::kTypeID);
+        if (!actor)
+            return;
+
+        auto form = LookupFormByID(a_formid);
+        if (!form)
+            return;
+
+        if (form->formType != TESObjectARMO::kTypeID)
+            return;
+
+        auto armor = DYNAMIC_CAST(form, TESForm, TESObjectARMO);
+        if (!armor)
+            return;
+
+        armorOverrideResults_t ovResults;
+        if (!IArmor::FindOverrides(actor, armor, ovResults))
+            return;
+
         auto current = IConfig::GetArmorOverride(a_handle);
+        if (current) {
+            armorOverrideDescriptor_t r;
+            if (!BuildArmorOverride(a_handle, ovResults, *current))
+                IConfig::RemoveArmorOverride(a_handle);
+        }
+        else {
+            armorOverrideDescriptor_t r;
+            if (!BuildArmorOverride(a_handle, ovResults, r))
+                return;
 
-        if (current != nullptr)
-        {
-            if (current->first.size() == a_desc.size())
-            {
-                armorOverrideResults_t tmp;
-
-                std::set_symmetric_difference(
-                    current->first.begin(), current->first.end(),
-                    a_desc.begin(), a_desc.end(),
-                    std::inserter(tmp, tmp.begin()));
-
-                if (tmp.empty())
-                    return false;
-            }
+            IConfig::SetArmorOverride(a_handle, std::move(r));
         }
 
-        armorOverrideDescriptor_t newEntry;
-
-        for (const auto& e : a_desc)
-        {
-            auto entry = IData::GetArmorCacheEntry(e);
-            if (!entry) {
-                Warning("[%llX] [%s] Couldn't read armor override data: %s",
-                    a_handle, e.c_str(), IData::GetLastException().what());
-                continue;
-            }
-
-            newEntry.first.emplace(e);
-
-            for (const auto& ea : *entry)
-            {
-                auto r = newEntry.second.emplace(ea.first, ea.second);
-                for (const auto& eb : ea.second)
-                    r.first->second.insert_or_assign(eb.first, eb.second);
-            }
-        }
-
-        if (newEntry.first.empty())
-            return false;
-
-        IConfig::SetArmorOverride(a_handle, std::move(newEntry));
-
-        return true;
+        DoConfigUpdate(a_handle, actor, it->second);
     }
 
     void UpdateTask::UpdateArmorOverride(SKSE::ObjectHandle a_handle)
@@ -519,6 +506,62 @@ namespace CBP
 
         if (updateConfig)
             DoConfigUpdate(a_handle, actor, it->second);
+    }
+
+    bool UpdateTask::ApplyArmorOverride(SKSE::ObjectHandle a_handle, const armorOverrideResults_t& a_desc)
+    {
+        auto current = IConfig::GetArmorOverride(a_handle);
+
+        if (current != nullptr)
+        {
+            if (current->first.size() == a_desc.size())
+            {
+                armorOverrideResults_t tmp;
+
+                std::set_symmetric_difference(
+                    current->first.begin(), current->first.end(),
+                    a_desc.begin(), a_desc.end(),
+                    std::inserter(tmp, tmp.begin()));
+
+                if (tmp.empty())
+                    return false;
+            }
+        }
+
+        armorOverrideDescriptor_t r;
+        if (!BuildArmorOverride(a_handle, a_desc, r))
+            return false;
+
+        IConfig::SetArmorOverride(a_handle, std::move(r));
+
+        return true;
+    }
+
+    bool UpdateTask::BuildArmorOverride(
+        SKSE::ObjectHandle a_handle,
+        const armorOverrideResults_t& a_in,
+        armorOverrideDescriptor_t& a_out)
+    {
+        for (const auto& e : a_in)
+        {
+            auto entry = IData::GetArmorCacheEntry(e);
+            if (!entry) {
+                Warning("[%llX] [%s] Couldn't read armor override data: %s",
+                    a_handle, e.c_str(), IData::GetLastException().what());
+                continue;
+            }
+
+            a_out.first.emplace(e);
+
+            for (const auto& ea : *entry)
+            {
+                auto r = a_out.second.emplace(ea.first, ea.second);
+                for (const auto& eb : ea.second)
+                    r.first->second.insert_or_assign(eb.first, eb.second);
+            }
+        }
+
+        return !a_out.first.empty();
     }
 
     void UpdateTask::AddTask(const UTTask& task)
@@ -546,6 +589,13 @@ namespace CBP
     {
         m_taskLock.Enter();
         m_taskQueue.emplace(UTTask{ a_action, a_handle });
+        m_taskLock.Leave();
+    }
+
+    void UpdateTask::AddTask(UTTask::UTTAction a_action, SKSE::ObjectHandle a_handle, SKSE::FormID a_formid)
+    {
+        m_taskLock.Enter();
+        m_taskQueue.emplace(UTTask{ a_action, a_handle, a_formid });
         m_taskLock.Leave();
     }
 
@@ -603,6 +653,9 @@ namespace CBP
                 break;
             case UTTask::UTTAction::WeightUpdateAll:
                 WeightUpdateAll();
+                break;
+            case UTTask::UTTAction::AddArmorOverride:
+                AddArmorOverride(task.m_handle, task.m_formid);
                 break;
             case UTTask::UTTAction::UpdateArmorOverride:
                 UpdateArmorOverride(task.m_handle);

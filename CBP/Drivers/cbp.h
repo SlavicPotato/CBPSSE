@@ -143,6 +143,8 @@ namespace CBP
         static void Initialize();
 
         static void MainLoop_Hook(void* p1);
+        static void OnCreateArmorNode(TESObjectREFR* a_ref, BipedParam* a_params);
+        static NiAVObject* CreateArmorNode_Hook(NiAVObject* a_obj, Biped* a_info, BipedParam* a_params);
 
         static void DispatchActorTask(Actor* actor, UTTask::UTTAction action);
         static void DispatchActorTask(SKSE::ObjectHandle handle, UTTask::UTTAction action);
