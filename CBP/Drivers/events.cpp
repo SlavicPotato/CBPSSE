@@ -3,7 +3,7 @@
 
 namespace CBP
 {
-    static auto ExitGameAddr = IAL::Addr(35552, 0x1D);
+    static auto ExitGameAddr = IAL::Addr(35551, 0x16D);
 
     IEvents IEvents::m_Instance;
 
@@ -19,13 +19,28 @@ namespace CBP
 
         gLogger.SetWriteCallback(OnLogWrite);
 
-        if (!Hook::Call5(
-            ExitGameAddr,
-            reinterpret_cast<uintptr_t>(ExitGame_Hook),
-            m_Instance.exitPatch_o
-        ))
+        struct MessagePumpExitInject : JITASM::JITASM {
+            MessagePumpExitInject(uintptr_t targetAddr
+            ) : JITASM()
+            {
+                Xbyak::Label callLabel;
+                Xbyak::Label retnLabel;
+
+                call(ptr[rip + callLabel]);
+                lea(r11, qword[rsp + 0x80]);
+                jmp(ptr[rip + retnLabel]);
+
+                L(retnLabel);
+                dq(targetAddr + 0x8);
+
+                L(callLabel);
+                dq(uintptr_t(ExitGame_Hook));
+            }
+        };
+
         {
-            m_Instance.Error("Failed to install exit hook, the game will likely crash on quit");
+            MessagePumpExitInject code(ExitGameAddr);
+            g_branchTrampoline.Write6Branch(ExitGameAddr, code.get());
         }
 
         return true;
@@ -33,8 +48,7 @@ namespace CBP
 
     void IEvents::ExitGame_Hook()
     {
-        TriggerEvent(Event::OnExit, nullptr);
-        m_Instance.exitPatch_o();
+        TriggerEvent(Event::OnExit);
     }
 
     void IEvents::RegisterForEvent(Event a_code, EventCallback a_fn)

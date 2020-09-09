@@ -61,8 +61,6 @@ namespace CBP
 
         static void OnLogWrite(char* a_buffer);
 
-        exitPatch_t exitPatch_o;
-
         std::unordered_map<Event, std::vector<_EventTriggerDescriptor>> m_events;
         std::unordered_map<UInt32, LoadGameEventCallback> m_loadgame_events;
 
