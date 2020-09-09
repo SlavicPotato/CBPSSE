@@ -148,7 +148,57 @@ namespace CBP
         const auto& globalConfig = IConfig::GetGlobalConfig();;
 
         ImGui::SameLine();
-        UICommon::HelpMarker(m_helpText.at(a_id), globalConfig.ui.fontScale);
+       UICommon::HelpMarker(m_helpText.at(a_id), globalConfig.ui.fontScale);
+    }
+
+    template <typename T>
+    void UIBase::SetGlobal(T& a_member, T const a_value)
+    {
+        static_assert(std::is_fundamental<T>::value);
+
+        a_member = a_value;
+        DCBP::MarkGlobalsForSave();
+    }
+
+    bool UIBase::CheckboxGlobal(const char* a_label, bool* a_member)
+    {
+        bool res = ImGui::Checkbox(a_label, a_member);
+        if (res)
+            DCBP::MarkGlobalsForSave();
+
+        return res;
+    }
+
+    bool UIBase::SliderFloatGlobal(
+        const char* a_label,
+        float* a_member,
+        float a_min,
+        float a_max,
+        const char* a_fmt)
+    {
+        bool res = ImGui::SliderFloat(a_label, a_member, a_min, a_max, a_fmt);
+        if (res) {
+            *a_member = std::clamp(*a_member, a_min, a_max);
+            DCBP::MarkGlobalsForSave();
+        }
+
+        return res;
+    }
+
+    bool UIBase::SliderIntGlobal(
+        const char* a_label,
+        int* a_member,
+        int a_min,
+        int a_max,
+        const char* a_fmt)
+    {
+        bool res = ImGui::SliderInt(a_label, a_member, a_min, a_max, a_fmt);
+        if (res) {
+            *a_member = std::clamp(*a_member, a_min, a_max);
+            DCBP::MarkGlobalsForSave();
+        }
+
+        return res;
     }
 
     template <class T>
@@ -183,8 +233,8 @@ namespace CBP
             }
         }
 
-        UICommon::MessageDialog("Create Error", "Could not create the profile\n\n%s", state.lastException.what());
-        UICommon::MessageDialog("Add Error", "Could not add the profile\n\n%s", state.lastException.what());
+       UICommon::MessageDialog("Create Error", "Could not create the profile\n\n%s", state.lastException.what());
+       UICommon::MessageDialog("Add Error", "Could not add the profile\n\n%s", state.lastException.what());
 
     }
 
@@ -338,7 +388,7 @@ namespace CBP
                 }
                 else {
 
-                    UICommon::MessageDialog("Save", "Saving profile '%s' to '%s' failed\n\n%s",
+                   UICommon::MessageDialog("Save", "Saving profile '%s' to '%s' failed\n\n%s",
                         profile.Name().c_str(), profile.PathStr().c_str(), state.lastException.what());
 
                     ImGui::Separator();
@@ -346,9 +396,9 @@ namespace CBP
                     DrawItem(profile);
                 }
 
-                UICommon::MessageDialog("Delete failed",
+               UICommon::MessageDialog("Delete failed",
                     "Could not delete the profile\n\n%s", state.lastException.what());
-                UICommon::MessageDialog("Rename failed",
+               UICommon::MessageDialog("Rename failed",
                     "Could not rename the profile\n\n%s", state.lastException.what());
             }
 
@@ -522,28 +572,22 @@ namespace CBP
                 ImGui::Text("Playable: %s", rlEntry.playable ? "yes" : "no");
 
                 ImGui::Spacing();
-                if (ImGui::Checkbox("Playable only", &globalConfig.ui.rlPlayableOnly)) {
+                if (CheckboxGlobal("Playable only", &globalConfig.ui.rlPlayableOnly))
                     QueueUpdateRaceList();
-                    DCBP::MarkGlobalsForSave();
-                }
                 HelpMarker(MiscHelpText::playableOnly);
 
                 ImGui::Spacing();
-                if (ImGui::Checkbox("Editor IDs", &globalConfig.ui.rlShowEditorIDs)) {
+                if (CheckboxGlobal("Editor IDs", &globalConfig.ui.rlShowEditorIDs))
                     QueueUpdateRaceList();
-                    DCBP::MarkGlobalsForSave();
-                }
                 HelpMarker(MiscHelpText::showEDIDs);
 
                 ImGui::Spacing();
 
-                if (ImGui::Checkbox("Clamp values", &globalConfig.ui.clampValuesRace))
-                    DCBP::MarkGlobalsForSave();
+                CheckboxGlobal("Clamp values", &globalConfig.ui.clampValuesRace);
                 HelpMarker(MiscHelpText::clampValues);
 
                 ImGui::Spacing();
-                if (ImGui::Checkbox("Sync min/max weight sliders", &globalConfig.ui.syncWeightSlidersRace))
-                    DCBP::MarkGlobalsForSave();
+                CheckboxGlobal("Sync min/max weight sliders", &globalConfig.ui.syncWeightSlidersRace);
                 HelpMarker(MiscHelpText::syncMinMax);
 
                 ImGui::SameLine(ImGui::GetWindowContentRegionMax().x - GetNextTextOffset("Reset", true));
@@ -763,7 +807,7 @@ namespace CBP
                 }
             }
 
-            UICommon::MessageDialog("Save to profile error",
+           UICommon::MessageDialog("Save to profile error",
                 "Error saving to profile '%s'\n\n%s", profile.Name().c_str(),
                 state.lastException.what());
         }
@@ -842,8 +886,7 @@ namespace CBP
 
                 ImGui::Spacing();
 
-                if (ImGui::SliderFloat("X", std::addressof(e.force.x), FORCE_MIN, FORCE_MAX, "%.0f"))
-                    DCBP::MarkGlobalsForSave();
+                SliderFloatGlobal("X", std::addressof(e.force.x), FORCE_MIN, FORCE_MAX, "%.0f");
 
                 ImGui::SameLine(wcm.x - GetNextTextOffset("Reset", true));
                 if (ButtonRight("Reset")) {
@@ -851,18 +894,12 @@ namespace CBP
                     DCBP::MarkGlobalsForSave();
                 }
 
-                if (ImGui::SliderFloat("Y", std::addressof(e.force.y), FORCE_MIN, FORCE_MAX, "%.0f"))
-                    DCBP::MarkGlobalsForSave();
-
-                if (ImGui::SliderFloat("Z", std::addressof(e.force.z), FORCE_MIN, FORCE_MAX, "%.0f"))
-                    DCBP::MarkGlobalsForSave();
+                SliderFloatGlobal("Y", std::addressof(e.force.y), FORCE_MIN, FORCE_MAX, "%.0f");
+                SliderFloatGlobal("Z", std::addressof(e.force.z), FORCE_MIN, FORCE_MAX, "%.0f");
 
                 ImGui::Spacing();
 
-                if (ImGui::SliderInt("Steps", std::addressof(e.steps), 0, 100)) {
-                    e.steps = std::max(e.steps, 0);
-                    DCBP::MarkGlobalsForSave();
-                }
+                SliderIntGlobal("Steps", std::addressof(e.steps), 0, 100);
             }
         }
 
@@ -958,10 +995,8 @@ namespace CBP
         if (a_handle != 0)
             m_actorList.at(a_handle).second = GetData(a_handle);
 
-        if (a_handle != globalConfig.ui.lastActor) {
-            globalConfig.ui.lastActor = a_handle;
-            DCBP::MarkGlobalsForSave();
-        }
+        if (a_handle != globalConfig.ui.lastActor)
+            SetGlobal(globalConfig.ui.lastActor, a_handle);
 
         if (m_markActor)
             DCBP::SetMarkedActor(a_handle);
@@ -971,10 +1006,9 @@ namespace CBP
     auto UIActorList<T>::GetSelectedEntry()
         -> actorListValue_t*
     {
-        if (m_currentActor != 0) {
-            const auto it = m_actorList.find(m_currentActor);
-            return std::addressof(*it);
-        }
+        if (m_currentActor != 0) 
+            return std::addressof(
+                *m_actorList.find(m_currentActor));        
 
         return nullptr;
     }
@@ -1162,6 +1196,118 @@ namespace CBP
         m_nodeConfig.Reset();
     }
 
+    void UIContext::DrawMenuBar(bool* a_active, const actorListValue_t* a_entry)
+    {
+        auto& globalConfig = IConfig::GetGlobalConfig();;
+
+        state.menu.saveAllFailed = false;
+        state.menu.saveToDefaultGlob = false;
+        state.menu.openImportDialog = false;
+        state.menu.openExportDialog = false;
+
+        if (ImGui::BeginMenuBar())
+        {
+            if (ImGui::BeginMenu("File"))
+            {
+                if (ImGui::MenuItem("Save"))
+                    if (!DCBP::SaveAll()) {
+                        state.menu.saveAllFailed = true;
+                        state.lastException =
+                            DCBP::GetLastSerializationException();
+                    }
+
+                if (ImGui::BeginMenu("Misc"))
+                {
+                    ImGui::SetWindowFontScale(globalConfig.ui.fontScale);
+
+                    state.menu.saveToDefaultGlob = ImGui::MenuItem("Store default profile");
+
+                    ImGui::EndMenu();
+                }
+
+                ImGui::Separator();
+
+                state.menu.openImportDialog = ImGui::MenuItem("Import", nullptr, &state.windows.importDialog);
+                state.menu.openExportDialog = ImGui::MenuItem("Export");
+
+                ImGui::Separator();
+
+                if (ImGui::MenuItem("Exit"))
+                    *a_active = false;
+
+                ImGui::EndMenu();
+            }
+
+            if (ImGui::BeginMenu("Tools"))
+            {
+                ImGui::MenuItem("Actor nodes", nullptr, &state.windows.nodeConf);
+                ImGui::MenuItem("Node collision groups", nullptr, &state.windows.collisionGroups);
+
+                ImGui::Separator();
+                ImGui::MenuItem("Race physics", nullptr, &state.windows.race);
+
+                ImGui::Separator();
+                if (ImGui::BeginMenu("Profile editors"))
+                {
+                    ImGui::SetWindowFontScale(globalConfig.ui.fontScale);
+
+                    ImGui::MenuItem("Physics", nullptr, &state.windows.profileSim);
+                    ImGui::MenuItem("Node", nullptr, &state.windows.profileNodes);
+
+                    ImGui::EndMenu();
+                }
+
+                ImGui::Separator();
+                ImGui::MenuItem("Options", nullptr, &state.windows.options);
+                ImGui::MenuItem("Stats", nullptr, &state.windows.profiling);
+
+#ifdef _CBP_ENABLE_DEBUG
+                ImGui::Separator();
+                ImGui::MenuItem("Debug info", nullptr, &state.windows.debug);
+#endif
+
+                ImGui::Separator();
+                ImGui::MenuItem("Log", nullptr, &state.windows.log);
+
+                ImGui::EndMenu();
+            }
+
+            if (ImGui::BeginMenu("Actions"))
+            {
+                if (ImGui::MenuItem("Reset actors"))
+                    DCBP::ResetActors();
+
+                ImGui::Separator();
+
+                if (ImGui::MenuItem("NiNode update"))
+                    DCBP::NiNodeUpdate();
+                if (ImGui::MenuItem("Weight update"))
+                    DCBP::WeightUpdate();
+
+                if (a_entry)
+                {
+                    ImGui::Separator();
+
+                    if (ImGui::BeginMenu(a_entry->second.first.c_str()))
+                    {
+                        ImGui::SetWindowFontScale(globalConfig.ui.fontScale);
+
+                        if (ImGui::MenuItem("NiNode update"))
+                            DCBP::NiNodeUpdate(a_entry->first);
+                        if (ImGui::MenuItem("Weight update"))
+                            DCBP::WeightUpdate(a_entry->first);
+
+                        ImGui::EndMenu();
+                    }
+                }
+
+                ImGui::EndMenu();
+            }
+
+            ImGui::EndMenuBar();
+        }
+    }
+
     void UIContext::Draw(bool* a_active)
     {
         auto& io = ImGui::GetIO();
@@ -1192,9 +1338,6 @@ namespace CBP
 
         auto entry = GetSelectedEntry();
 
-        bool openExportDialog = false;
-        bool openImportDialog = false;
-
         ImGui::PushID(static_cast<const void*>(this));
 
         if (ImGui::Begin("CBP Config Editor", a_active, ImGuiWindowFlags_MenuBar))
@@ -1203,110 +1346,7 @@ namespace CBP
 
             ImGui::PushItemWidth(ImGui::GetFontSize() * -15.5f);
 
-            bool saveAllFailed = false;
-            bool saveToDefaultGlob = false;
-
-            if (ImGui::BeginMenuBar())
-            {
-                if (ImGui::BeginMenu("File"))
-                {
-                    if (ImGui::MenuItem("Save"))
-                        if (!DCBP::SaveAll()) {
-                            saveAllFailed = true;
-                            state.lastException =
-                                DCBP::GetLastSerializationException();
-                        }
-
-                    if (ImGui::BeginMenu("Misc"))
-                    {
-                        ImGui::SetWindowFontScale(globalConfig.ui.fontScale);
-
-                        saveToDefaultGlob = ImGui::MenuItem("Store default profile");
-
-                        ImGui::EndMenu();
-                    }
-
-                    ImGui::Separator();
-
-                    openImportDialog = ImGui::MenuItem("Import", nullptr, &state.windows.importDialog);
-                    openExportDialog = ImGui::MenuItem("Export");
-
-                    ImGui::Separator();
-
-                    if (ImGui::MenuItem("Exit"))
-                        *a_active = false;
-
-                    ImGui::EndMenu();
-                }
-
-                if (ImGui::BeginMenu("Tools"))
-                {
-                    ImGui::MenuItem("Actor nodes", nullptr, &state.windows.nodeConf);
-                    ImGui::MenuItem("Node collision groups", nullptr, &state.windows.collisionGroups);
-
-                    ImGui::Separator();
-                    ImGui::MenuItem("Race physics", nullptr, &state.windows.race);
-
-                    ImGui::Separator();
-                    if (ImGui::BeginMenu("Profile editors"))
-                    {
-                        ImGui::SetWindowFontScale(globalConfig.ui.fontScale);
-
-                        ImGui::MenuItem("Physics", nullptr, &state.windows.profileSim);
-                        ImGui::MenuItem("Node", nullptr, &state.windows.profileNodes);
-
-                        ImGui::EndMenu();
-                    }
-
-                    ImGui::Separator();
-                    ImGui::MenuItem("Options", nullptr, &state.windows.options);
-                    ImGui::MenuItem("Stats", nullptr, &state.windows.profiling);
-
-#ifdef _CBP_ENABLE_DEBUG
-                    ImGui::Separator();
-                    ImGui::MenuItem("Debug info", nullptr, &state.windows.debug);
-#endif
-
-                    ImGui::Separator();
-                    ImGui::MenuItem("Log", nullptr, &state.windows.log);
-
-                    ImGui::EndMenu();
-                }
-
-                if (ImGui::BeginMenu("Actions"))
-                {
-                    if (ImGui::MenuItem("Reset actors"))
-                        DCBP::ResetActors();
-
-                    ImGui::Separator();
-
-                    if (ImGui::MenuItem("NiNode update"))
-                        DCBP::NiNodeUpdate();
-                    if (ImGui::MenuItem("Weight update"))
-                        DCBP::WeightUpdate();
-
-                    if (entry)
-                    {
-                        ImGui::Separator();
-
-                        if (ImGui::BeginMenu(entry->second.first.c_str()))
-                        {
-                            ImGui::SetWindowFontScale(globalConfig.ui.fontScale);
-
-                            if (ImGui::MenuItem("NiNode update"))
-                                DCBP::NiNodeUpdate(entry->first);
-                            if (ImGui::MenuItem("Weight update"))
-                                DCBP::WeightUpdate(entry->first);
-
-                            ImGui::EndMenu();
-                        }
-                    }
-
-                    ImGui::EndMenu();
-                }
-
-                ImGui::EndMenuBar();
-            }
+            DrawMenuBar(a_active, entry);
 
             const char* curSelName;
 
@@ -1344,10 +1384,9 @@ namespace CBP
             }
 
             ImGui::Spacing();
-            if (ImGui::Checkbox("Show all actors", &globalConfig.ui.showAllActors)) {
+            if (CheckboxGlobal("Show all actors", &globalConfig.ui.showAllActors))
                 DCBP::QueueActorCacheUpdate();
-                DCBP::MarkGlobalsForSave();
-            }
+
             HelpMarker(MiscHelpText::showAllActors);
 
             ImGui::SameLine(wcm.x - GetNextTextOffset("Rescan", true));
@@ -1355,8 +1394,7 @@ namespace CBP
                 DCBP::QueueActorCacheUpdate();
 
             ImGui::Spacing();
-            if (ImGui::Checkbox("Clamp values", &globalConfig.ui.clampValuesMain))
-                DCBP::MarkGlobalsForSave();
+            CheckboxGlobal("Clamp values", &globalConfig.ui.clampValuesMain);
             HelpMarker(MiscHelpText::clampValues);
 
             ImGui::SameLine(wcm.x - GetNextTextOffset("Reset", true));
@@ -1364,8 +1402,7 @@ namespace CBP
                 ImGui::OpenPopup("Reset");
 
             ImGui::Spacing();
-            if (ImGui::Checkbox("Sync min/max weight sliders", &globalConfig.ui.syncWeightSlidersMain))
-                DCBP::MarkGlobalsForSave();
+            CheckboxGlobal("Sync min/max weight sliders", &globalConfig.ui.syncWeightSlidersMain);
             HelpMarker(MiscHelpText::syncMinMax);
 
             if (UICommon::ConfirmDialog(
@@ -1382,9 +1419,9 @@ namespace CBP
                 }
             }
 
-            if (saveAllFailed)
+            if (state.menu.saveAllFailed)
                 ImGui::OpenPopup("Save failed");
-            else if (saveToDefaultGlob)
+            else if (state.menu.saveToDefaultGlob)
                 ImGui::OpenPopup("Store global");
 
             ImGui::Spacing();
@@ -1404,7 +1441,7 @@ namespace CBP
                 m_scGlobal.DrawSimComponents(0, IConfig::GetGlobalPhysicsConfig());
             }
 
-            UICommon::MessageDialog(
+           UICommon::MessageDialog(
                 "Save failed",
                 "Saving one or more files failed.\nThe last exception was:\n\n%s",
                 state.lastException.what());
@@ -1416,7 +1453,7 @@ namespace CBP
                 }
             }
 
-            UICommon::MessageDialog(
+           UICommon::MessageDialog(
                 "Store global failed",
                 "Could not save current globals to the default profile.\nThe last exception was:\n\n%s",
                 state.lastException.what());
@@ -1459,14 +1496,14 @@ namespace CBP
         if (state.windows.debug)
             m_debug.Draw(&state.windows.debug);
 #endif
-        if (openExportDialog)
+        if (state.menu.openExportDialog)
             m_exportDialog.Open();
 
         bool exportRes = m_exportDialog.Draw();
 
         if (state.windows.importDialog)
         {
-            if (openImportDialog)
+            if (state.menu.openImportDialog)
                 m_importDialog.OnOpen();
             else if (exportRes)
                 m_importDialog.UpdateFileList();
@@ -1497,17 +1534,14 @@ namespace CBP
             {
                 ImGui::Spacing();
 
-                if (ImGui::Checkbox("Select actor in crosshairs on open", &globalConfig.ui.selectCrosshairActor))
-                    DCBP::MarkGlobalsForSave();
+                CheckboxGlobal("Select actor in crosshairs on open", &globalConfig.ui.selectCrosshairActor);
 
-                if (ImGui::Checkbox("Armor overrides", &globalConfig.general.armorOverrides))
+                if (CheckboxGlobal("Armor overrides", &globalConfig.general.armorOverrides))
                 {
                     if (globalConfig.general.armorOverrides)
                         DCBP::UpdateArmorOverridesAll();
                     else
                         DCBP::ClearArmorOverrides();
-
-                    DCBP::MarkGlobalsForSave();
                 }
 
                 ImGui::Spacing();
@@ -1517,8 +1551,7 @@ namespace CBP
             {
                 ImGui::Spacing();
 
-                if (ImGui::SliderFloat("Font scale", &globalConfig.ui.fontScale, 0.5f, 3.0f))
-                    DCBP::MarkGlobalsForSave();
+                SliderFloatGlobal("Font scale", &globalConfig.ui.fontScale, 0.5f, 3.0f);
 
                 ImGui::Spacing();
             }
@@ -1540,8 +1573,7 @@ namespace CBP
 
                 ImGui::Spacing();
 
-                if (ImGui::Checkbox("Lock game controls while UI active", &globalConfig.ui.lockControls))
-                    DCBP::MarkGlobalsForSave();
+                CheckboxGlobal("Lock game controls while UI active", &globalConfig.ui.lockControls);
 
                 ImGui::Spacing();
             }
@@ -1550,35 +1582,24 @@ namespace CBP
             {
                 ImGui::Spacing();
 
-                if (ImGui::Checkbox("Female actors only", &globalConfig.general.femaleOnly)) {
+                if (CheckboxGlobal("Female actors only", &globalConfig.general.femaleOnly))
                     DCBP::ResetActors();
-                    DCBP::MarkGlobalsForSave();
-                }
 
-                if (ImGui::Checkbox("Enable collisions", &globalConfig.phys.collisions)) {
+                if (CheckboxGlobal("Enable collisions", &globalConfig.phys.collisions))
                     DCBP::ResetActors();
-                    DCBP::MarkGlobalsForSave();
-                }
 
                 ImGui::Spacing();
 
                 float timeTick = 1.0f / globalConfig.phys.timeTick;
-                if (ImGui::SliderFloat("timeTick", &timeTick, 1.0f, 300.0f, "%.0f")) {
-                    globalConfig.phys.timeTick = 1.0f / std::clamp(timeTick, 1.0f, 300.0f);
-                    DCBP::MarkGlobalsForSave();
-                }
+                if (SliderFloatGlobal("Time tick", &timeTick, 1.0f, 300.0f, "%.0f"))
+                    globalConfig.phys.timeTick = 1.0f / timeTick;
+
                 HelpMarker(MiscHelpText::timeTick);
 
-                if (ImGui::SliderFloat("maxSubSteps", &globalConfig.phys.maxSubSteps, 1.0f, 20.0f, "%.0f")) {
-                    globalConfig.phys.maxSubSteps = std::clamp(globalConfig.phys.maxSubSteps, 1.0f, 20.0f);
-                    DCBP::MarkGlobalsForSave();
-                }
+                SliderFloatGlobal("Max. substeps", &globalConfig.phys.maxSubSteps, 1.0f, 20.0f, "%.0f");
                 HelpMarker(MiscHelpText::maxSubSteps);
 
-                if (ImGui::SliderFloat("colMaxPenetrationDepth", &globalConfig.phys.colMaxPenetrationDepth, 0.5f, 100.0f)) {
-                    globalConfig.phys.colMaxPenetrationDepth = std::clamp(globalConfig.phys.colMaxPenetrationDepth, 0.05f, 500.0f);
-                    DCBP::MarkGlobalsForSave();
-                }
+                SliderFloatGlobal("Max. penetration depth", &globalConfig.phys.colMaxPenetrationDepth, 0.5f, 100.0f);
                 HelpMarker(MiscHelpText::colMaxPenetrationDepth);
 
                 ImGui::Spacing();
@@ -1590,13 +1611,10 @@ namespace CBP
                 {
                     ImGui::Spacing();
 
-                    if (ImGui::Checkbox("Enable", &globalConfig.debugRenderer.enabled)) {
+                    if (CheckboxGlobal("Enable", &globalConfig.debugRenderer.enabled))
                         DCBP::UpdateDebugRendererState();
-                        DCBP::MarkGlobalsForSave();
-                    }
 
-                    if (ImGui::Checkbox("Wireframe", &globalConfig.debugRenderer.wireframe))
-                        DCBP::MarkGlobalsForSave();
+                    CheckboxGlobal("Wireframe", &globalConfig.debugRenderer.wireframe);
 
                     ImGui::Spacing();
 
@@ -1609,39 +1627,25 @@ namespace CBP
 
                     ImGui::Spacing();
 
-                    if (ImGui::SliderFloat("Contact point sphere radius", &globalConfig.debugRenderer.contactPointSphereRadius, 0.1f, 25.0f, "%.2f")) {
-                        globalConfig.debugRenderer.contactPointSphereRadius = std::clamp(globalConfig.debugRenderer.contactPointSphereRadius, 0.1f, 25.0f);
+                    if (SliderFloatGlobal("Contact point sphere radius", &globalConfig.debugRenderer.contactPointSphereRadius, 0.1f, 25.0f, "%.2f"))
                         DCBP::UpdateDebugRendererSettings();
-                        DCBP::MarkGlobalsForSave();
-                    }
 
-                    if (ImGui::SliderFloat("Contact normal length", &globalConfig.debugRenderer.contactNormalLength, 0.1f, 50.0f, "%.2f")) {
-                        globalConfig.debugRenderer.contactNormalLength = std::clamp(globalConfig.debugRenderer.contactNormalLength, 0.1f, 50.0f);
+                    if (SliderFloatGlobal("Contact normal length", &globalConfig.debugRenderer.contactNormalLength, 0.1f, 50.0f, "%.2f"))
                         DCBP::UpdateDebugRendererSettings();
-                        DCBP::MarkGlobalsForSave();
-                    }
 
                     ImGui::Spacing();
 
-                    if (ImGui::Checkbox("Draw moving nodes", &globalConfig.debugRenderer.enableMovingNodes))
-                        DCBP::MarkGlobalsForSave();
+                    CheckboxGlobal("Draw moving nodes", &globalConfig.debugRenderer.enableMovingNodes);
 
-                    if (ImGui::SliderFloat("Moving nodes sphere radius", &globalConfig.debugRenderer.movingNodesRadius, 0.1f, 10.0f, "%.2f")) {
-                        globalConfig.debugRenderer.movingNodesRadius = std::clamp(globalConfig.debugRenderer.movingNodesRadius, 0.1f, 10.0f);
-                        DCBP::MarkGlobalsForSave();
-                    }
+                    SliderFloatGlobal("Moving nodes sphere radius", &globalConfig.debugRenderer.movingNodesRadius, 0.1f, 10.0f, "%.2f");
 
                     ImGui::Spacing();
 
-                    if (ImGui::Checkbox("Draw AABB", &globalConfig.debugRenderer.drawAABB)) {
+                    if (CheckboxGlobal("Draw AABB", &globalConfig.debugRenderer.drawAABB))
                         DCBP::UpdateDebugRendererSettings();
-                        DCBP::MarkGlobalsForSave();
-                    }
 
-                    if (ImGui::Checkbox("Draw broadphase AABB", &globalConfig.debugRenderer.drawBroadphaseAABB)) {
+                    if (CheckboxGlobal("Draw broadphase AABB", &globalConfig.debugRenderer.drawBroadphaseAABB))
                         DCBP::UpdateDebugRendererSettings();
-                        DCBP::MarkGlobalsForSave();
-                    }
                 }
             }
 
@@ -1914,10 +1918,9 @@ namespace CBP
             }
 
             ImGui::Spacing();
-            if (ImGui::Checkbox("Show all actors", &globalConfig.ui.showAllActors)) {
+            if (CheckboxGlobal("Show all actors", &globalConfig.ui.showAllActors))
                 DCBP::QueueActorCacheUpdate();
-                DCBP::MarkGlobalsForSave();
-            }
+
             HelpMarker(MiscHelpText::showAllActors);
 
             auto wcm = ImGui::GetWindowContentRegionMax();
@@ -1952,12 +1955,10 @@ namespace CBP
 
             ImGui::Separator();
 
-            if (entry) {
+            if (entry)
                 DrawNodes(entry->first, entry->second.second);
-            }
-            else {
+            else
                 DrawNodes(0, IConfig::GetGlobalNodeConfig());
-            }
 
             ImGui::PopItemWidth();
         }
@@ -2362,7 +2363,7 @@ namespace CBP
             else if (DrawSlider(e, pValue))
                 OnSimSliderChange(a_handle, a_data, a_pair, e, pValue);
 
-            ImGui::SameLine(); UICommon::HelpMarker(e.second.helpText, globalConfig.ui.fontScale);
+            ImGui::SameLine();UICommon::HelpMarker(e.second.helpText, globalConfig.ui.fontScale);
         }
     }
 
@@ -2506,21 +2507,13 @@ namespace CBP
             {
                 ImGui::PushItemWidth(ImGui::GetFontSize() * -8.0f);
 
-                if (ImGui::Checkbox("Enabled", &globalConfig.general.enableProfiling))
-                {
+                if (CheckboxGlobal("Enabled", &globalConfig.general.enableProfiling))
                     if (globalConfig.general.enableProfiling)
                         DCBP::ResetProfiler();
-                    DCBP::MarkGlobalsForSave();
-                }
 
-                if (ImGui::SliderInt("Interval (ms)", &globalConfig.general.profilingInterval, 100, 10000, "%d"))
-                {
-                    globalConfig.general.profilingInterval =
-                        std::clamp(globalConfig.general.profilingInterval, 100, 10000);
+                if (SliderIntGlobal("Interval (ms)", &globalConfig.general.profilingInterval, 100, 10000))
                     DCBP::SetProfilerInterval(static_cast<long long>(
                         globalConfig.general.profilingInterval) * 1000);
-                    DCBP::MarkGlobalsForSave();
-                }
 
                 ImGui::PopItemWidth();
             }
@@ -2825,18 +2818,18 @@ namespace CBP
             if (ImGui::Button("Cancel", ImVec2(120, 0)))
                 *a_active = false;
 
-            UICommon::MessageDialog(
+           UICommon::MessageDialog(
                 "Import failed",
                 "Something went wrong during the import\nThe last exception was:\n\n%s",
                 DCBP::GetLastSerializationException().what());
 
-            UICommon::MessageDialog(
+           UICommon::MessageDialog(
                 "Load failed",
                 "Could not show files in '%s'\nThe last exception was:\n\n%s",
                 GetRootStr().c_str(),
                 GetLastException().what());
 
-            UICommon::MessageDialog(
+           UICommon::MessageDialog(
                 "Delete failed",
                 "Error occured while attempting to delete export\nThe last exception was:\n\n%s",
                 GetLastException().what());
@@ -2920,15 +2913,15 @@ namespace CBP
                 ImGui::OpenPopup("Export failed");
         }
 
-        UICommon::MessageDialog(
+       UICommon::MessageDialog(
             "Illegal filename",
             "Filename contains illegal characters");
 
-        UICommon::MessageDialog(
+       UICommon::MessageDialog(
             "Operation failed",
             "Path exists and is not a regular file");
 
-        UICommon::MessageDialog(
+       UICommon::MessageDialog(
             "Export failed",
             "\nThe last exception was:\n\n%s",
             DCBP::GetLastSerializationException().what());

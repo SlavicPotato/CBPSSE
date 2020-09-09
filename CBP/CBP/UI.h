@@ -128,6 +128,22 @@ namespace CBP
             return res;
         }
 
+        template <typename T>
+        inline void SetGlobal(T& a_member, T const a_value);
+        inline bool CheckboxGlobal(const char* a_label, bool* a_member);
+        inline bool SliderFloatGlobal(
+            const char* a_label,
+            float* a_member,
+            float a_min,
+            float a_max,
+            const char* a_fmt = "%.3f");
+        inline bool SliderIntGlobal(
+            const char* a_label,
+            int* a_member,
+            int a_min,
+            int a_max,
+            const char* a_fmt = "%d");
+
     private:
 
         float m_posOffset = 0.0f;
@@ -175,7 +191,7 @@ namespace CBP
             const std::string& a_name)
         {
             std::ostringstream ss;
-            ss << "UISC#" << Enum::Underlying(ID) << "#" << a_name;
+            ss << "UISC#" << Misc::Underlying(ID) << "#" << a_name;
             return ss.str();
         }
 
@@ -230,7 +246,7 @@ namespace CBP
             const std::string& a_name)
         {
             std::ostringstream ss;
-            ss << "UIND#" << Enum::Underlying(ID) << "#" << a_name;
+            ss << "UIND#" << Misc::Underlying(ID) << "#" << a_name;
             return ss.str();
         }
     };
@@ -412,7 +428,8 @@ namespace CBP
     };
 
     template <class T>
-    class UIActorList
+    class UIActorList :
+        virtual protected UIBase
     {
     public:
         void ActorListTick();
@@ -446,7 +463,7 @@ namespace CBP
         void UpdateActorList();
 
         virtual void ResetAllActorValues(SKSE::ObjectHandle a_handle) = 0;
-        virtual const actorEntryValue_t& GetData(SKSE::ObjectHandle a_handle) = 0;
+        [[nodiscard]] virtual const actorEntryValue_t& GetData(SKSE::ObjectHandle a_handle) = 0;
 
         void FilterSelected(actorListValue_t*& a_entry, const char*& a_curSelName);
 
@@ -745,6 +762,8 @@ namespace CBP
 
     private:
 
+        void DrawMenuBar(bool* a_active, const actorListValue_t* a_entry);
+
         virtual void ApplyProfile(actorListValue_t* a_data, const SimProfile& m_peComponents);
         [[nodiscard]] virtual const SimProfile::base_type& GetData(const actorListValue_t* a_data) const;
 
@@ -779,6 +798,13 @@ namespace CBP
                 bool log;
                 bool importDialog;
             } windows;
+
+            struct {
+                bool openExportDialog;
+                bool openImportDialog;
+                bool saveAllFailed;
+                bool saveToDefaultGlob;
+            } menu;
 
             except::descriptor lastException;
         } state;
