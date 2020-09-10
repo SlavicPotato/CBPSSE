@@ -1,0 +1,223 @@
+{
+	"id" : 0,
+	"nodes" : 
+	{
+		"HDT Belly" : 
+		{
+			"femaleCollisions" : false,
+			"femaleMovement" : false,
+			"maleCollisions" : false,
+			"maleMovement" : false
+		},
+		"L Breast01" : 
+		{
+			"femaleCollisions" : false,
+			"femaleMovement" : true,
+			"maleCollisions" : false,
+			"maleMovement" : false
+		},
+		"L Breast02" : 
+		{
+			"femaleCollisions" : true,
+			"femaleMovement" : true,
+			"maleCollisions" : false,
+			"maleMovement" : false
+		},
+		"L Breast03" : 
+		{
+			"femaleCollisions" : false,
+			"femaleMovement" : true,
+			"maleCollisions" : false,
+			"maleMovement" : false
+		},
+		"NPC Belly" : 
+		{
+			"femaleCollisions" : false,
+			"femaleMovement" : true,
+			"maleCollisions" : false,
+			"maleMovement" : false
+		},
+		"NPC Genitals01 [Gen01]" : 
+		{
+			"femaleCollisions" : false,
+			"femaleMovement" : false,
+			"maleCollisions" : false,
+			"maleMovement" : false
+		},
+		"NPC Genitals02 [Gen02]" : 
+		{
+			"femaleCollisions" : false,
+			"femaleMovement" : false,
+			"maleCollisions" : false,
+			"maleMovement" : false
+		},
+		"NPC Genitals03 [Gen03]" : 
+		{
+			"femaleCollisions" : false,
+			"femaleMovement" : false,
+			"maleCollisions" : false,
+			"maleMovement" : false
+		},
+		"NPC Genitals04 [Gen04]" : 
+		{
+			"femaleCollisions" : false,
+			"femaleMovement" : false,
+			"maleCollisions" : false,
+			"maleMovement" : false
+		},
+		"NPC Genitals05 [Gen05]" : 
+		{
+			"femaleCollisions" : false,
+			"femaleMovement" : false,
+			"maleCollisions" : false,
+			"maleMovement" : false
+		},
+		"NPC Genitals06 [Gen06]" : 
+		{
+			"femaleCollisions" : false,
+			"femaleMovement" : false,
+			"maleCollisions" : false,
+			"maleMovement" : false
+		},
+		"NPC L Breast" : 
+		{
+			"femaleCollisions" : false,
+			"femaleMovement" : false,
+			"maleCollisions" : false,
+			"maleMovement" : false
+		},
+		"NPC L Butt" : 
+		{
+			"femaleCollisions" : true,
+			"femaleMovement" : true,
+			"maleCollisions" : false,
+			"maleMovement" : false
+		},
+		"NPC L Finger20 [LF20]" : 
+		{
+			"femaleCollisions" : true,
+			"femaleMovement" : false,
+			"maleCollisions" : true,
+			"maleMovement" : false
+		},
+		"NPC L Forearm [LLar]" : 
+		{
+			"femaleCollisions" : false,
+			"femaleMovement" : false,
+			"maleCollisions" : false,
+			"maleMovement" : false
+		},
+		"NPC L FrontThigh" : 
+		{
+			"femaleCollisions" : true,
+			"femaleMovement" : true,
+			"maleCollisions" : false,
+			"maleMovement" : false
+		},
+		"NPC L Hand [LHnd]" : 
+		{
+			"femaleCollisions" : false,
+			"femaleMovement" : false,
+			"maleCollisions" : false,
+			"maleMovement" : false
+		},
+		"NPC L RearCalf [LrClf]" : 
+		{
+			"femaleCollisions" : true,
+			"femaleMovement" : true,
+			"maleCollisions" : false,
+			"maleMovement" : false
+		},
+		"NPC L RearThigh" : 
+		{
+			"femaleCollisions" : true,
+			"femaleMovement" : true,
+			"maleCollisions" : false,
+			"maleMovement" : false
+		},
+		"NPC Pelvis [Pelv]" : 
+		{
+			"femaleCollisions" : false,
+			"femaleMovement" : false,
+			"maleCollisions" : false,
+			"maleMovement" : false
+		},
+		"NPC R Breast" : 
+		{
+			"femaleCollisions" : false,
+			"femaleMovement" : false,
+			"maleCollisions" : false,
+			"maleMovement" : false
+		},
+		"NPC R Butt" : 
+		{
+			"femaleCollisions" : true,
+			"femaleMovement" : true,
+			"maleCollisions" : false,
+			"maleMovement" : false
+		},
+		"NPC R Finger20 [RF20]" : 
+		{
+			"femaleCollisions" : true,
+			"femaleMovement" : false,
+			"maleCollisions" : true,
+			"maleMovement" : false
+		},
+		"NPC R Forearm [RLar]" : 
+		{
+			"femaleCollisions" : false,
+			"femaleMovement" : false,
+			"maleCollisions" : false,
+			"maleMovement" : false
+		},
+		"NPC R FrontThigh" : 
+		{
+			"femaleCollisions" : true,
+			"femaleMovement" : true,
+			"maleCollisions" : false,
+			"maleMovement" : false
+		},
+		"NPC R Hand [RHnd]" : 
+		{
+			"femaleCollisions" : false,
+			"femaleMovement" : false,
+			"maleCollisions" : false,
+			"maleMovement" : false
+		},
+		"NPC R RearCalf [RrClf]" : 
+		{
+			"femaleCollisions" : true,
+			"femaleMovement" : true,
+			"maleCollisions" : false,
+			"maleMovement" : false
+		},
+		"NPC R RearThigh" : 
+		{
+			"femaleCollisions" : true,
+			"femaleMovement" : true,
+			"maleCollisions" : false,
+			"maleMovement" : false
+		},
+		"R Breast01" : 
+		{
+			"femaleCollisions" : false,
+			"femaleMovement" : true,
+			"maleCollisions" : false,
+			"maleMovement" : false
+		},
+		"R Breast02" : 
+		{
+			"femaleCollisions" : true,
+			"femaleMovement" : true,
+			"maleCollisions" : false,
+			"maleMovement" : false
+		},
+		"R Breast03" : 
+		{
+			"femaleCollisions" : false,
+			"femaleMovement" : true,
+			"maleCollisions" : false,
+			"maleMovement" : false
+		}
+	}
+}
