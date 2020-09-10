@@ -27,6 +27,7 @@ assert len(CONFIGS)
 import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument('--rebuild', action='store_true')
+parser.add_argument('--nobuild', action='store_true')
 args = parser.parse_args()
 
 ##############################################################################
@@ -78,7 +79,8 @@ for e in CONFIGS:
 
     assert os.path.isdir(path)
 
-    build_solution(e, basecmd, path + '\\', args.rebuild, PARALLEL)
+    if not args.nobuild:
+        build_solution(e, basecmd, path + '\\', args.rebuild, PARALLEL)
 
     dll = os.path.join(path, DLL)
     if not test_file(dll):
