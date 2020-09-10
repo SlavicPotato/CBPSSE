@@ -19,11 +19,15 @@ FOMOD = 'installer\\generateFomod.py'
 SLN = 'CBP.sln'
 
 DLL = 'CBP.dll'
-REBUILD = True
 PARALLEL = True
 CONFIGS = ['Dep-IntelAvx2MT', 'Dep-IntelSSE42MT', 'Dep-Generic']
 
 assert len(CONFIGS)
+
+import argparse
+parser = argparse.ArgumentParser()
+parser.add_argument('--rebuild', action='store_true')
+args = parser.parse_args()
 
 ##############################################################################
 ##############################################################################
@@ -74,7 +78,7 @@ for e in CONFIGS:
 
     assert os.path.isdir(path)
 
-    build_solution(e, basecmd, path + '\\', REBUILD, PARALLEL)
+    build_solution(e, basecmd, path + '\\', args.rebuild, PARALLEL)
 
     dll = os.path.join(path, DLL)
     if not test_file(dll):
