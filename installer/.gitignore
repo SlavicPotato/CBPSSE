@@ -1,2 +1,3 @@
 *.zip
 installerTmp
+__pycache__/
