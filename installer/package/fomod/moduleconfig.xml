@@ -1,10 +1,10 @@
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://qconsulting.ca/fo3/ModConfig5.0.xsd">
   <moduleName>CBP-A</moduleName>
   <requiredInstallFiles>
-    <file source="03_baseconf\CBP\Settings\CollisionGroups.json" destination="SKSE\Plugins\CBP\Settings\CollisionGroups.json"/>
-    <file source="03_baseconf\CBP\Nodes.json" destination="SKSE\Plugins\CBP\Nodes.json"/>
-    <file source="03_baseconf\CBP\Profiles\Node\Blank.json" destination="SKSE\Plugins\CBP\Profiles\Node\Blank.json"/>
     <file source="03_baseconf\CBP.ini" destination="SKSE\Plugins\CBP.ini"/>
+    <file source="03_baseconf\CBP\Settings\CollisionGroups.json" destination="SKSE\Plugins\CBP\Settings\CollisionGroups.json"/>
+    <file source="03_baseconf\CBP\Profiles\Node\Blank.json" destination="SKSE\Plugins\CBP\Profiles\Node\Blank.json"/>
+    <file source="03_baseconf\CBP\Nodes.json" destination="SKSE\Plugins\CBP\Nodes.json"/>
   </requiredInstallFiles>
   <installSteps order="Explicit">
     <installStep name="Plugin">
@@ -44,7 +44,7 @@
     </installStep>
     <installStep name="Physics profile">
       <optionalFileGroups order="Explicit">
-        <group name="Select option to match your body" type="SelectExactlyOne">
+        <group name="Select the default global physics and node profiles" type="SelectExactlyOne">
           <plugins order="Explicit">
             <plugin name="UUNP - UNP">
               <description>UUNP - UNP</description>
@@ -125,6 +125,38 @@
       </pattern>
       <pattern>
         <dependencies operator="And">
+          <fileDependency file="SKSE\Plugins\CBP\Profiles\Node\BHUNP.json" state="Missing"/>
+        </dependencies>
+        <files>
+          <file source="03_baseconf\CBP\Profiles\Node\BHUNP.json" destination="SKSE\Plugins\CBP\Profiles\Node\BHUNP.json"/>
+        </files>
+      </pattern>
+      <pattern>
+        <dependencies operator="And">
+          <fileDependency file="SKSE\Plugins\CBP\Profiles\Node\BHUNP - more arm colliders.json" state="Missing"/>
+        </dependencies>
+        <files>
+          <file source="03_baseconf\CBP\Profiles\Node\BHUNP - more arm colliders.json" destination="SKSE\Plugins\CBP\Profiles\Node\BHUNP - more arm colliders.json"/>
+        </files>
+      </pattern>
+      <pattern>
+        <dependencies operator="And">
+          <fileDependency file="SKSE\Plugins\CBP\Profiles\Node\CBBE.json" state="Missing"/>
+        </dependencies>
+        <files>
+          <file source="03_baseconf\CBP\Profiles\Node\CBBE.json" destination="SKSE\Plugins\CBP\Profiles\Node\CBBE.json"/>
+        </files>
+      </pattern>
+      <pattern>
+        <dependencies operator="And">
+          <fileDependency file="SKSE\Plugins\CBP\Profiles\Node\3BBB.json" state="Missing"/>
+        </dependencies>
+        <files>
+          <file source="03_baseconf\CBP\Profiles\Node\3BBB.json" destination="SKSE\Plugins\CBP\Profiles\Node\3BBB.json"/>
+        </files>
+      </pattern>
+      <pattern>
+        <dependencies operator="And">
           <fileDependency file="SKSE\Plugins\CBP\Profiles\Physics\UUNP - UNP.json" state="Missing"/>
         </dependencies>
         <files>
@@ -145,6 +177,30 @@
         </dependencies>
         <files>
           <file source="03_baseconf\CBP\Profiles\Physics\UUNP - 7B.json" destination="SKSE\Plugins\CBP\Profiles\Physics\UUNP - 7B.json"/>
+        </files>
+      </pattern>
+      <pattern>
+        <dependencies operator="And">
+          <fileDependency file="SKSE\Plugins\CBP\Profiles\Physics\BHUNP - UNP.json" state="Missing"/>
+        </dependencies>
+        <files>
+          <file source="03_baseconf\CBP\Profiles\Physics\BHUNP - UNP.json" destination="SKSE\Plugins\CBP\Profiles\Physics\BHUNP - UNP.json"/>
+        </files>
+      </pattern>
+      <pattern>
+        <dependencies operator="And">
+          <fileDependency file="SKSE\Plugins\CBP\Profiles\Physics\CBBE.json" state="Missing"/>
+        </dependencies>
+        <files>
+          <file source="03_baseconf\CBP\Profiles\Physics\CBBE.json" destination="SKSE\Plugins\CBP\Profiles\Physics\CBBE.json"/>
+        </files>
+      </pattern>
+      <pattern>
+        <dependencies operator="And">
+          <fileDependency file="SKSE\Plugins\CBP\Profiles\Physics\3BBB.json" state="Missing"/>
+        </dependencies>
+        <files>
+          <file source="03_baseconf\CBP\Profiles\Physics\3BBB.json" destination="SKSE\Plugins\CBP\Profiles\Physics\3BBB.json"/>
         </files>
       </pattern>
     </patterns>

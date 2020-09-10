@@ -18,9 +18,16 @@ conf_force = {
 conf_missing = [
     'CBP\\Profiles\\Node\\UUNP.json',
     'CBP\\Profiles\\Node\\UUNP - more arm colliders.json',
+    'CBP\\Profiles\\Node\\BHUNP.json',
+    'CBP\\Profiles\\Node\\BHUNP - more arm colliders.json',
+    'CBP\\Profiles\\Node\\CBBE.json',
+    'CBP\\Profiles\\Node\\3BBB.json',
     'CBP\\Profiles\\Physics\\UUNP - UNP.json',
     'CBP\\Profiles\\Physics\\UUNP - UNPB.json',
-    'CBP\\Profiles\\Physics\\UUNP - 7B.json'
+    'CBP\\Profiles\\Physics\\UUNP - 7B.json',
+    'CBP\\Profiles\\Physics\\BHUNP - UNP.json',
+    'CBP\\Profiles\\Physics\\CBBE.json',
+    'CBP\\Profiles\\Physics\\3BBB.json',
 ]
 
 def mkfile(a, b, c, d = pyfomod.OptionType.OPTIONAL, e = None):
@@ -63,10 +70,9 @@ page_profile = pyfomod.Page()
 page_profile.name = 'Physics profile'
 
 group_profile = pyfomod.Group()
-group_profile.name = 'Select option to match your body'
+group_profile.name = 'Select the default global physics and node profiles'
 group_profile.type = pyfomod.GroupType.EXACTLYONE
 
-#group_profile.append(mkfile('UUNP - Base', 'UUNP - Base', ('01_default\\uunp\\base\\default.json', T_P)))
 group_profile.append(mkfile('UUNP - UNP', 'UUNP - UNP', ('01_default\\uunp\\unp\\default.json', T_P)))
 group_profile.append(mkfile('UUNP - UNPB', 'UUNP - UNPB', ('01_default\\uunp\\unpb\\default.json', T_P)))
 group_profile.append(mkfile('UUNP - 7B Original', 'UUNP - 7B Original', ('01_default\\uunp\\7b\\default.json', T_P)))

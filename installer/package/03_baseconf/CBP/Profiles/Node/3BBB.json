@@ -97,7 +97,7 @@
 		{
 			"femaleCollisions" : true,
 			"femaleMovement" : false,
-			"maleCollisions" : false,
+			"maleCollisions" : true,
 			"maleMovement" : false
 		},
 		"NPC L Forearm [LLar]" : 
@@ -160,7 +160,7 @@
 		{
 			"femaleCollisions" : true,
 			"femaleMovement" : false,
-			"maleCollisions" : false,
+			"maleCollisions" : true,
 			"maleMovement" : false
 		},
 		"NPC R Forearm [RLar]" : 
