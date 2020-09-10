@@ -16,10 +16,10 @@ conf_force = {
 }
 
 conf_missing = [
-    'CBP\\Profiles\\Node\\UNP.json',
-    'CBP\\Profiles\\Node\\CBBE 3BBB.json',
+    'CBP\\Profiles\\Node\\UUNP.json',
+    'CBP\\Profiles\\Node\\UUNP - more arm colliders.json',
     'CBP\\Profiles\\Physics\\UNP.json',
-    'CBP\\Profiles\\Physics\\CBBE 3BBB.json'
+    'CBP\\Profiles\\Physics\\UNPB.json'
 ]
 
 def mkfile(a, b, c, d = pyfomod.OptionType.OPTIONAL, e = None):
@@ -65,11 +65,11 @@ group_profile = pyfomod.Group()
 group_profile.name = 'Select option to match your body'
 group_profile.type = pyfomod.GroupType.EXACTLYONE
 
-group_profile.append(mkfile('UUNP - Base', 'UUNP - Base', ('01_default\\uunp\\base\\default.json', T_P)))
+#group_profile.append(mkfile('UUNP - Base', 'UUNP - Base', ('01_default\\uunp\\base\\default.json', T_P)))
 group_profile.append(mkfile('UUNP - UNP', 'UUNP - UNP', ('01_default\\uunp\\unp\\default.json', T_P)))
 group_profile.append(mkfile('UUNP - UNPB', 'UUNP - UNPB', ('01_default\\uunp\\unpb\\default.json', T_P)))
 group_profile.append(mkfile('UUNP - 7B', 'UUNP - 7B', ('01_default\\uunp\\7b\\default.json', T_P)))
-group_profile.append(mkfile('BHUUNP - Base', 'BHUUNP - Base', ('01_default\\bhuunp\\base\\default.json', T_P)))
+#group_profile.append(mkfile('BHUUNP - Base', 'BHUUNP - Base', ('01_default\\bhuunp\\base\\default.json', T_P)))
 group_profile.append(mkfile('CBBE', 'CBBE', ('01_default\\cbbe\\default.json', T_P)))
 group_profile.append(mkfile('CBBE 3BBB', 'CBBE 3BBB', ('01_default\\cbbe_3bbb\\default.json', T_P)))
 

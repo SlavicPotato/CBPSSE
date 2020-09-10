@@ -7,7 +7,7 @@ import CppHeaderParser
 import pyfomod
 
 PACKAGE_NAME = 'CBP-A'
-PACKAGE_AUTHOR = 'sp'
+PACKAGE_AUTHOR = 'SlavicPotato'
 PACKAGE_DESCRIPTION = 'CBP-A'
 
 VERSION_H = '..\\CBP\\version.h'
