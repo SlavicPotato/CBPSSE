@@ -30,6 +30,8 @@ conf_missing = [
     'CBP\\Profiles\\Physics\\3BBB.json',
 ]
 
+desc = 'Makes stuff jiggle'
+
 def mkfile(a, b, c, d = pyfomod.OptionType.OPTIONAL, e = None):
     t = pyfomod.Option()
     t.name = a
@@ -50,6 +52,7 @@ def mkccond(p, a):
     return p
 
 root = pyfomod.Root()
+root.description = desc
 
 pages = pyfomod.Pages()
 
@@ -60,9 +63,9 @@ group_exec = pyfomod.Group()
 group_exec.name = 'DLL'
 group_exec.type = pyfomod.GroupType.EXACTLYONE
 
-group_exec.append(mkfile('Generic', 'For any x64 cpu', ('00_binaries\\generic\\cbp.dll', T_DLL)))
-group_exec.append(mkfile('SSE4.2', 'For Intel Nehalem (Core 2) / AMD K10 or later', ('00_binaries\\sse42\\cbp.dll', T_DLL)))
-group_exec.append(mkfile('AVX2', 'For Intel Haswell / AMD Excavator or later', ('00_binaries\\avx2\\cbp.dll', T_DLL)))
+group_exec.append(mkfile('Generic x64', 'For any x64 processor.\n\nUse only if you run a potato built before 2008.', ('00_binaries\\generic\\cbp.dll', T_DLL)))
+group_exec.append(mkfile('SSE4.2', 'For Intel Nehalem (Core 2) / AMD Bulldozer or later.\n\nNehalem was launched in 2008, Bulldozer in late 2011.', ('00_binaries\\sse42\\cbp.dll', T_DLL)))
+group_exec.append(mkfile('AVX2', 'For Intel Haswell / AMD Excavator or later.\n\nHaswell was launched in 2013, Excavator in 2015.\n\nBest performance.', ('00_binaries\\avx2\\cbp.dll', T_DLL)))
 
 page_exec.append(group_exec)
 
@@ -70,7 +73,7 @@ page_profile = pyfomod.Page()
 page_profile.name = 'Physics profile'
 
 group_profile = pyfomod.Group()
-group_profile.name = 'Select the default global physics and node profiles'
+group_profile.name = 'Select the default global physics and node profile'
 group_profile.type = pyfomod.GroupType.EXACTLYONE
 
 group_profile.append(mkfile('UUNP - UNP', 'UUNP - UNP', ('01_default\\uunp\\unp\\default.json', T_P)))

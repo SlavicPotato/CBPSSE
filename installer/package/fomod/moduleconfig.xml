@@ -1,18 +1,20 @@
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://qconsulting.ca/fo3/ModConfig5.0.xsd">
   <moduleName>CBP-A</moduleName>
   <requiredInstallFiles>
-    <file source="03_baseconf\CBP.ini" destination="SKSE\Plugins\CBP.ini"/>
-    <file source="03_baseconf\CBP\Settings\CollisionGroups.json" destination="SKSE\Plugins\CBP\Settings\CollisionGroups.json"/>
     <file source="03_baseconf\CBP\Profiles\Node\Blank.json" destination="SKSE\Plugins\CBP\Profiles\Node\Blank.json"/>
+    <file source="03_baseconf\CBP\Settings\CollisionGroups.json" destination="SKSE\Plugins\CBP\Settings\CollisionGroups.json"/>
     <file source="03_baseconf\CBP\Nodes.json" destination="SKSE\Plugins\CBP\Nodes.json"/>
+    <file source="03_baseconf\CBP.ini" destination="SKSE\Plugins\CBP.ini"/>
   </requiredInstallFiles>
   <installSteps order="Explicit">
     <installStep name="Plugin">
       <optionalFileGroups order="Explicit">
         <group name="DLL" type="SelectExactlyOne">
           <plugins order="Explicit">
-            <plugin name="Generic">
-              <description>For any x64 cpu</description>
+            <plugin name="Generic x64">
+              <description>For any x64 processor.
+              
+              Use only if you run a potato built before 2008.</description>
               <files>
                 <file source="00_binaries\generic\cbp.dll" destination="SKSE\Plugins\cbp.dll"/>
               </files>
@@ -21,7 +23,9 @@
               </typeDescriptor>
             </plugin>
             <plugin name="SSE4.2">
-              <description>For Intel Nehalem (Core 2) / AMD K10 or later</description>
+              <description>For Intel Nehalem (Core 2) / AMD Bulldozer or later.
+              
+              Nehalem was launched in 2008, Bulldozer in late 2011.</description>
               <files>
                 <file source="00_binaries\sse42\cbp.dll" destination="SKSE\Plugins\cbp.dll"/>
               </files>
@@ -30,7 +34,11 @@
               </typeDescriptor>
             </plugin>
             <plugin name="AVX2">
-              <description>For Intel Haswell / AMD Excavator or later</description>
+              <description>For Intel Haswell / AMD Excavator or later.
+              
+              Haswell was launched in 2013, Excavator in 2015.
+              
+              Best performance.</description>
               <files>
                 <file source="00_binaries\avx2\cbp.dll" destination="SKSE\Plugins\cbp.dll"/>
               </files>
@@ -44,7 +52,7 @@
     </installStep>
     <installStep name="Physics profile">
       <optionalFileGroups order="Explicit">
-        <group name="Select the default global physics and node profiles" type="SelectExactlyOne">
+        <group name="Select the default global physics and node profile" type="SelectExactlyOne">
           <plugins order="Explicit">
             <plugin name="UUNP - UNP">
               <description>UUNP - UNP</description>

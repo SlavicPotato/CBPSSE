@@ -2,6 +2,7 @@
 
 import os
 import subprocess
+import argparse
 from installer.generateFomod import FomodGenerator
 
 assert 'MSBUILD_PATH' in os.environ
@@ -19,20 +20,14 @@ FOMOD = 'installer\\generateFomod.py'
 SLN = 'CBP.sln'
 
 DLL = 'CBP.dll'
-PARALLEL = True
 CONFIGS = ['Dep-IntelAvx2MT', 'Dep-IntelSSE42MT', 'Dep-Generic']
 
-assert len(CONFIGS)
-
-import argparse
 parser = argparse.ArgumentParser()
-parser.add_argument('--rebuild', action='store_true')
-parser.add_argument('--nobuild', action='store_true')
+parser.register('type', 'bool', lambda x: x.lower() in ("yes", "true", "1"))
+parser.add_argument('--rebuild', action='store_true', default=False)
+parser.add_argument('--nobuild', action='store_true', default=False)
+parser.add_argument('-p', type='bool', nargs='?', const=True, default=True)
 args = parser.parse_args()
-
-##############################################################################
-##############################################################################
-##############################################################################
 
 def prepare(p):
     if os.path.exists(p):
@@ -80,7 +75,7 @@ for e in CONFIGS:
     assert os.path.isdir(path)
 
     if not args.nobuild:
-        build_solution(e, basecmd, path + '\\', args.rebuild, PARALLEL)
+        build_solution(e, basecmd, path + '\\', args.rebuild, args.p)
 
     dll = os.path.join(path, DLL)
     if not test_file(dll):

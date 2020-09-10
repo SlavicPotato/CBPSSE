@@ -16,10 +16,11 @@ PLUGIN_VERSION_MINOR = 'PLUGIN_VERSION_MINOR'
 PLUGIN_VERSION_REVISION = 'PLUGIN_VERSION_REVISION'
 
 PACKAGE_PATH = 'package'
+OUT_PATH = 'releases'
 PACKAGE_COMPRESSION_FORMAT = 'zip'
 
 PKG_BIN_MAP = {
-    'Dep-Generic': 'Generic',
+    'Dep-Generic': 'Generic x64',
     'Dep-IntelAvx2MT': 'AVX2',
     'Dep-IntelSSE42MT': 'SSE4.2'
 }
@@ -47,7 +48,7 @@ class FomodGenerator:
 
         pyfomod.write(root, package_path)
 
-        self.packFomod(root_path / '{}_{}'.format(root.name, root.version), package_path)
+        self.packFomod(root_path / os.path.join(OUT_PATH, '{}_{}'.format(root.name, root.version)), package_path)
 
     def validate(self, root):
         f = False
