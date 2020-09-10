@@ -84,7 +84,7 @@ for e in CONFIGS:
 
     assert os.path.isdir(path)
 
-    build_solution(e, basecmd, path, REBUILD, PARALLEL)
+    build_solution(e, basecmd, path + '\\', REBUILD, PARALLEL)
 
     dll = os.path.join(path, DLL)
     if not test_file(dll):

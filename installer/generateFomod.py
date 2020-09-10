@@ -7,17 +7,17 @@ import CppHeaderParser
 import pyfomod
 import pathlib
 
-PACKAGE_NAME = "CBP-A"
-PACKAGE_AUTHOR = "sp"
-PACKAGE_DESCRIPTION = "CBP-A"
+PACKAGE_NAME = 'CBP-A'
+PACKAGE_AUTHOR = 'sp'
+PACKAGE_DESCRIPTION = 'CBP-A'
 
-VERSION_H = "..\\CBP\\version.h"
-PLUGIN_VERSION_MAJOR = "PLUGIN_VERSION_MAJOR"
-PLUGIN_VERSION_MINOR = "PLUGIN_VERSION_MINOR"
-PLUGIN_VERSION_REVISION = "PLUGIN_VERSION_REVISION"
+VERSION_H = '..\\CBP\\version.h'
+PLUGIN_VERSION_MAJOR = 'PLUGIN_VERSION_MAJOR'
+PLUGIN_VERSION_MINOR = 'PLUGIN_VERSION_MINOR'
+PLUGIN_VERSION_REVISION = 'PLUGIN_VERSION_REVISION'
 
-PACKAGE_PATH = "package"
-PACKAGE_COMPRESSION_FORMAT = "zip"
+PACKAGE_PATH = 'package'
+PACKAGE_COMPRESSION_FORMAT = 'zip'
 
 PKG_BIN_MAP = {
     'Release MT': 'Generic',
@@ -47,26 +47,26 @@ class FomodGenerator:
 
         pyfomod.write(root, package_path)
 
-        self.packFomod(root_path / "{}_{}".format(root.name, root.version), package_path)
+        self.packFomod(root_path / '{}_{}'.format(root.name, root.version), package_path)
 
     def validate(self, root):
         f = False
         for warning in root.validate():
-            print("{}{}: {} - {}".format(
-                "CRITICAL: " if warning.critical else "", 
+            print('{}{}: {} - {}'.format(
+                'CRITICAL: ' if warning.critical else '', 
                 warning.elem, warning.title, warning.msg))
 
             if warning.critical:
                 f = True
 
         if f:
-            raise Exception("Bad config")
+            raise Exception('Bad config')
 
     def getOpts(self, root):
         r = {}
 
         for p in root.pages:
-            if p.name == "Plugin":
+            if p.name == 'Plugin':
                 assert len(p) == 1
                 for g in p:
                     for o in g:
@@ -79,7 +79,7 @@ class FomodGenerator:
         opts = self.getOpts(root)
 
         if len(opts) != len(self._releaseDictionary):
-            print("WARNING: fomod binary count doesn't match release dict")
+            print('WARNING: fomod binary count doesn\'t match release dict')
 
         c = []
 
@@ -99,7 +99,7 @@ class FomodGenerator:
 
             for l in f:
                 p = os.path.join(root_path, l)
-                print(v, "->", p)
+                print(v, '->', p)
                 c.append((v, p))
             
         for v in c:
@@ -114,8 +114,8 @@ class FomodGenerator:
             ttmp = defineStatement.split(None,1)
             defineDictionary[ttmp[0]] = ttmp[1]
 
-        return (defineDictionary[PLUGIN_VERSION_MAJOR]+"."+
-                defineDictionary[PLUGIN_VERSION_MINOR]+"."+
+        return (defineDictionary[PLUGIN_VERSION_MAJOR]+'.'+
+                defineDictionary[PLUGIN_VERSION_MINOR]+'.'+
                 defineDictionary[PLUGIN_VERSION_REVISION])
 
     def packFomod(self, file, path):

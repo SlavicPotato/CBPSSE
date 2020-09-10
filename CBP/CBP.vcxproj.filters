@@ -256,5 +256,8 @@
     <None Include="..\installer\generateFomod.py">
       <Filter>Installer</Filter>
     </None>
+    <None Include="..\installer\mktemplate.py">
+      <Filter>Installer</Filter>
+    </None>
   </ItemGroup>
 </Project>
