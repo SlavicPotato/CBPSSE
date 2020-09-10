@@ -52,7 +52,7 @@ group_exec.name = 'DLL'
 group_exec.type = pyfomod.GroupType.EXACTLYONE
 
 group_exec.append(mkfile('Generic', 'For any x64 cpu', ('00_binaries\\generic\\cbp.dll', T_DLL)))
-#group_exec.append(mkfile('SSE4.2', 'For Intel Nehalem (Core 2) / AMD K10 or later', ('00_binaries\\sse42\\cbp.dll', T_DLL)))
+group_exec.append(mkfile('SSE4.2', 'For Intel Nehalem (Core 2) / AMD K10 or later', ('00_binaries\\sse42\\cbp.dll', T_DLL)))
 group_exec.append(mkfile('AVX2', 'For Intel Haswell / AMD Excavator or later', ('00_binaries\\avx2\\cbp.dll', T_DLL)))
 
 page_exec.append(group_exec)

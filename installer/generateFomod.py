@@ -20,7 +20,8 @@ PACKAGE_COMPRESSION_FORMAT = 'zip'
 
 PKG_BIN_MAP = {
     'Release MT': 'Generic',
-    'ReleaseAVX2 MT W7': 'AVX2'
+    'Dep-IntelAvx2MT': 'AVX2',
+    'Dep-IntelSSE42MT': 'SSE4.2'
 }
 
 class FomodGenerator:

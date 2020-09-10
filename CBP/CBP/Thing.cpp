@@ -110,8 +110,6 @@ namespace CBP
         m_oldWorldPos(a_obj->m_worldTransform.pos),
         m_initialNodePos(a_obj->m_localTransform.pos),
         m_initialNodeRot(a_obj->m_localTransform.rot),
-        m_velocity(NiPoint3(0.0f, 0.0f, 0.0f)),
-        m_npZero(NiPoint3(0.0f, 0.0f, 0.0f)),
         m_collisionData(*this),
         m_parentId(a_parentId),
         m_groupId(a_groupId),

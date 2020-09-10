@@ -21,7 +21,7 @@ SLN = 'CBP.sln'
 DLL = 'CBP.dll'
 REBUILD = True
 PARALLEL = True
-CONFIGS = ['ReleaseAVX2 MT W7', 'Release MT']
+CONFIGS = ['Dep-IntelAvx2MT', 'Dep-IntelSSE42MT', 'Release MT']
 
 assert len(CONFIGS)
 
