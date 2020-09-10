@@ -1,11 +1,10 @@
 #!/usr/bin/python
 
 import os
-import sys
 import shutil
+import pathlib
 import CppHeaderParser
 import pyfomod
-import pathlib
 
 PACKAGE_NAME = 'CBP-A'
 PACKAGE_AUTHOR = 'sp'
@@ -119,5 +118,5 @@ class FomodGenerator:
                 defineDictionary[PLUGIN_VERSION_REVISION])
 
     def packFomod(self, file, path):
-        shutil.make_archive(file,PACKAGE_COMPRESSION_FORMAT, path)
+        shutil.make_archive(file, PACKAGE_COMPRESSION_FORMAT, path)
 

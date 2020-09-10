@@ -1,9 +1,7 @@
 #!/usr/bin/env python
 
 import os
-import shutil
 import subprocess
-import importlib
 from installer.generateFomod import FomodGenerator
 
 assert 'MSBUILD_PATH' in os.environ
@@ -21,7 +19,7 @@ FOMOD = 'installer\\generateFomod.py'
 SLN = 'CBP.sln'
 
 DLL = 'CBP.dll'
-REBUILD = False
+REBUILD = True
 PARALLEL = True
 CONFIGS = ['ReleaseAVX2 MT W7', 'Release MT']
 
@@ -47,18 +45,10 @@ def safe_mkdir(p):
 def test_file(p):
     return os.path.exists(p) and os.path.isfile(p) 
 
-def make_package(fmscript, targets):
-    cmd = ['python', fmscript]
-    cmd.extend(targets)
-
-    r = subprocess.run(cmd)
-    if r.returncode != 0:
-        raise Exception('Could not build the package ({})'.format(r.returncode))
-        
 def build_solution(cfg, bc, path, rebuild, parallel = True):
-    args = ['-p:Configuration={};OutDir={}'.format(cfg, path)]
+    args = ['-p:Configuration={};OutDir={};PostBuildEventUseInBuild=no'.format(cfg, path)]
     if rebuild:
-        args.append('-t:Rebuild')
+        args.append('-t:Clean;Rebuild')
     if parallel:
         args.append('-m')
 
