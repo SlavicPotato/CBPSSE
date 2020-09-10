@@ -81,6 +81,8 @@ class FomodGenerator:
         if len(opts) != len(self._releaseDictionary):
             print("WARNING: fomod binary count doesn't match release dict")
 
+        c = []
+
         for k, v in self._releaseDictionary.items():
             if k not in PKG_BIN_MAP:
                 print('Unknown key: {}'.format(k))
@@ -98,8 +100,10 @@ class FomodGenerator:
             for l in f:
                 p = os.path.join(root_path, l)
                 print(v, "->", p)
-                shutil.copyfile(v, p)
+                c.append((v, p))
             
+        for v in c:
+            shutil.copyfile(*v)
         
     def getReleaseVersion(self,hFile):
         cppHeader = CppHeaderParser.CppHeader(hFile)
