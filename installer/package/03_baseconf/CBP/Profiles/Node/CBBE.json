@@ -5,7 +5,7 @@
 		"HDT Belly" : 
 		{
 			"femaleCollisions" : false,
-			"femaleMovement" : true,
+			"femaleMovement" : false,
 			"maleCollisions" : false,
 			"maleMovement" : false
 		},

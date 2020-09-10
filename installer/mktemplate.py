@@ -70,8 +70,8 @@ group_profile.type = pyfomod.GroupType.EXACTLYONE
 group_profile.append(mkfile('UUNP - UNP', 'UUNP - UNP', ('01_default\\uunp\\unp\\default.json', T_P)))
 group_profile.append(mkfile('UUNP - UNPB', 'UUNP - UNPB', ('01_default\\uunp\\unpb\\default.json', T_P)))
 group_profile.append(mkfile('UUNP - 7B Original', 'UUNP - 7B Original', ('01_default\\uunp\\7b\\default.json', T_P)))
-group_profile.append(mkfile('BHUNP - UNP', 'BHUNP - Base', ('01_default\\bhunp\\base\\default.json', T_P)))
-group_profile.append(mkfile('CBBE', 'CBBE', ('01_default\\cbbe\\default.json', T_P)))
+group_profile.append(mkfile('BHUNP - UNP', 'BHUNP - UNP', ('01_default\\bhunp\\unp\\default.json', T_P)))
+group_profile.append(mkfile('CBBE Curvy', 'CBBE Curvy', ('01_default\\cbbe\\default.json', T_P)))
 group_profile.append(mkfile('CBBE 3BBB', 'CBBE 3BBB', ('01_default\\cbbe_3bbb\\default.json', T_P)))
 
 page_profile.append(group_profile)
