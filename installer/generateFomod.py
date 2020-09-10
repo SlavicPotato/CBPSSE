@@ -19,7 +19,7 @@ PACKAGE_PATH = 'package'
 PACKAGE_COMPRESSION_FORMAT = 'zip'
 
 PKG_BIN_MAP = {
-    'Release MT': 'Generic',
+    'Dep-Generic': 'Generic',
     'Dep-IntelAvx2MT': 'AVX2',
     'Dep-IntelSSE42MT': 'SSE4.2'
 }
