@@ -3,6 +3,8 @@
 import os
 import shutil
 import subprocess
+import importlib
+from installer.generateFomod import FomodGenerator
 
 assert 'MSBUILD_PATH' in os.environ
 assert 'CBP_SLN_ROOT' in os.environ
@@ -19,7 +21,8 @@ FOMOD = 'installer\\generateFomod.py'
 SLN = 'CBP.sln'
 
 DLL = 'CBP.dll'
-REBUILD = True
+REBUILD = False
+PARALLEL = True
 CONFIGS = ['ReleaseAVX2 MT W7', 'Release MT']
 
 assert len(CONFIGS)
@@ -52,10 +55,12 @@ def make_package(fmscript, targets):
     if r.returncode != 0:
         raise Exception('Could not build the package ({})'.format(r.returncode))
         
-def build_solution(cfg, bc, path, rebuild):
+def build_solution(cfg, bc, path, rebuild, parallel = True):
     args = ['-p:Configuration={};OutDir={}'.format(cfg, path)]
     if rebuild:
         args.append('-t:Rebuild')
+    if parallel:
+        args.append('-m')
 
     cmd = bc
     cmd.extend(args)
@@ -71,7 +76,7 @@ basecmd = [MSBUILD_PATH, os.path.join(SLN_ROOT, SLN)]
 
 prepare(OUTPUT_PATH)
 
-package_targets = []
+package_targets = {}
 
 for e in CONFIGS:
     path = os.path.join(OUTPUT_PATH, e)
@@ -79,14 +84,16 @@ for e in CONFIGS:
 
     assert os.path.isdir(path)
 
-    build_solution(e, basecmd, path, REBUILD)
+    build_solution(e, basecmd, path, REBUILD, PARALLEL)
 
     dll = os.path.join(path, DLL)
     if not test_file(dll):
         raise Exception('Could not find dll: {}'.format(dll))
 
-    package_targets.append('{}|{}'.format(e, dll))
+    package_targets[e] = dll
 
-make_package(os.path.join(SLN_ROOT, FOMOD), package_targets)
+fg = FomodGenerator(package_targets)
+fg.run()
+
 
 print('OK')

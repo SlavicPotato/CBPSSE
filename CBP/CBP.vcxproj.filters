@@ -52,6 +52,9 @@
     <Filter Include="Config\CBP\Profiles\Node">
       <UniqueIdentifier>{ce412327-bf33-4fb8-8390-b95912fd258f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Installer">
+      <UniqueIdentifier>{7bf4bb86-bf0e-4c8b-804a-c74a49dc08e4}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">
@@ -250,5 +253,8 @@
       <Filter>Config\CBP</Filter>
     </None>
     <None Include="..\build.py" />
+    <None Include="..\installer\generateFomod.py">
+      <Filter>Installer</Filter>
+    </None>
   </ItemGroup>
 </Project>

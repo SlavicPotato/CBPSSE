@@ -594,6 +594,7 @@
     <None Include="..\config\CBP\Profiles\Physics\UNP Basic.json" />
     <None Include="..\config\CBP\Settings\CollisionGroups.json" />
     <None Include="..\build.py" />
+    <None Include="..\installer\generateFomod.py" />
     <None Include="..\README.md" />
     <None Include="..\scripts\CBP.psc" />
     <None Include="exports.def" />

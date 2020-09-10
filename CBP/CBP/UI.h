@@ -191,7 +191,7 @@ namespace CBP
             const std::string& a_name)
         {
             std::ostringstream ss;
-            ss << "UISC#" << Misc::Underlying(ID) << "#" << a_name;
+            ss << "UISC#" << Enum::Underlying(ID) << "#" << a_name;
             return ss.str();
         }
 
@@ -246,7 +246,7 @@ namespace CBP
             const std::string& a_name)
         {
             std::ostringstream ss;
-            ss << "UIND#" << Misc::Underlying(ID) << "#" << a_name;
+            ss << "UIND#" << Enum::Underlying(ID) << "#" << a_name;
             return ss.str();
         }
     };

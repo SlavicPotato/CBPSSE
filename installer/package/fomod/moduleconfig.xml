@@ -1,0 +1,143 @@
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://qconsulting.ca/fo3/ModConfig5.0.xsd">
+  <moduleName>CBP-A</moduleName>
+  <requiredInstallFiles>
+    <file source="03_baseconf\CBP.ini" destination="SKSE\Plugins\CBP.ini"/>
+    <file source="03_baseconf\CBP\Nodes.json" destination="SKSE\Plugins\CBP\Nodes.json"/>
+    <file source="03_baseconf\CBP\Settings\CollisionGroups.json" destination="SKSE\Plugins\CBP\Settings\CollisionGroups.json"/>
+  </requiredInstallFiles>
+  <installSteps order="Explicit">
+    <installStep name="Plugin">
+      <optionalFileGroups order="Explicit">
+        <group name="DLL" type="SelectExactlyOne">
+          <plugins order="Explicit">
+            <plugin name="Generic">
+              <description>For any x64 cpu</description>
+              <files>
+                <file source="00_binaries\generic\cbp.dll" destination="SKSE\Plugins\cbp.dll"/>
+              </files>
+              <typeDescriptor>
+                <type name="Optional"/>
+              </typeDescriptor>
+            </plugin>
+            <plugin name="AVX2">
+              <description>For Intel Haswell / AMD Excavator or later</description>
+              <files>
+                <file source="00_binaries\avx2\cbp.dll" destination="SKSE\Plugins\cbp.dll"/>
+              </files>
+              <typeDescriptor>
+                <type name="Optional"/>
+              </typeDescriptor>
+            </plugin>
+          </plugins>
+        </group>
+      </optionalFileGroups>
+    </installStep>
+    <installStep name="Physics profile">
+      <optionalFileGroups order="Explicit">
+        <group name="Select option to match your body" type="SelectExactlyOne">
+          <plugins order="Explicit">
+            <plugin name="UUNP - Base">
+              <description>UUNP - Base</description>
+              <files>
+                <file source="01_default\uunp\base\default.json" destination="SKSE\Plugins\CBP\Default.json"/>
+              </files>
+              <typeDescriptor>
+                <type name="Optional"/>
+              </typeDescriptor>
+            </plugin>
+            <plugin name="UUNP - UNP">
+              <description>UUNP - UNP</description>
+              <files>
+                <file source="01_default\uunp\unp\default.json" destination="SKSE\Plugins\CBP\Default.json"/>
+              </files>
+              <typeDescriptor>
+                <type name="Optional"/>
+              </typeDescriptor>
+            </plugin>
+            <plugin name="UUNP - UNPB">
+              <description>UUNP - UNPB</description>
+              <files>
+                <file source="01_default\uunp\unpb\default.json" destination="SKSE\Plugins\CBP\Default.json"/>
+              </files>
+              <typeDescriptor>
+                <type name="Optional"/>
+              </typeDescriptor>
+            </plugin>
+            <plugin name="UUNP - 7B">
+              <description>UUNP - 7B</description>
+              <files>
+                <file source="01_default\uunp\7b\default.json" destination="SKSE\Plugins\CBP\Default.json"/>
+              </files>
+              <typeDescriptor>
+                <type name="Optional"/>
+              </typeDescriptor>
+            </plugin>
+            <plugin name="BHUUNP - Base">
+              <description>BHUUNP - Base</description>
+              <files>
+                <file source="01_default\bhuunp\base\default.json" destination="SKSE\Plugins\CBP\Default.json"/>
+              </files>
+              <typeDescriptor>
+                <type name="Optional"/>
+              </typeDescriptor>
+            </plugin>
+            <plugin name="CBBE">
+              <description>CBBE</description>
+              <files>
+                <file source="01_default\cbbe\default.json" destination="SKSE\Plugins\CBP\Default.json"/>
+              </files>
+              <typeDescriptor>
+                <type name="Optional"/>
+              </typeDescriptor>
+            </plugin>
+            <plugin name="CBBE 3BBB">
+              <description>CBBE 3BBB</description>
+              <files>
+                <file source="01_default\cbbe_3bbb\default.json" destination="SKSE\Plugins\CBP\Default.json"/>
+              </files>
+              <typeDescriptor>
+                <type name="Optional"/>
+              </typeDescriptor>
+            </plugin>
+          </plugins>
+        </group>
+      </optionalFileGroups>
+    </installStep>
+  </installSteps>
+  <conditionalFileInstalls>
+    <patterns>
+      <pattern>
+        <dependencies operator="And">
+          <fileDependency file="SKSE\Plugins\CBP\Profiles\Node\UNP.json" state="Missing"/>
+        </dependencies>
+        <files>
+          <file source="03_baseconf\CBP\Profiles\Node\UNP.json" destination="SKSE\Plugins\CBP\Profiles\Node\UNP.json"/>
+        </files>
+      </pattern>
+      <pattern>
+        <dependencies operator="And">
+          <fileDependency file="SKSE\Plugins\CBP\Profiles\Node\CBBE 3BBB.json" state="Missing"/>
+        </dependencies>
+        <files>
+          <file source="03_baseconf\CBP\Profiles\Node\CBBE 3BBB.json" destination="SKSE\Plugins\CBP\Profiles\Node\CBBE 3BBB.json"/>
+        </files>
+      </pattern>
+      <pattern>
+        <dependencies operator="And">
+          <fileDependency file="SKSE\Plugins\CBP\Profiles\Physics\UNP.json" state="Missing"/>
+        </dependencies>
+        <files>
+          <file source="03_baseconf\CBP\Profiles\Physics\UNP.json" destination="SKSE\Plugins\CBP\Profiles\Physics\UNP.json"/>
+        </files>
+      </pattern>
+      <pattern>
+        <dependencies operator="And">
+          <fileDependency file="SKSE\Plugins\CBP\Profiles\Physics\CBBE 3BBB.json" state="Missing"/>
+        </dependencies>
+        <files>
+          <file source="03_baseconf\CBP\Profiles\Physics\CBBE 3BBB.json" destination="SKSE\Plugins\CBP\Profiles\Physics\CBBE 3BBB.json"/>
+        </files>
+      </pattern>
+    </patterns>
+  </conditionalFileInstalls>
+</config>
