@@ -11,7 +11,8 @@ T_P = 'SKSE\\Plugins\\CBP\\Default.json'
 conf_force = {
     'CBP.ini',
     'CBP\\Nodes.json',
-    'CBP\\Settings\\CollisionGroups.json'
+    'CBP\\Settings\\CollisionGroups.json',
+    'CBP\\Profiles\\Node\\Blank.json'
 }
 
 conf_missing = [
