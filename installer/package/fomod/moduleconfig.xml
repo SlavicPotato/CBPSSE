@@ -1,9 +1,9 @@
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://qconsulting.ca/fo3/ModConfig5.0.xsd">
-  <moduleName>CBP-A</moduleName>
+  <moduleName>placeholder</moduleName>
   <requiredInstallFiles>
-    <file source="03_baseconf\CBP\Profiles\Node\Blank.json" destination="SKSE\Plugins\CBP\Profiles\Node\Blank.json"/>
     <file source="03_baseconf\CBP\Settings\CollisionGroups.json" destination="SKSE\Plugins\CBP\Settings\CollisionGroups.json"/>
     <file source="03_baseconf\CBP\Nodes.json" destination="SKSE\Plugins\CBP\Nodes.json"/>
+    <file source="03_baseconf\CBP\Profiles\Node\Blank.json" destination="SKSE\Plugins\CBP\Profiles\Node\Blank.json"/>
     <file source="03_baseconf\CBP.ini" destination="SKSE\Plugins\CBP.ini"/>
   </requiredInstallFiles>
   <installSteps order="Explicit">

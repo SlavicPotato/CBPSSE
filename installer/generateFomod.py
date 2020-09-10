@@ -8,7 +8,7 @@ import pyfomod
 
 PACKAGE_NAME = 'CBP-A'
 PACKAGE_AUTHOR = 'SlavicPotato'
-PACKAGE_DESCRIPTION = 'CBP-A'
+PACKAGE_DESCRIPTION = 'Makes stuff jiggle'
 
 VERSION_H = '..\\CBP\\version.h'
 PLUGIN_VERSION_MAJOR = 'PLUGIN_VERSION_MAJOR'

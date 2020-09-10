@@ -52,7 +52,6 @@ def mkccond(p, a):
     return p
 
 root = pyfomod.Root()
-root.description = desc
 
 pages = pyfomod.Pages()
 
@@ -88,9 +87,9 @@ page_profile.append(group_profile)
 pages.append(page_exec)
 pages.append(page_profile)
 
-root.name = 'CBP-A'
-root.author = 'SlavicPotato'
-root.description = 'CBP-A'
+root.name = 'placeholder'
+root.author = 'placeholder'
+root.description = 'placeholder'
 
 root.pages = pages
 
