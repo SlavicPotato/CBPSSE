@@ -30,8 +30,6 @@ conf_missing = [
     'CBP\\Profiles\\Physics\\3BBB.json',
 ]
 
-desc = 'Makes stuff jiggle'
-
 def mkfile(a, b, c, d = pyfomod.OptionType.OPTIONAL, e = None):
     t = pyfomod.Option()
     t.name = a
@@ -62,9 +60,9 @@ group_exec = pyfomod.Group()
 group_exec.name = 'DLL'
 group_exec.type = pyfomod.GroupType.EXACTLYONE
 
-group_exec.append(mkfile('Generic x64', 'For any x64 processor.\n\nUse only if you run a potato built before 2008.', ('00_binaries\\generic\\cbp.dll', T_DLL)))
-group_exec.append(mkfile('SSE4.2', 'For Intel Nehalem (Core 2) / AMD Bulldozer or later.\n\nNehalem was launched in 2008, Bulldozer in late 2011.', ('00_binaries\\sse42\\cbp.dll', T_DLL)))
-group_exec.append(mkfile('AVX2', 'For Intel Haswell / AMD Excavator or later.\n\nHaswell was launched in 2013, Excavator in 2015.\n\nBest performance.', ('00_binaries\\avx2\\cbp.dll', T_DLL)))
+group_exec.append(mkfile('Generic x64', 'For any x64 processor. Use only if you run a potato built before 2008.', ('00_binaries\\generic\\cbp.dll', T_DLL)))
+group_exec.append(mkfile('SSE4.2', 'For Intel Nehalem (Core 2) / AMD Bulldozer or later. Nehalem was launched in 2008, Bulldozer in late 2011.', ('00_binaries\\sse42\\cbp.dll', T_DLL)))
+group_exec.append(mkfile('AVX2', 'For Intel Haswell / AMD Excavator or later. Haswell was launched in 2013, Excavator in 2015. Best performance.', ('00_binaries\\avx2\\cbp.dll', T_DLL)))
 
 page_exec.append(group_exec)
 
@@ -90,6 +88,7 @@ pages.append(page_profile)
 root.name = 'placeholder'
 root.author = 'placeholder'
 root.description = 'placeholder'
+root.version = 'placeholder'
 
 root.pages = pages
 
