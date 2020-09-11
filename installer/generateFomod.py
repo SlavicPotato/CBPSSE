@@ -5,10 +5,12 @@ import shutil
 import pathlib
 import CppHeaderParser
 import pyfomod
+import git
 
 PACKAGE_NAME = 'CBP-A'
 PACKAGE_AUTHOR = 'SlavicPotato'
 PACKAGE_DESCRIPTION = 'Makes stuff jiggle'
+GITROOT = '..\\'
 
 VERSION_H = '..\\CBP\\version.h'
 PLUGIN_VERSION_MAJOR = 'PLUGIN_VERSION_MAJOR'
@@ -48,7 +50,18 @@ class FomodGenerator:
 
         pyfomod.write(root, package_path)
 
-        self.packFomod(root_path / os.path.join(OUT_PATH, '{}_{}'.format(root.name, root.version)), package_path)
+        self.packFomod(
+            root_path / os.path.join(OUT_PATH, '{}_{}-{}'.format(
+                root.name, root.version, self.getCommitSHA(root_path))), 
+            package_path)
+
+    def getCommitSHA(self, root_path):
+        repo = git.Repo(root_path / GITROOT)
+        commits = list(repo.iter_commits("master", max_count=1))
+
+        assert len(commits) == 1
+
+        return commits[0].hexsha[0:8]
 
     def validate(self, root):
         f = False
