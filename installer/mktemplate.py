@@ -26,6 +26,8 @@ conf_missing = [
     'CBP\\Profiles\\Physics\\UUNP - UNPB.json',
     'CBP\\Profiles\\Physics\\UUNP - 7B.json',
     'CBP\\Profiles\\Physics\\BHUNP - UNP.json',
+    'CBP\\Profiles\\Physics\\BHUNP - UNPB.json',
+    'CBP\\Profiles\\Physics\\BHUNP - 7B.json',
     'CBP\\Profiles\\Physics\\CBBE.json',
     'CBP\\Profiles\\Physics\\3BBB.json',
 ]
@@ -77,6 +79,8 @@ group_profile.append(mkfile('UUNP - UNP', 'UUNP - UNP', ('01_default\\uunp\\unp\
 group_profile.append(mkfile('UUNP - UNPB', 'UUNP - UNPB', ('01_default\\uunp\\unpb\\default.json', T_P)))
 group_profile.append(mkfile('UUNP - 7B Original', 'UUNP - 7B Original', ('01_default\\uunp\\7b\\default.json', T_P)))
 group_profile.append(mkfile('BHUNP - UNP', 'BHUNP - UNP', ('01_default\\bhunp\\unp\\default.json', T_P)))
+group_profile.append(mkfile('BHUNP - UNPB', 'BHUNP - UNPB', ('01_default\\bhunp\\unpb\\default.json', T_P)))
+group_profile.append(mkfile('BHUNP - 7B Original', 'BHUNP - 7B Original', ('01_default\\bhunp\\7b\\default.json', T_P)))
 group_profile.append(mkfile('CBBE Curvy', 'CBBE Curvy', ('01_default\\cbbe\\default.json', T_P)))
 group_profile.append(mkfile('CBBE 3BBB', 'CBBE 3BBB', ('01_default\\cbbe_3bbb\\default.json', T_P)))
 
