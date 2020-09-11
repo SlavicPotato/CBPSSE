@@ -370,3 +370,4 @@ FodyWeavers.xsd
 /tmp
 *.dll
 /CBP/My Advisor Results - CBP
+/installer/package/fomod
