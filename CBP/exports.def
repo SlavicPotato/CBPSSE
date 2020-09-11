@@ -1,4 +1,4 @@
-LIBRARY CBP
+LIBRARY "CBP"
 EXPORTS
     SKSEPlugin_Query
     SKSEPlugin_Load

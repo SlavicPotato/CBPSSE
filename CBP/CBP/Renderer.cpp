@@ -57,24 +57,24 @@ namespace CBP
     void Renderer::GenerateMovingNodes(
         const simActorList_t& a_actorList,
         float a_radius,
+        bool a_centerOfMass,
         SKSE::ObjectHandle a_markedHandle)
     {
         for (const auto& e : a_actorList)
         {
-            for (const auto& n : e.second)
-            {
-                /*if (n.second.HasActiveCollider())
-                    continue;*/
-
-                GenerateSphere(n.second.GetPos(), a_radius, MOVING_NODES_COL);
-            }
+            if (a_centerOfMass)
+                for (const auto& n : e.second)
+                    GenerateSphere(n.second.GetCenterOfMass(), a_radius, MOVING_NODES_COL);
+            else
+                for (const auto& n : e.second)
+                    GenerateSphere(n.second.GetPos(), a_radius, MOVING_NODES_COL);
 
             if (e.first == a_markedHandle)
             {
-                NiTransform hT;
-                if (e.second.GetHeadTransform(hT))
+                auto ht = e.second.GetHeadTransform();
+                if (ht)
                     GenerateSphere(
-                        hT * NiPoint3(0.0f, 0.0f, 20.0f),
+                        *ht * NiPoint3(0.0f, 0.0f, 20.0f),
                         2.0f, ACTOR_MARKER_COL);
             }
         }
@@ -89,9 +89,11 @@ namespace CBP
     void Renderer::UpdateMovingNodes(
         const simActorList_t& a_actorList,
         float a_radius,
-        SKSE::ObjectHandle a_markedHandle)
+        bool a_centerOfMass,
+        SKSE::ObjectHandle a_markedHandle
+    )
     {
-        GenerateMovingNodes(a_actorList, a_radius, a_markedHandle);
+        GenerateMovingNodes(a_actorList, a_radius, a_centerOfMass, a_markedHandle);
     }
 
     void Renderer::Clear()

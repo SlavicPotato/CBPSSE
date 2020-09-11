@@ -28,7 +28,7 @@ namespace CBP
 
         void Draw();
         void Update(const r3d::DebugRenderer& a_dr);
-        void UpdateMovingNodes(const simActorList_t& a_actorList, float a_radius, SKSE::ObjectHandle a_markedHandle);
+        void UpdateMovingNodes(const simActorList_t& a_actorList, float a_radius, bool a_centerOfMass, SKSE::ObjectHandle a_markedHandle);
         void Clear();
 
     private:
@@ -52,7 +52,7 @@ namespace CBP
 
         void GenerateLines(const r3d::DebugRenderer& a_dr);
         void GenerateTris(const r3d::DebugRenderer& a_dr);
-        void GenerateMovingNodes(const simActorList_t& a_actorList, float a_radius, SKSE::ObjectHandle a_markedHandle);
+        void GenerateMovingNodes(const simActorList_t& a_actorList, float a_radius, bool a_centerOfMass, SKSE::ObjectHandle a_markedHandle);
 
         void GenerateSphere(const NiPoint3& a_pos, float a_radius, const DirectX::XMFLOAT4& a_col);
 

@@ -62,6 +62,10 @@ namespace CBP
                 return m_created && m_active;
             }
 
+            [[nodiscard]] inline const auto& GetSphereOffset() const {
+                return m_sphereOffset;
+            }
+
         private:
             r3d::CollisionBody* m_body;
             r3d::SphereShape* m_sphereShape;
@@ -237,6 +241,10 @@ namespace CBP
 
         [[nodiscard]] inline const auto& GetPos() const {
             return m_obj->m_worldTransform.pos;
+        }
+        
+        [[nodiscard]] inline auto GetCenterOfMass() const {
+            return m_obj->m_worldTransform * m_npCogOffset;
         }
 
 #ifdef _CBP_ENABLE_DEBUG

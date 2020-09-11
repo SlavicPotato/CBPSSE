@@ -1646,6 +1646,7 @@ namespace CBP
                     ImGui::Spacing();
 
                     CheckboxGlobal("Draw moving nodes", &globalConfig.debugRenderer.enableMovingNodes);
+                    CheckboxGlobal("Show moving nodes center of mass", &globalConfig.debugRenderer.movingNodesCenterOfMass);
 
                     SliderFloatGlobal("Moving nodes sphere radius", &globalConfig.debugRenderer.movingNodesRadius, 0.1f, 10.0f, "%.2f");
 

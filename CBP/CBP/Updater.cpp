@@ -21,6 +21,7 @@ namespace CBP
         m_averageInterval(1.0f / 60.0f),
         m_profiler(1000000),
         m_markedActor(0)
+        // m_pt(1000000)
     {
     }
 
@@ -42,6 +43,7 @@ namespace CBP
                     renderer->UpdateMovingNodes(
                         GetSimActorList(),
                         globalConf.debugRenderer.movingNodesRadius,
+                        globalConf.debugRenderer.movingNodesCenterOfMass,
                         m_markedActor);
                 }
 
@@ -180,6 +182,8 @@ namespace CBP
 
     void UpdateTask::Run()
     {
+        //m_pt.Begin();
+
         DCBP::Lock();
 
         CullActors();
@@ -189,6 +193,10 @@ namespace CBP
             ProcessTasks();
 
         DCBP::Unlock();
+
+        /*long long t;
+        if (m_pt.End(t))
+            Debug(">> %lld", t);*/
     }
 
     void UpdateTask::CullActors()
@@ -209,7 +217,7 @@ namespace CBP
             else
                 ++it;
         }
-        }
+    }
 
     void UpdateTask::AddActor(SKSE::ObjectHandle a_handle)
     {
@@ -769,4 +777,4 @@ namespace CBP
     void UpdateTask::UpdateWeightTask::Dispose() {
         delete this;
     }
-        }
+}

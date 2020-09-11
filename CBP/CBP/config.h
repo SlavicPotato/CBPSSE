@@ -138,7 +138,6 @@ namespace CBP
             std::unordered_map<UIEditorID, configMirrorMap_t> mirror;
             collapsibleStates_t colStates;
             std::string forceActorSelected;
-
         } ui;
 
         struct
@@ -148,6 +147,7 @@ namespace CBP
             float contactPointSphereRadius = 0.5f;
             float contactNormalLength = 2.0f;
             bool enableMovingNodes = false;
+            bool movingNodesCenterOfMass = false;
             float movingNodesRadius = 0.75f;
             bool drawAABB = false;
             bool drawBroadphaseAABB = false;

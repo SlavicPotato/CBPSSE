@@ -2,8 +2,12 @@
 
 namespace CBP
 {
-    inline static float sgn(float val) {
+    inline static constexpr float sgn(float val) {
         return float((0.0f < val) - (val < 0.0f));
+    }
+
+    inline static constexpr float mmw(float a_val, float a_min, float a_max) {
+        return a_min + (a_max - a_min) * a_val / 100.0f;
     }
 
     SimComponent::Collider::Collider(
@@ -130,10 +134,6 @@ namespace CBP
     void SimComponent::Release()
     {
         m_collisionData.Destroy();
-    }
-
-    inline static float mmw(float a_val, float a_min, float a_max) {
-        return a_min + (a_max - a_min) * a_val / 100.0f;
     }
 
     bool SimComponent::UpdateWeightData(Actor* a_actor, const configComponent_t& a_config)
