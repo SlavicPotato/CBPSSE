@@ -148,7 +148,7 @@ namespace CBP
         const auto& globalConfig = IConfig::GetGlobalConfig();;
 
         ImGui::SameLine();
-       UICommon::HelpMarker(m_helpText.at(a_id), globalConfig.ui.fontScale);
+        UICommon::HelpMarker(m_helpText.at(a_id), globalConfig.ui.fontScale);
     }
 
     template <typename T>
@@ -233,8 +233,8 @@ namespace CBP
             }
         }
 
-       UICommon::MessageDialog("Create Error", "Could not create the profile\n\n%s", state.lastException.what());
-       UICommon::MessageDialog("Add Error", "Could not add the profile\n\n%s", state.lastException.what());
+        UICommon::MessageDialog("Create Error", "Could not create the profile\n\n%s", state.lastException.what());
+        UICommon::MessageDialog("Add Error", "Could not add the profile\n\n%s", state.lastException.what());
 
     }
 
@@ -349,14 +349,21 @@ namespace CBP
                 }
 
                 ImGui::SameLine();
-                if (ImGui::Button("Delete")) {
+                if (ImGui::Button("Delete"))
                     ImGui::OpenPopup("Delete");
-                }
 
                 ImGui::SameLine();
                 if (ImGui::Button("Rename")) {
                     ImGui::OpenPopup("Rename");
                     _snprintf_s(ex_state.ren_input, _TRUNCATE, "%s", (*state.selected).c_str());
+                }
+
+                ImGui::SameLine();
+                if (ImGui::Button("Reload")) {
+                    if (!profile.Load()) {
+                        ImGui::OpenPopup("Reload");
+                        state.lastException = profile.GetLastException();
+                    }
                 }
 
                 if (UICommon::ConfirmDialog(
@@ -388,7 +395,10 @@ namespace CBP
                 }
                 else {
 
-                   UICommon::MessageDialog("Save", "Saving profile '%s' to '%s' failed\n\n%s",
+                    UICommon::MessageDialog("Save", "Saving profile '%s' to '%s' failed\n\n%s",
+                        profile.Name().c_str(), profile.PathStr().c_str(), state.lastException.what());
+                    
+                    UICommon::MessageDialog("Reload", "Loading profile '%s' from '%s' failed\n\n%s",
                         profile.Name().c_str(), profile.PathStr().c_str(), state.lastException.what());
 
                     ImGui::Separator();
@@ -396,9 +406,9 @@ namespace CBP
                     DrawItem(profile);
                 }
 
-               UICommon::MessageDialog("Delete failed",
+                UICommon::MessageDialog("Delete failed",
                     "Could not delete the profile\n\n%s", state.lastException.what());
-               UICommon::MessageDialog("Rename failed",
+                UICommon::MessageDialog("Rename failed",
                     "Could not rename the profile\n\n%s", state.lastException.what());
             }
 
@@ -807,7 +817,7 @@ namespace CBP
                 }
             }
 
-           UICommon::MessageDialog("Save to profile error",
+            UICommon::MessageDialog("Save to profile error",
                 "Error saving to profile '%s'\n\n%s", profile.Name().c_str(),
                 state.lastException.what());
         }
@@ -1006,9 +1016,9 @@ namespace CBP
     auto UIActorList<T>::GetSelectedEntry()
         -> actorListValue_t*
     {
-        if (m_currentActor != 0) 
+        if (m_currentActor != 0)
             return std::addressof(
-                *m_actorList.find(m_currentActor));        
+                *m_actorList.find(m_currentActor));
 
         return nullptr;
     }
@@ -1441,7 +1451,7 @@ namespace CBP
                 m_scGlobal.DrawSimComponents(0, IConfig::GetGlobalPhysicsConfig());
             }
 
-           UICommon::MessageDialog(
+            UICommon::MessageDialog(
                 "Save failed",
                 "Saving one or more files failed.\nThe last exception was:\n\n%s",
                 state.lastException.what());
@@ -1453,7 +1463,7 @@ namespace CBP
                 }
             }
 
-           UICommon::MessageDialog(
+            UICommon::MessageDialog(
                 "Store global failed",
                 "Could not save current globals to the default profile.\nThe last exception was:\n\n%s",
                 state.lastException.what());
@@ -2363,7 +2373,7 @@ namespace CBP
             else if (DrawSlider(e, pValue))
                 OnSimSliderChange(a_handle, a_data, a_pair, e, pValue);
 
-            ImGui::SameLine();UICommon::HelpMarker(e.second.helpText, globalConfig.ui.fontScale);
+            ImGui::SameLine(); UICommon::HelpMarker(e.second.helpText, globalConfig.ui.fontScale);
         }
     }
 
@@ -2818,18 +2828,18 @@ namespace CBP
             if (ImGui::Button("Cancel", ImVec2(120, 0)))
                 *a_active = false;
 
-           UICommon::MessageDialog(
+            UICommon::MessageDialog(
                 "Import failed",
                 "Something went wrong during the import\nThe last exception was:\n\n%s",
                 DCBP::GetLastSerializationException().what());
 
-           UICommon::MessageDialog(
+            UICommon::MessageDialog(
                 "Load failed",
                 "Could not show files in '%s'\nThe last exception was:\n\n%s",
                 GetRootStr().c_str(),
                 GetLastException().what());
 
-           UICommon::MessageDialog(
+            UICommon::MessageDialog(
                 "Delete failed",
                 "Error occured while attempting to delete export\nThe last exception was:\n\n%s",
                 GetLastException().what());
@@ -2913,15 +2923,15 @@ namespace CBP
                 ImGui::OpenPopup("Export failed");
         }
 
-       UICommon::MessageDialog(
+        UICommon::MessageDialog(
             "Illegal filename",
             "Filename contains illegal characters");
 
-       UICommon::MessageDialog(
+        UICommon::MessageDialog(
             "Operation failed",
             "Path exists and is not a regular file");
 
-       UICommon::MessageDialog(
+        UICommon::MessageDialog(
             "Export failed",
             "\nThe last exception was:\n\n%s",
             DCBP::GetLastSerializationException().what());

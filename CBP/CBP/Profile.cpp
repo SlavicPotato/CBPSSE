@@ -57,9 +57,9 @@ namespace CBP
             Json::Value root;
             fs >> root;
 
-            m_conf.clear();
+            T tmp;
 
-            if (!Parse(root, m_conf, true))
+            if (!Parse(root, tmp, true))
                 throw std::exception("Parser error");
 
             auto& id = root["id"];
@@ -68,11 +68,12 @@ namespace CBP
             else
                 m_id = static_cast<uint64_t>(id.asUInt64());
 
+            m_conf = std::move(tmp);
+
             return true;
         }
         catch (const std::exception& e)
         {
-            m_conf.clear();
             m_lastExcept = e;
             return false;
         }
@@ -255,7 +256,7 @@ namespace CBP
 
         if (!std::regex_match(a_key, m_rFileCheck))
             throw std::exception("Invalid characters in profile name");
-    } 
+    }
 
     template <class T>
     bool ProfileManager<T>::DeleteProfile(const std::string& a_name)
