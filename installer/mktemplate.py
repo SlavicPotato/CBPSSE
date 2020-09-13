@@ -15,6 +15,11 @@ conf_force = {
     'CBP\\Profiles\\Node\\Blank.json'
 }
 
+conf_missing_dirs = {
+    'CBP\\Templates',
+    'CBP\\Exports'
+}
+
 conf_missing = [
     'CBP\\Profiles\\Node\\UUNP.json',
     'CBP\\Profiles\\Node\\UUNP - more arm colliders.json',
@@ -43,11 +48,11 @@ def mkfile(a, b, c, d = pyfomod.OptionType.OPTIONAL, e = None):
 
     return t
 
-def mkccond(p, a):
+def mkccond(p, a, b = False):
     c = pyfomod.Conditions()
     c[os.path.join(T_C, a)] = pyfomod.FileType.MISSING
     f = pyfomod.Files()
-    f[os.path.join('03_baseconf\\', a)] = os.path.join(T_C, a)
+    f[os.path.join('03_baseconf\\', a) + ('/' if b else '')] = os.path.join(T_C, a)
     p[c] = f
     return p
 
@@ -98,9 +103,12 @@ root.pages = pages
 
 for v in conf_force:
     root.files[os.path.join('03_baseconf', v)] = os.path.join(T_C, v)
-
+    
 for v in conf_missing:
     mkccond(root.file_patterns, v)
+    
+for v in conf_missing_dirs:
+    mkccond(root.file_patterns, v, True)
 
 vl = root.validate()
 for warning in vl:
