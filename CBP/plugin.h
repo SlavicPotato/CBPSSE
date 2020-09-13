@@ -23,4 +23,4 @@ constexpr const char* PLUGIN_CBP_TEMP_PROF_NODE = CBP_DATA_BASE_PATH "Templates\
 constexpr const char* PLUGIN_CBP_TEMP_PLUG = CBP_DATA_BASE_PATH "Templates\\Plugins";
 constexpr const char* PLUGIN_IMGUI_INI_FILE = CBP_DATA_BASE_PATH "Settings\\ImGui.ini";
 
-#define MIN_SKSE_VERSION            RUNTIME_VERSION_1_5_23
+#define MIN_SKSE_VERSION            RUNTIME_VERSION_1_5_39
