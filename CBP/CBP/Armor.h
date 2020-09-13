@@ -19,7 +19,6 @@ namespace CBP
         static bool FindOverrides(Actor* a_actor, armorOverrideResults_t& a_out);
         static bool FindOverrides(Actor* a_actor, TESObjectARMO* a_armor, armorOverrideResults_t& a_out);
 
-
         static bool FindOverridesA(Actor* a_actor, armorOverrideResults_t& a_out);
 
     private:

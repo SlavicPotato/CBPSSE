@@ -773,6 +773,7 @@
     <ClInclude Include="CBP\Renderer.h" />
     <ClInclude Include="CBP\Serialization.h" />
     <ClInclude Include="CBP\SimObj.h" />
+    <ClInclude Include="CBP\Template.h" />
     <ClInclude Include="CBP\Thing.h" />
     <ClInclude Include="CBP\UI.h" />
     <ClInclude Include="CBP\Updater.h" />
@@ -804,6 +805,7 @@
     <ClCompile Include="CBP\Renderer.cpp" />
     <ClCompile Include="CBP\Serialization.cpp" />
     <ClCompile Include="CBP\SimObj.cpp" />
+    <ClCompile Include="CBP\Template.cpp" />
     <ClCompile Include="CBP\Thing.cpp" />
     <ClCompile Include="CBP\UI.cpp" />
     <ClCompile Include="CBP\Updater.cpp" />

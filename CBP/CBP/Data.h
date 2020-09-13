@@ -37,13 +37,31 @@ namespace CBP
     class IData
     {
         typedef std::unordered_map<SKSE::FormID, raceCacheEntry_t> raceList_t;
-        typedef std::unordered_map<SKSE::ObjectHandle, SKSE::FormID> actorRaceMap_t;
+        typedef std::unordered_map<SKSE::ObjectHandle, SKSE::FormID> handleFormIdMap_t;
         typedef std::unordered_map<SKSE::ObjectHandle, actorCacheEntry_t> actorCache_t;
+
 
     public:
         [[nodiscard]] static bool PopulateRaceList();
-        static void UpdateActorRaceMap(SKSE::ObjectHandle a_handle, const Actor* a_actor);
-        static void UpdateActorRaceMap(SKSE::ObjectHandle a_handle);
+        static void UpdateActorMaps(SKSE::ObjectHandle a_handle, const Actor* a_actor);
+        static void UpdateActorMaps(SKSE::ObjectHandle a_handle);
+
+       /* static inline void UpdateHandleNpcMap(SKSE::ObjectHandle a_handle, SKSE::FormID a_formid) {
+            actorNpcMap.insert_or_assign(a_handle, a_formid);
+        }*/
+
+        /*static inline void RemoveHandleNpcMap(SKSE::ObjectHandle a_handle) {
+            actorNpcMap.erase(a_handle);
+        }*/
+
+        static inline bool ResolveHandleToNpc(SKSE::ObjectHandle a_handle, SKSE::FormID& a_out) {
+            auto it = actorNpcMap.find(a_handle);
+            if (it != actorNpcMap.end()) {
+                a_out = it->second;
+                return true;
+            }
+            return false;
+        }
 
         static void UpdateActorCache(const simActorList_t& a_list);
 
@@ -93,7 +111,8 @@ namespace CBP
         static void AddExtraActorEntry(SKSE::ObjectHandle a_handle);
 
         static raceList_t raceList;
-        static actorRaceMap_t actorRaceMap;
+        static handleFormIdMap_t actorRaceMap;
+        static handleFormIdMap_t actorNpcMap;
 
         static actorCache_t actorCache;
         static SKSE::ObjectHandle crosshairRef;

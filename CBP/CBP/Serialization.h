@@ -32,6 +32,10 @@ namespace CBP
     {
     public:
 
+        static constexpr uint8_t IMPORT_GLOBAL = 1 << 0;
+        static constexpr uint8_t IMPORT_ACTORS = 1 << 1;
+        static constexpr uint8_t IMPORT_RACES = 1 << 2;
+
         enum Group : uint8_t
         {
             kGlobals = 0,
@@ -58,7 +62,7 @@ namespace CBP
         void LoadCollisionGroups();
         bool SaveCollisionGroups();
 
-        bool Import(SKSESerializationInterface* intfc, const fs::path& a_path);
+        bool Import(SKSESerializationInterface* intfc, const fs::path& a_path, uint8_t a_flags);
         bool Export(const fs::path& a_path);
 
         bool ImportGetInfo(const fs::path& a_path, importInfo_t& a_out);

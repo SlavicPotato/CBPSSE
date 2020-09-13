@@ -216,6 +216,15 @@ namespace CBP
                 globalConfig.ui.lastActor = static_cast<SKSE::ObjectHandle>(ui.get("lastActor", 0ULL).asUInt64());
                 globalConfig.ui.fontScale = ui.get("fontScale", 1.0f).asFloat();
 
+                if (ui.isMember("import"))
+                {
+                    const auto& import = ui["import"];
+
+                    globalConfig.ui.import.global = import.get("global", true).asBool();
+                    globalConfig.ui.import.actors = import.get("actors", true).asBool();
+                    globalConfig.ui.import.races = import.get("races", true).asBool();
+                }
+
                 if (ui.isMember("force")) {
                     const auto& force = ui["force"];
 
@@ -331,6 +340,7 @@ namespace CBP
                     globalConfig.debugRenderer.contactNormalLength = debugRenderer.get("contactNormalLength", 2.0f).asFloat();
                     globalConfig.debugRenderer.enableMovingNodes = debugRenderer.get("enableMovingNodes", false).asBool();
                     globalConfig.debugRenderer.movingNodesRadius = debugRenderer.get("movingNodesRadius", 0.75f).asFloat();
+                    globalConfig.debugRenderer.movingNodesCenterOfMass = debugRenderer.get("movingNodesCenterOfMass", false).asBool();
                     globalConfig.debugRenderer.drawAABB = debugRenderer.get("drawAABB", false).asBool();
                     globalConfig.debugRenderer.drawBroadphaseAABB = debugRenderer.get("drawBroadphaseAABB", false).asBool();
                 }
@@ -383,6 +393,12 @@ namespace CBP
             ui["lastActor"] = static_cast<uint64_t>(globalConfig.ui.lastActor);
             ui["fontScale"] = globalConfig.ui.fontScale;
 
+            auto& import = ui["import"];
+
+            ui["global"] = globalConfig.ui.import.global;
+            ui["actors"] = globalConfig.ui.import.actors;
+            ui["races"] = globalConfig.ui.import.races;
+
             auto& force = ui["force"];
 
             for (const auto& e : globalConfig.ui.forceActor)
@@ -425,6 +441,7 @@ namespace CBP
             debugRenderer["contactPointSphereRadius"] = globalConfig.debugRenderer.contactPointSphereRadius;
             debugRenderer["contactNormalLength"] = globalConfig.debugRenderer.contactNormalLength;
             debugRenderer["enableMovingNodes"] = globalConfig.debugRenderer.enableMovingNodes;
+            debugRenderer["movingNodesCenterOfMass"] = globalConfig.debugRenderer.movingNodesCenterOfMass;
             debugRenderer["movingNodesRadius"] = globalConfig.debugRenderer.movingNodesRadius;
             debugRenderer["drawAABB"] = globalConfig.debugRenderer.drawAABB;
             debugRenderer["drawBroadphaseAABB"] = globalConfig.debugRenderer.drawBroadphaseAABB;
@@ -672,7 +689,7 @@ namespace CBP
 
             if (m_componentParser.Parse(*it, componentData)) {
                 a_actorConfigComponents.emplace(newHandle, std::move(componentData));
-                IData::UpdateActorRaceMap(newHandle);
+                IData::UpdateActorMaps(newHandle);
             }
 
             configNodes_t nodeData;
@@ -747,7 +764,7 @@ namespace CBP
         }
     }
 
-    bool ISerialization::Import(SKSESerializationInterface* intfc, const fs::path& a_path)
+    bool ISerialization::Import(SKSESerializationInterface* intfc, const fs::path& a_path, uint8_t a_flags)
     {
         try
         {
@@ -762,21 +779,32 @@ namespace CBP
             configComponents_t globalComponentData;
             configNodes_t globalNodeData;
 
-            _LoadActorProfiles(intfc, root["actors"], actorConfigComponents, actorConfigNodes);
-            _LoadRaceProfiles(intfc, root["races"], raceConfigComponents);
+            if (a_flags & IMPORT_ACTORS)
+                _LoadActorProfiles(intfc, root["actors"], actorConfigComponents, actorConfigNodes);
 
-            if (!m_componentParser.Parse(root["global"], globalComponentData))
-                throw std::exception("Error while parsing global component data");
+            if (a_flags & IMPORT_RACES)
+                _LoadRaceProfiles(intfc, root["races"], raceConfigComponents);
 
-            if (!m_nodeParser.Parse(root["global"], globalNodeData))
-                throw std::exception("Error while parsing global node data");
+            if (a_flags & IMPORT_GLOBAL) {
+                if (!m_componentParser.Parse(root["global"], globalComponentData))
+                    throw std::exception("Error while parsing global component data");
 
-            IConfig::SetActorConfigHolder(std::move(actorConfigComponents));
-            IConfig::SetActorNodeConfigHolder(std::move(actorConfigNodes));
+                if (!m_nodeParser.Parse(root["global"], globalNodeData))
+                    throw std::exception("Error while parsing global node data");
+            }
+
+            if (a_flags & IMPORT_ACTORS) {
+                IConfig::SetActorConfigHolder(std::move(actorConfigComponents));
+                IConfig::SetActorNodeConfigHolder(std::move(actorConfigNodes));
+            }
+
+            if (a_flags & IMPORT_RACES)
             IConfig::SetRaceConfigHolder(std::move(raceConfigComponents));
 
-            IConfig::SetGlobalPhysicsConfig(std::move(globalComponentData));
-            IConfig::SetGlobalNodeConfig(std::move(globalNodeData));
+            if (a_flags & IMPORT_GLOBAL) {
+                IConfig::SetGlobalPhysicsConfig(std::move(globalComponentData));
+                IConfig::SetGlobalNodeConfig(std::move(globalNodeData));
+            }
 
             return true;
         }

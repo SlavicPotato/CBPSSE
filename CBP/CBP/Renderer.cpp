@@ -62,12 +62,16 @@ namespace CBP
     {
         for (const auto& e : a_actorList)
         {
-            if (a_centerOfMass)
+            if (a_centerOfMass) {
                 for (const auto& n : e.second)
-                    GenerateSphere(n.second.GetCenterOfMass(), a_radius, MOVING_NODES_COL);
-            else
+                    if (n.second.HasMovement())
+                        GenerateSphere(n.second.GetCenterOfMass(), a_radius, MOVING_NODES_COL);
+            }
+            else {
                 for (const auto& n : e.second)
-                    GenerateSphere(n.second.GetPos(), a_radius, MOVING_NODES_COL);
+                    if (n.second.HasMovement())
+                        GenerateSphere(n.second.GetPos(), a_radius, MOVING_NODES_COL);
+            }
 
             if (e.first == a_markedHandle)
             {

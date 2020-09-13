@@ -17,7 +17,10 @@ constexpr const char* PLUGIN_CBP_GLOBAL_DATA = CBP_DATA_BASE_PATH "Settings\\Glo
 constexpr const char* PLUGIN_CBP_CG_DATA = CBP_DATA_BASE_PATH "Settings\\CollisionGroups.json";
 constexpr const char* PLUGIN_CBP_NODE_DATA = CBP_DATA_BASE_PATH "Nodes.json";
 constexpr const char* PLUGIN_CBP_GLOBPROFILE_DEFAULT_DATA = CBP_DATA_BASE_PATH "Default.json";
-constexpr const char* PLUGIN_CBP_EXPORTS_PATH = CBP_DATA_BASE_PATH "Exports";
+constexpr const char* PLUGIN_CBP_EXPORTS_PATH = CBP_DATA_BASE_PATH "Exports"; 
+constexpr const char* PLUGIN_CBP_TEMP_PROF_PHYS = CBP_DATA_BASE_PATH "Templates\\Profiles\\Physics";
+constexpr const char* PLUGIN_CBP_TEMP_PROF_NODE = CBP_DATA_BASE_PATH "Templates\\Profiles\\Node";
+constexpr const char* PLUGIN_CBP_TEMP_PLUG = CBP_DATA_BASE_PATH "Templates\\Plugins";
 constexpr const char* PLUGIN_IMGUI_INI_FILE = CBP_DATA_BASE_PATH "Settings\\ImGui.ini";
 
 #define MIN_SKSE_VERSION            RUNTIME_VERSION_1_5_23

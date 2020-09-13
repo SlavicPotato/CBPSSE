@@ -144,6 +144,9 @@
     <ClInclude Include="ImGui\imgui_impl_win32.h">
       <Filter>Header Files\ImGui</Filter>
     </ClInclude>
+    <ClInclude Include="CBP\Template.h">
+      <Filter>Header Files\CBP</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp">
@@ -226,6 +229,9 @@
     </ClCompile>
     <ClCompile Include="ImGui\imgui_impl_win32.cpp">
       <Filter>Source Files\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="CBP\Template.cpp">
+      <Filter>Source Files\CBP</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

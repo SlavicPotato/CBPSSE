@@ -12,6 +12,8 @@ namespace CBP
         nodeDescList_t& a_out)
         -> nodeDescList_t::size_type
     {
+        auto& nodeConfig = IConfig::GetActorNodeConfig(a_handle);
+
         for (const auto& b : a_nodeMap)
         {
             BSFixedString cs(b.first.c_str());
@@ -25,7 +27,10 @@ namespace CBP
                 continue;
 
             configNode_t nodeConf;
-            IConfig::GetActorNodeConfig(a_handle, b.first, nodeConf);
+
+            auto itn = nodeConfig.find(b.first);
+            if (itn != nodeConfig.end())
+                nodeConf = itn->second;
 
             bool collisions, movement;
             nodeConf.Get(a_sex, collisions, movement);

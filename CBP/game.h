@@ -9,4 +9,6 @@ namespace Game
     {
         void Notification(const char* a_message, bool a_cancelIfQueued = true, const char* a_sound = nullptr);
     }
+
+    bool GetModIndex(UInt32 a_formID, UInt32& a_out);
 }

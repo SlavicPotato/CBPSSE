@@ -382,19 +382,19 @@ namespace CBP
     };
 
     class UIProfileEditorSim :
-        public UIProfileEditorBase<SimProfile>,
+        public UIProfileEditorBase<PhysicsProfile>,
         UISimComponent<int, UIEditorID::kProfileEditorSim>
     {
     public:
         UIProfileEditorSim(const char* a_name) :
-            UIProfileEditorBase<SimProfile>(a_name) {}
+            UIProfileEditorBase<PhysicsProfile>(a_name) {}
     private:
-        virtual void DrawItem(SimProfile& a_profile);
+        virtual void DrawItem(PhysicsProfile& a_profile);
 
         virtual void OnSimSliderChange(
             int,
-            typename SimProfile::base_type& a_data,
-            typename SimProfile::base_type::value_type& a_pair,
+            typename PhysicsProfile::base_type& a_data,
+            typename PhysicsProfile::base_type::value_type& a_pair,
             const componentValueDescMap_t::vec_value_type& a_desc,
             float* a_val);
     };
@@ -515,7 +515,7 @@ namespace CBP
     typedef std::map<SKSE::FormID, raceEntry_t> raceList_t;
 
     class UIRaceEditor :
-        UIProfileSelector<raceList_t::value_type, SimProfile>,
+        UIProfileSelector<raceList_t::value_type, PhysicsProfile>,
         UISimComponent<SKSE::FormID, UIEditorID::kRaceEditor>
     {
         using raceListValue_t = raceList_t::value_type;
@@ -542,7 +542,7 @@ namespace CBP
         void UpdateRaceList();
         void ResetAllRaceValues(SKSE::FormID a_formid, raceListValue_t* a_data);
 
-        virtual void ApplyProfile(raceListValue_t* a_data, const SimProfile& a_profile);
+        virtual void ApplyProfile(raceListValue_t* a_data, const PhysicsProfile& a_profile);
         [[nodiscard]] virtual const configComponents_t& GetData(const raceListValue_t* a_data) const;
 
         virtual void OnSimSliderChange(
@@ -699,7 +699,7 @@ namespace CBP
     class UIContext :
         virtual UIBase,
         UIActorList<actorListBaseConf_t>,
-        UIProfileSelector<actorListBaseConf_t::value_type, SimProfile>,
+        UIProfileSelector<actorListBaseConf_t::value_type, PhysicsProfile>,
         UIApplyForce<actorListBaseConf_t::value_type>
     {
         using actorListValue_t = actorListBaseConf_t::value_type;
@@ -764,8 +764,8 @@ namespace CBP
 
         void DrawMenuBar(bool* a_active, const actorListValue_t* a_entry);
 
-        virtual void ApplyProfile(actorListValue_t* a_data, const SimProfile& m_peComponents);
-        [[nodiscard]] virtual const SimProfile::base_type& GetData(const actorListValue_t* a_data) const;
+        virtual void ApplyProfile(actorListValue_t* a_data, const PhysicsProfile& m_peComponents);
+        [[nodiscard]] virtual const PhysicsProfile::base_type& GetData(const actorListValue_t* a_data) const;
 
         virtual void ApplyForce(
             actorListValue_t* a_data,

@@ -93,6 +93,7 @@ namespace CBP
 #include "cbp/Config.h"
 #include "cbp/Serialization.h"
 #include "cbp/Profile.h"
+#include "cbp/Template.h"
 #include "cbp/Thing.h"
 #include "cbp/SimObj.h"
 #include "cbp/Collision.h"

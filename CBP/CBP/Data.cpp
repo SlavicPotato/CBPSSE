@@ -3,7 +3,8 @@
 namespace CBP
 {
     IData::raceList_t IData::raceList;
-    IData::actorRaceMap_t IData::actorRaceMap;
+    IData::handleFormIdMap_t IData::actorRaceMap;
+    IData::handleFormIdMap_t IData::actorNpcMap;
     IData::actorCache_t IData::actorCache;
     SKSE::ObjectHandle IData::crosshairRef = 0;
     uint64_t IData::actorCacheUpdateId = 1;
@@ -19,24 +20,28 @@ namespace CBP
         0x0002C65A
     };
 
-    void IData::UpdateActorRaceMap(SKSE::ObjectHandle a_handle, const Actor* a_actor)
+    void IData::UpdateActorMaps(SKSE::ObjectHandle a_handle, const Actor* a_actor)
     {
-        if (a_actor->race == nullptr)
-            return;
+        if (a_actor->race != nullptr)
+            actorRaceMap.insert_or_assign(a_handle, a_actor->race->formID);
 
-        actorRaceMap.insert_or_assign(a_handle, a_actor->race->formID);
+        auto npc = DYNAMIC_CAST(a_actor->baseForm, TESForm, TESNPC);
+        if (npc != nullptr)
+            actorNpcMap.insert_or_assign(a_handle, npc->formID);
     }
 
-    void IData::UpdateActorRaceMap(SKSE::ObjectHandle a_handle)
+    void IData::UpdateActorMaps(SKSE::ObjectHandle a_handle)
     {
         auto actor = SKSE::ResolveObject<Actor>(a_handle, Actor::kTypeID);
         if (actor == nullptr)
             return;
 
-        if (actor->race == nullptr)
-            return;
+        if (actor->race != nullptr)
+            actorRaceMap.insert_or_assign(a_handle, actor->race->formID);
 
-        actorRaceMap.insert_or_assign(a_handle, actor->race->formID);
+        auto npc = DYNAMIC_CAST(actor->baseForm, TESForm, TESNPC);
+        if (npc != nullptr) 
+            actorNpcMap.insert_or_assign(a_handle, npc->formID);
     }
 
     void IData::AddExtraActorEntry(

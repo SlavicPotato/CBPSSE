@@ -220,11 +220,11 @@ namespace CBP
         return iface.Export(a_path);
     }
 
-    bool DCBP::ImportData(const std::filesystem::path& a_path)
+    bool DCBP::ImportData(const std::filesystem::path& a_path, uint8_t a_flags)
     {
         auto& iface = m_Instance.m_serialization;
 
-        bool res = iface.Import(nullptr, a_path);
+        bool res = iface.Import(nullptr, a_path, a_flags);
         if (res)
             ResetActors();
 
@@ -433,7 +433,7 @@ namespace CBP
 
         IConfig::LoadConfig();
 
-        auto& pms = GlobalProfileManager::GetSingleton<SimProfile>();
+        auto& pms = GlobalProfileManager::GetSingleton<PhysicsProfile>();
         pms.Load(PLUGIN_CBP_PROFILE_PATH);
 
         auto& pmn = GlobalProfileManager::GetSingleton<NodeProfile>();
@@ -537,7 +537,15 @@ namespace CBP
             GetUpdateTask().UpdateTimeTick(IConfig::GetGlobalConfig().phys.timeTick);
             UpdateKeys();
 
+            bool pl = CBP::ITemplate::LoadProfiles();
+
             Unlock();
+
+            auto loadTime = pt.Stop();
+
+            if (!pl)
+                m_Instance.Error("%s: ITemplate::LoadProfiles failed: %s",
+                    __FUNCTION__, CBP::ITemplate::GetLastException().what());
 
             m_Instance.Debug("%s: data loaded (%f)", __FUNCTION__, pt.Stop());
         }

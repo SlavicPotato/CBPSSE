@@ -198,7 +198,7 @@ namespace CBP
         }
 
         static bool ExportData(const std::filesystem::path& a_path);
-        static bool ImportData(const std::filesystem::path& a_path);
+        static bool ImportData(const std::filesystem::path& a_path, uint8_t a_flags);
         static bool ImportGetInfo(const std::filesystem::path& a_path, importInfo_t& a_out);
 
         [[nodiscard]] inline static const auto& GetLastSerializationException() {

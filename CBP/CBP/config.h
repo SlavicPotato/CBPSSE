@@ -138,6 +138,14 @@ namespace CBP
             std::unordered_map<UIEditorID, configMirrorMap_t> mirror;
             collapsibleStates_t colStates;
             std::string forceActorSelected;
+
+            struct
+            {
+                bool global = true;
+                bool actors = true;
+                bool races = true;
+            } import;
+
         } ui;
 
         struct
@@ -307,6 +315,7 @@ namespace CBP
     enum class ConfigClass
     {
         kConfigGlobal,
+        kConfigTemplate,
         kConfigRace,
         kConfigActor
     };

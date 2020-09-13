@@ -16,4 +16,19 @@ namespace Game
             NotificationImpl(a_message, a_sound, a_cancelIfQueued);
         }
     }
+
+    bool GetModIndex(UInt32 a_formID, UInt32& a_out)
+    {
+        UInt32 modID = (a_formID & 0xFF000000) >> 24;
+
+        if (modID == 0xFF)
+            return false;
+
+        if (modID == 0xFE)
+            a_out = a_formID >> 12;
+        else
+            a_out = modID;
+
+        return true;
+    }
 }

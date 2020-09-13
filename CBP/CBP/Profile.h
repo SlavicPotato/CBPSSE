@@ -113,7 +113,7 @@ namespace CBP
         except::descriptor m_lastExcept;
     };
 
-    typedef Profile<configComponents_t> SimProfile;
+    typedef Profile<configComponents_t> PhysicsProfile;
     typedef Profile<configNodes_t> NodeProfile;
 
     template <class T>
@@ -123,7 +123,7 @@ namespace CBP
         typedef std::map<std::string, T> profileStorage_t;
 
     public:
-        ProfileManager(const std::string& a_fc);
+        ProfileManager(const std::string& a_fc, bool a_lowercase = false);
 
         ProfileManager() = delete;
         virtual ~ProfileManager() noexcept = default;
@@ -144,6 +144,8 @@ namespace CBP
         [[nodiscard]] inline profileStorage_t& Data() noexcept { return m_storage; }
         [[nodiscard]] inline const profileStorage_t& Data() const noexcept { return m_storage; }
         [[nodiscard]] inline T& Get(const std::string& a_key) { return m_storage.at(a_key); };
+        [[nodiscard]] inline typename profileStorage_t::const_iterator Find(const std::string& a_key) const { return m_storage.find(a_key); };
+        [[nodiscard]] inline typename profileStorage_t::const_iterator End() const { return m_storage.end(); };
         [[nodiscard]] inline const T& Get(const std::string& a_key) const { return m_storage.at(a_key); };
         [[nodiscard]] inline bool Contains(const std::string& a_key) const { return m_storage.contains(a_key); };
         [[nodiscard]] inline const auto& GetLastException() const noexcept { return m_lastExcept; }
@@ -161,13 +163,14 @@ namespace CBP
         std::regex m_rFileCheck;
         except::descriptor m_lastExcept;
         bool m_isInitialized;
+        bool m_lowercase;
         bool m_toUpper;
     };
 
     class GlobalProfileManager
     {
     public:
-        template <typename T, std::enable_if_t<std::is_same<T, SimProfile>::value, int> = 0>
+        template <typename T, std::enable_if_t<std::is_same<T, PhysicsProfile>::value, int> = 0>
         [[nodiscard]] inline static ProfileManager<T>& GetSingleton() noexcept {
             return m_Instance1;
         }
@@ -178,7 +181,7 @@ namespace CBP
         }
 
     private:
-        static ProfileManager<SimProfile> m_Instance1;
+        static ProfileManager<PhysicsProfile> m_Instance1;
         static ProfileManager<NodeProfile> m_Instance2;
     };
 

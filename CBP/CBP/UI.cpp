@@ -420,14 +420,14 @@ namespace CBP
         ImGui::PopID();
     }
 
-    void UIProfileEditorSim::DrawItem(SimProfile& a_profile) {
+    void UIProfileEditorSim::DrawItem(PhysicsProfile& a_profile) {
         DrawSimComponents(0, a_profile.Data());
     }
 
     void UIProfileEditorSim::OnSimSliderChange(
         int,
-        SimProfile::base_type& a_data,
-        SimProfile::base_type::value_type& a_pair,
+        PhysicsProfile::base_type& a_data,
+        PhysicsProfile::base_type::value_type& a_pair,
         const componentValueDescMap_t::vec_value_type& a_desc,
         float* a_val)
     {
@@ -689,7 +689,7 @@ namespace CBP
         DCBP::UpdateConfigOnAllActors();
     }
 
-    void UIRaceEditor::ApplyProfile(raceListValue_t* a_data, const SimProfile& a_profile)
+    void UIRaceEditor::ApplyProfile(raceListValue_t* a_data, const PhysicsProfile& a_profile)
     {
         IConfig::CopyComponents(a_profile.Data(), a_data->second.second);
         IConfig::SetRaceConf(a_data->first, a_data->second.second);
@@ -1075,6 +1075,9 @@ namespace CBP
                 case ConfigClass::kConfigRace:
                     label += " [R]";
                     break;
+                case ConfigClass::kConfigTemplate:
+                    label += " [T]";
+                    break;
                 }
 
                 if (ImGui::Selectable(label.c_str(), selected)) {
@@ -1377,6 +1380,9 @@ namespace CBP
                     break;
                 case ConfigClass::kConfigRace:
                     classText = "race";
+                    break;
+                case ConfigClass::kConfigTemplate:
+                    classText = "template";
                     break;
                 default:
                     classText = "global";
@@ -1921,6 +1927,9 @@ namespace CBP
                 case ConfigClass::kConfigActor:
                     classText = "actor";
                     break;
+                case ConfigClass::kConfigTemplate:
+                    classText = "template";
+                    break;
                 default:
                     classText = "global";
                     break;
@@ -2109,7 +2118,7 @@ namespace CBP
         return DCBP::GlobalHasConfigGroup(a_comp.first);
     }
 
-    void UIContext::ApplyProfile(actorListValue_t* a_data, const SimProfile& a_profile)
+    void UIContext::ApplyProfile(actorListValue_t* a_data, const PhysicsProfile& a_profile)
     {
         auto& profileData = a_profile.Data();
 
@@ -2124,7 +2133,7 @@ namespace CBP
         }
     }
 
-    const SimProfile::base_type& UIContext::GetData(const actorListValue_t* a_data) const
+    const PhysicsProfile::base_type& UIContext::GetData(const actorListValue_t* a_data) const
     {
         return !a_data ? IConfig::GetGlobalPhysicsConfig() : a_data->second.second;
     }
@@ -2755,7 +2764,7 @@ namespace CBP
     bool UIDialogImport::Draw(bool* a_active)
     {
         auto& io = ImGui::GetIO();
-        const auto& globalConfig = IConfig::GetGlobalConfig();;
+        auto& globalConfig = IConfig::GetGlobalConfig();;
 
         ImVec2 center(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f);
         ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
@@ -2811,11 +2820,29 @@ namespace CBP
 
             ImGui::Separator();
 
+            uint8_t importFlags = 0;
+
+            CheckboxGlobal("Global", &globalConfig.ui.import.global); 
+            ImGui::SameLine(); 
+            CheckboxGlobal("Actors", &globalConfig.ui.import.actors);
+            ImGui::SameLine(); 
+            CheckboxGlobal("Races", &globalConfig.ui.import.races);
+
+            ImGui::Separator();
+
             if (ImGui::Button("Import", ImVec2(120, 0)))
             {
                 if (selected && selected->m_infoResult)
                 {
-                    if (DCBP::ImportData(selected->m_path)) {
+                    uint8_t flags = 0;
+                    if (globalConfig.ui.import.global)
+                        flags |= ISerialization::IMPORT_GLOBAL;
+                    if (globalConfig.ui.import.actors)
+                        flags |= ISerialization::IMPORT_ACTORS;
+                    if (globalConfig.ui.import.races)
+                        flags |= ISerialization::IMPORT_RACES;
+
+                    if (DCBP::ImportData(selected->m_path, flags)) {
                         *a_active = false;
                         res = true;
                     }

@@ -6,7 +6,8 @@ namespace CBP
         public BSTEventSink <TESObjectLoadedEvent>,
         public BSTEventSink <TESInitScriptEvent>,
         public BSTEventSink <TESFastTravelEndEvent>,
-        public BSTEventSink <TESEquipEvent>
+        public BSTEventSink <TESEquipEvent>,
+        public BSTEventSink <SKSENiNodeUpdateEvent>
 
     {
     protected:
@@ -14,6 +15,7 @@ namespace CBP
         virtual EventResult	ReceiveEvent(TESInitScriptEvent* evn, EventDispatcher<TESInitScriptEvent>* dispatcher) override;
         virtual EventResult	ReceiveEvent(TESFastTravelEndEvent* evn, EventDispatcher<TESFastTravelEndEvent>* dispatcher) override;
         virtual EventResult	ReceiveEvent(TESEquipEvent* evn, EventDispatcher<TESEquipEvent>* dispatcher) override;
+        virtual EventResult ReceiveEvent(SKSENiNodeUpdateEvent* evn, EventDispatcher<SKSENiNodeUpdateEvent>* dispatcher) override;
 
     public:
         static EventHandler* GetSingleton() {

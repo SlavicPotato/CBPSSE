@@ -240,8 +240,9 @@ namespace CBP
 
         char sex;
         auto npc = DYNAMIC_CAST(actor->baseForm, TESForm, TESNPC);
-        if (npc != nullptr)
+        if (npc != nullptr) {
             sex = CALL_MEMBER_FN(npc, GetSex)();
+        }
         else
             sex = 0;
 
@@ -254,8 +255,14 @@ namespace CBP
                 ApplyArmorOverride(a_handle, ovResult);
         }
 
+        IData::UpdateActorMaps(a_handle, actor);
+
         auto& actorConf = IConfig::GetActorConfAO(a_handle);
         auto& nodeMap = IConfig::GetNodeMap();
+
+#ifdef _CBP_SHOW_STATS
+        Debug("Adding %.16llX (%s)", a_handle, CALL_MEMBER_FN(actor, GetReferenceName)());
+#endif
 
         nodeDescList_t descList;
         if (!SimObject::CreateNodeDescriptorList(
@@ -269,12 +276,6 @@ namespace CBP
         {
             return;
         }
-
-        IData::UpdateActorRaceMap(a_handle, actor);
-
-#ifdef _CBP_SHOW_STATS
-        Debug("Adding %.16llX (%s)", a_handle, CALL_MEMBER_FN(actor, GetReferenceName)());
-#endif
 
         m_actors.try_emplace(a_handle, a_handle, actor, sex, m_nextGroupId++, descList);
     }
@@ -291,6 +292,7 @@ namespace CBP
             it->second.Release();
             m_actors.erase(it);
 
+            //IData::RemoveHandleNpcMap(a_handle);
             IConfig::RemoveArmorOverride(a_handle);
         }
     }
@@ -372,6 +374,7 @@ namespace CBP
 #endif
 
             e.second.Release();
+            //IData::RemoveHandleNpcMap(e.first);
         }
 
         m_actors.clear();

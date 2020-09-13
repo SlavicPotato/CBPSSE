@@ -76,4 +76,12 @@ namespace CBP
         return kEvent_Continue;
     }
 
+    auto EventHandler::ReceiveEvent(SKSENiNodeUpdateEvent* evn, EventDispatcher<SKSENiNodeUpdateEvent>*)
+        -> EventResult
+    {
+        if (evn && evn->reference)
+            gLogger.Debug(">> %llX", evn->reference->formID);
+
+        return kEvent_Continue;
+    }
 }

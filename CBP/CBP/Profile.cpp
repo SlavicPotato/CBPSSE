@@ -4,7 +4,7 @@ namespace CBP
 {
     namespace fs = std::filesystem;
 
-    ProfileManager<SimProfile> GlobalProfileManager::m_Instance1("^[a-zA-Z0-9_\\- ]+$");
+    ProfileManager<PhysicsProfile> GlobalProfileManager::m_Instance1("^[a-zA-Z0-9_\\- ]+$");
     ProfileManager<NodeProfile> GlobalProfileManager::m_Instance2("^[a-zA-Z0-9_\\- ]+$");
 
     template <class T>
@@ -80,8 +80,12 @@ namespace CBP
     }
 
     template <typename T>
-    ProfileManager<T>::ProfileManager(const std::string& a_fc) :
+    ProfileManager<T>::ProfileManager(
+        const std::string& a_fc,
+        bool a_lowercase)
+        :
         m_isInitialized(false),
+        m_lowercase(a_lowercase),
         m_rFileCheck(a_fc,
             std::regex_constants::ECMAScript)
     {
@@ -98,9 +102,8 @@ namespace CBP
                     throw std::exception("Couldn't create profile directory");
                 }
             }
-            else if (!fs::is_directory(root)) {
+            else if (!fs::is_directory(root))
                 throw std::exception("Root path is not a directory");
-            }
 
             m_storage.clear();
 
@@ -111,19 +114,16 @@ namespace CBP
 
             for (const auto& entry : fs::directory_iterator(root))
             {
-                if (!entry.is_regular_file()) {
+                if (!entry.is_regular_file())
                     continue;
-                }
 
                 auto& path = entry.path();
-                if (!path.has_extension() || path.extension() != ext) {
+                if (!path.has_extension() || path.extension() != ext)
                     continue;
-                }
 
                 auto key = path.stem().string();
-                if (key.size() == 0) {
+                if (key.size() == 0)
                     continue;
-                }
 
                 if (!std::regex_match(key, m_rFileCheck)) {
                     Warning("Invalid characters in profile name: %s", key.c_str());
@@ -138,12 +138,15 @@ namespace CBP
 
                 T profile(path);
                 if (!profile.Load()) {
-                    Warning("Failed to load profile '%s': %s",
+                    Warning("Failed loading profile '%s': %s",
                         filename.c_str(), profile.GetLastException().what());
                     continue;
                 }
 
-                m_storage.emplace(key, profile);
+                if (m_lowercase)
+                    transform(key.begin(), key.end(), key.begin(), ::tolower);
+
+                m_storage.emplace(key, std::move(profile));
             }
 
             Debug("Loaded %zu profile(s)", m_storage.size());
@@ -162,17 +165,14 @@ namespace CBP
     {
         try
         {
-            if (!m_isInitialized) {
+            if (!m_isInitialized)
                 throw std::exception("Not initialized");
-            }
 
-            if (!a_name.size()) {
+            if (!a_name.size())
                 throw std::exception("Profile name length == 0");
-            }
 
-            if (!std::regex_match(a_name, m_rFileCheck)) {
+            if (!std::regex_match(a_name, m_rFileCheck))
                 throw std::exception("Invalid characters in profile name");
-            }
 
             fs::path path(m_root);
 
@@ -180,19 +180,16 @@ namespace CBP
             path += ".json";
 
             auto filename = path.filename().string();
-            if (filename.length() > 64) {
+            if (filename.length() > 64)
                 throw std::exception("Profile name too long");
-            }
 
-            if (fs::exists(path)) {
+            if (fs::exists(path))
                 throw std::exception("Profile already exists");
-            }
 
             a_out.SetPath(path);
             a_out.SetDefaults();
-            if (!a_out.Save()) {
+            if (!a_out.Save())
                 throw a_out.GetLastException();
-            }
 
             return true;
         }
@@ -207,9 +204,8 @@ namespace CBP
     {
         try
         {
-            if (!m_isInitialized) {
+            if (!m_isInitialized)
                 throw std::exception("Not initialized");
-            }
 
             auto& key = a_in.Name();
 
@@ -230,9 +226,8 @@ namespace CBP
     {
         try
         {
-            if (!m_isInitialized) {
+            if (!m_isInitialized)
                 throw std::exception("Not initialized");
-            }
 
             auto& key = a_in.Name();
 
@@ -275,9 +270,8 @@ namespace CBP
             if (fs::exists(it->second.Path()) &&
                 fs::is_regular_file(it->second.Path()))
             {
-                if (!fs::remove(it->second.Path())) {
+                if (!fs::remove(it->second.Path()))
                     throw std::exception("Failed to remove the file");
-                }
             }
 
             m_storage.erase(a_name);
@@ -295,37 +289,31 @@ namespace CBP
     {
         try
         {
-            if (!m_isInitialized) {
+            if (!m_isInitialized)
                 throw std::exception("Not initialized");
-            }
 
-            if (!std::regex_match(a_newName, m_rFileCheck)) {
+            if (!std::regex_match(a_newName, m_rFileCheck))
                 throw std::exception("Invalid characters in profile name");
-            }
 
             auto it = m_storage.find(a_oldName);
-            if (it == m_storage.end()) {
+            if (it == m_storage.end())
                 throw std::exception("No such profile exists");
-            }
 
-            if (m_storage.find(a_newName) != m_storage.end()) {
+            if (m_storage.find(a_newName) != m_storage.end())
                 throw std::exception("A profile with that name already exists");
-            }
 
             fs::path newFilename(a_newName);
             newFilename += ".json";
 
-            if (newFilename.string().length() > 64) {
+            if (newFilename.string().length() > 64)
                 throw std::exception("Profile name too long");
-            }
 
             auto newPath = it->second.Path();
             _assert(newPath.has_filename());
             newPath.replace_filename(newFilename);
 
-            if (fs::exists(newPath)) {
+            if (fs::exists(newPath))
                 throw std::exception("A profile file with that name already exists");
-            }
 
             fs::rename(it->second.Path(), newPath);
 
