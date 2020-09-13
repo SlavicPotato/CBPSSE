@@ -260,10 +260,6 @@ namespace CBP
         auto& actorConf = IConfig::GetActorConfAO(a_handle);
         auto& nodeMap = IConfig::GetNodeMap();
 
-#ifdef _CBP_SHOW_STATS
-        Debug("Adding %.16llX (%s)", a_handle, CALL_MEMBER_FN(actor, GetReferenceName)());
-#endif
-
         nodeDescList_t descList;
         if (!SimObject::CreateNodeDescriptorList(
             a_handle,
@@ -276,6 +272,10 @@ namespace CBP
         {
             return;
         }
+
+#ifdef _CBP_SHOW_STATS
+        Debug("Adding %.16llX (%s)", a_handle, CALL_MEMBER_FN(actor, GetReferenceName)());
+#endif
 
         m_actors.try_emplace(a_handle, a_handle, actor, sex, m_nextGroupId++, descList);
     }

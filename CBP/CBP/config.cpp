@@ -342,11 +342,11 @@ namespace CBP
         auto it = rm.find(a_handle);
         if (it != rm.end())
         {
-            race.first = true;
-            race.second = it->second;
-
             if (raceConfHolder.find(it->second) != raceConfHolder.end())
                 return ConfigClass::kConfigRace;
+
+            race.first = true;
+            race.second = it->second;
         }
         else
             race.first = false;
@@ -513,12 +513,12 @@ namespace CBP
         auto itm = rm.find(a_handle);
         if (itm != rm.end())
         {
-            race.first = true;
-            race.second = itm->second;
-
             auto itr = raceConfHolder.find(itm->second);
             if (itr != raceConfHolder.end())
                 return (actorConfHolder[a_handle] = itr->second);
+
+            race.first = true;
+            race.second = itm->second;
         }
         else
             race.first = false;
@@ -545,12 +545,12 @@ namespace CBP
         auto itm = rm.find(a_handle);
         if (itm != rm.end())
         {
-            race.first = true;
-            race.second = itm->second;
-
             auto itr = raceConfHolder.find(itm->second);
             if (itr != raceConfHolder.end())
                 return itr->second;
+
+            race.first = true;
+            race.second = itm->second;
         }
         else
             race.first = false;
@@ -561,8 +561,7 @@ namespace CBP
             auto profile = ITemplate::GetProfile<PhysicsProfile>(npcFormID, race);
             if (profile)
                 return profile->Data();
-        } else
-           gLogger.Debug("FAILED resolve: %llX", a_handle);
+        }
 
         return thingGlobalConfig;
     }
