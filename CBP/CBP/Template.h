@@ -2,7 +2,6 @@
 
 namespace CBP
 {
-
     enum class TRecType : uint32_t {
         Physics,
         Node
@@ -119,7 +118,7 @@ namespace CBP
         static bool GatherPluginData(std::vector<TRecPlugin>& a_out);
 
         template <typename T>
-        [[nodiscard]] __forceinline static const T* GetProfileImpl(
+        __forceinline static const T* GetProfileImpl(
             const DataHolder<T>& a_data,
             SKSE::FormID a_npc,
             const std::pair<bool, SKSE::FormID>& a_race)

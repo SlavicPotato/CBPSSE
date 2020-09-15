@@ -13,6 +13,7 @@
 #include <algorithm>
 #include <regex>
 
+#include <corecrt_math_defines.h>
 #include <ShlObj.h>
 
 #include <d3d11.h>

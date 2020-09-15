@@ -215,7 +215,31 @@ namespace CBP
                 it = m_actors.erase(it);
             }
             else
+            {
+                bool attached = actor->parentCell && actor->parentCell->cellState == TESObjectCELL::kAttached;
+
+                if (it->second.IsSuspended())
+                {
+                    if (attached)
+                    {
+                        it->second.SetSuspended(false);
+#ifdef _CBP_SHOW_STATS
+                        Debug("Actor 0x%llX (%s) unsuspended", it->first, CALL_MEMBER_FN(actor, GetReferenceName)());
+#endif
+                    }
+                }
+                else {
+                    if (!attached)
+                    {
+                        it->second.SetSuspended(true);
+#ifdef _CBP_SHOW_STATS
+                        Debug("Actor 0x%llX (%s) suspended", it->first, CALL_MEMBER_FN(actor, GetReferenceName)());
+#endif
+                    }
+                }
+
                 ++it;
+            }
         }
     }
 

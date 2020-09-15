@@ -18,6 +18,10 @@ namespace CBP
 
         void GetDefault(configComponents_t& a_out);
         void GetDefault(configNodes_t& a_out);
+
+    private:
+
+        bool ParseFloatArray(const Json::Value& a_value, float* a_out, size_t a_size);
     };
 
     struct importInfo_t
@@ -39,7 +43,6 @@ namespace CBP
         enum Group : uint8_t
         {
             kGlobals = 0,
-            kGlobalProfile,
             kCollisionGroups,
             kNumGroups
         };

@@ -14,6 +14,19 @@ namespace CBP
             return false;
         }
 
+        uint32_t version = 0;
+        if (a_data.isMember("data_version"))
+        {
+            auto& v = a_data["data_version"];
+
+            if (v.isNumeric())
+                version = static_cast<uint32_t>(v.asUInt());
+            else {
+                Error("Bad version data");
+                return false;
+            }
+        }
+
         a_outData = IConfig::GetThingGlobalConfigDefaults();
 
         for (auto it1 = conf.begin(); it1 != conf.end(); ++it1)
@@ -23,42 +36,68 @@ namespace CBP
                 return false;
             }
 
-            auto k = it1.key();
-            if (!k.isString()) {
-                Error("Bad sim component name, expected string");
-                return false;
-            }
-
-            std::string componentName(k.asString());
+            std::string componentName(it1.key().asString());
             transform(componentName.begin(), componentName.end(), componentName.begin(), ::tolower);
 
-            if (!a_allowUnknown) {
-                if (!IConfig::IsValidSimComponent(componentName)) {
-                    Warning("Discarding unknown sim component: %s", componentName.c_str());
-                    continue;
+            /* if (!a_allowUnknown) {
+                 if (!IConfig::IsValidSimComponent(componentName)) {
+                     Warning("Discarding unknown sim component: %s", componentName.c_str());
+                     continue;
+                 }
+             }*/
+
+            const Json::Value* physData;
+            if (version == 0) {
+                physData = std::addressof(*it1);
+            }
+            else
+            {
+                auto& v = (*it1)["phys"];
+
+                if (v.empty()) {
+                    Error("%s: Missing physics data", componentName.c_str());
+                    return false;
                 }
+
+                if (!v.isObject()) {
+                    Error("%s: Invalid physics data", componentName.c_str());
+                    return false;
+                }
+
+                physData = std::addressof(v);
             }
 
             configComponent_t tmp;
 
-            for (auto it2 = it1->begin(); it2 != it1->end(); ++it2)
+            for (auto it2 = physData->begin(); it2 != physData->end(); ++it2)
             {
                 if (!it2->isNumeric()) {
-                    Error("(%s) Bad value, expected number", componentName.c_str());
+                    Error("(%s) Bad value type, expected number: %d", componentName.c_str(), Enum::Underlying(it2->type()));
                     return false;
                 }
 
-                auto kt = it2.key();
-                if (!kt.isString()) {
-                    Error("(%s) Bad key, expected string", componentName.c_str());
-                    return false;
-                }
-
-                std::string valName = kt.asString();
+                std::string valName = it2.key().asString();
                 transform(valName.begin(), valName.end(), valName.begin(), ::tolower);
 
                 if (!tmp.Set(valName, it2->asFloat()))
                     Warning("(%s) Unknown value: %s", componentName.c_str(), valName.c_str());
+            }
+
+            auto& ex = (*it1)["ex"];
+
+            if (!ex.empty())
+            {
+                uint32_t s = ex.get("colShape", 0).asUInt();
+
+                switch (s)
+                {
+                case 0:
+                    tmp.ex.colShape = ColliderShape::Sphere;
+                    break;
+                case 1:
+                    tmp.ex.colShape = ColliderShape::Capsule;
+                    break;
+                }
             }
 
             a_outData.insert_or_assign(componentName, std::move(tmp));
@@ -74,30 +113,19 @@ namespace CBP
         for (const auto& v : a_data) {
             auto& simComponent = data[v.first];
 
-            simComponent["cogOffset"] = v.second.cogOffset;
-            simComponent["damping"] = v.second.damping;
-            simComponent["gravityBias"] = v.second.gravityBias;
-            simComponent["gravityCorrection"] = v.second.gravityCorrection;
-            simComponent["linearX"] = v.second.linearX;
-            simComponent["linearY"] = v.second.linearY;
-            simComponent["linearZ"] = v.second.linearZ;
-            simComponent["maxOffset"] = v.second.maxOffset;
-            simComponent["rotationalX"] = v.second.rotationalX;
-            simComponent["rotationalY"] = v.second.rotationalY;
-            simComponent["rotationalZ"] = v.second.rotationalZ;
-            simComponent["stiffness"] = v.second.stiffness;
-            simComponent["stiffness2"] = v.second.stiffness2;
-            simComponent["colSphereRadMin"] = v.second.colSphereRadMin;
-            simComponent["colSphereRadMax"] = v.second.colSphereRadMax;
-            simComponent["colSphereOffsetXMin"] = v.second.colSphereOffsetXMin;
-            simComponent["colSphereOffsetXMax"] = v.second.colSphereOffsetXMax;
-            simComponent["colSphereOffsetYMin"] = v.second.colSphereOffsetYMin;
-            simComponent["colSphereOffsetYMax"] = v.second.colSphereOffsetYMax;
-            simComponent["colSphereOffsetZMin"] = v.second.colSphereOffsetZMin;
-            simComponent["colSphereOffsetZMax"] = v.second.colSphereOffsetZMax;
-            simComponent["colDampingCoef"] = v.second.colDampingCoef;
-            simComponent["colDepthMul"] = v.second.colDepthMul;
+            auto& phys = simComponent["phys"];
+
+            auto baseaddr = reinterpret_cast<uintptr_t>(std::addressof(v.second));
+
+            for (const auto& e : v.second.descMap)
+                phys[e.first] = *reinterpret_cast<float*>(baseaddr + e.second.offset);
+
+            auto& ex = simComponent["ex"];
+
+            ex["colShape"] = Enum::Underlying(v.second.ex.colShape);
         }
+
+        a_out["data_version"] = Json::Value::UInt(1);
     }
 
     void Parser::Create(const configNodes_t& a_data, Json::Value& a_out)
@@ -111,6 +139,18 @@ namespace CBP
             n["femaleCollisions"] = e.second.femaleCollisions;
             n["maleMovement"] = e.second.maleMovement;
             n["maleCollisions"] = e.second.maleCollisions;
+
+            auto& offmin = n["offsetMin"];
+
+            offmin[0] = e.second.colOffsetMin[0];
+            offmin[1] = e.second.colOffsetMin[1];
+            offmin[2] = e.second.colOffsetMin[2];
+
+            auto& offmax = n["offsetMax"];
+
+            offmax[0] = e.second.colOffsetMax[0];
+            offmax[1] = e.second.colOffsetMax[1];
+            offmax[2] = e.second.colOffsetMax[2];
         }
     }
 
@@ -133,12 +173,12 @@ namespace CBP
 
             std::string k(it.key().asString());
 
-            if (!a_allowUnknown) {
+            /*if (!a_allowUnknown) {
                 if (!IConfig::IsValidNode(k)) {
                     Warning("Discarding unknown node: %s", k.c_str());
                     continue;
                 }
-            }
+            }*/
 
             auto& nc = a_out[k];
 
@@ -146,6 +186,24 @@ namespace CBP
             nc.femaleCollisions = it->get("femaleCollisions", false).asBool();
             nc.maleMovement = it->get("maleMovement", false).asBool();
             nc.maleCollisions = it->get("maleCollisions", false).asBool();
+
+            auto& offsetMin = (*it)["offsetMin"];
+
+            if (!offsetMin.empty()) {
+                if (!ParseFloatArray(offsetMin, nc.colOffsetMin, ARRAYSIZE(nc.colOffsetMin))) {
+                    Error("Couldn't parse offsetMin");
+                    return false;
+                }
+            }
+
+            auto& offsetMax = (*it)["offsetMax"];
+
+            if (!offsetMax.empty()) {
+                if (!ParseFloatArray(offsetMax, nc.colOffsetMax, ARRAYSIZE(nc.colOffsetMax))) {
+                    Error("Couldn't parse offsetMax");
+                    return false;
+                }
+            }
         }
 
         return true;
@@ -159,6 +217,20 @@ namespace CBP
     void Parser::GetDefault(configNodes_t& a_out)
     {
         a_out = IConfig::GetGlobalNodeConfig();
+    }
+
+    bool Parser::ParseFloatArray(const Json::Value& a_value, float *a_out, size_t a_size)
+    {
+        if (!a_value.isArray())
+            return false;
+
+        if (a_value.size() != a_size)
+            return false;
+
+        for (size_t i = 0; i < a_size; i++)
+            a_out[i] = a_value.get(i, 0.0f).asFloat();
+
+        return true;
     }
 
     void ISerialization::LoadGlobals()
@@ -799,7 +871,7 @@ namespace CBP
             }
 
             if (a_flags & IMPORT_RACES)
-            IConfig::SetRaceConfigHolder(std::move(raceConfigComponents));
+                IConfig::SetRaceConfigHolder(std::move(raceConfigComponents));
 
             if (a_flags & IMPORT_GLOBAL) {
                 IConfig::SetGlobalPhysicsConfig(std::move(globalComponentData));

@@ -10,6 +10,7 @@ namespace CBP
         configComponent_t conf;
         bool collisions;
         bool movement;
+        configNode_t nodeConf;
     };
 
     typedef std::vector<nodeDesc_t> nodeDescList_t;
@@ -96,6 +97,12 @@ namespace CBP
                 return nullptr;
         }
 
+        void SetSuspended(bool a_switch);
+
+        [[nodiscard]] inline bool IsSuspended() const {
+            return m_suspended;
+        }
+
     private:
 
         thingMap_t m_things;
@@ -105,9 +112,12 @@ namespace CBP
         SKSE::ObjectHandle m_handle;
 
         NiPointer<Actor> m_actor;
+        NiPointer<NiNode> m_node;
         NiPointer<NiAVObject> m_objHead;
 
         char m_sex;
+
+        bool m_suspended;
 
 #ifdef _CBP_ENABLE_DEBUG
         std::string m_actorName;

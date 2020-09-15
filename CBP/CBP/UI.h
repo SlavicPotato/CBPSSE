@@ -86,7 +86,9 @@ namespace CBP
         importDialog,
         exportDialog,
         simRate,
-        armorOverrides
+        armorOverrides,
+        offsetMin,
+        offsetMax
     };
 
     typedef std::pair<const std::string, configComponents_t> actorEntryBaseConf_t;
@@ -99,6 +101,11 @@ namespace CBP
     {
     protected:
         bool CollapsingHeader(
+            const std::string& a_key,
+            const char* a_label,
+            bool a_default = true) const;
+
+        bool Tree(
             const std::string& a_key,
             const char* a_label,
             bool a_default = true) const;
@@ -176,7 +183,15 @@ namespace CBP
             configComponents_t& a_data,
             configComponentsValue_t& a_pair,
             const componentValueDescMap_t::vec_value_type& a_desc,
-            float* a_val
+            float* a_val,
+            size_t a_size
+        ) = 0;
+
+        virtual void OnColliderShapeChange(
+            T a_handle,
+            configComponents_t& a_data,
+            configComponentsValue_t& a_pair,
+            const componentValueDescMap_t::vec_value_type& a_desc
         ) = 0;
 
     protected:
@@ -185,13 +200,22 @@ namespace CBP
             configComponents_t* a_dg,
             const std::string& a_comp,
             const std::string& a_key,
-            float a_val);
+            float *a_val,
+            size_t a_size);
 
         [[nodiscard]] inline std::string GetCSID(
             const std::string& a_name)
         {
             std::ostringstream ss;
             ss << "UISC#" << Enum::Underlying(ID) << "#" << a_name;
+            return ss.str();
+        }
+
+        [[nodiscard]] inline std::string GetCSSID(
+            const std::string& a_name, const char* a_group)
+        {
+            std::ostringstream ss;
+            ss << "UISC#" << Enum::Underlying(ID) << "#" << a_name << "#" << a_group;
             return ss.str();
         }
 
@@ -220,6 +244,12 @@ namespace CBP
             float* a_pValue,
             const armorCacheEntry_t::mapped_type* a_cacheEntry);
 
+        __forceinline void DrawColliderShapeCombo(
+            T a_handle,
+            configComponents_t& a_data,
+            configComponentsValue_t& a_pair,
+            const componentValueDescMap_t::vec_value_type& a_entry);
+
         char m_scBuffer1[64 + std::numeric_limits<float>::digits];
     };
 
@@ -240,7 +270,8 @@ namespace CBP
         virtual void UpdateNodeData(
             T a_handle,
             const std::string& a_node,
-            const configNode_t& a_data) = 0;
+            const configNode_t& a_data,
+            bool a_reset) = 0;
 
         [[nodiscard]] inline std::string GetCSID(
             const std::string& a_name)
@@ -396,7 +427,15 @@ namespace CBP
             typename PhysicsProfile::base_type& a_data,
             typename PhysicsProfile::base_type::value_type& a_pair,
             const componentValueDescMap_t::vec_value_type& a_desc,
-            float* a_val);
+            float* a_val,
+            size_t a_size);
+
+        virtual void OnColliderShapeChange(
+            int a_handle,
+            configComponents_t& a_data,
+            configComponentsValue_t& a_pair,
+            const componentValueDescMap_t::vec_value_type& a_desc
+        );
     };
 
     class UIProfileEditorNode :
@@ -411,7 +450,8 @@ namespace CBP
         virtual void UpdateNodeData(
             int,
             const std::string& a_node,
-            const NodeProfile::base_type::mapped_type& a_data);
+            const NodeProfile::base_type::mapped_type& a_data,
+            bool a_reset);
     };
 
     class UIOptions :
@@ -506,7 +546,8 @@ namespace CBP
         virtual void UpdateNodeData(
             SKSE::ObjectHandle a_handle,
             const std::string& a_node,
-            const NodeProfile::base_type::mapped_type& a_data);
+            const NodeProfile::base_type::mapped_type& a_data,
+            bool a_reset);
 
         virtual ConfigClass GetActorClass(SKSE::ObjectHandle a_handle);
     };
@@ -550,7 +591,15 @@ namespace CBP
             configComponents_t& a_data,
             configComponentsValue_t& a_pair,
             const componentValueDescMap_t::vec_value_type& a_desc,
-            float* a_val);
+            float* a_val,
+            size_t a_size);
+
+        virtual void OnColliderShapeChange(
+            SKSE::FormID a_handle,
+            configComponents_t& a_data,
+            configComponentsValue_t& a_pair,
+            const componentValueDescMap_t::vec_value_type& a_desc
+        );
 
         inline void MarkChanged() { m_changed = true; }
 
@@ -713,7 +762,15 @@ namespace CBP
                 configComponents_t& a_data,
                 configComponentsValue_t& a_pair,
                 const componentValueDescMap_t::vec_value_type& a_desc,
-                float* a_val);
+                float* a_val,
+                size_t a_size);
+
+            virtual void OnColliderShapeChange(
+                SKSE::ObjectHandle a_handle,
+                configComponents_t& a_data,
+                configComponentsValue_t& a_pair,
+                const componentValueDescMap_t::vec_value_type& a_desc
+            );
 
         private:
             virtual bool ShouldDrawComponent(
@@ -734,7 +791,15 @@ namespace CBP
                 configComponents_t& a_data,
                 configComponentsValue_t& a_pair,
                 const componentValueDescMap_t::vec_value_type& a_desc,
-                float* a_val);
+                float* a_val,
+                size_t a_size);
+
+            virtual void OnColliderShapeChange(
+                SKSE::ObjectHandle a_handle,
+                configComponents_t& a_data,
+                configComponentsValue_t& a_pair,
+                const componentValueDescMap_t::vec_value_type& a_desc
+            );
 
             virtual bool ShouldDrawComponent(
                 SKSE::ObjectHandle a_handle,

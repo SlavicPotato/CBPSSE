@@ -2,6 +2,8 @@
 
 namespace CBP
 {
+    class SimObject;
+
 #ifdef _CBP_ENABLE_DEBUG
     struct SimDebugInfo
     {
@@ -32,30 +34,55 @@ namespace CBP
             Collider(const Collider& a_rhs) = delete;
             Collider(Collider&& a_rhs) = delete;
 
-            bool Create();
+            bool Create(ColliderShape a_shape);
             bool Destroy();
-            void Update();
+            inline void Update();
             void Reset();
+            
+            inline void SetColliderRotation(float a_x, float a_y, float a_z)
+            {
+                const float mul = static_cast<float>(M_PI) / 180.0f;
 
-            inline void SetRadius(r3d::decimal a_val) {
+                m_colRot = r3d::Quaternion::fromEulerAngles(
+                    a_x * mul,
+                    a_y * mul,
+                    a_z * mul
+                );
+            }
+
+            inline void SetRadius(float a_val) {
                 m_radius = a_val;
                 UpdateRadius();
             }
 
             inline void UpdateRadius() {
                 auto rad = m_radius * m_nodeScale;
-                if (rad > 0.0f)
-                    m_sphereShape->setRadius(rad);
+                if (rad > 0.0f) {
+                    if (m_shape == ColliderShape::Capsule)
+                        m_capsuleShape->setRadius(rad);
+                    else
+                        m_sphereShape->setRadius(rad);
+                }
             }
 
-            inline void SetSphereOffset(const NiPoint3& a_offset) {
-                m_sphereOffset = a_offset;
+            inline void UpdateHeight() {
+                if (m_shape == ColliderShape::Capsule)
+                    m_capsuleShape->setHeight(m_height * m_nodeScale);
             }
 
-            inline void SetSphereOffset(float a_x, float a_y, float a_z) {
-                m_sphereOffset.x = a_x;
-                m_sphereOffset.y = a_y;
-                m_sphereOffset.z = a_z;
+            inline void SetHeight(float a_val) {
+                m_height = a_val;
+                UpdateHeight();
+            }
+
+            inline void SetOffset(const NiPoint3& a_offset) {
+                m_bodyOffset = a_offset;
+            }
+
+            inline void SetOffset(float a_x, float a_y, float a_z) {
+                m_bodyOffset.x = a_x;
+                m_bodyOffset.y = a_y;
+                m_bodyOffset.z = a_z;
             }
 
             [[nodiscard]] inline bool IsActive() const {
@@ -63,27 +90,52 @@ namespace CBP
             }
 
             [[nodiscard]] inline const auto& GetSphereOffset() const {
-                return m_sphereOffset;
+                return m_bodyOffset;
+            }
+
+            [[nodiscard]] inline auto GetColliderShape() const {
+                return m_shape;
+            }
+
+            inline void SetShouldProcess(bool a_switch) {
+                m_process = a_switch;
+                if (IsActive())
+                    m_body->setIsActive(a_switch);
             }
 
         private:
             r3d::CollisionBody* m_body;
-            r3d::SphereShape* m_sphereShape;
             r3d::Collider* m_collider;
-            NiPoint3 m_sphereOffset;
+
+            union
+            {
+                r3d::SphereShape* m_sphereShape;
+                r3d::CapsuleShape* m_capsuleShape;
+                r3d::CollisionShape* m_colliderShape;
+            };
+
+            NiPoint3 m_bodyOffset;
+            r3d::Quaternion m_colRot;
+            r3d::Transform m_transform;
+
+            ColliderShape m_shape;
+
             float m_nodeScale;
             float m_radius;
-
-            r3d::Transform m_transform;
+            float m_height;
 
             bool m_created;
             bool m_active;
+            bool m_process;
 
             SimComponent& m_parent;
         };
 
     private:
-        bool UpdateWeightData(Actor* a_actor, const configComponent_t& a_config);
+        bool UpdateWeightData(
+            Actor* a_actor,
+            const configComponent_t& a_config,
+            const configNode_t& a_nodeConf);
 
         NiPoint3 m_npCogOffset;
         NiPoint3 m_npGravityCorrection;
@@ -106,10 +158,11 @@ namespace CBP
         bool m_collisions;
         bool m_movement;
 
-        float m_colSphereRad = 1.0f;
-        float m_colSphereOffsetX = 0.0f;
-        float m_colSphereOffsetY = 0.0f;
-        float m_colSphereOffsetZ = 0.0f;
+        float m_colRad = 1.0f;
+        float m_colCapsuleHeight = 0.0f;
+        float m_colOffsetX = 0.0f;
+        float m_colOffsetY = 0.0f;
+        float m_colOffsetZ = 0.0f;
 
         uint64_t m_groupId;
         uint64_t m_parentId;
@@ -119,7 +172,6 @@ namespace CBP
 
         NiPointer<NiAVObject> m_obj;
         NiPointer<NiAVObject> m_objParent;
-        NiPointer<NiNode> m_node;
 
         NiAVObject::ControllerUpdateContext m_updateCtx;
 
@@ -147,7 +199,8 @@ namespace CBP
             uint32_t a_parentId,
             uint64_t a_groupId,
             bool a_collisions,
-            bool a_movement
+            bool a_movement,
+            const configNode_t &a_nodeConf
         );
 
         SimComponent() = delete;
@@ -160,7 +213,8 @@ namespace CBP
             Actor* a_actor,
             const configComponent_t& centry,
             bool a_collisions,
-            bool a_movement) noexcept;
+            bool a_movement,
+            const configNode_t& a_nodeConf) noexcept;
 
         void UpdateMovement(float timeStep);
         void UpdateVelocity();
@@ -242,9 +296,13 @@ namespace CBP
         [[nodiscard]] inline const auto& GetPos() const {
             return m_obj->m_worldTransform.pos;
         }
-        
+
         [[nodiscard]] inline auto GetCenterOfMass() const {
             return m_obj->m_worldTransform * m_npCogOffset;
+        }
+
+        [[nodiscard]] inline auto& GetCollider() {
+            return m_collisionData;
         }
 
 #ifdef _CBP_ENABLE_DEBUG

@@ -173,17 +173,45 @@ namespace CBP
         }
     };
 
+    enum class DescUIMarker : uint32_t
+    {
+        None = 0,
+        BeginGroup = 1 << 0,
+        EndGroup = 1 << 1,
+        Misc1 = 1 << 2,
+        Float3 = 1 << 3,
+        NoDraw = 1 << 4
+    };
+
+    DEFINE_ENUM_CLASS_BITWISE(DescUIMarker);
+
+    enum class DescUIGroupType : uint32_t
+    {
+        None,
+        Physics,
+        Collisions
+    };
+
+    enum class ColliderShape : uint32_t
+    {
+        Sphere = 0,
+        Capsule
+    };
+
     struct componentValueDesc_t
     {
         ptrdiff_t offset;
         std::string counterpart;
         float min;
         float max;
-        const char* helpText;
-        const char* descTag;
+        std::string helpText;
+        std::string descTag;
+        DescUIMarker marker = DescUIMarker::None;
+        DescUIGroupType groupType = DescUIGroupType::None;
+        std::string groupName;
     };
 
-    typedef KVStorage<std::string, componentValueDesc_t> componentValueDescMap_t;
+    typedef KVStorage<std::string, const componentValueDesc_t> componentValueDescMap_t;
 
     struct configComponent_t
     {
@@ -201,9 +229,20 @@ namespace CBP
             return true;
         }
 
+        [[nodiscard]] inline float* Get(const std::string& a_key) const
+        {
+            const auto it = descMap.find(a_key);
+            if (it == descMap.map_end())
+                return nullptr;
+
+            auto addr = reinterpret_cast<uintptr_t>(this) + it->second.offset;
+
+            return reinterpret_cast<float*>(addr);
+        }
+
         [[nodiscard]] inline auto Contains(const std::string& a_key) const
         {
-            return descMap.contains(a_key);
+            return descMap.find(a_key) != descMap.map_end();
         }
 
         inline bool Set(const std::string& a_key, float a_value)
@@ -215,6 +254,20 @@ namespace CBP
             auto addr = reinterpret_cast<uintptr_t>(this) + it->second.offset;
 
             *reinterpret_cast<float*>(addr) = a_value;
+
+            return true;
+        }
+
+        inline bool Set(const std::string& a_key, float* a_value, size_t a_size)
+        {
+            const auto it = descMap.find(a_key);
+            if (it == descMap.map_end())
+                return false;
+
+            auto addr = reinterpret_cast<uintptr_t>(this) + it->second.offset;
+
+            for (size_t i = 0; i < a_size; i++)
+                reinterpret_cast<float*>(addr)[i] = a_value[i];
 
             return true;
         }
@@ -240,34 +293,36 @@ namespace CBP
             return *reinterpret_cast<float*>(addr);
         }
 
-        float stiffness = 10.0f;
-        float stiffness2 = 10.0f;
-        float damping = 0.95f;
-        float maxOffset = 20.0f;
-        float cogOffset = 5.0f;
-        float gravityBias = 0.0f;
-        float gravityCorrection = 0.0f;
-        float linearX = 0.5f;
-        float linearY = 0.1f;
-        float linearZ = 0.25f;
-        float rotationalX = 0.0f;
-        float rotationalY = 0.0f;
-        float rotationalZ = 0.0f;
-        float colSphereRadMin = 4.0f;
-        float colSphereRadMax = 4.0f;
-        float colSphereOffsetXMin = 0.0f;
-        float colSphereOffsetXMax = 0.0f;
-        float colSphereOffsetYMin = 0.0f;
-        float colSphereOffsetYMax = 0.0f;
-        float colSphereOffsetZMin = 0.0f;
-        float colSphereOffsetZMax = 0.0f;
-        float colDampingCoef = 1.5f;
-        float colDepthMul = 100.0f;
+        struct
+        {
+            float stiffness = 10.0f;
+            float stiffness2 = 10.0f;
+            float damping = 0.95f;
+            float maxOffset = 20.0f;
+            float cogOffset = 5.0f;
+            float gravityBias = 0.0f;
+            float gravityCorrection = 0.0f;
+            float linear[3] = { 0.5f, 0.1f, 0.25f };
+            float rotational[3] = { 0.0f, 0.0f, 0.0f };
+            float colSphereRadMin = 4.0f;
+            float colSphereRadMax = 4.0f;
+            float offsetMin[3] = { 0.0f, 0.0f, 0.0f };
+            float offsetMax[3] = { 0.0f, 0.0f, 0.0f };
+            float colHeight = 0.0f;
+            float colRot[3] = { 0.0f, 0.0f, 0.0f };
+            float colDampingCoef = 1.5f;
+            float colDepthMul = 100.0f;
+        } phys;
+
+        struct
+        {
+            ColliderShape colShape = ColliderShape::Sphere;
+        } ex;
 
         static const componentValueDescMap_t descMap;
     };
 
-    static_assert(sizeof(configComponent_t) == 0x5C);
+    //static_assert(sizeof(configComponent_t) == 0x5C);
 
     typedef std::map<std::string, configComponent_t> configComponents_t;
     typedef configComponents_t::value_type configComponentsValue_t;
@@ -290,6 +345,9 @@ namespace CBP
         bool femaleCollisions = false;
         bool maleMovement = false;
         bool maleCollisions = false;
+
+        float colOffsetMin[3] = { 0.0f, 0.0f, 0.0f };
+        float colOffsetMax[3] = { 0.0f, 0.0f, 0.0f };
 
         inline void Get(char a_sex, bool& a_collisionsOut, bool& a_movementOut) const noexcept
         {
@@ -584,7 +642,7 @@ namespace CBP
 
             return nullptr;
         }
-        
+
         inline static bool RemoveArmorOverride(SKSE::ObjectHandle a_handle) {
             return armorOverrides.erase(a_handle) == 1;
         }

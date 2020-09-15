@@ -45,7 +45,9 @@ namespace CBP
                     it->first,
                     it->second,
                     a_collisions && collisions,
-                    movement });
+                    movement,
+                    nodeConf
+                });
         }
 
         return a_out.size();
@@ -63,7 +65,9 @@ namespace CBP
         m_things(a_desc.size()),
 #endif
         m_Id(a_Id),
-        m_sex(a_sex)
+        m_sex(a_sex),
+        m_node(a_actor->loadedState->node),
+        m_suspended(false)
     {
 
 #ifdef _CBP_ENABLE_DEBUG
@@ -81,7 +85,8 @@ namespace CBP
                 m_Id,
                 IConfig::GetNodeCollisionGroupId(e.nodeName),
                 e.collisions,
-                e.movement
+                e.movement,
+                e.nodeConf
             );
 
             m_configGroups.emplace(e.confGroup);
@@ -101,12 +106,18 @@ namespace CBP
 
     void SimObject::UpdateMovement(float a_timeStep)
     {
+        if (m_suspended)
+            return;
+
         for (auto& p : m_things)
             p.second.UpdateMovement(a_timeStep);
     }
 
     void SimObject::UpdateVelocity()
     {
+        if (m_suspended)
+            return;
+
         for (auto& p : m_things)
             p.second.UpdateVelocity();
     }
@@ -129,7 +140,8 @@ namespace CBP
                 a_actor,
                 it2->second,
                 a_collisions && collisions,
-                movement
+                movement,
+                nodeConf
             );
         }
     }
@@ -159,6 +171,17 @@ namespace CBP
     void SimObject::Release() {
         for (auto& p : m_things)
             p.second.Release();
+    }
+
+    void SimObject::SetSuspended(bool a_switch) 
+    {
+        m_suspended = a_switch;
+
+        for (auto& e : m_things)
+            e.second.GetCollider().SetShouldProcess(!a_switch);
+
+        if (!a_switch)
+            Reset();
     }
 
 }

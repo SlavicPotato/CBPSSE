@@ -15,26 +15,41 @@ namespace CBP
         :
         m_created(false),
         m_active(true),
+        m_process(true),
         m_nodeScale(1.0f),
         m_radius(1.0f),
+        m_height(0.0f),
         m_parent(a_parent)
     {}
 
-    bool SimComponent::Collider::Create()
+    bool SimComponent::Collider::Create(ColliderShape a_shape)
     {
         if (m_created)
-            return false;
+        {
+            if (m_shape == a_shape)
+                return false;
+
+            Destroy();
+        }
 
         auto world = DCBP::GetWorld();
         auto& physicsCommon = DCBP::GetPhysicsCommon();
 
         m_body = world->createCollisionBody(r3d::Transform::identity());
-        m_sphereShape = physicsCommon.createSphereShape(m_parent.m_conf.colSphereRadMax);
-        m_collider = m_body->addCollider(m_sphereShape, r3d::Transform::identity());
+
+        if (a_shape == ColliderShape::Capsule)
+            m_capsuleShape = physicsCommon.createCapsuleShape(m_radius, m_height);
+        else
+            m_sphereShape = physicsCommon.createSphereShape(m_radius);
+
+        m_collider = m_body->addCollider(m_colliderShape, r3d::Transform::identity());
+
         m_collider->setUserData(std::addressof(m_parent));
+        m_body->setIsActive(m_process);
 
         m_created = true;
         m_active = true;
+        m_shape = a_shape;
 
         return true;
     }
@@ -48,7 +63,12 @@ namespace CBP
         auto& physicsCommon = DCBP::GetPhysicsCommon();
 
         m_body->removeCollider(m_collider);
-        physicsCommon.destroySphereShape(m_sphereShape);
+
+        if (m_shape == ColliderShape::Capsule)
+            physicsCommon.destroyCapsuleShape(m_capsuleShape);
+        else
+            physicsCommon.destroySphereShape(m_sphereShape);
+
         world->destroyCollisionBody(m_body);
 
         m_created = false;
@@ -67,7 +87,7 @@ namespace CBP
             if (nodeScale > 0.0f)
             {
                 m_active = true;
-                m_body->setIsActive(true);
+                m_body->setIsActive(m_process);
             }
             else
                 return;
@@ -82,14 +102,33 @@ namespace CBP
             }
         }
 
-        auto pos = m_parent.m_obj->m_worldTransform * m_sphereOffset;
+        auto pos = m_parent.m_obj->m_worldTransform * m_bodyOffset;
 
-        m_transform.setPosition(r3d::Vector3(pos.x, pos.y, pos.z));
-        m_body->setTransform(m_transform);
+        if (m_shape == ColliderShape::Capsule)
+        {
+            auto& mat = m_parent.m_obj->m_worldTransform.rot;
+
+            r3d::Quaternion quat({
+                mat.arr[0], mat.arr[1], mat.arr[2],
+                mat.arr[3], mat.arr[4], mat.arr[5],
+                mat.arr[6], mat.arr[7], mat.arr[8] }
+            );
+
+            m_body->setTransform({
+                { pos.x, pos.y, pos.z },
+                quat * m_colRot }
+            );
+        }
+        else
+        {
+            m_transform.setPosition({ pos.x, pos.y, pos.z });
+            m_body->setTransform(m_transform);
+        }
 
         if (nodeScale != m_nodeScale) {
             m_nodeScale = nodeScale;
             UpdateRadius();
+            UpdateHeight();
         }
     }
 
@@ -108,7 +147,8 @@ namespace CBP
         uint32_t a_parentId,
         uint64_t a_groupId,
         bool a_collisions,
-        bool a_movement)
+        bool a_movement,
+        const configNode_t& a_nodeConf)
         :
         m_configGroupName(a_configGroupName),
         m_oldWorldPos(a_obj->m_worldTransform.pos),
@@ -119,7 +159,6 @@ namespace CBP
         m_groupId(a_groupId),
         m_inContact(false),
         m_dampingMul(1.0f),
-        m_node(a_actor->loadedState->node),
         m_obj(a_obj),
         m_objParent(a_obj->m_parent),
         m_updateCtx({ 0.0f, 0 })
@@ -127,7 +166,7 @@ namespace CBP
 #ifdef _CBP_ENABLE_DEBUG
         m_debugInfo.parentNodeName = a_obj->m_parent->m_name;
 #endif
-        UpdateConfig(a_actor, a_config, a_collisions, a_movement);
+        UpdateConfig(a_actor, a_config, a_collisions, a_movement, a_nodeConf);
         m_collisionData.Update();
     }
 
@@ -136,7 +175,10 @@ namespace CBP
         m_collisionData.Destroy();
     }
 
-    bool SimComponent::UpdateWeightData(Actor* a_actor, const configComponent_t& a_config)
+    bool SimComponent::UpdateWeightData(
+        Actor* a_actor, 
+        const configComponent_t& a_config, 
+        const configNode_t& a_nodeConf)
     {
         if (a_actor == nullptr)
             return false;
@@ -147,10 +189,16 @@ namespace CBP
 
         float weight = std::clamp(npc->weight, 0.0f, 100.0f);
 
-        m_colSphereRad = std::max(mmw(weight, a_config.colSphereRadMin, a_config.colSphereRadMax), 0.0f);
-        m_colSphereOffsetX = mmw(weight, a_config.colSphereOffsetXMin, a_config.colSphereOffsetXMax);
-        m_colSphereOffsetY = mmw(weight, a_config.colSphereOffsetYMin, a_config.colSphereOffsetYMax);
-        m_colSphereOffsetZ = mmw(weight, a_config.colSphereOffsetZMin, a_config.colSphereOffsetZMax);
+        m_colRad = std::max(mmw(weight, a_config.phys.colSphereRadMin, a_config.phys.colSphereRadMax), 0.0f);
+        m_colOffsetX = mmw(weight, 
+            a_config.phys.offsetMin[0] + a_nodeConf.colOffsetMin[0], 
+            a_config.phys.offsetMax[0] + a_nodeConf.colOffsetMax[0]);
+        m_colOffsetY = mmw(weight,
+            a_config.phys.offsetMin[1] + a_nodeConf.colOffsetMin[1], 
+            a_config.phys.offsetMax[1] + a_nodeConf.colOffsetMax[1]);
+        m_colOffsetZ = mmw(weight, 
+            a_config.phys.offsetMin[2] + a_nodeConf.colOffsetMin[2], 
+            a_config.phys.offsetMax[2] + a_nodeConf.colOffsetMax[2]);
 
         return true;
     }
@@ -159,7 +207,8 @@ namespace CBP
         Actor* a_actor,
         const configComponent_t& a_config,
         bool a_collisions,
-        bool a_movement) noexcept
+        bool a_movement,
+        const configNode_t& a_nodeConf) noexcept
     {
         m_conf = a_config;
         m_collisions = a_collisions;
@@ -169,33 +218,43 @@ namespace CBP
             m_applyForceQueue.swap(decltype(m_applyForceQueue)());
         }
 
-        if (!UpdateWeightData(a_actor, a_config)) {
-            m_colSphereRad = a_config.colSphereRadMax;
-            m_colSphereOffsetX = a_config.colSphereOffsetXMax;
-            m_colSphereOffsetY = a_config.colSphereOffsetYMax;
-            m_colSphereOffsetZ = a_config.colSphereOffsetZMax;
+        if (!UpdateWeightData(a_actor, a_config, a_nodeConf)) {
+            m_colRad = a_config.phys.colSphereRadMax;
+            m_colOffsetX = a_config.phys.offsetMax[0] + a_nodeConf.colOffsetMax[0];
+            m_colOffsetY = a_config.phys.offsetMax[1] + a_nodeConf.colOffsetMax[1];
+            m_colOffsetZ = a_config.phys.offsetMax[2] + a_nodeConf.colOffsetMax[2];
         }
 
         if (m_collisions &&
-            m_colSphereRad > 0.0f)
+            m_colRad > 0.0f)
         {
-            if (m_collisionData.Create())
+            if (m_collisionData.Create(m_conf.ex.colShape))
                 ResetOverrides();
 
-            m_collisionData.SetRadius(m_colSphereRad);
-            m_collisionData.SetSphereOffset(
-                m_colSphereOffsetX,
-                m_colSphereOffsetY,
-                m_colSphereOffsetZ
+            m_collisionData.SetRadius(m_colRad);
+            m_collisionData.SetOffset(
+                m_colOffsetX,
+                m_colOffsetY,
+                m_colOffsetZ
             );
+
+            if (m_collisionData.GetColliderShape() == ColliderShape::Capsule)
+            {
+                m_collisionData.SetHeight(m_conf.phys.colHeight);
+                m_collisionData.SetColliderRotation(
+                    m_conf.phys.colRot[0],
+                    m_conf.phys.colRot[1],
+                    m_conf.phys.colRot[2]
+                );
+            }
         }
         else {
             if (m_collisionData.Destroy())
                 ResetOverrides();
         }
 
-        m_npCogOffset = NiPoint3(0.0f, m_conf.cogOffset, 0.0f);
-        m_npGravityCorrection = NiPoint3(0.0f, 0.0f, m_conf.gravityCorrection);
+        m_npCogOffset = NiPoint3(0.0f, m_conf.phys.cogOffset, 0.0f);
+        m_npGravityCorrection = NiPoint3(0.0f, 0.0f, m_conf.phys.gravityCorrection);
     }
 
     void SimComponent::Reset()
@@ -238,9 +297,9 @@ namespace CBP
 
             // Compute the "Spring" Force
             NiPoint3 diff2(diff.x * diff.x * sgn(diff.x), diff.y * diff.y * sgn(diff.y), diff.z * diff.z * sgn(diff.z));
-            NiPoint3 force = (diff * m_conf.stiffness) + (diff2 * m_conf.stiffness2);
+            NiPoint3 force = (diff * m_conf.phys.stiffness) + (diff2 * m_conf.phys.stiffness2);
 
-            force.z -= m_conf.gravityBias;
+            force.z -= m_conf.phys.gravityBias;
 
             if (m_applyForceQueue.size())
             {
@@ -259,31 +318,31 @@ namespace CBP
 
             // Assume mass is 1, so Accelleration is Force, can vary mass by changing force
             SetVelocity((m_velocity + (force * a_timeStep)) -
-                (m_velocity * ((m_conf.damping * a_timeStep) * m_dampingMul)));
+                (m_velocity * ((m_conf.phys.damping * a_timeStep) * m_dampingMul)));
 
             newPos += m_velocity * a_timeStep;
 
             diff = newPos - target;
 
-            diff.x = std::clamp(diff.x, -m_conf.maxOffset, m_conf.maxOffset);
-            diff.y = std::clamp(diff.y, -m_conf.maxOffset, m_conf.maxOffset);
-            diff.z = std::clamp(diff.z, -m_conf.maxOffset, m_conf.maxOffset);
+            diff.x = std::clamp(diff.x, -m_conf.phys.maxOffset, m_conf.phys.maxOffset);
+            diff.y = std::clamp(diff.y, -m_conf.phys.maxOffset, m_conf.phys.maxOffset);
+            diff.z = std::clamp(diff.z, -m_conf.phys.maxOffset, m_conf.phys.maxOffset);
 
             auto invRot = m_objParent->m_worldTransform.rot.Transpose();
             auto ldiff = invRot * diff;
 
             m_oldWorldPos = (m_objParent->m_worldTransform.rot * ldiff) + target;
 
-            m_obj->m_localTransform.pos.x = m_initialNodePos.x + (ldiff.x * m_conf.linearX);
-            m_obj->m_localTransform.pos.y = m_initialNodePos.y + (ldiff.y * m_conf.linearY);
-            m_obj->m_localTransform.pos.z = m_initialNodePos.z + (ldiff.z * m_conf.linearZ);
+            m_obj->m_localTransform.pos.x = m_initialNodePos.x + (ldiff.x * m_conf.phys.linear[0]);
+            m_obj->m_localTransform.pos.y = m_initialNodePos.y + (ldiff.y * m_conf.phys.linear[1]);
+            m_obj->m_localTransform.pos.z = m_initialNodePos.z + (ldiff.z * m_conf.phys.linear[2]);
 
             m_obj->m_localTransform.pos += invRot * m_npGravityCorrection;
 
             m_obj->m_localTransform.rot.SetEulerAngles(
-                ldiff.x * m_conf.rotationalX,
-                ldiff.y * m_conf.rotationalY,
-                ldiff.z * m_conf.rotationalZ);
+                ldiff.x * m_conf.phys.rotational[0],
+                ldiff.y * m_conf.phys.rotational[1],
+                ldiff.z * m_conf.phys.rotational[2]);
 
             m_obj->UpdateWorldData(&m_updateCtx);
         }

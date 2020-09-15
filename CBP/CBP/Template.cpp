@@ -38,14 +38,14 @@ namespace CBP
             if (!pt.isString())
                 throw std::exception("Invalid plugin name");
 
-            auto plugin = pt.asString();
-            if (!plugin.size())
+            auto pluginName = pt.asString();
+            if (!pluginName.size())
                 throw std::exception("Plugin name len == 0");
 
-            if (plugin.size() >= sizeof(ModInfo::name))
+            if (pluginName.size() >= sizeof(ModInfo::name))
                 throw std::exception("Plugin name too long");
 
-            transform(plugin.begin(), plugin.end(), plugin.begin(), ::tolower);
+            transform(pluginName.begin(), pluginName.end(), pluginName.begin(), ::tolower);
 
             auto& data = root["data"];
 
@@ -98,7 +98,7 @@ namespace CBP
                 }
             }
 
-            m_pluginName = std::move(plugin);
+            m_pluginName = std::move(pluginName);
             m_data = std::move(tmp);
 
             return true;
@@ -158,7 +158,7 @@ namespace CBP
         {
             auto it = pm.Find(t.first);
             if (it == pm.End()) {
-               gLogger.Debug("%s: [%s] template not found: %s",
+                gLogger.Warning("%s: [%s] template not found: %s",
                     __FUNCTION__, a_modInfo->name, t.first.c_str());
                 continue;
             }
@@ -171,7 +171,7 @@ namespace CBP
                     modIndex,
                     const_cast<decltype(it->second)&>(it->second));
 
-                //SDT::gLogger.Debug("!!>>> mod: 0x%X", modIndex);
+                //gLogger.Debug("!!>>> mod: 0x%X", modIndex);
 
                 continue;
             }
@@ -184,7 +184,7 @@ namespace CBP
 
                 auto form = LookupFormByID(formid);
                 if (!form) {
-                   gLogger.Warning("%s: [%s] [%s] %.8X: form not found",
+                    gLogger.Warning("%s: [%s] [%s] %.8X: form not found",
                         __FUNCTION__, a_modInfo->name, t.first.c_str(), formid);
                     continue;
                 }
@@ -201,11 +201,11 @@ namespace CBP
                 }
                 else
                 {
-                   gLogger.Warning("%s: [%s] [%s] %.8X: unexpected form type %hhu",
+                    gLogger.Warning("%s: [%s] [%s] %.8X: unexpected form type %hhu",
                         __FUNCTION__, a_modInfo->name, t.first.c_str(), formid, form->formType);
                 }
 
-                //SDT::gLogger.Debug("!!>>> %hhu, 0x%X -> %s", form->formType, formid, t.first.c_str());
+                //gLogger.Debug("!!>>> %hhu, 0x%X -> %s", form->formType, formid, t.first.c_str());
             }
         }
     }
@@ -243,12 +243,12 @@ namespace CBP
 
             mm.emplace(std::move(tmp), modInfo);
 
-            //SDT::gLogger.Debug(">> %s", modInfo->name);
+            //gLogger.Debug(">> %s", modInfo->name);
         }
 
         for (const auto& rec : data)
         {
-            //SDT::gLogger.Debug("|| %s", rec.GetPluginName().c_str());
+            //gLogger.Debug("|| %s", rec.GetPluginName().c_str());
 
             auto it1 = mm.find(rec.GetPluginName());
             if (it1 == mm.end())
@@ -267,7 +267,7 @@ namespace CBP
                 }
             }
 
-            //SDT::gLogger.Debug("!! 0x%X", it1->second->GetPartialIndex());
+            //gLogger.Debug("!! 0x%X", it1->second->GetPartialIndex());
         }
 
         //std::_Exit(0);

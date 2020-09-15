@@ -19,8 +19,10 @@ namespace CBP
         {MiscHelpText::importDialog, "Import and apply actor, race and global settings from the selected file."},
         {MiscHelpText::exportDialog, "Export actor, race and global settings."},
         {MiscHelpText::simRate, "If this value isn't equal to framerate the simulation speed is affected. Adjust timeTick to get proper results."},
-        {MiscHelpText::armorOverrides, ""}
-        });
+        {MiscHelpText::armorOverrides, ""},
+        {MiscHelpText::offsetMin, "Collider body offset (X, Y, Z, weight 0)"},
+        {MiscHelpText::offsetMax, "Collider body offset (X, Y, Z, weight 100)"}
+    });
 
     static const keyDesc_t comboKeyDesc({
         {0, "None"},
@@ -134,6 +136,26 @@ namespace CBP
         bool& state = globalConfig.GetColState(a_key, a_default);
         bool newState = ImGui::CollapsingHeader(a_label,
             state ? ImGuiTreeNodeFlags_DefaultOpen : 0);
+
+        if (state != newState) {
+            state = newState;
+            DCBP::MarkGlobalsForSave();
+        }
+
+        return newState;
+    }
+
+    bool UIBase::Tree(
+        const std::string& a_key,
+        const char* a_label,
+        bool a_default) const
+    {
+        auto& globalConfig = IConfig::GetGlobalConfig();;
+
+        bool& state = globalConfig.GetColState(a_key, a_default);
+        bool newState = ImGui::TreeNodeEx(a_label,
+            ImGuiTreeNodeFlags_SpanAvailWidth |
+            (state ? ImGuiTreeNodeFlags_DefaultOpen : 0));
 
         if (state != newState) {
             state = newState;
@@ -397,7 +419,7 @@ namespace CBP
 
                     UICommon::MessageDialog("Save", "Saving profile '%s' to '%s' failed\n\n%s",
                         profile.Name().c_str(), profile.PathStr().c_str(), state.lastException.what());
-                    
+
                     UICommon::MessageDialog("Reload", "Loading profile '%s' from '%s' failed\n\n%s",
                         profile.Name().c_str(), profile.PathStr().c_str(), state.lastException.what());
 
@@ -429,19 +451,29 @@ namespace CBP
         PhysicsProfile::base_type& a_data,
         PhysicsProfile::base_type::value_type& a_pair,
         const componentValueDescMap_t::vec_value_type& a_desc,
-        float* a_val)
+        float* a_val,
+        size_t a_size)
     {
-        const auto& globalConfig = IConfig::GetGlobalConfig();;
+        const auto& globalConfig = IConfig::GetGlobalConfig();
 
         if (globalConfig.ui.clampValuesMain)
-            *a_val = std::clamp(*a_val, a_desc.second.min, a_desc.second.max);
+            for (size_t i = 0; i < a_size; i++)
+                a_val[i] = std::clamp(a_val[i], a_desc.second.min, a_desc.second.max);
 
-        Propagate(a_data, nullptr, a_pair.first, a_desc.first, *a_val);
+        Propagate(a_data, nullptr, a_pair.first, a_desc.first, a_val, a_size);
 
         if (a_desc.second.counterpart.size() && globalConfig.ui.syncWeightSlidersMain) {
-            a_pair.second.Set(a_desc.second.counterpart, *a_val);
-            Propagate(a_data, nullptr, a_pair.first, a_desc.second.counterpart, *a_val);
+            a_pair.second.Set(a_desc.second.counterpart, a_val, a_size);
+            Propagate(a_data, nullptr, a_pair.first, a_desc.second.counterpart, a_val, a_size);
         }
+    }
+
+    void UIProfileEditorSim::OnColliderShapeChange(
+        int,
+        PhysicsProfile::base_type& a_data,
+        PhysicsProfile::base_type::value_type& a_pair,
+        const componentValueDescMap_t::vec_value_type& a_desc)
+    {
     }
 
     void UIProfileEditorNode::DrawItem(NodeProfile& a_profile)
@@ -452,7 +484,8 @@ namespace CBP
     void UIProfileEditorNode::UpdateNodeData(
         int,
         const std::string&,
-        const NodeProfile::base_type::mapped_type&)
+        const NodeProfile::base_type::mapped_type&,
+        bool)
     {
     }
 
@@ -707,28 +740,47 @@ namespace CBP
         configComponents_t& a_data,
         configComponentsValue_t& a_pair,
         const componentValueDescMap_t::vec_value_type& a_desc,
-        float* a_val)
+        float* a_val,
+        size_t a_size)
     {
-        const auto& globalConfig = IConfig::GetGlobalConfig();;
+        const auto& globalConfig = IConfig::GetGlobalConfig();
 
         if (globalConfig.ui.clampValuesMain)
-            *a_val = std::clamp(*a_val, a_desc.second.min, a_desc.second.max);
+            for (size_t i = 0; i < a_size; i++)
+                a_val[i] = std::clamp(a_val[i], a_desc.second.min, a_desc.second.max);
 
         auto& raceConf = IConfig::GetOrCreateRaceConf(a_formid);
-        auto& entry = raceConf.at(a_pair.first);
+        auto& entry = raceConf[a_pair.first];
 
         auto addr = reinterpret_cast<uintptr_t>(std::addressof(entry)) + a_desc.second.offset;
-        *reinterpret_cast<float*>(addr) = *a_val;
 
-        Propagate(a_data, std::addressof(raceConf), a_pair.first, a_desc.first, *a_val);
+        for (size_t i = 0; i < a_size; i++)
+            reinterpret_cast<float*>(addr)[i] = a_val[i];
+
+        Propagate(a_data, std::addressof(raceConf), a_pair.first, a_desc.first, a_val, a_size);
 
         if (a_desc.second.counterpart.size() &&
             globalConfig.ui.syncWeightSlidersRace)
         {
             a_pair.second.Set(a_desc.second.counterpart, *a_val);
-            entry.Set(a_desc.second.counterpart, *a_val);
-            Propagate(a_data, std::addressof(raceConf), a_pair.first, a_desc.second.counterpart, *a_val);
+            entry.Set(a_desc.second.counterpart, a_val, a_size);
+            Propagate(a_data, std::addressof(raceConf), a_pair.first, a_desc.second.counterpart, a_val, a_size);
         }
+
+        MarkChanged();
+        DCBP::UpdateConfigOnAllActors();
+    }
+
+    void UIRaceEditor::OnColliderShapeChange(
+        SKSE::FormID a_formid,
+        configComponents_t& a_data,
+        configComponentsValue_t& a_pair,
+        const componentValueDescMap_t::vec_value_type& a_desc)
+    {
+        auto& raceConf = IConfig::GetOrCreateRaceConf(a_formid);
+        auto& entry = raceConf[a_pair.first];
+
+        entry.ex.colShape = a_pair.second.ex.colShape;
 
         MarkChanged();
         DCBP::UpdateConfigOnAllActors();
@@ -2019,24 +2071,30 @@ namespace CBP
         IConfig::EraseActorNodeConfig(a_handle);
         m_actorList.at(a_handle).second = IConfig::GetActorNodeConfig(a_handle);
 
-        DCBP::MarkForSave(ISerialization::kGlobalProfile);
         DCBP::ResetActors();
     }
 
     void UINodeConfig::UpdateNodeData(
         SKSE::ObjectHandle a_handle,
         const std::string& a_node,
-        const NodeProfile::base_type::mapped_type& a_data)
+        const NodeProfile::base_type::mapped_type& a_data,
+        bool a_reset)
     {
         if (a_handle) {
             auto& nodeConfig = IConfig::GetOrCreateActorNodeConfig(a_handle);
             nodeConfig.insert_or_assign(a_node, a_data);
+
+            if (a_reset)
+                DCBP::ResetActors();
+            else
+                DCBP::DispatchActorTask(a_handle, UTTask::UTTAction::UpdateConfig);                
         }
         else {
-            DCBP::MarkForSave(ISerialization::kGlobalProfile);
-        }
-
-        DCBP::ResetActors();
+            if (a_reset)
+                DCBP::ResetActors();
+            else
+                DCBP::UpdateConfigOnAllActors();
+        }        
     }
 
     ConfigClass UINodeConfig::GetActorClass(SKSE::ObjectHandle a_handle)
@@ -2049,28 +2107,46 @@ namespace CBP
         configComponents_t& a_data,
         configComponentsValue_t& a_pair,
         const componentValueDescMap_t::vec_value_type& a_desc,
-        float* a_val)
+        float* a_val,
+        size_t a_size)
     {
-        const auto& globalConfig = IConfig::GetGlobalConfig();;
+        const auto& globalConfig = IConfig::GetGlobalConfig();
 
         if (globalConfig.ui.clampValuesMain)
-            *a_val = std::clamp(*a_val, a_desc.second.min, a_desc.second.max);
+            for (size_t i = 0; i < a_size; i++)
+                a_val[i] = std::clamp(a_val[i], a_desc.second.min, a_desc.second.max);
 
         auto& actorConf = IConfig::GetOrCreateActorConf(a_handle);
-        auto& entry = actorConf.at(a_pair.first);
+        auto& entry = actorConf[a_pair.first];
 
         auto addr = reinterpret_cast<uintptr_t>(std::addressof(entry)) + a_desc.second.offset;
-        *reinterpret_cast<float*>(addr) = *a_val;
 
-        Propagate(a_data, std::addressof(actorConf), a_pair.first, a_desc.first, *a_val);
+        for (size_t i = 0; i < a_size; i++)
+            reinterpret_cast<float*>(addr)[i] = a_val[i];
+
+        Propagate(a_data, std::addressof(actorConf), a_pair.first, a_desc.first, a_val, a_size);
 
         if (a_desc.second.counterpart.size() &&
             globalConfig.ui.syncWeightSlidersMain)
         {
-            a_pair.second.Set(a_desc.second.counterpart, *a_val);
-            entry.Set(a_desc.second.counterpart, *a_val);
-            Propagate(a_data, std::addressof(actorConf), a_pair.first, a_desc.second.counterpart, *a_val);
+            a_pair.second.Set(a_desc.second.counterpart, a_val, a_size);
+            entry.Set(a_desc.second.counterpart, a_val, a_size);
+            Propagate(a_data, std::addressof(actorConf), a_pair.first, a_desc.second.counterpart, a_val, a_size);
         }
+
+        DCBP::DispatchActorTask(a_handle, UTTask::UTTAction::UpdateConfig);
+    }
+
+    void UIContext::UISimComponentActor::OnColliderShapeChange(
+        SKSE::ObjectHandle a_handle,
+        configComponents_t& a_data,
+        configComponentsValue_t& a_pair,
+        const componentValueDescMap_t::vec_value_type& a_desc)
+    {
+        auto& actorConf = IConfig::GetOrCreateActorConf(a_handle);
+        auto& entry = actorConf[a_pair.first];
+
+        entry.ex.colShape = a_pair.second.ex.colShape;
 
         DCBP::DispatchActorTask(a_handle, UTTask::UTTAction::UpdateConfig);
     }
@@ -2094,20 +2170,31 @@ namespace CBP
         configComponents_t& a_data,
         configComponentsValue_t& a_pair,
         const componentValueDescMap_t::vec_value_type& a_desc,
-        float* a_val)
+        float* a_val,
+        size_t a_size)
     {
-        const auto& globalConfig = IConfig::GetGlobalConfig();;
+        const auto& globalConfig = IConfig::GetGlobalConfig();
 
         if (globalConfig.ui.clampValuesMain)
-            *a_val = std::clamp(*a_val, a_desc.second.min, a_desc.second.max);
+            for (size_t i = 0; i < a_size; i++)
+                a_val[i] = std::clamp(a_val[i], a_desc.second.min, a_desc.second.max);
 
-        Propagate(a_data, nullptr, a_pair.first, a_desc.first, *a_val);
+        Propagate(a_data, nullptr, a_pair.first, a_desc.first, a_val, a_size);
 
         if (a_desc.second.counterpart.size() && globalConfig.ui.syncWeightSlidersMain) {
-            a_pair.second.Set(a_desc.second.counterpart, *a_val);
-            Propagate(a_data, nullptr, a_pair.first, a_desc.second.counterpart, *a_val);
+            a_pair.second.Set(a_desc.second.counterpart, a_val, a_size);
+            Propagate(a_data, nullptr, a_pair.first, a_desc.second.counterpart, a_val, a_size);
         }
 
+        DCBP::UpdateConfigOnAllActors();
+    }
+
+    void UIContext::UISimComponentGlobal::OnColliderShapeChange(
+        SKSE::ObjectHandle a_handle,
+        configComponents_t& a_data,
+        configComponentsValue_t& a_pair,
+        const componentValueDescMap_t::vec_value_type& a_desc)
+    {
         DCBP::UpdateConfigOnAllActors();
     }
 
@@ -2191,7 +2278,8 @@ namespace CBP
         configComponents_t* a_dg,
         const std::string& a_comp,
         const std::string& a_key,
-        float a_val)
+        float* a_val,
+        size_t a_size)
     {
         const auto& globalConfig = IConfig::GetGlobalConfig();;
 
@@ -2209,12 +2297,12 @@ namespace CBP
 
             auto it1 = a_dl.find(e.first);
             if (it1 != a_dl.end())
-                it1->second.Set(a_key, a_val);
+                it1->second.Set(a_key, a_val, a_size);
 
             if (a_dg != nullptr) {
                 auto it2 = a_dg->find(e.first);
                 if (it2 != a_dg->end())
-                    it2->second.Set(a_key, a_val);
+                    it2->second.Set(a_key, a_val, a_size);
             }
         }
     }
@@ -2243,8 +2331,10 @@ namespace CBP
                 {
                     ImGui::PushID(static_cast<const void*>(std::addressof(p)));
 
+                    //ImGui::Indent(12.0f);
                     if (ImGui::Button("Mirroring >"))
                         ImGui::OpenPopup("mirror_popup");
+                    //ImGui::Unindent(12.0f);
 
                     if (ImGui::BeginPopup("mirror_popup"))
                     {
@@ -2331,9 +2421,12 @@ namespace CBP
         const componentValueDescMap_t::vec_value_type& a_entry,
         float* a_pValue)
     {
-        return ImGui::SliderFloat(a_entry.second.descTag, a_pValue, a_entry.second.min, a_entry.second.max);
+        if ((a_entry.second.marker & DescUIMarker::Float3) == DescUIMarker::Float3)
+            return ImGui::SliderFloat3(a_entry.second.descTag.c_str(), a_pValue, a_entry.second.min, a_entry.second.max);
+        else
+            return ImGui::SliderFloat(a_entry.second.descTag.c_str(), a_pValue, a_entry.second.min, a_entry.second.max);
     }
-
+    
     template <class T, UIEditorID ID>
     bool UISimComponent<T, ID>::DrawSlider(
         const componentValueDescMap_t::vec_value_type& a_entry,
@@ -2346,19 +2439,65 @@ namespace CBP
 
         ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.66f, 0.13f, 1.0f));
 
-        _snprintf_s(m_scBuffer1, _TRUNCATE, "%s [%u|%.3f]", "%.3f",
-            it->second.first, GetActualSliderValue(it->second, *a_pValue));
+        bool res;
 
-        bool res = ImGui::SliderFloat(
-            a_entry.second.descTag,
-            a_pValue,
-            a_entry.second.min,
-            a_entry.second.max,
-            m_scBuffer1);
+        if ((a_entry.second.marker & DescUIMarker::Float3) == DescUIMarker::Float3)
+            res = ImGui::SliderFloat3(
+                a_entry.second.descTag.c_str(),
+                a_pValue,
+                a_entry.second.min,
+                a_entry.second.max);
+        else
+        {
+            _snprintf_s(m_scBuffer1, _TRUNCATE, "%s [%u|%.3f]", "%.3f",
+                it->second.first, GetActualSliderValue(it->second, *a_pValue));
+
+            res = ImGui::SliderFloat(
+                a_entry.second.descTag.c_str(),
+                a_pValue,
+                a_entry.second.min,
+                a_entry.second.max,
+                m_scBuffer1);
+        }
 
         ImGui::PopStyleColor();
 
         return res;
+    }
+
+    template <class T, UIEditorID ID>
+    void UISimComponent<T, ID>::DrawColliderShapeCombo(
+        T a_handle,
+        configComponents_t& a_data,
+        configComponentsValue_t& a_pair,
+        const componentValueDescMap_t::vec_value_type& a_entry)
+    {
+        const char* desc;
+        switch (a_pair.second.ex.colShape)
+        {
+        case ColliderShape::Sphere:
+            desc = "Sphere";
+            break;
+        case ColliderShape::Capsule:
+            desc = "Capsule";
+            break;
+        default:
+            throw std::exception("Not implemented");
+        }
+
+        if (ImGui::BeginCombo("Collider shape", desc))
+        {
+            if (ImGui::Selectable("Sphere", a_pair.second.ex.colShape == ColliderShape::Sphere)) {
+                a_pair.second.ex.colShape = ColliderShape::Sphere;
+                OnColliderShapeChange(a_handle, a_data, a_pair, a_entry);
+            }
+            if (ImGui::Selectable("Capsule", a_pair.second.ex.colShape == ColliderShape::Capsule)) {
+                a_pair.second.ex.colShape = ColliderShape::Capsule;
+                OnColliderShapeChange(a_handle, a_data, a_pair, a_entry);
+            }
+
+            ImGui::EndCombo();
+        }
     }
 
     template <class T, UIEditorID ID>
@@ -2368,23 +2507,84 @@ namespace CBP
         configComponentsValue_t& a_pair
     )
     {
+        ImGui::PushID(static_cast<const void*>(std::addressof(a_pair)));
+
         const auto& globalConfig = IConfig::GetGlobalConfig();
         auto aoSect = GetArmorOverrideSection(a_handle, a_pair.first);
 
+        bool drawingGroup(false);
+        bool openState(false);
+
+        DescUIGroupType groupType(DescUIGroupType::None);
+
         for (const auto& e : configComponent_t::descMap)
         {
+            if (Enum::Underlying(e.second.marker) & Enum::Underlying(DescUIMarker::NoDraw))
+                continue;
+
             auto addr = reinterpret_cast<uintptr_t>(std::addressof(a_pair.second)) + e.second.offset;
             float* pValue = reinterpret_cast<float*>(addr);
 
-            if (aoSect) {
-                if (DrawSlider(e, pValue, aoSect))
-                    OnSimSliderChange(a_handle, a_data, a_pair, e, pValue);
-            }
-            else if (DrawSlider(e, pValue))
-                OnSimSliderChange(a_handle, a_data, a_pair, e, pValue);
+            size_t sz;
+            if ((e.second.marker & DescUIMarker::Float3) == DescUIMarker::Float3)
+                sz = 3;
+            else
+                sz = 1;
 
-            ImGui::SameLine(); UICommon::HelpMarker(e.second.helpText, globalConfig.ui.fontScale);
+            if ((e.second.marker & DescUIMarker::BeginGroup) == DescUIMarker::BeginGroup)
+            {
+                openState = Tree(
+                    GetCSSID(a_pair.first, e.second.groupName.c_str()),
+                    e.second.groupName.c_str());
+
+                groupType = e.second.groupType;
+                drawingGroup = true;
+
+                if (e.second.groupType == DescUIGroupType::Collisions)
+                    DrawColliderShapeCombo(a_handle, a_data, a_pair, e);
+            }
+            else if ((e.second.marker & DescUIMarker::Misc1) == DescUIMarker::Misc1)
+            {
+                if (groupType == DescUIGroupType::Collisions &&
+                    a_pair.second.ex.colShape != ColliderShape::Capsule)
+                {
+                    continue;
+                }
+            }
+
+            if (!drawingGroup || (drawingGroup && openState))
+            {
+                if (aoSect)
+                {
+                    /*if (e.second.marker == DescUIMarker::SameLine)
+                        ImGui::SameLine();*/
+
+                    if (DrawSlider(e, pValue, aoSect))
+                        OnSimSliderChange(a_handle, a_data, a_pair, e, pValue, sz);
+                }
+                else
+                {
+                    /*if (e.second.marker == DescUIMarker::SameLine)
+                        ImGui::SameLine();*/
+
+                    if (DrawSlider(e, pValue))
+                        OnSimSliderChange(a_handle, a_data, a_pair, e, pValue, sz);
+                }
+                ImGui::SameLine(); UICommon::HelpMarker(e.second.helpText.c_str(), globalConfig.ui.fontScale);
+            }
+
+            if ((e.second.marker & DescUIMarker::EndGroup) == DescUIMarker::EndGroup)
+            {
+                if (openState) {
+                    ImGui::TreePop();
+                    openState = false;
+                }
+                drawingGroup = false;
+                groupType = DescUIGroupType::None;
+            }
         }
+
+        ImGui::PopID();
     }
 
     template <class T, UIEditorID ID>
@@ -2426,7 +2626,7 @@ namespace CBP
                 {
                     auto& conf = a_data[e.first];
 
-                    bool changed = false;
+                    bool changed(false);
 
                     ImGui::Columns(2, nullptr, false);
 
@@ -2454,8 +2654,16 @@ namespace CBP
 
                     ImGui::Columns(1);
 
-                    if (changed)
-                        UpdateNodeData(a_handle, e.first, conf);
+                    bool changed2(false);
+
+                    changed2 |= ImGui::SliderFloat3("Offset min", conf.colOffsetMin, -250.0f, 250.0f);
+                    HelpMarker(MiscHelpText::offsetMin);
+
+                    changed2 |= ImGui::SliderFloat3("Offset max", conf.colOffsetMax, -250.0f, 250.0f);
+                    HelpMarker(MiscHelpText::offsetMax);
+
+                    if (changed || changed2)
+                        UpdateNodeData(a_handle, e.first, conf, changed);
                 }
 
                 ImGui::PopID();
@@ -2822,10 +3030,10 @@ namespace CBP
 
             uint8_t importFlags = 0;
 
-            CheckboxGlobal("Global", &globalConfig.ui.import.global); 
-            ImGui::SameLine(); 
+            CheckboxGlobal("Global", &globalConfig.ui.import.global);
+            ImGui::SameLine();
             CheckboxGlobal("Actors", &globalConfig.ui.import.actors);
-            ImGui::SameLine(); 
+            ImGui::SameLine();
             CheckboxGlobal("Races", &globalConfig.ui.import.races);
 
             ImGui::Separator();

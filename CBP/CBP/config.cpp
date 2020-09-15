@@ -27,160 +27,214 @@ namespace CBP
 
     const componentValueDescMap_t configComponent_t::descMap({
         {"stiffness", {
-            offsetof(configComponent_t, stiffness),
+            offsetof(configComponent_t, phys.stiffness),
             "",
             0.0f, 100.0f,
             "Linear spring stiffness",
-            "Linear stiffness"
+            "Linear stiffness",
+            DescUIMarker::BeginGroup,
+            DescUIGroupType::Physics,
+            "Physics"
         }},
         {"stiffness2", {
-            offsetof(configComponent_t, stiffness2),
+            offsetof(configComponent_t, phys.stiffness2),
             "", 0.0f, 100.0f,
             "Quadratic spring stiffness",
             "Quadratic stiffness"
         }},
         {"damping", {
-            offsetof(configComponent_t, damping),
+            offsetof(configComponent_t, phys.damping),
             "",
             0.0f, 10.0f,
             "Velocity removed/tick 1.0 would be all velocity removed",
             "Velocity damping"
         }},
         {"maxoffset", {
-            offsetof(configComponent_t, maxOffset),
+            offsetof(configComponent_t, phys.maxOffset),
             "", 0.0f, 100.0f,
             "Maximum amount the bone is allowed to move from target",
             "Max. offset"
         }},
         {"linearx", {
-            offsetof(configComponent_t, linearX),
+            offsetof(configComponent_t, phys.linear[0]),
             "",
             0.0f, 10.0f,
-            "Scale of the side to side motion",
-            "Linear scale X"
+            "Linear motion scale (side to side, front to back, up and down respectively)",
+            "Linear motion scale",
+            DescUIMarker::Float3
         }},
         {"lineary", {
-            offsetof(configComponent_t, linearY),
+            offsetof(configComponent_t, phys.linear[1]),
             "", 0.0f, 10.0f,
-            "Scale of the front to back motion",
-            "Linear scale Y"
+            "",
+            "",
+            DescUIMarker::NoDraw
         }},
         {"linearz", {
-            offsetof(configComponent_t, linearZ),
+            offsetof(configComponent_t, phys.linear[1]),
             "", 0.0f, 10.0f ,
-            "Scale of the up and down motion",
-            "Linear scale Z"
+            "",
+            "",
+            DescUIMarker::NoDraw
         }},
         {"rotationalx", {
-            offsetof(configComponent_t, rotationalX),
+            offsetof(configComponent_t, phys.rotational[0]),
             "", 0.0f, 1.0f,
-            "Scale of the bones rotation around the X axis",
-            "Rotational scale X"
+            "Scale of the bones rotation around the X, Y and Z axes respectively",
+            "Rotational scale",
+            DescUIMarker::Float3
         }},
         {"rotationaly", {
-            offsetof(configComponent_t, rotationalY),
+            offsetof(configComponent_t, phys.rotational[1]),
             "",
             0.0f, 1.0f,
-            "Scale of the bones rotation around the Y axis",
-            "Rotational scale Y"
+            "",
+            "",
+            DescUIMarker::NoDraw
         }},
         {"rotationalz", {
-            offsetof(configComponent_t, rotationalZ),
+            offsetof(configComponent_t, phys.rotational[2]),
             "",
             0.0f, 1.0f,
-            "Scale of the bones rotation around the Z axis",
-            "Rotational scale Z"
+            "",
+            "",
+            DescUIMarker::NoDraw
         }},
         {"gravitybias", {
-            offsetof(configComponent_t, gravityBias),
+            offsetof(configComponent_t, phys.gravityBias),
             "",
             -300.0f, 300.0f,
             "This is in effect the gravity coefficient, a constant force acting down * the mass of the object",
             "Gravity bias"
         }},
         {"gravitycorrection", {
-            offsetof(configComponent_t, gravityCorrection),
+            offsetof(configComponent_t, phys.gravityCorrection),
             "",
             -100.0f, 100.0f,
             "Amount to move the target point up to counteract the neutral effect of gravityBias",
             "Gravity correction"
         }},
         {"cogoffset", {
-            offsetof(configComponent_t, cogOffset),
+            offsetof(configComponent_t, phys.cogOffset),
             "",
-            0.0f, 100.0f,
+            -100.0f, 100.0f,
             "The ammount that the COG is forwards of the bone root, changes how rotation will impact motion",
-            "COG offset"
+            "COG offset",
+            DescUIMarker::EndGroup,
+            DescUIGroupType::Physics
         }},
         {"colsphereradmin", {
-            offsetof(configComponent_t, colSphereRadMin),
+            offsetof(configComponent_t, phys.colSphereRadMin),
             "colsphereradmax",
             0.0f, 100.0,
-            "Collision sphere radius (weigth 0)",
-            "Col. sphere radius min"
+            "Collider radius (weigth 0)",
+            "Radius min",
+            DescUIMarker::BeginGroup,
+            DescUIGroupType::Collisions,
+            "Collisions"
         }},
         {"colsphereradmax", {
-            offsetof(configComponent_t, colSphereRadMax),
+            offsetof(configComponent_t, phys.colSphereRadMax),
             "colsphereradmin",
             0.0f, 100.0f,
-            "Collision sphere radius (weight 100)",
-            "Col. sphere radius max"
+            "Collider radius (weight 100)",
+            "Radius max",
+        }},
+        { "colheight", {
+            offsetof(configComponent_t, phys.colHeight),
+            "",
+            0.0f, 250.0f,
+            "Capsule height",
+            "Capsule height",
+            DescUIMarker::Misc1
         }},
         {"colsphereoffsetxmin", {
-            offsetof(configComponent_t, colSphereOffsetXMin),
+            offsetof(configComponent_t, phys.offsetMin[0]),
             "colsphereoffsetxmax",
             -50.0f, 50.0f,
-            "Collision sphere X offset (weigth 0)",
-            "Col. sphere min offset X"
-        }},
-        {"colsphereoffsetxmax", {
-            offsetof(configComponent_t, colSphereOffsetXMax),
-            "colsphereoffsetxmin",
-            -50.0f, 50.0f,
-            "Collision sphere X offset (weigth 100)",
-            "Col. sphere max offset X"
+            "Collider body offset (X, Y, Z, weight 0)",
+            "Offset min",
+            DescUIMarker::Float3
         }},
         {"colsphereoffsetymin", {
-            offsetof(configComponent_t, colSphereOffsetYMin),
+            offsetof(configComponent_t, phys.offsetMin[1]),
             "colsphereoffsetymax",
             -50.0f, 50.0f,
-            "Collision sphere Y offset (weigth 0)",
-            "Col. sphere min offset Y"
-        }},
-        {"colsphereoffsetymax", {
-            offsetof(configComponent_t, colSphereOffsetYMax),
-            "colsphereoffsetymin",
-            -50.0f, 50.0f,
-            "Collision sphere Y offset (weigth 100)",
-            "Col. sphere max offset Y"
+            "",
+            "",
+            DescUIMarker::NoDraw
         }},
         {"colsphereoffsetzmin", {
-            offsetof(configComponent_t, colSphereOffsetZMin),
+            offsetof(configComponent_t, phys.offsetMin[2]),
             "colsphereoffsetzmax",
             -50.0f, 50.0f,
-            "Collision sphere Z offset (weigth 0)",
-            "Col. sphere min offset Z"
+            "",
+            "",
+            DescUIMarker::NoDraw
+        }},
+        {"colsphereoffsetxmax", {
+            offsetof(configComponent_t, phys.offsetMax[0]),
+            "colsphereoffsetxmin",
+            -50.0f, 50.0f,
+            "Collider body offset (X, Y, Z, weight 100)",
+            "Offset max",
+            DescUIMarker::Float3
+        }},
+        {"colsphereoffsetymax", {
+            offsetof(configComponent_t, phys.offsetMax[1]),
+            "colsphereoffsetymin",
+            -50.0f, 50.0f,
+            "",
+            "",
+            DescUIMarker::NoDraw
         }},
         {"colsphereoffsetzmax", {
-            offsetof(configComponent_t, colSphereOffsetZMax),
+            offsetof(configComponent_t, phys.offsetMax[2]),
             "colsphereoffsetzmin",
             -50.0f, 50.0f,
-            "Collision sphere Z offset (weigth 100)",
-            "Col. sphere max offset Z"
+            "",
+            "",
+            DescUIMarker::NoDraw
+        }},
+        {"colrotx", {
+            offsetof(configComponent_t, phys.colRot[0]),
+            "",
+            -360.0f, 360.0f,
+            "Collider rotation in degrees around the X, Y and Z axes respectively.",
+            "Collider rotation",
+            DescUIMarker::Misc1 | DescUIMarker::Float3
+        }},
+        {"colroty", {
+            offsetof(configComponent_t, phys.colRot[1]),
+            "",
+            -360.0f, 360.0f,
+            "",
+            "",
+            DescUIMarker::NoDraw
+        }},
+        {"colrotz", {
+            offsetof(configComponent_t, phys.colRot[2]),
+            "",
+            -360.0f, 360.0f,
+            "",
+            "",
+            DescUIMarker::NoDraw
         }},
         {"coldampingcoef", {
-            offsetof(configComponent_t, colDampingCoef),
+            offsetof(configComponent_t, phys.colDampingCoef),
             "",
             0.0f, 10.0f,
             "Velocity damping scale when nodes are colliding",
-            "Col. damping coef"
+            "Damping coef"
         }},
         {"coldepthmul", {
-            offsetof(configComponent_t, colDepthMul),
+            offsetof(configComponent_t, phys.colDepthMul),
             "",
             1.0f, 1000.0f,
             "",
-            "Col. depth mul"
+            "Depth mul",
+            DescUIMarker::EndGroup,
+            DescUIGroupType::Collisions
         }}
         });
 
