@@ -241,10 +241,9 @@ namespace CBP
     {
         auto& iface = m_Instance.m_serialization;
 
-        bool failed = false;
+        bool failed(false);
 
         failed |= !iface.SaveGlobals();
-        failed |= !iface.SaveCollisionGroups();
 
         return !failed;
     }
@@ -747,7 +746,6 @@ namespace CBP
         Lock();
 
         iface.SaveGlobals();
-        iface.SaveCollisionGroups();
 
         intfc->OpenRecord('DPBC', kDataVersion1);
 
