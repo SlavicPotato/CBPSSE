@@ -96,6 +96,18 @@ namespace CBP
     typedef std::unordered_map<std::string, configForce_t> configForceMap_t;
     typedef std::unordered_map<std::string, bool> collapsibleStates_t;
 
+    struct configGlobalRace_t
+    {
+        bool playableOnly = true;
+        bool showEditorIDs = true;
+    };
+    
+    struct configGlobalActor_t
+    {
+        bool showAll = true;
+        SKSE::ObjectHandle lastActor = 0;
+    };
+
     struct configGlobal_t
     {
         struct
@@ -117,13 +129,16 @@ namespace CBP
         struct
         {
             bool lockControls = true;
-            bool showAllActors = false;
+            
+            configGlobalActor_t actorPhysics;
+            configGlobalActor_t actorNode;
+
             bool clampValuesMain = true;
             bool clampValuesRace = true;
-            bool rlPlayableOnly = true;
-            bool rlShowEditorIDs = true;
-            bool rlNodePlayableOnly = true;
-            bool rlNodeShowEditorIDs = true;
+
+            configGlobalRace_t racePhysics;
+            configGlobalRace_t raceNode;
+
             bool syncWeightSlidersMain = false;
             bool syncWeightSlidersRace = false;
             bool selectCrosshairActor = false;
@@ -136,7 +151,6 @@ namespace CBP
             UInt32 comboKeyDR = DIK_LSHIFT;
             UInt32 showKeyDR = DIK_PGDN;
 
-            SKSE::ObjectHandle lastActor = 0;
             configForceMap_t forceActor;
             std::unordered_map<UIEditorID, configMirrorMap_t> mirror;
             collapsibleStates_t colStates;
@@ -495,7 +509,7 @@ namespace CBP
         inline static void ClearRacePhysicsConfigHolder() {
             raceConfHolder.clear();
         }
-
+        
         [[nodiscard]] inline static auto& GetGlobalConfig() {
             return globalConfig;
         }

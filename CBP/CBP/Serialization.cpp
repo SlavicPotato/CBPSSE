@@ -219,7 +219,7 @@ namespace CBP
         a_out = IConfig::GetGlobalNodeConfig();
     }
 
-    bool Parser::ParseFloatArray(const Json::Value& a_value, float *a_out, size_t a_size)
+    bool Parser::ParseFloatArray(const Json::Value& a_value, float* a_out, size_t a_size)
     {
         if (!a_value.isArray())
             return false;
@@ -273,13 +273,14 @@ namespace CBP
                 const auto& ui = root["ui"];
 
                 globalConfig.ui.lockControls = ui.get("lockControls", true).asBool();
-                globalConfig.ui.showAllActors = ui.get("showAllActors", false).asBool();
+                globalConfig.ui.actorPhysics.showAll = ui.get("showAllActors", false).asBool();
+                globalConfig.ui.actorNode.showAll = ui.get("nodeShowAllActors", false).asBool();
                 globalConfig.ui.clampValuesMain = ui.get("clampValuesMain", true).asBool();
                 globalConfig.ui.clampValuesRace = ui.get("clampValuesRace", true).asBool();
-                globalConfig.ui.rlPlayableOnly = ui.get("rlPlayableOnly", true).asBool();
-                globalConfig.ui.rlShowEditorIDs = ui.get("rlShowEditorIDs", true).asBool();
-                globalConfig.ui.rlNodePlayableOnly = ui.get("rlNodePlayableOnly", true).asBool();
-                globalConfig.ui.rlNodeShowEditorIDs = ui.get("rlNodeShowEditorIDs", true).asBool();
+                globalConfig.ui.racePhysics.playableOnly = ui.get("rlPlayableOnly", true).asBool();
+                globalConfig.ui.racePhysics.showEditorIDs = ui.get("rlShowEditorIDs", true).asBool();
+                globalConfig.ui.raceNode.playableOnly = ui.get("rlNodePlayableOnly", true).asBool();
+                globalConfig.ui.raceNode.showEditorIDs = ui.get("rlNodeShowEditorIDs", true).asBool();
                 globalConfig.ui.syncWeightSlidersMain = ui.get("syncWeightSlidersMain", false).asBool();
                 globalConfig.ui.syncWeightSlidersRace = ui.get("syncWeightSlidersRace", false).asBool();
                 globalConfig.ui.selectCrosshairActor = ui.get("selectCrosshairActor", false).asBool();
@@ -287,7 +288,8 @@ namespace CBP
                 globalConfig.ui.showKey = static_cast<UInt32>(ui.get("showKey", DIK_END).asUInt());
                 globalConfig.ui.comboKeyDR = static_cast<UInt32>(ui.get("comboKeyDR", DIK_LSHIFT).asUInt());
                 globalConfig.ui.showKeyDR = static_cast<UInt32>(ui.get("showKeyDR", DIK_PGDN).asUInt());
-                globalConfig.ui.lastActor = static_cast<SKSE::ObjectHandle>(ui.get("lastActor", 0ULL).asUInt64());
+                globalConfig.ui.actorPhysics.lastActor = static_cast<SKSE::ObjectHandle>(ui.get("lastActor", 0ULL).asUInt64());
+                globalConfig.ui.actorNode.lastActor = static_cast<SKSE::ObjectHandle>(ui.get("nodeLastActor", 0ULL).asUInt64());
                 globalConfig.ui.fontScale = ui.get("fontScale", 1.0f).asFloat();
 
                 if (ui.isMember("import"))
@@ -452,13 +454,14 @@ namespace CBP
             auto& ui = root["ui"];
 
             ui["lockControls"] = globalConfig.ui.lockControls;
-            ui["showAllActors"] = globalConfig.ui.showAllActors;
+            ui["showAllActors"] = globalConfig.ui.actorPhysics.showAll;
+            ui["nodeShowAllActors"] = globalConfig.ui.actorNode.showAll;
             ui["clampValuesMain"] = globalConfig.ui.clampValuesMain;
             ui["clampValuesRace"] = globalConfig.ui.clampValuesRace;
-            ui["rlPlayableOnly"] = globalConfig.ui.rlPlayableOnly;
-            ui["rlShowEditorIDs"] = globalConfig.ui.rlShowEditorIDs;
-            ui["rlNodePlayableOnly"] = globalConfig.ui.rlNodePlayableOnly;
-            ui["rlNodeShowEditorIDs"] = globalConfig.ui.rlNodeShowEditorIDs;
+            ui["rlPlayableOnly"] = globalConfig.ui.racePhysics.playableOnly;
+            ui["rlShowEditorIDs"] = globalConfig.ui.racePhysics.showEditorIDs;
+            ui["rlNodePlayableOnly"] = globalConfig.ui.raceNode.playableOnly;
+            ui["rlNodeShowEditorIDs"] = globalConfig.ui.raceNode.showEditorIDs;
             ui["syncWeightSlidersMain"] = globalConfig.ui.syncWeightSlidersMain;
             ui["syncWeightSlidersRace"] = globalConfig.ui.syncWeightSlidersRace;
             ui["selectCrosshairActor"] = globalConfig.ui.selectCrosshairActor;
@@ -466,7 +469,8 @@ namespace CBP
             ui["showKey"] = static_cast<uint32_t>(globalConfig.ui.showKey);
             ui["comboKeyDR"] = static_cast<uint32_t>(globalConfig.ui.comboKeyDR);
             ui["showKeyDR"] = static_cast<uint32_t>(globalConfig.ui.showKeyDR);
-            ui["lastActor"] = static_cast<uint64_t>(globalConfig.ui.lastActor);
+            ui["lastActor"] = static_cast<uint64_t>(globalConfig.ui.actorPhysics.lastActor);
+            ui["nodeLastActor"] = static_cast<uint64_t>(globalConfig.ui.actorNode.lastActor);
             ui["fontScale"] = globalConfig.ui.fontScale;
 
             auto& import = ui["import"];
@@ -995,7 +999,7 @@ namespace CBP
                 auto& race = races[std::to_string(e.first)];
                 m_componentParser.Create(e.second, race);
             }
-            
+
             for (const auto& e : IConfig::GetRaceNodeConfigHolder()) {
                 auto& race = races[std::to_string(e.first)];
                 m_nodeParser.Create(e.second, race);

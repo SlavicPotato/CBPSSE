@@ -494,6 +494,10 @@ namespace CBP
         inline void QueueUpdateCurrent() {
             m_nextUpdateCurrent = true;
         }
+        
+        inline void QueueUpdateList() {
+            m_nextUpdateList = true;
+        }
 
     protected:
         void ListTick();
@@ -518,6 +522,7 @@ namespace CBP
 
         bool m_firstUpdate;
         bool m_nextUpdateCurrent;
+        bool m_nextUpdateList;
 
         T m_list;
         P m_current;
@@ -545,6 +550,7 @@ namespace CBP
         virtual void SetCurrentItem(SKSE::ObjectHandle a_handle);
 
         virtual ConfigClass GetActorClass(SKSE::ObjectHandle a_handle) = 0;
+        [[nodiscard]] virtual configGlobalActor_t& GetActorConfig() = 0;
     private:
         virtual void UpdateList();
         virtual void FilterSelected(listValue_t*& a_entry, const char*& a_curSelName);
@@ -569,6 +575,11 @@ namespace CBP
         virtual listValue_t* GetSelectedEntry();
         virtual void DrawList(listValue_t*& a_entry, const char*& a_curSelName);
         virtual void SetCurrentItem(SKSE::FormID a_formid);
+
+        [[nodiscard]] virtual configGlobalRace_t& GetRaceConfig() = 0;
+
+    private:
+        virtual void UpdateList();
     };
 
     class UICollisionGroups :
@@ -606,7 +617,8 @@ namespace CBP
             const NodeProfile::base_type::mapped_type& a_data,
             bool a_reset);
 
-        virtual ConfigClass GetActorClass(SKSE::ObjectHandle a_handle);
+        [[nodiscard]] virtual ConfigClass GetActorClass(SKSE::ObjectHandle a_handle);
+        [[nodiscard]] virtual configGlobalActor_t& GetActorConfig();
     };
 
     typedef std::pair<const std::string, configComponents_t> raceEntryPhysConf_t;
@@ -621,9 +633,6 @@ namespace CBP
         protected UIProfileSelector<typename T::value_type, N>
     {
     public:
-        inline void QueueUpdateRaceList() {
-            m_nextUpdateRaceList = true;
-        }
 
         [[nodiscard]] inline bool GetChanged() {
             bool r = m_changed;
@@ -636,18 +645,16 @@ namespace CBP
     protected:
         UIRaceEditorBase() noexcept;
 
-        virtual void UpdateList();
-
         [[nodiscard]] virtual const entryValue_t& GetData(SKSE::FormID a_formid) = 0;
 
         inline void MarkChanged() { m_changed = true; }
 
-        bool m_nextUpdateRaceList;
         bool m_changed;
         
         struct {
             except::descriptor lastException;
         } state;
+
     };
 
     class UIRaceEditorNode :
@@ -663,6 +670,8 @@ namespace CBP
 
         [[nodiscard]] virtual const entryValue_t& GetData(SKSE::FormID a_formid);
         [[nodiscard]] virtual const entryValue_t& GetData(const listValue_t* a_entry) const;
+
+        [[nodiscard]] virtual configGlobalRace_t& GetRaceConfig();
 
         virtual void ResetAllValues(SKSE::FormID a_formid);
         virtual void ApplyProfile(listValue_t* a_data, const NodeProfile& a_profile);
@@ -687,6 +696,8 @@ namespace CBP
         virtual void ApplyProfile(listValue_t* a_data, const PhysicsProfile& a_profile);
         [[nodiscard]] virtual const entryValue_t& GetData(SKSE::FormID a_formid);
         [[nodiscard]] virtual const entryValue_t& GetData(const listValue_t *a_entry) const;
+
+        [[nodiscard]] virtual configGlobalRace_t& GetRaceConfig();
 
         virtual void ResetAllValues(SKSE::FormID a_formid);
 
@@ -951,7 +962,8 @@ namespace CBP
         [[nodiscard]] virtual const entryValue_t& GetData(SKSE::ObjectHandle a_handle);
         [[nodiscard]] virtual const entryValue_t& GetData(const listValue_t* a_data) const;
 
-        virtual ConfigClass GetActorClass(SKSE::ObjectHandle a_handle);
+        [[nodiscard]] virtual ConfigClass GetActorClass(SKSE::ObjectHandle a_handle);
+        [[nodiscard]] virtual configGlobalActor_t& GetActorConfig();
 
         void UpdateActorValues(SKSE::ObjectHandle a_handle);
         void UpdateActorValues(listValue_t* a_data);

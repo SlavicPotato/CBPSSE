@@ -535,6 +535,61 @@ namespace CBP
     }
 
     template <class T>
+    void UIRaceList<T>::UpdateList()
+    {
+        bool isFirstUpdate = m_firstUpdate;
+
+        m_firstUpdate = true;
+
+        m_list.clear();
+
+        const auto& globalConfig = IConfig::GetGlobalConfig();
+        const auto& raceConf = GetRaceConfig();
+
+        for (const auto& e : IData::GetRaceList())
+        {
+            if (raceConf.playableOnly && !e.second.playable)
+                continue;
+
+            std::ostringstream ss;
+            ss << "[" << std::uppercase << std::setfill('0') <<
+                std::setw(8) << std::hex << e.first << "] ";
+
+            if (raceConf.showEditorIDs)
+                ss << e.second.edid;
+            else
+                ss << e.second.fullname;
+
+            m_list.try_emplace(e.first,
+                std::move(ss.str()), GetData(e.first));
+        }
+
+        if (m_list.size() == 0) {
+            SetCurrentItem(0);
+            return;
+        }
+
+        if (globalConfig.ui.selectCrosshairActor && !isFirstUpdate) {
+            auto crosshairRef = IData::GetCrosshairRef();
+            if (crosshairRef)
+            {
+                auto ac = IData::GetActorRefInfo(crosshairRef);
+                if (ac && ac->m_race.first) {
+                    if (m_list.find(ac->m_race.second) != m_list.end()) {
+                        SetCurrentItem(ac->m_race.second);
+                        return;
+                    }
+                }
+            }
+        }
+
+        if (m_current != 0)
+            if (m_list.find(m_current) == m_list.end())
+                SetCurrentItem(0);
+    }
+
+
+    template <class T>
     void UIRaceList<T>::DrawList(
         listValue_t*& a_entry,
         const char*& a_curSelName)
@@ -601,7 +656,6 @@ namespace CBP
     template <class T, class N>
     UIRaceEditorBase<T, N>::UIRaceEditorBase() noexcept :
         UIRaceList<T>(),
-        m_nextUpdateRaceList(true),
         m_changed(false)
     {
     }
@@ -610,61 +664,7 @@ namespace CBP
     void UIRaceEditorBase<T, N>::Reset() {
 
         UIListBase<T, SKSE::FormID>::ResetList();
-        m_nextUpdateRaceList = true;
         m_changed = false;
-    }
-
-    template <class T, class N>
-    void UIRaceEditorBase<T, N>::UpdateList()
-    {
-        bool isFirstUpdate = m_firstUpdate;
-
-        m_firstUpdate = true;
-
-        m_list.clear();
-
-        const auto& globalConfig = IConfig::GetGlobalConfig();
-
-        for (const auto& e : IData::GetRaceList())
-        {
-            if (globalConfig.ui.rlPlayableOnly && !e.second.playable)
-                continue;
-
-            std::ostringstream ss;
-            ss << "[" << std::uppercase << std::setfill('0') <<
-                std::setw(8) << std::hex << e.first << "] ";
-
-            if (globalConfig.ui.rlShowEditorIDs)
-                ss << e.second.edid;
-            else
-                ss << e.second.fullname;
-
-            m_list.try_emplace(e.first,
-                std::move(ss.str()), GetData(e.first));
-        }
-
-        if (m_list.size() == 0) {
-            SetCurrentItem(0);
-            return;
-        }
-
-        if (globalConfig.ui.selectCrosshairActor && !isFirstUpdate) {
-            auto crosshairRef = IData::GetCrosshairRef();
-            if (crosshairRef)
-            {
-                auto ac = IData::GetActorRefInfo(crosshairRef);
-                if (ac && ac->m_race.first) {
-                    if (m_list.find(ac->m_race.second) != m_list.end()) {
-                        SetCurrentItem(ac->m_race.second);
-                        return;
-                    }
-                }
-            }
-        }
-
-        if (m_current != 0)
-            if (m_list.find(m_current) == m_list.end())
-                SetCurrentItem(0);
     }
 
     UIRaceEditorNode::UIRaceEditorNode() noexcept :
@@ -691,6 +691,12 @@ namespace CBP
     {
         return !a_data ? IConfig::GetGlobalNodeConfig() : a_data->second.second;
     }
+
+    configGlobalRace_t& UIRaceEditorNode::GetRaceConfig()
+    {
+        return IConfig::GetGlobalConfig().ui.raceNode;
+    }
+
 
 
     void UIRaceEditorNode::ApplyProfile(listValue_t* a_data, const NodeProfile& a_profile)
@@ -728,11 +734,6 @@ namespace CBP
 
     void UIRaceEditorNode::Draw(bool* a_active)
     {
-        if (m_nextUpdateRaceList) {
-            m_nextUpdateRaceList = false;
-            UpdateList();
-        }
-
         ListTick();
 
         auto& io = ImGui::GetIO();
@@ -767,20 +768,20 @@ namespace CBP
                 ImGui::Text("Playable: %s", rlEntry.playable ? "yes" : "no");
 
                 ImGui::Spacing();
-                if (CheckboxGlobal("Playable only", &globalConfig.ui.rlNodePlayableOnly))
-                    QueueUpdateRaceList();
+                if (CheckboxGlobal("Playable only", &globalConfig.ui.raceNode.playableOnly))
+                    QueueUpdateList();
                 HelpMarker(MiscHelpText::playableOnly);
 
                 ImGui::Spacing();
-                if (CheckboxGlobal("Editor IDs", &globalConfig.ui.rlNodeShowEditorIDs))
-                    QueueUpdateRaceList();
+                if (CheckboxGlobal("Editor IDs", &globalConfig.ui.raceNode.showEditorIDs))
+                    QueueUpdateList();
                 HelpMarker(MiscHelpText::showEDIDs);
-
-                ImGui::Spacing();
 
                 ImGui::SameLine(ImGui::GetWindowContentRegionMax().x - GetNextTextOffset("Reset", true));
                 if (ButtonRight("Reset"))
                     ImGui::OpenPopup("Reset");
+
+                ImGui::Spacing();
 
                 if (UICommon::ConfirmDialog(
                     "Reset",
@@ -814,10 +815,7 @@ namespace CBP
 
     void UIRaceEditorPhysics::Draw(bool* a_active)
     {
-        if (m_nextUpdateRaceList) {
-            m_nextUpdateRaceList = false;
-            UpdateList();
-        }
+        ListTick();
 
         auto& io = ImGui::GetIO();
         auto& globalConfig = IConfig::GetGlobalConfig();;
@@ -851,13 +849,13 @@ namespace CBP
                 ImGui::Text("Playable: %s", rlEntry.playable ? "yes" : "no");
 
                 ImGui::Spacing();
-                if (CheckboxGlobal("Playable only", &globalConfig.ui.rlPlayableOnly))
-                    QueueUpdateRaceList();
+                if (CheckboxGlobal("Playable only", &globalConfig.ui.racePhysics.playableOnly))
+                    QueueUpdateList();
                 HelpMarker(MiscHelpText::playableOnly);
 
                 ImGui::Spacing();
-                if (CheckboxGlobal("Editor IDs", &globalConfig.ui.rlShowEditorIDs))
-                    QueueUpdateRaceList();
+                if (CheckboxGlobal("Editor IDs", &globalConfig.ui.racePhysics.showEditorIDs))
+                    QueueUpdateList();
                 HelpMarker(MiscHelpText::showEDIDs);
 
                 ImGui::Spacing();
@@ -919,6 +917,11 @@ namespace CBP
         const entryValue_t&
     {
         return !a_data ? IConfig::GetGlobalPhysicsConfig() : a_data->second.second;
+    }
+
+    configGlobalRace_t& UIRaceEditorPhysics::GetRaceConfig()
+    {
+        return IConfig::GetGlobalConfig().ui.racePhysics;
     }
 
     void UIRaceEditorPhysics::ResetAllValues(SKSE::FormID a_formid)
@@ -1172,7 +1175,8 @@ namespace CBP
     UIListBase<T, P>::UIListBase() :
         m_current(P(0)),
         m_firstUpdate(false),
-        m_nextUpdateCurrent(false)
+        m_nextUpdateCurrent(false),
+        m_nextUpdateList(true)
     {
         m_strBuf1[0] = 0x0;
     }
@@ -1182,6 +1186,7 @@ namespace CBP
     {
         m_nextUpdateCurrent = false;
         m_firstUpdate = false;
+        m_nextUpdateList = true;
         m_list.clear();
     }
 
@@ -1191,6 +1196,11 @@ namespace CBP
         if (m_nextUpdateCurrent) {
             m_nextUpdateCurrent = false;
             UpdateCurrent();
+        }
+
+        if (m_nextUpdateList) {
+            m_nextUpdateList = false;
+            UpdateList();
         }
     }
 
@@ -1218,12 +1228,13 @@ namespace CBP
         m_firstUpdate = true;
 
         const auto& globalConfig = IConfig::GetGlobalConfig();
+        const auto& actorConf = GetActorConfig();
 
         m_list.clear();
 
         for (const auto& e : IData::GetActorCache())
         {
-            if (!globalConfig.ui.showAllActors && !e.second.active)
+            if (!actorConf.showAll && !e.second.active)
                 continue;
 
             m_list.try_emplace(e.first, e.second.name, GetData(e.first));
@@ -1252,10 +1263,10 @@ namespace CBP
                 SetCurrentItem(0);
         }
         else {
-            if (globalConfig.ui.lastActor &&
-                m_list.find(globalConfig.ui.lastActor) != m_list.end())
+            if (actorConf.lastActor &&
+                m_list.find(actorConf.lastActor) != m_list.end())
             {
-                m_current = globalConfig.ui.lastActor;
+                m_current = actorConf.lastActor;
             }
         }
     }
@@ -1283,19 +1294,19 @@ namespace CBP
     void UIActorList<T>::SetCurrentItem(SKSE::ObjectHandle a_handle)
     {
         auto& globalConfig = IConfig::GetGlobalConfig();
+        auto& actorConf = GetActorConfig();
 
         m_current = a_handle;
 
         if (a_handle != 0)
             m_list.at(a_handle).second = GetData(a_handle);
 
-        if (a_handle != globalConfig.ui.lastActor)
-            SetGlobal(globalConfig.ui.lastActor, a_handle);
+        if (a_handle != actorConf.lastActor)
+            SetGlobal(actorConf.lastActor, a_handle);
 
         if (m_markActor)
             DCBP::SetMarkedActor(a_handle);
     }
-
 
     template <class T, class P>
     void UIListBase<T, P>::UpdateCurrent()
@@ -1685,7 +1696,7 @@ namespace CBP
             }
 
             ImGui::Spacing();
-            if (CheckboxGlobal("Show all actors", &globalConfig.ui.showAllActors))
+            if (CheckboxGlobal("Show all actors", &globalConfig.ui.actorPhysics.showAll))
                 DCBP::QueueActorCacheUpdate();
 
             HelpMarker(MiscHelpText::showAllActors);
@@ -2234,7 +2245,7 @@ namespace CBP
             }
 
             ImGui::Spacing();
-            if (CheckboxGlobal("Show all actors", &globalConfig.ui.showAllActors))
+            if (CheckboxGlobal("Show all actors", &globalConfig.ui.actorNode.showAll))
                 DCBP::QueueActorCacheUpdate();
 
             HelpMarker(MiscHelpText::showAllActors);
@@ -2345,6 +2356,11 @@ namespace CBP
     ConfigClass UIActorEditorNode::GetActorClass(SKSE::ObjectHandle a_handle)
     {
         return IConfig::GetActorNodeConfigClass(a_handle);
+    }
+
+    configGlobalActor_t& UIActorEditorNode::GetActorConfig()
+    {
+        return IConfig::GetGlobalConfig().ui.actorNode;
     }
 
     void UIContext::UISimComponentActor::OnSimSliderChange(
@@ -2563,6 +2579,11 @@ namespace CBP
     ConfigClass UIContext::GetActorClass(SKSE::ObjectHandle a_handle)
     {
         return IConfig::GetActorPhysicsConfigClass(a_handle);
+    }
+
+    configGlobalActor_t& UIContext::GetActorConfig()
+    {
+        return IConfig::GetGlobalConfig().ui.actorPhysics;
     }
 
     void UIContext::ApplyForce(
@@ -3188,7 +3209,7 @@ namespace CBP
         ImGui::End();
 
         ImGui::PopID();
-}
+    }
 #endif
 
     UIFileSelector::SelectedFile::SelectedFile() :
