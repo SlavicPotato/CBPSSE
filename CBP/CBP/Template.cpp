@@ -76,24 +76,67 @@ namespace CBP
 
                 for (auto it2 = it1->begin(); it2 != it1->end(); ++it2)
                 {
-                    if (!it2->isArray())
-                        throw std::exception("Unexpected data (2) (expected array)");
+                    if (!it2->isObject())
+                        throw std::exception("Unexpected data (2) (expected object)");
 
                     auto templ = it2.key().asString();
                     transform(templ.begin(), templ.end(), templ.begin(), ::tolower);
 
+                    auto& t = (*it2)["target"];
+
+                    if (!t.isNumeric())
+                        throw std::exception("Invalid target type");
+
                     auto& e2 = e1[templ];
 
-                    /*if (it2->empty()) // all
-                        continue;*/
+                    auto type = static_cast<uint32_t>(t.asUInt());
 
-                    auto& v = *it2;
+                    switch (type)
+                    {
+                    case 0:
+                        e2.type = TRecTargetType::All;
+                        break;
+                    case 1:
+                    {
+                        auto& v = (*it2)["formids"];
 
-                    for (const auto& e : v) {
-                        if (!e.isNumeric())
-                            throw std::exception("Unexpected data (4) (expected numeric)");
+                        if (!v.isArray())
+                            throw std::exception("Invalid formid list");
 
-                        e2.push_back(static_cast<SKSE::FormID>(e.asUInt()));
+                        for (const auto& e : v) {
+                            if (!e.isNumeric())
+                                throw std::exception("Unexpected formid data (not numeric)");
+
+                            e2.formids.push_back(static_cast<SKSE::FormID>(e.asUInt()));
+                        }
+
+                        e2.type = TRecTargetType::FormIDs;
+                    }
+                    break;
+                    default:
+                        throw std::exception("Unrecognized type");
+                    }
+
+                    auto& v = (*it2)["gender"];
+
+                    if (!v.isNull())
+                    {
+                        if (!v.isNumeric())
+                            throw std::exception("Invalid gender specifier");
+
+                        switch (v.asInt())
+                        {
+                        case -1:
+                            e2.gender = TRecTargetGender::Any;
+                            break;
+                        case 0:
+                            e2.gender = TRecTargetGender::Male;
+                            break;
+                        case 1:
+                            e2.gender = TRecTargetGender::Female;
+                            break;
+                        }
+
                     }
                 }
             }
@@ -165,53 +208,71 @@ namespace CBP
 
             UInt32 modIndex = a_modInfo->GetPartialIndex();
 
-            if (!t.second.size())
+            switch (t.second.type)
             {
+            case TRecTargetType::All:
                 a_data.GetModMap().insert_or_assign(
                     modIndex,
-                    const_cast<decltype(it->second)&>(it->second));
+                    DataHolder<T>::profileData_t{
+                        Enum::Underlying(t.second.gender),
+                        const_cast<decltype(it->second)&>(it->second)
+                    }
+                );
 
-                //gLogger.Debug("!!>>> mod: 0x%X", modIndex);
+                //gLogger.Debug("!!>>> %X, %s | %hhd", modIndex, t.first.c_str(), Enum::Underlying(t.second.gender));
 
-                continue;
-            }
-
-            auto& fm = a_data.GetFormMap();
-
-            for (auto& p : t.second)
+                break;
+            case TRecTargetType::FormIDs:
             {
-                auto formid = a_modInfo->GetFormID(p);
+                auto& fm = a_data.GetFormMap();
 
-                auto form = LookupFormByID(formid);
-                if (!form) {
-                    gLogger.Warning("%s: [%s] [%s] %.8X: form not found",
-                        __FUNCTION__, a_modInfo->name, t.first.c_str(), formid);
-                    continue;
-                }
+                for (auto& p : t.second.formids)
+                {
+                    auto formid = a_modInfo->GetFormID(p);
 
-                if (form->formType == TESNPC::kTypeID)
-                {
-                    fm[modIndex].first.insert_or_assign(
-                        formid, const_cast<decltype(it->second)&>(it->second));
-                }
-                else if (form->formType == TESRace::kTypeID)
-                {
-                    fm[modIndex].second.insert_or_assign(
-                        formid, const_cast<decltype(it->second)&>(it->second));
-                }
-                else
-                {
-                    gLogger.Warning("%s: [%s] [%s] %.8X: unexpected form type %hhu",
-                        __FUNCTION__, a_modInfo->name, t.first.c_str(), formid, form->formType);
-                }
+                    auto form = LookupFormByID(formid);
+                    if (!form) {
+                        gLogger.Warning("%s: [%s] [%s] %.8X: form not found",
+                            __FUNCTION__, a_modInfo->name, t.first.c_str(), formid);
+                        continue;
+                    }
 
-                //gLogger.Debug("!!>>> %hhu, 0x%X -> %s", form->formType, formid, t.first.c_str());
+                    if (form->formType == TESNPC::kTypeID)
+                    {
+                        fm[modIndex].first.insert_or_assign(
+                            formid, DataHolder<T>::profileData_t{
+                                Enum::Underlying(t.second.gender),
+                                const_cast<decltype(it->second)&>(it->second)
+                            });
+                    }
+                    else if (form->formType == TESRace::kTypeID)
+                    {
+                        fm[modIndex].second.insert_or_assign(
+                            formid, DataHolder<T>::profileData_t{
+                                Enum::Underlying(t.second.gender),
+                                const_cast<decltype(it->second)&>(it->second)
+                            });
+                    }
+                    else
+                    {
+                        gLogger.Warning("%s: [%s] [%s] %.8X: unexpected form type %hhu",
+                            __FUNCTION__, a_modInfo->name, t.first.c_str(), formid, form->formType);
+                    }
+
+                    //gLogger.Debug("!!>>> %hhu, 0x%X -> %s", form->formType, formid, t.first.c_str());
+                }
+            }
+            break;
             }
         }
     }
 
     bool ITemplate::LoadProfiles()
     {
+        std::pair<bool, int> a;
+
+        std::reference_wrapper<decltype(a)> tt(a);
+
         if (!m_dataPhysics.Load(PLUGIN_CBP_TEMP_PROF_PHYS))
             return false;
 

@@ -30,6 +30,13 @@ namespace CBP
         SKSE::ObjectHandle crosshairRef;
     };
 
+    struct actorRefData_t
+    {
+        SKSE::FormID m_npc;
+        std::pair<bool, SKSE::FormID> m_race;
+        char m_sex;
+    };
+
     typedef std::pair<uint32_t, float> armorCacheValue_t;
     typedef std::unordered_map<std::string, std::unordered_map<std::string, armorCacheValue_t>> armorCacheEntry_t;
     typedef std::unordered_map<std::string, armorCacheEntry_t> armorCache_t;
@@ -38,6 +45,7 @@ namespace CBP
     {
         typedef std::unordered_map<SKSE::FormID, raceCacheEntry_t> raceList_t;
         typedef std::unordered_map<SKSE::ObjectHandle, SKSE::FormID> handleFormIdMap_t;
+        typedef std::unordered_map<SKSE::ObjectHandle, actorRefData_t> actorRefMap_t;
         typedef std::unordered_map<SKSE::ObjectHandle, actorCacheEntry_t> actorCache_t;
 
 
@@ -54,13 +62,12 @@ namespace CBP
             actorNpcMap.erase(a_handle);
         }*/
 
-        static inline bool ResolveHandleToNpc(SKSE::ObjectHandle a_handle, SKSE::FormID& a_out) {
+        static inline const actorRefData_t* GetActorRefInfo(SKSE::ObjectHandle a_handle) {
             auto it = actorNpcMap.find(a_handle);
             if (it != actorNpcMap.end()) {
-                a_out = it->second;
-                return true;
+                return std::addressof(it->second);
             }
-            return false;
+            return nullptr;
         }
 
         static void UpdateActorCache(const simActorList_t& a_list);
@@ -89,10 +96,6 @@ namespace CBP
             return raceList.size();
         }
 
-        [[nodiscard]] inline static const auto& GetActorRaceMap() {
-            return actorRaceMap;
-        }
-
         [[nodiscard]] inline static bool IsIgnoredRace(SKSE::FormID a_formid) {
             return ignoredRaces.find(a_formid) != ignoredRaces.end();
         }
@@ -111,8 +114,7 @@ namespace CBP
         static void AddExtraActorEntry(SKSE::ObjectHandle a_handle);
 
         static raceList_t raceList;
-        static handleFormIdMap_t actorRaceMap;
-        static handleFormIdMap_t actorNpcMap;
+        static actorRefMap_t actorNpcMap;
 
         static actorCache_t actorCache;
         static SKSE::ObjectHandle crosshairRef;

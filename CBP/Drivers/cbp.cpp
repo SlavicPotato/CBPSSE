@@ -156,57 +156,6 @@ namespace CBP
         );
     }
 
-    bool DCBP::ActorHasNode(SKSE::ObjectHandle a_handle, const std::string& a_node)
-    {
-        auto& actors = GetSimActorList();
-        auto it = actors.find(a_handle);
-        if (it == actors.end())
-            return false;
-
-        return it->second.HasNode(a_node);
-    }
-
-    bool DCBP::ActorHasConfigGroup(SKSE::ObjectHandle a_handle, const std::string& a_cg)
-    {
-        auto& actors = GetSimActorList();
-        auto it = actors.find(a_handle);
-        if (it != actors.end())
-            return it->second.HasConfigGroup(a_cg);
-
-        auto& cgMap = IConfig::GetConfigGroupMap();
-        auto itc = cgMap.find(a_cg);
-        if (itc == cgMap.end())
-            return false;
-
-        for (const auto& e : itc->second) {
-            configNode_t tmp;
-            if (IConfig::GetActorNodeConfig(a_handle, e, tmp))
-                if (tmp)
-                    return true;
-        }
-
-        return false;
-    }
-
-
-    bool DCBP::GlobalHasConfigGroup(const std::string& a_cg)
-    {
-        auto& cgMap = IConfig::GetConfigGroupMap();
-        auto itc = cgMap.find(a_cg);
-        if (itc == cgMap.end())
-            return true;
-
-        for (const auto& e : itc->second) {
-            configNode_t tmp;
-            if (IConfig::GetGlobalNodeConfig(e, tmp)) {
-                if (tmp)
-                    return true;
-            }
-        }
-
-        return false;
-    }
-
     void DCBP::UIQueueUpdateCurrentActor()
     {
         if (m_Instance.conf.ui_enabled)
@@ -769,9 +718,10 @@ namespace CBP
 
         m_Instance.m_loadInstance++;
 
-        IConfig::ClearActorConfigHolder();
+        IConfig::ClearActorPhysicsConfigHolder();
         IConfig::ClearActorNodeConfigHolder();
-        IConfig::ClearRaceConfigHolder();
+        IConfig::ClearRacePhysicsConfigHolder();
+        IConfig::ClearRaceNodeConfigHolder();
 
         auto& iface = m_Instance.m_serialization;
         auto& dgp = IConfig::GetDefaultGlobalProfile();

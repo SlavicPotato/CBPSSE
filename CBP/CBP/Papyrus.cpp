@@ -120,7 +120,7 @@ namespace CBP
 
         if (m_handle)
         {
-            auto& ach = IConfig::GetActorConfigHolder();
+            auto& ach = IConfig::GetActorPhysicsConfigHolder();
 
             auto ith = ach.find(m_handle);
             if (ith == ach.end())

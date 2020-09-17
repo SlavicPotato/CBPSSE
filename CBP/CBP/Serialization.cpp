@@ -278,6 +278,8 @@ namespace CBP
                 globalConfig.ui.clampValuesRace = ui.get("clampValuesRace", true).asBool();
                 globalConfig.ui.rlPlayableOnly = ui.get("rlPlayableOnly", true).asBool();
                 globalConfig.ui.rlShowEditorIDs = ui.get("rlShowEditorIDs", true).asBool();
+                globalConfig.ui.rlNodePlayableOnly = ui.get("rlNodePlayableOnly", true).asBool();
+                globalConfig.ui.rlNodeShowEditorIDs = ui.get("rlNodeShowEditorIDs", true).asBool();
                 globalConfig.ui.syncWeightSlidersMain = ui.get("syncWeightSlidersMain", false).asBool();
                 globalConfig.ui.syncWeightSlidersRace = ui.get("syncWeightSlidersRace", false).asBool();
                 globalConfig.ui.selectCrosshairActor = ui.get("selectCrosshairActor", false).asBool();
@@ -455,6 +457,8 @@ namespace CBP
             ui["clampValuesRace"] = globalConfig.ui.clampValuesRace;
             ui["rlPlayableOnly"] = globalConfig.ui.rlPlayableOnly;
             ui["rlShowEditorIDs"] = globalConfig.ui.rlShowEditorIDs;
+            ui["rlNodePlayableOnly"] = globalConfig.ui.rlNodePlayableOnly;
+            ui["rlNodeShowEditorIDs"] = globalConfig.ui.rlNodeShowEditorIDs;
             ui["syncWeightSlidersMain"] = globalConfig.ui.syncWeightSlidersMain;
             ui["syncWeightSlidersRace"] = globalConfig.ui.syncWeightSlidersRace;
             ui["selectCrosshairActor"] = globalConfig.ui.selectCrosshairActor;
@@ -775,6 +779,82 @@ namespace CBP
         return c;
     }
 
+    size_t ISerialization::_LoadRaceProfiles(
+        SKSESerializationInterface* intfc,
+        const Json::Value& a_root,
+        raceConfigComponentsHolder_t& a_raceConfigComponents,
+        raceConfigNodesHolder_t& a_nodeData)
+    {
+        if (a_root.empty())
+            return 0;
+
+        if (!a_root.isObject())
+            throw std::exception("Expected an object");
+
+        size_t c = 0;
+
+        for (auto it = a_root.begin(); it != a_root.end(); ++it)
+        {
+            if (!it->isObject()) {
+                Error("Expected an object");
+                continue;
+            }
+
+            SKSE::FormID formID;
+
+            try {
+                formID = static_cast<SKSE::FormID>(std::stoul(it.key().asString()));
+            }
+            catch (...) {
+                Error("Exception while trying to convert formID");
+                continue;
+            }
+
+            if (formID == 0) {
+                Error("formID == 0");
+                continue;
+            }
+
+            SKSE::FormID newFormID = 0;
+
+            if (intfc != nullptr) {
+                if (!SKSE::ResolveRaceForm(intfc, formID, &newFormID)) {
+                    Error("0x%lX: Couldn't resolve handle, discarding", formID);
+                    continue;
+                }
+
+                if (newFormID == 0) {
+                    Error("0x%lX: newFormID == 0", formID);
+                    continue;
+                }
+            }
+            else {
+                newFormID = formID;
+            }
+
+            auto& rl = IData::GetRaceList();
+            if (rl.find(newFormID) == rl.end()) {
+                Warning("0x%lX: race record not found", newFormID);
+                continue;
+            }
+
+            configComponents_t componentData;
+
+            if (m_componentParser.Parse(*it, componentData))
+                a_raceConfigComponents.emplace(newFormID, std::move(componentData));
+
+            configNodes_t nodeData;
+
+            if (m_nodeParser.Parse(*it, nodeData))
+                a_nodeData.emplace(newFormID, std::move(nodeData));
+
+            c++;
+        }
+
+
+        return c;
+    }
+
     size_t ISerialization::LoadActorProfiles(SKSESerializationInterface* intfc, std::stringstream& a_data)
     {
         try
@@ -788,7 +868,7 @@ namespace CBP
 
             size_t res = _LoadActorProfiles(intfc, root, actorConfigComponents, actorConfigNodes);
 
-            IConfig::SetActorConfigHolder(std::move(actorConfigComponents));
+            IConfig::SetActorPhysicsConfigHolder(std::move(actorConfigComponents));
             IConfig::SetActorNodeConfigHolder(std::move(actorConfigNodes));
 
             return res;
@@ -847,6 +927,7 @@ namespace CBP
             actorConfigComponentsHolder_t actorConfigComponents;
             actorConfigNodesHolder_t actorConfigNodes;
             raceConfigComponentsHolder_t raceConfigComponents;
+            raceConfigNodesHolder_t raceConfigNodes;
 
             configComponents_t globalComponentData;
             configNodes_t globalNodeData;
@@ -855,7 +936,7 @@ namespace CBP
                 _LoadActorProfiles(intfc, root["actors"], actorConfigComponents, actorConfigNodes);
 
             if (a_flags & IMPORT_RACES)
-                _LoadRaceProfiles(intfc, root["races"], raceConfigComponents);
+                _LoadRaceProfiles(intfc, root["races"], raceConfigComponents, raceConfigNodes);
 
             if (a_flags & IMPORT_GLOBAL) {
                 if (!m_componentParser.Parse(root["global"], globalComponentData))
@@ -866,12 +947,14 @@ namespace CBP
             }
 
             if (a_flags & IMPORT_ACTORS) {
-                IConfig::SetActorConfigHolder(std::move(actorConfigComponents));
+                IConfig::SetActorPhysicsConfigHolder(std::move(actorConfigComponents));
                 IConfig::SetActorNodeConfigHolder(std::move(actorConfigNodes));
             }
 
-            if (a_flags & IMPORT_RACES)
-                IConfig::SetRaceConfigHolder(std::move(raceConfigComponents));
+            if (a_flags & IMPORT_RACES) {
+                IConfig::SetRacePhysicsConfigHolder(std::move(raceConfigComponents));
+                IConfig::SetRaceNodeConfigHolder(std::move(raceConfigNodes));
+            }
 
             if (a_flags & IMPORT_GLOBAL) {
                 IConfig::SetGlobalPhysicsConfig(std::move(globalComponentData));
@@ -896,7 +979,7 @@ namespace CBP
 
             auto& actors = root["actors"];
 
-            for (const auto& e : IConfig::GetActorConfigHolder()) {
+            for (const auto& e : IConfig::GetActorPhysicsConfigHolder()) {
                 auto& actor = actors[std::to_string(e.first)];
                 m_componentParser.Create(e.second, actor);
             }
@@ -908,9 +991,14 @@ namespace CBP
 
             auto& races = root["races"];
 
-            for (const auto& e : IConfig::GetRaceConfigHolder()) {
+            for (const auto& e : IConfig::GetRacePhysicsConfigHolder()) {
                 auto& race = races[std::to_string(e.first)];
                 m_componentParser.Create(e.second, race);
+            }
+            
+            for (const auto& e : IConfig::GetRaceNodeConfigHolder()) {
+                auto& race = races[std::to_string(e.first)];
+                m_nodeParser.Create(e.second, race);
             }
 
             auto& global = root["global"];
@@ -930,78 +1018,6 @@ namespace CBP
         }
     }
 
-    size_t ISerialization::_LoadRaceProfiles(
-        SKSESerializationInterface* intfc,
-        const Json::Value& a_root,
-        raceConfigComponentsHolder_t& a_raceConfigComponents)
-    {
-        if (a_root.empty())
-            return 0;
-
-        if (!a_root.isObject())
-            throw std::exception("Expected an object");
-
-        size_t c = 0;
-
-        for (auto it = a_root.begin(); it != a_root.end(); ++it)
-        {
-            if (!it->isObject()) {
-                Error("Expected an object");
-                continue;
-            }
-
-            SKSE::FormID formID;
-
-            try {
-                formID = static_cast<SKSE::FormID>(std::stoul(it.key().asString()));
-            }
-            catch (...) {
-                Error("Exception while trying to convert formID");
-                continue;
-            }
-
-            if (formID == 0) {
-                Error("formID == 0");
-                continue;
-            }
-
-            SKSE::FormID newFormID = 0;
-
-            if (intfc != nullptr) {
-                if (!SKSE::ResolveRaceForm(intfc, formID, &newFormID)) {
-                    Error("0x%lX: Couldn't resolve handle, discarding", formID);
-                    continue;
-                }
-
-                if (newFormID == 0) {
-                    Error("0x%lX: newFormID == 0", formID);
-                    continue;
-                }
-            }
-            else {
-                newFormID = formID;
-            }
-
-            auto& rl = IData::GetRaceList();
-            if (rl.find(newFormID) == rl.end()) {
-                Warning("0x%lX: race record not found", newFormID);
-                continue;
-            }
-
-            configComponents_t data;
-
-            if (!m_componentParser.Parse(*it, data))
-                continue;
-
-            a_raceConfigComponents.emplace(newFormID, std::move(data));
-
-            c++;
-        }
-
-
-        return c;
-    }
-
     size_t ISerialization::LoadRaceProfiles(SKSESerializationInterface* intfc, std::stringstream& a_data)
     {
         try
@@ -1011,10 +1027,12 @@ namespace CBP
             a_data >> root;
 
             raceConfigComponentsHolder_t raceConfigComponents;
+            raceConfigNodesHolder_t raceConfigNodes;
 
-            size_t res = _LoadRaceProfiles(intfc, root, raceConfigComponents);
+            size_t res = _LoadRaceProfiles(intfc, root, raceConfigComponents, raceConfigNodes);
 
-            IConfig::SetRaceConfigHolder(std::move(raceConfigComponents));
+            IConfig::SetRacePhysicsConfigHolder(std::move(raceConfigComponents));
+            IConfig::SetRaceNodeConfigHolder(std::move(raceConfigNodes));
 
             return res;
         }
@@ -1032,7 +1050,7 @@ namespace CBP
         {
             Json::Value root;
 
-            for (const auto& e : IConfig::GetActorConfigHolder()) {
+            for (const auto& e : IConfig::GetActorPhysicsConfigHolder()) {
                 auto& actor = root[std::to_string(e.first)];
                 m_componentParser.Create(e.second, actor);
             }
@@ -1051,6 +1069,34 @@ namespace CBP
             m_lastException = e;
             Error("%s: %s", __FUNCTION__, e.what());
             return false;
+        }
+    }
+
+    size_t ISerialization::SerializeRaceProfiles(std::stringstream& a_out)
+    {
+        try
+        {
+            Json::Value root;
+
+            for (const auto& e : IConfig::GetRacePhysicsConfigHolder()) {
+                auto& race = root[std::to_string(e.first)];
+                m_componentParser.Create(e.second, race);
+            }
+
+            for (const auto& e : IConfig::GetRaceNodeConfigHolder()) {
+                auto& actor = root[std::to_string(e.first)];
+                m_nodeParser.Create(e.second, actor);
+            }
+
+            a_out << root;
+
+            return static_cast<size_t>(root.size());
+        }
+        catch (const std::exception& e)
+        {
+            m_lastException = e;
+            Error("%s: %s", __FUNCTION__, e.what());
+            return 0;
         }
     }
 
@@ -1093,29 +1139,6 @@ namespace CBP
             m_lastException = e;
             Error("%s: %s", __FUNCTION__, e.what());
             return false;
-        }
-    }
-
-    size_t ISerialization::SerializeRaceProfiles(std::stringstream& a_out)
-    {
-        try
-        {
-            Json::Value root;
-
-            for (const auto& e : IConfig::GetRaceConfigHolder()) {
-                auto& race = root[std::to_string(e.first)];
-                m_componentParser.Create(e.second, race);
-            }
-
-            a_out << root;
-
-            return static_cast<size_t>(root.size());
-        }
-        catch (const std::exception& e)
-        {
-            m_lastException = e;
-            Error("%s: %s", __FUNCTION__, e.what());
-            return 0;
         }
     }
 

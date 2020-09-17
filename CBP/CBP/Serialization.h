@@ -93,7 +93,8 @@ namespace CBP
         size_t _LoadRaceProfiles(
             SKSESerializationInterface* intfc,
             const Json::Value& a_root,
-            raceConfigComponentsHolder_t& a_raceConfigComponents);
+            raceConfigComponentsHolder_t& a_raceConfigComponents,
+            raceConfigNodesHolder_t& a_nodeData);
 
         size_t _LoadGlobalProfile(const Json::Value& a_root);
 

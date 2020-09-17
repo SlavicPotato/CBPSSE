@@ -3,8 +3,7 @@
 namespace CBP
 {
     IData::raceList_t IData::raceList;
-    IData::handleFormIdMap_t IData::actorRaceMap;
-    IData::handleFormIdMap_t IData::actorNpcMap;
+    IData::actorRefMap_t IData::actorNpcMap;
     IData::actorCache_t IData::actorCache;
     SKSE::ObjectHandle IData::crosshairRef = 0;
     uint64_t IData::actorCacheUpdateId = 1;
@@ -22,12 +21,27 @@ namespace CBP
 
     void IData::UpdateActorMaps(SKSE::ObjectHandle a_handle, const Actor* a_actor)
     {
+        actorRefData_t tmp;
+
         if (a_actor->race != nullptr)
-            actorRaceMap.insert_or_assign(a_handle, a_actor->race->formID);
+        {
+            tmp.m_race.first = true;
+            tmp.m_race.second = a_actor->race->formID;
+        }
+        else
+            tmp.m_race.first = false;
 
         auto npc = DYNAMIC_CAST(a_actor->baseForm, TESForm, TESNPC);
         if (npc != nullptr)
-            actorNpcMap.insert_or_assign(a_handle, npc->formID);
+        {
+            auto sex = CALL_MEMBER_FN(npc, GetSex)();
+
+            tmp.m_npc = npc->formID;
+            tmp.m_sex = CALL_MEMBER_FN(npc, GetSex)();
+
+            actorNpcMap.insert_or_assign(
+                a_handle, std::move(tmp));
+        }
     }
 
     void IData::UpdateActorMaps(SKSE::ObjectHandle a_handle)
@@ -36,12 +50,7 @@ namespace CBP
         if (actor == nullptr)
             return;
 
-        if (actor->race != nullptr)
-            actorRaceMap.insert_or_assign(a_handle, actor->race->formID);
-
-        auto npc = DYNAMIC_CAST(actor->baseForm, TESForm, TESNPC);
-        if (npc != nullptr) 
-            actorNpcMap.insert_or_assign(a_handle, npc->formID);
+        UpdateActorMaps(a_handle, actor);
     }
 
     void IData::AddExtraActorEntry(
@@ -83,7 +92,7 @@ namespace CBP
                 actorCacheEntry_t{ true, std::move(ss.str()) });
         }
 
-        for (const auto& e : IConfig::GetActorConfigHolder())
+        for (const auto& e : IConfig::GetActorPhysicsConfigHolder())
         {
             AddExtraActorEntry(e.first);
         }

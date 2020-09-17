@@ -124,6 +124,8 @@ namespace CBP
 
     void SimObject::UpdateConfig(Actor* a_actor, bool a_collisions, const configComponents_t& a_config)
     {
+        auto& nodeConfig = IConfig::GetActorNodeConfig(m_handle);
+
         for (auto& p : m_things)
         {
             auto it2 = a_config.find(p.second.GetConfigGroupName());
@@ -131,7 +133,10 @@ namespace CBP
                 continue;
 
             configNode_t nodeConf;
-            IConfig::GetActorNodeConfig(m_handle, p.first, nodeConf);
+
+            auto itn = nodeConfig.find(p.first);
+            if (itn != nodeConfig.end())
+                nodeConf = itn->second;
 
             bool collisions, movement;
             nodeConf.Get(m_sex, collisions, movement);

@@ -4,11 +4,12 @@ namespace CBP
 {
     enum class UIEditorID : int
     {
-        kProfileEditorSim = 0,
-        kRaceEditor,
+        kProfileEditorPhys = 0,
+        kRacePhysicsEditor,
         kMainEditor,
         kProfileEditorNode,
-        kNodeEditor
+        kNodeEditor,
+        kRaceNodeEditor
     };
 
     template <typename K, typename V>
@@ -121,6 +122,8 @@ namespace CBP
             bool clampValuesRace = true;
             bool rlPlayableOnly = true;
             bool rlShowEditorIDs = true;
+            bool rlNodePlayableOnly = true;
+            bool rlNodeShowEditorIDs = true;
             bool syncWeightSlidersMain = false;
             bool syncWeightSlidersRace = false;
             bool selectCrosshairActor = false;
@@ -364,11 +367,24 @@ namespace CBP
         [[nodiscard]] inline explicit operator bool() const noexcept {
             return femaleMovement || femaleCollisions || maleMovement || maleCollisions;
         }
+
+        [[nodiscard]] inline bool Enabled() const noexcept {
+            return femaleMovement || femaleCollisions || maleMovement || maleCollisions;
+        }
+
+        [[nodiscard]] inline bool HasMovement() const noexcept {
+            return femaleMovement || maleMovement;
+        }
+        
+        [[nodiscard]] inline bool HasCollisions() const noexcept {
+            return femaleCollisions || maleCollisions;
+        }
     };
 
     typedef std::map<std::string, configNode_t> configNodes_t;
     typedef configNodes_t::value_type configNodesValue_t;
     typedef std::unordered_map<SKSE::ObjectHandle, configNodes_t> actorConfigNodesHolder_t;
+    typedef std::unordered_map<SKSE::FormID, configNodes_t> raceConfigNodesHolder_t;
 
     enum class ConfigClass
     {
@@ -404,24 +420,24 @@ namespace CBP
         [[nodiscard]] static ConfigClass GetActorNodeConfigClass(SKSE::ObjectHandle a_handle);
 
         // Not guaranteed to be actual actor conf storage
-        [[nodiscard]] static const configComponents_t& GetActorConf(SKSE::ObjectHandle handle);
+        [[nodiscard]] static const configComponents_t& GetActorPhysicsConfig(SKSE::ObjectHandle handle);
 
-        [[nodiscard]] static const configComponents_t& GetActorConfAO(SKSE::ObjectHandle handle);
-        [[nodiscard]] static configComponents_t& GetOrCreateActorConf(SKSE::ObjectHandle handle);
-        static void SetActorConf(SKSE::ObjectHandle a_handle, const configComponents_t& a_conf);
-        static void SetActorConf(SKSE::ObjectHandle a_handle, configComponents_t&& a_conf);
+        [[nodiscard]] static const configComponents_t& GetActorPhysicsConfigAO(SKSE::ObjectHandle handle);
+        [[nodiscard]] static configComponents_t& GetOrCreateActorPhysicsConfig(SKSE::ObjectHandle handle);
+        static void SetActorPhysicsConfig(SKSE::ObjectHandle a_handle, const configComponents_t& a_conf);
+        static void SetActorPhysicsConfig(SKSE::ObjectHandle a_handle, configComponents_t&& a_conf);
 
         inline static void EraseActorConf(SKSE::ObjectHandle handle) {
             actorConfHolder.erase(handle);
         }
 
         // Not guaranteed to be actual race conf storage
-        [[nodiscard]] static const configComponents_t& GetRaceConf(SKSE::FormID a_formid);
+        [[nodiscard]] static const configComponents_t& GetRacePhysicsConfig(SKSE::FormID a_formid);
 
-        [[nodiscard]] static configComponents_t& GetOrCreateRaceConf(SKSE::FormID a_formid);
-        static void SetRaceConf(SKSE::FormID a_formid, const configComponents_t& a_conf);
-        static void SetRaceConf(SKSE::FormID a_formid, configComponents_t&& a_conf);
-        inline static void EraseRaceConf(SKSE::FormID handle) {
+        [[nodiscard]] static configComponents_t& GetOrCreateRacePhysicsConfig(SKSE::FormID a_formid);
+        static void SetRacePhysicsConfig(SKSE::FormID a_formid, const configComponents_t& a_conf);
+        static void SetRacePhysicsConfig(SKSE::FormID a_formid, configComponents_t&& a_conf);
+        inline static void EraseRacePhysicsConfig(SKSE::FormID handle) {
             raceConfHolder.erase(handle);
         }
 
@@ -452,32 +468,32 @@ namespace CBP
             return thingGlobalConfigDefaults;
         }
 
-        [[nodiscard]] inline static auto& GetActorConfigHolder() {
+        [[nodiscard]] inline static auto& GetActorPhysicsConfigHolder() {
             return actorConfHolder;
         }
 
-        inline static void SetActorConfigHolder(actorConfigComponentsHolder_t&& a_rhs) noexcept {
+        inline static void SetActorPhysicsConfigHolder(actorConfigComponentsHolder_t&& a_rhs) noexcept {
             actorConfHolder = std::forward<actorConfigComponentsHolder_t>(a_rhs);
-            loadState.actorPhys = true;
         }
 
-        [[nodiscard]] inline static auto& GetRaceConfigHolder() {
+        [[nodiscard]] inline static auto& GetRacePhysicsConfigHolder() {
             return raceConfHolder;
         }
 
-        inline static void SetRaceConfigHolder(raceConfigComponentsHolder_t&& a_rhs) noexcept {
+        inline static void SetRacePhysicsConfigHolder(raceConfigComponentsHolder_t&& a_rhs) noexcept {
             raceConfHolder = std::forward<raceConfigComponentsHolder_t>(a_rhs);
-            loadState.racePhys = true;
+        }
+        
+        inline static void SetRaceNodeConfigHolder(raceConfigNodesHolder_t&& a_rhs) noexcept {
+            raceNodeConfigHolder = std::forward<raceConfigNodesHolder_t>(a_rhs);
         }
 
-        inline static void ClearActorConfigHolder() {
+        inline static void ClearActorPhysicsConfigHolder() {
             actorConfHolder.clear();
-            loadState.actorPhys = false;
         }
 
-        inline static void ClearRaceConfigHolder() {
+        inline static void ClearRacePhysicsConfigHolder() {
             raceConfHolder.clear();
-            loadState.racePhys = false;
         }
 
         [[nodiscard]] inline static auto& GetGlobalConfig() {
@@ -571,41 +587,43 @@ namespace CBP
         [[nodiscard]] inline static auto& GetActorNodeConfigHolder() {
             return actorNodeConfigHolder;
         }
+        
+        [[nodiscard]] inline static auto& GetRaceNodeConfigHolder() {
+            return raceNodeConfigHolder;
+        }
 
         inline static void SetActorNodeConfigHolder(actorConfigNodesHolder_t&& a_rhs) noexcept {
             actorNodeConfigHolder = std::forward<actorConfigNodesHolder_t>(a_rhs);
-            loadState.actorNode = true;
         }
 
         static const configNodes_t& GetActorNodeConfig(SKSE::ObjectHandle a_handle);
+        static const configNodes_t& GetRaceNodeConfig(SKSE::FormID a_formid);
         static configNodes_t& GetOrCreateActorNodeConfig(SKSE::ObjectHandle a_handle);
+        static configNodes_t& GetOrCreateRaceNodeConfig(SKSE::FormID a_formid);
         static bool GetActorNodeConfig(SKSE::ObjectHandle a_handle, const std::string& a_node, configNode_t& a_out);
         static void SetActorNodeConfig(SKSE::ObjectHandle a_handle, const configNodes_t& a_conf);
         static void SetActorNodeConfig(SKSE::ObjectHandle a_handle, configNodes_t&& a_conf);
+        static void SetRaceNodeConfig(SKSE::FormID a_handle, const configNodes_t& a_conf);
+        static void SetRaceNodeConfig(SKSE::FormID a_handle, configNodes_t&& a_conf);
 
-        inline static void EraseActorNodeConfig(SKSE::ObjectHandle handle) {
-            actorNodeConfigHolder.erase(handle);
+        inline static void EraseActorNodeConfig(SKSE::ObjectHandle a_formid) {
+            actorNodeConfigHolder.erase(a_formid);
+        }
+        
+        inline static void EraseRaceNodeConfig(SKSE::FormID a_formid) {
+            raceNodeConfigHolder.erase(a_formid);
         }
 
         inline static void ClearActorNodeConfigHolder() {
             actorNodeConfigHolder.clear();
-            loadState.actorNode = false;
+        }
+        
+        inline static void ClearRaceNodeConfigHolder() {
+            raceNodeConfigHolder.clear();
         }
 
         inline static const auto& GetConfigGroupMap() {
             return configGroupMap;
-        }
-
-        inline static void SetActorPhysLoadState(bool a_newState) {
-            loadState.actorPhys = a_newState;
-        }
-
-        inline static void SetActorNodeLoadState(bool a_newState) {
-            loadState.actorNode = a_newState;
-        }
-
-        inline static void SetRacePhysLoadState(bool a_newState) {
-            loadState.racePhys = a_newState;
         }
 
         inline static void StoreDefaultGlobalProfile() {
@@ -672,15 +690,10 @@ namespace CBP
 
         static configNodes_t globalNodeConfigHolder;
         static actorConfigNodesHolder_t actorNodeConfigHolder;
+        static raceConfigNodesHolder_t raceNodeConfigHolder;
 
         static armorOverrides_t armorOverrides;
         static mergedConfCache_t mergedConfCache;
-
-        static struct configLoadStates_t {
-            bool actorPhys;
-            bool actorNode;
-            bool racePhys;
-        } loadState;
 
         static combinedData_t defaultGlobalProfileStorage;
 

@@ -16,12 +16,11 @@ namespace CBP
 
     configNodes_t IConfig::globalNodeConfigHolder;
     actorConfigNodesHolder_t IConfig::actorNodeConfigHolder;
+    raceConfigNodesHolder_t IConfig::raceNodeConfigHolder;
     combinedData_t IConfig::defaultGlobalProfileStorage;
 
     armorOverrides_t IConfig::armorOverrides;
     mergedConfCache_t IConfig::mergedConfCache;
-
-    IConfig::configLoadStates_t IConfig::loadState{ false, false, false };
 
     IConfig::IConfigLog IConfig::log;
 
@@ -392,24 +391,18 @@ namespace CBP
 
         std::pair<bool, SKSE::FormID> race;
 
-        auto& rm = IData::GetActorRaceMap();
-        auto it = rm.find(a_handle);
-        if (it != rm.end())
+        auto ac = IData::GetActorRefInfo(a_handle);
+
+        if (ac)
         {
-            if (raceConfHolder.find(it->second) != raceConfHolder.end())
-                return ConfigClass::kConfigRace;
+            if (ac->m_race.first)
+                if (raceConfHolder.find(ac->m_race.second) != raceConfHolder.end())
+                    return ConfigClass::kConfigRace;
 
-            race.first = true;
-            race.second = it->second;
-        }
-        else
-            race.first = false;
-
-        SKSE::FormID npcFormID;
-        if (IData::ResolveHandleToNpc(a_handle, npcFormID)) {
-            auto profile = ITemplate::GetProfile<PhysicsProfile>(npcFormID, race);
+            auto profile = ITemplate::GetProfile<PhysicsProfile>(ac);
             if (profile)
                 return ConfigClass::kConfigTemplate;
+
         }
 
         return ConfigClass::kConfigGlobal;
@@ -420,22 +413,14 @@ namespace CBP
         if (actorNodeConfigHolder.find(a_handle) != actorNodeConfigHolder.end())
             return ConfigClass::kConfigActor;
 
-        SKSE::FormID npcFormID;
-        if (IData::ResolveHandleToNpc(a_handle, npcFormID))
+        auto ac = IData::GetActorRefInfo(a_handle);
+        if (ac)
         {
-            std::pair<bool, SKSE::FormID> race;
+            if (ac->m_race.first)
+                if (raceNodeConfigHolder.find(ac->m_race.second) != raceNodeConfigHolder.end())
+                    return ConfigClass::kConfigRace;
 
-            auto& rm = IData::GetActorRaceMap();
-            auto itm = rm.find(a_handle);
-            if (itm != rm.end())
-            {
-                race.first = true;
-                race.second = itm->second;
-            }
-            else
-                race.first = false;
-
-            auto profile = ITemplate::GetProfile<NodeProfile>(npcFormID, race);
+            auto profile = ITemplate::GetProfile<NodeProfile>(ac);
             if (profile)
                 return ConfigClass::kConfigTemplate;
         }
@@ -443,12 +428,12 @@ namespace CBP
         return ConfigClass::kConfigGlobal;
     }
 
-    void IConfig::SetActorConf(SKSE::ObjectHandle a_handle, const configComponents_t& a_conf)
+    void IConfig::SetActorPhysicsConfig(SKSE::ObjectHandle a_handle, const configComponents_t& a_conf)
     {
         actorConfHolder.insert_or_assign(a_handle, a_conf);
     }
 
-    void IConfig::SetActorConf(SKSE::ObjectHandle a_handle, configComponents_t&& a_conf)
+    void IConfig::SetActorPhysicsConfig(SKSE::ObjectHandle a_handle, configComponents_t&& a_conf)
     {
         actorConfHolder.insert_or_assign(a_handle, std::forward<configComponents_t>(a_conf));
     }
@@ -480,24 +465,28 @@ namespace CBP
         if (it != actorNodeConfigHolder.end())
             return it->second;
 
-        SKSE::FormID npcFormID;
-        if (IData::ResolveHandleToNpc(a_handle, npcFormID))
+        auto ac = IData::GetActorRefInfo(a_handle);
+        if (ac)
         {
-            std::pair<bool, SKSE::FormID> race;
-
-            auto& rm = IData::GetActorRaceMap();
-            auto itm = rm.find(a_handle);
-            if (itm != rm.end())
-            {
-                race.first = true;
-                race.second = itm->second;
+            if (ac->m_race.first) {
+                auto itr = raceNodeConfigHolder.find(ac->m_race.second);
+                if (itr != raceNodeConfigHolder.end())
+                    return itr->second;
             }
-            else
-                race.first = false;
 
-            auto profile = ITemplate::GetProfile<NodeProfile>(npcFormID, race);
+            auto profile = ITemplate::GetProfile<NodeProfile>(ac);
             if (profile)
                 return profile->Data();
+        }
+
+        return IConfig::GetGlobalNodeConfig();
+    }
+
+    const configNodes_t& IConfig::GetRaceNodeConfig(SKSE::FormID a_formid)
+    {
+        auto it = raceNodeConfigHolder.find(a_formid);
+        if (it != raceNodeConfigHolder.end()) {
+            return it->second;
         }
 
         return IConfig::GetGlobalNodeConfig();
@@ -509,28 +498,33 @@ namespace CBP
         if (it != actorNodeConfigHolder.end())
             return it->second;
 
-        SKSE::FormID npcFormID;
-        if (IData::ResolveHandleToNpc(a_handle, npcFormID))
+        auto ac = IData::GetActorRefInfo(a_handle);
+        if (ac)
         {
-            std::pair<bool, SKSE::FormID> race;
-
-            auto& rm = IData::GetActorRaceMap();
-            auto itm = rm.find(a_handle);
-            if (itm != rm.end())
-            {
-                race.first = true;
-                race.second = itm->second;
+            if (ac->m_race.first) {
+                auto itr = raceNodeConfigHolder.find(ac->m_race.second);
+                if (itr != raceNodeConfigHolder.end())
+                    return (actorNodeConfigHolder[a_handle] = itr->second);
             }
-            else
-                race.first = false;
 
-            auto profile = ITemplate::GetProfile<NodeProfile>(npcFormID, race);
+            auto profile = ITemplate::GetProfile<NodeProfile>(ac);
             if (profile)
                 return (actorNodeConfigHolder[a_handle] = profile->Data());
         }
 
         return (actorNodeConfigHolder[a_handle] = GetGlobalNodeConfig());
     }
+
+    configNodes_t& IConfig::GetOrCreateRaceNodeConfig(SKSE::FormID a_formid)
+    {
+        auto it = raceNodeConfigHolder.find(a_formid);
+        if (it != raceNodeConfigHolder.end()) {
+            return it->second;
+        }
+
+        return (raceNodeConfigHolder[a_formid] = IConfig::GetGlobalNodeConfig());
+    }
+
 
     bool IConfig::GetActorNodeConfig(SKSE::ObjectHandle a_handle, const std::string& a_node, configNode_t& a_out)
     {
@@ -554,65 +548,57 @@ namespace CBP
     {
         actorNodeConfigHolder.insert_or_assign(a_handle, std::forward<configNodes_t>(a_conf));
     }
+    
+    void IConfig::SetRaceNodeConfig(SKSE::FormID a_handle, const configNodes_t& a_conf)
+    {
+        raceNodeConfigHolder.insert_or_assign(a_handle, a_conf);
+    }
 
-    configComponents_t& IConfig::GetOrCreateActorConf(SKSE::ObjectHandle a_handle)
+    void IConfig::SetRaceNodeConfig(SKSE::FormID a_handle, configNodes_t&& a_conf)
+    {
+        raceNodeConfigHolder.insert_or_assign(a_handle, std::forward<configNodes_t>(a_conf));
+    }
+
+    configComponents_t& IConfig::GetOrCreateActorPhysicsConfig(SKSE::ObjectHandle a_handle)
     {
         auto ita = actorConfHolder.find(a_handle);
         if (ita != actorConfHolder.end())
             return ita->second;
 
-        std::pair<bool, SKSE::FormID> race;
-
-        auto& rm = IData::GetActorRaceMap();
-        auto itm = rm.find(a_handle);
-        if (itm != rm.end())
+        auto ac = IData::GetActorRefInfo(a_handle);
+        if (ac)
         {
-            auto itr = raceConfHolder.find(itm->second);
-            if (itr != raceConfHolder.end())
-                return (actorConfHolder[a_handle] = itr->second);
+            if (ac->m_race.first) {
+                auto itr = raceConfHolder.find(ac->m_race.second);
+                if (itr != raceConfHolder.end())
+                    return (actorConfHolder[a_handle] = itr->second);
+            }
 
-            race.first = true;
-            race.second = itm->second;
-        }
-        else
-            race.first = false;
-
-        SKSE::FormID npcFormID;
-        if (IData::ResolveHandleToNpc(a_handle, npcFormID)) {
-            auto profile = ITemplate::GetProfile<PhysicsProfile>(npcFormID, race);
+            auto profile = ITemplate::GetProfile<PhysicsProfile>(ac);
             if (profile)
                 return (actorConfHolder[a_handle] = profile->Data());
+
         }
 
         return (actorConfHolder[a_handle] = thingGlobalConfig);
     }
 
-    const configComponents_t& IConfig::GetActorConf(SKSE::ObjectHandle a_handle)
+    const configComponents_t& IConfig::GetActorPhysicsConfig(SKSE::ObjectHandle a_handle)
     {
         auto ita = actorConfHolder.find(a_handle);
         if (ita != actorConfHolder.end())
             return ita->second;
 
-        std::pair<bool, SKSE::FormID> race;
-
-        auto& rm = IData::GetActorRaceMap();
-        auto itm = rm.find(a_handle);
-        if (itm != rm.end())
+        auto ac = IData::GetActorRefInfo(a_handle);
+        if (ac)
         {
-            auto itr = raceConfHolder.find(itm->second);
-            if (itr != raceConfHolder.end())
-                return itr->second;
+            if (ac->m_race.first) {
+                auto itr = raceConfHolder.find(ac->m_race.second);
+                if (itr != raceConfHolder.end())
+                    return itr->second;
+            }
 
-            race.first = true;
-            race.second = itm->second;
-        }
-        else
-            race.first = false;
-
-        SKSE::FormID npcFormID;
-        if (IData::ResolveHandleToNpc(a_handle, npcFormID))
-        {
-            auto profile = ITemplate::GetProfile<PhysicsProfile>(npcFormID, race);
+            auto profile = ITemplate::GetProfile<PhysicsProfile>(ac);
             if (profile)
                 return profile->Data();
         }
@@ -620,9 +606,9 @@ namespace CBP
         return thingGlobalConfig;
     }
 
-    const configComponents_t& IConfig::GetActorConfAO(SKSE::ObjectHandle handle)
+    const configComponents_t& IConfig::GetActorPhysicsConfigAO(SKSE::ObjectHandle handle)
     {
-        auto& conf = GetActorConf(handle);
+        auto& conf = GetActorPhysicsConfig(handle);
 
         auto it = armorOverrides.find(handle);
         if (it == armorOverrides.end())
@@ -652,7 +638,7 @@ namespace CBP
         return me;
     }
 
-    configComponents_t& IConfig::GetOrCreateRaceConf(SKSE::FormID a_formid)
+    configComponents_t& IConfig::GetOrCreateRacePhysicsConfig(SKSE::FormID a_formid)
     {
         auto it = raceConfHolder.find(a_formid);
         if (it != raceConfHolder.end()) {
@@ -662,7 +648,7 @@ namespace CBP
         return (raceConfHolder[a_formid] = thingGlobalConfig);
     }
 
-    const configComponents_t& IConfig::GetRaceConf(SKSE::FormID a_formid)
+    const configComponents_t& IConfig::GetRacePhysicsConfig(SKSE::FormID a_formid)
     {
         auto it = raceConfHolder.find(a_formid);
         if (it != raceConfHolder.end()) {
@@ -672,12 +658,12 @@ namespace CBP
         return thingGlobalConfig;
     }
 
-    void IConfig::SetRaceConf(SKSE::FormID a_handle, const configComponents_t& a_conf)
+    void IConfig::SetRacePhysicsConfig(SKSE::FormID a_handle, const configComponents_t& a_conf)
     {
         raceConfHolder.insert_or_assign(a_handle, a_conf);
     }
 
-    void IConfig::SetRaceConf(SKSE::FormID a_handle, configComponents_t&& a_conf)
+    void IConfig::SetRacePhysicsConfig(SKSE::FormID a_handle, configComponents_t&& a_conf)
     {
         raceConfHolder.insert_or_assign(a_handle, std::forward<configComponents_t>(a_conf));
     }

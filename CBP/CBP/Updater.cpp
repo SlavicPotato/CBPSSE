@@ -281,7 +281,7 @@ namespace CBP
 
         IData::UpdateActorMaps(a_handle, actor);
 
-        auto& actorConf = IConfig::GetActorConfAO(a_handle);
+        auto& actorConf = IConfig::GetActorPhysicsConfigAO(a_handle);
         auto& nodeMap = IConfig::GetNodeMap();
 
         nodeDescList_t descList;
@@ -361,7 +361,7 @@ namespace CBP
         a_obj.UpdateConfig(
             a_actor,
             globalConfig.phys.collisions,
-            IConfig::GetActorConfAO(a_handle));
+            IConfig::GetActorPhysicsConfigAO(a_handle));
     }
 
     void UpdateTask::ApplyForce(

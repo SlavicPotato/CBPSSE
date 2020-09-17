@@ -7,10 +7,30 @@ namespace CBP
         Node
     };
 
+    enum class TRecTargetType : uint32_t
+    {
+        All,
+        FormIDs
+    };
+
+    enum class TRecTargetGender : char
+    {
+        Any = -1,
+        Male = 0,
+        Female = 1
+    };
+
     class TRecPlugin
     {
+        struct profileTargetDesc_t
+        {
+            TRecTargetType type;
+            TRecTargetGender gender = TRecTargetGender::Any;
+            std::vector<SKSE::FormID> formids;
+        };
+
     public:
-        typedef std::unordered_map<std::string, std::vector<SKSE::FormID>> entry_t;
+        typedef std::unordered_map<std::string, profileTargetDesc_t> entry_t;
 
         TRecPlugin(const fs::path& a_path);
 
@@ -42,11 +62,20 @@ namespace CBP
         typedef std::unordered_map<SKSE::FormID, PhysicsProfile&> templateDataHolderPhysics_t;
         typedef std::unordered_map<SKSE::FormID, NodeProfile&> templateDataHolderNode_t;
 
+
         template <class T>
         class DataHolder
         {
-            typedef std::unordered_map<UInt32, T&> templateModMap_t;
-            typedef std::unordered_map<UInt32, std::pair<std::unordered_map<SKSE::FormID, T&>, std::unordered_map<SKSE::FormID, T&>>> templateFormMap_t;
+        public:
+            struct profileData_t
+            {
+            public:
+                char gender;
+                std::reference_wrapper<T> profile;
+            };
+
+            typedef std::unordered_map<UInt32, profileData_t> templateModMap_t;
+            typedef std::unordered_map<UInt32, std::pair<std::unordered_map<SKSE::FormID, profileData_t>, std::unordered_map<SKSE::FormID, profileData_t>>> templateFormMap_t;
 
             friend class ITemplate;
 
@@ -96,18 +125,16 @@ namespace CBP
 
         template <typename T, std::enable_if_t<std::is_same<T, PhysicsProfile>::value, int> = 0>
         [[nodiscard]] __forceinline static const T* GetProfile(
-            SKSE::FormID a_npc,
-            const std::pair<bool, SKSE::FormID>& a_race)
+            const actorRefData_t* a_param)
         {
-            return GetProfileImpl(m_dataPhysics, a_npc, a_race);
+            return GetProfileImpl(m_dataPhysics, a_param);
         }
 
         template <typename T, std::enable_if_t<std::is_same<T, NodeProfile>::value, int> = 0>
         [[nodiscard]] __forceinline static const T* GetProfile(
-            SKSE::FormID a_npc,
-            const std::pair<bool, SKSE::FormID>& a_race)
+            const actorRefData_t* a_param)
         {
-            return GetProfileImpl(m_dataNode, a_npc, a_race);
+            return GetProfileImpl(m_dataNode, a_param);
         }
 
         [[nodiscard]] inline static const auto& GetLastException() {
@@ -120,36 +147,76 @@ namespace CBP
         template <typename T>
         __forceinline static const T* GetProfileImpl(
             const DataHolder<T>& a_data,
-            SKSE::FormID a_npc,
-            const std::pair<bool, SKSE::FormID>& a_race)
+            const actorRefData_t* a_param)
         {
             UInt32 modIndex;
-            if (!Game::GetModIndex(a_npc, modIndex))
+            if (!Game::GetModIndex(a_param->m_npc, modIndex))
                 return nullptr;
 
             const auto& fm = a_data.GetFormMap();
             auto itm = fm.find(modIndex);
             if (itm != fm.end())
             {
-                auto ita = itm->second.first.find(a_npc);
-                if (ita != itm->second.first.end())
-                    return std::addressof(ita->second);
+                auto ita = itm->second.first.find(a_param->m_npc);
+                if (ita != itm->second.first.end()) {
+                    auto sex = ita->second.gender;
+                    if (sex == -1 || sex == a_param->m_sex)
+                        return std::addressof(ita->second.profile.get());
+                }
 
-                if (a_race.first)
+                if (a_param->m_race.first)
                 {
-                    auto itr = itm->second.second.find(a_race.second);
-                    if (itr != itm->second.second.end())
-                        return std::addressof(itr->second);
+                    auto itr = itm->second.second.find(a_param->m_race.second);
+                    if (itr != itm->second.second.end()) {
+                        auto sex = itr->second.gender;
+                        if (sex == -1 || sex == a_param->m_sex)
+                            return std::addressof(itr->second.profile.get());
+                    }
                 }
             }
 
             const auto& mm = a_data.GetModMap();
             auto it = mm.find(modIndex);
-            if (it != mm.end())
-                return std::addressof(it->second);
+            if (it != mm.end()) {
+                auto sex = it->second.gender;
+                if (sex == -1 || sex == a_param->m_sex)
+                    return std::addressof(it->second.profile.get());
+            }
 
             return nullptr;
         }
+
+        /*template <typename T>
+        __forceinline static const T* GetProfileRaceImpl(
+            const DataHolder<T>& a_data,
+            SKSE::FormID a_formid)
+        {
+            UInt32 modIndex;
+            if (!Game::GetModIndex(a_param->m_npc, modIndex))
+                return nullptr;
+
+            const auto& fm = a_data.GetFormMap();
+            auto itm = fm.find(modIndex);
+            if (itm != fm.end())
+            {
+                auto itr = itm->second.second.find(a_formid);
+                if (itr != itm->second.second.end()) {
+                    auto sex = itr->second.gender;
+                    if (sex == -1 || sex == a_param->m_sex)
+                        return std::addressof(itr->second.profile.get());
+                }
+            }
+
+            const auto& mm = a_data.GetModMap();
+            auto it = mm.find(modIndex);
+            if (it != mm.end()) {
+                auto sex = it->second.gender;
+                if (sex == -1 || sex == a_param->m_sex)
+                    return std::addressof(it->second.profile.get());
+            }
+
+            return nullptr;
+        }*/
 
         template <typename T>
         static void ProcessTemplateRecord(DataHolder<T>& a_data, const TRecPlugin::entry_t& a_entry, ModInfo* a_modInfo);
