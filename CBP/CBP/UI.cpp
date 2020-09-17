@@ -1888,7 +1888,7 @@ namespace CBP
                 m_importDialog.UpdateFileList();
 
             if (m_importDialog.Draw(&m_state.windows.importDialog))
-                ResetList();
+                Reset(m_activeLoadInstance);
         }
     }
 
