@@ -135,7 +135,7 @@ namespace CBP
         static std::atomic<uint64_t> m_nextGroupId;
 
         Profiler m_profiler;
-        //SDT::PerfTimerInt m_pt;
+        //PerfTimerInt m_pt;
     };
 
 }

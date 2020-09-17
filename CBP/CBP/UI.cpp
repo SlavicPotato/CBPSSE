@@ -18,10 +18,11 @@ namespace CBP
         {MiscHelpText::colGroupEditor, "Nodes assigned to the same group will not collide with eachother. This applies only to nodes on the same actor."},
         {MiscHelpText::importDialog, "Import and apply actor, race and global settings from the selected file."},
         {MiscHelpText::exportDialog, "Export actor, race and global settings."},
-        {MiscHelpText::simRate, "If this value isn't equal to framerate the simulation speed is affected. Adjust timeTick to get proper results."},
+        {MiscHelpText::simRate, "If this value isn't equal to framerate the simulation speed is affected. Increase max. sub steps or adjust timeTick to get proper results."},
         {MiscHelpText::armorOverrides, ""},
         {MiscHelpText::offsetMin, "Collider body offset (X, Y, Z, weight 0)"},
-        {MiscHelpText::offsetMax, "Collider body offset (X, Y, Z, weight 100)"}
+        {MiscHelpText::offsetMax, "Collider body offset (X, Y, Z, weight 100)"},
+        {MiscHelpText::applyForce, "Apply force to node along the X, Y and Z axes, respectively"}
         });
 
     static const keyDesc_t comboKeyDesc({
@@ -207,8 +208,28 @@ namespace CBP
         const char* a_fmt)
     {
         bool res = ImGui::SliderFloat(a_label, a_member, a_min, a_max, a_fmt);
-        if (res) {
+        if (res)
+        {
             *a_member = std::clamp(*a_member, a_min, a_max);
+            DCBP::MarkGlobalsForSave();
+        }
+
+        return res;
+    }
+
+    bool UIBase::SliderFloat3Global(
+        const char* a_label,
+        float* a_member,
+        float a_min,
+        float a_max,
+        const char* a_fmt)
+    {
+        bool res = ImGui::SliderFloat3(a_label, a_member, a_min, a_max, a_fmt);
+        if (res)
+        {
+            for (uint32_t i = 0; i < 3; i++)
+                a_member[i] = std::clamp(a_member[i], a_min, a_max);
+
             DCBP::MarkGlobalsForSave();
         }
 
@@ -231,40 +252,69 @@ namespace CBP
         return res;
     }
 
+    void UIBase::SetWindowDimensions(float a_offsetX, float a_sizeX, float a_sizeY)
+    {
+        auto& io = ImGui::GetIO();
+
+        if (!m_sizeData.initialized)
+        {
+            m_sizeData.sizeMin = {
+                std::min(300.0f, io.DisplaySize.x - 40.0f),
+                std::min(200.0f, io.DisplaySize.y - 40.0f) };
+
+            m_sizeData.sizeMax = {
+                std::min(1920.0f, io.DisplaySize.x),
+                std::max(io.DisplaySize.y - 40.0f, m_sizeData.sizeMin.y)
+            };
+
+            m_sizeData.pos = { std::min(20.0f + a_offsetX, io.DisplaySize.x - 40.0f), 20.0f };
+            m_sizeData.size = {
+                a_sizeX < 0.0f ? 450.0f : a_sizeX,
+                a_sizeY < 0.0f ? io.DisplaySize.y : a_sizeY };
+
+            m_sizeData.initialized = true;
+        }
+
+        ImGui::SetNextWindowPos(m_sizeData.pos, ImGuiCond_FirstUseEver);
+        ImGui::SetNextWindowSize(m_sizeData.size, ImGuiCond_FirstUseEver);
+
+        ImGui::SetNextWindowSizeConstraints(m_sizeData.sizeMin, m_sizeData.sizeMax);
+    }
+
     template <class T>
     void UIProfileBase<T>::DrawCreateNew()
     {
         const auto& globalConfig = IConfig::GetGlobalConfig();;
 
         if (UICommon::TextInputDialog("New profile", "Enter the profile name:",
-            state.new_input, sizeof(state.new_input), globalConfig.ui.fontScale))
+            m_state.new_input, sizeof(m_state.new_input), globalConfig.ui.fontScale))
         {
-            if (strlen(state.new_input))
+            if (strlen(m_state.new_input))
             {
                 T profile;
 
                 auto& pm = GlobalProfileManager::GetSingleton<T>();
 
-                if (pm.CreateProfile(state.new_input, profile))
+                if (pm.CreateProfile(m_state.new_input, profile))
                 {
                     std::string name(profile.Name());
                     if (pm.AddProfile(std::move(profile))) {
-                        state.selected = std::move(name);
+                        m_state.selected = std::move(name);
                     }
                     else {
-                        state.lastException = pm.GetLastException();
+                        m_state.lastException = pm.GetLastException();
                         ImGui::OpenPopup("Add Error");
                     }
                 }
                 else {
-                    state.lastException = pm.GetLastException();
+                    m_state.lastException = pm.GetLastException();
                     ImGui::OpenPopup("Create Error");
                 }
             }
         }
 
-        UICommon::MessageDialog("Create Error", "Could not create the profile\n\n%s", state.lastException.what());
-        UICommon::MessageDialog("Add Error", "Could not add the profile\n\n%s", state.lastException.what());
+        UICommon::MessageDialog("Create Error", "Could not create the profile\n\n%s", m_state.lastException.what());
+        UICommon::MessageDialog("Add Error", "Could not add the profile\n\n%s", m_state.lastException.what());
 
     }
 
@@ -277,16 +327,9 @@ namespace CBP
     template <class T>
     void UIProfileEditorBase<T>::Draw(bool* a_active)
     {
-        auto& io = ImGui::GetIO();
         const auto& globalConfig = IConfig::GetGlobalConfig();;
 
-        ImGui::SetNextWindowPos(ImVec2(std::min(420.0f, io.DisplaySize.x - 40.0f), 20.0f), ImGuiCond_FirstUseEver);
-        ImGui::SetNextWindowSize(ImVec2(450.0f, io.DisplaySize.y), ImGuiCond_FirstUseEver);
-
-        ImVec2 sizeMin(std::min(300.0f, io.DisplaySize.x - 40.0f), std::min(200.0f, io.DisplaySize.y - 40.0f));
-        ImVec2 sizeMax(std::min(1920.0f, io.DisplaySize.x), std::max(io.DisplaySize.y - 40.0f, sizeMin.y));
-
-        ImGui::SetNextWindowSizeConstraints(sizeMin, sizeMax);
+        SetWindowDimensions(400.0f);
 
         ImGui::PushID(static_cast<const void*>(this));
 
@@ -299,19 +342,19 @@ namespace CBP
             auto& data = GlobalProfileManager::GetSingleton<T>().Data();
 
             const char* curSelName = nullptr;
-            if (state.selected) {
-                if (data.find(*state.selected) != data.end())
+            if (m_state.selected) {
+                if (data.find(*m_state.selected) != data.end())
                 {
-                    curSelName = state.selected->c_str();
+                    curSelName = m_state.selected->c_str();
 
-                    if (!m_filter.Test(*state.selected))
+                    if (!m_filter.Test(*m_state.selected))
                     {
                         for (const auto& e : data)
                         {
                             if (!m_filter.Test(e.first))
                                 continue;
 
-                            state.selected = e.first;
+                            m_state.selected = e.first;
                             curSelName = e.first.c_str();
 
                             break;
@@ -319,13 +362,13 @@ namespace CBP
                     }
                 }
                 else {
-                    state.selected.Clear();
+                    m_state.selected.Clear();
                 }
             }
             else {
                 if (data.size()) {
-                    state.selected = data.begin()->first;
-                    curSelName = (*state.selected).c_str();
+                    m_state.selected = data.begin()->first;
+                    curSelName = (*m_state.selected).c_str();
                 }
             }
 
@@ -340,12 +383,12 @@ namespace CBP
 
                     ImGui::PushID(reinterpret_cast<const void*>(std::addressof(e.second)));
 
-                    bool selected = e.first == *state.selected;
+                    bool selected = e.first == *m_state.selected;
                     if (selected)
                         if (ImGui::IsWindowAppearing()) ImGui::SetScrollHereY();
 
                     if (ImGui::Selectable(e.second.Name().c_str(), selected))
-                        state.selected = e.first;
+                        m_state.selected = e.first;
 
                     ImGui::PopID();
                 }
@@ -358,7 +401,7 @@ namespace CBP
             ImGui::SameLine(ImGui::GetWindowContentRegionMax().x - GetNextTextOffset("New", true));
             if (ButtonRight("New")) {
                 ImGui::OpenPopup("New profile");
-                state.new_input[0] = 0;
+                m_state.new_input[0] = 0;
             }
 
             m_filter.Draw();
@@ -367,14 +410,14 @@ namespace CBP
 
             DrawCreateNew();
 
-            if (state.selected)
+            if (m_state.selected)
             {
-                auto& profile = data.at(*state.selected);
+                auto& profile = data.at(*m_state.selected);
 
                 if (ImGui::Button("Save")) {
                     if (!profile.Save()) {
                         ImGui::OpenPopup("Save");
-                        state.lastException = profile.GetLastException();
+                        m_state.lastException = profile.GetLastException();
                     }
                 }
 
@@ -385,14 +428,14 @@ namespace CBP
                 ImGui::SameLine();
                 if (ImGui::Button("Rename")) {
                     ImGui::OpenPopup("Rename");
-                    _snprintf_s(ex_state.ren_input, _TRUNCATE, "%s", (*state.selected).c_str());
+                    _snprintf_s(ex_state.ren_input, _TRUNCATE, "%s", (*m_state.selected).c_str());
                 }
 
                 ImGui::SameLine();
                 if (ImGui::Button("Reload")) {
                     if (!profile.Load()) {
                         ImGui::OpenPopup("Reload");
-                        state.lastException = profile.GetLastException();
+                        m_state.lastException = profile.GetLastException();
                     }
                 }
 
@@ -401,11 +444,11 @@ namespace CBP
                     "Are you sure you want to delete profile '%s'?\n\n", curSelName))
                 {
                     auto& pm = GlobalProfileManager::GetSingleton<T>();
-                    if (pm.DeleteProfile(*state.selected)) {
-                        state.selected.Clear();
+                    if (pm.DeleteProfile(*m_state.selected)) {
+                        m_state.selected.Clear();
                     }
                     else {
-                        state.lastException = pm.GetLastException();
+                        m_state.lastException = pm.GetLastException();
                         ImGui::OpenPopup("Delete failed");
                     }
                 }
@@ -415,21 +458,21 @@ namespace CBP
                     auto& pm = GlobalProfileManager::GetSingleton<T>();
                     std::string newName(ex_state.ren_input);
 
-                    if (pm.RenameProfile(*state.selected, newName)) {
-                        state.selected = newName;
+                    if (pm.RenameProfile(*m_state.selected, newName)) {
+                        m_state.selected = newName;
                     }
                     else {
-                        state.lastException = pm.GetLastException();
+                        m_state.lastException = pm.GetLastException();
                         ImGui::OpenPopup("Rename failed");
                     }
                 }
                 else {
 
                     UICommon::MessageDialog("Save", "Saving profile '%s' to '%s' failed\n\n%s",
-                        profile.Name().c_str(), profile.PathStr().c_str(), state.lastException.what());
+                        profile.Name().c_str(), profile.PathStr().c_str(), m_state.lastException.what());
 
                     UICommon::MessageDialog("Reload", "Loading profile '%s' from '%s' failed\n\n%s",
-                        profile.Name().c_str(), profile.PathStr().c_str(), state.lastException.what());
+                        profile.Name().c_str(), profile.PathStr().c_str(), m_state.lastException.what());
 
                     ImGui::Separator();
 
@@ -437,9 +480,9 @@ namespace CBP
                 }
 
                 UICommon::MessageDialog("Delete failed",
-                    "Could not delete the profile\n\n%s", state.lastException.what());
+                    "Could not delete the profile\n\n%s", m_state.lastException.what());
                 UICommon::MessageDialog("Rename failed",
-                    "Could not rename the profile\n\n%s", state.lastException.what());
+                    "Could not rename the profile\n\n%s", m_state.lastException.what());
             }
 
             ImGui::PopItemWidth();
@@ -450,11 +493,11 @@ namespace CBP
         ImGui::PopID();
     }
 
-    void UIProfileEditorPhys::DrawItem(PhysicsProfile& a_profile) {
+    void UIProfileEditorPhysics::DrawItem(PhysicsProfile& a_profile) {
         DrawSimComponents(0, a_profile.Data());
     }
 
-    void UIProfileEditorPhys::OnSimSliderChange(
+    void UIProfileEditorPhysics::OnSimSliderChange(
         int,
         PhysicsProfile::base_type& a_data,
         PhysicsProfile::base_type::value_type& a_pair,
@@ -476,7 +519,7 @@ namespace CBP
         }
     }
 
-    void UIProfileEditorPhys::OnColliderShapeChange(
+    void UIProfileEditorPhysics::OnColliderShapeChange(
         int,
         PhysicsProfile::base_type& a_data,
         PhysicsProfile::base_type::value_type& a_pair,
@@ -484,7 +527,7 @@ namespace CBP
     {
     }
 
-    const configNode_t* UIProfileEditorPhys::GetNodeConfig(
+    const configNode_t* UIProfileEditorPhysics::GetNodeConfig(
         int a_handle,
         const std::string&) const
     {
@@ -574,9 +617,9 @@ namespace CBP
             if (crosshairRef)
             {
                 auto ac = IData::GetActorRefInfo(crosshairRef);
-                if (ac && ac->m_race.first) {
-                    if (m_list.find(ac->m_race.second) != m_list.end()) {
-                        SetCurrentItem(ac->m_race.second);
+                if (ac && ac->race.first) {
+                    if (m_list.find(ac->race.second) != m_list.end()) {
+                        SetCurrentItem(ac->race.second);
                         return;
                     }
                 }
@@ -736,16 +779,9 @@ namespace CBP
     {
         ListTick();
 
-        auto& io = ImGui::GetIO();
         auto& globalConfig = IConfig::GetGlobalConfig();;
 
-        ImGui::SetNextWindowPos(ImVec2(std::min(820.0f, io.DisplaySize.x - 40.0f), 20.0f), ImGuiCond_FirstUseEver);
-        ImGui::SetNextWindowSize(ImVec2(450.0f, io.DisplaySize.y), ImGuiCond_FirstUseEver);
-
-        ImVec2 sizeMin(std::min(300.0f, io.DisplaySize.x - 40.0f), std::min(200.0f, io.DisplaySize.y - 40.0f));
-        ImVec2 sizeMax(std::min(1920.0f, io.DisplaySize.x), std::max(io.DisplaySize.y - 40.0f, sizeMin.y));
-
-        ImGui::SetNextWindowSizeConstraints(sizeMin, sizeMax);
+        SetWindowDimensions(800.0f);
 
         ImGui::PushID(static_cast<const void*>(this));
 
@@ -817,16 +853,9 @@ namespace CBP
     {
         ListTick();
 
-        auto& io = ImGui::GetIO();
         auto& globalConfig = IConfig::GetGlobalConfig();;
 
-        ImGui::SetNextWindowPos(ImVec2(std::min(820.0f, io.DisplaySize.x - 40.0f), 20.0f), ImGuiCond_FirstUseEver);
-        ImGui::SetNextWindowSize(ImVec2(450.0f, io.DisplaySize.y), ImGuiCond_FirstUseEver);
-
-        ImVec2 sizeMin(std::min(300.0f, io.DisplaySize.x - 40.0f), std::min(200.0f, io.DisplaySize.y - 40.0f));
-        ImVec2 sizeMax(std::min(1920.0f, io.DisplaySize.x), std::max(io.DisplaySize.y - 40.0f, sizeMin.y));
-
-        ImGui::SetNextWindowSizeConstraints(sizeMin, sizeMax);
+        SetWindowDimensions(800.0f);
 
         ImGui::PushID(static_cast<const void*>(this));
 
@@ -958,7 +987,7 @@ namespace CBP
         if (a_desc.second.counterpart.size() &&
             globalConfig.ui.syncWeightSlidersRace)
         {
-            a_pair.second.Set(a_desc.second.counterpart, *a_val);
+            a_pair.second.Set(a_desc.second.counterpart, a_val, a_size);
             entry.Set(a_desc.second.counterpart, a_val, a_size);
             Propagate(a_data, std::addressof(raceConf), a_pair.first, a_desc.second.counterpart, a_val, a_size);
         }
@@ -983,10 +1012,43 @@ namespace CBP
     }
 
     const configNode_t* UIRaceEditorPhysics::GetNodeConfig(
-        SKSE::FormID,
-        const std::string&) const
+        SKSE::FormID a_formid,
+        const std::string& a_confGroup) const
     {
+        auto& cgMap = CBP::IConfig::GetConfigGroupMap();
+        auto itc = cgMap.find(a_confGroup);
+        if (itc == cgMap.end())
+            return nullptr;
+
+        for (const auto& e : itc->second)
+        {
+            auto& nodeConf = IConfig::GetRaceNodeConfig(a_formid);
+            auto it = nodeConf.find(e);
+            if (it != nodeConf.end()) {
+                return std::addressof(it->second);
+            }
+        }
+
         return nullptr;
+    }
+
+    bool UIRaceEditorPhysics::ShouldDrawComponent(
+        SKSE::FormID,
+        const configNode_t* a_nodeConfig) const
+    {
+        return a_nodeConfig && a_nodeConfig->Enabled();
+    }
+
+    bool UIRaceEditorPhysics::HasMovement(
+        const configNode_t* a_nodeConfig) const
+    {
+        return a_nodeConfig && a_nodeConfig->HasMovement();
+    }
+
+    bool UIRaceEditorPhysics::HasCollisions(
+        const configNode_t* a_nodeConfig) const
+    {
+        return a_nodeConfig && a_nodeConfig->HasCollisions();
     }
 
     template<class T, class P>
@@ -998,11 +1060,11 @@ namespace CBP
         ImGui::PushID(std::addressof(pm));
 
         const char* curSelName = nullptr;
-        if (state.selected) {
-            if (data.find(*state.selected) != data.end())
-                curSelName = state.selected->c_str();
+        if (m_state.selected) {
+            if (data.find(*m_state.selected) != data.end())
+                curSelName = m_state.selected->c_str();
             else
-                state.selected.Clear();
+                m_state.selected.Clear();
         }
 
         if (ImGui::BeginCombo("Profile", curSelName, ImGuiComboFlags_HeightLarge))
@@ -1011,14 +1073,14 @@ namespace CBP
             {
                 ImGui::PushID(reinterpret_cast<const void*>(std::addressof(e.second)));
 
-                bool selected = state.selected &&
-                    e.first == *state.selected;
+                bool selected = m_state.selected &&
+                    e.first == *m_state.selected;
 
                 if (selected)
                     if (ImGui::IsWindowAppearing()) ImGui::SetScrollHereY();
 
                 if (ImGui::Selectable(e.second.Name().c_str(), selected)) {
-                    state.selected = e.first;
+                    m_state.selected = e.first;
                 }
 
                 ImGui::PopID();
@@ -1031,16 +1093,16 @@ namespace CBP
         ImGui::SameLine(wcm.x - GetNextTextOffset("New", true));
         if (ButtonRight("New")) {
             ImGui::OpenPopup("New profile");
-            state.new_input[0] = 0;
+            m_state.new_input[0] = 0;
         }
 
         //UpdateNextItemOffset();
 
         DrawCreateNew();
 
-        if (state.selected)
+        if (m_state.selected)
         {
-            auto& profile = data.at(*state.selected);
+            auto& profile = data.at(*m_state.selected);
 
             ImGui::SameLine(wcm.x - GetNextTextOffset("Apply"));
             if (ButtonRight("Apply")) {
@@ -1067,14 +1129,14 @@ namespace CBP
             {
                 auto& data = GetData(a_data);
                 if (!profile.Save(data, true)) {
-                    state.lastException = profile.GetLastException();
+                    m_state.lastException = profile.GetLastException();
                     ImGui::OpenPopup("Save to profile error");
                 }
             }
 
             UICommon::MessageDialog("Save to profile error",
                 "Error saving to profile '%s'\n\n%s", profile.Name().c_str(),
-                state.lastException.what());
+                m_state.lastException.what());
         }
 
         ImGui::PopID();
@@ -1151,16 +1213,14 @@ namespace CBP
 
                 ImGui::Spacing();
 
-                SliderFloatGlobal("X", std::addressof(e.force.x), FORCE_MIN, FORCE_MAX, "%.0f");
+                SliderFloat3Global("Force", e.forcearr, FORCE_MIN, FORCE_MAX, "%.0f");
+                HelpMarker(MiscHelpText::applyForce);
 
                 ImGui::SameLine(wcm.x - GetNextTextOffset("Reset", true));
                 if (ButtonRight("Reset")) {
                     e = configForce_t();
                     DCBP::MarkGlobalsForSave();
                 }
-
-                SliderFloatGlobal("Y", std::addressof(e.force.y), FORCE_MIN, FORCE_MAX, "%.0f");
-                SliderFloatGlobal("Z", std::addressof(e.force.z), FORCE_MIN, FORCE_MAX, "%.0f");
 
                 ImGui::Spacing();
 
@@ -1331,10 +1391,9 @@ namespace CBP
         listValue_t*& a_entry,
         const char*& a_curSelName)
     {
-        if (a_entry)
-            a_curSelName = a_entry->second.first.c_str();
-        else
-            a_curSelName = m_globLabel.c_str();
+        a_curSelName = a_entry ?
+            a_entry->second.first.c_str() :
+            m_globLabel.c_str();
 
         FilterSelected(a_entry, a_curSelName);
 
@@ -1491,11 +1550,11 @@ namespace CBP
     UIContext::UIContext() noexcept :
         m_activeLoadInstance(0),
         m_tsNoActors(PerfCounter::Query()),
-        m_peComponents("Physics profile editor"),
+        m_pePhysics("Physics profile editor"),
         m_peNodes("Node profile editor"),
         m_importDialog(PLUGIN_CBP_EXPORTS_PATH),
         m_exportDialog(PLUGIN_CBP_EXPORTS_PATH),
-        state({ {false, false, false, false, false, false, false, false, false, false, false} }),
+        m_state({ {false, false, false, false, false, false, false, false, false, false, false} }),
         UIActorList<actorListPhysConf_t>(true)
     {
     }
@@ -1505,18 +1564,19 @@ namespace CBP
         ResetList();
         m_activeLoadInstance = a_loadInstance;
 
-        m_raceEditor.Reset();
-        m_nodeConfig.Reset();
+        m_racePhysicsEditor.Reset();
+        m_actorNodeEditor.Reset();
+        m_raceNodeEditor.Reset();
     }
 
     void UIContext::DrawMenuBar(bool* a_active, const listValue_t* a_entry)
     {
         auto& globalConfig = IConfig::GetGlobalConfig();;
 
-        state.menu.saveAllFailed = false;
-        state.menu.saveToDefaultGlob = false;
-        state.menu.openImportDialog = false;
-        state.menu.openExportDialog = false;
+        m_state.menu.saveAllFailed = false;
+        m_state.menu.saveToDefaultGlob = false;
+        m_state.menu.openImportDialog = false;
+        m_state.menu.openExportDialog = false;
 
         if (ImGui::BeginMenuBar())
         {
@@ -1524,8 +1584,8 @@ namespace CBP
             {
                 if (ImGui::MenuItem("Save settings"))
                     if (!DCBP::SaveAll()) {
-                        state.menu.saveAllFailed = true;
-                        state.lastException =
+                        m_state.menu.saveAllFailed = true;
+                        m_state.lastException =
                             DCBP::GetLastSerializationException();
                     }
 
@@ -1533,15 +1593,15 @@ namespace CBP
                 {
                     ImGui::SetWindowFontScale(globalConfig.ui.fontScale);
 
-                    state.menu.saveToDefaultGlob = ImGui::MenuItem("Store default profile");
+                    m_state.menu.saveToDefaultGlob = ImGui::MenuItem("Store default profile");
 
                     ImGui::EndMenu();
                 }
 
                 ImGui::Separator();
 
-                state.menu.openImportDialog = ImGui::MenuItem("Import", nullptr, &state.windows.importDialog);
-                state.menu.openExportDialog = ImGui::MenuItem("Export");
+                m_state.menu.openImportDialog = ImGui::MenuItem("Import", nullptr, &m_state.windows.importDialog);
+                m_state.menu.openExportDialog = ImGui::MenuItem("Export");
 
                 ImGui::Separator();
 
@@ -1553,27 +1613,32 @@ namespace CBP
 
             if (ImGui::BeginMenu("Tools"))
             {
-                ImGui::MenuItem("Actor nodes", nullptr, &state.windows.nodeConf);
-                ImGui::MenuItem("Node collision groups", nullptr, &state.windows.collisionGroups);
+                ImGui::MenuItem("Actor nodes", nullptr, &m_state.windows.nodeConf);
+                ImGui::MenuItem("Node collision groups", nullptr, &m_state.windows.collisionGroups);
 
                 ImGui::Separator();
-                ImGui::MenuItem("Race physics", nullptr, &state.windows.race);
-                ImGui::MenuItem("Race nodes", nullptr, &state.windows.raceNode);
 
-                ImGui::Separator();
+                if (ImGui::BeginMenu("Race editors"))
+                {
+                    ImGui::MenuItem("Physics", nullptr, &m_state.windows.race);
+                    ImGui::MenuItem("Node", nullptr, &m_state.windows.raceNode);
+
+                    ImGui::EndMenu();
+                }
+
                 if (ImGui::BeginMenu("Profile editors"))
                 {
                     ImGui::SetWindowFontScale(globalConfig.ui.fontScale);
 
-                    ImGui::MenuItem("Physics", nullptr, &state.windows.profileSim);
-                    ImGui::MenuItem("Node", nullptr, &state.windows.profileNodes);
+                    ImGui::MenuItem("Physics", nullptr, &m_state.windows.profileSim);
+                    ImGui::MenuItem("Node", nullptr, &m_state.windows.profileNodes);
 
                     ImGui::EndMenu();
                 }
 
                 ImGui::Separator();
-                ImGui::MenuItem("Options", nullptr, &state.windows.options);
-                ImGui::MenuItem("Stats", nullptr, &state.windows.profiling);
+                ImGui::MenuItem("Options", nullptr, &m_state.windows.options);
+                ImGui::MenuItem("Stats", nullptr, &m_state.windows.profiling);
 
 #ifdef _CBP_ENABLE_DEBUG
                 ImGui::Separator();
@@ -1581,7 +1646,7 @@ namespace CBP
 #endif
 
                 ImGui::Separator();
-                ImGui::MenuItem("Log", nullptr, &state.windows.log);
+                ImGui::MenuItem("Log", nullptr, &m_state.windows.log);
 
                 ImGui::EndMenu();
             }
@@ -1624,7 +1689,6 @@ namespace CBP
 
     void UIContext::Draw(bool* a_active)
     {
-        auto& io = ImGui::GetIO();
         auto& globalConfig = IConfig::GetGlobalConfig();;
 
         ActorListTick();
@@ -1637,13 +1701,7 @@ namespace CBP
             }
         }
 
-        ImGui::SetNextWindowPos(ImVec2(20.0f, 20.0f), ImGuiCond_FirstUseEver);
-        ImGui::SetNextWindowSize(ImVec2(450.0f, io.DisplaySize.y), ImGuiCond_FirstUseEver);
-
-        ImVec2 sizeMin(std::min(300.0f, io.DisplaySize.x - 40.0f), std::min(200.0f, io.DisplaySize.y - 40.0f));
-        ImVec2 sizeMax(std::min(1920.0f, io.DisplaySize.x), std::max(io.DisplaySize.y - 40.0f, sizeMin.y));
-
-        ImGui::SetNextWindowSizeConstraints(sizeMin, sizeMax);
+        SetWindowDimensions();
 
         auto entry = GetSelectedEntry();
 
@@ -1731,9 +1789,9 @@ namespace CBP
                 }
             }
 
-            if (state.menu.saveAllFailed)
+            if (m_state.menu.saveAllFailed)
                 ImGui::OpenPopup("Save failed");
-            else if (state.menu.saveToDefaultGlob)
+            else if (m_state.menu.saveToDefaultGlob)
                 ImGui::OpenPopup("Store global");
 
             ImGui::Spacing();
@@ -1756,11 +1814,11 @@ namespace CBP
             UICommon::MessageDialog(
                 "Save failed",
                 "Saving one or more files failed.\nThe last exception was:\n\n%s",
-                state.lastException.what());
+                m_state.lastException.what());
 
             if (UICommon::ConfirmDialog("Store global", "Are you sure you want to save current global physics and node configuration as the default?")) {
                 if (!DCBP::SaveToDefaultGlobalProfile()) {
-                    state.lastException = DCBP::GetLastSerializationException();
+                    m_state.lastException = DCBP::GetLastSerializationException();
                     ImGui::OpenPopup("Store global failed");
                 }
             }
@@ -1768,7 +1826,7 @@ namespace CBP
             UICommon::MessageDialog(
                 "Store global failed",
                 "Could not save current globals to the default profile.\nThe last exception was:\n\n%s",
-                state.lastException.what());
+                m_state.lastException.what());
 
             ImGui::PopItemWidth();
 
@@ -1777,59 +1835,59 @@ namespace CBP
         ImGui::End();
         ImGui::PopID();
 
-        if (state.windows.options)
-            m_options.Draw(&state.windows.options);
+        if (m_state.windows.options)
+            m_options.Draw(&m_state.windows.options);
 
-        if (state.windows.profileSim)
-            m_peComponents.Draw(&state.windows.profileSim);
+        if (m_state.windows.profileSim)
+            m_pePhysics.Draw(&m_state.windows.profileSim);
 
-        if (state.windows.profileNodes)
-            m_peNodes.Draw(&state.windows.profileNodes);
+        if (m_state.windows.profileNodes)
+            m_peNodes.Draw(&m_state.windows.profileNodes);
 
-        if (state.windows.race) {
-            m_raceEditor.Draw(&state.windows.race);
-            if (m_raceEditor.GetChanged()) {
+        if (m_state.windows.race) {
+            m_racePhysicsEditor.Draw(&m_state.windows.race);
+            if (m_racePhysicsEditor.GetChanged()) {
                 QueueUpdateCurrent();
             }
         }
 
-        if (state.windows.raceNode) {
-            m_raceNodeEditor.Draw(&state.windows.raceNode);
+        if (m_state.windows.raceNode) {
+            m_raceNodeEditor.Draw(&m_state.windows.raceNode);
             if (m_raceNodeEditor.GetChanged()) {
                 QueueUpdateCurrent();
-                m_nodeConfig.QueueUpdateCurrent();
+                m_actorNodeEditor.QueueUpdateCurrent();
             }
         }
 
-        if (state.windows.collisionGroups)
-            m_colGroups.Draw(&state.windows.collisionGroups);
+        if (m_state.windows.collisionGroups)
+            m_colGroups.Draw(&m_state.windows.collisionGroups);
 
-        if (state.windows.nodeConf)
-            m_nodeConfig.Draw(&state.windows.nodeConf);
+        if (m_state.windows.nodeConf)
+            m_actorNodeEditor.Draw(&m_state.windows.nodeConf);
 
-        if (state.windows.profiling)
-            m_profiling.Draw(&state.windows.profiling);
+        if (m_state.windows.profiling)
+            m_profiling.Draw(&m_state.windows.profiling);
 
-        if (state.windows.log)
-            m_log.Draw(&state.windows.log);
+        if (m_state.windows.log)
+            m_log.Draw(&m_state.windows.log);
 
 #ifdef _CBP_ENABLE_DEBUG
         if (state.windows.debug)
             m_debug.Draw(&state.windows.debug);
 #endif
-        if (state.menu.openExportDialog)
+        if (m_state.menu.openExportDialog)
             m_exportDialog.Open();
 
         bool exportRes = m_exportDialog.Draw();
 
-        if (state.windows.importDialog)
+        if (m_state.windows.importDialog)
         {
-            if (state.menu.openImportDialog)
+            if (m_state.menu.openImportDialog)
                 m_importDialog.OnOpen();
             else if (exportRes)
                 m_importDialog.UpdateFileList();
 
-            if (m_importDialog.Draw(&state.windows.importDialog))
+            if (m_importDialog.Draw(&m_state.windows.importDialog))
                 ResetList();
         }
     }
@@ -2196,16 +2254,9 @@ namespace CBP
     {
         ActorListTick();
 
-        auto& io = ImGui::GetIO();
         auto& globalConfig = IConfig::GetGlobalConfig();;
 
-        ImVec2 center(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f);
-        ImGui::SetNextWindowPos(center, ImGuiCond_FirstUseEver, ImVec2(0.5f, 0.5f));
-
-        ImVec2 sizeMin(std::min(300.0f, io.DisplaySize.x - 40.0f), std::min(100.0f, io.DisplaySize.y - 40.0f));
-        ImVec2 sizeMax(std::min(1920.0f, io.DisplaySize.x), std::max(io.DisplaySize.y - 40.0f, sizeMin.y));
-
-        ImGui::SetNextWindowSizeConstraints(sizeMin, sizeMax);
+        SetWindowDimensions(450.0f);
 
         ImGui::PushID(static_cast<const void*>(this));
 
@@ -2250,15 +2301,15 @@ namespace CBP
 
             HelpMarker(MiscHelpText::showAllActors);
 
-            auto wcm = ImGui::GetWindowContentRegionMax();
+            auto wcmx = ImGui::GetWindowContentRegionMax().x;
 
-            ImGui::SameLine(wcm.x - GetNextTextOffset("Rescan", true));
+            ImGui::SameLine(wcmx - GetNextTextOffset("Rescan", true));
             if (ButtonRight("Rescan"))
                 DCBP::QueueActorCacheUpdate();
 
             if (entry)
             {
-                ImGui::SameLine(wcm.x - GetNextTextOffset("Reset"));
+                ImGui::SameLine(wcmx - GetNextTextOffset("Reset"));
                 if (ButtonRight("Reset"))
                     ImGui::OpenPopup("Reset Node");
 
@@ -2434,7 +2485,7 @@ namespace CBP
     }
 
     bool UIContext::UISimComponentActor::ShouldDrawComponent(
-        SKSE::ObjectHandle a_handle,
+        SKSE::ObjectHandle,
         const configNode_t* a_nodeConfig) const
     {
         return a_nodeConfig && a_nodeConfig->Enabled();
@@ -2513,7 +2564,7 @@ namespace CBP
     }
 
     bool UIContext::UISimComponentGlobal::ShouldDrawComponent(
-        SKSE::ObjectHandle a_handle,
+        SKSE::ObjectHandle,
         const configNode_t* a_nodeConfig) const
     {
         return a_nodeConfig && a_nodeConfig->Enabled();
@@ -2595,11 +2646,7 @@ namespace CBP
         if (a_steps == 0)
             return;
 
-        SKSE::ObjectHandle handle;
-        if (a_data != nullptr)
-            handle = a_data->first;
-        else
-            handle = 0;
+        SKSE::ObjectHandle handle = a_data ? a_data->first : 0;
 
         DCBP::ApplyForce(handle, a_steps, a_component, a_force);
     }
@@ -2672,7 +2719,7 @@ namespace CBP
 
                     if (ImGui::BeginPopup("mirror_popup"))
                     {
-                        DrawMirrorContextMenu(a_handle, a_data, p, nodeConfig);
+                        DrawMirrorContextMenu(a_handle, a_data, p);
 
                         ImGui::EndPopup();
                     }
@@ -2693,8 +2740,7 @@ namespace CBP
     void UISimComponent<T, ID>::DrawMirrorContextMenu(
         T a_handle,
         configComponents_t& a_data,
-        configComponents_t::value_type& a_entry,
-        const configNode_t* a_nodeConfig)
+        configComponents_t::value_type& a_entry)
     {
         auto& globalConfig = IConfig::GetGlobalConfig();
 
@@ -2708,7 +2754,9 @@ namespace CBP
             if (e.first == a_entry.first)
                 continue;
 
-            if (!ShouldDrawComponent(a_handle, a_nodeConfig))
+            auto nodeConfig = GetNodeConfig(a_handle, e.first);
+
+            if (!ShouldDrawComponent(a_handle, nodeConfig))
                 continue;
 
             auto headerName = e.first;
@@ -2929,8 +2977,8 @@ namespace CBP
 
     template <class T, UIEditorID ID>
     bool UISimComponent<T, ID>::ShouldDrawComponent(
-        T m_handle,
-        const configNode_t* a_nodeConfig) const
+        T,
+        const configNode_t*) const
     {
         return true;
     }
@@ -3235,11 +3283,9 @@ namespace CBP
 
     void UIFileSelector::DrawFileSelector()
     {
-        const char* curSelName;
-        if (m_selected)
-            curSelName = m_selected->m_filenameStr.c_str();
-        else
-            curSelName = nullptr;
+        const char* curSelName = m_selected ?
+            m_selected->m_filenameStr.c_str() :
+            nullptr;
 
         ImGui::PushItemWidth(ImGui::GetFontSize() * -8.0f);
 
@@ -3333,7 +3379,7 @@ namespace CBP
         ImVec2 center(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f);
         ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
 
-        bool res = false;
+        bool res(false);
 
         ImGui::PushID(static_cast<const void*>(this));
 
@@ -3499,7 +3545,7 @@ namespace CBP
     {
         const auto& globalConfig = IConfig::GetGlobalConfig();;
 
-        bool res = false;
+        bool res(false);
 
         ImGui::PushID(static_cast<const void*>(this));
 
@@ -3544,16 +3590,9 @@ namespace CBP
 
     void UILog::Draw(bool* a_active)
     {
-        auto& io = ImGui::GetIO();
-        const auto& globalConfig = IConfig::GetGlobalConfig();;
+        const auto& globalConfig = IConfig::GetGlobalConfig();
 
-        ImGui::SetNextWindowPos(ImVec2(20.0f, 20.0f), ImGuiCond_FirstUseEver);
-        ImGui::SetNextWindowSize(ImVec2(450.0f, io.DisplaySize.y), ImGuiCond_FirstUseEver);
-
-        ImVec2 sizeMin(std::min(300.0f, io.DisplaySize.x - 40.0f), std::min(200.0f, io.DisplaySize.y - 40.0f));
-        ImVec2 sizeMax(std::min(1920.0f, io.DisplaySize.x), std::max(io.DisplaySize.y - 40.0f, sizeMin.y));
-
-        ImGui::SetNextWindowSizeConstraints(sizeMin, sizeMax);
+        SetWindowDimensions(20.0f, 800.0f, 400.0f);
 
         ImGui::PushID(static_cast<const void*>(this));
 
@@ -3562,13 +3601,12 @@ namespace CBP
             ImGui::SetWindowFontScale(globalConfig.ui.fontScale);
 
             auto& backlog = DCBP::GetBackLog();
+            {
+                IScopedCriticalSection _(std::addressof(backlog.GetLock()));
 
-            backlog.Lock();
-
-            for (const auto& e : backlog)
-                ImGui::TextWrapped(e.c_str());
-
-            backlog.Unlock();
+                for (const auto& e : backlog)
+                    ImGui::TextWrapped(e.c_str());
+            }
 
             if (m_doScrollBottom)
             {

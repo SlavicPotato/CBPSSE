@@ -193,7 +193,7 @@ namespace CBP
     void ITemplate::ProcessTemplateRecord(
         DataHolder<T>& a_data,
         const TRecPlugin::entry_t& a_entry,
-        ModInfo* a_modInfo)
+        const modData_t& a_modData)
     {
         auto& pm = a_data.GetProfileManager();
 
@@ -202,11 +202,11 @@ namespace CBP
             auto it = pm.Find(t.first);
             if (it == pm.End()) {
                 gLogger.Warning("%s: [%s] template not found: %s",
-                    __FUNCTION__, a_modInfo->name, t.first.c_str());
+                    __FUNCTION__, a_modData.name.c_str(), t.first.c_str());
                 continue;
             }
 
-            UInt32 modIndex = a_modInfo->GetPartialIndex();
+            UInt32 modIndex = a_modData.GetPartialIndex();
 
             switch (t.second.type)
             {
@@ -228,12 +228,12 @@ namespace CBP
 
                 for (auto& p : t.second.formids)
                 {
-                    auto formid = a_modInfo->GetFormID(p);
+                    auto formid = a_modData.GetFormID(p);
 
                     auto form = LookupFormByID(formid);
                     if (!form) {
                         gLogger.Warning("%s: [%s] [%s] %.8X: form not found",
-                            __FUNCTION__, a_modInfo->name, t.first.c_str(), formid);
+                            __FUNCTION__, a_modData.name.c_str(), t.first.c_str(), formid);
                         continue;
                     }
 
@@ -256,7 +256,7 @@ namespace CBP
                     else
                     {
                         gLogger.Warning("%s: [%s] [%s] %.8X: unexpected form type %hhu",
-                            __FUNCTION__, a_modInfo->name, t.first.c_str(), formid, form->formType);
+                            __FUNCTION__, a_modData.name.c_str(), t.first.c_str(), formid, form->formType);
                     }
 
                     //gLogger.Debug("!!>>> %hhu, 0x%X -> %s", form->formType, formid, t.first.c_str());
@@ -284,25 +284,16 @@ namespace CBP
         if (!GatherPluginData(data))
             return false;
 
-        auto dh = DataHandler::GetSingleton();
-        if (!dh)
-            return false;
+        std::unordered_map<std::string, const modData_t&> mm;
 
-        std::unordered_map<std::string, ModInfo*> mm;
+        auto md = IData::GetModList();
 
-        for (auto it = dh->modList.modInfoList.Begin(); !it.End(); ++it)
+        for (const auto &e: md)
         {
-            auto modInfo = it.Get();
-            if (!modInfo)
-                continue;
-
-            if (!modInfo->IsActive())
-                continue;
-
-            std::string tmp(modInfo->name);
+            std::string tmp(e.second.name);
             transform(tmp.begin(), tmp.end(), tmp.begin(), ::tolower);
 
-            mm.emplace(std::move(tmp), modInfo);
+            mm.emplace(std::move(tmp), e.second);
 
             //gLogger.Debug(">> %s", modInfo->name);
         }

@@ -88,7 +88,13 @@ namespace CBP
 
     struct configForce_t
     {
-        NiPoint3 force{ 0.0f, 0.0f, 0.0f };
+        union
+        {
+            float forcearr[3]{ 0.0f, 0.0f, 0.0f };
+            NiPoint3 force;
+
+            static_assert(sizeof(force) == sizeof(forcearr));
+        };
         int steps = 1;
     };
 
@@ -101,7 +107,7 @@ namespace CBP
         bool playableOnly = true;
         bool showEditorIDs = true;
     };
-    
+
     struct configGlobalActor_t
     {
         bool showAll = true;
@@ -129,7 +135,7 @@ namespace CBP
         struct
         {
             bool lockControls = true;
-            
+
             configGlobalActor_t actorPhysics;
             configGlobalActor_t actorNode;
 
@@ -389,7 +395,7 @@ namespace CBP
         [[nodiscard]] inline bool HasMovement() const noexcept {
             return femaleMovement || maleMovement;
         }
-        
+
         [[nodiscard]] inline bool HasCollisions() const noexcept {
             return femaleCollisions || maleCollisions;
         }
@@ -497,7 +503,7 @@ namespace CBP
         inline static void SetRacePhysicsConfigHolder(raceConfigComponentsHolder_t&& a_rhs) noexcept {
             raceConfHolder = std::forward<raceConfigComponentsHolder_t>(a_rhs);
         }
-        
+
         inline static void SetRaceNodeConfigHolder(raceConfigNodesHolder_t&& a_rhs) noexcept {
             raceNodeConfigHolder = std::forward<raceConfigNodesHolder_t>(a_rhs);
         }
@@ -509,7 +515,7 @@ namespace CBP
         inline static void ClearRacePhysicsConfigHolder() {
             raceConfHolder.clear();
         }
-        
+
         [[nodiscard]] inline static auto& GetGlobalConfig() {
             return globalConfig;
         }
@@ -601,7 +607,7 @@ namespace CBP
         [[nodiscard]] inline static auto& GetActorNodeConfigHolder() {
             return actorNodeConfigHolder;
         }
-        
+
         [[nodiscard]] inline static auto& GetRaceNodeConfigHolder() {
             return raceNodeConfigHolder;
         }
@@ -623,7 +629,7 @@ namespace CBP
         inline static void EraseActorNodeConfig(SKSE::ObjectHandle a_formid) {
             actorNodeConfigHolder.erase(a_formid);
         }
-        
+
         inline static void EraseRaceNodeConfig(SKSE::FormID a_formid) {
             raceNodeConfigHolder.erase(a_formid);
         }
@@ -631,7 +637,7 @@ namespace CBP
         inline static void ClearActorNodeConfigHolder() {
             actorNodeConfigHolder.clear();
         }
-        
+
         inline static void ClearRaceNodeConfigHolder() {
             raceNodeConfigHolder.clear();
         }
@@ -697,7 +703,6 @@ namespace CBP
 
         static nodeMap_t nodeMap;
         static configGroupMap_t configGroupMap;
-        static const nodeMap_t defaultNodeMap;
 
         static collisionGroups_t collisionGroups;
         static nodeCollisionGroupMap_t nodeCollisionGroupMap;

@@ -485,15 +485,17 @@ namespace CBP
             GetUpdateTask().UpdateTimeTick(IConfig::GetGlobalConfig().phys.timeTick);
             UpdateKeys();
 
-            bool pl = CBP::ITemplate::LoadProfiles();
+            if (IData::PopulateModList())
+            {
+                if (!ITemplate::LoadProfiles())
+                    m_Instance.Error("%s: ITemplate::LoadProfiles failed: %s",
+                        __FUNCTION__, ITemplate::GetLastException().what());
+            }
+            else
+                m_Instance.Error("%s: failed to populate mod list, templates will be unavailable");
+
 
             Unlock();
-
-            auto loadTime = pt.Stop();
-
-            if (!pl)
-                m_Instance.Error("%s: ITemplate::LoadProfiles failed: %s",
-                    __FUNCTION__, CBP::ITemplate::GetLastException().what());
 
             m_Instance.Debug("%s: data loaded (%f)", __FUNCTION__, pt.Stop());
         }

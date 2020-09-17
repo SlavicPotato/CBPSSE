@@ -35,6 +35,10 @@ namespace CBP
                 m_lock.Leave();
             }
 
+            inline auto& GetLock() {
+                return m_lock;
+            }
+
             inline void Add(const char* a_string)
             {
                 m_lock.Enter();

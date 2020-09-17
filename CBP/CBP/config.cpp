@@ -237,7 +237,8 @@ namespace CBP
         }}
         });
 
-    const nodeMap_t IConfig::defaultNodeMap = {
+    static const nodeMap_t defaultNodeMap
+    {
         {"NPC L Breast", "breast"},
         {"NPC R Breast", "breast"},
         {"NPC L Butt", "butt"},
@@ -395,8 +396,8 @@ namespace CBP
 
         if (ac)
         {
-            if (ac->m_race.first)
-                if (raceConfHolder.find(ac->m_race.second) != raceConfHolder.end())
+            if (ac->race.first)
+                if (raceConfHolder.find(ac->race.second) != raceConfHolder.end())
                     return ConfigClass::kConfigRace;
 
             auto profile = ITemplate::GetProfile<PhysicsProfile>(ac);
@@ -416,8 +417,8 @@ namespace CBP
         auto ac = IData::GetActorRefInfo(a_handle);
         if (ac)
         {
-            if (ac->m_race.first)
-                if (raceNodeConfigHolder.find(ac->m_race.second) != raceNodeConfigHolder.end())
+            if (ac->race.first)
+                if (raceNodeConfigHolder.find(ac->race.second) != raceNodeConfigHolder.end())
                     return ConfigClass::kConfigRace;
 
             auto profile = ITemplate::GetProfile<NodeProfile>(ac);
@@ -468,8 +469,8 @@ namespace CBP
         auto ac = IData::GetActorRefInfo(a_handle);
         if (ac)
         {
-            if (ac->m_race.first) {
-                auto itr = raceNodeConfigHolder.find(ac->m_race.second);
+            if (ac->race.first) {
+                auto itr = raceNodeConfigHolder.find(ac->race.second);
                 if (itr != raceNodeConfigHolder.end())
                     return itr->second;
             }
@@ -501,8 +502,8 @@ namespace CBP
         auto ac = IData::GetActorRefInfo(a_handle);
         if (ac)
         {
-            if (ac->m_race.first) {
-                auto itr = raceNodeConfigHolder.find(ac->m_race.second);
+            if (ac->race.first) {
+                auto itr = raceNodeConfigHolder.find(ac->race.second);
                 if (itr != raceNodeConfigHolder.end())
                     return (actorNodeConfigHolder[a_handle] = itr->second);
             }
@@ -548,7 +549,7 @@ namespace CBP
     {
         actorNodeConfigHolder.insert_or_assign(a_handle, std::forward<configNodes_t>(a_conf));
     }
-    
+
     void IConfig::SetRaceNodeConfig(SKSE::FormID a_handle, const configNodes_t& a_conf)
     {
         raceNodeConfigHolder.insert_or_assign(a_handle, a_conf);
@@ -568,8 +569,8 @@ namespace CBP
         auto ac = IData::GetActorRefInfo(a_handle);
         if (ac)
         {
-            if (ac->m_race.first) {
-                auto itr = raceConfHolder.find(ac->m_race.second);
+            if (ac->race.first) {
+                auto itr = raceConfHolder.find(ac->race.second);
                 if (itr != raceConfHolder.end())
                     return (actorConfHolder[a_handle] = itr->second);
             }
@@ -592,8 +593,8 @@ namespace CBP
         auto ac = IData::GetActorRefInfo(a_handle);
         if (ac)
         {
-            if (ac->m_race.first) {
-                auto itr = raceConfHolder.find(ac->m_race.second);
+            if (ac->race.first) {
+                auto itr = raceConfHolder.find(ac->race.second);
                 if (itr != raceConfHolder.end())
                     return itr->second;
             }

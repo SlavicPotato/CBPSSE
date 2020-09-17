@@ -150,26 +150,26 @@ namespace CBP
             const actorRefData_t* a_param)
         {
             UInt32 modIndex;
-            if (!Game::GetModIndex(a_param->m_npc, modIndex))
+            if (!Game::GetModIndex(a_param->npc, modIndex))
                 return nullptr;
 
             const auto& fm = a_data.GetFormMap();
             auto itm = fm.find(modIndex);
             if (itm != fm.end())
             {
-                auto ita = itm->second.first.find(a_param->m_npc);
+                auto ita = itm->second.first.find(a_param->npc);
                 if (ita != itm->second.first.end()) {
                     auto sex = ita->second.gender;
-                    if (sex == -1 || sex == a_param->m_sex)
+                    if (sex == -1 || sex == a_param->sex)
                         return std::addressof(ita->second.profile.get());
                 }
 
-                if (a_param->m_race.first)
+                if (a_param->race.first)
                 {
-                    auto itr = itm->second.second.find(a_param->m_race.second);
+                    auto itr = itm->second.second.find(a_param->race.second);
                     if (itr != itm->second.second.end()) {
                         auto sex = itr->second.gender;
-                        if (sex == -1 || sex == a_param->m_sex)
+                        if (sex == -1 || sex == a_param->sex)
                             return std::addressof(itr->second.profile.get());
                     }
                 }
@@ -179,7 +179,7 @@ namespace CBP
             auto it = mm.find(modIndex);
             if (it != mm.end()) {
                 auto sex = it->second.gender;
-                if (sex == -1 || sex == a_param->m_sex)
+                if (sex == -1 || sex == a_param->sex)
                     return std::addressof(it->second.profile.get());
             }
 
@@ -192,7 +192,7 @@ namespace CBP
             SKSE::FormID a_formid)
         {
             UInt32 modIndex;
-            if (!Game::GetModIndex(a_param->m_npc, modIndex))
+            if (!Game::GetModIndex(a_param->npc, modIndex))
                 return nullptr;
 
             const auto& fm = a_data.GetFormMap();
@@ -202,7 +202,7 @@ namespace CBP
                 auto itr = itm->second.second.find(a_formid);
                 if (itr != itm->second.second.end()) {
                     auto sex = itr->second.gender;
-                    if (sex == -1 || sex == a_param->m_sex)
+                    if (sex == -1 || sex == a_param->sex)
                         return std::addressof(itr->second.profile.get());
                 }
             }
@@ -211,7 +211,7 @@ namespace CBP
             auto it = mm.find(modIndex);
             if (it != mm.end()) {
                 auto sex = it->second.gender;
-                if (sex == -1 || sex == a_param->m_sex)
+                if (sex == -1 || sex == a_param->sex)
                     return std::addressof(it->second.profile.get());
             }
 
@@ -219,7 +219,7 @@ namespace CBP
         }*/
 
         template <typename T>
-        static void ProcessTemplateRecord(DataHolder<T>& a_data, const TRecPlugin::entry_t& a_entry, ModInfo* a_modInfo);
+        static void ProcessTemplateRecord(DataHolder<T>& a_data, const TRecPlugin::entry_t& a_entry, const modData_t& a_modData);
 
         static DataHolder<PhysicsProfile> m_dataPhysics;
         static DataHolder<NodeProfile> m_dataNode;

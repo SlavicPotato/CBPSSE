@@ -88,7 +88,8 @@ namespace CBP
         simRate,
         armorOverrides,
         offsetMin,
-        offsetMax
+        offsetMax,
+        applyForce
     };
 
     typedef std::pair<const std::string, configComponents_t> actorEntryPhysConf_t;
@@ -138,13 +139,23 @@ namespace CBP
 
         template <typename T>
         inline void SetGlobal(T& a_member, T const a_value);
+
         inline bool CheckboxGlobal(const char* a_label, bool* a_member);
+
         inline bool SliderFloatGlobal(
             const char* a_label,
             float* a_member,
             float a_min,
             float a_max,
             const char* a_fmt = "%.3f");
+
+        inline bool SliderFloat3Global(
+            const char* a_label,
+            float* a_member,
+            float a_min,
+            float a_max,
+            const char* a_fmt = "%.3f");
+
         inline bool SliderIntGlobal(
             const char* a_label,
             int* a_member,
@@ -152,11 +163,22 @@ namespace CBP
             int a_max,
             const char* a_fmt = "%d");
 
+        void SetWindowDimensions(float a_offsetX = 0.0f, float a_sizeX = -1.0f, float a_sizeY = -1.0f);
+
     private:
 
         float m_posOffset = 0.0f;
 
         std::unordered_map<std::string, float> m_ctlPositions;
+
+        struct
+        {
+            ImVec2 sizeMin;
+            ImVec2 sizeMax;
+            ImVec2 pos;
+            ImVec2 size;
+            bool initialized = false;
+        } m_sizeData;
 
         static const std::unordered_map<MiscHelpText, const char*> m_helpText;
     };
@@ -245,8 +267,7 @@ namespace CBP
         void DrawMirrorContextMenu(
             T a_handle,
             configComponents_t& a_data,
-            configComponents_t::value_type& a_entry,
-            const configNode_t* a_nodeConfig);
+            configComponents_t::value_type& a_entry);
 
         __forceinline bool DrawSlider(
             const componentValueDescMap_t::vec_value_type& a_entry,
@@ -351,7 +372,7 @@ namespace CBP
             char new_input[60];
             UISelectedItem<std::string> selected;
             except::descriptor lastException;
-        } state;
+        } m_state;
     };
 
     template <class T, class P>
@@ -426,12 +447,12 @@ namespace CBP
         const char* m_name;
     };
 
-    class UIProfileEditorPhys :
+    class UIProfileEditorPhysics :
         public UIProfileEditorBase<PhysicsProfile>,
         UISimComponent<int, UIEditorID::kProfileEditorPhys>
     {
     public:
-        UIProfileEditorPhys(const char* a_name) :
+        UIProfileEditorPhysics(const char* a_name) :
             UIProfileEditorBase<PhysicsProfile>(a_name) {}
     private:
         virtual void DrawItem(PhysicsProfile& a_profile);
@@ -494,7 +515,7 @@ namespace CBP
         inline void QueueUpdateCurrent() {
             m_nextUpdateCurrent = true;
         }
-        
+
         inline void QueueUpdateList() {
             m_nextUpdateList = true;
         }
@@ -650,7 +671,7 @@ namespace CBP
         inline void MarkChanged() { m_changed = true; }
 
         bool m_changed;
-        
+
         struct {
             except::descriptor lastException;
         } state;
@@ -695,7 +716,7 @@ namespace CBP
 
         virtual void ApplyProfile(listValue_t* a_data, const PhysicsProfile& a_profile);
         [[nodiscard]] virtual const entryValue_t& GetData(SKSE::FormID a_formid);
-        [[nodiscard]] virtual const entryValue_t& GetData(const listValue_t *a_entry) const;
+        [[nodiscard]] virtual const entryValue_t& GetData(const listValue_t* a_entry) const;
 
         [[nodiscard]] virtual configGlobalRace_t& GetRaceConfig();
 
@@ -713,12 +734,22 @@ namespace CBP
             SKSE::FormID a_handle,
             configComponents_t& a_data,
             configComponentsValue_t& a_pair,
-            const componentValueDescMap_t::vec_value_type& a_desc
-        );
+            const componentValueDescMap_t::vec_value_type& a_desc);
 
         virtual const configNode_t* GetNodeConfig(
             SKSE::FormID a_handle,
             const std::string& a_node) const;
+
+        virtual bool ShouldDrawComponent(
+            SKSE::FormID a_handle,
+            const configNode_t* a_nodeConfig) const;
+
+        virtual bool HasMovement(
+            const configNode_t* a_nodeConfig) const;
+
+        virtual bool HasCollisions(
+            const configNode_t* a_nodeConfig) const;
+
     };
 
     class UIProfiling :
@@ -994,15 +1025,15 @@ namespace CBP
             } menu;
 
             except::descriptor lastException;
-        } state;
+        } m_state;
 
-        UIProfileEditorPhys m_peComponents;
+        UIProfileEditorPhysics m_pePhysics;
         UIProfileEditorNode m_peNodes;
-        UIRaceEditorPhysics m_raceEditor;
+        UIRaceEditorPhysics m_racePhysicsEditor;
         UIRaceEditorNode m_raceNodeEditor;
+        UIActorEditorNode m_actorNodeEditor;
         UIOptions m_options;
         UICollisionGroups m_colGroups;
-        UIActorEditorNode m_nodeConfig;
         UIProfiling m_profiling;
         UIDialogImport m_importDialog;
         UIDialogExport m_exportDialog;

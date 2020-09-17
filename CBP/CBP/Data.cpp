@@ -9,6 +9,8 @@ namespace CBP
     uint64_t IData::actorCacheUpdateId = 1;
     armorCache_t IData::armorCache;
 
+    std::map<UInt32, modData_t> IData::modList;
+
     except::descriptor IData::lastException;
 
     std::unordered_set<SKSE::FormID> IData::ignoredRaces = {
@@ -25,19 +27,19 @@ namespace CBP
 
         if (a_actor->race != nullptr)
         {
-            tmp.m_race.first = true;
-            tmp.m_race.second = a_actor->race->formID;
+            tmp.race.first = true;
+            tmp.race.second = a_actor->race->formID;
         }
         else
-            tmp.m_race.first = false;
+            tmp.race.first = false;
 
         auto npc = DYNAMIC_CAST(a_actor->baseForm, TESForm, TESNPC);
         if (npc != nullptr)
         {
             auto sex = CALL_MEMBER_FN(npc, GetSex)();
 
-            tmp.m_npc = npc->formID;
-            tmp.m_sex = CALL_MEMBER_FN(npc, GetSex)();
+            tmp.npc = npc->formID;
+            tmp.sex = CALL_MEMBER_FN(npc, GetSex)();
 
             actorNpcMap.insert_or_assign(
                 a_handle, std::move(tmp));
@@ -161,6 +163,31 @@ namespace CBP
                 raceCacheEntry_t{ playable, fullName, edid });
         }
 
+        return true;
+    }
+
+    bool IData::PopulateModList()
+    {
+        auto dh = DataHandler::GetSingleton();
+        if (!dh)
+            return false;
+
+        for (auto it = dh->modList.modInfoList.Begin(); !it.End(); ++it)
+        {
+            auto modInfo = it.Get();
+            if (!modInfo)
+                continue;
+
+            if (!modInfo->IsActive())
+                continue;
+                        
+            modList.try_emplace(it->GetPartialIndex(), 
+                modInfo->fileFlags,
+                modInfo->modIndex, 
+                modInfo->lightIndex, 
+                modInfo->name);
+        }
+        
         return true;
     }
 

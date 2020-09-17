@@ -32,9 +32,64 @@ namespace CBP
 
     struct actorRefData_t
     {
-        SKSE::FormID m_npc;
-        std::pair<bool, SKSE::FormID> m_race;
-        char m_sex;
+        SKSE::FormID npc;
+        std::pair<bool, SKSE::FormID> race;
+        char sex;
+    };
+
+    struct modData_t
+    {
+        UInt32 fileFlags;
+        UInt32 modIndex;
+        UInt32 lightIndex;
+        std::string name;
+
+        bool isLight;
+        UInt32 partialIndex;
+
+        modData_t(
+            UInt32 a_fileFlags,
+            UInt8 a_modIndex,
+            UInt16 a_lightIndex,
+            const std::string& a_name)
+            :
+            fileFlags(a_fileFlags),
+            modIndex(a_modIndex),
+            lightIndex(a_lightIndex),
+            name(a_name)
+        {
+            isLight = (a_fileFlags & ModInfo::kFileFlags_Light) == ModInfo::kFileFlags_Light;
+            partialIndex = !isLight ? a_modIndex : (UInt32(0xFE000) | a_lightIndex);
+        }
+
+        inline bool IsFormInMod(UInt32 a_formID) const
+        {
+            UInt32 modID = (a_formID & 0xFF000000) >> 24;
+
+            if (!isLight && modID == modIndex)
+                return true;
+
+            if (isLight && modID == 0xFE && ((a_formID & 0x00FFF000) >> 12) == lightIndex)
+                return true;
+
+            return false;
+        }
+
+        inline UInt32 GetPartialIndex() const
+        {
+            return partialIndex;
+        }
+
+        inline bool IsLight() const {
+            return isLight;
+        }
+
+        inline UInt32 GetFormID(UInt32 a_formIDLower) const
+        {
+            return !isLight ?
+                modIndex << 24 | (a_formIDLower & 0xFFFFFF) :
+                0xFE000000 | (lightIndex << 12) | (a_formIDLower & 0xFFF);
+        }
     };
 
     typedef std::pair<uint32_t, float> armorCacheValue_t;
@@ -51,16 +106,17 @@ namespace CBP
 
     public:
         [[nodiscard]] static bool PopulateRaceList();
+        [[nodiscard]] static bool PopulateModList();
         static void UpdateActorMaps(SKSE::ObjectHandle a_handle, const Actor* a_actor);
         static void UpdateActorMaps(SKSE::ObjectHandle a_handle);
 
-       /* static inline void UpdateHandleNpcMap(SKSE::ObjectHandle a_handle, SKSE::FormID a_formid) {
-            actorNpcMap.insert_or_assign(a_handle, a_formid);
-        }*/
+        /* static inline void UpdateHandleNpcMap(SKSE::ObjectHandle a_handle, SKSE::FormID a_formid) {
+             actorNpcMap.insert_or_assign(a_handle, a_formid);
+         }*/
 
-        /*static inline void RemoveHandleNpcMap(SKSE::ObjectHandle a_handle) {
-            actorNpcMap.erase(a_handle);
-        }*/
+         /*static inline void RemoveHandleNpcMap(SKSE::ObjectHandle a_handle) {
+             actorNpcMap.erase(a_handle);
+         }*/
 
         static inline const actorRefData_t* GetActorRefInfo(SKSE::ObjectHandle a_handle) {
             auto it = actorNpcMap.find(a_handle);
@@ -100,6 +156,10 @@ namespace CBP
             return ignoredRaces.find(a_formid) != ignoredRaces.end();
         }
 
+        [[nodiscard]] inline static auto& GetModList() {
+            return modList;
+        }
+
         static bool GetActorName(SKSE::ObjectHandle a_handle, std::string& a_out);
 
         static bool HasArmorCacheEntry(const std::string& a_path);
@@ -115,13 +175,12 @@ namespace CBP
 
         static raceList_t raceList;
         static actorRefMap_t actorNpcMap;
-
         static actorCache_t actorCache;
         static SKSE::ObjectHandle crosshairRef;
+        static armorCache_t armorCache;
+        static std::map<UInt32, modData_t> modList;
 
         static uint64_t actorCacheUpdateId;
-
-        static armorCache_t armorCache;
 
         static std::unordered_set<SKSE::FormID> ignoredRaces;
 
