@@ -88,13 +88,10 @@ namespace CBP
 
     struct configForce_t
     {
-        union
-        {
-            float forcearr[3]{ 0.0f, 0.0f, 0.0f };
-            NiPoint3 force;
+        NiPoint3 force;
 
-            static_assert(sizeof(force) == sizeof(forcearr));
-        };
+        static_assert(sizeof(NiPoint3) == sizeof(float[3]));
+
         int steps = 1;
     };
 

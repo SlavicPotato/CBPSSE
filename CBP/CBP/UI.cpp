@@ -1213,7 +1213,7 @@ namespace CBP
 
                 ImGui::Spacing();
 
-                SliderFloat3Global("Force", e.forcearr, FORCE_MIN, FORCE_MAX, "%.0f");
+                SliderFloat3Global("Force", std::addressof(e.force.x), FORCE_MIN, FORCE_MAX, "%.0f");
                 HelpMarker(MiscHelpText::applyForce);
 
                 ImGui::SameLine(wcm.x - GetNextTextOffset("Reset", true));
