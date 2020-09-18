@@ -177,7 +177,7 @@ namespace CBP
             p.second.Release();
     }
 
-    void SimObject::SetSuspended(bool a_switch) 
+    void SimObject::SetSuspended(bool a_switch)
     {
         m_suspended = a_switch;
 

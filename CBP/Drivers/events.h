@@ -34,13 +34,11 @@ namespace CBP
 
         typedef void (*exitPatch_t)(void);
     public:
-        typedef void(*inihookproc) (void);
-
         typedef EventTriggerDescriptor<Event, EventCallback> _EventTriggerDescriptor;
 
         typedef void (*LoadGameEventCallback) (SKSESerializationInterface*, UInt32, UInt32, UInt32);
 
-        static bool Initialize();
+        static void Initialize();
         static void RegisterForEvent(Event a_code, EventCallback fn);
         static void RegisterForLoadGameEvent(UInt32 code, LoadGameEventCallback fn);
         static void TriggerEvent(Event a_code, void* args = nullptr);
@@ -52,7 +50,7 @@ namespace CBP
         IEvents() = default;
 
         static void MessageHandler(SKSEMessagingInterface::Message* message);
-        static void FormDeleteHandler(UInt64 handle);
+        //static void FormDeleteHandler(UInt64 handle);
         static void SaveGameHandler(SKSESerializationInterface* intfc);
         static void LoadGameHandler(SKSESerializationInterface* intfc);
         static void RevertHandler(SKSESerializationInterface* intfc);

@@ -133,7 +133,7 @@ namespace CBP
         ProfileManager& operator=(const ProfileManager&) = delete;
         void operator=(ProfileManager&&) = delete;
 
-        virtual bool Load(const std::string& a_path);
+        virtual bool Load(const fs::path& a_path);
         [[nodiscard]] virtual bool CreateProfile(const std::string& a_name, T& a_out);
 
         [[nodiscard]] virtual bool AddProfile(const T& a_in);

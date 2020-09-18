@@ -176,7 +176,7 @@ namespace CBP
 #endif
         UpdateConfig(a_actor, a_config, a_collisions, a_movement, a_nodeConf);
         m_collisionData.Update();
-}
+    }
 
     void SimComponent::Release()
     {

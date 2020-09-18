@@ -7,7 +7,7 @@ namespace CBP
 
     IEvents IEvents::m_Instance;
 
-    bool IEvents::Initialize()
+    void IEvents::Initialize()
     {
         SKSE::g_messaging->RegisterListener(SKSE::g_pluginHandle, "SKSE", MessageHandler);
 
@@ -15,7 +15,7 @@ namespace CBP
         SKSE::g_serialization->SetRevertCallback(SKSE::g_pluginHandle, RevertHandler);
         SKSE::g_serialization->SetSaveCallback(SKSE::g_pluginHandle, SaveGameHandler);
         SKSE::g_serialization->SetLoadCallback(SKSE::g_pluginHandle, LoadGameHandler);
-        SKSE::g_serialization->SetFormDeleteCallback(SKSE::g_pluginHandle, FormDeleteHandler);
+        //SKSE::g_serialization->SetFormDeleteCallback(SKSE::g_pluginHandle, FormDeleteHandler);
 
         gLogger.SetWriteCallback(OnLogWrite);
 
@@ -38,12 +38,8 @@ namespace CBP
             }
         };
 
-        {
-            MessagePumpExitInject code(ExitGameAddr);
-            g_branchTrampoline.Write6Branch(ExitGameAddr, code.get());
-        }
-
-        return true;
+        MessagePumpExitInject code(ExitGameAddr);
+        g_branchTrampoline.Write6Branch(ExitGameAddr, code.get());
     }
 
     void IEvents::ExitGame_Hook()
@@ -84,10 +80,10 @@ namespace CBP
         TriggerEvent(Event::OnMessage, static_cast<void*>(message));
     }
 
-    void IEvents::FormDeleteHandler(UInt64 handle)
+    /*void IEvents::FormDeleteHandler(UInt64 handle)
     {
         TriggerEvent(Event::OnFormDelete, static_cast<void*>(&handle));
-    }
+    }*/
 
     void IEvents::SaveGameHandler(SKSESerializationInterface* intfc)
     {

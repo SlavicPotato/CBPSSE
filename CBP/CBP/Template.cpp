@@ -157,10 +157,12 @@ namespace CBP
     {
         try
         {
-            fs::path root(PLUGIN_CBP_TEMP_PLUG);
+            auto& driverConf = DCBP::GetDriverConfig();
+
             fs::path ext(".json");
 
-            for (const auto& entry : fs::directory_iterator(root))
+            for (const auto& entry : 
+                fs::directory_iterator(driverConf.paths.templatePlugins))
             {
                 if (!entry.is_regular_file())
                     continue;
@@ -269,14 +271,12 @@ namespace CBP
 
     bool ITemplate::LoadProfiles()
     {
-        std::pair<bool, int> a;
+        auto& driverConf = DCBP::GetDriverConfig();
 
-        std::reference_wrapper<decltype(a)> tt(a);
-
-        if (!m_dataPhysics.Load(PLUGIN_CBP_TEMP_PROF_PHYS))
+        if (!m_dataPhysics.Load(driverConf.paths.templateProfilesPhysics))
             return false;
 
-        if (!m_dataNode.Load(PLUGIN_CBP_TEMP_PROF_NODE))
+        if (!m_dataNode.Load(driverConf.paths.templateProfilesNode))
             return false;
 
         std::vector<TRecPlugin> data;
@@ -288,7 +288,7 @@ namespace CBP
 
         auto md = IData::GetModList();
 
-        for (const auto &e: md)
+        for (const auto& e : md)
         {
             std::string tmp(e.second.name);
             transform(tmp.begin(), tmp.end(), tmp.begin(), ::tolower);

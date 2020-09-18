@@ -90,7 +90,7 @@ namespace CBP
             return m_actor;
         }
 
-        [[nodiscard]] inline const NiTransform *GetHeadTransform() const {
+        [[nodiscard]] inline const NiTransform* GetHeadTransform() const {
             if (m_objHead)
                 return std::addressof(m_objHead->m_worldTransform);
             else

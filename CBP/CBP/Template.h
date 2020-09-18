@@ -85,7 +85,7 @@ namespace CBP
             {
             }
 
-            [[nodiscard]] inline bool Load(const std::string& a_path)
+            [[nodiscard]] inline bool Load(const fs::path& a_path)
             {
                 return m_profileManager.Load(a_path);
             }

@@ -17,6 +17,7 @@ namespace CBP
     constexpr const char* CKEY_DEBUGRENDERER = "DebugRenderer";
     constexpr const char* CKEY_FORCEINIKEYS = "ForceINIKeys";
     constexpr const char* CKEY_COMPLEVEL = "CompressionLevel";
+    constexpr const char* CKEY_DATAPATH = "DataPath";
 
     DCBP::DCBP() :
         m_loadInstance(0),
@@ -257,6 +258,45 @@ namespace CBP
             1, InputMap::kMacro_NumKeyboardKeys - 1);
     }
 
+    bool DCBP::LoadPaths()
+    {
+        auto& paths = m_Instance.conf.paths;
+
+        try 
+        {
+            paths.root = m_Instance.GetConfigValue(SECTION_CBP, CKEY_DATAPATH, CBP_DATA_BASE_PATH);
+
+            if (paths.root.empty())
+                return false;
+
+            if (!fs::is_directory(paths.root))
+                return false;
+
+            /*auto perms = fs::status(paths.root).permissions();
+            auto expected = fs::perms::owner_write | fs::perms::owner_read;
+
+            if ((perms & expected) != expected)
+                return false;*/
+
+            paths.profilesPhysics = paths.root / PLUGIN_CBP_PROFILE_PATH_R;
+            paths.profilesNode = paths.root / PLUGIN_CBP_PROFILE_NODE_PATH_R;
+            paths.settings = paths.root / PLUGIN_CBP_GLOBAL_DATA_R;
+            paths.collisionGroups = paths.root / PLUGIN_CBP_CG_DATA_R;
+            paths.nodes = paths.root / PLUGIN_CBP_NODE_DATA_R;
+            paths.defaultProfile = paths.root / PLUGIN_CBP_GLOBPROFILE_DEFAULT_DATA_R;
+            paths.exports = paths.root / PLUGIN_CBP_EXPORTS_PATH_R;
+            paths.templateProfilesPhysics = paths.root / PLUGIN_CBP_TEMP_PROF_PHYS_R;
+            paths.templateProfilesNode = paths.root / PLUGIN_CBP_TEMP_PROF_NODE_R;
+            paths.templatePlugins = paths.root / PLUGIN_CBP_TEMP_PLUG_R;
+            paths.imguiSettings = paths.root / PLUGIN_IMGUI_INI_FILE_R;
+
+            return true;
+        }
+        catch (...) {
+            return false;
+        }
+    }
+
     void DCBP::MainLoop_Hook(void* p1) {
         m_Instance.mainLoopUpdateFunc_o(p1);
         m_Instance.m_updateTask.PhysicsTick();
@@ -358,7 +398,8 @@ namespace CBP
 
         ICollision::Initialize(m_Instance.m_world);
 
-        if (m_Instance.conf.debug_renderer) {
+        if (m_Instance.conf.debug_renderer)
+        {
             IEvents::RegisterForEvent(Event::OnD3D11PostCreate, OnD3D11PostCreate_CBP);
 
             DRender::AddPresentCallback(Present_Pre);
@@ -373,7 +414,10 @@ namespace CBP
 
         if (m_Instance.conf.ui_enabled)
         {
-            if (DUI::Initialize()) {
+            if (DUI::Initialize())
+            {
+                DUI::SetImGuiIni(m_Instance.conf.paths.imguiSettings);
+
                 DInput::RegisterForKeyEvents(&m_Instance.m_inputEventHandler);
 
                 m_Instance.Message("UI enabled");
@@ -382,11 +426,13 @@ namespace CBP
 
         IConfig::LoadConfig();
 
-        auto& pms = GlobalProfileManager::GetSingleton<PhysicsProfile>();
-        pms.Load(PLUGIN_CBP_PROFILE_PATH);
+        auto& driverConf = GetDriverConfig();
 
-        auto& pmn = GlobalProfileManager::GetSingleton<NodeProfile>();
-        pmn.Load(PLUGIN_CBP_PROFILE_NODE_PATH);
+        auto& pms = CBP::GlobalProfileManager::GetSingleton<CBP::PhysicsProfile>();
+        pms.Load(driverConf.paths.profilesPhysics);
+
+        auto& pmn = CBP::GlobalProfileManager::GetSingleton<CBP::NodeProfile>();
+        pmn.Load(driverConf.paths.profilesNode);
     }
 
     void DCBP::OnD3D11PostCreate_CBP(Event, void* data)
@@ -762,7 +808,7 @@ namespace CBP
         auto& io = ImGui::GetIO();
 
         if (m_loadInstance != m_uiContext.GetLoadInstance() ||
-            io.KeysDown[VK_ESCAPE]) 
+            io.KeysDown[VK_ESCAPE])
         {
             uiState.show = false;
         }
@@ -820,12 +866,6 @@ namespace CBP
     void DCBP::DisableUI()
     {
         SavePending();
-        ImGui::SaveIniSettingsToDisk(PLUGIN_IMGUI_INI_FILE);
-
-        auto& io = ImGui::GetIO();
-        if (io.WantSaveIniSettings) {
-            io.WantSaveIniSettings = false;
-        }
 
         m_uiContext.Reset(m_loadInstance);
 

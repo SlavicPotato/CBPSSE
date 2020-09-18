@@ -144,6 +144,7 @@ namespace CBP
 
     public:
 
+        static bool LoadPaths();
         static void Initialize();
 
         static void MainLoop_Hook(void* p1);
@@ -275,7 +276,7 @@ namespace CBP
     private:
         DCBP();
 
-        virtual void LoadConfig();
+        void LoadConfig();
 
         bool ProcessUICallbackImpl();
 
@@ -312,6 +313,22 @@ namespace CBP
 
             UInt32 comboKey;
             UInt32 showKey;
+
+            struct
+            {
+                fs::path root;
+                fs::path profilesPhysics;
+                fs::path profilesNode;
+                fs::path settings;
+                fs::path collisionGroups;
+                fs::path nodes;
+                fs::path defaultProfile;
+                fs::path exports;
+                fs::path templateProfilesPhysics;
+                fs::path templateProfilesNode;
+                fs::path templatePlugins;
+                fs::path imguiSettings;
+            } paths;
         } conf;
 
         KeyPressHandler m_inputEventHandler;

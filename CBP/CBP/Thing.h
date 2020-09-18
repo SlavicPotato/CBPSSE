@@ -117,6 +117,7 @@ namespace CBP
         private:
             r3d::CollisionBody* m_body;
             r3d::Collider* m_collider;
+
             r3d::SphereShape* m_sphereShape;
             r3d::CapsuleShape* m_capsuleShape;
 

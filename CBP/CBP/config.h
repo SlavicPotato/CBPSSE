@@ -322,14 +322,14 @@ namespace CBP
             float cogOffset = 5.0f;
             float gravityBias = 0.0f;
             float gravityCorrection = 0.0f;
-            float linear[3] = { 0.5f, 0.1f, 0.25f };
-            float rotational[3] = { 0.0f, 0.0f, 0.0f };
+            float linear[3]{ 0.5f, 0.1f, 0.25f };
+            float rotational[3]{ 0.0f, 0.0f, 0.0f };
             float colSphereRadMin = 4.0f;
             float colSphereRadMax = 4.0f;
-            float offsetMin[3] = { 0.0f, 0.0f, 0.0f };
-            float offsetMax[3] = { 0.0f, 0.0f, 0.0f };
+            float offsetMin[3]{ 0.0f, 0.0f, 0.0f };
+            float offsetMax[3]{ 0.0f, 0.0f, 0.0f };
             float colHeight = 0.001f;
-            float colRot[3] = { 0.0f, 0.0f, 0.0f };
+            float colRot[3]{ 0.0f, 0.0f, 0.0f };
             float colDampingCoef = 1.5f;
             float colDepthMul = 100.0f;
         } phys;
@@ -366,8 +366,8 @@ namespace CBP
         bool maleMovement = false;
         bool maleCollisions = false;
 
-        float colOffsetMin[3] = { 0.0f, 0.0f, 0.0f };
-        float colOffsetMax[3] = { 0.0f, 0.0f, 0.0f };
+        float colOffsetMin[3]{ 0.0f, 0.0f, 0.0f };
+        float colOffsetMax[3]{ 0.0f, 0.0f, 0.0f };
 
         inline void Get(char a_sex, bool& a_collisionsOut, bool& a_movementOut) const noexcept
         {
@@ -688,7 +688,7 @@ namespace CBP
 
     private:
 
-        static bool LoadNodeMap(nodeMap_t& a_out);
+        [[nodiscard]] static bool LoadNodeMap(nodeMap_t& a_out);
         [[nodiscard]] static bool CompatLoadOldConf(configComponents_t& a_out);
 
         static configComponents_t thingGlobalConfig;

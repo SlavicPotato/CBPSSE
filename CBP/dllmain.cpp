@@ -12,6 +12,15 @@ static bool Initialize(const SKSEInterface* skse)
         return false;
     }
 
+    if (IConfigINI::Load() != 0) {
+        gLogger.Warning("Couldn't load configuration from '%s'", PLUGIN_INI_FILE);
+    }
+
+    if (!CBP::DCBP::LoadPaths()) {
+        gLogger.FatalError("Couldn't construct data paths, this is fatal. Make sure DataPath is set to an existing, writable folder.");
+        return false;
+    }
+
     if (!SKSE::Initialize(skse)) {
         return false;
     }
@@ -21,14 +30,10 @@ static bool Initialize(const SKSEInterface* skse)
         return false;
     }
 
-    if (IConfigINI::Load() != 0) {
-        gLogger.Warning("Couldn't load %s", PLUGIN_INI_FILE);
-    }
-
     CBP::IEvents::Initialize();
     CBP::DInput::Initialize();
     CBP::DCBP::Initialize();
-    CBP::DRender::Initialize();
+    _assert(CBP::DRender::Initialize());
 
     return true;
 }

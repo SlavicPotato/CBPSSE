@@ -825,7 +825,7 @@ namespace CBP
     public:
         bool UpdateFileList();
     protected:
-        UIFileSelector(const fs::path& a_path);
+        UIFileSelector();
 
         void DrawFileSelector();
         bool DeleteExport(const fs::path& a_file);
@@ -834,28 +834,13 @@ namespace CBP
             return m_selected;
         }
 
-        inline void SetPath(const fs::path& a_path) {
-            m_root = a_path;
-            m_rootString = a_path.string();
-        }
-
         inline const auto& GetLastException() const {
             return m_lastExcept;
-        }
-
-        inline const auto& GetRoot() const {
-            return m_root;
-        }
-
-        inline const auto& GetRootStr() const {
-            return m_rootString;
         }
 
     private:
         UISelectedItem<SelectedFile> m_selected;
         std::vector<fs::path> m_files;
-        fs::path m_root;
-        std::string m_rootString;
 
         except::descriptor m_lastExcept;
     };
@@ -864,7 +849,7 @@ namespace CBP
         public UIFileSelector
     {
     public:
-        UIDialogImport(const fs::path& a_path);
+        UIDialogImport() = default;
 
         bool Draw(bool* a_active);
         void OnOpen();
@@ -875,7 +860,7 @@ namespace CBP
         UIBase
     {
     public:
-        UIDialogExport(const fs::path& a_path);
+        UIDialogExport();
 
         bool Draw();
         void Open();

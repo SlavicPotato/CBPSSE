@@ -250,9 +250,11 @@ namespace CBP
     {
         try
         {
-            std::ifstream ifs(PLUGIN_CBP_NODE_DATA, std::ifstream::in | std::ifstream::binary);
+            auto& driverConf = DCBP::GetDriverConfig();
+
+            std::ifstream ifs(driverConf.paths.nodes, std::ifstream::in | std::ifstream::binary);
             if (!ifs.is_open())
-                throw std::system_error(errno, std::system_category(), PLUGIN_CBP_NODE_DATA);
+                throw std::system_error(errno, std::system_category(), driverConf.paths.nodes.string());
 
             Json::Value root;
             ifs >> root;
@@ -329,13 +331,15 @@ namespace CBP
                 char* tok1 = strtok_s(nullptr, " ", &next_tok);
                 char* tok2 = strtok_s(nullptr, " ", &next_tok);
 
-                if (tok0 && tok1 && tok2) {
+                if (tok0 && tok1 && tok2) 
+                {
                     std::string sect(tok0);
                     std::string key(tok1);
 
                     transform(sect.begin(), sect.end(), sect.begin(), ::tolower);
 
-                    if (a_out.find(sect) == a_out.end())
+                    auto it = a_out.find(sect);
+                    if (it == a_out.end())
                         continue;
 
                     transform(key.begin(), key.end(), key.begin(), ::tolower);
@@ -343,9 +347,9 @@ namespace CBP
                     static const std::string rot("rotational");
 
                     if (key == rot)
-                        a_out.at(sect).Set("rotationalz", atof(tok2));
+                        it->second.Set("rotationalz", atof(tok2));
                     else
-                        a_out.at(sect).Set(key, atof(tok2));
+                        it->second.Set(key, atof(tok2));
                 }
             }
 

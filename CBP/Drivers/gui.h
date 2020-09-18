@@ -68,7 +68,7 @@ namespace CBP
         static void RemoveCallback(uint32_t id);
 
         inline static bool HasCallback(uint32_t id) {
-            return m_Instance.m_drawCallbacks.find(id) != 
+            return m_Instance.m_drawCallbacks.find(id) !=
                 m_Instance.m_drawCallbacks.end();
         }
 
@@ -81,6 +81,10 @@ namespace CBP
         inline static void QueueResetIO()
         {
             m_Instance.m_nextResetIO = true;
+        }
+
+        inline static void SetImGuiIni(const fs::path& a_path) {
+            m_Instance.conf.imgui_ini = a_path.string();
         }
 
         FN_NAMEPROC("UI")
@@ -98,6 +102,7 @@ namespace CBP
             LPARAM lParam);
 
         static void OnD3D11PostCreate_DUI(Event, void* data);
+        static void OnExit_DUI(Event, void* data);
 
         WNDPROC pfnWndProc;
 
@@ -109,10 +114,15 @@ namespace CBP
             UIRect bufferSize;
         } info;
 
+        struct {
+            std::string imgui_ini;
+        } conf;
+
         std::map<uint32_t, uiDrawCallback_t> m_drawCallbacks;
 
         KeyPressHandler m_inputEventHandler;
 
+        bool m_imInitialized;
         bool m_isRunning;
         HWND m_WindowHandle;
 

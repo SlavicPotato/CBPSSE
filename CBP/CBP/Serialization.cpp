@@ -239,8 +239,10 @@ namespace CBP
 
         try
         {
+            auto& driverConf = DCBP::GetDriverConfig();
+
             Json::Value root;
-            if (!ReadJsonData(PLUGIN_CBP_GLOBAL_DATA, root))
+            if (!ReadJsonData(driverConf.paths.settings, root))
                 return;
 
             if (root.empty())
@@ -526,7 +528,9 @@ namespace CBP
             debugRenderer["drawAABB"] = globalConfig.debugRenderer.drawAABB;
             debugRenderer["drawBroadphaseAABB"] = globalConfig.debugRenderer.drawBroadphaseAABB;
 
-            WriteJsonData(PLUGIN_CBP_GLOBAL_DATA, root);
+            auto& driverConf = DCBP::GetDriverConfig();
+
+            WriteJsonData(driverConf.paths.settings, root);
 
             return true;
         }
@@ -544,8 +548,10 @@ namespace CBP
             collisionGroups_t colGroups;
             nodeCollisionGroupMap_t nodeColGroupMap;
 
+            auto& driverConf = DCBP::GetDriverConfig();
+
             Json::Value root;
-            if (!ReadJsonData(PLUGIN_CBP_CG_DATA, root))
+            if (!ReadJsonData(driverConf.paths.collisionGroups, root))
                 return;
 
             if (root.isMember("groups")) {
@@ -623,7 +629,9 @@ namespace CBP
                 ncgMap[e.first] = e.second;
             }
 
-            WriteJsonData(PLUGIN_CBP_CG_DATA, root);
+            auto& driverConf = DCBP::GetDriverConfig();
+
+            WriteJsonData(driverConf.paths.collisionGroups, root);
 
             return true;
         }
@@ -698,7 +706,9 @@ namespace CBP
         {
             Json::Value root;
 
-            if (!ReadJsonData(PLUGIN_CBP_GLOBPROFILE_DEFAULT_DATA, root))
+            auto& driverConf = DCBP::GetDriverConfig();
+
+            if (!ReadJsonData(driverConf.paths.defaultProfile, root))
                 throw std::exception("Couldn't load the default profile");
 
             return _LoadGlobalProfile(root) != 0;
@@ -1134,7 +1144,9 @@ namespace CBP
             m_componentParser.Create(IConfig::GetGlobalPhysicsConfig(), root);
             m_nodeParser.Create(IConfig::GetGlobalNodeConfig(), root);
 
-            WriteJsonData(PLUGIN_CBP_GLOBPROFILE_DEFAULT_DATA, root);
+            auto& driverConf = DCBP::GetDriverConfig();
+
+            WriteJsonData(driverConf.paths.defaultProfile, root);
 
             return true;
         }

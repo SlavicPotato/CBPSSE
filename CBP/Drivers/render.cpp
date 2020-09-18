@@ -16,11 +16,11 @@ namespace CBP
             return false;
         }
 
-        ASSERT(Hook::Call5(m_Instance.CreateD3D11,
+        _assert(Hook::Call5(m_Instance.CreateD3D11,
             reinterpret_cast<uintptr_t>(CreateD3D11_Hook),
             m_Instance.CreateD3D11_O));
 
-        ASSERT(Hook::Call5(m_Instance.UnkPresent,
+        _assert(Hook::Call5(m_Instance.UnkPresent,
             reinterpret_cast<uintptr_t>(Present_Pre),
             m_Instance.UnkPresent_O));
 
@@ -33,8 +33,8 @@ namespace CBP
         m_Instance.CreateD3D11_O();
 
         auto renderManager = BSRenderManager::GetSingleton();
-        ASSERT(renderManager != nullptr);
-        ASSERT(renderManager->swapChain != nullptr);
+        _assert(renderManager != nullptr);
+        _assert(renderManager->swapChain != nullptr);
 
         DXGI_SWAP_CHAIN_DESC sd;
         if (renderManager->swapChain->GetDesc(&sd) != S_OK) {

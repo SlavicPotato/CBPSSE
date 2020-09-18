@@ -5,6 +5,7 @@ namespace CBP
     DUI DUI::m_Instance;
 
     DUI::DUI() :
+        m_imInitialized(false),
         m_isRunning(false),
         m_nextResetIO(false)
     {
@@ -15,6 +16,7 @@ namespace CBP
         DInput::RegisterForKeyEvents(&m_Instance.m_inputEventHandler);
 
         IEvents::RegisterForEvent(Event::OnD3D11PostCreate, OnD3D11PostCreate_DUI);
+        IEvents::RegisterForEvent(Event::OnExit, OnExit_DUI);
         DRender::AddPresentCallback(Present_Pre);
 
         return true;
@@ -81,23 +83,28 @@ namespace CBP
         m_Instance.info.bufferSize.height = static_cast<float>(info->m_pSwapChainDesc->BufferDesc.Height);
         m_Instance.m_WindowHandle = info->m_pSwapChainDesc->OutputWindow;
 
-        IMGUI_CHECKVERSION();
+        _assert(IMGUI_CHECKVERSION());
         ImGui::CreateContext();
-        ImGui::LoadIniSettingsFromDisk(PLUGIN_IMGUI_INI_FILE);
 
         ImGuiIO& io = ImGui::GetIO();
         io.MouseDrawCursor = true;
         io.WantSetMousePos = true;
         io.ConfigWindowsMoveFromTitleBarOnly = true;
-        io.IniFilename = nullptr;
         io.DisplaySize = ImVec2(m_Instance.info.bufferSize.width, m_Instance.info.bufferSize.height);
         io.MousePos.x = io.DisplaySize.x / 2.0f;
         io.MousePos.y = io.DisplaySize.y / 2.0f;
+
+        if (!m_Instance.conf.imgui_ini.empty())
+            io.IniFilename = m_Instance.conf.imgui_ini.c_str();
+        else
+            io.IniFilename = nullptr;
 
         ImGui::StyleColorsDark();
 
         ImGui_ImplWin32_Init(info->m_pSwapChainDesc->OutputWindow);
         ImGui_ImplDX11_Init(info->m_pDevice, info->m_pImmediateContext);
+
+        m_Instance.m_imInitialized = true;
 
         m_Instance.pfnWndProc = reinterpret_cast<WNDPROC>(
             ::SetWindowLongPtrA(
@@ -110,6 +117,20 @@ namespace CBP
             m_Instance.Error(
                 "[0x%llX] SetWindowLongPtrA failed", info->m_pSwapChainDesc->OutputWindow);
 
+    }
+
+    void DUI::OnExit_DUI(Event, void* data)
+    {
+        if (m_Instance.m_imInitialized)
+        {
+            m_Instance.Debug("Shutting down..");
+
+            ImGui_ImplDX11_Shutdown();
+            ImGui_ImplWin32_Shutdown();
+            ImGui::DestroyContext();
+
+            m_Instance.m_imInitialized = false;
+        }
     }
 
     LRESULT CALLBACK DUI::WndProc_Hook(
@@ -332,6 +353,7 @@ namespace CBP
 
         template bool ConfirmDialog<>(const char*, const char*);
         template bool ConfirmDialog<const char*>(const char*, const char*, const char*);
+        template bool ConfirmDialog<const char*>(const char*, const char*, const char*, const char*);
 
         template<typename... Args>
         void MessageDialog(const char* name, const char* text, Args... args)

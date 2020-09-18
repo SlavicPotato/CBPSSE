@@ -371,3 +371,4 @@ FodyWeavers.xsd
 *.dll
 /CBP/My Advisor Results - CBP
 /installer/package/fomod
+/x64_v142/common_1_5_97_vc14

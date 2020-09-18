@@ -92,27 +92,26 @@ namespace CBP
     }
 
     template <typename T>
-    bool ProfileManager<T>::Load(const std::string& a_path)
+    bool ProfileManager<T>::Load(const fs::path& a_path)
     {
         try
         {
-            fs::path root(a_path);
-            if (!fs::exists(root)) {
-                if (!fs::create_directories(root)) {
+            if (!fs::exists(a_path)) {
+                if (!fs::create_directories(a_path)) {
                     throw std::exception("Couldn't create profile directory");
                 }
             }
-            else if (!fs::is_directory(root))
+            else if (!fs::is_directory(a_path))
                 throw std::exception("Root path is not a directory");
 
             m_storage.clear();
 
-            m_root = root;
+            m_root = a_path;
             m_isInitialized = true;
 
             fs::path ext(".json");
 
-            for (const auto& entry : fs::directory_iterator(root))
+            for (const auto& entry : fs::directory_iterator(a_path))
             {
                 if (!entry.is_regular_file())
                     continue;

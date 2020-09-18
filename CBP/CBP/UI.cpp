@@ -1596,8 +1596,6 @@ namespace CBP
         m_tsNoActors(PerfCounter::Query()),
         m_pePhysics("Physics profile editor"),
         m_peNodes("Node profile editor"),
-        m_importDialog(PLUGIN_CBP_EXPORTS_PATH),
-        m_exportDialog(PLUGIN_CBP_EXPORTS_PATH),
         m_state({ {false, false, false, false, false, false, false, false, false, false, false} }),
         UIActorList<actorListPhysConf_t>(true)
     {
@@ -3442,9 +3440,8 @@ namespace CBP
         m_infoResult = DCBP::ImportGetInfo(m_path, m_info);
     }
 
-    UIFileSelector::UIFileSelector(const fs::path& a_path)
+    UIFileSelector::UIFileSelector()
     {
-        SetPath(a_path);
     }
 
     void UIFileSelector::DrawFileSelector()
@@ -3488,10 +3485,12 @@ namespace CBP
     {
         try
         {
+            auto& driverConf = DCBP::GetDriverConfig();
+
             m_files.clear();
             m_selected.Clear();
 
-            for (const auto& entry : fs::directory_iterator(m_root))
+            for (const auto& entry : fs::directory_iterator(driverConf.paths.exports))
             {
                 if (!entry.is_regular_file())
                     continue;
@@ -3530,11 +3529,6 @@ namespace CBP
             m_lastExcept = e;
             return false;
         }
-    }
-
-    UIDialogImport::UIDialogImport(const fs::path& a_path) :
-        UIFileSelector(a_path)
-    {
     }
 
     bool UIDialogImport::Draw(bool* a_active)
@@ -3639,8 +3633,7 @@ namespace CBP
 
             UICommon::MessageDialog(
                 "Load failed",
-                "Could not show files in '%s'\nThe last exception was:\n\n%s",
-                GetRootStr().c_str(),
+                "Failed to load exports\nThe last exception was:\n\n%s",
                 GetLastException().what());
 
             UICommon::MessageDialog(
@@ -3666,8 +3659,7 @@ namespace CBP
         ImGui::PopID();
     }
 
-    UIDialogExport::UIDialogExport(const fs::path& a_path) :
-        m_path(a_path),
+    UIDialogExport::UIDialogExport():
         m_rFileCheck("^[a-zA-Z0-9_\\- ]+$",
             std::regex_constants::ECMAScript)
     {
@@ -3683,7 +3675,9 @@ namespace CBP
             return false;
         }
 
-        m_lastTargetPath = m_path;
+        auto& driverConf = DCBP::GetDriverConfig();
+
+        m_lastTargetPath = driverConf.paths.exports;
         m_lastTargetPath /= m_buf;
         m_lastTargetPath += ".json";
 
