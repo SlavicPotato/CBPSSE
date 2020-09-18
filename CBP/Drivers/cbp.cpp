@@ -21,7 +21,8 @@ namespace CBP
     DCBP::DCBP() :
         m_loadInstance(0),
         uiState({ false, false }),
-        m_backlog(1000)
+        m_backlog(1000),
+        m_resetUI(false)
     {
     }
 
