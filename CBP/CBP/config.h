@@ -643,14 +643,14 @@ namespace CBP
             return configGroupMap;
         }
 
-        inline static void StoreDefaultGlobalProfile() {
-            defaultGlobalProfileStorage.components = thingGlobalConfig;
-            defaultGlobalProfileStorage.nodes = globalNodeConfigHolder;
-            defaultGlobalProfileStorage.stored = true;
+        inline static void StoreDefaultProfile() {
+            defaultProfileStorage.components = thingGlobalConfig;
+            defaultProfileStorage.nodes = globalNodeConfigHolder;
+            defaultProfileStorage.stored = true;
         }
 
-        [[nodiscard]] inline static auto& GetDefaultGlobalProfile() {
-            return defaultGlobalProfileStorage;
+        [[nodiscard]] inline static auto& GetDefaultProfile() {
+            return defaultProfileStorage;
         }
 
         [[nodiscard]] inline static bool HasArmorOverride(SKSE::ObjectHandle a_handle) {
@@ -711,7 +711,7 @@ namespace CBP
         static armorOverrides_t armorOverrides;
         static mergedConfCache_t mergedConfCache;
 
-        static combinedData_t defaultGlobalProfileStorage;
+        static combinedData_t defaultProfileStorage;
 
         static IConfigLog log;
     };

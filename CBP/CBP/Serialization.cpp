@@ -430,7 +430,7 @@ namespace CBP
         }
     }
 
-    bool ISerialization::SaveGlobals()
+    bool ISerialization::SaveGlobalConfig()
     {
         try
         {
@@ -692,7 +692,7 @@ namespace CBP
         }
     }
 
-    bool ISerialization::LoadDefaultGlobalProfile()
+    bool ISerialization::LoadDefaultProfile()
     {
         try
         {
@@ -1186,7 +1186,7 @@ namespace CBP
     {
         bool failed = false;
 
-        failed |= !DoPendingSave(Group::kGlobals, &ISerialization::SaveGlobals);
+        failed |= !DoPendingSave(Group::kGlobals, &ISerialization::SaveGlobalConfig);
         failed |= !DoPendingSave(Group::kCollisionGroups, &ISerialization::SaveCollisionGroups);
 
         return !failed;

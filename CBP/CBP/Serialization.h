@@ -48,7 +48,7 @@ namespace CBP
         };
 
         void LoadGlobals();
-        bool SaveGlobals();
+        bool SaveGlobalConfig();
 
         size_t LoadActorProfiles(SKSESerializationInterface* intfc, std::stringstream& a_data);
         size_t SerializeActorProfiles(std::stringstream& a_out);
@@ -56,7 +56,7 @@ namespace CBP
         size_t LoadGlobalProfile(SKSESerializationInterface* intfc, std::stringstream& a_data);
         size_t SerializeGlobalProfile(std::stringstream& a_out);
 
-        bool LoadDefaultGlobalProfile();
+        bool LoadDefaultProfile();
         bool SaveToDefaultGlobalProfile();
 
         size_t LoadRaceProfiles(SKSESerializationInterface* intfc, std::stringstream& a_data);

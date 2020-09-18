@@ -18,7 +18,7 @@ namespace CBP
         m_process(true),
         m_nodeScale(1.0f),
         m_radius(1.0f),
-        m_height(0.0f),
+        m_height(0.001f),
         m_parent(a_parent)
     {}
 
@@ -32,17 +32,23 @@ namespace CBP
             Destroy();
         }
 
+        m_nodeScale = 1.0f;
+        m_radius = 1.0f;
+        m_height = 0.001f;
+        m_transform.setToIdentity();
+        SetColliderRotation(0.0f, 0.0f, 0.0f);
+
         auto world = DCBP::GetWorld();
         auto& physicsCommon = DCBP::GetPhysicsCommon();
 
-        m_body = world->createCollisionBody(r3d::Transform::identity());
+        m_body = world->createCollisionBody(m_transform);
 
         if (a_shape == ColliderShape::Capsule)
             m_capsuleShape = physicsCommon.createCapsuleShape(m_radius, m_height);
         else
             m_sphereShape = physicsCommon.createSphereShape(m_radius);
 
-        m_collider = m_body->addCollider(m_colliderShape, r3d::Transform::identity());
+        m_collider = m_body->addCollider(m_colliderShape, m_transform);
 
         m_collider->setUserData(std::addressof(m_parent));
         m_body->setIsActive(m_process);
@@ -108,20 +114,19 @@ namespace CBP
         {
             auto& mat = m_parent.m_obj->m_worldTransform.rot;
 
-            r3d::Quaternion quat({
+            r3d::Quaternion quat(r3d::Matrix3x3(
                 mat.arr[0], mat.arr[1], mat.arr[2],
                 mat.arr[3], mat.arr[4], mat.arr[5],
-                mat.arr[6], mat.arr[7], mat.arr[8] }
+                mat.arr[6], mat.arr[7], mat.arr[8])
             );
 
-            m_body->setTransform({
-                { pos.x, pos.y, pos.z },
-                quat * m_colRot }
-            );
+            m_body->setTransform(r3d::Transform(
+                r3d::Vector3(pos.x, pos.y, pos.z),
+                quat * m_colRot));
         }
         else
         {
-            m_transform.setPosition({ pos.x, pos.y, pos.z });
+            m_transform.setPosition(r3d::Vector3(pos.x, pos.y, pos.z ));
             m_body->setTransform(m_transform);
         }
 
@@ -240,7 +245,7 @@ namespace CBP
 
             if (m_collisionData.GetColliderShape() == ColliderShape::Capsule)
             {
-                m_collisionData.SetHeight(m_conf.phys.colHeight);
+                m_collisionData.SetHeight(std::max(m_conf.phys.colHeight, 0.001f));
                 m_collisionData.SetColliderRotation(
                     m_conf.phys.colRot[0],
                     m_conf.phys.colRot[1],

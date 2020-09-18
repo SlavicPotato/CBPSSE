@@ -17,7 +17,7 @@ namespace CBP
     configNodes_t IConfig::globalNodeConfigHolder;
     actorConfigNodesHolder_t IConfig::actorNodeConfigHolder;
     raceConfigNodesHolder_t IConfig::raceNodeConfigHolder;
-    combinedData_t IConfig::defaultGlobalProfileStorage;
+    combinedData_t IConfig::defaultProfileStorage;
 
     armorOverrides_t IConfig::armorOverrides;
     mergedConfCache_t IConfig::mergedConfCache;
@@ -142,7 +142,7 @@ namespace CBP
         { "colheight", {
             offsetof(configComponent_t, phys.colHeight),
             "",
-            0.0f, 250.0f,
+            0.001f, 250.0f,
             "Capsule height",
             "Capsule height",
             DescUIMarker::Misc1

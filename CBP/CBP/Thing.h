@@ -66,8 +66,11 @@ namespace CBP
             }
 
             inline void UpdateHeight() {
-                if (m_shape == ColliderShape::Capsule)
-                    m_capsuleShape->setHeight(m_height * m_nodeScale);
+                if (m_shape == ColliderShape::Capsule) {
+                    auto height = m_height * m_nodeScale;
+                    if (height > 0.0f)
+                        m_capsuleShape->setHeight(height);
+                }
             }
 
             inline void SetHeight(float a_val) {

@@ -18,6 +18,13 @@ namespace CBP
     constexpr const char* CKEY_FORCEINIKEYS = "ForceINIKeys";
     constexpr const char* CKEY_COMPLEVEL = "CompressionLevel";
 
+    DCBP::DCBP() :
+        m_loadInstance(0),
+        uiState({ false, false }),
+        m_backlog(1000)
+    {
+    }
+
     void DCBP::DispatchActorTask(Actor* actor, UTTask::UTTAction action)
     {
         if (actor != nullptr) {
@@ -192,7 +199,7 @@ namespace CBP
 
         bool failed(false);
 
-        failed |= !iface.SaveGlobals();
+        failed |= !iface.SaveGlobalConfig();
 
         return !failed;
     }
@@ -231,13 +238,6 @@ namespace CBP
         default:
             return DIK_LSHIFT;
         }
-    }
-
-    DCBP::DCBP() :
-        m_loadInstance(0),
-        uiState({ false, false }),
-        m_backlog(1000)
-    {
     }
 
     void DCBP::LoadConfig()
@@ -475,8 +475,8 @@ namespace CBP
 
             iface.LoadGlobals();
             iface.LoadCollisionGroups();
-            if (iface.LoadDefaultGlobalProfile())
-                IConfig::StoreDefaultGlobalProfile();
+            if (iface.LoadDefaultProfile())
+                IConfig::StoreDefaultProfile();
 
             UpdateDebugRendererState();
             UpdateDebugRendererSettings();
@@ -608,6 +608,7 @@ namespace CBP
         }
 
         GetProfiler().Reset();
+        QueueUIReset();
 
         Unlock();
 
@@ -696,7 +697,7 @@ namespace CBP
 
         Lock();
 
-        iface.SaveGlobals();
+        iface.SaveGlobalConfig();
 
         intfc->OpenRecord('DPBC', kDataVersion1);
 
@@ -726,7 +727,7 @@ namespace CBP
         IConfig::ClearRaceNodeConfigHolder();
 
         auto& iface = m_Instance.m_serialization;
-        auto& dgp = IConfig::GetDefaultGlobalProfile();
+        auto& dgp = IConfig::GetDefaultProfile();
 
         if (dgp.stored) {
             IConfig::SetGlobalPhysicsConfig(dgp.components);
@@ -736,11 +737,12 @@ namespace CBP
             IConfig::ClearGlobalPhysicsConfig();
             IConfig::ClearGlobalNodeConfig();
 
-            if (iface.LoadDefaultGlobalProfile())
-                IConfig::StoreDefaultGlobalProfile();
+            if (iface.LoadDefaultProfile())
+                IConfig::StoreDefaultProfile();
         }
 
         GetUpdateTask().ClearActors();
+        QueueUIReset();
 
         Unlock();
     }
@@ -767,8 +769,14 @@ namespace CBP
             auto mm = MenuManager::GetSingleton();
             if (mm && mm->InPausedMenu())
                 uiState.show = false;
-            else
+            else {
+                if (m_resetUI) {
+                    m_resetUI = false;
+                    m_uiContext.Reset(m_loadInstance);
+                }
+
                 m_uiContext.Draw(&uiState.show);
+            }
         }
 
         bool ret = uiState.show;

@@ -175,7 +175,7 @@ namespace CBP
         static bool SaveAll();
 
         inline static bool SaveGlobals() {
-            return m_Instance.m_serialization.SaveGlobals();
+            return m_Instance.m_serialization.SaveGlobalConfig();
         }
 
         inline static void MarkGlobalsForSave() {
@@ -267,6 +267,10 @@ namespace CBP
             m_Instance.m_updateTask.SetMarkedActor(a_handle);
         }
 
+        inline static void QueueUIReset() {
+            m_Instance.m_resetUI = true;
+        }
+
         FN_NAMEPROC("CBP")
     private:
         DCBP();
@@ -332,6 +336,8 @@ namespace CBP
         mainLoopUpdateFunc_t mainLoopUpdateFunc_o;
 
         BackLog m_backlog;
+
+        bool m_resetUI;
 
         ICriticalSection m_lock;
 

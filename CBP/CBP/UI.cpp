@@ -1846,9 +1846,8 @@ namespace CBP
 
         if (m_state.windows.race) {
             m_racePhysicsEditor.Draw(&m_state.windows.race);
-            if (m_racePhysicsEditor.GetChanged()) {
+            if (m_racePhysicsEditor.GetChanged())
                 QueueUpdateCurrent();
-            }
         }
 
         if (m_state.windows.raceNode) {
