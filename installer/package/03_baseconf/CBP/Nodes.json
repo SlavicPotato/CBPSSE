@@ -10,6 +10,8 @@
 	"hand right": ["NPC R Hand [RHnd]"],
 	"forearm left": ["NPC L Forearm [LLar]"],
 	"forearm right": ["NPC R Forearm [RLar]"],
+	"upperarm left": ["NPC L UpperArm [LUar]"],
+	"upperarm right": ["NPC R UpperArm [RUar]"],
 	"palm left": ["NPC L Finger20 [LF20]"],
 	"palm right": ["NPC R Finger20 [RF20]"],
 	"extra breast left 1": ["L Breast01"],
@@ -28,6 +30,8 @@
 	"front thigh right": ["NPC R FrontThigh"],
 	"rear thigh left": ["NPC L RearThigh"],
 	"rear thigh right": ["NPC R RearThigh"],
-	"rear calf left": ["NPC L RearCalf [LrClf]"],
-	"rear calf right": ["NPC R RearCalf [RrClf]"]
+	"thigh left": ["NPC L Thigh [LThg]"],
+	"thigh right": ["NPC R Thigh [RThg]"],
+	"calf left": ["NPC L Calf [LClf]"],
+	"calf right": ["NPC R Calf [RClf]"]
 }
