@@ -10,7 +10,6 @@ namespace CBP
     static auto CreateArmorNodePost = IAL::Addr(15501, 0xB58);
 
     constexpr const char* SECTION_CBP = "CBP";
-    constexpr const char* CKEY_CBPFEMALEONLY = "FemaleOnly";
     constexpr const char* CKEY_COMBOKEY = "ComboKey";
     constexpr const char* CKEY_SHOWKEY = "ToggleKey";
     constexpr const char* CKEY_UIENABLED = "UIEnabled";
@@ -251,7 +250,6 @@ namespace CBP
 
         auto& globalConfig = IConfig::GetGlobalConfig();
 
-        globalConfig.general.femaleOnly = GetConfigValue(SECTION_CBP, CKEY_CBPFEMALEONLY, true);
         globalConfig.ui.comboKey = conf.comboKey = ConfigGetComboKey(GetConfigValue(SECTION_CBP, CKEY_COMBOKEY, 1));
         globalConfig.ui.showKey = conf.showKey = std::clamp<UInt32>(
             GetConfigValue<UInt32>(SECTION_CBP, CKEY_SHOWKEY, DIK_END),
