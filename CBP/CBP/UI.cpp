@@ -319,6 +319,21 @@ namespace CBP
     }
 
     template <class T>
+    const T* UIProfileBase<T>::GetCurrentProfile() const
+    {
+        if (!m_state.selected)
+            return nullptr;
+
+        auto& data = GlobalProfileManager::GetSingleton<T>();
+
+        auto it = data.Find(*m_state.selected);
+        if (it != data.End())
+            return std::addressof(it->second);
+
+        return nullptr;
+    }
+
+    template <class T>
     UIProfileEditorBase<T>::UIProfileEditorBase(const char* a_name) :
         m_name(a_name)
     {
@@ -521,10 +536,18 @@ namespace CBP
 
     void UIProfileEditorPhysics::OnColliderShapeChange(
         int,
-        PhysicsProfile::base_type& a_data,
-        PhysicsProfile::base_type::value_type& a_pair,
-        const componentValueDescMap_t::vec_value_type& a_desc)
+        PhysicsProfile::base_type&,
+        PhysicsProfile::base_type::value_type&,
+        const componentValueDescMap_t::vec_value_type&)
     {
+    }
+
+    void UIProfileEditorPhysics::OnComponentUpdate(
+        int,
+        PhysicsProfile::base_type& a_data,
+        PhysicsProfile::base_type::value_type& a_pair)
+    {
+        PropagateComponent(a_data, nullptr, a_pair);
     }
 
     const configNode_t* UIProfileEditorPhysics::GetNodeConfig(
@@ -1011,6 +1034,20 @@ namespace CBP
         DCBP::UpdateConfigOnAllActors();
     }
 
+    void UIRaceEditorPhysics::OnComponentUpdate(
+        SKSE::FormID a_formid,
+        configComponents_t& a_data,
+        configComponentsValue_t& a_pair)
+    {
+        auto& raceConf = IConfig::GetOrCreateRacePhysicsConfig(a_formid);
+        raceConf[a_pair.first] = a_pair.second;
+
+        PropagateComponent(a_data, std::addressof(raceConf), a_pair);
+
+        MarkChanged();
+        DCBP::UpdateConfigOnAllActors();
+    }
+
     const configNode_t* UIRaceEditorPhysics::GetNodeConfig(
         SKSE::FormID a_formid,
         const std::string& a_confGroup) const
@@ -1049,6 +1086,11 @@ namespace CBP
         const configNode_t* a_nodeConfig) const
     {
         return a_nodeConfig && a_nodeConfig->HasCollisions();
+    }
+
+    const PhysicsProfile* UIRaceEditorPhysics::GetSelectedProfile() const
+    {
+        return GetCurrentProfile();
     }
 
     template<class T, class P>
@@ -1549,6 +1591,8 @@ namespace CBP
 
     UIContext::UIContext() noexcept :
         m_activeLoadInstance(0),
+        m_scActor(*this),
+        m_scGlobal(*this),
         m_tsNoActors(PerfCounter::Query()),
         m_pePhysics("Physics profile editor"),
         m_peNodes("Node profile editor"),
@@ -2413,6 +2457,12 @@ namespace CBP
         return IConfig::GetGlobalConfig().ui.actorNode;
     }
 
+    UIContext::UISimComponentActor::UISimComponentActor(UIContext& a_parent) :
+        UISimComponent<SKSE::ObjectHandle, UIEditorID::kMainEditor>(),
+        m_ctxParent(a_parent)
+    {
+    }
+
     void UIContext::UISimComponentActor::OnSimSliderChange(
         SKSE::ObjectHandle a_handle,
         configComponents_t& a_data,
@@ -2462,6 +2512,19 @@ namespace CBP
         DCBP::DispatchActorTask(a_handle, UTTask::UTTAction::UpdateConfig);
     }
 
+    void UIContext::UISimComponentActor::OnComponentUpdate(
+        SKSE::ObjectHandle a_handle,
+        configComponents_t& a_data,
+        configComponentsValue_t& a_pair)
+    {
+        auto& actorConf = IConfig::GetOrCreateActorPhysicsConfig(a_handle);
+        actorConf[a_pair.first] = a_pair.second;
+
+        PropagateComponent(a_data, std::addressof(actorConf), a_pair);
+
+        DCBP::DispatchActorTask(a_handle, UTTask::UTTAction::UpdateConfig);
+    }
+
     const configNode_t* UIContext::UISimComponentActor::GetNodeConfig(
         SKSE::ObjectHandle a_handle,
         const std::string& a_confGroup) const
@@ -2481,6 +2544,11 @@ namespace CBP
         }
 
         return nullptr;
+    }
+
+    const PhysicsProfile* UIContext::UISimComponentActor::GetSelectedProfile() const
+    {
+        return m_ctxParent.GetCurrentProfile();
     }
 
     bool UIContext::UISimComponentActor::ShouldDrawComponent(
@@ -2509,6 +2577,12 @@ namespace CBP
         return IConfig::GetArmorOverrideSection(a_handle, a_comp);
     }
 
+    UIContext::UISimComponentGlobal::UISimComponentGlobal(UIContext& a_parent) :
+        UISimComponent<SKSE::ObjectHandle, UIEditorID::kMainEditor>(),
+        m_ctxParent(a_parent)
+    {
+    }
+
     void UIContext::UISimComponentGlobal::OnSimSliderChange(
         SKSE::ObjectHandle a_handle,
         configComponents_t& a_data,
@@ -2534,11 +2608,21 @@ namespace CBP
     }
 
     void UIContext::UISimComponentGlobal::OnColliderShapeChange(
-        SKSE::ObjectHandle a_handle,
-        configComponents_t& a_data,
-        configComponentsValue_t& a_pair,
-        const componentValueDescMap_t::vec_value_type& a_desc)
+        SKSE::ObjectHandle,
+        configComponents_t&,
+        configComponentsValue_t&,
+        const componentValueDescMap_t::vec_value_type&)
     {
+        DCBP::UpdateConfigOnAllActors();
+    }
+
+    void UIContext::UISimComponentGlobal::OnComponentUpdate(
+        SKSE::ObjectHandle,
+        configComponents_t& a_data,
+        configComponentsValue_t& a_pair)
+    {
+        PropagateComponent(a_data, nullptr, a_pair);
+
         DCBP::UpdateConfigOnAllActors();
     }
 
@@ -2579,6 +2663,11 @@ namespace CBP
         const configNode_t* a_nodeConfig) const
     {
         return a_nodeConfig && a_nodeConfig->HasCollisions();
+    }
+
+    const PhysicsProfile* UIContext::UISimComponentGlobal::GetSelectedProfile() const
+    {
+        return m_ctxParent.GetCurrentProfile();
     }
 
     void UIContext::ApplyProfile(listValue_t* a_data, const PhysicsProfile& a_profile)
@@ -2651,6 +2740,12 @@ namespace CBP
     }
 
     template <class T, UIEditorID ID>
+    const PhysicsProfile* UISimComponent<T, ID>::GetSelectedProfile() const
+    {
+        return nullptr;
+    }
+
+    template <class T, UIEditorID ID>
     void UISimComponent<T, ID>::Propagate(
         configComponents_t& a_dl,
         configComponents_t* a_dg,
@@ -2659,7 +2754,7 @@ namespace CBP
         float* a_val,
         size_t a_size)
     {
-        const auto& globalConfig = IConfig::GetGlobalConfig();;
+        const auto& globalConfig = IConfig::GetGlobalConfig();
 
         auto itm = globalConfig.ui.mirror.find(ID);
         if (itm == globalConfig.ui.mirror.end())
@@ -2681,6 +2776,38 @@ namespace CBP
                 auto it2 = a_dg->find(e.first);
                 if (it2 != a_dg->end())
                     it2->second.Set(a_key, a_val, a_size);
+            }
+        }
+    }
+
+    template <class T, UIEditorID ID>
+    void UISimComponent<T, ID>::PropagateComponent(
+        configComponents_t& a_dl,
+        configComponents_t* a_dg,
+        const configComponentsValue_t& a_pair)
+    {
+        const auto& globalConfig = IConfig::GetGlobalConfig();
+
+        auto itm = globalConfig.ui.mirror.find(ID);
+        if (itm == globalConfig.ui.mirror.end())
+            return;
+
+        auto it = itm->second.find(a_pair.first);
+        if (it == itm->second.end())
+            return;
+
+        for (auto& e : it->second) {
+            if (!e.second)
+                continue;
+
+            auto itl = a_dl.find(e.first);
+            if (itl != a_dl.end())
+                itl->second = a_pair.second;
+
+            if (a_dg != nullptr) {
+                auto itg = a_dg->find(e.first);
+                if (itg != a_dg->end())
+                    itg->second = a_pair.second;
             }
         }
     }
@@ -2711,15 +2838,32 @@ namespace CBP
                 {
                     ImGui::PushID(static_cast<const void*>(std::addressof(p)));
 
-                    //ImGui::Indent(12.0f);
                     if (ImGui::Button("Mirroring >"))
                         ImGui::OpenPopup("mirror_popup");
-                    //ImGui::Unindent(12.0f);
+
+                    auto profile = GetSelectedProfile();
+                    if (profile)
+                    {
+                        ImGui::SameLine();
+                        if (ImGui::Button("Copy from profile"))
+                            ImGui::OpenPopup("Copy from profile");
+
+                        if (UICommon::ConfirmDialog(
+                            "Copy from profile",
+                            "Copy and apply all values for '%s' from profile '%s'?",
+                            p.first.c_str(), profile->Name().c_str()))
+                        {
+                            if (!CopyFromSelectedProfile(a_handle, a_data, p))
+                                ImGui::OpenPopup("Copy failed");
+                        }
+                    }
+
+                    UICommon::MessageDialog(
+                        "Copy failed", "Could not copy values from selected profile");
 
                     if (ImGui::BeginPopup("mirror_popup"))
                     {
                         DrawMirrorContextMenu(a_handle, a_data, p);
-
                         ImGui::EndPopup();
                     }
 
@@ -2780,6 +2924,29 @@ namespace CBP
                 DCBP::MarkGlobalsForSave();
             }
         }
+    }
+
+    template <class T, UIEditorID ID>
+    bool UISimComponent<T, ID>::CopyFromSelectedProfile(
+        T a_handle,
+        configComponents_t& a_data,
+        configComponentsValue_t& a_pair)
+    {
+        auto profile = GetSelectedProfile();
+        if (!profile)
+            return false;
+
+        auto& data = profile->Data();
+
+        auto it = data.find(a_pair.first);
+        if (it == data.end())
+            return false;
+
+        a_pair.second = it->second;
+
+        OnComponentUpdate(a_handle, a_data, a_pair);
+
+        return true;
     }
 
     template <class T, UIEditorID ID>

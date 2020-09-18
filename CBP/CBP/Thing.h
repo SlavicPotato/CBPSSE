@@ -55,7 +55,11 @@ namespace CBP
                 UpdateRadius();
             }
 
-            inline void UpdateRadius() {
+            inline void UpdateRadius() 
+            {
+                if (!m_created)
+                    return;
+
                 auto rad = m_radius * m_nodeScale;
                 if (rad > 0.0f) {
                     if (m_shape == ColliderShape::Capsule)
@@ -65,7 +69,11 @@ namespace CBP
                 }
             }
 
-            inline void UpdateHeight() {
+            inline void UpdateHeight() 
+            {
+                if (!m_created)
+                    return;
+
                 if (m_shape == ColliderShape::Capsule) {
                     auto height = m_height * m_nodeScale;
                     if (height > 0.0f)
@@ -109,13 +117,8 @@ namespace CBP
         private:
             r3d::CollisionBody* m_body;
             r3d::Collider* m_collider;
-
-            union
-            {
-                r3d::SphereShape* m_sphereShape;
-                r3d::CapsuleShape* m_capsuleShape;
-                r3d::CollisionShape* m_colliderShape;
-            };
+            r3d::SphereShape* m_sphereShape;
+            r3d::CapsuleShape* m_capsuleShape;
 
             NiPoint3 m_bodyOffset;
             r3d::Quaternion m_colRot;

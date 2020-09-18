@@ -19,7 +19,8 @@ namespace CBP
         m_nodeScale(1.0f),
         m_radius(1.0f),
         m_height(0.001f),
-        m_parent(a_parent)
+        m_parent(a_parent),
+        m_shape(ColliderShape::Sphere)
     {}
 
     bool SimComponent::Collider::Create(ColliderShape a_shape)
@@ -43,12 +44,14 @@ namespace CBP
 
         m_body = world->createCollisionBody(m_transform);
 
-        if (a_shape == ColliderShape::Capsule)
+        if (a_shape == ColliderShape::Capsule) {
             m_capsuleShape = physicsCommon.createCapsuleShape(m_radius, m_height);
-        else
+            m_collider = m_body->addCollider(m_capsuleShape, m_transform);
+        }
+        else {
             m_sphereShape = physicsCommon.createSphereShape(m_radius);
-
-        m_collider = m_body->addCollider(m_colliderShape, m_transform);
+            m_collider = m_body->addCollider(m_sphereShape, m_transform);
+        }
 
         m_collider->setUserData(std::addressof(m_parent));
         m_body->setIsActive(m_process);
@@ -126,7 +129,7 @@ namespace CBP
         }
         else
         {
-            m_transform.setPosition(r3d::Vector3(pos.x, pos.y, pos.z ));
+            m_transform.setPosition(r3d::Vector3(pos.x, pos.y, pos.z));
             m_body->setTransform(m_transform);
         }
 
@@ -173,7 +176,7 @@ namespace CBP
 #endif
         UpdateConfig(a_actor, a_config, a_collisions, a_movement, a_nodeConf);
         m_collisionData.Update();
-    }
+}
 
     void SimComponent::Release()
     {
@@ -181,8 +184,8 @@ namespace CBP
     }
 
     bool SimComponent::UpdateWeightData(
-        Actor* a_actor, 
-        const configComponent_t& a_config, 
+        Actor* a_actor,
+        const configComponent_t& a_config,
         const configNode_t& a_nodeConf)
     {
         if (a_actor == nullptr)
@@ -195,14 +198,14 @@ namespace CBP
         float weight = std::clamp(npc->weight, 0.0f, 100.0f);
 
         m_colRad = std::max(mmw(weight, a_config.phys.colSphereRadMin, a_config.phys.colSphereRadMax), 0.0f);
-        m_colOffsetX = mmw(weight, 
-            a_config.phys.offsetMin[0] + a_nodeConf.colOffsetMin[0], 
+        m_colOffsetX = mmw(weight,
+            a_config.phys.offsetMin[0] + a_nodeConf.colOffsetMin[0],
             a_config.phys.offsetMax[0] + a_nodeConf.colOffsetMax[0]);
         m_colOffsetY = mmw(weight,
-            a_config.phys.offsetMin[1] + a_nodeConf.colOffsetMin[1], 
+            a_config.phys.offsetMin[1] + a_nodeConf.colOffsetMin[1],
             a_config.phys.offsetMax[1] + a_nodeConf.colOffsetMax[1]);
-        m_colOffsetZ = mmw(weight, 
-            a_config.phys.offsetMin[2] + a_nodeConf.colOffsetMin[2], 
+        m_colOffsetZ = mmw(weight,
+            a_config.phys.offsetMin[2] + a_nodeConf.colOffsetMin[2],
             a_config.phys.offsetMax[2] + a_nodeConf.colOffsetMax[2]);
 
         return true;

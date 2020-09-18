@@ -188,12 +188,14 @@ namespace CBP
         virtual protected UIBase
     {
     public:
-        UISimComponent() = default;
-        virtual ~UISimComponent() = default;
 
         void DrawSimComponents(
             T a_handle,
             configComponents_t& a_data);
+
+    protected:
+        UISimComponent() = default;
+        virtual ~UISimComponent() = default;
 
         void DrawSliders(
             T a_handle,
@@ -218,7 +220,13 @@ namespace CBP
             const componentValueDescMap_t::vec_value_type& a_desc
         ) = 0;
 
-    protected:
+        virtual void OnComponentUpdate(
+            T a_handle,
+            configComponents_t& a_data,
+            configComponentsValue_t& a_pair) = 0;
+
+        virtual const PhysicsProfile* GetSelectedProfile() const;
+
         void Propagate(
             configComponents_t& a_dl,
             configComponents_t* a_dg,
@@ -226,6 +234,11 @@ namespace CBP
             const std::string& a_key,
             float* a_val,
             size_t a_size);
+
+        void PropagateComponent(
+            configComponents_t& a_dl,
+            configComponents_t* a_dg,
+            const configComponentsValue_t &a_pair);
 
         [[nodiscard]] inline std::string GetCSID(
             const std::string& a_name)
@@ -268,6 +281,11 @@ namespace CBP
             T a_handle,
             configComponents_t& a_data,
             configComponents_t::value_type& a_entry);
+
+        bool CopyFromSelectedProfile(
+            T a_handle,
+            configComponents_t& a_data,
+            configComponentsValue_t& a_pair);
 
         __forceinline bool DrawSlider(
             const componentValueDescMap_t::vec_value_type& a_entry,
@@ -362,6 +380,8 @@ namespace CBP
     template <class T>
     class UIProfileBase
     {
+    public:
+        const T* GetCurrentProfile() const;
     protected:
         UIProfileBase() = default;
         virtual ~UIProfileBase() = default;
@@ -379,7 +399,7 @@ namespace CBP
     class UIProfileSelector :
         virtual protected UIBase,
         UIDataBase<T, typename P::base_type>,
-        UIProfileBase<P>
+        public UIProfileBase<P>
     {
     protected:
         UIProfileSelector() = default;
@@ -471,6 +491,11 @@ namespace CBP
             PhysicsProfile::base_type::value_type& a_pair,
             const componentValueDescMap_t::vec_value_type& a_desc
         );
+
+        virtual void OnComponentUpdate(
+            int a_handle,
+            PhysicsProfile::base_type& a_data,
+            PhysicsProfile::base_type::value_type& a_pair);
 
         virtual const configNode_t* GetNodeConfig(
             int a_handle,
@@ -723,7 +748,7 @@ namespace CBP
         virtual void ResetAllValues(SKSE::FormID a_formid);
 
         virtual void OnSimSliderChange(
-            SKSE::FormID a_handle,
+            SKSE::FormID a_formid,
             configComponents_t& a_data,
             configComponentsValue_t& a_pair,
             const componentValueDescMap_t::vec_value_type& a_desc,
@@ -731,10 +756,15 @@ namespace CBP
             size_t a_size);
 
         virtual void OnColliderShapeChange(
-            SKSE::FormID a_handle,
+            SKSE::FormID a_formid,
             configComponents_t& a_data,
             configComponentsValue_t& a_pair,
             const componentValueDescMap_t::vec_value_type& a_desc);
+
+        virtual void OnComponentUpdate(
+            SKSE::FormID a_formid,
+            configComponents_t& a_data,
+            configComponentsValue_t& a_pair);
 
         virtual const configNode_t* GetNodeConfig(
             SKSE::FormID a_handle,
@@ -749,6 +779,8 @@ namespace CBP
 
         virtual bool HasCollisions(
             const configNode_t* a_nodeConfig) const;
+
+        virtual const PhysicsProfile* GetSelectedProfile() const;
 
     };
 
@@ -883,15 +915,15 @@ namespace CBP
     class UIContext :
         virtual UIBase,
         public UIActorList<actorListPhysConf_t>,
-        UIProfileSelector<actorListPhysConf_t::value_type, PhysicsProfile>,
+        public UIProfileSelector<actorListPhysConf_t::value_type, PhysicsProfile>,
         UIApplyForce<actorListPhysConf_t::value_type>
     {
-        //using actorListValue_t = actorListBaseConf_t::value_type;
-
         class UISimComponentActor :
             public UISimComponent<SKSE::ObjectHandle, UIEditorID::kMainEditor>
         {
         public:
+            UISimComponentActor(UIContext& a_parent);
+
         private:
             virtual void OnSimSliderChange(
                 SKSE::ObjectHandle a_handle,
@@ -907,6 +939,11 @@ namespace CBP
                 configComponentsValue_t& a_pair,
                 const componentValueDescMap_t::vec_value_type& a_desc
             );
+
+            virtual void OnComponentUpdate(
+                SKSE::ObjectHandle a_handle,
+                configComponents_t& a_data,
+                configComponentsValue_t& a_pair);
 
             virtual bool ShouldDrawComponent(
                 SKSE::ObjectHandle a_handle,
@@ -925,11 +962,18 @@ namespace CBP
             virtual const configNode_t* GetNodeConfig(
                 SKSE::ObjectHandle a_handle,
                 const std::string& a_node) const;
+
+            virtual const PhysicsProfile* GetSelectedProfile() const;
+
+            UIContext& m_ctxParent;
         };
 
         class UISimComponentGlobal :
             public UISimComponent<SKSE::ObjectHandle, UIEditorID::kMainEditor>
         {
+        public:
+            UISimComponentGlobal(UIContext& a_parent);
+
         private:
             virtual void OnSimSliderChange(
                 SKSE::ObjectHandle a_handle,
@@ -946,6 +990,11 @@ namespace CBP
                 const componentValueDescMap_t::vec_value_type& a_desc
             );
 
+            virtual void OnComponentUpdate(
+                SKSE::ObjectHandle a_handle,
+                configComponents_t& a_data,
+                configComponentsValue_t& a_pair);
+
             virtual bool ShouldDrawComponent(
                 SKSE::ObjectHandle a_handle,
                 const configNode_t* a_nodeConfig) const;
@@ -959,6 +1008,10 @@ namespace CBP
             virtual const configNode_t* GetNodeConfig(
                 SKSE::ObjectHandle a_handle,
                 const std::string& a_node) const;
+
+            virtual const PhysicsProfile* GetSelectedProfile() const;
+
+            UIContext& m_ctxParent;
         };
 
     public:

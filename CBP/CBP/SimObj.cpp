@@ -18,8 +18,8 @@ namespace CBP
         {
             BSFixedString cs(b.first.c_str());
 
-            auto bone = a_actor->loadedState->node->GetObjectByName(&cs.data);
-            if (bone == nullptr)
+            auto object = a_actor->loadedState->node->GetObjectByName(&cs.data);
+            if (!object || !object->m_parent)
                 continue;
 
             auto it = a_config.find(b.second);
@@ -41,7 +41,7 @@ namespace CBP
             a_out.emplace_back(
                 nodeDesc_t{
                     b.first,
-                    bone,
+                    object,
                     it->first,
                     it->second,
                     a_collisions && collisions,
