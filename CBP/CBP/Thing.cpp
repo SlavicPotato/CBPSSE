@@ -149,7 +149,7 @@ namespace CBP
         NiAVObject* a_obj,
         const std::string& a_configGroupName,
         const configComponent_t& a_config,
-        uint32_t a_parentId,
+        uint64_t a_parentId,
         uint64_t a_groupId,
         bool a_collisions,
         bool a_movement,

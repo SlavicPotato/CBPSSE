@@ -2149,7 +2149,7 @@ namespace CBP
                     colGroups.emplace(m_input);
                     m_selected = m_input;
                     DCBP::SaveCollisionGroups();
-                    DCBP::UpdateGroupInfoOnAllActors();
+                    DCBP::ResetActors();
                 }
             }
 
@@ -2177,7 +2177,7 @@ namespace CBP
                 m_selected.Clear();
 
                 DCBP::SaveCollisionGroups();
-                DCBP::UpdateGroupInfoOnAllActors();
+                DCBP::ResetActors();
             }
 
             ImGui::Separator();
@@ -2204,7 +2204,7 @@ namespace CBP
                         if (ImGui::Selectable("")) {
                             nodeColGroupMap.erase(e.first);
                             DCBP::SaveCollisionGroups();
-                            DCBP::UpdateGroupInfoOnAllActors();
+                            DCBP::ResetActors();
                         }
                     }
 
@@ -2219,7 +2219,7 @@ namespace CBP
                         if (ImGui::Selectable(reinterpret_cast<const char*>(std::addressof(j)), selected)) {
                             nodeColGroupMap[e.first] = j;
                             DCBP::SaveCollisionGroups();
-                            DCBP::UpdateGroupInfoOnAllActors();
+                            DCBP::ResetActors();
                         }
 
                         ImGui::PopID();

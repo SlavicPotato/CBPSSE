@@ -64,7 +64,6 @@ namespace CBP
 #ifndef _CBP_ENABLE_DEBUG
         m_things(a_desc.size()),
 #endif
-        m_Id(a_Id),
         m_sex(a_sex),
         m_node(a_actor->loadedState->node),
         m_suspended(false)
@@ -82,7 +81,7 @@ namespace CBP
                 e.bone,
                 e.confGroup,
                 e.conf,
-                m_Id,
+                a_Id,
                 IConfig::GetNodeCollisionGroupId(e.nodeName),
                 e.collisions,
                 e.movement,
@@ -169,7 +168,7 @@ namespace CBP
     void SimObject::UpdateGroupInfo()
     {
         for (auto& p : m_things)
-            p.second.UpdateGroupInfo(m_Id,
+            p.second.UpdateGroupInfo(
                 IConfig::GetNodeCollisionGroupId(p.first));
     }
 

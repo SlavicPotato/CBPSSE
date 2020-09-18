@@ -199,7 +199,7 @@ namespace CBP
             NiAVObject* m_obj,
             const std::string& a_configBoneName,
             const configComponent_t& config,
-            uint32_t a_parentId,
+            uint64_t a_parentId,
             uint64_t a_groupId,
             bool a_collisions,
             bool a_movement,
@@ -271,8 +271,7 @@ namespace CBP
                 a_rhs.m_groupId == m_groupId;
         }
 
-        inline void UpdateGroupInfo(uint64_t a_parentId, uint64_t a_groupId) {
-            m_parentId = a_parentId;
+        inline void UpdateGroupInfo(uint64_t a_groupId) {
             m_groupId = a_groupId;
         };
 

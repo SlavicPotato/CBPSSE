@@ -108,7 +108,6 @@ namespace CBP
         thingMap_t m_things;
         std::unordered_set<std::string> m_configGroups;
 
-        uint64_t m_Id;
         SKSE::ObjectHandle m_handle;
 
         NiPointer<Actor> m_actor;

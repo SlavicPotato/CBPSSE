@@ -328,7 +328,7 @@ namespace CBP
             float colSphereRadMax = 4.0f;
             float offsetMin[3] = { 0.0f, 0.0f, 0.0f };
             float offsetMax[3] = { 0.0f, 0.0f, 0.0f };
-            float colHeight = 0.0f;
+            float colHeight = 0.001f;
             float colRot[3] = { 0.0f, 0.0f, 0.0f };
             float colDampingCoef = 1.5f;
             float colDepthMul = 100.0f;
