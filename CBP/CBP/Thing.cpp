@@ -303,8 +303,6 @@ namespace CBP
             if (!m_inContact && m_dampingMul > 1.0f)
                 m_dampingMul = std::max(m_dampingMul / (a_timeStep + 1.0f), 1.0f);
 
-            auto newPos = m_oldWorldPos;
-
             // Compute the "Spring" Force
             NiPoint3 diff2(diff.x * diff.x * sgn(diff.x), diff.y * diff.y * sgn(diff.y), diff.z * diff.z * sgn(diff.z));
             NiPoint3 force = (diff * m_conf.phys.stiffness) + (diff2 * m_conf.phys.stiffness2);
@@ -330,16 +328,14 @@ namespace CBP
             SetVelocity((m_velocity + (force * a_timeStep)) -
                 (m_velocity * ((m_conf.phys.damping * a_timeStep) * m_dampingMul)));
 
-            newPos += m_velocity * a_timeStep;
-
-            diff = newPos - target;
-
-            diff.x = std::clamp(diff.x, -m_conf.phys.maxOffset[0], m_conf.phys.maxOffset[0]);
-            diff.y = std::clamp(diff.y, -m_conf.phys.maxOffset[1], m_conf.phys.maxOffset[1]);
-            diff.z = std::clamp(diff.z, -m_conf.phys.maxOffset[2], m_conf.phys.maxOffset[2]);
-
             auto invRot = m_objParent->m_worldTransform.rot.Transpose();
-            auto ldiff = invRot * diff;
+
+            auto newPos = m_oldWorldPos + m_velocity * a_timeStep;
+            auto ldiff = invRot * (newPos - target);
+
+            ldiff.x = std::clamp(ldiff.x, -m_conf.phys.maxOffset[0], m_conf.phys.maxOffset[0]);
+            ldiff.y = std::clamp(ldiff.y, -m_conf.phys.maxOffset[1], m_conf.phys.maxOffset[1]);
+            ldiff.z = std::clamp(ldiff.z, -m_conf.phys.maxOffset[2], m_conf.phys.maxOffset[2]);
 
             m_oldWorldPos = (m_objParent->m_worldTransform.rot * ldiff) + target;
 
