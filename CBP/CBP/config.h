@@ -48,6 +48,7 @@ namespace CBP
         [[nodiscard]] inline const_iterator begin() const noexcept {
             return m_vec.begin();
         }
+
         [[nodiscard]] inline const_iterator end() const noexcept {
             return m_vec.end();
         }
@@ -55,6 +56,7 @@ namespace CBP
         [[nodiscard]] inline map_const_iterator map_begin() const noexcept {
             return m_map.begin();
         }
+
         [[nodiscard]] inline map_const_iterator map_end() const noexcept {
             return m_map.end();
         }
@@ -277,6 +279,15 @@ namespace CBP
 
             return true;
         }
+        
+        __forceinline bool Set(const componentValueDesc_t& a_desc, float a_value)
+        {
+            auto addr = reinterpret_cast<uintptr_t>(this) + a_desc.offset;
+
+            *reinterpret_cast<float*>(addr) = a_value;
+
+            return true;
+        }
 
         inline bool Set(const std::string& a_key, float* a_value, size_t a_size)
         {
@@ -285,6 +296,16 @@ namespace CBP
                 return false;
 
             auto addr = reinterpret_cast<uintptr_t>(this) + it->second.offset;
+
+            for (size_t i = 0; i < a_size; i++)
+                reinterpret_cast<float*>(addr)[i] = a_value[i];
+
+            return true;
+        }
+
+        __forceinline bool Set(const componentValueDesc_t &a_desc, float* a_value, size_t a_size)
+        {
+            auto addr = reinterpret_cast<uintptr_t>(this) + a_desc.offset;
 
             for (size_t i = 0; i < a_size; i++)
                 reinterpret_cast<float*>(addr)[i] = a_value[i];

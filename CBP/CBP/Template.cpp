@@ -161,7 +161,7 @@ namespace CBP
 
             fs::path ext(".json");
 
-            for (const auto& entry : 
+            for (const auto& entry :
                 fs::directory_iterator(driverConf.paths.templatePlugins))
             {
                 if (!entry.is_regular_file())

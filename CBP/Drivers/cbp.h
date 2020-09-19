@@ -209,7 +209,7 @@ namespace CBP
 
         static void UIQueueUpdateCurrentActor();
         inline static void UIQueueUpdateCurrentActorA() {
-            m_Instance.m_uiContext.QueueUpdateCurrent();
+            m_Instance.m_uiContext.QueueListUpdateCurrent();
         }
 
         inline static void QueueActorCacheUpdate() {

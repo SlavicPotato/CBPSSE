@@ -308,8 +308,8 @@ namespace CBP
     {
         try
         {
-            std::filesystem::path path(PLUGIN_CBP_CONFIG);
-            if (!std::filesystem::is_regular_file(path))
+            fs::path path(PLUGIN_CBP_CONFIG);
+            if (!fs::is_regular_file(path))
                 return false;
 
             std::ifstream ifs(path, std::ifstream::in);

@@ -526,11 +526,14 @@ namespace CBP
             for (size_t i = 0; i < a_size; i++)
                 a_val[i] = std::clamp(a_val[i], a_desc.second.min, a_desc.second.max);
 
-        Propagate(a_data, nullptr, a_pair.first, a_desc.first, a_val, a_size);
+        Propagate(a_data, nullptr, a_pair, [&](configComponent_t& a_v) {
+            a_v.Set(a_desc.second, a_val, a_size); });
 
         if (a_desc.second.counterpart.size() && globalConfig.ui.syncWeightSlidersMain) {
             a_pair.second.Set(a_desc.second.counterpart, a_val, a_size);
-            Propagate(a_data, nullptr, a_pair.first, a_desc.second.counterpart, a_val, a_size);
+
+            Propagate(a_data, nullptr, a_pair, [&](configComponent_t& a_v) {
+                a_v.Set(a_desc.second.counterpart, a_val, a_size); });
         }
     }
 
@@ -547,7 +550,8 @@ namespace CBP
         PhysicsProfile::base_type& a_data,
         PhysicsProfile::base_type::value_type& a_pair)
     {
-        PropagateComponent(a_data, nullptr, a_pair);
+        Propagate(a_data, nullptr, a_pair, [&](configComponent_t& a_v) {
+            a_v = a_pair.second; });
     }
 
     const configNode_t* UIProfileEditorPhysics::GetNodeConfig(
@@ -577,17 +581,15 @@ namespace CBP
     }
 
     template <class T>
-    auto UIRaceList<T>::GetSelectedEntry() ->
+    auto UIRaceList<T>::ListGetSelected() ->
         listValue_t*
     {
-        if (m_current != 0) {
-            auto it = m_list.find(m_current);
-            return std::addressof(*it);
-        }
+        if (m_listCurrent != 0)
+            return std::addressof(*m_listData.find(m_listCurrent));
 
-        if (m_list.size()) {
-            auto it = m_list.begin();
-            SetCurrentItem(it->first);
+        auto it = m_listData.begin();
+        if (it != m_listData.end()) {
+            ListSetCurrentItem(it->first);
             return std::addressof(*it);
         }
 
@@ -595,19 +597,19 @@ namespace CBP
     }
 
     template <class T>
-    void UIRaceList<T>::SetCurrentItem(SKSE::FormID a_formid)
+    void UIRaceList<T>::ListSetCurrentItem(SKSE::FormID a_formid)
     {
-        m_current = a_formid;
+        m_listCurrent = a_formid;
     }
 
     template <class T>
-    void UIRaceList<T>::UpdateList()
+    void UIRaceList<T>::ListUpdate()
     {
-        bool isFirstUpdate = m_firstUpdate;
+        bool isFirstUpdate = m_listFirstUpdate;
 
-        m_firstUpdate = true;
+        m_listFirstUpdate = true;
 
-        m_list.clear();
+        m_listData.clear();
 
         const auto& globalConfig = IConfig::GetGlobalConfig();
         const auto& raceConf = GetRaceConfig();
@@ -626,14 +628,17 @@ namespace CBP
             else
                 ss << e.second.fullname;
 
-            m_list.try_emplace(e.first,
+            m_listData.try_emplace(e.first,
                 std::move(ss.str()), GetData(e.first));
         }
 
-        if (m_list.size() == 0) {
-            SetCurrentItem(0);
+        if (m_listData.empty()) {
+            _snprintf_s(m_listBuf1, _TRUNCATE, "No races");
+            ListSetCurrentItem(0);
             return;
         }
+
+        _snprintf_s(m_listBuf1, _TRUNCATE, "%zu races", m_listData.size());
 
         if (globalConfig.ui.selectCrosshairActor && !isFirstUpdate) {
             auto crosshairRef = IData::GetCrosshairRef();
@@ -641,39 +646,38 @@ namespace CBP
             {
                 auto ac = IData::GetActorRefInfo(crosshairRef);
                 if (ac && ac->race.first) {
-                    if (m_list.find(ac->race.second) != m_list.end()) {
-                        SetCurrentItem(ac->race.second);
+                    if (m_listData.find(ac->race.second) != m_listData.end()) {
+                        ListSetCurrentItem(ac->race.second);
                         return;
                     }
                 }
             }
         }
 
-        if (m_current != 0)
-            if (m_list.find(m_current) == m_list.end())
-                SetCurrentItem(0);
+        if (m_listCurrent != 0)
+            if (m_listData.find(m_listCurrent) == m_listData.end())
+                ListSetCurrentItem(0);
     }
 
-
     template <class T>
-    void UIRaceList<T>::DrawList(
+    void UIRaceList<T>::ListFilterSelected(
         listValue_t*& a_entry,
         const char*& a_curSelName)
     {
         if (a_entry)
         {
-            if (!m_filter.Test(a_entry->second.first))
+            if (!m_listFilter.Test(a_entry->second.first))
             {
-                SetCurrentItem(0);
+                ListSetCurrentItem(0);
                 a_entry = nullptr;
                 a_curSelName = nullptr;
 
-                for (auto& e : m_list)
+                for (auto& e : m_listData)
                 {
-                    if (!m_filter.Test(e.second.first))
+                    if (!m_listFilter.Test(e.second.first))
                         continue;
 
-                    SetCurrentItem(e.first);
+                    ListSetCurrentItem(e.first);
                     a_entry = std::addressof(e);
                     a_curSelName = e.second.first.c_str();
 
@@ -685,38 +689,6 @@ namespace CBP
         }
         else
             a_curSelName = nullptr;
-
-        ImGui::PushItemWidth(ImGui::GetFontSize() * -5.0f);
-
-        if (ImGui::BeginCombo("Race", a_curSelName, ImGuiComboFlags_HeightLarge))
-        {
-            for (auto& e : m_list)
-            {
-                if (!m_filter.Test(e.second.first))
-                    continue;
-
-                ImGui::PushID(reinterpret_cast<const void*>(std::addressof(e.second)));
-
-                bool selected = e.first == m_current;
-                if (selected)
-                    if (ImGui::IsWindowAppearing()) ImGui::SetScrollHereY();
-
-                if (ImGui::Selectable(e.second.first.c_str(), selected)) {
-                    SetCurrentItem(e.first);
-                    a_entry = std::addressof(e);
-                }
-
-                ImGui::PopID();
-            }
-
-            ImGui::EndCombo();
-        }
-
-        ImGui::SameLine();
-        m_filter.DrawButton();
-        m_filter.Draw();
-
-        ImGui::PopItemWidth();
     }
 
     template <class T, class N>
@@ -729,7 +701,7 @@ namespace CBP
     template <class T, class N>
     void UIRaceEditorBase<T, N>::Reset() {
 
-        UIListBase<T, SKSE::FormID>::ResetList();
+        UIListBase<T, SKSE::FormID>::ListReset();
         m_changed = false;
     }
 
@@ -738,15 +710,15 @@ namespace CBP
     {
     }
 
-    void UIRaceEditorNode::ResetAllValues(SKSE::FormID a_formid)
+    void UIRaceEditorNode::ListResetAllValues(SKSE::FormID a_formid)
     {
         IConfig::EraseRaceNodeConfig(a_formid);
-        m_list.at(a_formid).second = IConfig::GetRaceNodeConfig(a_formid);
+        m_listData.at(a_formid).second = IConfig::GetRaceNodeConfig(a_formid);
 
         DCBP::ResetActors();
     }
 
-    auto UIRaceEditorNode::GetData(SKSE::FormID a_formid) ->
+    auto UIRaceEditorNode::GetData(SKSE::FormID a_formid) const ->
         const entryValue_t&
     {
         return IConfig::GetRaceNodeConfig(a_formid);
@@ -758,12 +730,10 @@ namespace CBP
         return !a_data ? IConfig::GetGlobalNodeConfig() : a_data->second.second;
     }
 
-    configGlobalRace_t& UIRaceEditorNode::GetRaceConfig()
+    configGlobalRace_t& UIRaceEditorNode::GetRaceConfig() const
     {
         return IConfig::GetGlobalConfig().ui.raceNode;
     }
-
-
 
     void UIRaceEditorNode::ApplyProfile(listValue_t* a_data, const NodeProfile& a_profile)
     {
@@ -812,10 +782,10 @@ namespace CBP
         {
             ImGui::SetWindowFontScale(globalConfig.ui.fontScale);
 
-            auto entry = GetSelectedEntry();
+            auto entry = ListGetSelected();
             const char* curSelName;
 
-            DrawList(entry, curSelName);
+            ListDraw(entry, curSelName);
 
             ImGui::Spacing();
 
@@ -823,17 +793,17 @@ namespace CBP
             {
                 ImGui::PushItemWidth(ImGui::GetFontSize() * -15.5f);
 
-                auto& rlEntry = IData::GetRaceListEntry(m_current);
+                auto& rlEntry = IData::GetRaceListEntry(m_listCurrent);
                 ImGui::Text("Playable: %s", rlEntry.playable ? "yes" : "no");
 
                 ImGui::Spacing();
                 if (CheckboxGlobal("Playable only", &globalConfig.ui.raceNode.playableOnly))
-                    QueueUpdateList();
+                    QueueListUpdate();
                 HelpMarker(MiscHelpText::playableOnly);
 
                 ImGui::Spacing();
                 if (CheckboxGlobal("Editor IDs", &globalConfig.ui.raceNode.showEditorIDs))
-                    QueueUpdateList();
+                    QueueListUpdate();
                 HelpMarker(MiscHelpText::showEDIDs);
 
                 ImGui::SameLine(ImGui::GetWindowContentRegionMax().x - GetNextTextOffset("Reset", true));
@@ -846,7 +816,7 @@ namespace CBP
                     "Reset",
                     "%s: clear all values for race?\n\n", curSelName))
                 {
-                    ResetAllValues(m_current);
+                    ListResetAllValues(m_listCurrent);
                     MarkChanged();
                 }
 
@@ -856,7 +826,7 @@ namespace CBP
 
                 ImGui::Separator();
 
-                DrawNodes(m_current, entry->second.second);
+                DrawNodes(m_listCurrent, entry->second.second);
 
                 ImGui::PopItemWidth();
             }
@@ -886,10 +856,10 @@ namespace CBP
         {
             ImGui::SetWindowFontScale(globalConfig.ui.fontScale);
 
-            auto entry = GetSelectedEntry();
+            auto entry = ListGetSelected();
             const char* curSelName;
 
-            DrawList(entry, curSelName);
+            ListDraw(entry, curSelName);
 
             ImGui::Spacing();
 
@@ -897,17 +867,17 @@ namespace CBP
             {
                 ImGui::PushItemWidth(ImGui::GetFontSize() * -15.5f);
 
-                auto& rlEntry = IData::GetRaceListEntry(m_current);
+                auto& rlEntry = IData::GetRaceListEntry(m_listCurrent);
                 ImGui::Text("Playable: %s", rlEntry.playable ? "yes" : "no");
 
                 ImGui::Spacing();
                 if (CheckboxGlobal("Playable only", &globalConfig.ui.racePhysics.playableOnly))
-                    QueueUpdateList();
+                    QueueListUpdate();
                 HelpMarker(MiscHelpText::playableOnly);
 
                 ImGui::Spacing();
                 if (CheckboxGlobal("Editor IDs", &globalConfig.ui.racePhysics.showEditorIDs))
-                    QueueUpdateList();
+                    QueueListUpdate();
                 HelpMarker(MiscHelpText::showEDIDs);
 
                 ImGui::Spacing();
@@ -927,7 +897,7 @@ namespace CBP
                     "Reset",
                     "%s: clear all values for race?\n\n", curSelName))
                 {
-                    ResetAllValues(m_current);
+                    ListResetAllValues(m_listCurrent);
                     MarkChanged();
                 }
 
@@ -937,7 +907,7 @@ namespace CBP
 
                 ImGui::Separator();
 
-                DrawSimComponents(m_current, entry->second.second);
+                DrawSimComponents(m_listCurrent, entry->second.second);
 
                 ImGui::PopItemWidth();
             }
@@ -959,7 +929,7 @@ namespace CBP
         DCBP::UpdateConfigOnAllActors();
     }
 
-    auto UIRaceEditorPhysics::GetData(SKSE::FormID a_formid) ->
+    auto UIRaceEditorPhysics::GetData(SKSE::FormID a_formid) const ->
         const entryValue_t&
     {
         return IConfig::GetRacePhysicsConfig(a_formid);
@@ -971,15 +941,15 @@ namespace CBP
         return !a_data ? IConfig::GetGlobalPhysicsConfig() : a_data->second.second;
     }
 
-    configGlobalRace_t& UIRaceEditorPhysics::GetRaceConfig()
+    configGlobalRace_t& UIRaceEditorPhysics::GetRaceConfig() const
     {
         return IConfig::GetGlobalConfig().ui.racePhysics;
     }
 
-    void UIRaceEditorPhysics::ResetAllValues(SKSE::FormID a_formid)
+    void UIRaceEditorPhysics::ListResetAllValues(SKSE::FormID a_formid)
     {
         IConfig::EraseRacePhysicsConfig(a_formid);
-        m_list.at(a_formid).second = IConfig::GetGlobalPhysicsConfig();
+        m_listData.at(a_formid).second = IConfig::GetGlobalPhysicsConfig();
         DCBP::UpdateConfigOnAllActors();
     }
 
@@ -1005,14 +975,17 @@ namespace CBP
         for (size_t i = 0; i < a_size; i++)
             reinterpret_cast<float*>(addr)[i] = a_val[i];
 
-        Propagate(a_data, std::addressof(raceConf), a_pair.first, a_desc.first, a_val, a_size);
+        Propagate(a_data, std::addressof(raceConf), a_pair, [&](configComponent_t& a_v) {
+            a_v.Set(a_desc.second, a_val, a_size); });
 
         if (a_desc.second.counterpart.size() &&
             globalConfig.ui.syncWeightSlidersRace)
         {
             a_pair.second.Set(a_desc.second.counterpart, a_val, a_size);
             entry.Set(a_desc.second.counterpart, a_val, a_size);
-            Propagate(a_data, std::addressof(raceConf), a_pair.first, a_desc.second.counterpart, a_val, a_size);
+
+            Propagate(a_data, std::addressof(raceConf), a_pair, [&](configComponent_t& a_v) {
+                a_v.Set(a_desc.second.counterpart, a_val, a_size); });
         }
 
         MarkChanged();
@@ -1042,7 +1015,8 @@ namespace CBP
         auto& raceConf = IConfig::GetOrCreateRacePhysicsConfig(a_formid);
         raceConf[a_pair.first] = a_pair.second;
 
-        PropagateComponent(a_data, std::addressof(raceConf), a_pair);
+        Propagate(a_data, std::addressof(raceConf), a_pair, [&](configComponent_t& a_v) {
+            a_v = a_pair.second; });
 
         MarkChanged();
         DCBP::UpdateConfigOnAllActors();
@@ -1274,43 +1248,85 @@ namespace CBP
     }
 
     template <class T, class P>
-    UIListBase<T, P>::UIListBase() :
-        m_current(P(0)),
-        m_firstUpdate(false),
-        m_nextUpdateCurrent(false),
-        m_nextUpdateList(true)
+    UIListBase<T, P>::UIListBase() noexcept :
+        m_listCurrent(P(0)),
+        m_listFirstUpdate(false),
+        m_listNextUpdateCurrent(false),
+        m_listNextUpdate(true)
     {
-        m_strBuf1[0] = 0x0;
+        m_listBuf1[0] = 0x0;
     }
 
     template <class T, class P>
-    void UIListBase<T, P>::ResetList()
+    void UIListBase<T, P>::ListDraw(
+        listValue_t*& a_entry,
+        const char*& a_curSelName)
     {
-        m_nextUpdateCurrent = false;
-        m_firstUpdate = false;
-        m_nextUpdateList = true;
-        m_list.clear();
+        ListFilterSelected(a_entry, a_curSelName);
+
+        ImGui::PushItemWidth(ImGui::GetFontSize() * -10.0f);
+
+        if (ImGui::BeginCombo(m_listBuf1, a_curSelName, ImGuiComboFlags_HeightLarge))
+        {
+            for (auto& e : m_listData)
+            {
+                if (!m_listFilter.Test(e.second.first))
+                    continue;
+
+                ImGui::PushID(reinterpret_cast<const void*>(std::addressof(e.second)));
+
+                bool selected = e.first == m_listCurrent;
+                if (selected)
+                    if (ImGui::IsWindowAppearing()) ImGui::SetScrollHereY();
+
+                if (ImGui::Selectable(e.second.first.c_str(), selected)) {
+                    ListSetCurrentItem(e.first);
+                    a_entry = std::addressof(e);
+                    a_curSelName = e.second.first.c_str();
+                }
+
+                ImGui::PopID();
+            }
+
+            ImGui::EndCombo();
+        }
+
+        ImGui::SameLine();
+
+        m_listFilter.DrawButton();
+        m_listFilter.Draw();
+
+        ImGui::PopItemWidth();
+    }
+
+    template <class T, class P>
+    void UIListBase<T, P>::ListFilterSelected(
+        listValue_t*& a_entry,
+        const char*& a_curSelName)
+    {
+    }
+
+    template <class T, class P>
+    void UIListBase<T, P>::ListReset()
+    {
+        m_listNextUpdateCurrent = false;
+        m_listFirstUpdate = false;
+        m_listNextUpdate = true;
+        m_listData.clear();
     }
 
     template <class T, class P>
     void UIListBase<T, P>::ListTick()
     {
-        if (m_nextUpdateCurrent) {
-            m_nextUpdateCurrent = false;
-            UpdateCurrent();
+        if (m_listNextUpdateCurrent) {
+            m_listNextUpdateCurrent = false;
+            ListUpdateCurrent();
         }
 
-        if (m_nextUpdateList) {
-            m_nextUpdateList = false;
-            UpdateList();
+        if (m_listNextUpdate) {
+            m_listNextUpdate = false;
+            ListUpdate();
         }
-    }
-
-    template <class T, class P>
-    void UIListBase<T, P>::FilterSelected(
-        listValue_t*& a_entry,
-        const char*& a_curSelName)
-    {
     }
 
     template <typename T>
@@ -1323,52 +1339,52 @@ namespace CBP
     }
 
     template <typename T>
-    void UIActorList<T>::UpdateList()
+    void UIActorList<T>::ListUpdate()
     {
-        bool isFirstUpdate = m_firstUpdate;
+        bool isFirstUpdate = m_listFirstUpdate;
 
-        m_firstUpdate = true;
+        m_listFirstUpdate = true;
 
         const auto& globalConfig = IConfig::GetGlobalConfig();
         const auto& actorConf = GetActorConfig();
 
-        m_list.clear();
+        m_listData.clear();
 
         for (const auto& e : IData::GetActorCache())
         {
             if (!actorConf.showAll && !e.second.active)
                 continue;
 
-            m_list.try_emplace(e.first, e.second.name, GetData(e.first));
+            m_listData.try_emplace(e.first, e.second.name, GetData(e.first));
         }
 
-        if (m_list.size() == 0) {
-            _snprintf_s(m_strBuf1, _TRUNCATE, "No actors");
-            SetCurrentItem(0);
+        if (m_listData.size() == 0) {
+            _snprintf_s(m_listBuf1, _TRUNCATE, "No actors");
+            ListSetCurrentItem(0);
             return;
         }
 
-        _snprintf_s(m_strBuf1, _TRUNCATE, "%zu actors", m_list.size());
+        _snprintf_s(m_listBuf1, _TRUNCATE, "%zu actors", m_listData.size());
 
         if (globalConfig.ui.selectCrosshairActor && !isFirstUpdate) {
             auto crosshairRef = IData::GetCrosshairRef();
             if (crosshairRef) {
-                if (m_list.find(crosshairRef) != m_list.end()) {
-                    SetCurrentItem(crosshairRef);
+                if (m_listData.find(crosshairRef) != m_listData.end()) {
+                    ListSetCurrentItem(crosshairRef);
                     return;
                 }
             }
         }
 
-        if (m_current != 0) {
-            if (m_list.find(m_current) == m_list.end())
-                SetCurrentItem(0);
+        if (m_listCurrent != 0) {
+            if (m_listData.find(m_listCurrent) == m_listData.end())
+                ListSetCurrentItem(0);
         }
         else {
             if (actorConf.lastActor &&
-                m_list.find(actorConf.lastActor) != m_list.end())
+                m_listData.find(actorConf.lastActor) != m_listData.end())
             {
-                m_current = actorConf.lastActor;
+                m_listCurrent = actorConf.lastActor;
             }
         }
     }
@@ -1379,29 +1395,29 @@ namespace CBP
         auto cacheUpdateId = IData::GetActorCacheUpdateId();
         if (cacheUpdateId != m_lastCacheUpdateId) {
             m_lastCacheUpdateId = cacheUpdateId;
-            UpdateList();
+            ListUpdate();
         }
 
         ListTick();
     }
 
     template <typename T>
-    void UIActorList<T>::ResetList()
+    void UIActorList<T>::ListReset()
     {
-        UIListBase<T, SKSE::ObjectHandle>::ResetList();
+        UIListBase<T, SKSE::ObjectHandle>::ListReset();
         m_lastCacheUpdateId = IData::GetActorCacheUpdateId() - 1;
     }
 
     template <typename T>
-    void UIActorList<T>::SetCurrentItem(SKSE::ObjectHandle a_handle)
+    void UIActorList<T>::ListSetCurrentItem(SKSE::ObjectHandle a_handle)
     {
         auto& globalConfig = IConfig::GetGlobalConfig();
         auto& actorConf = GetActorConfig();
 
-        m_current = a_handle;
+        m_listCurrent = a_handle;
 
         if (a_handle != 0)
-            m_list.at(a_handle).second = GetData(a_handle);
+            m_listData.at(a_handle).second = GetData(a_handle);
 
         if (a_handle != actorConf.lastActor)
             SetGlobal(actorConf.lastActor, a_handle);
@@ -1411,25 +1427,25 @@ namespace CBP
     }
 
     template <class T, class P>
-    void UIListBase<T, P>::UpdateCurrent()
+    void UIListBase<T, P>::ListUpdateCurrent()
     {
-        if (m_current)
-            m_list.at(m_current).second = GetData(m_current);
+        if (m_listCurrent)
+            m_listData.at(m_listCurrent).second = GetData(m_listCurrent);
     }
 
     template <class T>
-    auto UIActorList<T>::GetSelectedEntry()
+    auto UIActorList<T>::ListGetSelected()
         -> listValue_t*
     {
-        if (m_current != 0)
+        if (m_listCurrent != 0)
             return std::addressof(
-                *m_list.find(m_current));
+                *m_listData.find(m_listCurrent));
 
         return nullptr;
     }
 
     template <class T>
-    void UIActorList<T>::DrawList(
+    void UIActorList<T>::ListDraw(
         listValue_t*& a_entry,
         const char*& a_curSelName)
     {
@@ -1437,18 +1453,18 @@ namespace CBP
             a_entry->second.first.c_str() :
             m_globLabel.c_str();
 
-        FilterSelected(a_entry, a_curSelName);
+        ListFilterSelected(a_entry, a_curSelName);
 
-        ImGui::PushItemWidth(ImGui::GetFontSize() * -8.0f);
+        ImGui::PushItemWidth(ImGui::GetFontSize() * -10.0f);
 
-        if (ImGui::BeginCombo(m_strBuf1, a_curSelName, ImGuiComboFlags_HeightLarge))
+        if (ImGui::BeginCombo(m_listBuf1, a_curSelName, ImGuiComboFlags_HeightLarge))
         {
-            if (m_filter.Test(m_globLabel))
+            if (m_listFilter.Test(m_globLabel))
             {
                 ImGui::PushID(static_cast<const void*>(m_globLabel.c_str()));
 
-                if (ImGui::Selectable(m_globLabel.c_str(), 0 == m_current)) {
-                    SetCurrentItem(0);
+                if (ImGui::Selectable(m_globLabel.c_str(), 0 == m_listCurrent)) {
+                    ListSetCurrentItem(0);
                     a_entry = nullptr;
                     a_curSelName = m_globLabel.c_str();
                 }
@@ -1456,14 +1472,14 @@ namespace CBP
                 ImGui::PopID();
             }
 
-            for (auto& e : m_list)
+            for (auto& e : m_listData)
             {
-                if (!m_filter.Test(e.second.first))
+                if (!m_listFilter.Test(e.second.first))
                     continue;
 
                 ImGui::PushID(static_cast<const void*>(std::addressof(e.second)));
 
-                bool selected = e.first == m_current;
+                bool selected = e.first == m_listCurrent;
                 if (selected)
                     if (ImGui::IsWindowAppearing()) ImGui::SetScrollHereY();
 
@@ -1483,7 +1499,7 @@ namespace CBP
                 }
 
                 if (ImGui::Selectable(label.c_str(), selected)) {
-                    SetCurrentItem(e.first);
+                    ListSetCurrentItem(e.first);
                     a_entry = std::addressof(e);
                     a_curSelName = e.second.first.c_str();
                 }
@@ -1496,38 +1512,38 @@ namespace CBP
 
         ImGui::SameLine();
 
-        m_filter.DrawButton();
-        m_filter.Draw();
+        m_listFilter.DrawButton();
+        m_listFilter.Draw();
 
         ImGui::PopItemWidth();
     }
 
     template <class T>
-    void UIActorList<T>::FilterSelected(
+    void UIActorList<T>::ListFilterSelected(
         listValue_t*& a_entry,
         const char*& a_curSelName)
     {
-        if (m_filter.Test(a_entry ?
+        if (m_listFilter.Test(a_entry ?
             a_entry->second.first :
             m_globLabel))
         {
             return;
         }
 
-        for (auto& e : m_list)
+        for (auto& e : m_listData)
         {
-            if (!m_filter.Test(e.second.first))
+            if (!m_listFilter.Test(e.second.first))
                 continue;
 
-            SetCurrentItem(e.first);
+            ListSetCurrentItem(e.first);
             a_entry = std::addressof(e);
             a_curSelName = e.second.first.c_str();
 
             return;
         }
 
-        if (m_filter.Test(m_globLabel)) {
-            SetCurrentItem(0);
+        if (m_listFilter.Test(m_globLabel)) {
+            ListSetCurrentItem(0);
             a_entry = nullptr;
             a_curSelName = m_globLabel.c_str();
         }
@@ -1603,7 +1619,7 @@ namespace CBP
 
     void UIContext::Reset(uint32_t a_loadInstance)
     {
-        ResetList();
+        ListReset();
         m_activeLoadInstance = a_loadInstance;
 
         m_racePhysicsEditor.Reset();
@@ -1614,6 +1630,7 @@ namespace CBP
     void UIContext::DrawMenuBar(bool* a_active, const listValue_t* a_entry)
     {
         auto& globalConfig = IConfig::GetGlobalConfig();;
+        auto& ws = m_state.windows;
 
         m_state.menu.saveAllFailed = false;
         m_state.menu.saveToDefaultGlob = false;
@@ -1635,14 +1652,15 @@ namespace CBP
                 {
                     ImGui::SetWindowFontScale(globalConfig.ui.fontScale);
 
-                    m_state.menu.saveToDefaultGlob = ImGui::MenuItem("Store default profile");
+                    m_state.menu.saveToDefaultGlob = 
+                        ImGui::MenuItem("Store default profile");
 
                     ImGui::EndMenu();
                 }
 
                 ImGui::Separator();
 
-                m_state.menu.openImportDialog = ImGui::MenuItem("Import", nullptr, &m_state.windows.importDialog);
+                m_state.menu.openImportDialog = ImGui::MenuItem("Import", nullptr, &ws.importDialog);
                 m_state.menu.openExportDialog = ImGui::MenuItem("Export");
 
                 ImGui::Separator();
@@ -1655,15 +1673,15 @@ namespace CBP
 
             if (ImGui::BeginMenu("Tools"))
             {
-                ImGui::MenuItem("Actor nodes", nullptr, &m_state.windows.nodeConf);
-                ImGui::MenuItem("Node collision groups", nullptr, &m_state.windows.collisionGroups);
+                ImGui::MenuItem("Actor nodes", nullptr, &ws.nodeConf);
+                ImGui::MenuItem("Node collision groups", nullptr, &ws.collisionGroups);
 
                 ImGui::Separator();
 
                 if (ImGui::BeginMenu("Race editors"))
                 {
-                    ImGui::MenuItem("Physics", nullptr, &m_state.windows.race);
-                    ImGui::MenuItem("Node", nullptr, &m_state.windows.raceNode);
+                    ImGui::MenuItem("Physics", nullptr, &ws.race);
+                    ImGui::MenuItem("Node", nullptr, &ws.raceNode);
 
                     ImGui::EndMenu();
                 }
@@ -1672,23 +1690,23 @@ namespace CBP
                 {
                     ImGui::SetWindowFontScale(globalConfig.ui.fontScale);
 
-                    ImGui::MenuItem("Physics", nullptr, &m_state.windows.profileSim);
-                    ImGui::MenuItem("Node", nullptr, &m_state.windows.profileNodes);
+                    ImGui::MenuItem("Physics", nullptr, &ws.profileSim);
+                    ImGui::MenuItem("Node", nullptr, &ws.profileNodes);
 
                     ImGui::EndMenu();
                 }
 
                 ImGui::Separator();
-                ImGui::MenuItem("Options", nullptr, &m_state.windows.options);
-                ImGui::MenuItem("Stats", nullptr, &m_state.windows.profiling);
+                ImGui::MenuItem("Options", nullptr, &ws.options);
+                ImGui::MenuItem("Stats", nullptr, &ws.profiling);
 
 #ifdef _CBP_ENABLE_DEBUG
                 ImGui::Separator();
-                ImGui::MenuItem("Debug info", nullptr, &state.windows.debug);
+                ImGui::MenuItem("Debug info", nullptr, &ws.debug);
 #endif
 
                 ImGui::Separator();
-                ImGui::MenuItem("Log", nullptr, &m_state.windows.log);
+                ImGui::MenuItem("Log", nullptr, &ws.log);
 
                 ImGui::EndMenu();
             }
@@ -1735,7 +1753,7 @@ namespace CBP
 
         ActorListTick();
 
-        if (m_list.size() == 0) {
+        if (m_listData.size() == 0) {
             auto t = PerfCounter::Query();
             if (PerfCounter::delta_us(m_tsNoActors, t) >= 2500000LL) {
                 DCBP::QueueActorCacheUpdate();
@@ -1745,7 +1763,7 @@ namespace CBP
 
         SetWindowDimensions();
 
-        auto entry = GetSelectedEntry();
+        auto entry = ListGetSelected();
 
         ImGui::PushID(static_cast<const void*>(this));
 
@@ -1759,15 +1777,15 @@ namespace CBP
 
             const char* curSelName;
 
-            DrawList(entry, curSelName);
+            ListDraw(entry, curSelName);
 
             ImGui::Spacing();
 
             auto wcm = ImGui::GetWindowContentRegionMax();
 
-            if (m_current)
+            if (m_listCurrent)
             {
-                auto confClass = IConfig::GetActorPhysicsConfigClass(m_current);
+                auto confClass = IConfig::GetActorPhysicsConfigClass(m_listCurrent);
                 const char* classText;
                 switch (confClass)
                 {
@@ -1786,7 +1804,7 @@ namespace CBP
                 }
                 ImGui::Text("Config in use: %s", classText);
 
-                if (IConfig::HasArmorOverride(m_current))
+                if (IConfig::HasArmorOverride(m_listCurrent))
                 {
                     ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.66f, 0.13f, 1.0f));
                     ImGui::SameLine(wcm.x - GetNextTextOffset("Armor overrides active", true));
@@ -1821,9 +1839,9 @@ namespace CBP
                 "Reset",
                 "%s: clear all values for actor?\n\n", curSelName))
             {
-                if (m_current) {
-                    ResetAllValues(m_current);
-                    DCBP::DispatchActorTask(m_current, UTTask::UTTAction::UpdateConfig);
+                if (m_listCurrent) {
+                    ListResetAllValues(m_listCurrent);
+                    DCBP::DispatchActorTask(m_listCurrent, UTTask::UTTAction::UpdateConfig);
                 }
                 else {
                     IConfig::ClearGlobalPhysicsConfig();
@@ -1846,8 +1864,8 @@ namespace CBP
 
             ImGui::Separator();
 
-            if (m_current) {
-                m_scActor.DrawSimComponents(m_current, entry->second.second);
+            if (m_listCurrent) {
+                m_scActor.DrawSimComponents(m_listCurrent, entry->second.second);
             }
             else {
                 m_scGlobal.DrawSimComponents(0, IConfig::GetGlobalPhysicsConfig());
@@ -1889,14 +1907,14 @@ namespace CBP
         if (m_state.windows.race) {
             m_racePhysicsEditor.Draw(&m_state.windows.race);
             if (m_racePhysicsEditor.GetChanged())
-                QueueUpdateCurrent();
+                QueueListUpdateCurrent();
         }
 
         if (m_state.windows.raceNode) {
             m_raceNodeEditor.Draw(&m_state.windows.raceNode);
             if (m_raceNodeEditor.GetChanged()) {
-                QueueUpdateCurrent();
-                m_actorNodeEditor.QueueUpdateCurrent();
+                QueueListUpdateCurrent();
+                m_actorNodeEditor.QueueListUpdateCurrent();
             }
         }
 
@@ -1913,8 +1931,8 @@ namespace CBP
             m_log.Draw(&m_state.windows.log);
 
 #ifdef _CBP_ENABLE_DEBUG
-        if (state.windows.debug)
-            m_debug.Draw(&state.windows.debug);
+        if (m_state.windows.debug)
+            m_debug.Draw(&m_state.windows.debug);
 #endif
         if (m_state.menu.openExportDialog)
             m_exportDialog.Open();
@@ -2288,7 +2306,7 @@ namespace CBP
 
     void UIActorEditorNode::Reset()
     {
-        ResetList();
+        ListReset();
     }
 
     void UIActorEditorNode::Draw(bool* a_active)
@@ -2307,16 +2325,16 @@ namespace CBP
 
             ImGui::PushItemWidth(ImGui::GetFontSize() * -12.0f);
 
-            auto entry = GetSelectedEntry();
+            auto entry = ListGetSelected();
             const char* curSelName;
 
-            DrawList(entry, curSelName);
+            ListDraw(entry, curSelName);
 
             ImGui::Spacing();
 
-            if (m_current)
+            if (m_listCurrent)
             {
-                auto confClass = IConfig::GetActorNodeConfigClass(m_current);
+                auto confClass = IConfig::GetActorNodeConfigClass(m_listCurrent);
                 const char* classText;
                 switch (confClass)
                 {
@@ -2358,7 +2376,7 @@ namespace CBP
                     "Reset Node",
                     "Reset all values for '%s'?\n\n", curSelName))
                 {
-                    ResetAllValues(entry->first);
+                    ListResetAllValues(entry->first);
                 }
             }
 
@@ -2387,7 +2405,7 @@ namespace CBP
         ImGui::PopID();
     }
 
-    auto UIActorEditorNode::GetData(SKSE::ObjectHandle a_handle) ->
+    auto UIActorEditorNode::GetData(SKSE::ObjectHandle a_handle) const ->
         const entryValue_t&
     {
         return IConfig::GetActorNodeConfig(a_handle);
@@ -2414,10 +2432,10 @@ namespace CBP
         DCBP::ResetActors();
     }
 
-    void UIActorEditorNode::ResetAllValues(SKSE::ObjectHandle a_handle)
+    void UIActorEditorNode::ListResetAllValues(SKSE::ObjectHandle a_handle)
     {
         IConfig::EraseActorNodeConfig(a_handle);
-        m_list.at(a_handle).second = IConfig::GetActorNodeConfig(a_handle);
+        m_listData.at(a_handle).second = IConfig::GetActorNodeConfig(a_handle);
 
         DCBP::ResetActors();
     }
@@ -2445,12 +2463,12 @@ namespace CBP
         }
     }
 
-    ConfigClass UIActorEditorNode::GetActorClass(SKSE::ObjectHandle a_handle)
+    ConfigClass UIActorEditorNode::GetActorClass(SKSE::ObjectHandle a_handle) const
     {
         return IConfig::GetActorNodeConfigClass(a_handle);
     }
 
-    configGlobalActor_t& UIActorEditorNode::GetActorConfig()
+    configGlobalActor_t& UIActorEditorNode::GetActorConfig() const
     {
         return IConfig::GetGlobalConfig().ui.actorNode;
     }
@@ -2483,14 +2501,17 @@ namespace CBP
         for (size_t i = 0; i < a_size; i++)
             reinterpret_cast<float*>(addr)[i] = a_val[i];
 
-        Propagate(a_data, std::addressof(actorConf), a_pair.first, a_desc.first, a_val, a_size);
+        Propagate(a_data, std::addressof(actorConf), a_pair, [&](configComponent_t& a_v) {
+            a_v.Set(a_desc.second, a_val, a_size); });
 
         if (a_desc.second.counterpart.size() &&
             globalConfig.ui.syncWeightSlidersMain)
         {
             a_pair.second.Set(a_desc.second.counterpart, a_val, a_size);
             entry.Set(a_desc.second.counterpart, a_val, a_size);
-            Propagate(a_data, std::addressof(actorConf), a_pair.first, a_desc.second.counterpart, a_val, a_size);
+
+            Propagate(a_data, std::addressof(actorConf), a_pair, [&](configComponent_t& a_v) {
+                a_v.Set(a_desc.second.counterpart, a_val, a_size); });
         }
 
         DCBP::DispatchActorTask(a_handle, UTTask::UTTAction::UpdateConfig);
@@ -2518,7 +2539,8 @@ namespace CBP
         auto& actorConf = IConfig::GetOrCreateActorPhysicsConfig(a_handle);
         actorConf[a_pair.first] = a_pair.second;
 
-        PropagateComponent(a_data, std::addressof(actorConf), a_pair);
+        Propagate(a_data, std::addressof(actorConf), a_pair, [&](configComponent_t& a_v) {
+            a_v = a_pair.second; });
 
         DCBP::DispatchActorTask(a_handle, UTTask::UTTAction::UpdateConfig);
     }
@@ -2595,11 +2617,14 @@ namespace CBP
             for (size_t i = 0; i < a_size; i++)
                 a_val[i] = std::clamp(a_val[i], a_desc.second.min, a_desc.second.max);
 
-        Propagate(a_data, nullptr, a_pair.first, a_desc.first, a_val, a_size);
+        Propagate(a_data, nullptr, a_pair, [&](configComponent_t& a_v) {
+            a_v.Set(a_desc.second, a_val, a_size); });
 
         if (a_desc.second.counterpart.size() && globalConfig.ui.syncWeightSlidersMain) {
             a_pair.second.Set(a_desc.second.counterpart, a_val, a_size);
-            Propagate(a_data, nullptr, a_pair.first, a_desc.second.counterpart, a_val, a_size);
+
+            Propagate(a_data, nullptr, a_pair, [&](configComponent_t& a_v) {
+                a_v.Set(a_desc.second.counterpart, a_val, a_size); });
         }
 
         DCBP::UpdateConfigOnAllActors();
@@ -2607,8 +2632,8 @@ namespace CBP
 
     void UIContext::UISimComponentGlobal::OnColliderShapeChange(
         SKSE::ObjectHandle,
-        configComponents_t&,
-        configComponentsValue_t&,
+        configComponents_t& a_data,
+        configComponentsValue_t& a_pair,
         const componentValueDescMap_t::vec_value_type&)
     {
         DCBP::UpdateConfigOnAllActors();
@@ -2619,7 +2644,8 @@ namespace CBP
         configComponents_t& a_data,
         configComponentsValue_t& a_pair)
     {
-        PropagateComponent(a_data, nullptr, a_pair);
+        Propagate(a_data, nullptr, a_pair, [&](configComponent_t& a_v) {
+            a_v = a_pair.second; });
 
         DCBP::UpdateConfigOnAllActors();
     }
@@ -2689,16 +2715,16 @@ namespace CBP
         return !a_data ? IConfig::GetGlobalPhysicsConfig() : a_data->second.second;
     }
 
-    void UIContext::ResetAllValues(SKSE::ObjectHandle a_handle)
+    void UIContext::ListResetAllValues(SKSE::ObjectHandle a_handle)
     {
         IConfig::EraseActorConf(a_handle);
-        m_list.at(a_handle).second = IConfig::GetActorPhysicsConfig(a_handle);
+        m_listData.at(a_handle).second = IConfig::GetActorPhysicsConfig(a_handle);
     }
 
     void UIContext::UpdateActorValues(SKSE::ObjectHandle a_handle)
     {
         if (a_handle)
-            m_list.at(a_handle).second = IConfig::GetActorPhysicsConfig(a_handle);
+            m_listData.at(a_handle).second = IConfig::GetActorPhysicsConfig(a_handle);
     }
 
     void UIContext::UpdateActorValues(listValue_t* a_data)
@@ -2707,18 +2733,18 @@ namespace CBP
             a_data->second.second = IConfig::GetActorPhysicsConfig(a_data->first);
     }
 
-    auto UIContext::GetData(SKSE::ObjectHandle a_handle) ->
+    auto UIContext::GetData(SKSE::ObjectHandle a_handle) const ->
         const entryValue_t&
     {
         return IConfig::GetActorPhysicsConfig(a_handle);
     }
 
-    ConfigClass UIContext::GetActorClass(SKSE::ObjectHandle a_handle)
+    ConfigClass UIContext::GetActorClass(SKSE::ObjectHandle a_handle) const
     {
         return IConfig::GetActorPhysicsConfigClass(a_handle);
     }
 
-    configGlobalActor_t& UIContext::GetActorConfig()
+    configGlobalActor_t& UIContext::GetActorConfig() const
     {
         return IConfig::GetGlobalConfig().ui.actorPhysics;
     }
@@ -2727,7 +2753,7 @@ namespace CBP
         listValue_t* a_data,
         uint32_t a_steps,
         const std::string& a_component,
-        const NiPoint3& a_force)
+        const NiPoint3& a_force) const
     {
         if (a_steps == 0)
             return;
@@ -2747,42 +2773,8 @@ namespace CBP
     void UISimComponent<T, ID>::Propagate(
         configComponents_t& a_dl,
         configComponents_t* a_dg,
-        const std::string& a_comp,
-        const std::string& a_key,
-        float* a_val,
-        size_t a_size)
-    {
-        const auto& globalConfig = IConfig::GetGlobalConfig();
-
-        auto itm = globalConfig.ui.mirror.find(ID);
-        if (itm == globalConfig.ui.mirror.end())
-            return;
-
-        auto it = itm->second.find(a_comp);
-        if (it == itm->second.end())
-            return;
-
-        for (auto& e : it->second) {
-            if (!e.second)
-                continue;
-
-            auto it1 = a_dl.find(e.first);
-            if (it1 != a_dl.end())
-                it1->second.Set(a_key, a_val, a_size);
-
-            if (a_dg != nullptr) {
-                auto it2 = a_dg->find(e.first);
-                if (it2 != a_dg->end())
-                    it2->second.Set(a_key, a_val, a_size);
-            }
-        }
-    }
-
-    template <class T, UIEditorID ID>
-    void UISimComponent<T, ID>::PropagateComponent(
-        configComponents_t& a_dl,
-        configComponents_t* a_dg,
-        const configComponentsValue_t& a_pair)
+        const configComponentsValue_t& a_pair,
+        std::function<void(configComponent_t&)> a_func) const
     {
         const auto& globalConfig = IConfig::GetGlobalConfig();
 
@@ -2798,14 +2790,14 @@ namespace CBP
             if (!e.second)
                 continue;
 
-            auto itl = a_dl.find(e.first);
-            if (itl != a_dl.end())
-                itl->second = a_pair.second;
+            auto it1 = a_dl.find(e.first);
+            if (it1 != a_dl.end())
+                a_func(it1->second);
 
             if (a_dg != nullptr) {
-                auto itg = a_dg->find(e.first);
-                if (itg != a_dg->end())
-                    itg->second = a_pair.second;
+                auto it2 = a_dg->find(e.first);
+                if (it2 != a_dg->end())
+                    a_func(it2->second);
             }
         }
     }
@@ -2950,7 +2942,7 @@ namespace CBP
     template <class T, UIEditorID ID>
     float UISimComponent<T, ID>::GetActualSliderValue(
         const armorCacheValue_t& a_cacheval,
-        float a_baseval)
+        float a_baseval) const
     {
         switch (a_cacheval.first)
         {
@@ -3659,7 +3651,7 @@ namespace CBP
         ImGui::PopID();
     }
 
-    UIDialogExport::UIDialogExport():
+    UIDialogExport::UIDialogExport() :
         m_rFileCheck("^[a-zA-Z0-9_\\- ]+$",
             std::regex_constants::ECMAScript)
     {

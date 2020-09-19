@@ -15,7 +15,7 @@ MSBUILD_PATH = os.path.join(os.environ['MSBUILD_PATH'], 'msbuild.exe')
 SLN_ROOT = os.environ['CBP_SLN_ROOT']
 
 # relative to SLN_ROOT
-OUT = 'tmp'
+OUT = 'deploy_build'
 FOMOD = 'installer\\generateFomod.py'
 SLN = 'CBP.sln'
 

@@ -195,7 +195,7 @@ namespace CBP
 
     protected:
         UISimComponent() = default;
-        virtual ~UISimComponent() = default;
+        virtual ~UISimComponent() noexcept = default;
 
         void DrawSliders(
             T a_handle,
@@ -230,18 +230,11 @@ namespace CBP
         void Propagate(
             configComponents_t& a_dl,
             configComponents_t* a_dg,
-            const std::string& a_comp,
-            const std::string& a_key,
-            float* a_val,
-            size_t a_size);
-
-        void PropagateComponent(
-            configComponents_t& a_dl,
-            configComponents_t* a_dg,
-            const configComponentsValue_t &a_pair);
+            const configComponentsValue_t& a_pair,
+            std::function<void(configComponent_t&)> a_func) const;
 
         [[nodiscard]] inline std::string GetCSID(
-            const std::string& a_name)
+            const std::string& a_name) const
         {
             std::ostringstream ss;
             ss << "UISC#" << Enum::Underlying(ID) << "#" << a_name;
@@ -249,14 +242,14 @@ namespace CBP
         }
 
         [[nodiscard]] inline std::string GetCSSID(
-            const std::string& a_name, const char* a_group)
+            const std::string& a_name, const char* a_group) const
         {
             std::ostringstream ss;
             ss << "UISC#" << Enum::Underlying(ID) << "#" << a_name << "#" << a_group;
             return ss.str();
         }
 
-        float GetActualSliderValue(const armorCacheValue_t& a_cacheval, float a_baseval);
+        float GetActualSliderValue(const armorCacheValue_t& a_cacheval, float a_baseval) const;
 
     private:
         virtual bool ShouldDrawComponent(
@@ -327,7 +320,7 @@ namespace CBP
             bool a_reset) = 0;
 
         [[nodiscard]] inline std::string GetCSID(
-            const std::string& a_name)
+            const std::string& a_name) const
         {
             std::ostringstream ss;
             ss << "UIND#" << Enum::Underlying(ID) << "#" << a_name;
@@ -348,7 +341,7 @@ namespace CBP
 
         [[nodiscard]] bool Test(const std::string& a_haystack) const;
 
-        inline bool IsOpen() {
+        inline bool IsOpen() const noexcept {
             return m_searchOpen;
         }
 
@@ -384,7 +377,7 @@ namespace CBP
         const T* GetCurrentProfile() const;
     protected:
         UIProfileBase() = default;
-        virtual ~UIProfileBase() = default;
+        virtual ~UIProfileBase() noexcept = default;
 
         void DrawCreateNew();
 
@@ -431,7 +424,7 @@ namespace CBP
             T* a_data,
             uint32_t a_steps,
             const std::string& a_component,
-            const NiPoint3& a_force) = 0;
+            const NiPoint3& a_force) const = 0;
 
     private:
         struct {
@@ -537,44 +530,43 @@ namespace CBP
     {
     public:
 
-        inline void QueueUpdateCurrent() {
-            m_nextUpdateCurrent = true;
+        inline void QueueListUpdateCurrent() {
+            m_listNextUpdateCurrent = true;
         }
 
-        inline void QueueUpdateList() {
-            m_nextUpdateList = true;
+        inline void QueueListUpdate() {
+            m_listNextUpdate = true;
         }
 
     protected:
         void ListTick();
-
-        virtual void ResetList();
-        virtual void UpdateCurrent();
+        void ListReset();
+        void ListUpdateCurrent();
 
         typedef typename T::value_type listValue_t;
         typedef typename T::value_type::second_type::second_type entryValue_t;
 
-        UIListBase();
+        UIListBase() noexcept;
         virtual ~UIListBase() noexcept = default;
-
-        virtual listValue_t* GetSelectedEntry() = 0;
-        virtual void DrawList(listValue_t*& a_entry, const char*& a_curSelName) = 0;
-        virtual void SetCurrentItem(P a_handle) = 0;
-        virtual void UpdateList() = 0;
-        virtual void ResetAllValues(P a_handle) = 0;
-        virtual void FilterSelected(listValue_t*& a_entry, const char*& a_curSelName);
-        [[nodiscard]] virtual const entryValue_t& GetData(P a_formid) = 0;
+        
+        virtual void ListDraw(listValue_t*& a_entry, const char*& a_curSelName);
+        virtual void ListFilterSelected(listValue_t*& a_entry, const char*& a_curSelName);
+        virtual listValue_t* ListGetSelected() = 0;
+        virtual void ListSetCurrentItem(P a_handle) = 0;
+        virtual void ListUpdate() = 0;
+        virtual void ListResetAllValues(P a_handle) = 0;
+        [[nodiscard]] virtual const entryValue_t& GetData(P a_formid) const = 0;
         [[nodiscard]] virtual const entryValue_t& GetData(const listValue_t* a_data) const = 0;
 
-        bool m_firstUpdate;
-        bool m_nextUpdateCurrent;
-        bool m_nextUpdateList;
+        bool m_listFirstUpdate;
+        bool m_listNextUpdateCurrent;
+        bool m_listNextUpdate;
 
-        T m_list;
-        P m_current;
+        T m_listData;
+        P m_listCurrent;
 
-        char m_strBuf1[128];
-        UIGenericFilter m_filter;
+        char m_listBuf1[128];
+        UIGenericFilter m_listFilter;
     };
 
     template <class T>
@@ -583,7 +575,7 @@ namespace CBP
     {
     public:
         void ActorListTick();
-        virtual void ResetList();
+        virtual void ListReset();
     protected:
         using listValue_t = typename UIListBase<T, SKSE::ObjectHandle>::listValue_t;
         using entryValue_t = typename UIListBase<T, SKSE::ObjectHandle>::entryValue_t;
@@ -591,15 +583,15 @@ namespace CBP
         UIActorList(bool a_mark);
         virtual ~UIActorList() noexcept = default;
 
-        virtual listValue_t* GetSelectedEntry();
-        virtual void DrawList(listValue_t*& a_entry, const char*& a_curSelName);
-        virtual void SetCurrentItem(SKSE::ObjectHandle a_handle);
+        virtual listValue_t* ListGetSelected();
+        virtual void ListDraw(listValue_t*& a_entry, const char*& a_curSelName);
+        virtual void ListSetCurrentItem(SKSE::ObjectHandle a_handle);
 
-        virtual ConfigClass GetActorClass(SKSE::ObjectHandle a_handle) = 0;
-        [[nodiscard]] virtual configGlobalActor_t& GetActorConfig() = 0;
+        virtual ConfigClass GetActorClass(SKSE::ObjectHandle a_handle) const = 0;
+        [[nodiscard]] virtual configGlobalActor_t& GetActorConfig() const = 0;
     private:
-        virtual void UpdateList();
-        virtual void FilterSelected(listValue_t*& a_entry, const char*& a_curSelName);
+        virtual void ListUpdate();
+        virtual void ListFilterSelected(listValue_t*& a_entry, const char*& a_curSelName);
 
         uint64_t m_lastCacheUpdateId;
 
@@ -618,14 +610,14 @@ namespace CBP
         UIRaceList();
         virtual ~UIRaceList() noexcept = default;
 
-        virtual listValue_t* GetSelectedEntry();
-        virtual void DrawList(listValue_t*& a_entry, const char*& a_curSelName);
-        virtual void SetCurrentItem(SKSE::FormID a_formid);
+        virtual listValue_t* ListGetSelected();
+        virtual void ListSetCurrentItem(SKSE::FormID a_formid);
 
-        [[nodiscard]] virtual configGlobalRace_t& GetRaceConfig() = 0;
+        [[nodiscard]] virtual configGlobalRace_t& GetRaceConfig() const = 0;
 
     private:
-        virtual void UpdateList();
+        virtual void ListUpdate();
+        virtual void ListFilterSelected(listValue_t*& a_entry, const char*& a_curSelName);
     };
 
     class UICollisionGroups :
@@ -651,8 +643,8 @@ namespace CBP
         void Draw(bool* a_active);
         void Reset();
     private:
-        virtual void ResetAllValues(SKSE::ObjectHandle a_handle);
-        [[nodiscard]] virtual const entryValue_t& GetData(SKSE::ObjectHandle a_handle);
+        virtual void ListResetAllValues(SKSE::ObjectHandle a_handle);
+        [[nodiscard]] virtual const entryValue_t& GetData(SKSE::ObjectHandle a_handle) const;
         [[nodiscard]] virtual const entryValue_t& GetData(const listValue_t* a_data) const;
 
         virtual void ApplyProfile(listValue_t* a_data, const NodeProfile& a_profile);
@@ -663,8 +655,8 @@ namespace CBP
             const NodeProfile::base_type::mapped_type& a_data,
             bool a_reset);
 
-        [[nodiscard]] virtual ConfigClass GetActorClass(SKSE::ObjectHandle a_handle);
-        [[nodiscard]] virtual configGlobalActor_t& GetActorConfig();
+        [[nodiscard]] virtual ConfigClass GetActorClass(SKSE::ObjectHandle a_handle) const;
+        [[nodiscard]] virtual configGlobalActor_t& GetActorConfig() const;
     };
 
     typedef std::pair<const std::string, configComponents_t> raceEntryPhysConf_t;
@@ -690,17 +682,13 @@ namespace CBP
 
     protected:
         UIRaceEditorBase() noexcept;
+        virtual ~UIRaceEditorBase() noexcept = default;
 
-        [[nodiscard]] virtual const entryValue_t& GetData(SKSE::FormID a_formid) = 0;
+        [[nodiscard]] virtual const entryValue_t& GetData(SKSE::FormID a_formid) const = 0;
 
         inline void MarkChanged() { m_changed = true; }
 
         bool m_changed;
-
-        struct {
-            except::descriptor lastException;
-        } state;
-
     };
 
     class UIRaceEditorNode :
@@ -714,12 +702,12 @@ namespace CBP
 
     private:
 
-        [[nodiscard]] virtual const entryValue_t& GetData(SKSE::FormID a_formid);
+        [[nodiscard]] virtual const entryValue_t& GetData(SKSE::FormID a_formid) const;
         [[nodiscard]] virtual const entryValue_t& GetData(const listValue_t* a_entry) const;
 
-        [[nodiscard]] virtual configGlobalRace_t& GetRaceConfig();
+        [[nodiscard]] virtual configGlobalRace_t& GetRaceConfig() const;
 
-        virtual void ResetAllValues(SKSE::FormID a_formid);
+        virtual void ListResetAllValues(SKSE::FormID a_formid);
         virtual void ApplyProfile(listValue_t* a_data, const NodeProfile& a_profile);
 
         virtual void UpdateNodeData(
@@ -740,12 +728,12 @@ namespace CBP
     private:
 
         virtual void ApplyProfile(listValue_t* a_data, const PhysicsProfile& a_profile);
-        [[nodiscard]] virtual const entryValue_t& GetData(SKSE::FormID a_formid);
+        [[nodiscard]] virtual const entryValue_t& GetData(SKSE::FormID a_formid) const;
         [[nodiscard]] virtual const entryValue_t& GetData(const listValue_t* a_entry) const;
 
-        [[nodiscard]] virtual configGlobalRace_t& GetRaceConfig();
+        [[nodiscard]] virtual configGlobalRace_t& GetRaceConfig() const;
 
-        virtual void ResetAllValues(SKSE::FormID a_formid);
+        virtual void ListResetAllValues(SKSE::FormID a_formid);
 
         virtual void OnSimSliderChange(
             SKSE::FormID a_formid,
@@ -1006,7 +994,7 @@ namespace CBP
         void Reset(uint32_t a_loadInstance);
         void Draw(bool* a_active);
 
-        [[nodiscard]] inline uint32_t GetLoadInstance() const {
+        [[nodiscard]] inline uint32_t GetLoadInstance() const noexcept {
             return m_activeLoadInstance;
         }
 
@@ -1024,15 +1012,15 @@ namespace CBP
             listValue_t* a_data,
             uint32_t a_steps,
             const std::string& a_component,
-            const NiPoint3& a_force);
+            const NiPoint3& a_force) const;
 
-        virtual void ResetAllValues(SKSE::ObjectHandle a_handle);
+        virtual void ListResetAllValues(SKSE::ObjectHandle a_handle);
 
-        [[nodiscard]] virtual const entryValue_t& GetData(SKSE::ObjectHandle a_handle);
+        [[nodiscard]] virtual const entryValue_t& GetData(SKSE::ObjectHandle a_handle) const;
         [[nodiscard]] virtual const entryValue_t& GetData(const listValue_t* a_data) const;
 
-        [[nodiscard]] virtual ConfigClass GetActorClass(SKSE::ObjectHandle a_handle);
-        [[nodiscard]] virtual configGlobalActor_t& GetActorConfig();
+        [[nodiscard]] virtual ConfigClass GetActorClass(SKSE::ObjectHandle a_handle) const;
+        [[nodiscard]] virtual configGlobalActor_t& GetActorConfig() const;
 
         void UpdateActorValues(SKSE::ObjectHandle a_handle);
         void UpdateActorValues(listValue_t* a_data);
@@ -1076,6 +1064,7 @@ namespace CBP
         UIDialogImport m_importDialog;
         UIDialogExport m_exportDialog;
         UILog m_log;
+
 #ifdef _CBP_ENABLE_DEBUG
         UIDebugInfo m_debug;
 #endif
