@@ -79,6 +79,10 @@ namespace CBP
                 std::string valName = it2.key().asString();
                 transform(valName.begin(), valName.end(), valName.begin(), ::tolower);
 
+                static const std::string m("maxoffset");
+                if (version < 2 && valName == m)
+                    valName = "maxoffsety";
+
                 if (!tmp.Set(valName, it2->asFloat()))
                     Warning("(%s) Unknown value: %s", componentName.c_str(), valName.c_str());
             }
@@ -118,14 +122,27 @@ namespace CBP
             auto baseaddr = reinterpret_cast<uintptr_t>(std::addressof(v.second));
 
             for (const auto& e : v.second.descMap)
+            {
+                /*if ((e.second.marker & DescUIMarker::Float3) == DescUIMarker::Float3)
+                {
+                    auto& arr = phys[e.first];
+
+                    float *data = reinterpret_cast<float*>(baseaddr + e.second.offset);
+
+                    arr[0] = data[0];
+                    arr[1] = data[1];
+                    arr[2] = data[2];
+
+                } else */
                 phys[e.first] = *reinterpret_cast<float*>(baseaddr + e.second.offset);
+            }
 
             auto& ex = simComponent["ex"];
 
             ex["colShape"] = Enum::Underlying(v.second.ex.colShape);
         }
 
-        a_out["data_version"] = Json::Value::UInt(1);
+        a_out["data_version"] = Json::Value::UInt(2);
     }
 
     void Parser::Create(const configNodes_t& a_data, Json::Value& a_out)

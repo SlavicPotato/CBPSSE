@@ -2849,7 +2849,8 @@ namespace CBP
                     }
 
                     UICommon::MessageDialog(
-                        "Copy failed", "Could not copy values from selected profile");
+                        "Copy failed", 
+                        "Could not copy values from selected profile");
 
                     if (ImGui::BeginPopup("mirror_popup"))
                     {

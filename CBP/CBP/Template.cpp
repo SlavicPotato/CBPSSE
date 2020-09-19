@@ -161,7 +161,7 @@ namespace CBP
 
             fs::path ext(".json");
 
-            for (const auto& entry :
+            for (const auto& entry : 
                 fs::directory_iterator(driverConf.paths.templatePlugins))
             {
                 if (!entry.is_regular_file())
@@ -288,7 +288,7 @@ namespace CBP
 
         auto md = IData::GetModList();
 
-        for (const auto& e : md)
+        for (const auto &e: md)
         {
             std::string tmp(e.second.name);
             transform(tmp.begin(), tmp.end(), tmp.begin(), ::tolower);

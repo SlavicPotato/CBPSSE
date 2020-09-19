@@ -48,11 +48,26 @@ namespace CBP
             "Velocity removed/tick 1.0 would be all velocity removed",
             "Velocity damping"
         }},
-        {"maxoffset", {
-            offsetof(configComponent_t, phys.maxOffset),
+        {"maxoffsetx", {
+            offsetof(configComponent_t, phys.maxOffset[0]),
             "", 0.0f, 100.0f,
-            "Maximum amount the bone is allowed to move from target",
-            "Max. offset"
+            "Maximum amount the bone is allowed to move from target (X, Y, Z)",
+            "Max. offset",
+             DescUIMarker::Float3
+        }},
+        {"maxoffsety", {
+            offsetof(configComponent_t, phys.maxOffset[1]),
+            "", 0.0f, 100.0f,
+            "",
+            "",
+            DescUIMarker::NoDraw
+        }},
+        {"maxoffsetz", {
+            offsetof(configComponent_t, phys.maxOffset[2]),
+            "", 0.0f, 100.0f,
+            "",
+            "",
+            DescUIMarker::NoDraw
         }},
         {"linearx", {
             offsetof(configComponent_t, phys.linear[0]),
@@ -99,6 +114,30 @@ namespace CBP
             "",
             DescUIMarker::NoDraw
         }},
+        {"cogoffsetx", {
+            offsetof(configComponent_t, phys.cogOffset[0]),
+            "",
+            -100.0f, 100.0f,
+            "Center of gravity offset from the bone root, changes how rotation will impact motion",
+            "COG offset",
+            DescUIMarker::Float3
+        }},
+        {"cogoffset", {
+            offsetof(configComponent_t, phys.cogOffset[1]),
+            "",
+            -100.0f, 100.0f,
+            "",
+            "",
+            DescUIMarker::NoDraw
+        }},
+        {"cogoffsetz", {
+            offsetof(configComponent_t, phys.cogOffset[2]),
+            "",
+            -100.0f, 100.0f,
+            "",
+            "",
+            DescUIMarker::NoDraw
+        }},
         {"gravitybias", {
             offsetof(configComponent_t, phys.gravityBias),
             "",
@@ -110,15 +149,8 @@ namespace CBP
             offsetof(configComponent_t, phys.gravityCorrection),
             "",
             -100.0f, 100.0f,
-            "Amount to move the target point up to counteract the neutral effect of gravityBias",
-            "Gravity correction"
-        }},
-        {"cogoffset", {
-            offsetof(configComponent_t, phys.cogOffset),
-            "",
-            -100.0f, 100.0f,
-            "The ammount that the COG is forwards of the bone root, changes how rotation will impact motion",
-            "COG offset",
+            "Amount to move the target point up to counteract the neutral effect of gravity bias",
+            "Gravity correction",
             DescUIMarker::EndGroup,
             DescUIGroupType::Physics
         }},
@@ -139,12 +171,20 @@ namespace CBP
             "Collider radius (weight 100)",
             "Radius max",
         }},
-        { "colheight", {
-            offsetof(configComponent_t, phys.colHeight),
-            "",
+        {"colheightmin", {
+            offsetof(configComponent_t, phys.colHeightMin),
+            "colheightmax",
             0.001f, 250.0f,
-            "Capsule height",
-            "Capsule height",
+            "Capsule height (weight 0)",
+            "Capsule height min",
+            DescUIMarker::Misc1
+        }},
+        {"colheightmax", {
+            offsetof(configComponent_t, phys.colHeightMax),
+            "colheightmin",
+            0.001f, 250.0f,
+            "Capsule height (weight 100)",
+            "Capsule height max",
             DescUIMarker::Misc1
         }},
         {"colsphereoffsetxmin", {
@@ -331,7 +371,7 @@ namespace CBP
                 char* tok1 = strtok_s(nullptr, " ", &next_tok);
                 char* tok2 = strtok_s(nullptr, " ", &next_tok);
 
-                if (tok0 && tok1 && tok2) 
+                if (tok0 && tok1 && tok2)
                 {
                     std::string sect(tok0);
                     std::string key(tok1);

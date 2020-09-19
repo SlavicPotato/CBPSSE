@@ -339,8 +339,8 @@ namespace CBP
             float stiffness = 10.0f;
             float stiffness2 = 10.0f;
             float damping = 0.95f;
-            float maxOffset = 20.0f;
-            float cogOffset = 5.0f;
+            float maxOffset[3]{ 20.0f, 20.0f, 20.0f };
+            float cogOffset[3]{ 0.0f, 5.0f, 0.0f };
             float gravityBias = 0.0f;
             float gravityCorrection = 0.0f;
             float linear[3]{ 0.5f, 0.1f, 0.25f };
@@ -349,7 +349,8 @@ namespace CBP
             float colSphereRadMax = 4.0f;
             float offsetMin[3]{ 0.0f, 0.0f, 0.0f };
             float offsetMax[3]{ 0.0f, 0.0f, 0.0f };
-            float colHeight = 0.001f;
+            float colHeightMin = 0.001f;
+            float colHeightMax = 0.001f;
             float colRot[3]{ 0.0f, 0.0f, 0.0f };
             float colDampingCoef = 1.5f;
             float colDepthMul = 100.0f;

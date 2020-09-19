@@ -198,6 +198,7 @@ namespace CBP
         float weight = std::clamp(npc->weight, 0.0f, 100.0f);
 
         m_colRad = std::max(mmw(weight, a_config.phys.colSphereRadMin, a_config.phys.colSphereRadMax), 0.0f);
+        m_colHeight = std::max(mmw(weight, a_config.phys.colHeightMin, a_config.phys.colHeightMax), 0.001f);
         m_colOffsetX = mmw(weight,
             a_config.phys.offsetMin[0] + a_nodeConf.colOffsetMin[0],
             a_config.phys.offsetMax[0] + a_nodeConf.colOffsetMax[0]);
@@ -228,6 +229,7 @@ namespace CBP
 
         if (!UpdateWeightData(a_actor, a_config, a_nodeConf)) {
             m_colRad = a_config.phys.colSphereRadMax;
+            m_colHeight = std::max(a_config.phys.colHeightMax, 0.001f);
             m_colOffsetX = a_config.phys.offsetMax[0] + a_nodeConf.colOffsetMax[0];
             m_colOffsetY = a_config.phys.offsetMax[1] + a_nodeConf.colOffsetMax[1];
             m_colOffsetZ = a_config.phys.offsetMax[2] + a_nodeConf.colOffsetMax[2];
@@ -248,7 +250,7 @@ namespace CBP
 
             if (m_collisionData.GetColliderShape() == ColliderShape::Capsule)
             {
-                m_collisionData.SetHeight(std::max(m_conf.phys.colHeight, 0.001f));
+                m_collisionData.SetHeight(m_colHeight);
                 m_collisionData.SetColliderRotation(
                     m_conf.phys.colRot[0],
                     m_conf.phys.colRot[1],
@@ -261,7 +263,7 @@ namespace CBP
                 ResetOverrides();
         }
 
-        m_npCogOffset = NiPoint3(0.0f, m_conf.phys.cogOffset, 0.0f);
+        m_npCogOffset = NiPoint3(m_conf.phys.cogOffset[0], m_conf.phys.cogOffset[1], m_conf.phys.cogOffset[2]);
         m_npGravityCorrection = NiPoint3(0.0f, 0.0f, m_conf.phys.gravityCorrection);
     }
 
@@ -309,7 +311,7 @@ namespace CBP
 
             force.z -= m_conf.phys.gravityBias;
 
-            if (m_applyForceQueue.size())
+            if (!m_applyForceQueue.empty())
             {
                 auto& current = m_applyForceQueue.front();
 
@@ -332,9 +334,9 @@ namespace CBP
 
             diff = newPos - target;
 
-            diff.x = std::clamp(diff.x, -m_conf.phys.maxOffset, m_conf.phys.maxOffset);
-            diff.y = std::clamp(diff.y, -m_conf.phys.maxOffset, m_conf.phys.maxOffset);
-            diff.z = std::clamp(diff.z, -m_conf.phys.maxOffset, m_conf.phys.maxOffset);
+            diff.x = std::clamp(diff.x, -m_conf.phys.maxOffset[0], m_conf.phys.maxOffset[0]);
+            diff.y = std::clamp(diff.y, -m_conf.phys.maxOffset[1], m_conf.phys.maxOffset[1]);
+            diff.z = std::clamp(diff.z, -m_conf.phys.maxOffset[2], m_conf.phys.maxOffset[2]);
 
             auto invRot = m_objParent->m_worldTransform.rot.Transpose();
             auto ldiff = invRot * diff;
