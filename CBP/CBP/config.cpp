@@ -138,10 +138,17 @@ namespace CBP
             "",
             DescUIMarker::NoDraw
         }},
+        {"r", {
+            offsetof(configComponent_t, phys.resistance),
+            "",
+            0.0f, 20.0f,
+            "Resistance",
+            "Resistance"
+        }},
         {"gravitybias", {
             offsetof(configComponent_t, phys.gravityBias),
             "",
-            -300.0f, 300.0f,
+            0.0f, 1000.0f,
             "This is in effect the gravity coefficient, a constant force acting down * the mass of the object",
             "Gravity bias"
         }},

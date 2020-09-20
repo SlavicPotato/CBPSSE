@@ -2,11 +2,11 @@
 
 namespace CBP
 {
-    inline static constexpr float sgn(float val) {
+    __forceinline static float sgn(float val) {
         return float((0.0f < val) - (val < 0.0f));
     }
 
-    inline static constexpr float mmw(float a_val, float a_min, float a_max) {
+    __forceinline static float mmw(float a_val, float a_min, float a_max) {
         return a_min + (a_max - a_min) * a_val / 100.0f;
     }
 
@@ -166,6 +166,8 @@ namespace CBP
         m_parentId(a_parentId),
         m_groupId(a_groupId),
         m_inContact(false),
+        m_resistanceOn(false),
+        m_rotScaleOn(false),
         m_dampingMul(1.0f),
         m_obj(a_obj),
         m_objParent(a_obj->m_parent),
@@ -265,6 +267,23 @@ namespace CBP
 
         m_npCogOffset = NiPoint3(m_conf.phys.cogOffset[0], m_conf.phys.cogOffset[1], m_conf.phys.cogOffset[2]);
         m_npGravityCorrection = NiPoint3(0.0f, 0.0f, m_conf.phys.gravityCorrection);
+
+        if (m_conf.phys.resistance > 0.0f) {
+            m_resistanceOn = true;
+            m_resistance = std::clamp(m_conf.phys.resistance, 0.0f, 20.0f);
+        }
+        else
+            m_resistanceOn = false;
+
+        bool rot =
+            m_conf.phys.rotational[0] != 0.0f ||
+            m_conf.phys.rotational[1] != 0.0f ||
+            m_conf.phys.rotational[2] != 0.0f;
+
+        if (rot != m_rotScaleOn) {
+            m_rotScaleOn = rot;
+            m_obj->m_localTransform.rot = m_initialNodeRot;
+        }
     }
 
     void SimComponent::Reset()
@@ -301,7 +320,7 @@ namespace CBP
             }
 
             if (!m_inContact && m_dampingMul > 1.0f)
-                m_dampingMul = std::max(m_dampingMul / (a_timeStep + 1.0f), 1.0f);
+                m_dampingMul = std::max(m_dampingMul / ((a_timeStep * 10.0f) + 1.0f), 1.0f);
 
             // Compute the "Spring" Force
             NiPoint3 diff2(diff.x * diff.x * sgn(diff.x), diff.y * diff.y * sgn(diff.y), diff.z * diff.z * sgn(diff.z));
@@ -314,7 +333,7 @@ namespace CBP
                 auto& current = m_applyForceQueue.front();
 
                 auto vD = m_objParent->m_worldTransform * current.force;
-                auto vP = m_objParent->m_worldTransform.pos;
+                auto& vP = m_objParent->m_worldTransform.pos;
 
                 force += (vD - vP) / a_timeStep;
 
@@ -324,9 +343,21 @@ namespace CBP
                     m_applyForceQueue.pop();
             }
 
-            // Assume mass is 1, so Accelleration is Force, can vary mass by changing force
+            float res = m_resistanceOn ?
+                (1.0f - 1.0f / ((m_velocity.Length() * 0.025f) + 1.0f)) * m_resistance : 0.0f;
+
             SetVelocity((m_velocity + (force * a_timeStep)) -
-                (m_velocity * ((m_conf.phys.damping * a_timeStep) * m_dampingMul)));
+                (m_velocity * ((m_conf.phys.damping * a_timeStep) * (m_dampingMul + res))));
+
+            /*if (m_resistanceOn)
+            {
+                auto l = m_velocity.Length();
+                if (l >= _EPSILON)
+                {
+                    NiPoint3 n(m_velocity.x / l, m_velocity.y / l, m_velocity.z / l);
+                    m_velocity -= n * (l * m_resistance);
+                }
+            }*/
 
             auto invRot = m_objParent->m_worldTransform.rot.Transpose();
 
@@ -345,10 +376,11 @@ namespace CBP
 
             m_obj->m_localTransform.pos += invRot * m_npGravityCorrection;
 
-            m_obj->m_localTransform.rot.SetEulerAngles(
-                ldiff.x * m_conf.phys.rotational[0],
-                ldiff.y * m_conf.phys.rotational[1],
-                ldiff.z * m_conf.phys.rotational[2]);
+            if (m_rotScaleOn)
+                m_obj->m_localTransform.rot.SetEulerAngles(
+                    ldiff.x * m_conf.phys.rotational[0],
+                    ldiff.y * m_conf.phys.rotational[1],
+                    ldiff.z * m_conf.phys.rotational[2]);
 
             m_obj->UpdateWorldData(&m_updateCtx);
         }

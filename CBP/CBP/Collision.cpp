@@ -58,16 +58,17 @@ namespace CBP
                     auto& normal = contactPoint.getWorldNormal();
 
                     auto len = (v1 - v2).Length();
+                    auto dmL = len * 0.005f;
                     auto n = NiPoint3(normal.x, normal.y, normal.z);
 
                     if (sc1->HasMovement()) {
-                        sc1->SetDampingMul(std::clamp(dampingMul * conf1.phys.colDampingCoef, 1.0f, 100.0f));
-                        sc1->SetVelocity2(n * ((len + (depth * conf1.phys.colDepthMul)) * depth), m_timeStep);
+                        sc1->SetDampingMul(std::clamp(dmL * conf1.phys.colDampingCoef, 1.0f, 100.0f));
+                        sc1->AddVelocityN(n * ((len + (depth * conf1.phys.colDepthMul)) * depth), m_timeStep);
                     }
 
                     if (sc2->HasMovement()) {
-                        sc2->SetDampingMul(std::clamp(dampingMul * conf2.phys.colDampingCoef, 1.0f, 100.0f));
-                        sc2->SetVelocity2(n * (-(len + (depth * conf2.phys.colDepthMul)) * depth), m_timeStep);
+                        sc2->SetDampingMul(std::clamp(dmL *conf2.phys.colDampingCoef, 1.0f, 100.0f));
+                        sc2->AddVelocityN(n * (-(len + (depth * conf2.phys.colDepthMul)) * depth), m_timeStep);
                     }
                 }
             }

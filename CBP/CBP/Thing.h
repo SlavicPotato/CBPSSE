@@ -171,12 +171,15 @@ namespace CBP
         float m_colOffsetX = 0.0f;
         float m_colOffsetY = 0.0f;
         float m_colOffsetZ = 0.0f;
+        float m_resistance = 0.0f;
 
         uint64_t m_groupId;
         uint64_t m_parentId;
 
         float m_dampingMul;
         bool m_inContact;
+        bool m_resistanceOn;
+        bool m_rotScaleOn;
 
         NiPointer<NiAVObject> m_obj;
         NiPointer<NiAVObject> m_objParent;
@@ -190,7 +193,6 @@ namespace CBP
         __forceinline void ClampVelocity()
         {
             float len = m_velocity.Length();
-
             if (len <= 1000.0f)
                 return;
 
@@ -244,13 +246,11 @@ namespace CBP
 
         __forceinline void SetVelocity(const NiPoint3& a_vel)
         {
-            m_velocity.x = a_vel.x;
-            m_velocity.y = a_vel.y;
-            m_velocity.z = a_vel.z;
+            m_velocity = a_vel;
             ClampVelocity();
         }
 
-        __forceinline void SetVelocity2(const NiPoint3& a_vel, float a_timeStep) {
+        __forceinline void AddVelocityN(const NiPoint3& a_vel, float a_timeStep) {
             SetVelocity(m_velocity - (a_vel * a_timeStep));
         }
 

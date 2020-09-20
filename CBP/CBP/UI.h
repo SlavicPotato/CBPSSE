@@ -443,7 +443,7 @@ namespace CBP
 
         void Draw(bool* a_active);
 
-        inline constexpr const char* GetName() const {
+        inline const char* GetName() const {
             return m_name;
         }
     protected:

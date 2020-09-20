@@ -2,7 +2,7 @@
 
 namespace CBP
 {
-    bool Parser::Parse(const Json::Value& a_data, configComponents_t& a_outData, bool a_allowUnknown)
+    bool Parser::Parse(const Json::Value& a_data, configComponents_t& a_outData, bool a_allowUnknown) const
     {
         auto& conf = a_data["data"];
 
@@ -87,6 +87,19 @@ namespace CBP
                     Warning("(%s) Unknown value: %s", componentName.c_str(), valName.c_str());
             }
 
+            /*for (const auto& desc : configComponent_t::descMap)
+            {
+                auto& v = (*physData)[desc.first];
+
+                if (!v.isNumeric()) {
+                    Warning("(%s) (%s) Bad value type, expected number: %d", 
+                        componentName.c_str(), desc.first.c_str(), Enum::Underlying(v.type()));
+                    continue;
+                }
+
+                tmp.Set(desc.second, v.asFloat());
+            }*/
+
             auto& ex = (*it1)["ex"];
 
             if (!ex.empty())
@@ -110,7 +123,7 @@ namespace CBP
         return true;
     }
 
-    void Parser::Create(const configComponents_t& a_data, Json::Value& a_out)
+    void Parser::Create(const configComponents_t& a_data, Json::Value& a_out) const
     {
         auto& data = a_out["data"];
 
@@ -145,7 +158,7 @@ namespace CBP
         a_out["data_version"] = Json::Value::UInt(2);
     }
 
-    void Parser::Create(const configNodes_t& a_data, Json::Value& a_out)
+    void Parser::Create(const configNodes_t& a_data, Json::Value& a_out) const
     {
         auto& nodes = a_out["nodes"];
 
@@ -171,7 +184,7 @@ namespace CBP
         }
     }
 
-    bool Parser::Parse(const Json::Value& a_data, configNodes_t& a_out, bool a_allowUnknown)
+    bool Parser::Parse(const Json::Value& a_data, configNodes_t& a_out, bool a_allowUnknown) const
     {
         auto& nodes = a_data["nodes"];
 
@@ -226,17 +239,17 @@ namespace CBP
         return true;
     }
 
-    void Parser::GetDefault(configComponents_t& a_out)
+    void Parser::GetDefault(configComponents_t& a_out) const
     {
         a_out = IConfig::GetThingGlobalConfigDefaults();
     }
 
-    void Parser::GetDefault(configNodes_t& a_out)
+    void Parser::GetDefault(configNodes_t& a_out) const
     {
         a_out = IConfig::GetGlobalNodeConfig();
     }
 
-    bool Parser::ParseFloatArray(const Json::Value& a_value, float* a_out, size_t a_size)
+    bool Parser::ParseFloatArray(const Json::Value& a_value, float* a_out, size_t a_size) const
     {
         if (!a_value.isArray())
             return false;
@@ -250,12 +263,12 @@ namespace CBP
         return true;
     }
 
-    void ISerialization::LoadGlobals()
+    void ISerialization::LoadGlobalConfig()
     {
-        configGlobal_t globalConfig;
-
         try
         {
+            configGlobal_t globalConfig;
+
             auto& driverConf = DCBP::GetDriverConfig();
 
             Json::Value root;
@@ -445,6 +458,7 @@ namespace CBP
         }
         catch (const std::exception& e)
         {
+            m_lastException = e;
             Error("%s: %s", __FUNCTION__, e.what());
         }
     }
@@ -712,6 +726,7 @@ namespace CBP
         }
         catch (const std::exception& e)
         {
+            m_lastException = e;
             Error("%s (Load): %s", __FUNCTION__, e.what());
             return 0;
         }
@@ -732,6 +747,7 @@ namespace CBP
         }
         catch (const std::exception& e)
         {
+            m_lastException = e;
             Error("%s (Load): %s", __FUNCTION__, e.what());
             return false;
         }
@@ -906,12 +922,13 @@ namespace CBP
         }
         catch (const std::exception& e)
         {
+            m_lastException = e;
             Error("%s: %s", __FUNCTION__, e.what());
             return 0;
         }
     }
 
-    void ISerialization::ReadImportData(const fs::path& a_path, Json::Value& a_out)
+    void ISerialization::ReadImportData(const fs::path& a_path, Json::Value& a_out) const
     {
         if (!ReadJsonData(a_path, a_out))
             throw std::exception("Couldn't read data");
@@ -927,7 +944,7 @@ namespace CBP
         }
     }
 
-    bool ISerialization::ImportGetInfo(const fs::path& a_path, importInfo_t& a_out)
+    bool ISerialization::ImportGetInfo(const fs::path& a_path, importInfo_t& a_out) const
     {
         try
         {
@@ -1175,7 +1192,7 @@ namespace CBP
         }
     }
 
-    bool ISerialization::ReadJsonData(const fs::path& a_path, Json::Value& a_root)
+    bool ISerialization::ReadJsonData(const fs::path& a_path, Json::Value& a_root) const
     {
         if (!fs::exists(a_path) || !fs::is_regular_file(a_path))
             return false;
@@ -1191,7 +1208,7 @@ namespace CBP
         return true;
     }
 
-    void ISerialization::WriteJsonData(const fs::path& a_path, const Json::Value& a_root)
+    void ISerialization::WriteJsonData(const fs::path& a_path, const Json::Value& a_root) const
     {
         auto base = a_path.parent_path();
 

@@ -345,6 +345,7 @@ namespace CBP
             float gravityCorrection = 0.0f;
             float linear[3]{ 0.5f, 0.1f, 0.25f };
             float rotational[3]{ 0.0f, 0.0f, 0.0f };
+            float resistance = 0.0f;
             float colSphereRadMin = 4.0f;
             float colSphereRadMax = 4.0f;
             float offsetMin[3]{ 0.0f, 0.0f, 0.0f };

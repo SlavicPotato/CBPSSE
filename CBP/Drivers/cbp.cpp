@@ -518,7 +518,7 @@ namespace CBP
 
             Lock();
 
-            iface.LoadGlobals();
+            iface.LoadGlobalConfig();
             iface.LoadCollisionGroups();
             if (iface.LoadDefaultProfile())
                 IConfig::StoreDefaultProfile();

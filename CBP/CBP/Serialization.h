@@ -10,18 +10,18 @@ namespace CBP
 
         FN_NAMEPROC("Parser")
     public:
-        void Create(const configComponents_t& a_data, Json::Value& a_out);
-        [[nodiscard]] bool Parse(const Json::Value& a_data, configComponents_t& a_out, bool a_allowUnknown = false);
+        void Create(const configComponents_t& a_data, Json::Value& a_out) const;
+        [[nodiscard]] bool Parse(const Json::Value& a_data, configComponents_t& a_out, bool a_allowUnknown = false) const;
 
-        void Create(const configNodes_t& a_data, Json::Value& a_out);
-        [[nodiscard]] bool Parse(const Json::Value& a_data, configNodes_t& a_out, bool a_allowUnknown = false);
+        void Create(const configNodes_t& a_data, Json::Value& a_out) const;
+        [[nodiscard]] bool Parse(const Json::Value& a_data, configNodes_t& a_out, bool a_allowUnknown = false) const;
 
-        void GetDefault(configComponents_t& a_out);
-        void GetDefault(configNodes_t& a_out);
+        void GetDefault(configComponents_t& a_out) const;
+        void GetDefault(configNodes_t& a_out) const;
 
     private:
 
-        bool ParseFloatArray(const Json::Value& a_value, float* a_out, size_t a_size);
+        bool ParseFloatArray(const Json::Value& a_value, float* a_out, size_t a_size) const;
     };
 
     struct importInfo_t
@@ -47,7 +47,7 @@ namespace CBP
             kNumGroups
         };
 
-        void LoadGlobals();
+        void LoadGlobalConfig();
         bool SaveGlobalConfig();
 
         size_t LoadActorProfiles(SKSESerializationInterface* intfc, std::stringstream& a_data);
@@ -68,7 +68,7 @@ namespace CBP
         bool Import(SKSESerializationInterface* intfc, const fs::path& a_path, uint8_t a_flags);
         bool Export(const fs::path& a_path);
 
-        bool ImportGetInfo(const fs::path& a_path, importInfo_t& a_out);
+        bool ImportGetInfo(const fs::path& a_path, importInfo_t& a_out) const;
 
         inline void MarkForSave(Group a_grp) {
             m_pendingSave[a_grp] = true;
@@ -82,7 +82,7 @@ namespace CBP
 
         FN_NAMEPROC("Serialization")
     private:
-        void ReadImportData(const fs::path& a_path, Json::Value& a_out);
+        void ReadImportData(const fs::path& a_path, Json::Value& a_out) const;
 
         size_t _LoadActorProfiles(
             SKSESerializationInterface* intfc,
@@ -98,8 +98,8 @@ namespace CBP
 
         size_t _LoadGlobalProfile(const Json::Value& a_root);
 
-        [[nodiscard]] bool ReadJsonData(const std::filesystem::path& a_path, Json::Value& a_out);
-        void WriteJsonData(const std::filesystem::path& a_path, const Json::Value& a_root);
+        [[nodiscard]] bool ReadJsonData(const std::filesystem::path& a_path, Json::Value& a_out) const;
+        void WriteJsonData(const std::filesystem::path& a_path, const Json::Value& a_root) const;
 
         except::descriptor m_lastException;
 
