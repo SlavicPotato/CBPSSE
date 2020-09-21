@@ -170,7 +170,7 @@ namespace CBP
         }},
         {"cr-", {
             offsetof(configComponent_t, phys.colSphereRadMin),
-            "colsphereradmax",
+            "cr+",
             0.0f, 100.0,
             "Collider radius (weigth 0)",
             "Radius min",
@@ -180,14 +180,14 @@ namespace CBP
         }},
         {"cr+", {
             offsetof(configComponent_t, phys.colSphereRadMax),
-            "colsphereradmin",
+            "cr-",
             0.0f, 100.0f,
             "Collider radius (weight 100)",
             "Radius max",
         }},
         {"ch-", {
             offsetof(configComponent_t, phys.colHeightMin),
-            "colheightmax",
+            "ch+",
             0.001f, 250.0f,
             "Capsule height (weight 0)",
             "Capsule height min",
@@ -195,7 +195,7 @@ namespace CBP
         }},
         {"ch+", {
             offsetof(configComponent_t, phys.colHeightMax),
-            "colheightmin",
+            "ch-",
             0.001f, 250.0f,
             "Capsule height (weight 100)",
             "Capsule height max",
@@ -203,7 +203,7 @@ namespace CBP
         }},
         {"cox-", {
             offsetof(configComponent_t, phys.offsetMin[0]),
-            "colsphereoffsetxmax",
+            "cox+",
             -50.0f, 50.0f,
             "Collider body offset (X, Y, Z, weight 0)",
             "Offset min",
@@ -227,7 +227,7 @@ namespace CBP
         }},
         {"cox+", {
             offsetof(configComponent_t, phys.offsetMax[0]),
-            "colsphereoffsetxmin",
+            "cox-",
             -50.0f, 50.0f,
             "Collider body offset (X, Y, Z, weight 100)",
             "Offset max",
@@ -281,7 +281,7 @@ namespace CBP
             "Bounciness",
             DescUIMarker::EndGroup,
             DescUIGroupType::Collisions
-        }} 
+        }}
         }
     );
 
