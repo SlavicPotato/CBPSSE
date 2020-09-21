@@ -10,18 +10,19 @@ namespace CBP
 
         FN_NAMEPROC("Parser")
     public:
-        void Create(const configComponents_t& a_data, Json::Value& a_out) const;
-        [[nodiscard]] bool Parse(const Json::Value& a_data, configComponents_t& a_out, bool a_allowUnknown = false) const;
+        void Create(const configComponents_t& a_in, Json::Value& a_out) const;
+        [[nodiscard]] bool Parse(const Json::Value& a_in, configComponents_t& a_out, bool a_allowUnknown = false) const;
 
-        void Create(const configNodes_t& a_data, Json::Value& a_out) const;
-        [[nodiscard]] bool Parse(const Json::Value& a_data, configNodes_t& a_out, bool a_allowUnknown = false) const;
+        void Create(const configNodes_t& a_in, Json::Value& a_out) const;
+        [[nodiscard]] bool Parse(const Json::Value& a_in, configNodes_t& a_out, bool a_allowUnknown = false) const;
 
         void GetDefault(configComponents_t& a_out) const;
         void GetDefault(configNodes_t& a_out) const;
 
     private:
 
-        bool ParseFloatArray(const Json::Value& a_value, float* a_out, size_t a_size) const;
+        bool ParseFloatArray(const Json::Value& a_in, float* a_out, size_t a_size) const;
+        bool ParseVersion(const Json::Value& a_in, const char *a_key, uint32_t& a_out) const;
     };
 
     struct importInfo_t

@@ -13,7 +13,7 @@ namespace CBP
     {
         using EventType = CollisionCallback::ContactPair::EventType;
 
-        auto& globalConf = IConfig::GetGlobalConfig();
+        //auto& globalConf = IConfig::GetGlobalConfig();
 
         auto nbContactPairs = callbackData.getNbContactPairs();
 
@@ -32,14 +32,10 @@ namespace CBP
             switch (type)
             {
             case EventType::ContactStart:
-                sc1->SetInContact(true);
-                sc2->SetInContact(true);
             case EventType::ContactStay:
             {
                 auto& conf1 = sc1->GetConfig();
                 auto& conf2 = sc2->GetConfig();
-
-                float dampingMul = 1.0f;
 
                 auto nbContactPoints = contactPair.getNbContactPoints();
 
@@ -47,36 +43,34 @@ namespace CBP
                 {
                     auto contactPoint = contactPair.getContactPoint(c);
 
-                    auto depth = std::min(contactPoint.getPenetrationDepth(),
-                        globalConf.phys.colMaxPenetrationDepth);
-
-                    dampingMul = std::max(depth, dampingMul);
+                    float depth = contactPoint.getPenetrationDepth();
 
                     auto& v1 = sc1->GetVelocity();
                     auto& v2 = sc2->GetVelocity();
 
-                    auto& normal = contactPoint.getWorldNormal();
+                    auto& _n = contactPoint.getWorldNormal();
 
-                    auto len = (v1 - v2).Length();
-                    auto dmL = len * 0.005f;
-                    auto n = NiPoint3(normal.x, normal.y, normal.z);
+                    auto n = NiPoint3(_n.x, _n.y, _n.z);
+                    auto deltaV = v1 - v2;
 
-                    if (sc1->HasMovement()) {
-                        sc1->SetDampingMul(std::clamp(dmL * conf1.phys.colDampingCoef, 1.0f, 100.0f));
-                        sc1->AddVelocityN(n * ((len + (depth * conf1.phys.colDepthMul)) * depth), m_timeStep);
-                    }
+                    auto deltaVDotN =
+                        deltaV.x * n.x +
+                        deltaV.y * n.y +
+                        deltaV.z * n.z;
 
-                    if (sc2->HasMovement()) {
-                        sc2->SetDampingMul(std::clamp(dmL *conf2.phys.colDampingCoef, 1.0f, 100.0f));
-                        sc2->AddVelocityN(n * (-(len + (depth * conf2.phys.colDepthMul)) * depth), m_timeStep);
-                    }
+                    float bias = depth > 0.01f ?
+                        (m_timeStep * 3500.0f) * std::max(depth - 0.01f, 0.0f): 0.0f;
+
+                    float impulse = std::max(deltaVDotN + bias, 0.0f);
+
+                    if (sc1->HasMovement())
+                        sc1->AddVelocity(n * (-impulse * conf1.phys.colBounciness));
+
+                    if (sc2->HasMovement())
+                        sc2->AddVelocity(n * (impulse * conf2.phys.colBounciness));
                 }
             }
             break;
-            case EventType::ContactExit:
-                sc1->SetInContact(false);
-                sc2->SetInContact(false);
-                break;
             }
         }
     }

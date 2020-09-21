@@ -125,9 +125,9 @@ namespace CBP
 
         struct
         {
-            float colMaxPenetrationDepth = 35.0f;
+            float colMaxPenetrationDepth = 100.0f;
             float timeTick = 1.0f / 60.0f;
-            float maxSubSteps = 5.0f;
+            float maxSubSteps = 7.0f;
             bool collisions = true;
         } phys;
 
@@ -238,7 +238,8 @@ namespace CBP
     struct configComponent_t
     {
     public:
-        [[nodiscard]] inline bool Get(const std::string& a_key, float& a_out) const
+
+        [[nodiscard]] __forceinline bool Get(const std::string& a_key, float& a_out) const
         {
             const auto it = descMap.find(a_key);
             if (it == descMap.map_end())
@@ -251,7 +252,7 @@ namespace CBP
             return true;
         }
 
-        [[nodiscard]] inline float* Get(const std::string& a_key) const
+        [[nodiscard]] __forceinline float* Get(const std::string& a_key) const
         {
             const auto it = descMap.find(a_key);
             if (it == descMap.map_end())
@@ -262,12 +263,12 @@ namespace CBP
             return reinterpret_cast<float*>(addr);
         }
 
-        [[nodiscard]] inline auto Contains(const std::string& a_key) const
+        [[nodiscard]] __forceinline auto Contains(const std::string& a_key) const
         {
             return descMap.find(a_key) != descMap.map_end();
         }
 
-        inline bool Set(const std::string& a_key, float a_value)
+        __forceinline bool Set(const std::string& a_key, float a_value)
         {
             const auto it = descMap.find(a_key);
             if (it == descMap.map_end())
@@ -280,16 +281,14 @@ namespace CBP
             return true;
         }
         
-        __forceinline bool Set(const componentValueDesc_t& a_desc, float a_value)
+        __forceinline void Set(const componentValueDesc_t& a_desc, float a_value)
         {
             auto addr = reinterpret_cast<uintptr_t>(this) + a_desc.offset;
 
             *reinterpret_cast<float*>(addr) = a_value;
-
-            return true;
         }
 
-        inline bool Set(const std::string& a_key, float* a_value, size_t a_size)
+        __forceinline bool Set(const std::string& a_key, float* a_value, size_t a_size)
         {
             const auto it = descMap.find(a_key);
             if (it == descMap.map_end())
@@ -303,17 +302,15 @@ namespace CBP
             return true;
         }
 
-        __forceinline bool Set(const componentValueDesc_t &a_desc, float* a_value, size_t a_size)
+        __forceinline void Set(const componentValueDesc_t &a_desc, float* a_value, size_t a_size)
         {
             auto addr = reinterpret_cast<uintptr_t>(this) + a_desc.offset;
 
             for (size_t i = 0; i < a_size; i++)
                 reinterpret_cast<float*>(addr)[i] = a_value[i];
-
-            return true;
         }
 
-        inline bool Mul(const std::string& a_key, float a_multiplier)
+        __forceinline bool Mul(const std::string& a_key, float a_multiplier)
         {
             const auto it = descMap.find(a_key);
             if (it == descMap.map_end())
@@ -334,6 +331,10 @@ namespace CBP
             return *reinterpret_cast<float*>(addr);
         }
 
+        inline void SetColShape(ColliderShape a_shape) {
+            ex.colShape = a_shape;
+        }
+
         struct
         {
             float stiffness = 10.0f;
@@ -343,6 +344,7 @@ namespace CBP
             float cogOffset[3]{ 0.0f, 5.0f, 0.0f };
             float gravityBias = 0.0f;
             float gravityCorrection = 0.0f;
+            float rotGravityCorrection = 0.0f;
             float linear[3]{ 0.5f, 0.1f, 0.25f };
             float rotational[3]{ 0.0f, 0.0f, 0.0f };
             float resistance = 0.0f;
@@ -353,8 +355,7 @@ namespace CBP
             float colHeightMin = 0.001f;
             float colHeightMax = 0.001f;
             float colRot[3]{ 0.0f, 0.0f, 0.0f };
-            float colDampingCoef = 1.5f;
-            float colDepthMul = 100.0f;
+            float colBounciness = 0.25f;
         } phys;
 
         struct
@@ -362,7 +363,10 @@ namespace CBP
             ColliderShape colShape = ColliderShape::Sphere;
         } ex;
 
+        bool tainted = false;
+
         static const componentValueDescMap_t descMap;
+        static const std::unordered_map<std::string, std::string> oldKeyMap;
     };
 
     //static_assert(sizeof(configComponent_t) == 0x5C);

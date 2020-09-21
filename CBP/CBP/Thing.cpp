@@ -6,8 +6,12 @@ namespace CBP
         return float((0.0f < val) - (val < 0.0f));
     }
 
+    __forceinline static float mmg(float a_val, float a_min, float a_max) {
+        return a_min + (a_max - a_min) * a_val;
+    }
+    
     __forceinline static float mmw(float a_val, float a_min, float a_max) {
-        return a_min + (a_max - a_min) * a_val / 100.0f;
+        return mmg(a_val / 100.0f, a_min, a_max);
     }
 
     SimComponent::Collider::Collider(
@@ -106,7 +110,6 @@ namespace CBP
             {
                 m_active = false;
                 m_body->setIsActive(false);
-                m_parent.ResetOverrides();
                 return;
             }
         }
@@ -165,10 +168,8 @@ namespace CBP
         m_collisionData(*this),
         m_parentId(a_parentId),
         m_groupId(a_groupId),
-        m_inContact(false),
         m_resistanceOn(false),
         m_rotScaleOn(false),
-        m_dampingMul(1.0f),
         m_obj(a_obj),
         m_objParent(a_obj->m_parent),
         m_updateCtx({ 0.0f, 0 })
@@ -240,8 +241,7 @@ namespace CBP
         if (m_collisions &&
             m_colRad > 0.0f)
         {
-            if (m_collisionData.Create(m_conf.ex.colShape))
-                ResetOverrides();
+            m_collisionData.Create(m_conf.ex.colShape);
 
             m_collisionData.SetRadius(m_colRad);
             m_collisionData.SetOffset(
@@ -261,8 +261,7 @@ namespace CBP
             }
         }
         else {
-            if (m_collisionData.Destroy())
-                ResetOverrides();
+            m_collisionData.Destroy();
         }
 
         m_npCogOffset = NiPoint3(m_conf.phys.cogOffset[0], m_conf.phys.cogOffset[1], m_conf.phys.cogOffset[2]);
@@ -284,6 +283,8 @@ namespace CBP
             m_rotScaleOn = rot;
             m_obj->m_localTransform.rot = m_initialNodeRot;
         }
+
+        m_conf.phys.colBounciness = mmg(std::clamp(m_conf.phys.colBounciness, 0.0f, 1.0f), 0.05f, 0.75f);
     }
 
     void SimComponent::Reset()
@@ -313,14 +314,13 @@ namespace CBP
 
             NiPoint3 diff(target - m_oldWorldPos);
 
-            if (fabs(diff.x) > 150.0f || fabs(diff.y) > 150.0f || fabs(diff.z) > 150.0f)
+            if (std::fabs(diff.x) > 150.0f ||
+                std::fabs(diff.y) > 150.0f ||
+                std::fabs(diff.z) > 150.0f)
             {
                 Reset();
                 return;
             }
-
-            if (!m_inContact && m_dampingMul > 1.0f)
-                m_dampingMul = std::max(m_dampingMul / ((a_timeStep * 10.0f) + 1.0f), 1.0f);
 
             // Compute the "Spring" Force
             NiPoint3 diff2(diff.x * diff.x * sgn(diff.x), diff.y * diff.y * sgn(diff.y), diff.z * diff.z * sgn(diff.z));
@@ -347,7 +347,7 @@ namespace CBP
                 (1.0f - 1.0f / ((m_velocity.Length() * 0.025f) + 1.0f)) * m_resistance : 0.0f;
 
             SetVelocity((m_velocity + (force * a_timeStep)) -
-                (m_velocity * ((m_conf.phys.damping * a_timeStep) * (m_dampingMul + res))));
+                (m_velocity * ((m_conf.phys.damping * a_timeStep) * (1.0f + res))));
 
             /*if (m_resistanceOn)
             {
@@ -380,7 +380,7 @@ namespace CBP
                 m_obj->m_localTransform.rot.SetEulerAngles(
                     ldiff.x * m_conf.phys.rotational[0],
                     ldiff.y * m_conf.phys.rotational[1],
-                    ldiff.z * m_conf.phys.rotational[2]);
+                    (ldiff.z + m_conf.phys.rotGravityCorrection) * m_conf.phys.rotational[2]);
 
             m_obj->UpdateWorldData(&m_updateCtx);
         }

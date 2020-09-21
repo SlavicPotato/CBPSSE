@@ -25,7 +25,7 @@ namespace CBP
     IConfig::IConfigLog IConfig::log;
 
     const componentValueDescMap_t configComponent_t::descMap({
-        {"stiffness", {
+        {"s", {
             offsetof(configComponent_t, phys.stiffness),
             "",
             0.0f, 100.0f,
@@ -35,41 +35,41 @@ namespace CBP
             DescUIGroupType::Physics,
             "Physics"
         }},
-        {"stiffness2", {
+        {"sq", {
             offsetof(configComponent_t, phys.stiffness2),
             "", 0.0f, 100.0f,
             "Quadratic spring stiffness",
             "Quadratic stiffness"
         }},
-        {"damping", {
+        {"d", {
             offsetof(configComponent_t, phys.damping),
             "",
             0.0f, 10.0f,
             "Velocity removed/tick 1.0 would be all velocity removed",
             "Velocity damping"
         }},
-        {"maxoffsetx", {
+        {"mox", {
             offsetof(configComponent_t, phys.maxOffset[0]),
             "", 0.0f, 100.0f,
             "Maximum amount the bone is allowed to move from target (X, Y, Z)",
             "Max. offset",
              DescUIMarker::Float3
         }},
-        {"maxoffsety", {
+        {"moy", {
             offsetof(configComponent_t, phys.maxOffset[1]),
             "", 0.0f, 100.0f,
             "",
             "",
             DescUIMarker::NoDraw
         }},
-        {"maxoffsetz", {
+        {"moz", {
             offsetof(configComponent_t, phys.maxOffset[2]),
             "", 0.0f, 100.0f,
             "",
             "",
             DescUIMarker::NoDraw
         }},
-        {"linearx", {
+        {"lx", {
             offsetof(configComponent_t, phys.linear[0]),
             "",
             0.0f, 10.0f,
@@ -77,28 +77,28 @@ namespace CBP
             "Linear motion scale",
             DescUIMarker::Float3
         }},
-        {"lineary", {
+        {"ly", {
             offsetof(configComponent_t, phys.linear[1]),
             "", 0.0f, 10.0f,
             "",
             "",
             DescUIMarker::NoDraw
         }},
-        {"linearz", {
+        {"lz", {
             offsetof(configComponent_t, phys.linear[1]),
             "", 0.0f, 10.0f ,
             "",
             "",
             DescUIMarker::NoDraw
         }},
-        {"rotationalx", {
+        {"rx", {
             offsetof(configComponent_t, phys.rotational[0]),
             "", 0.0f, 1.0f,
             "Scale of the bones rotation around the X, Y and Z axes respectively",
             "Rotational scale",
             DescUIMarker::Float3
         }},
-        {"rotationaly", {
+        {"ry", {
             offsetof(configComponent_t, phys.rotational[1]),
             "",
             0.0f, 1.0f,
@@ -106,7 +106,7 @@ namespace CBP
             "",
             DescUIMarker::NoDraw
         }},
-        {"rotationalz", {
+        {"rz", {
             offsetof(configComponent_t, phys.rotational[2]),
             "",
             0.0f, 1.0f,
@@ -114,7 +114,7 @@ namespace CBP
             "",
             DescUIMarker::NoDraw
         }},
-        {"cogoffsetx", {
+        {"cox", {
             offsetof(configComponent_t, phys.cogOffset[0]),
             "",
             -100.0f, 100.0f,
@@ -122,7 +122,7 @@ namespace CBP
             "COG offset",
             DescUIMarker::Float3
         }},
-        {"cogoffset", {
+        {"coy", {
             offsetof(configComponent_t, phys.cogOffset[1]),
             "",
             -100.0f, 100.0f,
@@ -130,7 +130,7 @@ namespace CBP
             "",
             DescUIMarker::NoDraw
         }},
-        {"cogoffsetz", {
+        {"coz", {
             offsetof(configComponent_t, phys.cogOffset[2]),
             "",
             -100.0f, 100.0f,
@@ -145,23 +145,30 @@ namespace CBP
             "Resistance",
             "Resistance"
         }},
-        {"gravitybias", {
+        {"gb", {
             offsetof(configComponent_t, phys.gravityBias),
             "",
             0.0f, 1000.0f,
             "This is in effect the gravity coefficient, a constant force acting down * the mass of the object",
             "Gravity bias"
         }},
-        {"gravitycorrection", {
+        {"gc", {
             offsetof(configComponent_t, phys.gravityCorrection),
             "",
             -100.0f, 100.0f,
             "Amount to move the target point up to counteract the neutral effect of gravity bias",
-            "Gravity correction",
+            "Gravity correction"
+        }},
+        {"rgc", {
+            offsetof(configComponent_t, phys.rotGravityCorrection),
+            "",
+            -100.0f, 100.0f,
+            "Amount to offset rotation to counteract the neutral effect of gravity bias",
+            "Rot. grav. correction",
             DescUIMarker::EndGroup,
             DescUIGroupType::Physics
         }},
-        {"colsphereradmin", {
+        {"cr-", {
             offsetof(configComponent_t, phys.colSphereRadMin),
             "colsphereradmax",
             0.0f, 100.0,
@@ -171,14 +178,14 @@ namespace CBP
             DescUIGroupType::Collisions,
             "Collisions"
         }},
-        {"colsphereradmax", {
+        {"cr+", {
             offsetof(configComponent_t, phys.colSphereRadMax),
             "colsphereradmin",
             0.0f, 100.0f,
             "Collider radius (weight 100)",
             "Radius max",
         }},
-        {"colheightmin", {
+        {"ch-", {
             offsetof(configComponent_t, phys.colHeightMin),
             "colheightmax",
             0.001f, 250.0f,
@@ -186,7 +193,7 @@ namespace CBP
             "Capsule height min",
             DescUIMarker::Misc1
         }},
-        {"colheightmax", {
+        {"ch+", {
             offsetof(configComponent_t, phys.colHeightMax),
             "colheightmin",
             0.001f, 250.0f,
@@ -194,7 +201,7 @@ namespace CBP
             "Capsule height max",
             DescUIMarker::Misc1
         }},
-        {"colsphereoffsetxmin", {
+        {"cox-", {
             offsetof(configComponent_t, phys.offsetMin[0]),
             "colsphereoffsetxmax",
             -50.0f, 50.0f,
@@ -202,7 +209,7 @@ namespace CBP
             "Offset min",
             DescUIMarker::Float3
         }},
-        {"colsphereoffsetymin", {
+        {"coy-", {
             offsetof(configComponent_t, phys.offsetMin[1]),
             "colsphereoffsetymax",
             -50.0f, 50.0f,
@@ -210,7 +217,7 @@ namespace CBP
             "",
             DescUIMarker::NoDraw
         }},
-        {"colsphereoffsetzmin", {
+        {"coz-", {
             offsetof(configComponent_t, phys.offsetMin[2]),
             "colsphereoffsetzmax",
             -50.0f, 50.0f,
@@ -218,7 +225,7 @@ namespace CBP
             "",
             DescUIMarker::NoDraw
         }},
-        {"colsphereoffsetxmax", {
+        {"cox+", {
             offsetof(configComponent_t, phys.offsetMax[0]),
             "colsphereoffsetxmin",
             -50.0f, 50.0f,
@@ -226,7 +233,7 @@ namespace CBP
             "Offset max",
             DescUIMarker::Float3
         }},
-        {"colsphereoffsetymax", {
+        {"coy+", {
             offsetof(configComponent_t, phys.offsetMax[1]),
             "colsphereoffsetymin",
             -50.0f, 50.0f,
@@ -234,7 +241,7 @@ namespace CBP
             "",
             DescUIMarker::NoDraw
         }},
-        {"colsphereoffsetzmax", {
+        {"coz+", {
             offsetof(configComponent_t, phys.offsetMax[2]),
             "colsphereoffsetzmin",
             -50.0f, 50.0f,
@@ -242,7 +249,7 @@ namespace CBP
             "",
             DescUIMarker::NoDraw
         }},
-        {"colrotx", {
+        {"crx", {
             offsetof(configComponent_t, phys.colRot[0]),
             "",
             -360.0f, 360.0f,
@@ -250,7 +257,7 @@ namespace CBP
             "Collider rotation",
             DescUIMarker::Misc1 | DescUIMarker::Float3
         }},
-        {"colroty", {
+        {"cry", {
             offsetof(configComponent_t, phys.colRot[1]),
             "",
             -360.0f, 360.0f,
@@ -258,7 +265,7 @@ namespace CBP
             "",
             DescUIMarker::NoDraw
         }},
-        {"colrotz", {
+        {"crz", {
             offsetof(configComponent_t, phys.colRot[2]),
             "",
             -360.0f, 360.0f,
@@ -266,23 +273,52 @@ namespace CBP
             "",
             DescUIMarker::NoDraw
         }},
-        {"coldampingcoef", {
-            offsetof(configComponent_t, phys.colDampingCoef),
+        {"cb", {
+            offsetof(configComponent_t, phys.colBounciness),
             "",
-            0.0f, 10.0f,
-            "Velocity damping scale when nodes are colliding",
-            "Damping coef"
-        }},
-        {"coldepthmul", {
-            offsetof(configComponent_t, phys.colDepthMul),
+            0.0f, 1.0f,
             "",
-            1.0f, 1000.0f,
-            "",
-            "Depth mul",
+            "Bounciness",
             DescUIMarker::EndGroup,
             DescUIGroupType::Collisions
-        }}
-        });
+        }} 
+        }
+    );
+
+    const std::unordered_map<std::string, std::string> configComponent_t::oldKeyMap =
+    {
+        {"stiffness", "s"},
+        {"stiffness2", "sq"},
+        {"damping", "d"},
+        {"maxoffsetx", "mox"},
+        {"maxoffsety", "moy"},
+        {"maxoffsetz", "moz"},
+        {"linearx", "lx"},
+        {"lineary", "ly"},
+        {"linearz", "lz"},
+        {"rotationalx", "rx"},
+        {"rotationaly", "ry"},
+        {"rotationalz", "rz"},
+        {"cogoffsetx", "cox"},
+        {"cogoffset", "coy"},
+        {"cogoffsetz", "coz"},
+        {"r", "r"},
+        {"gravitybias", "gb"},
+        {"gravitycorrection", "gc"},
+        {"colsphereradmin", "cr-"},
+        {"colsphereradmax", "cr+"},
+        {"colheightmin", "ch-"},
+        {"colheightmax", "ch+"},
+        {"colsphereoffsetxmin", "cox-"},
+        {"colsphereoffsetymin", "coy-"},
+        {"colsphereoffsetzmin", "coz-"},
+        {"colsphereoffsetxmax", "cox+"},
+        {"colsphereoffsetymax", "coy+"},
+        {"colsphereoffsetzmax", "coz+"},
+        {"colrotx", "crx"},
+        {"colroty", "cry"},
+        {"colrotz", "crz"}
+    };
 
     static const nodeMap_t defaultNodeMap
     {
@@ -394,9 +430,9 @@ namespace CBP
                     static const std::string rot("rotational");
 
                     if (key == rot)
-                        it->second.Set("rotationalz", atof(tok2));
+                        it->second.Set("rotationalz", static_cast<float>(std::atof(tok2)));
                     else
-                        it->second.Set(key, atof(tok2));
+                        it->second.Set(key, static_cast<float>(std::atof(tok2)));
                 }
             }
 

@@ -172,12 +172,11 @@ namespace CBP
         float m_colOffsetY = 0.0f;
         float m_colOffsetZ = 0.0f;
         float m_resistance = 0.0f;
+        float m_restitutionBias = 0.0f;
 
         uint64_t m_groupId;
         uint64_t m_parentId;
 
-        float m_dampingMul;
-        bool m_inContact;
         bool m_resistanceOn;
         bool m_rotScaleOn;
 
@@ -250,8 +249,8 @@ namespace CBP
             ClampVelocity();
         }
 
-        __forceinline void AddVelocityN(const NiPoint3& a_vel, float a_timeStep) {
-            SetVelocity(m_velocity - (a_vel * a_timeStep));
+        __forceinline void AddVelocity(const NiPoint3& a_vel) {
+            SetVelocity(m_velocity + a_vel);
         }
 
         [[nodiscard]] inline const auto& GetVelocity() const {
@@ -264,11 +263,6 @@ namespace CBP
 
         [[nodiscard]] inline const auto& GetConfigGroupName() const {
             return m_configGroupName;
-        }
-
-        inline void ResetOverrides() {
-            m_dampingMul = 1.0f;
-            m_inContact = false;
         }
 
         [[nodiscard]] inline bool IsSameGroup(const SimComponent& a_rhs) const {
@@ -291,14 +285,6 @@ namespace CBP
 
         [[nodiscard]] inline bool HasCollision() const {
             return m_collisions;
-        }
-
-        inline void SetDampingMul(float a_val) {
-            m_dampingMul = a_val;
-        }
-
-        inline void SetInContact(bool a_val) {
-            m_inContact = a_val;
         }
 
         [[nodiscard]] inline const auto& GetPos() const {

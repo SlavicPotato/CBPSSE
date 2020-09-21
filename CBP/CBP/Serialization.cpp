@@ -2,42 +2,29 @@
 
 namespace CBP
 {
-    bool Parser::Parse(const Json::Value& a_data, configComponents_t& a_outData, bool a_allowUnknown) const
+    bool Parser::Parse(const Json::Value& a_in, configComponents_t& a_outData, bool a_allowUnknown) const
     {
-        auto& conf = a_data["data"];
+        auto& data = a_in["data"];
 
-        if (conf.empty())
+        if (data.empty())
             return false;
 
-        if (!conf.isObject()) {
+        if (!data.isObject()) {
             Error("Expected an object");
             return false;
         }
 
-        uint32_t version = 0;
-        if (a_data.isMember("data_version"))
-        {
-            auto& v = a_data["data_version"];
-
-            if (v.isNumeric())
-                version = static_cast<uint32_t>(v.asUInt());
-            else {
-                Error("Bad version data");
-                return false;
-            }
+        uint32_t version;
+        if (!ParseVersion(a_in, "data_version", version)) {
+            Error("Bad version data");
+            return false;
         }
 
         a_outData = IConfig::GetThingGlobalConfigDefaults();
 
-        for (auto it1 = conf.begin(); it1 != conf.end(); ++it1)
+        for (auto it1 = data.begin(); it1 != data.end(); ++it1)
         {
-            if (!it1->isObject()) {
-                Error("Bad sim component data, expected object");
-                return false;
-            }
-
             std::string componentName(it1.key().asString());
-            transform(componentName.begin(), componentName.end(), componentName.begin(), ::tolower);
 
             /* if (!a_allowUnknown) {
                  if (!IConfig::IsValidSimComponent(componentName)) {
@@ -46,74 +33,99 @@ namespace CBP
                  }
              }*/
 
-            const Json::Value* physData;
-            if (version == 0) {
-                physData = std::addressof(*it1);
-            }
-            else
-            {
-                auto& v = (*it1)["phys"];
-
-                if (v.empty()) {
-                    Error("%s: Missing physics data", componentName.c_str());
-                    return false;
-                }
-
-                if (!v.isObject()) {
-                    Error("%s: Invalid physics data", componentName.c_str());
-                    return false;
-                }
-
-                physData = std::addressof(v);
-            }
-
             configComponent_t tmp;
 
-            for (auto it2 = physData->begin(); it2 != physData->end(); ++it2)
+            if (!it1->isNull())
             {
-                if (!it2->isNumeric()) {
-                    Error("(%s) Bad value type, expected number: %d", componentName.c_str(), Enum::Underlying(it2->type()));
+                if (!it1->isObject()) {
+                    Error("Bad sim component data, expected object");
                     return false;
                 }
 
-                std::string valName = it2.key().asString();
-                transform(valName.begin(), valName.end(), valName.begin(), ::tolower);
+                const Json::Value* physData;
+                if (version == 0) {
+                    physData = std::addressof(*it1);
+                }
+                else
+                {
+                    auto& v = (*it1)["phys"];
 
-                static const std::string m("maxoffset");
-                if (version < 2 && valName == m)
-                    valName = "maxoffsety";
+                    if (v.empty()) {
+                        Error("%s: Missing physics data", componentName.c_str());
+                        return false;
+                    }
 
-                if (!tmp.Set(valName, it2->asFloat()))
-                    Warning("(%s) Unknown value: %s", componentName.c_str(), valName.c_str());
-            }
+                    if (!v.isObject()) {
+                        Error("%s: Invalid physics data", componentName.c_str());
+                        return false;
+                    }
 
-            /*for (const auto& desc : configComponent_t::descMap)
-            {
-                auto& v = (*physData)[desc.first];
-
-                if (!v.isNumeric()) {
-                    Warning("(%s) (%s) Bad value type, expected number: %d", 
-                        componentName.c_str(), desc.first.c_str(), Enum::Underlying(v.type()));
-                    continue;
+                    physData = std::addressof(v);
                 }
 
-                tmp.Set(desc.second, v.asFloat());
-            }*/
-
-            auto& ex = (*it1)["ex"];
-
-            if (!ex.empty())
-            {
-                uint32_t s = ex.get("colShape", 0).asUInt();
-
-                switch (s)
+                if (version < 3)
                 {
-                case 0:
-                    tmp.ex.colShape = ColliderShape::Sphere;
-                    break;
-                case 1:
-                    tmp.ex.colShape = ColliderShape::Capsule;
-                    break;
+                    for (auto it2 = physData->begin(); it2 != physData->end(); ++it2)
+                    {
+                        if (!it2->isNumeric()) {
+                            Error("(%s) Bad value type, expected number: %d", componentName.c_str(), Enum::Underlying(it2->type()));
+                            return false;
+                        }
+
+                        std::string valName = it2.key().asString();
+                        transform(valName.begin(), valName.end(), valName.begin(), ::tolower);
+
+                        static const std::string m("maxoffset");
+                        if (version < 2 && valName == m)
+                        {
+                            float v = it2->asFloat();
+                            float tv[3] = { v, v, v };
+                            tmp.Set("mox", tv, 3);
+                        }
+                        else
+                        {
+                            auto ik = configComponent_t::oldKeyMap.find(valName);
+                            if (ik == configComponent_t::oldKeyMap.end()) {
+                                //Warning("(%s) Unknown value: %s", componentName.c_str(), valName.c_str());
+                                continue;
+                            }
+
+                            _assert(tmp.Set(ik->second, it2->asFloat()));
+                        }
+                    }
+                }
+                else
+                {
+                    for (const auto& desc : configComponent_t::descMap)
+                    {
+                        auto& v = (*physData)[desc.first];
+
+                        if (!v.isNumeric()) {
+                            if (!v.isNull())
+                                Warning("(%s) (%s) Bad value type, expected number: %d",
+                                    componentName.c_str(), desc.first.c_str(), Enum::Underlying(v.type()));
+                            continue;
+                        }
+
+                        tmp.Set(desc.second, v.asFloat());
+                    }
+                }
+
+                auto& ex = (*it1)["ex"];
+
+                if (!ex.empty())
+                {
+                    uint32_t s = ex.get("cs", 0).asUInt();
+
+                    switch (s)
+                    {
+                    case 0:
+                        tmp.SetColShape(ColliderShape::Sphere);
+                        break;
+                    case 1:
+                        tmp.SetColShape(ColliderShape::Capsule);
+                        break;
+                    }
                 }
             }
 
@@ -135,103 +147,119 @@ namespace CBP
             auto baseaddr = reinterpret_cast<uintptr_t>(std::addressof(v.second));
 
             for (const auto& e : v.second.descMap)
-            {
-                /*if ((e.second.marker & DescUIMarker::Float3) == DescUIMarker::Float3)
-                {
-                    auto& arr = phys[e.first];
-
-                    float *data = reinterpret_cast<float*>(baseaddr + e.second.offset);
-
-                    arr[0] = data[0];
-                    arr[1] = data[1];
-                    arr[2] = data[2];
-
-                } else */
                 phys[e.first] = *reinterpret_cast<float*>(baseaddr + e.second.offset);
-            }
 
             auto& ex = simComponent["ex"];
 
-            ex["colShape"] = Enum::Underlying(v.second.ex.colShape);
+            ex["cs"] = Enum::Underlying(v.second.ex.colShape);
         }
 
-        a_out["data_version"] = Json::Value::UInt(2);
+        a_out["data_version"] = Json::Value::UInt(3);
     }
 
     void Parser::Create(const configNodes_t& a_data, Json::Value& a_out) const
     {
-        auto& nodes = a_out["nodes"];
+        auto& data = a_out["nodes"];
 
         for (const auto& e : a_data) {
-            auto& n = nodes[e.first];
+            auto& n = data[e.first];
 
-            n["femaleMovement"] = e.second.femaleMovement;
-            n["femaleCollisions"] = e.second.femaleCollisions;
-            n["maleMovement"] = e.second.maleMovement;
-            n["maleCollisions"] = e.second.maleCollisions;
+            n["fm"] = e.second.femaleMovement;
+            n["fc"] = e.second.femaleCollisions;
+            n["mm"] = e.second.maleMovement;
+            n["mc"] = e.second.maleCollisions;
 
-            auto& offmin = n["offsetMin"];
+            auto& offmin = n["o-"];
 
             offmin[0] = e.second.colOffsetMin[0];
             offmin[1] = e.second.colOffsetMin[1];
             offmin[2] = e.second.colOffsetMin[2];
 
-            auto& offmax = n["offsetMax"];
+            auto& offmax = n["o+"];
 
             offmax[0] = e.second.colOffsetMax[0];
             offmax[1] = e.second.colOffsetMax[1];
             offmax[2] = e.second.colOffsetMax[2];
         }
+
+        a_out["nodes_version"] = Json::Value::UInt(1);
     }
 
-    bool Parser::Parse(const Json::Value& a_data, configNodes_t& a_out, bool a_allowUnknown) const
+    bool Parser::Parse(const Json::Value& a_in, configNodes_t& a_out, bool a_allowUnknown) const
     {
-        auto& nodes = a_data["nodes"];
+        auto& data = a_in["nodes"];
 
-        if (nodes.empty())
+        if (data.empty())
             return false;
 
-        if (!nodes.isObject()) {
+        if (!data.isObject()) {
             Error("Expected an object");
             return false;
         }
 
-        for (auto it = nodes.begin(); it != nodes.end(); ++it)
+        uint32_t version;
+        if (!ParseVersion(a_in, "nodes_version", version)) {
+            Error("Bad version data");
+            return false;
+        }
+
+        for (auto it = data.begin(); it != data.end(); ++it)
         {
             if (!it->isObject())
                 continue;
 
             std::string k(it.key().asString());
 
-            /*if (!a_allowUnknown) {
-                if (!IConfig::IsValidNode(k)) {
-                    Warning("Discarding unknown node: %s", k.c_str());
-                    continue;
-                }
-            }*/
-
             auto& nc = a_out[k];
 
-            nc.femaleMovement = it->get("femaleMovement", false).asBool();
-            nc.femaleCollisions = it->get("femaleCollisions", false).asBool();
-            nc.maleMovement = it->get("maleMovement", false).asBool();
-            nc.maleCollisions = it->get("maleCollisions", false).asBool();
+            if (version < 1)
+            {
+                nc.femaleMovement = it->get("femaleMovement", false).asBool();
+                nc.femaleCollisions = it->get("femaleCollisions", false).asBool();
+                nc.maleMovement = it->get("maleMovement", false).asBool();
+                nc.maleCollisions = it->get("maleCollisions", false).asBool();
 
-            auto& offsetMin = (*it)["offsetMin"];
+                auto& offsetMin = (*it)["offsetMin"];
 
-            if (!offsetMin.empty()) {
-                if (!ParseFloatArray(offsetMin, nc.colOffsetMin, ARRAYSIZE(nc.colOffsetMin))) {
-                    Error("Couldn't parse offsetMin");
-                    return false;
+                if (!offsetMin.empty()) {
+                    if (!ParseFloatArray(offsetMin, nc.colOffsetMin, ARRAYSIZE(nc.colOffsetMin))) {
+                        Error("Couldn't parse offsetMin");
+                        return false;
+                    }
+                }
+
+                auto& offsetMax = (*it)["offsetMax"];
+
+                if (!offsetMax.empty()) {
+                    if (!ParseFloatArray(offsetMax, nc.colOffsetMax, ARRAYSIZE(nc.colOffsetMax))) {
+                        Error("Couldn't parse offsetMax");
+                        return false;
+                    }
                 }
             }
+            else
+            {
+                nc.femaleMovement = it->get("fm", false).asBool();
+                nc.femaleCollisions = it->get("fc", false).asBool();
+                nc.maleMovement = it->get("mm", false).asBool();
+                nc.maleCollisions = it->get("mc", false).asBool();
 
-            auto& offsetMax = (*it)["offsetMax"];
+                auto& offsetMin = (*it)["o-"];
 
-            if (!offsetMax.empty()) {
-                if (!ParseFloatArray(offsetMax, nc.colOffsetMax, ARRAYSIZE(nc.colOffsetMax))) {
-                    Error("Couldn't parse offsetMax");
-                    return false;
+                if (!offsetMin.empty()) {
+                    if (!ParseFloatArray(offsetMin, nc.colOffsetMin, ARRAYSIZE(nc.colOffsetMin))) {
+                        Error("Couldn't parse offsetMin");
+                        return false;
+                    }
+                }
+
+                auto& offsetMax = (*it)["o+"];
+
+                if (!offsetMax.empty()) {
+                    if (!ParseFloatArray(offsetMax, nc.colOffsetMax, ARRAYSIZE(nc.colOffsetMax))) {
+                        Error("Couldn't parse offsetMax");
+                        return false;
+                    }
                 }
             }
         }
@@ -249,16 +277,40 @@ namespace CBP
         a_out = IConfig::GetGlobalNodeConfig();
     }
 
-    bool Parser::ParseFloatArray(const Json::Value& a_value, float* a_out, size_t a_size) const
+    bool Parser::ParseFloatArray(const Json::Value& a_in, float* a_out, size_t a_size) const
     {
-        if (!a_value.isArray())
+        if (!a_in.isArray())
             return false;
 
-        if (a_value.size() != a_size)
+        if (a_in.size() != a_size)
             return false;
 
-        for (size_t i = 0; i < a_size; i++)
-            a_out[i] = a_value.get(i, 0.0f).asFloat();
+        for (uint32_t i = 0; i < a_size; i++) 
+        {
+            auto& v = a_in[i];
+
+            if (!v.isNumeric())
+                return false;
+
+            a_out[i] = v.asFloat();
+        }
+
+        return true;
+    }
+
+    bool Parser::ParseVersion(const Json::Value& a_in, const char *a_key, uint32_t &a_out) const
+    {
+        if (a_in.isMember(a_key))
+        {
+            auto& v = a_in[a_key];
+
+            if (!v.isNumeric())
+                return false;
+            
+            a_out = static_cast<uint32_t>(v.asUInt());
+        }
+        else
+            a_out = 0;
 
         return true;
     }
@@ -1159,7 +1211,7 @@ namespace CBP
 
             a_out << root;
 
-            return static_cast<size_t>(root.size());
+            return size_t(2);
         }
         catch (const std::exception& e)
         {
