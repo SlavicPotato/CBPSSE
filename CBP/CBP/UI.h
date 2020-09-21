@@ -165,6 +165,8 @@ namespace CBP
 
         void SetWindowDimensions(float a_offsetX = 0.0f, float a_sizeX = -1.0f, float a_sizeY = -1.0f);
 
+        inline bool CanClip() const;
+
     private:
 
         float m_posOffset = 0.0f;
@@ -209,8 +211,7 @@ namespace CBP
             configComponents_t& a_data,
             configComponentsValue_t& a_pair,
             const componentValueDescMap_t::vec_value_type& a_desc,
-            float* a_val,
-            size_t a_size
+            float* a_val
         ) = 0;
 
         virtual void OnColliderShapeChange(
@@ -282,12 +283,14 @@ namespace CBP
 
         __forceinline bool DrawSlider(
             const componentValueDescMap_t::vec_value_type& a_entry,
-            float* a_pValue);
+            float* a_pValue,
+            bool a_scalar);
 
         __forceinline bool DrawSlider(
             const componentValueDescMap_t::vec_value_type& a_entry,
             float* a_pValue,
-            const armorCacheEntry_t::mapped_type* a_cacheEntry);
+            const armorCacheEntry_t::mapped_type* a_cacheEntry,
+            bool a_scalar);
 
         __forceinline void DrawColliderShapeCombo(
             T a_handle,
@@ -475,8 +478,7 @@ namespace CBP
             PhysicsProfile::base_type& a_data,
             PhysicsProfile::base_type::value_type& a_pair,
             const componentValueDescMap_t::vec_value_type& a_desc,
-            float* a_val,
-            size_t a_size);
+            float* a_val);
 
         virtual void OnColliderShapeChange(
             int a_handle,
@@ -740,8 +742,7 @@ namespace CBP
             configComponents_t& a_data,
             configComponentsValue_t& a_pair,
             const componentValueDescMap_t::vec_value_type& a_desc,
-            float* a_val,
-            size_t a_size);
+            float* a_val);
 
         virtual void OnColliderShapeChange(
             SKSE::FormID a_formid,
@@ -903,8 +904,7 @@ namespace CBP
                 configComponents_t& a_data,
                 configComponentsValue_t& a_pair,
                 const componentValueDescMap_t::vec_value_type& a_desc,
-                float* a_val,
-                size_t a_size);
+                float* a_val);
 
             virtual void OnColliderShapeChange(
                 SKSE::ObjectHandle a_handle,
@@ -953,8 +953,7 @@ namespace CBP
                 configComponents_t& a_data,
                 configComponentsValue_t& a_pair,
                 const componentValueDescMap_t::vec_value_type& a_desc,
-                float* a_val,
-                size_t a_size);
+                float* a_val);
 
             virtual void OnColliderShapeChange(
                 SKSE::ObjectHandle a_handle,

@@ -59,15 +59,13 @@ namespace CBP
             offsetof(configComponent_t, phys.maxOffset[1]),
             "", 0.0f, 100.0f,
             "",
-            "",
-            DescUIMarker::NoDraw
+            ""
         }},
         {"moz", {
             offsetof(configComponent_t, phys.maxOffset[2]),
             "", 0.0f, 100.0f,
             "",
-            "",
-            DescUIMarker::NoDraw
+            ""
         }},
         {"lx", {
             offsetof(configComponent_t, phys.linear[0]),
@@ -81,15 +79,13 @@ namespace CBP
             offsetof(configComponent_t, phys.linear[1]),
             "", 0.0f, 10.0f,
             "",
-            "",
-            DescUIMarker::NoDraw
+            ""
         }},
         {"lz", {
-            offsetof(configComponent_t, phys.linear[1]),
+            offsetof(configComponent_t, phys.linear[2]),
             "", 0.0f, 10.0f ,
             "",
-            "",
-            DescUIMarker::NoDraw
+            ""
         }},
         {"rx", {
             offsetof(configComponent_t, phys.rotational[0]),
@@ -103,16 +99,14 @@ namespace CBP
             "",
             0.0f, 1.0f,
             "",
-            "",
-            DescUIMarker::NoDraw
+            ""
         }},
         {"rz", {
             offsetof(configComponent_t, phys.rotational[2]),
             "",
             0.0f, 1.0f,
             "",
-            "",
-            DescUIMarker::NoDraw
+            ""
         }},
         {"cox", {
             offsetof(configComponent_t, phys.cogOffset[0]),
@@ -127,16 +121,14 @@ namespace CBP
             "",
             -100.0f, 100.0f,
             "",
-            "",
-            DescUIMarker::NoDraw
+            ""
         }},
         {"coz", {
             offsetof(configComponent_t, phys.cogOffset[2]),
             "",
             -100.0f, 100.0f,
             "",
-            "",
-            DescUIMarker::NoDraw
+            ""
         }},
         {"r", {
             offsetof(configComponent_t, phys.resistance),
@@ -211,19 +203,17 @@ namespace CBP
         }},
         {"coy-", {
             offsetof(configComponent_t, phys.offsetMin[1]),
-            "colsphereoffsetymax",
+            "coy+",
             -50.0f, 50.0f,
             "",
-            "",
-            DescUIMarker::NoDraw
+            ""
         }},
         {"coz-", {
             offsetof(configComponent_t, phys.offsetMin[2]),
-            "colsphereoffsetzmax",
+            "coz+",
             -50.0f, 50.0f,
             "",
-            "",
-            DescUIMarker::NoDraw
+            ""
         }},
         {"cox+", {
             offsetof(configComponent_t, phys.offsetMax[0]),
@@ -235,19 +225,17 @@ namespace CBP
         }},
         {"coy+", {
             offsetof(configComponent_t, phys.offsetMax[1]),
-            "colsphereoffsetymin",
+            "coy-",
             -50.0f, 50.0f,
             "",
-            "",
-            DescUIMarker::NoDraw
+            ""
         }},
         {"coz+", {
             offsetof(configComponent_t, phys.offsetMax[2]),
-            "colsphereoffsetzmin",
+            "coz-",
             -50.0f, 50.0f,
             "",
-            "",
-            DescUIMarker::NoDraw
+            ""
         }},
         {"crx", {
             offsetof(configComponent_t, phys.colRot[0]),
@@ -263,7 +251,7 @@ namespace CBP
             -360.0f, 360.0f,
             "",
             "",
-            DescUIMarker::NoDraw
+            DescUIMarker::Misc1
         }},
         {"crz", {
             offsetof(configComponent_t, phys.colRot[2]),
@@ -271,7 +259,7 @@ namespace CBP
             -360.0f, 360.0f,
             "",
             "",
-            DescUIMarker::NoDraw
+            DescUIMarker::Misc1
         }},
         {"cb", {
             offsetof(configComponent_t, phys.colBounciness),
@@ -281,7 +269,7 @@ namespace CBP
             "Bounciness",
             DescUIMarker::EndGroup,
             DescUIGroupType::Collisions
-        }}
+        }} 
         }
     );
 

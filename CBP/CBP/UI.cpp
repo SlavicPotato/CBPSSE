@@ -1,5 +1,7 @@
 ﻿#include "pch.h"
 
+#include "imgui_internal.h"
+
 namespace CBP
 {
     const std::unordered_map<MiscHelpText, const char*> UIBase::m_helpText({
@@ -281,6 +283,13 @@ namespace CBP
         ImGui::SetNextWindowSizeConstraints(m_sizeData.sizeMin, m_sizeData.sizeMax);
     }
 
+    bool UIBase::CanClip() const
+    {
+        auto window = ImGui::GetCurrentWindow();
+        _assert(window != nullptr);
+        return window->SkipItems;
+    }
+
     template <class T>
     void UIProfileBase<T>::DrawCreateNew()
     {
@@ -291,10 +300,9 @@ namespace CBP
         {
             if (strlen(m_state.new_input))
             {
-                T profile;
-
                 auto& pm = GlobalProfileManager::GetSingleton<T>();
 
+                T profile;
                 if (pm.CreateProfile(m_state.new_input, profile))
                 {
                     std::string name(profile.Name());
@@ -517,23 +525,21 @@ namespace CBP
         PhysicsProfile::base_type& a_data,
         PhysicsProfile::base_type::value_type& a_pair,
         const componentValueDescMap_t::vec_value_type& a_desc,
-        float* a_val,
-        size_t a_size)
+        float* a_val)
     {
         const auto& globalConfig = IConfig::GetGlobalConfig();
 
         if (globalConfig.ui.clampValuesMain)
-            for (size_t i = 0; i < a_size; i++)
-                a_val[i] = std::clamp(a_val[i], a_desc.second.min, a_desc.second.max);
+            *a_val = std::clamp(*a_val, a_desc.second.min, a_desc.second.max);
 
         Propagate(a_data, nullptr, a_pair, [&](configComponent_t& a_v) {
-            a_v.Set(a_desc.second, a_val, a_size); });
+            a_v.Set(a_desc.second, *a_val); });
 
         if (a_desc.second.counterpart.size() && globalConfig.ui.syncWeightSlidersMain) {
-            a_pair.second.Set(a_desc.second.counterpart, a_val, a_size);
+            a_pair.second.Set(a_desc.second.counterpart, *a_val);
 
             Propagate(a_data, nullptr, a_pair, [&](configComponent_t& a_v) {
-                a_v.Set(a_desc.second.counterpart, a_val, a_size); });
+                a_v.Set(a_desc.second.counterpart, *a_val); });
         }
     }
 
@@ -958,34 +964,31 @@ namespace CBP
         configComponents_t& a_data,
         configComponentsValue_t& a_pair,
         const componentValueDescMap_t::vec_value_type& a_desc,
-        float* a_val,
-        size_t a_size)
+        float* a_val)
     {
         const auto& globalConfig = IConfig::GetGlobalConfig();
 
         if (globalConfig.ui.clampValuesMain)
-            for (size_t i = 0; i < a_size; i++)
-                a_val[i] = std::clamp(a_val[i], a_desc.second.min, a_desc.second.max);
+            *a_val = std::clamp(*a_val, a_desc.second.min, a_desc.second.max);
 
         auto& raceConf = IConfig::GetOrCreateRacePhysicsConfig(a_formid);
         auto& entry = raceConf[a_pair.first];
 
         auto addr = reinterpret_cast<uintptr_t>(std::addressof(entry)) + a_desc.second.offset;
 
-        for (size_t i = 0; i < a_size; i++)
-            reinterpret_cast<float*>(addr)[i] = a_val[i];
+        *reinterpret_cast<float*>(addr) = *a_val;
 
         Propagate(a_data, std::addressof(raceConf), a_pair, [&](configComponent_t& a_v) {
-            a_v.Set(a_desc.second, a_val, a_size); });
+            a_v.Set(a_desc.second, *a_val); });
 
         if (a_desc.second.counterpart.size() &&
             globalConfig.ui.syncWeightSlidersRace)
         {
-            a_pair.second.Set(a_desc.second.counterpart, a_val, a_size);
-            entry.Set(a_desc.second.counterpart, a_val, a_size);
+            a_pair.second.Set(a_desc.second.counterpart, *a_val);
+            entry.Set(a_desc.second.counterpart, *a_val);
 
             Propagate(a_data, std::addressof(raceConf), a_pair, [&](configComponent_t& a_v) {
-                a_v.Set(a_desc.second.counterpart, a_val, a_size); });
+                a_v.Set(a_desc.second.counterpart, *a_val); });
         }
 
         MarkChanged();
@@ -2481,34 +2484,31 @@ namespace CBP
         configComponents_t& a_data,
         configComponentsValue_t& a_pair,
         const componentValueDescMap_t::vec_value_type& a_desc,
-        float* a_val,
-        size_t a_size)
+        float* a_val)
     {
         const auto& globalConfig = IConfig::GetGlobalConfig();
 
         if (globalConfig.ui.clampValuesMain)
-            for (size_t i = 0; i < a_size; i++)
-                a_val[i] = std::clamp(a_val[i], a_desc.second.min, a_desc.second.max);
+            *a_val = std::clamp(*a_val, a_desc.second.min, a_desc.second.max);
 
         auto& actorConf = IConfig::GetOrCreateActorPhysicsConfig(a_handle);
         auto& entry = actorConf[a_pair.first];
 
         auto addr = reinterpret_cast<uintptr_t>(std::addressof(entry)) + a_desc.second.offset;
 
-        for (size_t i = 0; i < a_size; i++)
-            reinterpret_cast<float*>(addr)[i] = a_val[i];
+        *reinterpret_cast<float*>(addr) = *a_val;
 
         Propagate(a_data, std::addressof(actorConf), a_pair, [&](configComponent_t& a_v) {
-            a_v.Set(a_desc.second, a_val, a_size); });
+            a_v.Set(a_desc.second, *a_val); });
 
         if (a_desc.second.counterpart.size() &&
             globalConfig.ui.syncWeightSlidersMain)
         {
-            a_pair.second.Set(a_desc.second.counterpart, a_val, a_size);
-            entry.Set(a_desc.second.counterpart, a_val, a_size);
+            a_pair.second.Set(a_desc.second.counterpart, *a_val);
+            entry.Set(a_desc.second.counterpart, *a_val);
 
             Propagate(a_data, std::addressof(actorConf), a_pair, [&](configComponent_t& a_v) {
-                a_v.Set(a_desc.second.counterpart, a_val, a_size); });
+                a_v.Set(a_desc.second.counterpart, *a_val); });
         }
 
         DCBP::DispatchActorTask(a_handle, UTTask::UTTAction::UpdateConfig);
@@ -2605,23 +2605,23 @@ namespace CBP
         configComponents_t& a_data,
         configComponentsValue_t& a_pair,
         const componentValueDescMap_t::vec_value_type& a_desc,
-        float* a_val,
-        size_t a_size)
+        float* a_val)
     {
         const auto& globalConfig = IConfig::GetGlobalConfig();
 
         if (globalConfig.ui.clampValuesMain)
-            for (size_t i = 0; i < a_size; i++)
-                a_val[i] = std::clamp(a_val[i], a_desc.second.min, a_desc.second.max);
+            *a_val = std::clamp(*a_val, a_desc.second.min, a_desc.second.max);
 
         Propagate(a_data, nullptr, a_pair, [&](configComponent_t& a_v) {
-            a_v.Set(a_desc.second, a_val, a_size); });
+            a_v.Set(a_desc.second, *a_val); });
 
-        if (a_desc.second.counterpart.size() && globalConfig.ui.syncWeightSlidersMain) {
-            a_pair.second.Set(a_desc.second.counterpart, a_val, a_size);
+        if (a_desc.second.counterpart.size() &&
+            globalConfig.ui.syncWeightSlidersMain)
+        {
+            a_pair.second.Set(a_desc.second.counterpart, *a_val);
 
             Propagate(a_data, nullptr, a_pair, [&](configComponent_t& a_v) {
-                a_v.Set(a_desc.second.counterpart, a_val, a_size); });
+                a_v.Set(a_desc.second.counterpart, *a_val); });
         }
 
         DCBP::UpdateConfigOnAllActors();
@@ -2956,39 +2956,54 @@ namespace CBP
     template <class T, UIEditorID ID>
     bool UISimComponent<T, ID>::DrawSlider(
         const componentValueDescMap_t::vec_value_type& a_entry,
-        float* a_pValue)
+        float* a_pValue,
+        bool a_scalar)
     {
-        if ((a_entry.second.marker & DescUIMarker::Float3) == DescUIMarker::Float3)
-            return ImGui::SliderFloat3(a_entry.second.descTag.c_str(), a_pValue, a_entry.second.min, a_entry.second.max);
+        if (a_scalar)
+            return ImGui::SliderScalar(
+                "",
+                ImGuiDataType_Float,
+                a_pValue,
+                &a_entry.second.min,
+                &a_entry.second.max,
+                "%.3f");
         else
-            return ImGui::SliderFloat(a_entry.second.descTag.c_str(), a_pValue, a_entry.second.min, a_entry.second.max);
+            return ImGui::SliderFloat(
+                a_entry.second.descTag.c_str(), 
+                a_pValue,
+                a_entry.second.min, 
+                a_entry.second.max);
     }
 
     template <class T, UIEditorID ID>
     bool UISimComponent<T, ID>::DrawSlider(
         const componentValueDescMap_t::vec_value_type& a_entry,
         float* a_pValue,
-        const armorCacheEntry_t::mapped_type* a_cacheEntry)
+        const armorCacheEntry_t::mapped_type* a_cacheEntry,
+        bool a_scalar)
     {
         auto it = a_cacheEntry->find(a_entry.first);
         if (it == a_cacheEntry->end())
-            return DrawSlider(a_entry, a_pValue);
+            return DrawSlider(a_entry, a_pValue, a_scalar);
 
         ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.66f, 0.13f, 1.0f));
 
+        _snprintf_s(m_scBuffer1, _TRUNCATE, "%s [%u|%.3f]", "%.3f",
+            it->second.first, GetActualSliderValue(it->second, *a_pValue));
+
         bool res;
 
-        if ((a_entry.second.marker & DescUIMarker::Float3) == DescUIMarker::Float3)
-            res = ImGui::SliderFloat3(
-                a_entry.second.descTag.c_str(),
-                a_pValue,
-                a_entry.second.min,
-                a_entry.second.max);
-        else
+        if (a_scalar)
         {
-            _snprintf_s(m_scBuffer1, _TRUNCATE, "%s [%u|%.3f]", "%.3f",
-                it->second.first, GetActualSliderValue(it->second, *a_pValue));
-
+            res = ImGui::SliderScalar(
+                "",
+                ImGuiDataType_Float,
+                a_pValue,
+                &a_entry.second.min,
+                &a_entry.second.max,
+                m_scBuffer1);
+        }
+        else {
             res = ImGui::SliderFloat(
                 a_entry.second.descTag.c_str(),
                 a_pValue,
@@ -3045,6 +3060,9 @@ namespace CBP
         const configNode_t* a_nodeConfig
     )
     {
+        if (CanClip())
+            return;
+
         const auto& globalConfig = IConfig::GetGlobalConfig();
 
         auto aoSect = GetArmorOverrideSection(a_handle, a_pair.first);
@@ -3058,15 +3076,14 @@ namespace CBP
         ImGui::PushID(static_cast<const void*>(std::addressof(a_pair)));
         ImGui::PushItemWidth(ImGui::GetFontSize() * -14.0f);
 
+        int float3Index;
+        bool drawingFloat3 = false;
+        const componentValueDesc_t* currentDesc;
+
         for (const auto& e : configComponent_t::descMap)
         {
-            if ((e.second.marker & DescUIMarker::NoDraw) == DescUIMarker::NoDraw)
-                continue;
-
             auto addr = reinterpret_cast<uintptr_t>(std::addressof(a_pair.second)) + e.second.offset;
             float* pValue = reinterpret_cast<float*>(addr);
-
-            size_t sz = (e.second.marker & DescUIMarker::Float3) == DescUIMarker::Float3 ? 3 : 1;
 
             if ((e.second.marker & DescUIMarker::BeginGroup) == DescUIMarker::BeginGroup)
             {
@@ -3101,17 +3118,74 @@ namespace CBP
 
             if (!drawingGroup || (drawingGroup && openState && showCurrentGroup))
             {
-                if (aoSect)
+                if (!drawingFloat3 && (e.second.marker & DescUIMarker::Float3) == DescUIMarker::Float3)
                 {
-                    if (DrawSlider(e, pValue, aoSect))
-                        OnSimSliderChange(a_handle, a_data, a_pair, e, pValue, sz);
+                    ImGuiContext& g = *GImGui;
+
+                    currentDesc = std::addressof(e.second);
+                    float3Index = 0;
+                    drawingFloat3 = true;
+
+                    ImGui::BeginGroup();
+                    ImGui::PushID(e.second.descTag.c_str());
+                    ImGui::PushMultiItemsWidths(3, ImGui::CalcItemWidth());
+                }
+
+                if (drawingFloat3)
+                {
+                    ImGuiContext& g = *GImGui;
+
+                    ImGui::PushID(float3Index);
+                    if (float3Index > 0)
+                        ImGui::SameLine(0, g.Style.ItemInnerSpacing.x);
+
+                    if (aoSect)
+                    {
+                        if (DrawSlider(e, pValue, aoSect, true))
+                            OnSimSliderChange(a_handle, a_data, a_pair, e, pValue);
+                    }
+                    else
+                    {
+                        if (ImGui::SliderScalar("", ImGuiDataType_Float, pValue, &e.second.min, &e.second.max, "%.3f"))
+                            OnSimSliderChange(a_handle, a_data, a_pair, e, pValue);
+                    }
+
+                    ImGui::PopID();
+                    ImGui::PopItemWidth();
+
+                    float3Index++;
+                    if (float3Index == 3)
+                    {
+                        ImGui::PopID();
+                        const char* label_end = ImGui::FindRenderedTextEnd(currentDesc->descTag.c_str());
+                        if (currentDesc->descTag.c_str() != label_end)
+                        {
+                            ImGui::SameLine(0, g.Style.ItemInnerSpacing.x);
+                            ImGui::TextEx(currentDesc->descTag.c_str(), label_end);
+                        }
+
+                        ImGui::EndGroup();
+
+                        HelpMarker(currentDesc->helpText);
+
+                        drawingFloat3 = false;
+                    }
                 }
                 else
                 {
-                    if (DrawSlider(e, pValue))
-                        OnSimSliderChange(a_handle, a_data, a_pair, e, pValue, sz);
+                    if (aoSect)
+                    {
+                        if (DrawSlider(e, pValue, aoSect, false))
+                            OnSimSliderChange(a_handle, a_data, a_pair, e, pValue);
+                    }
+                    else
+                    {
+                        if (ImGui::SliderFloat(e.second.descTag.c_str(), pValue, e.second.min, e.second.max))
+                            OnSimSliderChange(a_handle, a_data, a_pair, e, pValue);
+                    }
+
+                    HelpMarker(e.second.helpText);
                 }
-                HelpMarker(e.second.helpText);
             }
 
             if ((e.second.marker & DescUIMarker::EndGroup) == DescUIMarker::EndGroup)

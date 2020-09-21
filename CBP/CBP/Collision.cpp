@@ -59,7 +59,7 @@ namespace CBP
                         deltaV.z * n.z;
 
                     float bias = depth > 0.01f ?
-                        (m_timeStep * 3500.0f) * std::max(depth - 0.01f, 0.0f): 0.0f;
+                        (m_timeStep * 3500.0f) * std::max(depth - 0.01f, 0.0f) : 0.0f;
 
                     float impulse = std::max(deltaVDotN + bias, 0.0f);
 

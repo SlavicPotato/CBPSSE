@@ -200,8 +200,7 @@ namespace CBP
         BeginGroup = 1 << 0,
         EndGroup = 1 << 1,
         Misc1 = 1 << 2,
-        Float3 = 1 << 3,
-        NoDraw = 1 << 4
+        Float3 = 1 << 3
     };
 
     DEFINE_ENUM_CLASS_BITWISE(DescUIMarker);
