@@ -1652,7 +1652,7 @@ namespace CBP
                 {
                     ImGui::SetWindowFontScale(globalConfig.ui.fontScale);
 
-                    m_state.menu.saveToDefaultGlob = 
+                    m_state.menu.saveToDefaultGlob =
                         ImGui::MenuItem("Store default profile");
 
                     ImGui::EndMenu();
@@ -2036,9 +2036,6 @@ namespace CBP
 
                 SliderFloatGlobal("Max. substeps", &globalConfig.phys.maxSubSteps, 1.0f, 20.0f, "%.0f");
                 HelpMarker(MiscHelpText::maxSubSteps);
-
-                SliderFloatGlobal("Max. penetration depth", &globalConfig.phys.colMaxPenetrationDepth, 0.5f, 100.0f);
-                HelpMarker(MiscHelpText::colMaxPenetrationDepth);
 
                 ImGui::Spacing();
             }
@@ -2849,7 +2846,7 @@ namespace CBP
                     }
 
                     UICommon::MessageDialog(
-                        "Copy failed", 
+                        "Copy failed",
                         "Could not copy values from selected profile");
 
                     if (ImGui::BeginPopup("mirror_popup"))

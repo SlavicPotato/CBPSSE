@@ -172,7 +172,6 @@ namespace CBP
         float m_colOffsetY = 0.0f;
         float m_colOffsetZ = 0.0f;
         float m_resistance = 0.0f;
-        float m_restitutionBias = 0.0f;
 
         uint64_t m_groupId;
         uint64_t m_parentId;
