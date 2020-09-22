@@ -3120,8 +3120,6 @@ namespace CBP
             {
                 if (!drawingFloat3 && (e.second.marker & DescUIMarker::Float3) == DescUIMarker::Float3)
                 {
-                    ImGuiContext& g = *GImGui;
-
                     currentDesc = std::addressof(e.second);
                     float3Index = 0;
                     drawingFloat3 = true;
@@ -3139,16 +3137,12 @@ namespace CBP
                     if (float3Index > 0)
                         ImGui::SameLine(0, g.Style.ItemInnerSpacing.x);
 
-                    if (aoSect)
-                    {
-                        if (DrawSlider(e, pValue, aoSect, true))
-                            OnSimSliderChange(a_handle, a_data, a_pair, e, pValue);
-                    }
-                    else
-                    {
-                        if (ImGui::SliderScalar("", ImGuiDataType_Float, pValue, &e.second.min, &e.second.max, "%.3f"))
-                            OnSimSliderChange(a_handle, a_data, a_pair, e, pValue);
-                    }
+                    bool changed = aoSect ?
+                        DrawSlider(e, pValue, aoSect, true) :
+                        ImGui::SliderScalar("", ImGuiDataType_Float, pValue, &e.second.min, &e.second.max, "%.3f");
+
+                    if (changed)
+                        OnSimSliderChange(a_handle, a_data, a_pair, e, pValue);
 
                     ImGui::PopID();
                     ImGui::PopItemWidth();
@@ -3157,6 +3151,7 @@ namespace CBP
                     if (float3Index == 3)
                     {
                         ImGui::PopID();
+
                         const char* label_end = ImGui::FindRenderedTextEnd(currentDesc->descTag.c_str());
                         if (currentDesc->descTag.c_str() != label_end)
                         {
@@ -3173,16 +3168,12 @@ namespace CBP
                 }
                 else
                 {
-                    if (aoSect)
-                    {
-                        if (DrawSlider(e, pValue, aoSect, false))
-                            OnSimSliderChange(a_handle, a_data, a_pair, e, pValue);
-                    }
-                    else
-                    {
-                        if (ImGui::SliderFloat(e.second.descTag.c_str(), pValue, e.second.min, e.second.max))
-                            OnSimSliderChange(a_handle, a_data, a_pair, e, pValue);
-                    }
+                    bool changed = aoSect ?
+                        DrawSlider(e, pValue, aoSect, false) :
+                        ImGui::SliderFloat(e.second.descTag.c_str(), pValue, e.second.min, e.second.max);
+
+                    if (changed)
+                        OnSimSliderChange(a_handle, a_data, a_pair, e, pValue);
 
                     HelpMarker(e.second.helpText);
                 }

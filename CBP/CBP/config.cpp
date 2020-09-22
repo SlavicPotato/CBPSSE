@@ -137,6 +137,13 @@ namespace CBP
             "Resistance",
             "Resistance"
         }},
+        {"m", {
+            offsetof(configComponent_t, phys.mass),
+            "",
+            1.0f, 1000.0f,
+            "Mass",
+            "Mass"
+        }},
         {"gb", {
             offsetof(configComponent_t, phys.gravityBias),
             "",
@@ -262,14 +269,28 @@ namespace CBP
             DescUIMarker::Misc1
         }},
         {"cb", {
-            offsetof(configComponent_t, phys.colBounciness),
+            offsetof(configComponent_t, phys.colRestitutionCoefficient),
             "",
             0.0f, 1.0f,
             "",
-            "Bounciness",
+            "Bounciness"
+        }},
+        {"cp", {
+            offsetof(configComponent_t, phys.colPenMass),
+            "",
+            1.0f, 100.0f,
+            "",
+            "Penetration mass"
+        }},
+        { "cp", {
+            offsetof(configComponent_t, phys.colPenBiasFactor),
+            "",
+            0.0f, 5.0f,
+            "",
+            "Pen. bias factor",
             DescUIMarker::EndGroup,
             DescUIGroupType::Collisions
-        }} 
+        }}
         }
     );
 

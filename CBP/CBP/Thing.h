@@ -146,7 +146,6 @@ namespace CBP
 
         NiPoint3 m_npCogOffset;
         NiPoint3 m_npGravityCorrection;
-        NiPoint3 m_npZero;
 
         NiPoint3 m_oldWorldPos;
         NiPoint3 m_velocity;
@@ -249,7 +248,8 @@ namespace CBP
         }
 
         __forceinline void AddVelocity(const NiPoint3& a_vel) {
-            SetVelocity(m_velocity + a_vel);
+            m_velocity += a_vel;
+            ClampVelocity();
         }
 
         [[nodiscard]] inline const auto& GetVelocity() const {

@@ -346,6 +346,7 @@ namespace CBP
             float linear[3]{ 0.5f, 0.1f, 0.25f };
             float rotational[3]{ 0.0f, 0.0f, 0.0f };
             float resistance = 0.0f;
+            float mass = 1.0f;
             float colSphereRadMin = 4.0f;
             float colSphereRadMax = 4.0f;
             float offsetMin[3]{ 0.0f, 0.0f, 0.0f };
@@ -353,7 +354,9 @@ namespace CBP
             float colHeightMin = 0.001f;
             float colHeightMax = 0.001f;
             float colRot[3]{ 0.0f, 0.0f, 0.0f };
-            float colBounciness = 0.25f;
+            float colRestitutionCoefficient = 0.25f;
+            float colPenBiasFactor = 1.0f;
+            float colPenMass = 1.0f;
         } phys;
 
         struct

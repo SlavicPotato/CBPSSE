@@ -2,14 +2,10 @@
 
 namespace CBP
 {
-    __forceinline static float sgn(float val) {
-        return float((0.0f < val) - (val < 0.0f));
-    }
-
     __forceinline static float mmg(float a_val, float a_min, float a_max) {
         return a_min + (a_max - a_min) * a_val;
     }
-    
+
     __forceinline static float mmw(float a_val, float a_min, float a_max) {
         return mmg(a_val / 100.0f, a_min, a_max);
     }
@@ -269,7 +265,7 @@ namespace CBP
 
         if (m_conf.phys.resistance > 0.0f) {
             m_resistanceOn = true;
-            m_resistance = std::clamp(m_conf.phys.resistance, 0.0f, 20.0f);
+            m_resistance = std::clamp(m_conf.phys.resistance, 0.0f, 100.0f);
         }
         else
             m_resistanceOn = false;
@@ -284,7 +280,14 @@ namespace CBP
             m_obj->m_localTransform.rot = m_initialNodeRot;
         }
 
-        m_conf.phys.colBounciness = mmg(std::clamp(m_conf.phys.colBounciness, 0.0f, 1.0f), 0.05f, 0.75f);
+        m_conf.phys.colRestitutionCoefficient = mmg(std::clamp(m_conf.phys.colRestitutionCoefficient, 0.0f, 1.0f), 0.0f, 1.0f);
+
+        if (m_movement)
+            m_conf.phys.mass = std::clamp(m_conf.phys.mass, 1.0f, 10000.0f);
+        else
+            m_conf.phys.mass = 10000.0f;
+
+        m_conf.phys.colPenMass = std::clamp(m_conf.phys.colPenMass, 1.0f, 100.0f);
     }
 
     void SimComponent::Reset()
@@ -300,7 +303,7 @@ namespace CBP
 
         m_collisionData.Update();
 
-        m_velocity = m_npZero;
+        m_velocity = NiPoint3();
 
         m_applyForceQueue.swap(decltype(m_applyForceQueue)());
     }
@@ -314,16 +317,17 @@ namespace CBP
 
             NiPoint3 diff(target - m_oldWorldPos);
 
-            if (std::fabs(diff.x) > 150.0f ||
-                std::fabs(diff.y) > 150.0f ||
-                std::fabs(diff.z) > 150.0f)
-            {
+            float ax = std::fabs(diff.x);
+            float ay = std::fabs(diff.y);
+            float az = std::fabs(diff.z);
+
+            if (ax > 250.0f || ay > 250.0f || az > 250.0f) {
                 Reset();
                 return;
             }
 
             // Compute the "Spring" Force
-            NiPoint3 diff2(diff.x * diff.x * sgn(diff.x), diff.y * diff.y * sgn(diff.y), diff.z * diff.z * sgn(diff.z));
+            NiPoint3 diff2(diff.x * ax, diff.y * ay, diff.z * az);
             NiPoint3 force = (diff * m_conf.phys.stiffness) + (diff2 * m_conf.phys.stiffness2);
 
             force.z -= m_conf.phys.gravityBias;
@@ -332,14 +336,13 @@ namespace CBP
             {
                 auto& current = m_applyForceQueue.front();
 
-                auto vD = m_objParent->m_worldTransform * current.force;
-                auto& vP = m_objParent->m_worldTransform.pos;
+                float forceMag = current.force.Length();
+                auto vDir = m_objParent->m_worldTransform.rot * current.force;
+                vDir.Normalize();
 
-                force += (vD - vP) / a_timeStep;
+                force += (vDir * forceMag) / a_timeStep;
 
-                current.steps--;
-
-                if (!current.steps)
+                if (!current.steps--)
                     m_applyForceQueue.pop();
             }
 
@@ -348,16 +351,6 @@ namespace CBP
 
             SetVelocity((m_velocity + (force * a_timeStep)) -
                 (m_velocity * ((m_conf.phys.damping * a_timeStep) * (1.0f + res))));
-
-            /*if (m_resistanceOn)
-            {
-                auto l = m_velocity.Length();
-                if (l >= _EPSILON)
-                {
-                    NiPoint3 n(m_velocity.x / l, m_velocity.y / l, m_velocity.z / l);
-                    m_velocity -= n * (l * m_resistance);
-                }
-            }*/
 
             auto invRot = m_objParent->m_worldTransform.rot.Transpose();
 

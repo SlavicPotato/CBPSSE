@@ -9,6 +9,8 @@ namespace CBP
         a_world->setCollisionCheckCallback(collisionCheckFunc);
     }
 
+    int i = 0;
+
     void ICollision::onContact(const CollisionCallback::CallbackData& callbackData)
     {
         using EventType = CollisionCallback::ContactPair::EventType;
@@ -58,16 +60,28 @@ namespace CBP
                         deltaV.y * n.y +
                         deltaV.z * n.z;
 
-                    float bias = depth > 0.01f ?
-                        (m_timeStep * 3500.0f) * std::max(depth - 0.01f, 0.0f) : 0.0f;
+                    auto pbf = std::max(conf1.phys.colPenBiasFactor, conf2.phys.colPenBiasFactor);
 
-                    float impulse = std::max(deltaVDotN + bias, 0.0f);
+                    float bias = depth > 0.01f ?
+                        (m_timeStep * (2880.0f * pbf)) * std::max(depth - 0.01f, 0.0f) : 0.0f;
+
+                    float sma = 1.0f / conf1.phys.mass;
+                    float smb = 1.0f / conf2.phys.mass;
+                    float spm = 1.0f / std::max(conf1.phys.colPenMass, conf2.phys.colPenMass);
+
+                    float impulse = std::max((deltaVDotN + bias) / (sma + smb), 0.0f);
 
                     if (sc1->HasMovement())
-                        sc1->AddVelocity(n * (-impulse * conf1.phys.colBounciness));
+                    {
+                        float Jm = (1.0f + conf1.phys.colRestitutionCoefficient) * impulse;
+                        sc1->AddVelocity(((n * -Jm) * sma) * spm);
+                    }
 
                     if (sc2->HasMovement())
-                        sc2->AddVelocity(n * (impulse * conf2.phys.colBounciness));
+                    {
+                        float Jm = (1.0f + conf2.phys.colRestitutionCoefficient) * impulse;
+                        sc2->AddVelocity(((n * Jm) * smb) * spm);
+                    }
                 }
             }
             break;
