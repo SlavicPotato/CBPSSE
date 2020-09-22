@@ -282,7 +282,7 @@ namespace CBP
             "",
             "Penetration mass"
         }},
-        { "cp", {
+        { "ce", {
             offsetof(configComponent_t, phys.colPenBiasFactor),
             "",
             0.0f, 5.0f,

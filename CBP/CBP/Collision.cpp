@@ -9,13 +9,9 @@ namespace CBP
         a_world->setCollisionCheckCallback(collisionCheckFunc);
     }
 
-    int i = 0;
-
     void ICollision::onContact(const CollisionCallback::CallbackData& callbackData)
     {
         using EventType = CollisionCallback::ContactPair::EventType;
-
-        //auto& globalConf = IConfig::GetGlobalConfig();
 
         auto nbContactPairs = callbackData.getNbContactPairs();
 
@@ -74,13 +70,13 @@ namespace CBP
                     if (sc1->HasMovement())
                     {
                         float Jm = (1.0f + conf1.phys.colRestitutionCoefficient) * impulse;
-                        sc1->AddVelocity(((n * -Jm) * sma) * spm);
+                        sc1->AddVelocity((n * -Jm) * (sma * spm));
                     }
 
                     if (sc2->HasMovement())
                     {
                         float Jm = (1.0f + conf2.phys.colRestitutionCoefficient) * impulse;
-                        sc2->AddVelocity(((n * Jm) * smb) * spm);
+                        sc2->AddVelocity((n * Jm) * (smb * spm));
                     }
                 }
             }

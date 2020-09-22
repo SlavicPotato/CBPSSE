@@ -283,7 +283,7 @@ namespace CBP
         m_conf.phys.colRestitutionCoefficient = mmg(std::clamp(m_conf.phys.colRestitutionCoefficient, 0.0f, 1.0f), 0.0f, 1.0f);
 
         if (m_movement)
-            m_conf.phys.mass = std::clamp(m_conf.phys.mass, 1.0f, 10000.0f);
+            m_conf.phys.mass = std::clamp(m_conf.phys.mass, 1.0f, 1000.0f);
         else
             m_conf.phys.mass = 10000.0f;
 
@@ -321,7 +321,7 @@ namespace CBP
             float ay = std::fabs(diff.y);
             float az = std::fabs(diff.z);
 
-            if (ax > 250.0f || ay > 250.0f || az > 250.0f) {
+            if (ax > 512.0f || ay > 512.0f || az > 512.0f) {
                 Reset();
                 return;
             }
@@ -330,7 +330,7 @@ namespace CBP
             NiPoint3 diff2(diff.x * ax, diff.y * ay, diff.z * az);
             NiPoint3 force = (diff * m_conf.phys.stiffness) + (diff2 * m_conf.phys.stiffness2);
 
-            force.z -= m_conf.phys.gravityBias;
+            force.z -= m_conf.phys.gravityBias * m_conf.phys.mass;
 
             if (!m_applyForceQueue.empty())
             {
@@ -349,7 +349,7 @@ namespace CBP
             float res = m_resistanceOn ?
                 (1.0f - 1.0f / ((m_velocity.Length() * 0.025f) + 1.0f)) * m_resistance : 0.0f;
 
-            SetVelocity((m_velocity + (force * a_timeStep)) -
+            SetVelocity((m_velocity + ((force / m_conf.phys.mass) * a_timeStep)) -
                 (m_velocity * ((m_conf.phys.damping * a_timeStep) * (1.0f + res))));
 
             auto invRot = m_objParent->m_worldTransform.rot.Transpose();

@@ -354,7 +354,7 @@ namespace CBP
             float colHeightMin = 0.001f;
             float colHeightMax = 0.001f;
             float colRot[3]{ 0.0f, 0.0f, 0.0f };
-            float colRestitutionCoefficient = 0.25f;
+            float colRestitutionCoefficient = 0.33f;
             float colPenBiasFactor = 1.0f;
             float colPenMass = 1.0f;
         } phys;
