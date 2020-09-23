@@ -92,8 +92,6 @@ namespace CBP
     {
         NiPoint3 force;
 
-        static_assert(sizeof(NiPoint3) == sizeof(float[3]));
-
         int steps = 1;
     };
 
@@ -115,7 +113,9 @@ namespace CBP
 
     struct configGlobalSimComponent_t
     {
-        bool showNodes = true;
+        bool showNodes = false;
+        bool syncWeightSliders = false;
+        bool clampValues = true;
     };
 
     struct configGlobal_t
@@ -142,9 +142,6 @@ namespace CBP
             configGlobalActor_t actorPhysics;
             configGlobalActor_t actorNode;
 
-            bool clampValuesMain = true;
-            bool clampValuesRace = true;
-
             configGlobalSimComponent_t actor;
             configGlobalSimComponent_t race;
             configGlobalSimComponent_t profile;
@@ -152,8 +149,6 @@ namespace CBP
             configGlobalRace_t racePhysics;
             configGlobalRace_t raceNode;
 
-            bool syncWeightSlidersMain = false;
-            bool syncWeightSlidersRace = false;
             bool selectCrosshairActor = false;
 
             float fontScale = 1.0f;

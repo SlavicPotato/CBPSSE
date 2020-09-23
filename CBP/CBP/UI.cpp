@@ -369,7 +369,7 @@ namespace CBP
     template <class T>
     void UIProfileEditorBase<T>::Draw(bool* a_active)
     {
-        const auto& globalConfig = IConfig::GetGlobalConfig();;
+        auto& globalConfig = IConfig::GetGlobalConfig();;
 
         SetWindowDimensions(400.0f);
 
@@ -481,6 +481,18 @@ namespace CBP
                     }
                 }
 
+                ImGui::Spacing();
+
+                CheckboxGlobal("Sync min/max weight sliders", &globalConfig.ui.profile.syncWeightSliders);
+                HelpMarker(MiscHelpText::syncMinMax);
+
+                ImGui::Spacing();
+
+                CheckboxGlobal("Clamp values", &globalConfig.ui.profile.clampValues);
+                HelpMarker(MiscHelpText::clampValues);
+
+                ImGui::Spacing();
+
                 if (UICommon::ConfirmDialog(
                     "Delete",
                     "Are you sure you want to delete profile '%s'?\n\n", curSelName))
@@ -548,14 +560,14 @@ namespace CBP
     {
         const auto& globalConfig = IConfig::GetGlobalConfig();
 
-        if (globalConfig.ui.clampValuesMain)
+        if (globalConfig.ui.profile.clampValues)
             *a_val = std::clamp(*a_val, a_desc.second.min, a_desc.second.max);
 
         Propagate(a_data, nullptr, a_pair, [&](configComponent_t& a_v) {
             a_v.Set(a_desc.second, *a_val); });
 
         if (a_desc.second.counterpart.size() &&
-            globalConfig.ui.syncWeightSlidersMain)
+            globalConfig.ui.profile.syncWeightSliders)
         {
             a_pair.second.Set(a_desc.second.counterpart, *a_val);
 
@@ -913,11 +925,11 @@ namespace CBP
 
                 ImGui::Spacing();
 
-                CheckboxGlobal("Clamp values", &globalConfig.ui.clampValuesRace);
+                CheckboxGlobal("Clamp values", &globalConfig.ui.race.clampValues);
                 HelpMarker(MiscHelpText::clampValues);
 
                 ImGui::Spacing();
-                CheckboxGlobal("Sync min/max weight sliders", &globalConfig.ui.syncWeightSlidersRace);
+                CheckboxGlobal("Sync min/max weight sliders", &globalConfig.ui.race.syncWeightSliders);
                 HelpMarker(MiscHelpText::syncMinMax);
 
                 ImGui::Spacing();
@@ -1005,7 +1017,7 @@ namespace CBP
     {
         const auto& globalConfig = IConfig::GetGlobalConfig();
 
-        if (globalConfig.ui.clampValuesMain)
+        if (globalConfig.ui.race.clampValues)
             *a_val = std::clamp(*a_val, a_desc.second.min, a_desc.second.max);
 
         auto& raceConf = IConfig::GetOrCreateRacePhysicsConfig(a_formid);
@@ -1019,7 +1031,7 @@ namespace CBP
             a_v.Set(a_desc.second, *a_val); });
 
         if (a_desc.second.counterpart.size() &&
-            globalConfig.ui.syncWeightSlidersRace)
+            globalConfig.ui.race.syncWeightSliders)
         {
             a_pair.second.Set(a_desc.second.counterpart, *a_val);
             entry.Set(a_desc.second.counterpart, *a_val);
@@ -1076,7 +1088,7 @@ namespace CBP
         {
             auto& nodeConf = IConfig::GetRaceNodeConfig(a_formid);
             auto it = nodeConf.find(e);
-
+            
             a_out.emplace_back(e, it != nodeConf.end() ?
                 std::addressof(it->second) :
                 nullptr);
@@ -1893,7 +1905,7 @@ namespace CBP
                 DCBP::QueueActorCacheUpdate();
 
             ImGui::Spacing();
-            CheckboxGlobal("Clamp values", &globalConfig.ui.clampValuesMain);
+            CheckboxGlobal("Clamp values", &globalConfig.ui.actor.clampValues);
             HelpMarker(MiscHelpText::clampValues);
 
             ImGui::SameLine(wcm.x - GetNextTextOffset("Reset", true));
@@ -1901,7 +1913,7 @@ namespace CBP
                 ImGui::OpenPopup("Reset");
 
             ImGui::Spacing();
-            CheckboxGlobal("Sync min/max weight sliders", &globalConfig.ui.syncWeightSlidersMain);
+            CheckboxGlobal("Sync min/max weight sliders", &globalConfig.ui.actor.syncWeightSliders);
             HelpMarker(MiscHelpText::syncMinMax);
 
             ImGui::Spacing();
@@ -2566,7 +2578,7 @@ namespace CBP
     {
         const auto& globalConfig = IConfig::GetGlobalConfig();
 
-        if (globalConfig.ui.clampValuesMain)
+        if (globalConfig.ui.actor.clampValues)
             *a_val = std::clamp(*a_val, a_desc.second.min, a_desc.second.max);
 
         auto& actorConf = IConfig::GetOrCreateActorPhysicsConfig(a_handle);
@@ -2580,7 +2592,7 @@ namespace CBP
             a_v.Set(a_desc.second, *a_val); });
 
         if (a_desc.second.counterpart.size() &&
-            globalConfig.ui.syncWeightSlidersMain)
+            globalConfig.ui.actor.syncWeightSliders)
         {
             a_pair.second.Set(a_desc.second.counterpart, *a_val);
             entry.Set(a_desc.second.counterpart, *a_val);
@@ -2634,7 +2646,7 @@ namespace CBP
         {
             auto& nodeConf = IConfig::GetActorNodeConfig(a_handle);
             auto it = nodeConf.find(e);
-
+            
             a_out.emplace_back(e, it != nodeConf.end() ?
                 std::addressof(it->second) :
                 nullptr);
@@ -2731,14 +2743,14 @@ namespace CBP
     {
         const auto& globalConfig = IConfig::GetGlobalConfig();
 
-        if (globalConfig.ui.clampValuesMain)
+        if (globalConfig.ui.actor.clampValues)
             *a_val = std::clamp(*a_val, a_desc.second.min, a_desc.second.max);
 
         Propagate(a_data, nullptr, a_pair, [&](configComponent_t& a_v) {
             a_v.Set(a_desc.second, *a_val); });
 
         if (a_desc.second.counterpart.size() &&
-            globalConfig.ui.syncWeightSlidersMain)
+            globalConfig.ui.actor.syncWeightSliders)
         {
             a_pair.second.Set(a_desc.second.counterpart, *a_val);
 
@@ -2798,7 +2810,7 @@ namespace CBP
         const configNode_t& a_data,
         bool a_reset)
     {
-        if (!a_handle)
+        if (!a_handle) 
         {
             auto& nodeConfig = IConfig::GetGlobalNodeConfig();
             nodeConfig.insert_or_assign(a_node, a_data);
@@ -3241,7 +3253,7 @@ namespace CBP
                     ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_DefaultOpen))
                 {
                     auto data = e.second ? *e.second : configNode_t();
-
+  
                     DrawNodeItem(a_handle, e.first, data);
 
                     ImGui::TreePop();
