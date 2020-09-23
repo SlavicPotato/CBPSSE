@@ -113,6 +113,11 @@ namespace CBP
         SKSE::ObjectHandle lastActor = 0;
     };
 
+    struct configGlobalSimComponent_t
+    {
+        bool showNodes = true;
+    };
+
     struct configGlobal_t
     {
         struct
@@ -126,7 +131,7 @@ namespace CBP
         struct
         {
             float timeTick = 1.0f / 60.0f;
-            float maxSubSteps = 7.0f;
+            float maxSubSteps = 10.0f;
             bool collisions = true;
         } phys;
 
@@ -139,6 +144,10 @@ namespace CBP
 
             bool clampValuesMain = true;
             bool clampValuesRace = true;
+
+            configGlobalSimComponent_t actor;
+            configGlobalSimComponent_t race;
+            configGlobalSimComponent_t profile;
 
             configGlobalRace_t racePhysics;
             configGlobalRace_t raceNode;
@@ -363,8 +372,6 @@ namespace CBP
         {
             ColliderShape colShape = ColliderShape::Sphere;
         } ex;
-
-        bool tainted = false;
 
         static const componentValueDescMap_t descMap;
         static const std::unordered_map<std::string, std::string> oldKeyMap;

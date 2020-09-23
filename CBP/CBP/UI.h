@@ -89,7 +89,8 @@ namespace CBP
         armorOverrides,
         offsetMin,
         offsetMax,
-        applyForce
+        applyForce,
+        showNodes
     };
 
     typedef std::pair<const std::string, configComponents_t> actorEntryPhysConf_t;
@@ -97,6 +98,8 @@ namespace CBP
 
     typedef std::pair<const std::string, configNodes_t> actorEntryNodeConf_t;
     typedef std::map<SKSE::ObjectHandle, actorEntryNodeConf_t> actorListNodeConf_t;
+
+    typedef std::vector<std::pair<const std::string, const configNode_t*>> nodeConfigList_t;
 
     class UIBase
     {
@@ -185,12 +188,52 @@ namespace CBP
         static const std::unordered_map<MiscHelpText, const char*> m_helpText;
     };
 
-    template <class T, UIEditorID ID>
-    class UISimComponent :
+    template <typename T>
+    class UINodeCommon :
         virtual protected UIBase
     {
-    public:
+    protected:
+        virtual void UpdateNodeData(
+            T a_handle,
+            const std::string& a_node,
+            const configNode_t& a_data,
+            bool a_reset) = 0;
 
+        /*void DrawConfigGroupNodeItems(
+            T a_handle,
+            const std::string& a_confGroup,
+            configNodes_t& a_data
+        );*/
+
+        void DrawNodeItem(
+            T a_handle,
+            const std::string& a_nodeName,
+            configNode_t& a_conf
+        );
+    };
+
+    template <typename T, UIEditorID ID>
+    class UINodeConfGroupMenu :
+        protected UINodeCommon<T>
+    {
+    protected:
+        virtual void DrawConfGroupNodeMenu(
+            T a_handle,
+            nodeConfigList_t& a_nodeList
+        );
+
+        void DrawConfGroupNodeMenuImpl(
+            T a_handle,
+            nodeConfigList_t& a_nodeList
+        );
+    };
+
+    template <class T, UIEditorID ID>
+    class UISimComponent :
+        virtual protected UIBase,
+        protected UINodeConfGroupMenu<T, ID>
+    {
+    public:
         void DrawSimComponents(
             T a_handle,
             configComponents_t& a_data);
@@ -203,7 +246,7 @@ namespace CBP
             T a_handle,
             configComponents_t& a_data,
             configComponentsValue_t& a_pair,
-            const configNode_t* a_nodeConfig
+            nodeConfigList_t& a_nodeConfig
         );
 
         virtual void OnSimSliderChange(
@@ -225,6 +268,8 @@ namespace CBP
             T a_handle,
             configComponents_t& a_data,
             configComponentsValue_t& a_pair) = 0;
+
+        virtual configGlobalSimComponent_t& GetSimComponentConfig() const = 0;
 
         virtual const PhysicsProfile* GetSelectedProfile() const;
 
@@ -255,21 +300,22 @@ namespace CBP
     private:
         virtual bool ShouldDrawComponent(
             T a_handle,
-            const configNode_t* a_nodeConfig) const;
+            nodeConfigList_t& a_nodeConfig) const;
 
         virtual bool HasMovement(
-            const configNode_t* a_nodeConfig) const;
+            nodeConfigList_t& a_nodeConfig) const;
 
         virtual bool HasCollisions(
-            const configNode_t* a_nodeConfig) const;
+            nodeConfigList_t& a_nodeConfig) const;
 
         virtual const armorCacheEntry_t::mapped_type* GetArmorOverrideSection(
             T a_handle,
             const std::string& a_comp) const;
 
-        virtual const configNode_t* GetNodeConfig(
+        virtual bool GetNodeConfig(
             T a_handle,
-            const std::string& a_node) const = 0;
+            const std::string& a_node,
+            nodeConfigList_t &a_out) const = 0;
 
         void DrawMirrorContextMenu(
             T a_handle,
@@ -304,7 +350,8 @@ namespace CBP
 
     template <class T, UIEditorID ID>
     class UINode :
-        virtual protected UIBase
+        virtual protected UIBase,
+        UINodeCommon<T>
     {
     public:
         UINode() = default;
@@ -315,12 +362,6 @@ namespace CBP
             configNodes_t& a_data);
 
     protected:
-
-        virtual void UpdateNodeData(
-            T a_handle,
-            const std::string& a_node,
-            const configNode_t& a_data,
-            bool a_reset) = 0;
 
         [[nodiscard]] inline std::string GetCSID(
             const std::string& a_name) const
@@ -492,9 +533,18 @@ namespace CBP
             PhysicsProfile::base_type& a_data,
             PhysicsProfile::base_type::value_type& a_pair);
 
-        virtual const configNode_t* GetNodeConfig(
+        virtual bool GetNodeConfig(
             int a_handle,
-            const std::string& a_node) const;
+            const std::string& a_node,
+            nodeConfigList_t& a_out) const;
+
+        virtual void UpdateNodeData(
+            int a_handle,
+            const std::string& a_node,
+            const configNode_t& a_data,
+            bool a_reset);
+
+        virtual configGlobalSimComponent_t& GetSimComponentConfig() const;
     };
 
     class UIProfileEditorNode :
@@ -550,7 +600,7 @@ namespace CBP
 
         UIListBase() noexcept;
         virtual ~UIListBase() noexcept = default;
-        
+
         virtual void ListDraw(listValue_t*& a_entry, const char*& a_curSelName);
         virtual void ListFilterSelected(listValue_t*& a_entry, const char*& a_curSelName);
         virtual listValue_t* ListGetSelected() = 0;
@@ -654,7 +704,7 @@ namespace CBP
         virtual void UpdateNodeData(
             SKSE::ObjectHandle a_handle,
             const std::string& a_node,
-            const NodeProfile::base_type::mapped_type& a_data,
+            const configNode_t& a_data,
             bool a_reset);
 
         [[nodiscard]] virtual ConfigClass GetActorClass(SKSE::ObjectHandle a_handle) const;
@@ -715,7 +765,7 @@ namespace CBP
         virtual void UpdateNodeData(
             SKSE::FormID a_formid,
             const std::string& a_node,
-            const NodeProfile::base_type::mapped_type& a_data,
+            const configNode_t& a_data,
             bool a_reset);
     };
 
@@ -737,6 +787,11 @@ namespace CBP
 
         virtual void ListResetAllValues(SKSE::FormID a_formid);
 
+        virtual void DrawConfGroupNodeMenu(
+            SKSE::FormID a_handle,
+            nodeConfigList_t& a_nodeList
+        );
+
         virtual void OnSimSliderChange(
             SKSE::FormID a_formid,
             configComponents_t& a_data,
@@ -755,19 +810,28 @@ namespace CBP
             configComponents_t& a_data,
             configComponentsValue_t& a_pair);
 
-        virtual const configNode_t* GetNodeConfig(
+        virtual bool GetNodeConfig(
             SKSE::FormID a_handle,
-            const std::string& a_node) const;
+            const std::string& a_node,
+            nodeConfigList_t& a_out) const;
+
+        virtual void UpdateNodeData(
+            SKSE::FormID a_handle,
+            const std::string& a_node,
+            const configNode_t& a_data,
+            bool a_reset);
 
         virtual bool ShouldDrawComponent(
             SKSE::FormID a_handle,
-            const configNode_t* a_nodeConfig) const;
+            nodeConfigList_t& a_nodeConfig) const;
 
         virtual bool HasMovement(
-            const configNode_t* a_nodeConfig) const;
+            nodeConfigList_t& a_nodeConfig) const;
 
         virtual bool HasCollisions(
-            const configNode_t* a_nodeConfig) const;
+            nodeConfigList_t& a_nodeConfig) const;
+
+        virtual configGlobalSimComponent_t& GetSimComponentConfig() const;
 
         virtual const PhysicsProfile* GetSelectedProfile() const;
 
@@ -899,6 +963,11 @@ namespace CBP
             UISimComponentActor(UIContext& a_parent);
 
         private:
+            virtual void DrawConfGroupNodeMenu(
+                SKSE::ObjectHandle a_handle,
+                nodeConfigList_t& a_nodeList
+            );
+
             virtual void OnSimSliderChange(
                 SKSE::ObjectHandle a_handle,
                 configComponents_t& a_data,
@@ -920,21 +989,30 @@ namespace CBP
 
             virtual bool ShouldDrawComponent(
                 SKSE::ObjectHandle a_handle,
-                const configNode_t* a_nodeConfig) const;
+                nodeConfigList_t& a_nodeConfig) const;
 
             virtual bool HasMovement(
-                const configNode_t* a_nodeConfig) const;
+                nodeConfigList_t& a_nodeConfig) const;
 
             virtual bool HasCollisions(
-                const configNode_t* a_nodeConfig) const;
+                nodeConfigList_t& a_nodeConfig) const;
 
             virtual const armorCacheEntry_t::mapped_type* GetArmorOverrideSection(
                 SKSE::ObjectHandle a_handle,
                 const std::string& a_comp) const;
 
-            virtual const configNode_t* GetNodeConfig(
+            virtual bool GetNodeConfig(
                 SKSE::ObjectHandle a_handle,
-                const std::string& a_node) const;
+                const std::string& a_node,
+                nodeConfigList_t& a_out) const;
+
+            virtual void UpdateNodeData(
+                SKSE::ObjectHandle a_handle,
+                const std::string& a_node,
+                const configNode_t& a_data,
+                bool a_reset);
+
+            virtual configGlobalSimComponent_t& GetSimComponentConfig() const;
 
             virtual const PhysicsProfile* GetSelectedProfile() const;
 
@@ -948,6 +1026,11 @@ namespace CBP
             UISimComponentGlobal(UIContext& a_parent);
 
         private:
+            virtual void DrawConfGroupNodeMenu(
+                SKSE::ObjectHandle a_handle,
+                nodeConfigList_t& a_nodeList
+            );
+
             virtual void OnSimSliderChange(
                 SKSE::ObjectHandle a_handle,
                 configComponents_t& a_data,
@@ -969,17 +1052,26 @@ namespace CBP
 
             virtual bool ShouldDrawComponent(
                 SKSE::ObjectHandle a_handle,
-                const configNode_t* a_nodeConfig) const;
+                nodeConfigList_t& a_nodeConfig) const;
 
             virtual bool HasMovement(
-                const configNode_t* a_nodeConfig) const;
+                nodeConfigList_t &a_nodeConfig) const;
 
             virtual bool HasCollisions(
-                const configNode_t* a_nodeConfig) const;
+                nodeConfigList_t& a_nodeConfig) const;
 
-            virtual const configNode_t* GetNodeConfig(
+            virtual bool GetNodeConfig(
                 SKSE::ObjectHandle a_handle,
-                const std::string& a_node) const;
+                const std::string& a_node,
+                nodeConfigList_t& a_out) const;
+
+            virtual void UpdateNodeData(
+                SKSE::ObjectHandle a_handle,
+                const std::string& a_node,
+                const configNode_t& a_data,
+                bool a_reset);
+
+            virtual configGlobalSimComponent_t& GetSimComponentConfig() const;
 
             virtual const PhysicsProfile* GetSelectedProfile() const;
 

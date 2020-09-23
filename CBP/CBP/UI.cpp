@@ -24,7 +24,8 @@ namespace CBP
         {MiscHelpText::armorOverrides, ""},
         {MiscHelpText::offsetMin, "Collider body offset (X, Y, Z, weight 0)"},
         {MiscHelpText::offsetMax, "Collider body offset (X, Y, Z, weight 100)"},
-        {MiscHelpText::applyForce, "Apply force to node along the X, Y and Z axes, respectively"}
+        {MiscHelpText::applyForce, "Apply force to node along the X, Y and Z axes, respectively"},
+        {MiscHelpText::showNodes, ""},
         });
 
     static const keyDesc_t comboKeyDesc({
@@ -128,6 +129,47 @@ namespace CBP
         {DIK_Y,"Y"},
         {DIK_Z,"Z"}
         });
+
+    __forceinline static void UpdateActorNodeData(
+        SKSE::ObjectHandle a_handle,
+        const std::string& a_node,
+        const configNode_t& a_data,
+        bool a_reset)
+    {
+        if (a_handle) {
+            auto& nodeConfig = IConfig::GetOrCreateActorNodeConfig(a_handle);
+            nodeConfig.insert_or_assign(a_node, a_data);
+
+            if (a_reset)
+                DCBP::ResetActors();
+            else
+                DCBP::DispatchActorTask(a_handle, UTTask::UTTAction::UpdateConfig);
+        }
+        else {
+            if (a_reset)
+                DCBP::ResetActors();
+            else
+                DCBP::UpdateConfigOnAllActors();
+        }
+    }
+
+    __forceinline static void UpdateRaceNodeData(
+        SKSE::FormID a_formid,
+        const std::string& a_node,
+        const configNode_t& a_data,
+        bool a_reset)
+    {
+        if (!a_formid)
+            return;
+
+        auto& nodeConfig = IConfig::GetOrCreateRaceNodeConfig(a_formid);
+        nodeConfig.insert_or_assign(a_node, a_data);
+
+        if (a_reset)
+            DCBP::ResetActors();
+        else
+            DCBP::UpdateConfigOnAllActors();
+    }
 
     bool UIBase::CollapsingHeader(
         const std::string& a_key,
@@ -535,7 +577,9 @@ namespace CBP
         Propagate(a_data, nullptr, a_pair, [&](configComponent_t& a_v) {
             a_v.Set(a_desc.second, *a_val); });
 
-        if (a_desc.second.counterpart.size() && globalConfig.ui.syncWeightSlidersMain) {
+        if (a_desc.second.counterpart.size() &&
+            globalConfig.ui.syncWeightSlidersMain)
+        {
             a_pair.second.Set(a_desc.second.counterpart, *a_val);
 
             Propagate(a_data, nullptr, a_pair, [&](configComponent_t& a_v) {
@@ -560,11 +604,25 @@ namespace CBP
             a_v = a_pair.second; });
     }
 
-    const configNode_t* UIProfileEditorPhysics::GetNodeConfig(
-        int a_handle,
-        const std::string&) const
+    bool UIProfileEditorPhysics::GetNodeConfig(
+        int,
+        const std::string&,
+        nodeConfigList_t&) const
     {
-        return nullptr;
+        return false;
+    }
+
+    void UIProfileEditorPhysics::UpdateNodeData(
+        int,
+        const std::string&,
+        const configNode_t&,
+        bool)
+    {
+    }
+
+    configGlobalSimComponent_t& UIProfileEditorPhysics::GetSimComponentConfig() const
+    {
+        return IConfig::GetGlobalConfig().ui.profile;
     }
 
     void UIProfileEditorNode::DrawItem(NodeProfile& a_profile)
@@ -757,21 +815,11 @@ namespace CBP
     void UIRaceEditorNode::UpdateNodeData(
         SKSE::FormID a_formid,
         const std::string& a_node,
-        const NodeProfile::base_type::mapped_type& a_data,
+        const configNode_t& a_data,
         bool a_reset)
     {
-        if (!a_formid)
-            return;
-
-        auto& nodeConfig = IConfig::GetOrCreateRaceNodeConfig(a_formid);
-        nodeConfig.insert_or_assign(a_node, a_data);
-
+        UpdateRaceNodeData(a_formid, a_node, a_data, a_reset);
         MarkChanged();
-
-        if (a_reset)
-            DCBP::ResetActors();
-        else
-            DCBP::UpdateConfigOnAllActors();
     }
 
     void UIRaceEditorNode::Draw(bool* a_active)
@@ -895,6 +943,10 @@ namespace CBP
                 CheckboxGlobal("Sync min/max weight sliders", &globalConfig.ui.syncWeightSlidersRace);
                 HelpMarker(MiscHelpText::syncMinMax);
 
+                ImGui::Spacing();
+                CheckboxGlobal("Show nodes", &globalConfig.ui.race.showNodes);
+                HelpMarker(MiscHelpText::showNodes);
+
                 ImGui::SameLine(ImGui::GetWindowContentRegionMax().x - GetNextTextOffset("Reset", true));
                 if (ButtonRight("Reset"))
                     ImGui::OpenPopup("Reset");
@@ -957,6 +1009,14 @@ namespace CBP
         IConfig::EraseRacePhysicsConfig(a_formid);
         m_listData.at(a_formid).second = IConfig::GetGlobalPhysicsConfig();
         DCBP::UpdateConfigOnAllActors();
+    }
+
+    void UIRaceEditorPhysics::DrawConfGroupNodeMenu(
+        SKSE::FormID a_formid,
+        nodeConfigList_t& a_nodeList
+    )
+    {
+        DrawConfGroupNodeMenuImpl(a_formid, a_nodeList);
     }
 
     void UIRaceEditorPhysics::OnSimSliderChange(
@@ -1025,44 +1085,73 @@ namespace CBP
         DCBP::UpdateConfigOnAllActors();
     }
 
-    const configNode_t* UIRaceEditorPhysics::GetNodeConfig(
+    bool UIRaceEditorPhysics::GetNodeConfig(
         SKSE::FormID a_formid,
-        const std::string& a_confGroup) const
+        const std::string& a_confGroup,
+        nodeConfigList_t& a_out) const
     {
         auto& cgMap = CBP::IConfig::GetConfigGroupMap();
         auto itc = cgMap.find(a_confGroup);
         if (itc == cgMap.end())
-            return nullptr;
+            return false;
 
         for (const auto& e : itc->second)
         {
             auto& nodeConf = IConfig::GetRaceNodeConfig(a_formid);
             auto it = nodeConf.find(e);
-            if (it != nodeConf.end()) {
-                return std::addressof(it->second);
-            }
+            
+            a_out.emplace_back(e, it != nodeConf.end() ?
+                std::addressof(it->second) :
+                nullptr);
         }
 
-        return nullptr;
+        return !a_out.empty();
+    }
+
+    void UIRaceEditorPhysics::UpdateNodeData(
+        SKSE::FormID a_formid,
+        const std::string& a_node,
+        const configNode_t& a_data,
+        bool a_reset)
+    {
+        UpdateRaceNodeData(a_formid, a_node, a_data, a_reset);
+        MarkChanged();
     }
 
     bool UIRaceEditorPhysics::ShouldDrawComponent(
         SKSE::FormID,
-        const configNode_t* a_nodeConfig) const
+        nodeConfigList_t& a_nodeConfig) const
     {
-        return a_nodeConfig && a_nodeConfig->Enabled();
+        for (const auto& e : a_nodeConfig)
+            if (e.second && e.second->Enabled())
+                return true;
+
+        return false;
     }
 
     bool UIRaceEditorPhysics::HasMovement(
-        const configNode_t* a_nodeConfig) const
+        nodeConfigList_t& a_nodeConfig) const
     {
-        return a_nodeConfig && a_nodeConfig->HasMovement();
+        for (const auto& e : a_nodeConfig)
+            if (e.second && e.second->HasMovement())
+                return true;
+
+        return false;
     }
 
     bool UIRaceEditorPhysics::HasCollisions(
-        const configNode_t* a_nodeConfig) const
+        nodeConfigList_t& a_nodeConfig) const
     {
-        return a_nodeConfig && a_nodeConfig->HasCollisions();
+        for (const auto& e : a_nodeConfig)
+            if (e.second && e.second->HasCollisions())
+                return true;
+
+        return false;
+    }
+
+    configGlobalSimComponent_t& UIRaceEditorPhysics::GetSimComponentConfig() const
+    {
+        return IConfig::GetGlobalConfig().ui.race;
     }
 
     const PhysicsProfile* UIRaceEditorPhysics::GetSelectedProfile() const
@@ -1838,6 +1927,10 @@ namespace CBP
             CheckboxGlobal("Sync min/max weight sliders", &globalConfig.ui.syncWeightSlidersMain);
             HelpMarker(MiscHelpText::syncMinMax);
 
+            ImGui::Spacing();
+            CheckboxGlobal("Show nodes", &globalConfig.ui.actor.showNodes);
+            HelpMarker(MiscHelpText::showNodes);
+
             if (UICommon::ConfirmDialog(
                 "Reset",
                 "%s: clear all values for actor?\n\n", curSelName))
@@ -2443,24 +2536,10 @@ namespace CBP
     void UIActorEditorNode::UpdateNodeData(
         SKSE::ObjectHandle a_handle,
         const std::string& a_node,
-        const NodeProfile::base_type::mapped_type& a_data,
+        const configNode_t& a_data,
         bool a_reset)
     {
-        if (a_handle) {
-            auto& nodeConfig = IConfig::GetOrCreateActorNodeConfig(a_handle);
-            nodeConfig.insert_or_assign(a_node, a_data);
-
-            if (a_reset)
-                DCBP::ResetActors();
-            else
-                DCBP::DispatchActorTask(a_handle, UTTask::UTTAction::UpdateConfig);
-        }
-        else {
-            if (a_reset)
-                DCBP::ResetActors();
-            else
-                DCBP::UpdateConfigOnAllActors();
-        }
+        UpdateActorNodeData(a_handle, a_node, a_data, a_reset);
     }
 
     ConfigClass UIActorEditorNode::GetActorClass(SKSE::ObjectHandle a_handle) const
@@ -2477,6 +2556,14 @@ namespace CBP
         UISimComponent<SKSE::ObjectHandle, UIEditorID::kMainEditor>(),
         m_ctxParent(a_parent)
     {
+    }
+
+    void UIContext::UISimComponentActor::DrawConfGroupNodeMenu(
+        SKSE::ObjectHandle a_handle,
+        nodeConfigList_t& a_nodeList
+    )
+    {
+        DrawConfGroupNodeMenuImpl(a_handle, a_nodeList);
     }
 
     void UIContext::UISimComponentActor::OnSimSliderChange(
@@ -2542,25 +2629,41 @@ namespace CBP
         DCBP::DispatchActorTask(a_handle, UTTask::UTTAction::UpdateConfig);
     }
 
-    const configNode_t* UIContext::UISimComponentActor::GetNodeConfig(
+    bool UIContext::UISimComponentActor::GetNodeConfig(
         SKSE::ObjectHandle a_handle,
-        const std::string& a_confGroup) const
+        const std::string& a_confGroup,
+        nodeConfigList_t& a_out) const
     {
         auto& cgMap = CBP::IConfig::GetConfigGroupMap();
         auto itc = cgMap.find(a_confGroup);
         if (itc == cgMap.end())
-            return nullptr;
+            return false;
 
         for (const auto& e : itc->second)
         {
             auto& nodeConf = IConfig::GetActorNodeConfig(a_handle);
             auto it = nodeConf.find(e);
-            if (it != nodeConf.end()) {
-                return std::addressof(it->second);
-            }
+            
+            a_out.emplace_back(e, it != nodeConf.end() ?
+                std::addressof(it->second) :
+                nullptr);
         }
 
-        return nullptr;
+        return !a_out.empty();
+    }
+
+    void UIContext::UISimComponentActor::UpdateNodeData(
+        SKSE::ObjectHandle a_handle,
+        const std::string& a_node,
+        const configNode_t& a_data,
+        bool a_reset)
+    {
+        UpdateActorNodeData(a_handle, a_node, a_data, a_reset);
+    }
+
+    configGlobalSimComponent_t& UIContext::UISimComponentActor::GetSimComponentConfig() const
+    {
+        return IConfig::GetGlobalConfig().ui.actor;
     }
 
     const PhysicsProfile* UIContext::UISimComponentActor::GetSelectedProfile() const
@@ -2570,21 +2673,33 @@ namespace CBP
 
     bool UIContext::UISimComponentActor::ShouldDrawComponent(
         SKSE::ObjectHandle,
-        const configNode_t* a_nodeConfig) const
+        nodeConfigList_t& a_nodeConfig) const
     {
-        return a_nodeConfig && a_nodeConfig->Enabled();
+        for (const auto& e : a_nodeConfig)
+            if (e.second && e.second->Enabled())
+                return true;
+
+        return false;
     }
 
     bool UIContext::UISimComponentActor::HasMovement(
-        const configNode_t* a_nodeConfig) const
+        nodeConfigList_t& a_nodeConfig) const
     {
-        return a_nodeConfig && a_nodeConfig->HasMovement();
+        for (const auto& e : a_nodeConfig)
+            if (e.second && e.second->HasMovement())
+                return true;
+
+        return false;
     }
 
     bool UIContext::UISimComponentActor::HasCollisions(
-        const configNode_t* a_nodeConfig) const
+        nodeConfigList_t& a_nodeConfig) const
     {
-        return a_nodeConfig && a_nodeConfig->HasCollisions();
+        for (const auto& e : a_nodeConfig)
+            if (e.second && e.second->HasCollisions())
+                return true;
+
+        return false;
     }
 
     const armorCacheEntry_t::mapped_type* UIContext::UISimComponentActor::GetArmorOverrideSection(
@@ -2598,6 +2713,14 @@ namespace CBP
         UISimComponent<SKSE::ObjectHandle, UIEditorID::kMainEditor>(),
         m_ctxParent(a_parent)
     {
+    }
+
+    void UIContext::UISimComponentGlobal::DrawConfGroupNodeMenu(
+        SKSE::ObjectHandle a_handle,
+        nodeConfigList_t& a_nodeList
+    )
+    {
+        DrawConfGroupNodeMenuImpl(a_handle, a_nodeList);
     }
 
     void UIContext::UISimComponentGlobal::OnSimSliderChange(
@@ -2647,43 +2770,72 @@ namespace CBP
         DCBP::UpdateConfigOnAllActors();
     }
 
-    const configNode_t* UIContext::UISimComponentGlobal::GetNodeConfig(
+    bool UIContext::UISimComponentGlobal::GetNodeConfig(
         SKSE::ObjectHandle a_handle,
-        const std::string& a_confGroup) const
+        const std::string& a_confGroup,
+        nodeConfigList_t& a_out) const
     {
         auto& cgMap = CBP::IConfig::GetConfigGroupMap();
         auto itc = cgMap.find(a_confGroup);
         if (itc == cgMap.end())
-            return nullptr;
+            return false;
 
         for (const auto& e : itc->second)
         {
             auto& nodeConf = IConfig::GetGlobalNodeConfig();
             auto it = nodeConf.find(e);
-            if (it != nodeConf.end()) {
-                return std::addressof(it->second);
-            }
+
+            a_out.emplace_back(e, it != nodeConf.end() ?
+                std::addressof(it->second) :
+                nullptr);
         }
-        return nullptr;
+
+        return !a_out.empty();
+    }
+
+    void UIContext::UISimComponentGlobal::UpdateNodeData(
+        SKSE::ObjectHandle a_handle,
+        const std::string& a_node,
+        const configNode_t& a_data,
+        bool a_reset)
+    {
+        UpdateActorNodeData(a_handle, a_node, a_data, a_reset);
     }
 
     bool UIContext::UISimComponentGlobal::ShouldDrawComponent(
         SKSE::ObjectHandle,
-        const configNode_t* a_nodeConfig) const
+        nodeConfigList_t& a_nodeConfig) const
     {
-        return a_nodeConfig && a_nodeConfig->Enabled();
+        for (const auto& e : a_nodeConfig)
+            if (e.second && e.second->Enabled())
+                return true;
+
+        return false;
     }
 
     bool UIContext::UISimComponentGlobal::HasMovement(
-        const configNode_t* a_nodeConfig) const
+        nodeConfigList_t& a_nodeConfig) const
     {
-        return a_nodeConfig && a_nodeConfig->HasMovement();
+        for (const auto& e : a_nodeConfig)
+            if (e.second && e.second->HasMovement())
+                return true;
+
+        return false;
     }
 
     bool UIContext::UISimComponentGlobal::HasCollisions(
-        const configNode_t* a_nodeConfig) const
+        nodeConfigList_t& a_nodeConfig) const
     {
-        return a_nodeConfig && a_nodeConfig->HasCollisions();
+        for (const auto& e : a_nodeConfig)
+            if (e.second && e.second->HasCollisions())
+                return true;
+
+        return false;
+    }
+
+    configGlobalSimComponent_t& UIContext::UISimComponentGlobal::GetSimComponentConfig() const
+    {
+        return IConfig::GetGlobalConfig().ui.actor;
     }
 
     const PhysicsProfile* UIContext::UISimComponentGlobal::GetSelectedProfile() const
@@ -2808,13 +2960,15 @@ namespace CBP
         {
             ImGui::PushItemWidth(ImGui::GetFontSize() * -16.0f);
 
-            auto& globalConfig = IConfig::GetGlobalConfig();
+            const auto& scConfig = GetSimComponentConfig();
 
             for (auto& p : a_data)
             {
-                auto nodeConfig = GetNodeConfig(a_handle, p.first);
+                nodeConfigList_t nodeList;
+                GetNodeConfig(a_handle, p.first, nodeList);
 
-                if (!ShouldDrawComponent(a_handle, nodeConfig))
+                if (!scConfig.showNodes &&
+                    !ShouldDrawComponent(a_handle, nodeList))
                     continue;
 
                 auto headerName = p.first;
@@ -2855,7 +3009,7 @@ namespace CBP
                         ImGui::EndPopup();
                     }
 
-                    DrawSliders(a_handle, a_data, p, nodeConfig);
+                    DrawSliders(a_handle, a_data, p, nodeList);
 
                     ImGui::PopID();
                 }
@@ -2885,9 +3039,10 @@ namespace CBP
             if (e.first == a_entry.first)
                 continue;
 
-            auto nodeConfig = GetNodeConfig(a_handle, e.first);
+            nodeConfigList_t nodeList;
+            GetNodeConfig(a_handle, e.first, nodeList);
 
-            if (!ShouldDrawComponent(a_handle, nodeConfig))
+            if (!ShouldDrawComponent(a_handle, nodeList))
                 continue;
 
             auto headerName = e.first;
@@ -2969,9 +3124,9 @@ namespace CBP
                 "%.3f");
         else
             return ImGui::SliderFloat(
-                a_entry.second.descTag.c_str(), 
+                a_entry.second.descTag.c_str(),
                 a_pValue,
-                a_entry.second.min, 
+                a_entry.second.min,
                 a_entry.second.max);
     }
 
@@ -3053,17 +3208,58 @@ namespace CBP
     }
 
     template <class T, UIEditorID ID>
+    void UINodeConfGroupMenu<T, ID>::DrawConfGroupNodeMenu(
+        T a_handle,
+        nodeConfigList_t& a_nodeList
+    )
+    {
+    }
+
+    template <class T, UIEditorID ID>
+    void UINodeConfGroupMenu<T, ID>::DrawConfGroupNodeMenuImpl(
+        T a_handle,
+        nodeConfigList_t& a_nodeList
+    )
+    {
+        if (a_nodeList.empty())
+            return;
+
+        if (ImGui::TreeNodeEx("Nodes",
+            ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_DefaultOpen))
+        {
+            for (auto& e : a_nodeList)
+            {
+                if (ImGui::TreeNodeEx(e.first.c_str(),
+                    ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_DefaultOpen))
+                {
+                    auto data = e.second ? *e.second : configNode_t();
+  
+                    DrawNodeItem(a_handle, e.first, data);
+
+                    ImGui::TreePop();
+                }
+            }
+
+            ImGui::TreePop();
+        }
+    }
+
+    template <class T, UIEditorID ID>
     void UISimComponent<T, ID>::DrawSliders(
         T a_handle,
         configComponents_t& a_data,
         configComponentsValue_t& a_pair,
-        const configNode_t* a_nodeConfig
+        nodeConfigList_t& a_nodeConfig
     )
     {
         if (CanClip())
             return;
 
         const auto& globalConfig = IConfig::GetGlobalConfig();
+        const auto& scConfig = GetSimComponentConfig();
+
+        if (scConfig.showNodes)
+            DrawConfGroupNodeMenu(a_handle, a_nodeConfig);
 
         auto aoSect = GetArmorOverrideSection(a_handle, a_pair.first);
 
@@ -3197,21 +3393,21 @@ namespace CBP
     template <class T, UIEditorID ID>
     bool UISimComponent<T, ID>::ShouldDrawComponent(
         T,
-        const configNode_t*) const
+        nodeConfigList_t&) const
     {
         return true;
     }
 
     template <class T, UIEditorID ID>
     bool UISimComponent<T, ID>::HasMovement(
-        const configNode_t* a_nodeConfig) const
+        nodeConfigList_t&) const
     {
         return true;
     }
 
     template <class T, UIEditorID ID>
     bool UISimComponent<T, ID>::HasCollisions(
-        const configNode_t* a_nodeConfig) const
+        nodeConfigList_t&) const
     {
         return true;
     }
@@ -3222,6 +3418,76 @@ namespace CBP
         const std::string& a_comp) const
     {
         return nullptr;
+    }
+
+    /*template <class T>
+    void UINodeCommon<T>::DrawConfigGroupNodeItems(
+        T a_handle,
+        const std::string& a_confGroup,
+        configNodes_t& a_data
+    )
+    {
+        auto& cgMap = IConfig::GetConfigGroupMap();
+
+        auto it = cgMap.find(a_confGroup);
+        if (it == cgMap.end())
+            return;
+
+        for (const auto& e : it->second)
+        {
+            if (ImGui::CollapsingHeader(e.c_str()))
+            {
+                DrawNodeItem(a_handle, e, a_data);
+            }
+        }
+    }*/
+
+    template <class T>
+    void UINodeCommon<T>::DrawNodeItem(
+        T a_handle,
+        const std::string& a_nodeName,
+        configNode_t& a_conf
+    )
+    {
+        bool changed(false);
+
+        ImGui::Columns(2, nullptr, false);
+
+        ImGui::Text("Female");
+
+        ImGui::PushID(1);
+
+        ImGui::Spacing();
+
+        changed |= ImGui::Checkbox("Movement", &a_conf.femaleMovement);
+        changed |= ImGui::Checkbox("Collisions", &a_conf.femaleCollisions);
+
+        ImGui::PopID();
+
+        ImGui::NextColumn();
+
+        ImGui::Text("Male");
+
+        ImGui::PushID(2);
+
+        ImGui::Spacing();
+        changed |= ImGui::Checkbox("Movement", &a_conf.maleMovement);
+        changed |= ImGui::Checkbox("Collisions", &a_conf.maleCollisions);
+
+        ImGui::PopID();
+
+        ImGui::Columns(1);
+
+        bool changed2(false);
+
+        changed2 |= ImGui::SliderFloat3("Offset min", a_conf.colOffsetMin, -250.0f, 250.0f);
+        HelpMarker(MiscHelpText::offsetMin);
+
+        changed2 |= ImGui::SliderFloat3("Offset max", a_conf.colOffsetMax, -250.0f, 250.0f);
+        HelpMarker(MiscHelpText::offsetMax);
+
+        if (changed || changed2)
+            UpdateNodeData(a_handle, a_nodeName, a_conf, changed);
     }
 
     template <class T, UIEditorID ID>
@@ -3245,48 +3511,7 @@ namespace CBP
 
                 if (CollapsingHeader(GetCSID(e.first), label.c_str()))
                 {
-                    auto& conf = a_data[e.first];
-
-                    bool changed(false);
-
-                    ImGui::Columns(2, nullptr, false);
-
-                    ImGui::Text("Female");
-
-                    ImGui::PushID(1);
-
-                    ImGui::Spacing();
-                    changed |= ImGui::Checkbox("Movement", &conf.femaleMovement);
-                    changed |= ImGui::Checkbox("Collisions", &conf.femaleCollisions);
-
-                    ImGui::PopID();
-
-                    ImGui::NextColumn();
-
-                    ImGui::Text("Male");
-
-                    ImGui::PushID(2);
-
-                    ImGui::Spacing();
-                    changed |= ImGui::Checkbox("Movement", &conf.maleMovement);
-                    changed |= ImGui::Checkbox("Collisions", &conf.maleCollisions);
-
-                    ImGui::PopID();
-
-                    ImGui::Columns(1);
-
-                    ImGui::Separator();
-
-                    bool changed2(false);
-
-                    changed2 |= ImGui::SliderFloat3("Offset min", conf.colOffsetMin, -250.0f, 250.0f);
-                    HelpMarker(MiscHelpText::offsetMin);
-
-                    changed2 |= ImGui::SliderFloat3("Offset max", conf.colOffsetMax, -250.0f, 250.0f);
-                    HelpMarker(MiscHelpText::offsetMax);
-
-                    if (changed || changed2)
-                        UpdateNodeData(a_handle, e.first, conf, changed);
+                    DrawNodeItem(a_handle, e.first, a_data[e.first]);
                 }
 
                 ImGui::PopID();

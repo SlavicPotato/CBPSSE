@@ -37,7 +37,8 @@ namespace CBP
         }},
         {"sq", {
             offsetof(configComponent_t, phys.stiffness2),
-            "", 0.0f, 100.0f,
+            "", 
+            0.0f, 100.0f,
             "Quadratic spring stiffness",
             "Quadratic stiffness"
         }},
@@ -50,20 +51,23 @@ namespace CBP
         }},
         {"mox", {
             offsetof(configComponent_t, phys.maxOffset[0]),
-            "", 0.0f, 100.0f,
+            "", 
+            0.0f, 100.0f,
             "Maximum amount the bone is allowed to move from target (X, Y, Z)",
             "Max. offset",
              DescUIMarker::Float3
         }},
         {"moy", {
             offsetof(configComponent_t, phys.maxOffset[1]),
-            "", 0.0f, 100.0f,
+            "", 
+            0.0f, 100.0f,
             "",
             ""
         }},
         {"moz", {
             offsetof(configComponent_t, phys.maxOffset[2]),
-            "", 0.0f, 100.0f,
+            "", 
+            0.0f, 100.0f,
             "",
             ""
         }},
@@ -77,19 +81,22 @@ namespace CBP
         }},
         {"ly", {
             offsetof(configComponent_t, phys.linear[1]),
-            "", 0.0f, 10.0f,
+            "", 
+            0.0f, 10.0f,
             "",
             ""
         }},
         {"lz", {
             offsetof(configComponent_t, phys.linear[2]),
-            "", 0.0f, 10.0f ,
+            "", 
+            0.0f, 10.0f ,
             "",
             ""
         }},
         {"rx", {
             offsetof(configComponent_t, phys.rotational[0]),
-            "", 0.0f, 1.0f,
+            "", 
+            0.0f, 1.0f,
             "Scale of the bones rotation around the X, Y and Z axes respectively",
             "Rotational scale",
             DescUIMarker::Float3
@@ -282,7 +289,7 @@ namespace CBP
             "",
             "Penetration mass"
         }},
-        { "ce", {
+        {"ce", {
             offsetof(configComponent_t, phys.colPenBiasFactor),
             "",
             0.0f, 5.0f,
