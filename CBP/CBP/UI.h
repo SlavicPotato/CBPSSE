@@ -69,6 +69,7 @@ namespace CBP
 
     enum class MiscHelpText : int
     {
+        none,
         timeTick,
         maxSubSteps,
         timeScale,
@@ -90,7 +91,9 @@ namespace CBP
         offsetMin,
         offsetMax,
         applyForce,
-        showNodes
+        showNodes,
+        dataFilterPhys,
+        dataFilterNode
     };
 
     typedef std::pair<const std::string, configComponents_t> actorEntryPhysConf_t;
@@ -186,6 +189,97 @@ namespace CBP
         } m_sizeData;
 
         static const std::unordered_map<MiscHelpText, const char*> m_helpText;
+
+    protected:
+        static const keyDesc_t m_comboKeyDesc;
+        static const keyDesc_t m_keyDesc;
+    };
+
+    template <typename T>
+    class UIFilterBase :
+        virtual protected UIBase
+    {
+    public:
+        void Draw();
+        void DrawButton();
+        void Clear();
+        void Toggle();
+
+        virtual bool Test(const std::string& a_haystack) const = 0;
+
+        inline bool IsOpen() const noexcept {
+            return m_searchOpen;
+        }
+
+        [[nodiscard]] inline explicit operator bool() const noexcept {
+            return m_filter.Has();
+        }
+
+        [[nodiscard]] inline const auto& operator*() const noexcept {
+            return m_filter;
+        }
+
+        [[nodiscard]] inline const auto* operator->() const noexcept {
+            return std::addressof(m_filter);
+        }
+
+        inline void NextSetFocus() {
+            m_nextSetFocus = true;
+        }
+
+    protected:
+
+        UIFilterBase();
+        UIFilterBase(bool a_isOpen);
+        UIFilterBase(bool a_isOpen, const char* a_label);
+        UIFilterBase(bool a_isOpen, const char* a_label, MiscHelpText a_helpText);
+
+        virtual void ProcessInput() = 0;
+
+        const char* m_label;
+        char m_filterBuf[128];
+
+        UISelectedItem<T> m_filter;
+        bool m_searchOpen;
+        bool m_nextSetFocus;
+
+        MiscHelpText m_helpText;
+    };
+
+    class UIGenericFilter :
+        public UIFilterBase<std::string>
+    {
+    public:
+
+        UIGenericFilter();
+        UIGenericFilter(bool a_isOpen);
+        UIGenericFilter(bool a_isOpen, const char* a_label);
+        UIGenericFilter(bool a_isOpen, const char* a_label, MiscHelpText a_helpText);
+
+        [[nodiscard]] virtual bool Test(const std::string& a_haystack) const;
+
+    protected:
+        virtual void ProcessInput();
+    };
+
+    class UIRegexFilter :
+        public UIFilterBase<std::regex>
+    {
+    public:
+
+        UIRegexFilter();
+        UIRegexFilter(bool a_isOpen);
+        UIRegexFilter(bool a_isOpen, const char* a_label);
+        UIRegexFilter(bool a_isOpen, const char* a_label, MiscHelpText a_helpText);
+
+        [[nodiscard]] virtual bool Test(const std::string& a_haystack) const;
+
+    protected:
+        virtual void ProcessInput();
+
+    private:
+
+        UISelectedItem<except::descriptor> m_lastException;
     };
 
     template <typename T>
@@ -228,10 +322,27 @@ namespace CBP
         );
     };
 
+    template <UIEditorID ID>
+    class UIMainItemFilter :
+        virtual protected UIBase
+    {
+    protected:
+
+        UIMainItemFilter(MiscHelpText a_helpText);
+
+        void DrawItemFilter();
+
+        virtual std::string GetGCSID(
+            const std::string& a_name) const = 0;
+
+        UIRegexFilter m_dataFilter;
+    };
+
     template <class T, UIEditorID ID>
     class UISimComponent :
         virtual protected UIBase,
-        protected UINodeConfGroupMenu<T, ID>
+        protected UINodeConfGroupMenu<T, ID>,
+        UIMainItemFilter<ID>
     {
     public:
         void DrawSimComponents(
@@ -239,7 +350,7 @@ namespace CBP
             configComponents_t& a_data);
 
     protected:
-        UISimComponent() = default;
+        UISimComponent();
         virtual ~UISimComponent() noexcept = default;
 
         void DrawSliders(
@@ -278,6 +389,9 @@ namespace CBP
             configComponents_t* a_dg,
             const configComponentsValue_t& a_pair,
             std::function<void(configComponent_t&)> a_func) const;
+
+        [[nodiscard]] inline virtual std::string GetGCSID(
+            const std::string& a_name) const;
 
         [[nodiscard]] inline std::string GetCSID(
             const std::string& a_name) const
@@ -344,17 +458,17 @@ namespace CBP
             configComponentsValue_t& a_pair,
             const componentValueDescMap_t::vec_value_type& a_entry);
 
-
         char m_scBuffer1[64 + std::numeric_limits<float>::digits];
     };
 
     template <class T, UIEditorID ID>
     class UINode :
         virtual protected UIBase,
-        UINodeCommon<T>
+        UINodeCommon<T>,
+        UIMainItemFilter<ID>
     {
     public:
-        UINode() = default;
+        UINode();
         virtual ~UINode() = default;
 
         void DrawNodes(
@@ -370,41 +484,10 @@ namespace CBP
             ss << "UIND#" << Enum::Underlying(ID) << "#" << a_name;
             return ss.str();
         }
-    };
+        
+        [[nodiscard]] virtual std::string GetGCSID(
+            const std::string& a_name) const;
 
-    class UIGenericFilter
-    {
-    public:
-        UIGenericFilter();
-
-    public:
-        void Draw();
-        void DrawButton();
-        void Clear();
-        void Toggle();
-
-        [[nodiscard]] bool Test(const std::string& a_haystack) const;
-
-        inline bool IsOpen() const noexcept {
-            return m_searchOpen;
-        }
-
-        [[nodiscard]] inline explicit operator bool() const noexcept {
-            return m_filter.Has();
-        }
-
-        [[nodiscard]] inline const auto& operator*() const noexcept {
-            return m_filter;
-        }
-
-        [[nodiscard]] inline const auto* operator->() const noexcept {
-            return std::addressof(m_filter);
-        }
-    private:
-        char m_filterBuf[128];
-
-        UISelectedItem<std::string> m_filter;
-        bool m_searchOpen;
     };
 
     template <class T, class C>

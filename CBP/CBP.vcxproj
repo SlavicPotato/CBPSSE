@@ -911,6 +911,7 @@
     <ClCompile Include="CBP\Armor.cpp" />
     <ClCompile Include="CBP\Collision.cpp" />
     <ClCompile Include="CBP\config.cpp" />
+    <ClCompile Include="CBP\ConfigData.cpp" />
     <ClCompile Include="CBP\Data.cpp" />
     <ClCompile Include="CBP\GameEventHandlers.cpp" />
     <ClCompile Include="CBP\Papyrus.cpp" />
@@ -922,6 +923,7 @@
     <ClCompile Include="CBP\Template.cpp" />
     <ClCompile Include="CBP\Thing.cpp" />
     <ClCompile Include="CBP\UI.cpp" />
+    <ClCompile Include="CBP\UIData.cpp" />
     <ClCompile Include="CBP\Updater.cpp" />
     <ClCompile Include="config.cpp" />
     <ClCompile Include="dllmain.cpp" />

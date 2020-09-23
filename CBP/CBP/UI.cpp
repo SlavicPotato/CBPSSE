@@ -4,132 +4,7 @@
 
 namespace CBP
 {
-    const std::unordered_map<MiscHelpText, const char*> UIBase::m_helpText({
-        {MiscHelpText::timeTick, "Target update rate"},
-        {MiscHelpText::maxSubSteps, ""},
-        {MiscHelpText::timeScale, "Simulation rate, speeds up or slows down time"},
-        {MiscHelpText::colMaxPenetrationDepth, "Maximum penetration depth during collisions"},
-        {MiscHelpText::showAllActors, "Checked: Show all known actors\nUnchecked: Only show actors currently simulated"},
-        {MiscHelpText::clampValues, "Clamp slider values to the default range."},
-        {MiscHelpText::syncMinMax, "Move weighted sliders together."},
-        {MiscHelpText::rescanActors, "Scan for nearby actors and update list."},
-        {MiscHelpText::resetConfOnActor, "Clear configuration for currently selected actor."},
-        {MiscHelpText::resetConfOnRace, "Clear configuration for currently selected race."},
-        {MiscHelpText::showEDIDs, "Show editor ID's instead of names."},
-        {MiscHelpText::playableOnly, "Show playable races only."},
-        {MiscHelpText::colGroupEditor, "Nodes assigned to the same group will not collide with eachother. This applies only to nodes on the same actor."},
-        {MiscHelpText::importDialog, "Import and apply actor, race and global settings from the selected file."},
-        {MiscHelpText::exportDialog, "Export actor, race and global settings."},
-        {MiscHelpText::simRate, "If this value isn't equal to framerate the simulation speed is affected. Increase max. sub steps or adjust timeTick to get proper results."},
-        {MiscHelpText::armorOverrides, ""},
-        {MiscHelpText::offsetMin, "Collider body offset (X, Y, Z, weight 0)"},
-        {MiscHelpText::offsetMax, "Collider body offset (X, Y, Z, weight 100)"},
-        {MiscHelpText::applyForce, "Apply force to node along the X, Y and Z axes, respectively"},
-        {MiscHelpText::showNodes, ""},
-        });
-
-    static const keyDesc_t comboKeyDesc({
-        {0, "None"},
-        {DIK_LSHIFT, "Left shift"},
-        {DIK_RSHIFT, "Right shift"},
-        {DIK_LCONTROL, "Left control"},
-        {DIK_RCONTROL, "Right control"},
-        {DIK_LALT, "Left alt"},
-        {DIK_RALT, "Right alt"}
-        });
-
-    static const keyDesc_t keyDesc({
-        {DIK_INSERT,"Insert"},
-        {DIK_DELETE,"Delete"},
-        {DIK_HOME,"Home"},
-        {DIK_END,"End"},
-        {DIK_PGUP,"Page up"},
-        {DIK_PGDN,"Page down"},
-        {DIK_BACKSPACE, "Backspace"},
-        {DIK_RETURN,"Return"},
-        {DIK_PAUSE, "Pause"},
-        {DIK_CAPSLOCK, "Caps lock"},
-        {DIK_LEFT, "Left"},
-        {DIK_RIGHT, "Right"},
-        {DIK_UP, "Up"},
-        {DIK_DOWN, "Down"},
-        {DIK_TAB, "Tab"},
-        {DIK_F1, "F1"},
-        {DIK_F2, "F2"},
-        {DIK_F3, "F3"},
-        {DIK_F4, "F4"},
-        {DIK_F5, "F5"},
-        {DIK_F6, "F6"},
-        {DIK_F7, "F7"},
-        {DIK_F8, "F8"},
-        {DIK_F9, "F9"},
-        {DIK_F10, "F10"},
-        {DIK_F11, "F11"},
-        {DIK_F12, "F12"},
-        {DIK_F13, "F13"},
-        {DIK_F14, "F14"},
-        {DIK_F15, "F15"},
-        {DIK_NUMPAD0, "Num 0"},
-        {DIK_NUMPAD1, "Num 1"},
-        {DIK_NUMPAD2, "Num 2"},
-        {DIK_NUMPAD3, "Num 3"},
-        {DIK_NUMPAD4, "Num 4"},
-        {DIK_NUMPAD5, "Num 5"},
-        {DIK_NUMPAD6, "Num 6"},
-        {DIK_NUMPAD7, "Num 7"},
-        {DIK_NUMPAD8, "Num 8"},
-        {DIK_NUMPAD9, "Num 9"},
-        {DIK_NUMPADSLASH, "Num /"},
-        {DIK_NUMPADSTAR, "Num *"},
-        {DIK_NUMPADMINUS, "Num -"},
-        {DIK_NUMPADPLUS, "Num +"},
-        {DIK_NUMPADENTER, "Num Enter"},
-        {DIK_NUMPADCOMMA, "Num ,"},
-        {DIK_PERIOD, "."},
-        {DIK_COMMA, ","},
-        {DIK_MINUS, "-"},
-        {DIK_BACKSLASH, "\\"},
-        {DIK_COLON, ":"},
-        {DIK_SEMICOLON, ";"},
-        {DIK_SLASH, "/"},
-        {DIK_0,"0"},
-        {DIK_1,"1"},
-        {DIK_2,"2"},
-        {DIK_3,"3"},
-        {DIK_4,"4"},
-        {DIK_5,"5"},
-        {DIK_6,"6"},
-        {DIK_7,"7"},
-        {DIK_8,"8"},
-        {DIK_9,"9"},
-        {DIK_A,"A"},
-        {DIK_B,"B"},
-        {DIK_C,"C"},
-        {DIK_D,"D"},
-        {DIK_E,"E"},
-        {DIK_F,"F"},
-        {DIK_G,"G"},
-        {DIK_H,"H"},
-        {DIK_I,"I"},
-        {DIK_J,"J"},
-        {DIK_K,"K"},
-        {DIK_L,"L"},
-        {DIK_M,"M"},
-        {DIK_N,"N"},
-        {DIK_O,"O"},
-        {DIK_P,"P"},
-        {DIK_Q,"Q"},
-        {DIK_R,"R"},
-        {DIK_S,"S"},
-        {DIK_T,"T"},
-        {DIK_U,"U"},
-        {DIK_V,"V"},
-        {DIK_W,"W"},
-        {DIK_X,"X"},
-        {DIK_Y,"Y"},
-        {DIK_Z,"Z"}
-        });
-
+    
     __forceinline static void UpdateRaceNodeData(
         SKSE::FormID a_formid,
         const std::string& a_node,
@@ -1088,7 +963,7 @@ namespace CBP
         {
             auto& nodeConf = IConfig::GetRaceNodeConfig(a_formid);
             auto it = nodeConf.find(e);
-            
+
             a_out.emplace_back(e, it != nodeConf.end() ?
                 std::addressof(it->second) :
                 nullptr);
@@ -1248,7 +1123,7 @@ namespace CBP
 
         static const std::string chKey("Main#Force");
 
-        if (CollapsingHeader(chKey, "Force"))
+        if (Tree(chKey, "Force", false))
         {
             auto& data = GetData(a_data);
 
@@ -1323,6 +1198,8 @@ namespace CBP
 
                 SliderIntGlobal("Steps", std::addressof(e.steps), 0, 100);
             }
+
+            ImGui::TreePop();
         }
 
         ImGui::PopID();
@@ -1630,38 +1507,110 @@ namespace CBP
         }
     }
 
-    UIGenericFilter::UIGenericFilter() :
-        m_searchOpen(false)
+    template <typename T>
+    UIFilterBase<T>::UIFilterBase() :
+        m_searchOpen(false),
+        m_label("Filter"),
+        m_helpText(MiscHelpText::none),
+        m_nextSetFocus(false)
     {
         m_filterBuf[0] = 0x0;
     }
 
-    void UIGenericFilter::DrawButton()
+    template <typename T>
+    UIFilterBase<T>::UIFilterBase(bool a_isOpen) :
+        m_searchOpen(a_isOpen),
+        m_label("Filter"),
+        m_helpText(MiscHelpText::none),
+        m_nextSetFocus(false)
+    {
+        m_filterBuf[0] = 0x0;
+    }
+
+    template <typename T>
+    UIFilterBase<T>::UIFilterBase(bool a_isOpen, const char* a_label) :
+        m_searchOpen(a_isOpen),
+        m_label(a_label),
+        m_helpText(MiscHelpText::none),
+        m_nextSetFocus(false)
+    {
+        m_filterBuf[0] = 0x0;
+    }
+
+    template <typename T>
+    UIFilterBase<T>::UIFilterBase(
+        bool a_isOpen,
+        const char* a_label,
+        MiscHelpText a_helpText)
+        :
+        m_searchOpen(a_isOpen),
+        m_label(a_label),
+        m_helpText(a_helpText)
+    {
+        m_filterBuf[0] = 0x0;
+    }
+
+    template <typename T>
+    void UIFilterBase<T>::DrawButton()
     {
         if (ImGui::Button(m_searchOpen ? "<" : ">"))
             m_searchOpen = !m_searchOpen;
     }
 
-    void UIGenericFilter::Draw()
+    template <typename T>
+    void UIFilterBase<T>::Draw()
     {
         if (!m_searchOpen)
             return;
 
-        ImGui::PushID(static_cast<const void*>(&m_searchOpen));
+        ImGui::PushID(static_cast<const void*>(this));
 
-        if (ImGui::InputText("Filter", m_filterBuf, sizeof(m_filterBuf))) {
+        ProcessInput();
+
+        ImGui::PopID();
+    }
+
+    template <typename T>
+    void UIFilterBase<T>::Toggle()
+    {
+        m_searchOpen = !m_searchOpen;
+    }
+
+    template <typename T>
+    void UIFilterBase<T>::Clear() {
+        m_filter.Clear();
+        m_filterBuf[0] = 0x0;
+    }
+
+    UIGenericFilter::UIGenericFilter() :
+        UIFilterBase<std::string>()
+    {
+    }
+
+    UIGenericFilter::UIGenericFilter(bool a_isOpen) :
+        UIFilterBase<std::string>(a_isOpen)
+    {
+    }
+
+    UIGenericFilter::UIGenericFilter(bool a_isOpen, const char* a_label) :
+        UIFilterBase<std::string>(a_isOpen, a_label)
+    {
+    }
+
+    UIGenericFilter::UIGenericFilter(bool a_isOpen, const char* a_label, MiscHelpText a_helpText) :
+        UIFilterBase<std::string>(a_isOpen, a_label, a_helpText)
+    {
+    }
+
+    void UIGenericFilter::ProcessInput()
+    {
+        if (ImGui::InputText(m_label, m_filterBuf, sizeof(m_filterBuf)))
+        {
             if (strlen(m_filterBuf))
                 m_filter = m_filterBuf;
             else
                 m_filter.Clear();
         }
-
-        ImGui::PopID();
-    }
-
-    void UIGenericFilter::Toggle()
-    {
-        m_searchOpen = !m_searchOpen;
     }
 
     bool UIGenericFilter::Test(const std::string& a_haystack) const
@@ -1681,9 +1630,85 @@ namespace CBP
         return (it != a_haystack.end());
     }
 
-    void UIGenericFilter::Clear() {
-        m_filter.Clear();
-        m_filterBuf[0] = 0x0;
+    UIRegexFilter::UIRegexFilter() :
+        UIFilterBase<std::regex>()
+    {
+    }
+
+    UIRegexFilter::UIRegexFilter(bool a_isOpen) :
+        UIFilterBase<std::regex>(a_isOpen)
+    {
+    }
+
+    UIRegexFilter::UIRegexFilter(bool a_isOpen, const char* a_label) :
+        UIFilterBase<std::regex>(a_isOpen, a_label)
+    {
+    }
+
+    UIRegexFilter::UIRegexFilter(bool a_isOpen, const char* a_label, MiscHelpText a_helpText) :
+        UIFilterBase<std::regex>(a_isOpen, a_label, a_helpText)
+    {
+    }
+
+    void UIRegexFilter::ProcessInput()
+    {
+        if (m_nextSetFocus) {
+            m_nextSetFocus = false;
+            ImGui::SetKeyboardFocusHere();
+        }
+
+        if (ImGui::InputText(
+            m_label,
+            m_filterBuf,
+            sizeof(m_filterBuf),
+            ImGuiInputTextFlags_EnterReturnsTrue))
+        {
+            if (strlen(m_filterBuf))
+            {
+                try
+                {
+                    m_filter = std::regex(m_filterBuf,
+                        std::regex_constants::ECMAScript |
+                        std::regex_constants::optimize |
+                        std::regex_constants::icase);
+
+                    if (m_lastException)
+                        m_lastException.Clear();
+
+                }
+                catch (const std::regex_error& e)
+                {
+                    m_lastException = e;
+                    m_filter.Clear();
+                }
+            }
+            else
+            {
+                if (m_lastException)
+                    m_lastException.Clear();
+
+                m_filter.Clear();
+            }
+
+            NextSetFocus();
+        }
+
+        if (m_helpText != MiscHelpText::none)
+            HelpMarker(m_helpText);
+
+        if (m_lastException)
+        {
+            ImGui::TextWrapped(m_lastException->what());
+            ImGui::Spacing();
+        }
+    }
+
+    bool UIRegexFilter::Test(const std::string& a_haystack) const
+    {
+        if (!m_filter)
+            return true;
+
+        return std::regex_search(a_haystack, *m_filter);
     }
 
     UIContext::UIContext() noexcept :
@@ -2091,8 +2116,8 @@ namespace CBP
 
                 ImGui::Spacing();
 
-                DrawKeyOptions("Combo key", comboKeyDesc, globalConfig.ui.comboKey);
-                DrawKeyOptions("Key", keyDesc, globalConfig.ui.showKey);
+                DrawKeyOptions("Combo key", UIBase::m_comboKeyDesc, globalConfig.ui.comboKey);
+                DrawKeyOptions("Key", UIBase::m_keyDesc, globalConfig.ui.showKey);
 
                 ImGui::Spacing();
 
@@ -2140,8 +2165,8 @@ namespace CBP
 
                     ImGui::PushID(1);
 
-                    DrawKeyOptions("Combo key", comboKeyDesc, globalConfig.ui.comboKeyDR);
-                    DrawKeyOptions("Key", keyDesc, globalConfig.ui.showKeyDR);
+                    DrawKeyOptions("Combo key", m_comboKeyDesc, globalConfig.ui.comboKeyDR);
+                    DrawKeyOptions("Key", m_keyDesc, globalConfig.ui.showKeyDR);
 
                     ImGui::PopID();
 
@@ -2646,7 +2671,7 @@ namespace CBP
         {
             auto& nodeConf = IConfig::GetActorNodeConfig(a_handle);
             auto it = nodeConf.find(e);
-            
+
             a_out.emplace_back(e, it != nodeConf.end() ?
                 std::addressof(it->second) :
                 nullptr);
@@ -2810,7 +2835,7 @@ namespace CBP
         const configNode_t& a_data,
         bool a_reset)
     {
-        if (!a_handle) 
+        if (!a_handle)
         {
             auto& nodeConfig = IConfig::GetGlobalNodeConfig();
             nodeConfig.insert_or_assign(a_node, a_data);
@@ -2939,6 +2964,15 @@ namespace CBP
     }
 
     template <class T, UIEditorID ID>
+    std::string UISimComponent<T, ID>::GetGCSID(
+        const std::string& a_name) const
+    {
+        std::ostringstream ss;
+        ss << "GUISC#" << Enum::Underlying(ID) << "#" << a_name;
+        return ss.str();
+    }
+
+    template <class T, UIEditorID ID>
     void UISimComponent<T, ID>::Propagate(
         configComponents_t& a_dl,
         configComponents_t* a_dg,
@@ -2971,9 +3005,38 @@ namespace CBP
         }
     }
 
+    template <UIEditorID ID>
+    UIMainItemFilter<ID>::UIMainItemFilter(MiscHelpText a_helpText) :
+        m_dataFilter(true, "Regex", a_helpText)
+    {
+    }
+
+    template <UIEditorID ID>
+    void UIMainItemFilter<ID>::DrawItemFilter()
+    {
+        ImGui::PushID(static_cast<const void*>(std::addressof(m_dataFilter)));
+
+        if (Tree(GetGCSID("Filter"), "Filter", false))
+        {
+            ImGui::PushItemWidth(ImGui::GetFontSize() * -8.0f);
+
+            m_dataFilter.Draw();
+
+            ImGui::PopItemWidth();
+
+            ImGui::TreePop();
+        }
+
+        ImGui::PopID();
+    }
+
     template <class T, UIEditorID ID>
     void UISimComponent<T, ID>::DrawSimComponents(T a_handle, configComponents_t& a_data)
     {
+        DrawItemFilter();
+
+        ImGui::Separator();
+
         const float width = ImGui::GetWindowContentRegionMax().x;
 
         if (ImGui::BeginChild("scc_area", ImVec2(width, 0.0f)))
@@ -2984,6 +3047,9 @@ namespace CBP
 
             for (auto& p : a_data)
             {
+                if (!m_dataFilter.Test(p.first))
+                    continue;
+
                 nodeConfigList_t nodeList;
                 GetNodeConfig(a_handle, p.first, nodeList);
 
@@ -3253,7 +3319,7 @@ namespace CBP
                     ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_DefaultOpen))
                 {
                     auto data = e.second ? *e.second : configNode_t();
-  
+
                     DrawNodeItem(a_handle, e.first, data);
 
                     ImGui::TreePop();
@@ -3262,6 +3328,12 @@ namespace CBP
 
             ImGui::TreePop();
         }
+    }
+
+    template <class T, UIEditorID ID>
+    UISimComponent<T, ID>::UISimComponent() :
+        UIMainItemFilter<ID>(MiscHelpText::dataFilterPhys)
+    {
     }
 
     template <class T, UIEditorID ID>
@@ -3511,10 +3583,20 @@ namespace CBP
     }
 
     template <class T, UIEditorID ID>
+    UINode<T, ID>::UINode() :
+        UIMainItemFilter<ID>(MiscHelpText::dataFilterNode)
+    {
+    }
+
+    template <class T, UIEditorID ID>
     void UINode<T, ID>::DrawNodes(
         T a_handle,
         configNodes_t& a_data)
     {
+        DrawItemFilter();
+
+        ImGui::Separator();
+
         auto& nodeMap = IConfig::GetNodeMap();
 
         const float width = ImGui::GetWindowContentRegionMax().x;
@@ -3525,6 +3607,9 @@ namespace CBP
 
             for (const auto& e : nodeMap)
             {
+                if (!m_dataFilter.Test(e.first))
+                    continue;
+
                 ImGui::PushID(static_cast<const void*>(std::addressof(e)));
 
                 std::string label = (e.first + " - " + e.second);
@@ -3542,6 +3627,14 @@ namespace CBP
 
         ImGui::EndChild();
 
+    }
+    template <class T, UIEditorID ID>
+    std::string UINode<T, ID>::GetGCSID(
+        const std::string& a_name) const
+    {
+        std::ostringstream ss;
+        ss << "GUIND#" << Enum::Underlying(ID) << "#" << a_name;
+        return ss.str();
     }
 
     void UIProfiling::Draw(bool* a_active)
