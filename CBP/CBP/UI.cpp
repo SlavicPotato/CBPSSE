@@ -130,29 +130,6 @@ namespace CBP
         {DIK_Z,"Z"}
         });
 
-    __forceinline static void UpdateActorNodeData(
-        SKSE::ObjectHandle a_handle,
-        const std::string& a_node,
-        const configNode_t& a_data,
-        bool a_reset)
-    {
-        if (a_handle) {
-            auto& nodeConfig = IConfig::GetOrCreateActorNodeConfig(a_handle);
-            nodeConfig.insert_or_assign(a_node, a_data);
-
-            if (a_reset)
-                DCBP::ResetActors();
-            else
-                DCBP::DispatchActorTask(a_handle, UTTask::UTTAction::UpdateConfig);
-        }
-        else {
-            if (a_reset)
-                DCBP::ResetActors();
-            else
-                DCBP::UpdateConfigOnAllActors();
-        }
-    }
-
     __forceinline static void UpdateRaceNodeData(
         SKSE::FormID a_formid,
         const std::string& a_node,
@@ -1099,7 +1076,7 @@ namespace CBP
         {
             auto& nodeConf = IConfig::GetRaceNodeConfig(a_formid);
             auto it = nodeConf.find(e);
-            
+
             a_out.emplace_back(e, it != nodeConf.end() ?
                 std::addressof(it->second) :
                 nullptr);
@@ -2539,7 +2516,21 @@ namespace CBP
         const configNode_t& a_data,
         bool a_reset)
     {
-        UpdateActorNodeData(a_handle, a_node, a_data, a_reset);
+        if (a_handle) {
+            auto& nodeConfig = IConfig::GetOrCreateActorNodeConfig(a_handle);
+            nodeConfig.insert_or_assign(a_node, a_data);
+
+            if (a_reset)
+                DCBP::ResetActors();
+            else
+                DCBP::DispatchActorTask(a_handle, UTTask::UTTAction::UpdateConfig);
+        }
+        else {
+            if (a_reset)
+                DCBP::ResetActors();
+            else
+                DCBP::UpdateConfigOnAllActors();
+        }
     }
 
     ConfigClass UIActorEditorNode::GetActorClass(SKSE::ObjectHandle a_handle) const
@@ -2643,7 +2634,7 @@ namespace CBP
         {
             auto& nodeConf = IConfig::GetActorNodeConfig(a_handle);
             auto it = nodeConf.find(e);
-            
+
             a_out.emplace_back(e, it != nodeConf.end() ?
                 std::addressof(it->second) :
                 nullptr);
@@ -2658,7 +2649,15 @@ namespace CBP
         const configNode_t& a_data,
         bool a_reset)
     {
-        UpdateActorNodeData(a_handle, a_node, a_data, a_reset);
+        if (a_handle) {
+            auto& nodeConfig = IConfig::GetOrCreateActorNodeConfig(a_handle);
+            nodeConfig.insert_or_assign(a_node, a_data);
+
+            if (a_reset)
+                DCBP::ResetActors();
+            else
+                DCBP::DispatchActorTask(a_handle, UTTask::UTTAction::UpdateConfig);
+        }
     }
 
     configGlobalSimComponent_t& UIContext::UISimComponentActor::GetSimComponentConfig() const
@@ -2799,7 +2798,16 @@ namespace CBP
         const configNode_t& a_data,
         bool a_reset)
     {
-        UpdateActorNodeData(a_handle, a_node, a_data, a_reset);
+        if (!a_handle)
+        {
+            auto& nodeConfig = IConfig::GetGlobalNodeConfig();
+            nodeConfig.insert_or_assign(a_node, a_data);
+
+            if (a_reset)
+                DCBP::ResetActors();
+            else
+                DCBP::UpdateConfigOnAllActors();
+        }
     }
 
     bool UIContext::UISimComponentGlobal::ShouldDrawComponent(
@@ -3233,7 +3241,7 @@ namespace CBP
                     ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_DefaultOpen))
                 {
                     auto data = e.second ? *e.second : configNode_t();
-  
+
                     DrawNodeItem(a_handle, e.first, data);
 
                     ImGui::TreePop();
