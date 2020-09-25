@@ -12,6 +12,7 @@
 #include <queue>
 #include <algorithm>
 #include <regex>
+#include <bitset>
 
 #include <corecrt_math_defines.h>
 #include <ShlObj.h>
