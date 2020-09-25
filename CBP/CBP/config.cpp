@@ -2,8 +2,8 @@
 
 namespace CBP
 {
-    configComponents_t IConfig::thingGlobalConfig;
-    configComponents_t IConfig::thingGlobalConfigDefaults;
+    configComponents_t IConfig::physicsGlobalConfig;
+    configComponents_t IConfig::physicsGlobalConfigDefaults;
     actorConfigComponentsHolder_t IConfig::actorConfHolder;
     raceConfigComponentsHolder_t IConfig::raceConfHolder;
     configGlobal_t IConfig::globalConfig;
@@ -21,6 +21,9 @@ namespace CBP
 
     armorOverrides_t IConfig::armorOverrides;
     mergedConfCache_t IConfig::mergedConfCache;
+
+    configNodes_t IConfig::templateBaseNodeHolder;
+    configComponents_t IConfig::templateBasePhysicsHolder;
 
     IConfig::IConfigLog IConfig::log;
 
@@ -156,20 +159,25 @@ namespace CBP
         else
             nodeMap = defaultNodeMap;
 
-        for (const auto& v : nodeMap) {
+        for (const auto& v : nodeMap) 
+        {
             validSimComponents.insert(v.second);
+            templateBaseNodeHolder.try_emplace(v.first);
             configGroupMap[v.second].push_back(v.first);
         }
 
         for (const auto& v : validSimComponents)
-            if (thingGlobalConfig.find(v) == thingGlobalConfig.end())
-                thingGlobalConfig.try_emplace(v);
+        {
+            templateBasePhysicsHolder.try_emplace(v);
+            if (physicsGlobalConfig.find(v) == physicsGlobalConfig.end())
+                physicsGlobalConfig.try_emplace(v);
+        }
 
-        configComponents_t cc(thingGlobalConfig);
+        configComponents_t cc(physicsGlobalConfig);
         if (CompatLoadOldConf(cc))
-            thingGlobalConfig = std::move(cc);
+            physicsGlobalConfig = std::move(cc);
 
-        thingGlobalConfigDefaults = thingGlobalConfig;
+        physicsGlobalConfigDefaults = physicsGlobalConfig;
     }
 
     ConfigClass IConfig::GetActorPhysicsConfigClass(SKSE::ObjectHandle a_handle)
@@ -368,7 +376,7 @@ namespace CBP
 
         }
 
-        return (actorConfHolder[a_handle] = thingGlobalConfig);
+        return (actorConfHolder[a_handle] = physicsGlobalConfig);
     }
 
     const configComponents_t& IConfig::GetActorPhysicsConfig(SKSE::ObjectHandle a_handle)
@@ -391,7 +399,7 @@ namespace CBP
                 return profile->Data();
         }
 
-        return thingGlobalConfig;
+        return physicsGlobalConfig;
     }
 
     const configComponents_t& IConfig::GetActorPhysicsConfigAO(SKSE::ObjectHandle handle)
@@ -433,7 +441,7 @@ namespace CBP
             return it->second;
         }
 
-        return (raceConfHolder[a_formid] = thingGlobalConfig);
+        return (raceConfHolder[a_formid] = physicsGlobalConfig);
     }
 
     const configComponents_t& IConfig::GetRacePhysicsConfig(SKSE::FormID a_formid)
@@ -443,7 +451,7 @@ namespace CBP
             return it->second;
         }
 
-        return thingGlobalConfig;
+        return physicsGlobalConfig;
     }
 
     void IConfig::SetRacePhysicsConfig(SKSE::FormID a_handle, const configComponents_t& a_conf)

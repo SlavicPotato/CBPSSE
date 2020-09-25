@@ -168,7 +168,8 @@ namespace CBP
         m_rotScaleOn(false),
         m_obj(a_obj),
         m_objParent(a_obj->m_parent),
-        m_updateCtx({ 0.0f, 0 })
+        m_updateCtx({ 0.0f, 0 }),
+        m_formid(a_actor->formID)
     {
 #ifdef _CBP_ENABLE_DEBUG
         m_debugInfo.parentNodeName = a_obj->m_parent->m_name;
@@ -280,13 +281,7 @@ namespace CBP
             m_obj->m_localTransform.rot = m_initialNodeRot;
         }
 
-        m_conf.phys.colRestitutionCoefficient = mmg(std::clamp(m_conf.phys.colRestitutionCoefficient, 0.0f, 1.0f), 0.0f, 1.0f);
-
-        if (m_movement)
-            m_conf.phys.mass = std::clamp(m_conf.phys.mass, 1.0f, 1000.0f);
-        else
-            m_conf.phys.mass = 10000.0f;
-
+        m_conf.phys.mass = std::clamp(m_conf.phys.mass, 1.0f, 10000.0f);
         m_conf.phys.colPenMass = std::clamp(m_conf.phys.colPenMass, 1.0f, 100.0f);
     }
 
@@ -347,10 +342,10 @@ namespace CBP
             }
 
             float res = m_resistanceOn ?
-                (1.0f - 1.0f / ((m_velocity.Length() * 0.025f) + 1.0f)) * m_resistance : 0.0f;
+                (1.0f - 1.0f / ((m_velocity.Length() * 0.0075f) + 1.0f)) * m_resistance : 0.0f;
 
             SetVelocity((m_velocity + ((force / m_conf.phys.mass) * a_timeStep)) -
-                (m_velocity * ((m_conf.phys.damping * a_timeStep) * (1.0f + res))));
+                (m_velocity * ((m_conf.phys.damping * (1.0f + res)) * a_timeStep)));
 
             auto invRot = m_objParent->m_worldTransform.rot.Transpose();
 

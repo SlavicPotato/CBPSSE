@@ -2,9 +2,10 @@
 
 #include "imgui_internal.h"
 
+#define sshex(size) std::uppercase << std::setfill('0') << std::setw(size) << std::hex
+
 namespace CBP
 {
-    
     __forceinline static void UpdateRaceNodeData(
         SKSE::FormID a_formid,
         const std::string& a_node,
@@ -21,6 +22,21 @@ namespace CBP
             DCBP::ResetActors();
         else
             DCBP::UpdateConfigOnAllActors();
+    }
+
+    __forceinline static const char* TranslateConfigClass(ConfigClass a_class)
+    {
+        switch (a_class)
+        {
+        case ConfigClass::kConfigActor:
+            return "Actor";
+        case ConfigClass::kConfigRace:
+            return "Race";
+        case ConfigClass::kConfigTemplate:
+            return "Template";
+        default:
+            return "Global";
+        }
     }
 
     bool UIBase::CollapsingHeader(
@@ -79,7 +95,7 @@ namespace CBP
     }
 
     template <typename T>
-    void UIBase::SetGlobal(T& a_member, T const a_value)
+    void UIBase::SetGlobal(T& a_member, T const a_value) const
     {
         static_assert(std::is_fundamental<T>::value);
 
@@ -87,7 +103,7 @@ namespace CBP
         DCBP::MarkGlobalsForSave();
     }
 
-    bool UIBase::CheckboxGlobal(const char* a_label, bool* a_member)
+    bool UIBase::CheckboxGlobal(const char* a_label, bool* a_member) const
     {
         bool res = ImGui::Checkbox(a_label, a_member);
         if (res)
@@ -101,7 +117,7 @@ namespace CBP
         float* a_member,
         float a_min,
         float a_max,
-        const char* a_fmt)
+        const char* a_fmt) const
     {
         bool res = ImGui::SliderFloat(a_label, a_member, a_min, a_max, a_fmt);
         if (res)
@@ -118,7 +134,7 @@ namespace CBP
         float* a_member,
         float a_min,
         float a_max,
-        const char* a_fmt)
+        const char* a_fmt) const
     {
         bool res = ImGui::SliderFloat3(a_label, a_member, a_min, a_max, a_fmt);
         if (res)
@@ -137,7 +153,7 @@ namespace CBP
         int* a_member,
         int a_min,
         int a_max,
-        const char* a_fmt)
+        const char* a_fmt) const
     {
         bool res = ImGui::SliderInt(a_label, a_member, a_min, a_max, a_fmt);
         if (res) {
@@ -244,7 +260,7 @@ namespace CBP
     template <class T>
     void UIProfileEditorBase<T>::Draw(bool* a_active)
     {
-        auto& globalConfig = IConfig::GetGlobalConfig();;
+        const auto& globalConfig = IConfig::GetGlobalConfig();
 
         SetWindowDimensions(400.0f);
 
@@ -356,15 +372,7 @@ namespace CBP
                     }
                 }
 
-                ImGui::Spacing();
-
-                CheckboxGlobal("Sync min/max weight sliders", &globalConfig.ui.profile.syncWeightSliders);
-                HelpMarker(MiscHelpText::syncMinMax);
-
-                ImGui::Spacing();
-
-                CheckboxGlobal("Clamp values", &globalConfig.ui.profile.clampValues);
-                HelpMarker(MiscHelpText::clampValues);
+                DrawOptions();
 
                 ImGui::Spacing();
 
@@ -422,8 +430,28 @@ namespace CBP
         ImGui::PopID();
     }
 
+    template <class T>
+    void UIProfileEditorBase<T>::DrawOptions() const
+    {
+    }
+
     void UIProfileEditorPhysics::DrawItem(PhysicsProfile& a_profile) {
         DrawSimComponents(0, a_profile.Data());
+    }
+
+    void UIProfileEditorPhysics::DrawOptions() const
+    {
+        auto& globalConfig = IConfig::GetGlobalConfig();
+
+        ImGui::Spacing();
+
+        CheckboxGlobal("Sync min/max weight sliders", &globalConfig.ui.profile.syncWeightSliders);
+        HelpMarker(MiscHelpText::syncMinMax);
+
+        ImGui::Spacing();
+
+        CheckboxGlobal("Clamp values", &globalConfig.ui.profile.clampValues);
+        HelpMarker(MiscHelpText::clampValues);
     }
 
     void UIProfileEditorPhysics::OnSimSliderChange(
@@ -619,6 +647,39 @@ namespace CBP
             a_curSelName = nullptr;
     }
 
+    template <class T>
+    void UIRaceList<T>::ListDrawInfoText(
+        listValue_t* a_entry)
+    {
+        const auto& raceConf = GetRaceConfig();
+
+        auto& raceCache = IData::GetRaceList();
+        auto& modList = IData::GetModList();
+
+        std::ostringstream ss;
+
+        auto itr = raceCache.find(a_entry->first);
+        if (itr != raceCache.end())
+        {
+            if (raceConf.showEditorIDs)
+                ss << "Name:  " << itr->second.fullname << std::endl;
+            else
+                ss << "EDID:  " << itr->second.edid << std::endl;
+
+            ss << "Flags: " << std::bitset<8>(itr->second.flags) << std::endl;
+        }
+
+        UInt32 modIndex;
+        if (Game::GetModIndex(a_entry->first, modIndex))
+        {
+            auto itm = modList.find(modIndex);
+            if (itm != modList.end())
+                ss << "Mod:   " << itm->second.name << " [" << sshex(2) << itm->second.GetPartialIndex() << "]" << std::endl;
+        }
+
+        ImGui::TextUnformatted(ss.str().c_str());
+    }
+
     template <class T, class N>
     UIRaceEditorBase<T, N>::UIRaceEditorBase() noexcept :
         UIRaceList<T>(),
@@ -668,8 +729,12 @@ namespace CBP
         if (!a_data)
             return;
 
-        IConfig::CopyNodes(a_profile.Data(), a_data->second.second);
-        IConfig::SetRaceNodeConfig(a_data->first, a_data->second.second);
+        configNodes_t tmp(IConfig::GetNodeTemplateBase());
+
+        IConfig::CopyNodes(a_profile.Data(), tmp);
+
+        a_data->second.second = tmp;
+        IConfig::SetRaceNodeConfig(a_data->first, std::move(tmp));
 
         MarkChanged();
 
@@ -845,8 +910,13 @@ namespace CBP
         if (!a_data)
             return;
 
-        IConfig::CopyComponents(a_profile.Data(), a_data->second.second);
-        IConfig::SetRacePhysicsConfig(a_data->first, a_data->second.second);
+        configComponents_t tmp(IConfig::GetPhysicsTemplateBase());
+
+        IConfig::CopyComponents(a_profile.Data(), tmp);
+
+        a_data->second.second = tmp;
+        IConfig::SetRacePhysicsConfig(a_data->first, std::move(tmp));
+
         MarkChanged();
         DCBP::UpdateConfigOnAllActors();
     }
@@ -1068,8 +1138,6 @@ namespace CBP
             m_state.new_input[0] = 0;
         }
 
-        //UpdateNextItemOffset();
-
         DrawCreateNew();
 
         if (m_state.selected)
@@ -1222,7 +1290,7 @@ namespace CBP
     {
         ListFilterSelected(a_entry, a_curSelName);
 
-        ImGui::PushItemWidth(ImGui::GetFontSize() * -10.0f);
+        ImGui::PushItemWidth(ImGui::GetFontSize() * -10.5f);
 
         if (ImGui::BeginCombo(m_listBuf1, a_curSelName, ImGuiComboFlags_HeightLarge))
         {
@@ -1248,6 +1316,9 @@ namespace CBP
 
             ImGui::EndCombo();
         }
+
+        if (a_entry)
+            ListDrawInfo(a_entry);
 
         ImGui::SameLine();
 
@@ -1284,6 +1355,35 @@ namespace CBP
         if (m_listNextUpdate) {
             m_listNextUpdate = false;
             ListUpdate();
+        }
+    }
+
+    template <class T, class P>
+    void UIListBase<T, P>::ListUpdateCurrent()
+    {
+        if (m_listCurrent)
+            m_listData.at(m_listCurrent).second = GetData(m_listCurrent);
+    }
+
+    template <class T, class P>
+    void UIListBase<T, P>::ListDrawInfo(
+        listValue_t* a_entry)
+    {
+        const auto& globalConfig = IConfig::GetGlobalConfig();
+
+        ImGui::SameLine();
+
+        ImGui::TextDisabled("[?]");
+        if (ImGui::IsItemHovered())
+        {
+            ImGui::BeginTooltip();
+            ImGui::SetWindowFontScale(globalConfig.ui.fontScale);
+            ImGui::PushTextWrapPos(ImGui::GetFontSize() * 35.0f);
+
+            ListDrawInfoText(a_entry);
+
+            ImGui::PopTextWrapPos();
+            ImGui::EndTooltip();
         }
     }
 
@@ -1384,13 +1484,6 @@ namespace CBP
             DCBP::SetMarkedActor(a_handle);
     }
 
-    template <class T, class P>
-    void UIListBase<T, P>::ListUpdateCurrent()
-    {
-        if (m_listCurrent)
-            m_listData.at(m_listCurrent).second = GetData(m_listCurrent);
-    }
-
     template <class T>
     auto UIActorList<T>::ListGetSelected()
         -> listValue_t*
@@ -1413,7 +1506,7 @@ namespace CBP
 
         ListFilterSelected(a_entry, a_curSelName);
 
-        ImGui::PushItemWidth(ImGui::GetFontSize() * -10.0f);
+        ImGui::PushItemWidth(ImGui::GetFontSize() * -10.5f);
 
         if (ImGui::BeginCombo(m_listBuf1, a_curSelName, ImGuiComboFlags_HeightLarge))
         {
@@ -1468,6 +1561,9 @@ namespace CBP
             ImGui::EndCombo();
         }
 
+        if (a_entry)
+            ListDrawInfo(a_entry);
+
         ImGui::SameLine();
 
         m_listFilter.DrawButton();
@@ -1505,6 +1601,49 @@ namespace CBP
             a_entry = nullptr;
             a_curSelName = m_globLabel.c_str();
         }
+    }
+
+    template <class T>
+    void UIActorList<T>::ListDrawInfoText(
+        listValue_t* a_entry)
+    {
+        auto& actorCache = IData::GetActorCache();
+        auto& raceCache = IData::GetRaceList();
+        auto& modList = IData::GetModList();
+
+        std::ostringstream ss;
+
+        auto it = actorCache.find(a_entry->first);
+        if (it != actorCache.end())
+        {
+            ss << "Base:  " << sshex(8) << it->second.base << " [" << std::bitset<8>(it->second.baseflags) << "]" << std::endl;
+
+            auto itr = raceCache.find(it->second.race);
+            if (itr != raceCache.end())
+                ss << "Race:  " << itr->second.edid << " [" << sshex(8) << it->second.race << "]" << std::endl;
+            else
+                ss << "Race:  " << sshex(8) << it->second.race << std::endl;
+
+            ss << "Sex:   " << (it->second.female ? "Female" : "Male") << std::endl;
+        }
+
+        UInt32 modIndex;
+        if (Game::GetModIndex(UInt32(a_entry->first & 0xFFFFFFFF), modIndex))
+        {
+            auto itm = modList.find(modIndex);
+            if (itm != modList.end())
+                ss << "Mod:   " << itm->second.name << " [" << sshex(2) << itm->second.GetPartialIndex() << "]" << std::endl;
+        }
+
+        ss << std::endl << "Config:" << std::endl << std::endl;
+
+        auto cl = IConfig::GetActorPhysicsConfigClass(a_entry->first);
+        ss << "Phys: " << TranslateConfigClass(cl) << std::endl;
+
+        cl = IConfig::GetActorNodeConfigClass(a_entry->first);
+        ss << "Node: " << TranslateConfigClass(cl) << std::endl;
+
+        ImGui::TextUnformatted(ss.str().c_str());
     }
 
     template <typename T>
@@ -1815,7 +1954,7 @@ namespace CBP
                 ImGui::MenuItem("Log", nullptr, &ws.log);
 
                 ImGui::EndMenu();
-            }
+                }
 
             if (ImGui::BeginMenu("Actions"))
             {
@@ -1850,8 +1989,8 @@ namespace CBP
             }
 
             ImGui::EndMenuBar();
+            }
         }
-    }
 
     void UIContext::Draw(bool* a_active)
     {
@@ -1892,23 +2031,8 @@ namespace CBP
             if (m_listCurrent)
             {
                 auto confClass = IConfig::GetActorPhysicsConfigClass(m_listCurrent);
-                const char* classText;
-                switch (confClass)
-                {
-                case ConfigClass::kConfigActor:
-                    classText = "actor";
-                    break;
-                case ConfigClass::kConfigRace:
-                    classText = "race";
-                    break;
-                case ConfigClass::kConfigTemplate:
-                    classText = "template";
-                    break;
-                default:
-                    classText = "global";
-                    break;
-                }
-                ImGui::Text("Config in use: %s", classText);
+
+                ImGui::Text("Config in use: %s", TranslateConfigClass(confClass));
 
                 if (IConfig::HasArmorOverride(m_listCurrent))
                 {
@@ -2116,8 +2240,8 @@ namespace CBP
 
                 ImGui::Spacing();
 
-                DrawKeyOptions("Combo key", UIBase::m_comboKeyDesc, globalConfig.ui.comboKey);
-                DrawKeyOptions("Key", UIBase::m_keyDesc, globalConfig.ui.showKey);
+                DrawKeyOptions("Combo key", m_comboKeyDesc, globalConfig.ui.comboKey);
+                DrawKeyOptions("Key", m_keyDesc, globalConfig.ui.showKey);
 
                 ImGui::Spacing();
 
@@ -2442,23 +2566,8 @@ namespace CBP
             if (m_listCurrent)
             {
                 auto confClass = IConfig::GetActorNodeConfigClass(m_listCurrent);
-                const char* classText;
-                switch (confClass)
-                {
-                case ConfigClass::kConfigActor:
-                    classText = "actor";
-                    break;
-                case ConfigClass::kConfigRace:
-                    classText = "race";
-                    break;
-                case ConfigClass::kConfigTemplate:
-                    classText = "template";
-                    break;
-                default:
-                    classText = "global";
-                    break;
-                }
-                ImGui::Text("Config in use: %s", classText);
+
+                ImGui::Text("Config in use: %s", TranslateConfigClass(confClass));
             }
 
             ImGui::Spacing();
@@ -2528,12 +2637,16 @@ namespace CBP
     {
         auto& profileData = a_profile.Data();
 
+        configNodes_t tmp(IConfig::GetNodeTemplateBase());
+
+        IConfig::CopyNodes(profileData, tmp);
+
         if (!a_data) {
-            IConfig::CopyToGlobalNodeConfig(profileData);
+            IConfig::SetGlobalNodeConfig(std::move(tmp));
         }
         else {
-            IConfig::CopyNodes(profileData, a_data->second.second);
-            IConfig::SetActorNodeConfig(a_data->first, a_data->second.second);
+            a_data->second.second = tmp;
+            IConfig::SetActorNodeConfig(a_data->first, std::move(tmp));
         }
 
         DCBP::ResetActors();
@@ -2892,13 +3005,18 @@ namespace CBP
     {
         auto& profileData = a_profile.Data();
 
+        configComponents_t tmp(IConfig::GetPhysicsTemplateBase());
+
+        IConfig::CopyComponents(profileData, tmp);
+
         if (!a_data) {
-            IConfig::CopyToGlobalPhysicsConfig(profileData);
+            IConfig::SetGlobalPhysicsConfig(std::move(tmp));
             DCBP::UpdateConfigOnAllActors();
         }
-        else {
-            IConfig::CopyComponents(profileData, a_data->second.second);
-            IConfig::SetActorPhysicsConfig(a_data->first, a_data->second.second);
+        else
+        {
+            a_data->second.second = tmp;
+            IConfig::SetActorPhysicsConfig(a_data->first, std::move(tmp));
             DCBP::DispatchActorTask(a_data->first, UTTask::UTTAction::UpdateConfig);
         }
     }
@@ -4177,4 +4295,4 @@ namespace CBP
 
         ImGui::PopID();
     }
-}
+    }

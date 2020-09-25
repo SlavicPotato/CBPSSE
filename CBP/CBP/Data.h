@@ -17,12 +17,17 @@ namespace CBP
         bool playable;
         std::string fullname;
         std::string edid;
+        UInt32 flags;
     };
 
     struct actorCacheEntry_t
     {
         bool active;
         std::string name;
+        SKSE::FormID base;
+        SKSE::FormID race;
+        bool female;
+        UInt32 baseflags;
     };
 
     struct activeCache_t
@@ -35,6 +40,7 @@ namespace CBP
         SKSE::FormID npc;
         std::pair<bool, SKSE::FormID> race;
         char sex;
+        UInt32 baseflags;
     };
 
     struct modData_t
@@ -171,6 +177,9 @@ namespace CBP
         }
 
     private:
+
+        static void FillActorCacheEntry(SKSE::ObjectHandle a_handle, actorCacheEntry_t& a_out);
+        static void FillActorCacheEntry(Actor* a_actor, actorCacheEntry_t& a_out);
         static void AddExtraActorEntry(SKSE::ObjectHandle a_handle);
 
         static raceList_t raceList;

@@ -187,6 +187,8 @@ namespace CBP
         SimDebugInfo m_debugInfo;
 #endif
 
+        SKSE::FormID m_formid;
+
         __forceinline void ClampVelocity()
         {
             float len = m_velocity.Length();
@@ -249,7 +251,7 @@ namespace CBP
 
         __forceinline void AddVelocity(const NiPoint3& a_vel) {
             m_velocity += a_vel;
-            ClampVelocity();
+            //ClampVelocity();
         }
 
         [[nodiscard]] inline const auto& GetVelocity() const {

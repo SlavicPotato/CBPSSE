@@ -6,7 +6,7 @@ namespace CBP
         {"s", {
             offsetof(configComponent_t, phys.stiffness),
             "",
-            0.0f, 100.0f,
+            0.0f, 255.0f,
             "Linear spring stiffness",
             "Linear stiffness",
             DescUIMarker::BeginGroup,
@@ -16,7 +16,7 @@ namespace CBP
         {"sq", {
             offsetof(configComponent_t, phys.stiffness2),
             "",
-            0.0f, 100.0f,
+            0.0f, 255.0f,
             "Quadratic spring stiffness",
             "Quadratic stiffness"
         }},
@@ -52,7 +52,7 @@ namespace CBP
         {"lx", {
             offsetof(configComponent_t, phys.linear[0]),
             "",
-            0.0f, 10.0f,
+            0.0f, 1.0f,
             "Linear motion scale (side to side, front to back, up and down respectively)",
             "Linear motion scale",
             DescUIMarker::Float3
@@ -60,14 +60,14 @@ namespace CBP
         {"ly", {
             offsetof(configComponent_t, phys.linear[1]),
             "",
-            0.0f, 10.0f,
+            0.0f, 1.0f,
             "",
             ""
         }},
         {"lz", {
             offsetof(configComponent_t, phys.linear[2]),
             "",
-            0.0f, 10.0f ,
+            0.0f, 1.0f ,
             "",
             ""
         }},
@@ -126,7 +126,7 @@ namespace CBP
             offsetof(configComponent_t, phys.mass),
             "",
             1.0f, 1000.0f,
-            "Mass",
+            "Object mass",
             "Mass"
         }},
         {"gb", {
@@ -257,21 +257,21 @@ namespace CBP
             offsetof(configComponent_t, phys.colRestitutionCoefficient),
             "",
             0.0f, 1.0f,
-            "",
+            "Ratio of final to initial relative velocity after collision (coefficient of restitution).",
             "Bounciness"
         }},
         {"cp", {
             offsetof(configComponent_t, phys.colPenMass),
             "",
             1.0f, 100.0f,
-            "",
+            "Determines how deep objects will penetrate when colliding. ",
             "Penetration mass"
         }},
-        {"ce", {
+        {"ce", { // consider removing, probably useless
             offsetof(configComponent_t, phys.colPenBiasFactor),
             "",
             0.0f, 5.0f,
-            "",
+            "Penetration bias multiplier used in collision response. Higher values 'eject' the object with greater velocity when overlapping with another.",
             "Pen. bias factor",
             DescUIMarker::EndGroup,
             DescUIGroupType::Collisions

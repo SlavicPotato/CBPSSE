@@ -25,21 +25,20 @@ namespace CBP
     {
         actorRefData_t tmp;
 
-        if (a_actor->race != nullptr)
-        {
-            tmp.race.first = true;
-            tmp.race.second = a_actor->race->formID;
-        }
-        else
-            tmp.race.first = false;
-
         auto npc = DYNAMIC_CAST(a_actor->baseForm, TESForm, TESNPC);
         if (npc != nullptr)
         {
-            auto sex = CALL_MEMBER_FN(npc, GetSex)();
+            if (a_actor->race != nullptr)
+            {
+                tmp.race.first = true;
+                tmp.race.second = a_actor->race->formID;
+            }
+            else
+                tmp.race.first = false;
 
             tmp.npc = npc->formID;
             tmp.sex = CALL_MEMBER_FN(npc, GetSex)();
+            tmp.baseflags = npc->flags;
 
             actorNpcMap.insert_or_assign(
                 a_handle, std::move(tmp));
@@ -55,23 +54,79 @@ namespace CBP
         UpdateActorMaps(a_handle, actor);
     }
 
+    void IData::FillActorCacheEntry(SKSE::ObjectHandle a_handle, actorCacheEntry_t& a_out)
+    {
+        std::ostringstream ss;
+
+        ss << "[" << std::uppercase << std::setfill('0') <<
+            std::setw(8) << std::hex << (a_handle & 0xFFFFFFFF) << "]";
+
+        auto it = actorNpcMap.find(a_handle);
+        if (it != actorNpcMap.end())
+        {
+            a_out.base = it->second.npc;
+            a_out.race = it->second.race.first ?
+                it->second.race.second :
+                SKSE::FormID(0);
+            a_out.female = it->second.sex == 1;
+            a_out.baseflags = it->second.baseflags;
+        }
+        else {
+            a_out.race = SKSE::FormID(0);
+            a_out.base = SKSE::FormID(0);
+            a_out.female = false;
+            a_out.baseflags = 0;
+        }
+
+        a_out.name = ss.str();
+    }
+
+    void IData::FillActorCacheEntry(Actor* a_actor, actorCacheEntry_t& a_out)
+    {
+        std::ostringstream ss;
+
+        ss << "[" << std::uppercase << std::setfill('0') <<
+            std::setw(8) << std::hex << a_actor->formID << "] " <<
+            CALL_MEMBER_FN(a_actor, GetReferenceName)();
+
+        if (a_actor->race != nullptr)
+            a_out.race = a_actor->race->formID;
+        else
+            a_out.race = SKSE::FormID(0);
+
+        auto npc = DYNAMIC_CAST(a_actor->baseForm, TESForm, TESNPC);
+        if (npc != nullptr)
+        {
+            a_out.base = npc->formID;
+            a_out.female = CALL_MEMBER_FN(npc, GetSex)() == 1;
+            a_out.baseflags = npc->flags;
+        }
+        else {
+            a_out.base = SKSE::FormID(0);
+            a_out.female = false;
+            a_out.baseflags = 0;
+        }
+
+        a_out.name = ss.str();
+    }
+
     void IData::AddExtraActorEntry(
         SKSE::ObjectHandle a_handle)
     {
         if (actorCache.find(a_handle) != actorCache.end())
             return;
 
-        std::ostringstream ss;
-        ss << "[" << std::uppercase << std::setfill('0') <<
-            std::setw(8) << std::hex << (a_handle & 0xFFFFFFFF) << "]";
+        actorCacheEntry_t tmp;
+        tmp.active = false;
 
         auto actor = SKSE::ResolveObject<Actor>(a_handle, Actor::kTypeID);
-        if (actor != nullptr) {
-            ss << " " << CALL_MEMBER_FN(actor, GetReferenceName)();
-        }
 
-        actorCache.emplace(a_handle,
-            actorCacheEntry_t{ false, std::move(ss.str()) });
+        if (actor)
+            FillActorCacheEntry(actor, tmp);
+        else
+            FillActorCacheEntry(a_handle, tmp);
+
+        actorCache.emplace(a_handle, std::move(tmp));
     }
 
     void IData::UpdateActorCache(const simActorList_t& a_list)
@@ -85,24 +140,19 @@ namespace CBP
             if (actor == nullptr)
                 continue;
 
-            std::ostringstream ss;
-            ss << "[" << std::uppercase << std::setfill('0') <<
-                std::setw(8) << std::hex << actor->formID << "] ";
-            ss << CALL_MEMBER_FN(actor, GetReferenceName)();
+            actorCacheEntry_t tmp;
+            tmp.active = true;
 
-            actorCache.emplace(e.first,
-                actorCacheEntry_t{ true, std::move(ss.str()) });
+            FillActorCacheEntry(actor, tmp);
+
+            actorCache.emplace(e.first, std::move(tmp));
         }
 
         for (const auto& e : IConfig::GetActorPhysicsConfigHolder())
-        {
             AddExtraActorEntry(e.first);
-        }
 
         for (const auto& e : IConfig::GetActorNodeConfigHolder())
-        {
             AddExtraActorEntry(e.first);
-        }
 
         auto refHolder = CrosshairRefHandleHolder::GetSingleton();
         if (refHolder) {
@@ -159,8 +209,8 @@ namespace CBP
 
             bool playable = (race->data.raceFlags & TESRace::kRace_Playable) != 0;
 
-            raceList.emplace(race->formID,
-                raceCacheEntry_t{ playable, fullName, edid });
+            raceList.emplace(race->formID, 
+                raceCacheEntry_t{ playable, fullName, edid, race->data.raceFlags });
         }
 
         return true;
@@ -180,14 +230,14 @@ namespace CBP
 
             if (!modInfo->IsActive())
                 continue;
-                        
-            modList.try_emplace(it->GetPartialIndex(), 
+
+            modList.try_emplace(it->GetPartialIndex(),
                 modInfo->fileFlags,
-                modInfo->modIndex, 
-                modInfo->lightIndex, 
+                modInfo->modIndex,
+                modInfo->lightIndex,
                 modInfo->name);
         }
-        
+
         return true;
     }
 

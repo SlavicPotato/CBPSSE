@@ -144,30 +144,30 @@ namespace CBP
         }
 
         template <typename T>
-        inline void SetGlobal(T& a_member, T const a_value);
+        inline void SetGlobal(T& a_member, T const a_value) const;
 
-        inline bool CheckboxGlobal(const char* a_label, bool* a_member);
+        inline bool CheckboxGlobal(const char* a_label, bool* a_member) const;
 
         inline bool SliderFloatGlobal(
             const char* a_label,
             float* a_member,
             float a_min,
             float a_max,
-            const char* a_fmt = "%.3f");
+            const char* a_fmt = "%.3f") const;
 
         inline bool SliderFloat3Global(
             const char* a_label,
             float* a_member,
             float a_min,
             float a_max,
-            const char* a_fmt = "%.3f");
+            const char* a_fmt = "%.3f") const;
 
         inline bool SliderIntGlobal(
             const char* a_label,
             int* a_member,
             int a_min,
             int a_max,
-            const char* a_fmt = "%d");
+            const char* a_fmt = "%d") const;
 
         void SetWindowDimensions(float a_offsetX = 0.0f, float a_sizeX = -1.0f, float a_sizeY = -1.0f);
 
@@ -578,6 +578,8 @@ namespace CBP
         virtual void DrawItem(T& a_profile) = 0;
     private:
 
+        virtual void DrawOptions() const;
+
         struct {
             char ren_input[60];
         } ex_state;
@@ -596,6 +598,7 @@ namespace CBP
             UIProfileEditorBase<PhysicsProfile>(a_name) {}
     private:
         virtual void DrawItem(PhysicsProfile& a_profile);
+        virtual void DrawOptions() const;
 
         virtual void OnSimSliderChange(
             int,
@@ -674,18 +677,20 @@ namespace CBP
         }
 
     protected:
+        typedef typename T::value_type listValue_t;
+        typedef typename T::value_type::second_type::second_type entryValue_t;
+
         void ListTick();
         void ListReset();
         void ListUpdateCurrent();
-
-        typedef typename T::value_type listValue_t;
-        typedef typename T::value_type::second_type::second_type entryValue_t;
+        void ListDrawInfo(listValue_t* a_entry);
 
         UIListBase() noexcept;
         virtual ~UIListBase() noexcept = default;
 
         virtual void ListDraw(listValue_t*& a_entry, const char*& a_curSelName);
         virtual void ListFilterSelected(listValue_t*& a_entry, const char*& a_curSelName);
+        virtual void ListDrawInfoText(listValue_t* a_entry) = 0;
         virtual listValue_t* ListGetSelected() = 0;
         virtual void ListSetCurrentItem(P a_handle) = 0;
         virtual void ListUpdate() = 0;
@@ -727,6 +732,7 @@ namespace CBP
     private:
         virtual void ListUpdate();
         virtual void ListFilterSelected(listValue_t*& a_entry, const char*& a_curSelName);
+        virtual void ListDrawInfoText(listValue_t* a_entry);
 
         uint64_t m_lastCacheUpdateId;
 
@@ -753,6 +759,7 @@ namespace CBP
     private:
         virtual void ListUpdate();
         virtual void ListFilterSelected(listValue_t*& a_entry, const char*& a_curSelName);
+        virtual void ListDrawInfoText(listValue_t* a_entry);
     };
 
     class UICollisionGroups :

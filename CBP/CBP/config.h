@@ -358,7 +358,7 @@ namespace CBP
             float colHeightMin = 0.001f;
             float colHeightMax = 0.001f;
             float colRot[3]{ 0.0f, 0.0f, 0.0f };
-            float colRestitutionCoefficient = 0.33f;
+            float colRestitutionCoefficient = 0.25f;
             float colPenBiasFactor = 1.0f;
             float colPenMass = 1.0f;
         } phys;
@@ -492,19 +492,19 @@ namespace CBP
         static void CopyNodes(const configNodes_t& a_lhs, configNodes_t& a_rhs);
 
         [[nodiscard]] inline static auto& GetGlobalPhysicsConfig() {
-            return thingGlobalConfig;
+            return physicsGlobalConfig;
         }
 
         inline static void SetGlobalPhysicsConfig(const configComponents_t& a_rhs) noexcept {
-            thingGlobalConfig = a_rhs;
+            physicsGlobalConfig = a_rhs;
         }
 
         inline static void SetGlobalPhysicsConfig(configComponents_t&& a_rhs) noexcept {
-            thingGlobalConfig = std::forward<configComponents_t>(a_rhs);
+            physicsGlobalConfig = std::forward<configComponents_t>(a_rhs);
         }
 
         inline static void CopyToGlobalPhysicsConfig(const configComponents_t& a_rhs) {
-            CopyComponents(a_rhs, thingGlobalConfig);
+            CopyComponents(a_rhs, physicsGlobalConfig);
         }
 
         inline static void CopyToGlobalNodeConfig(const configNodes_t& a_rhs) {
@@ -512,7 +512,7 @@ namespace CBP
         }
 
         [[nodiscard]] inline static const auto& GetThingGlobalConfigDefaults() {
-            return thingGlobalConfigDefaults;
+            return physicsGlobalConfigDefaults;
         }
 
         [[nodiscard]] inline static auto& GetActorPhysicsConfigHolder() {
@@ -560,7 +560,7 @@ namespace CBP
         }
 
         inline static void ClearGlobalPhysicsConfig() {
-            thingGlobalConfig = thingGlobalConfigDefaults;
+            physicsGlobalConfig = physicsGlobalConfigDefaults;
         }
 
         [[nodiscard]] inline static const auto& GetNodeMap() {
@@ -674,7 +674,7 @@ namespace CBP
         }
 
         inline static void StoreDefaultProfile() {
-            defaultProfileStorage.components = thingGlobalConfig;
+            defaultProfileStorage.components = physicsGlobalConfig;
             defaultProfileStorage.nodes = globalNodeConfigHolder;
             defaultProfileStorage.stored = true;
         }
@@ -716,13 +716,21 @@ namespace CBP
             armorOverrides.clear();
         }
 
+        inline static const auto& GetPhysicsTemplateBase() {
+            return templateBasePhysicsHolder;
+        }
+        
+        inline static const auto& GetNodeTemplateBase() {
+            return templateBaseNodeHolder;
+        }
+
     private:
 
         [[nodiscard]] static bool LoadNodeMap(nodeMap_t& a_out);
         [[nodiscard]] static bool CompatLoadOldConf(configComponents_t& a_out);
 
-        static configComponents_t thingGlobalConfig;
-        static configComponents_t thingGlobalConfigDefaults;
+        static configComponents_t physicsGlobalConfig;
+        static configComponents_t physicsGlobalConfigDefaults;
         static actorConfigComponentsHolder_t actorConfHolder;
         static raceConfigComponentsHolder_t raceConfHolder;
         static configGlobal_t globalConfig;
@@ -742,6 +750,9 @@ namespace CBP
         static mergedConfCache_t mergedConfCache;
 
         static combinedData_t defaultProfileStorage;
+
+        static configNodes_t templateBaseNodeHolder;
+        static configComponents_t templateBasePhysicsHolder;
 
         static IConfigLog log;
     };
