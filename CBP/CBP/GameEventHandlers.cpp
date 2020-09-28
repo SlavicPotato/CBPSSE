@@ -50,8 +50,8 @@ namespace CBP
         if (!actor)
             return;
 
-        SKSE::ObjectHandle handle;
-        if (!SKSE::GetHandle(actor, actor->formType, handle))
+        Game::ObjectHandle handle;
+        if (!Game::GetHandle(actor, actor->formType, handle))
             return;
 
         auto form = LookupFormByID(evn->baseObject);

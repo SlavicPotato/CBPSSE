@@ -187,7 +187,7 @@ namespace CBP
         SimDebugInfo m_debugInfo;
 #endif
 
-        SKSE::FormID m_formid;
+        Game::FormID m_formid;
 
         __forceinline void ClampVelocity()
         {

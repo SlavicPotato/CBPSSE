@@ -29,7 +29,7 @@ namespace CBP
         using const_iterator = typename thingMap_t::const_iterator;
     public:
         SimObject(
-            SKSE::ObjectHandle a_handle,
+            Game::ObjectHandle a_handle,
             Actor* actor,
             char a_sex,
             uint64_t a_Id,
@@ -63,7 +63,7 @@ namespace CBP
         }
 
         [[nodiscard]] static auto CreateNodeDescriptorList(
-            SKSE::ObjectHandle a_handle,
+            Game::ObjectHandle a_handle,
             Actor* a_actor,
             char a_sex,
             const configComponents_t& a_config,
@@ -108,7 +108,7 @@ namespace CBP
         thingMap_t m_things;
         std::unordered_set<std::string> m_configGroups;
 
-        SKSE::ObjectHandle m_handle;
+        Game::ObjectHandle m_handle;
 
         //NiPointer<Actor> m_actor;
         NiPointer<NiNode> m_node;

@@ -3,7 +3,7 @@
 namespace CBP
 {
     auto SimObject::CreateNodeDescriptorList(
-        SKSE::ObjectHandle a_handle,
+        Game::ObjectHandle a_handle,
         Actor* a_actor,
         char a_sex,
         const configComponents_t& a_config,
@@ -55,7 +55,7 @@ namespace CBP
     }
 
     SimObject::SimObject(
-        SKSE::ObjectHandle a_handle,
+        Game::ObjectHandle a_handle,
         Actor* a_actor,
         char a_sex,
         uint64_t a_Id,

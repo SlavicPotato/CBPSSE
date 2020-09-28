@@ -32,8 +32,8 @@ namespace CBP
         if (!actor)
             return false;
 
-        SKSE::ObjectHandle handle;
-        if (!SKSE::GetHandle(actor, actor->formType, handle))
+        Game::ObjectHandle handle;
+        if (!Game::GetHandle(actor, actor->formType, handle))
             return false;
 
         auto cmd = ConfigUpdateTask::Create(handle, sect, key, val);
@@ -102,7 +102,7 @@ namespace CBP
     }
 
     ConfigUpdateTask* ConfigUpdateTask::Create(
-        SKSE::ObjectHandle a_handle,
+        Game::ObjectHandle a_handle,
         const BSFixedString& a_sect,
         const BSFixedString& a_key,
         float a_val)

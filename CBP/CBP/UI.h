@@ -100,10 +100,10 @@ namespace CBP
     };
 
     typedef std::pair<const std::string, configComponents_t> actorEntryPhysConf_t;
-    typedef std::map<SKSE::ObjectHandle, actorEntryPhysConf_t> actorListPhysConf_t;
+    typedef std::map<Game::ObjectHandle, actorEntryPhysConf_t> actorListPhysConf_t;
 
     typedef std::pair<const std::string, configNodes_t> actorEntryNodeConf_t;
-    typedef std::map<SKSE::ObjectHandle, actorEntryNodeConf_t> actorListNodeConf_t;
+    typedef std::map<Game::ObjectHandle, actorEntryNodeConf_t> actorListNodeConf_t;
 
     typedef std::vector<std::pair<const std::string, const configNode_t*>> nodeConfigList_t;
 
@@ -733,23 +733,23 @@ namespace CBP
 
     template <class T>
     class UIActorList :
-        public UIListBase<T, SKSE::ObjectHandle>
+        public UIListBase<T, Game::ObjectHandle>
     {
     public:
         void ActorListTick();
         virtual void ListReset();
     protected:
-        using listValue_t = typename UIListBase<T, SKSE::ObjectHandle>::listValue_t;
-        using entryValue_t = typename UIListBase<T, SKSE::ObjectHandle>::entryValue_t;
+        using listValue_t = typename UIListBase<T, Game::ObjectHandle>::listValue_t;
+        using entryValue_t = typename UIListBase<T, Game::ObjectHandle>::entryValue_t;
 
         UIActorList(bool a_mark);
         virtual ~UIActorList() noexcept = default;
 
         virtual listValue_t* ListGetSelected();
         virtual void ListDraw(listValue_t*& a_entry, const char*& a_curSelName);
-        virtual void ListSetCurrentItem(SKSE::ObjectHandle a_handle);
+        virtual void ListSetCurrentItem(Game::ObjectHandle a_handle);
 
-        virtual ConfigClass GetActorClass(SKSE::ObjectHandle a_handle) const = 0;
+        virtual ConfigClass GetActorClass(Game::ObjectHandle a_handle) const = 0;
         [[nodiscard]] virtual configGlobalActor_t& GetActorConfig() const = 0;
     private:
         virtual void ListUpdate();
@@ -763,17 +763,17 @@ namespace CBP
 
     template <class T>
     class UIRaceList :
-        protected UIListBase<T, SKSE::FormID>
+        protected UIListBase<T, Game::FormID>
     {
     protected:
-        using listValue_t = typename UIListBase<T, SKSE::FormID>::listValue_t;
-        using entryValue_t = typename UIListBase<T, SKSE::FormID>::entryValue_t;
+        using listValue_t = typename UIListBase<T, Game::FormID>::listValue_t;
+        using entryValue_t = typename UIListBase<T, Game::FormID>::entryValue_t;
 
         UIRaceList();
         virtual ~UIRaceList() noexcept = default;
 
         virtual listValue_t* ListGetSelected();
-        virtual void ListSetCurrentItem(SKSE::FormID a_formid);
+        virtual void ListSetCurrentItem(Game::FormID a_formid);
 
         [[nodiscard]] virtual configGlobalRace_t& GetRaceConfig() const = 0;
 
@@ -798,7 +798,7 @@ namespace CBP
     class UIActorEditorNode :
         public UIActorList<actorListNodeConf_t>,
         UIProfileSelector<actorListNodeConf_t::value_type, NodeProfile>,
-        UINode<SKSE::ObjectHandle, UIEditorID::kNodeEditor>
+        UINode<Game::ObjectHandle, UIEditorID::kNodeEditor>
     {
     public:
         UIActorEditorNode() noexcept;
@@ -806,27 +806,27 @@ namespace CBP
         void Draw(bool* a_active);
         void Reset();
     private:
-        virtual void ListResetAllValues(SKSE::ObjectHandle a_handle);
-        [[nodiscard]] virtual const entryValue_t& GetData(SKSE::ObjectHandle a_handle) const;
+        virtual void ListResetAllValues(Game::ObjectHandle a_handle);
+        [[nodiscard]] virtual const entryValue_t& GetData(Game::ObjectHandle a_handle) const;
         [[nodiscard]] virtual const entryValue_t& GetData(const listValue_t* a_data) const;
 
         virtual void ApplyProfile(listValue_t* a_data, const NodeProfile& a_profile);
 
         virtual void UpdateNodeData(
-            SKSE::ObjectHandle a_handle,
+            Game::ObjectHandle a_handle,
             const std::string& a_node,
             const configNode_t& a_data,
             bool a_reset);
 
-        [[nodiscard]] virtual ConfigClass GetActorClass(SKSE::ObjectHandle a_handle) const;
+        [[nodiscard]] virtual ConfigClass GetActorClass(Game::ObjectHandle a_handle) const;
         [[nodiscard]] virtual configGlobalActor_t& GetActorConfig() const;
     };
 
     typedef std::pair<const std::string, configComponents_t> raceEntryPhysConf_t;
-    typedef std::map<SKSE::FormID, raceEntryPhysConf_t> raceListPhysConf_t;
+    typedef std::map<Game::FormID, raceEntryPhysConf_t> raceListPhysConf_t;
 
     typedef std::pair<const std::string, configNodes_t> raceEntryNodeConf_t;
-    typedef std::map<SKSE::FormID, raceEntryNodeConf_t> raceListNodeConf_t;
+    typedef std::map<Game::FormID, raceEntryNodeConf_t> raceListNodeConf_t;
 
     template <class T, class N>
     class UIRaceEditorBase :
@@ -847,7 +847,7 @@ namespace CBP
         UIRaceEditorBase() noexcept;
         virtual ~UIRaceEditorBase() noexcept = default;
 
-        [[nodiscard]] virtual const entryValue_t& GetData(SKSE::FormID a_formid) const = 0;
+        [[nodiscard]] virtual const entryValue_t& GetData(Game::FormID a_formid) const = 0;
 
         inline void MarkChanged() { m_changed = true; }
 
@@ -856,7 +856,7 @@ namespace CBP
 
     class UIRaceEditorNode :
         public UIRaceEditorBase<raceListNodeConf_t, NodeProfile>,
-        UINode<SKSE::FormID, UIEditorID::kRaceNodeEditor>
+        UINode<Game::FormID, UIEditorID::kRaceNodeEditor>
     {
     public:
         UIRaceEditorNode() noexcept;
@@ -865,16 +865,16 @@ namespace CBP
 
     private:
 
-        [[nodiscard]] virtual const entryValue_t& GetData(SKSE::FormID a_formid) const;
+        [[nodiscard]] virtual const entryValue_t& GetData(Game::FormID a_formid) const;
         [[nodiscard]] virtual const entryValue_t& GetData(const listValue_t* a_entry) const;
 
         [[nodiscard]] virtual configGlobalRace_t& GetRaceConfig() const;
 
-        virtual void ListResetAllValues(SKSE::FormID a_formid);
+        virtual void ListResetAllValues(Game::FormID a_formid);
         virtual void ApplyProfile(listValue_t* a_data, const NodeProfile& a_profile);
 
         virtual void UpdateNodeData(
-            SKSE::FormID a_formid,
+            Game::FormID a_formid,
             const std::string& a_node,
             const configNode_t& a_data,
             bool a_reset);
@@ -882,7 +882,7 @@ namespace CBP
 
     class UIRaceEditorPhysics :
         public UIRaceEditorBase<raceListPhysConf_t, PhysicsProfile>,
-        UISimComponent<SKSE::FormID, UIEditorID::kRacePhysicsEditor>
+        UISimComponent<Game::FormID, UIEditorID::kRacePhysicsEditor>
     {
     public:
         UIRaceEditorPhysics() noexcept;
@@ -891,49 +891,49 @@ namespace CBP
     private:
 
         virtual void ApplyProfile(listValue_t* a_data, const PhysicsProfile& a_profile);
-        [[nodiscard]] virtual const entryValue_t& GetData(SKSE::FormID a_formid) const;
+        [[nodiscard]] virtual const entryValue_t& GetData(Game::FormID a_formid) const;
         [[nodiscard]] virtual const entryValue_t& GetData(const listValue_t* a_entry) const;
 
         [[nodiscard]] virtual configGlobalRace_t& GetRaceConfig() const;
 
-        virtual void ListResetAllValues(SKSE::FormID a_formid);
+        virtual void ListResetAllValues(Game::FormID a_formid);
 
         virtual void DrawConfGroupNodeMenu(
-            SKSE::FormID a_handle,
+            Game::FormID a_handle,
             nodeConfigList_t& a_nodeList
         );
 
         virtual void OnSimSliderChange(
-            SKSE::FormID a_formid,
+            Game::FormID a_formid,
             configComponents_t& a_data,
             configComponentsValue_t& a_pair,
             const componentValueDescMap_t::vec_value_type& a_desc,
             float* a_val);
 
         virtual void OnColliderShapeChange(
-            SKSE::FormID a_formid,
+            Game::FormID a_formid,
             configComponents_t& a_data,
             configComponentsValue_t& a_pair,
             const componentValueDescMap_t::vec_value_type& a_desc);
 
         virtual void OnComponentUpdate(
-            SKSE::FormID a_formid,
+            Game::FormID a_formid,
             configComponents_t& a_data,
             configComponentsValue_t& a_pair);
 
         virtual bool GetNodeConfig(
-            SKSE::FormID a_handle,
+            Game::FormID a_handle,
             const std::string& a_node,
             nodeConfigList_t& a_out) const;
 
         virtual void UpdateNodeData(
-            SKSE::FormID a_handle,
+            Game::FormID a_handle,
             const std::string& a_node,
             const configNode_t& a_data,
             bool a_reset);
 
         virtual bool ShouldDrawComponent(
-            SKSE::FormID a_handle,
+            Game::FormID a_handle,
             nodeConfigList_t& a_nodeConfig) const;
 
         virtual bool HasMovement(
@@ -1109,38 +1109,38 @@ namespace CBP
         UIApplyForce<actorListPhysConf_t::value_type>
     {
         class UISimComponentActor :
-            public UISimComponent<SKSE::ObjectHandle, UIEditorID::kMainEditor>
+            public UISimComponent<Game::ObjectHandle, UIEditorID::kMainEditor>
         {
         public:
             UISimComponentActor(UIContext& a_parent);
 
         private:
             virtual void DrawConfGroupNodeMenu(
-                SKSE::ObjectHandle a_handle,
+                Game::ObjectHandle a_handle,
                 nodeConfigList_t& a_nodeList
             );
 
             virtual void OnSimSliderChange(
-                SKSE::ObjectHandle a_handle,
+                Game::ObjectHandle a_handle,
                 configComponents_t& a_data,
                 configComponentsValue_t& a_pair,
                 const componentValueDescMap_t::vec_value_type& a_desc,
                 float* a_val);
 
             virtual void OnColliderShapeChange(
-                SKSE::ObjectHandle a_handle,
+                Game::ObjectHandle a_handle,
                 configComponents_t& a_data,
                 configComponentsValue_t& a_pair,
                 const componentValueDescMap_t::vec_value_type& a_desc
             );
 
             virtual void OnComponentUpdate(
-                SKSE::ObjectHandle a_handle,
+                Game::ObjectHandle a_handle,
                 configComponents_t& a_data,
                 configComponentsValue_t& a_pair);
 
             virtual bool ShouldDrawComponent(
-                SKSE::ObjectHandle a_handle,
+                Game::ObjectHandle a_handle,
                 nodeConfigList_t& a_nodeConfig) const;
 
             virtual bool HasMovement(
@@ -1150,16 +1150,16 @@ namespace CBP
                 nodeConfigList_t& a_nodeConfig) const;
 
             virtual const armorCacheEntry_t::mapped_type* GetArmorOverrideSection(
-                SKSE::ObjectHandle a_handle,
+                Game::ObjectHandle a_handle,
                 const std::string& a_comp) const;
 
             virtual bool GetNodeConfig(
-                SKSE::ObjectHandle a_handle,
+                Game::ObjectHandle a_handle,
                 const std::string& a_node,
                 nodeConfigList_t& a_out) const;
 
             virtual void UpdateNodeData(
-                SKSE::ObjectHandle a_handle,
+                Game::ObjectHandle a_handle,
                 const std::string& a_node,
                 const configNode_t& a_data,
                 bool a_reset);
@@ -1172,38 +1172,38 @@ namespace CBP
         };
 
         class UISimComponentGlobal :
-            public UISimComponent<SKSE::ObjectHandle, UIEditorID::kMainEditor>
+            public UISimComponent<Game::ObjectHandle, UIEditorID::kMainEditor>
         {
         public:
             UISimComponentGlobal(UIContext& a_parent);
 
         private:
             virtual void DrawConfGroupNodeMenu(
-                SKSE::ObjectHandle a_handle,
+                Game::ObjectHandle a_handle,
                 nodeConfigList_t& a_nodeList
             );
 
             virtual void OnSimSliderChange(
-                SKSE::ObjectHandle a_handle,
+                Game::ObjectHandle a_handle,
                 configComponents_t& a_data,
                 configComponentsValue_t& a_pair,
                 const componentValueDescMap_t::vec_value_type& a_desc,
                 float* a_val);
 
             virtual void OnColliderShapeChange(
-                SKSE::ObjectHandle a_handle,
+                Game::ObjectHandle a_handle,
                 configComponents_t& a_data,
                 configComponentsValue_t& a_pair,
                 const componentValueDescMap_t::vec_value_type& a_desc
             );
 
             virtual void OnComponentUpdate(
-                SKSE::ObjectHandle a_handle,
+                Game::ObjectHandle a_handle,
                 configComponents_t& a_data,
                 configComponentsValue_t& a_pair);
 
             virtual bool ShouldDrawComponent(
-                SKSE::ObjectHandle a_handle,
+                Game::ObjectHandle a_handle,
                 nodeConfigList_t& a_nodeConfig) const;
 
             virtual bool HasMovement(
@@ -1213,12 +1213,12 @@ namespace CBP
                 nodeConfigList_t& a_nodeConfig) const;
 
             virtual bool GetNodeConfig(
-                SKSE::ObjectHandle a_handle,
+                Game::ObjectHandle a_handle,
                 const std::string& a_node,
                 nodeConfigList_t& a_out) const;
 
             virtual void UpdateNodeData(
-                SKSE::ObjectHandle a_handle,
+                Game::ObjectHandle a_handle,
                 const std::string& a_node,
                 const configNode_t& a_data,
                 bool a_reset);
@@ -1259,12 +1259,12 @@ namespace CBP
             const std::string& a_component,
             const NiPoint3& a_force) const;
 
-        virtual void ListResetAllValues(SKSE::ObjectHandle a_handle);
+        virtual void ListResetAllValues(Game::ObjectHandle a_handle);
 
-        [[nodiscard]] virtual const entryValue_t& GetData(SKSE::ObjectHandle a_handle) const;
+        [[nodiscard]] virtual const entryValue_t& GetData(Game::ObjectHandle a_handle) const;
         [[nodiscard]] virtual const entryValue_t& GetData(const listValue_t* a_data) const;
 
-        [[nodiscard]] virtual ConfigClass GetActorClass(SKSE::ObjectHandle a_handle) const;
+        [[nodiscard]] virtual ConfigClass GetActorClass(Game::ObjectHandle a_handle) const;
         [[nodiscard]] virtual configGlobalActor_t& GetActorConfig() const;
 
         uint32_t m_activeLoadInstance;

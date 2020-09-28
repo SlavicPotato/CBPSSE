@@ -107,7 +107,7 @@ namespace CBP
                             if (!e.isNumeric())
                                 throw std::exception("Unexpected formid data (not numeric)");
 
-                            e2.formids.push_back(static_cast<SKSE::FormID>(e.asUInt()));
+                            e2.formids.push_back(static_cast<Game::FormID>(e.asUInt()));
                         }
 
                         e2.type = TRecTargetType::FormIDs;

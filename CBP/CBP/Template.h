@@ -26,7 +26,7 @@ namespace CBP
         {
             TRecTargetType type;
             TRecTargetGender gender = TRecTargetGender::Any;
-            std::vector<SKSE::FormID> formids;
+            std::vector<Game::FormID> formids;
         };
 
     public:
@@ -59,8 +59,8 @@ namespace CBP
 
     class ITemplate
     {
-        typedef std::unordered_map<SKSE::FormID, PhysicsProfile&> templateDataHolderPhysics_t;
-        typedef std::unordered_map<SKSE::FormID, NodeProfile&> templateDataHolderNode_t;
+        typedef std::unordered_map<Game::FormID, PhysicsProfile&> templateDataHolderPhysics_t;
+        typedef std::unordered_map<Game::FormID, NodeProfile&> templateDataHolderNode_t;
 
 
         template <class T>
@@ -75,7 +75,7 @@ namespace CBP
             };
 
             typedef std::unordered_map<UInt32, profileData_t> templateModMap_t;
-            typedef std::unordered_map<UInt32, std::pair<std::unordered_map<SKSE::FormID, profileData_t>, std::unordered_map<SKSE::FormID, profileData_t>>> templateFormMap_t;
+            typedef std::unordered_map<UInt32, std::pair<std::unordered_map<Game::FormID, profileData_t>, std::unordered_map<Game::FormID, profileData_t>>> templateFormMap_t;
 
             friend class ITemplate;
 
@@ -189,7 +189,7 @@ namespace CBP
         /*template <typename T>
         __forceinline static const T* GetProfileRaceImpl(
             const DataHolder<T>& a_data,
-            SKSE::FormID a_formid)
+            Game::FormID a_formid)
         {
             UInt32 modIndex;
             if (!Game::GetModIndex(a_param->npc, modIndex))

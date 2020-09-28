@@ -116,7 +116,7 @@ namespace CBP
         {
         public:
             ApplyForceTask(
-                SKSE::ObjectHandle a_handle,
+                Game::ObjectHandle a_handle,
                 uint32_t a_steps,
                 const std::string& a_component,
                 const NiPoint3& a_force
@@ -127,7 +127,7 @@ namespace CBP
                 delete this;
             }
         private:
-            SKSE::ObjectHandle m_handle;
+            Game::ObjectHandle m_handle;
             uint32_t m_steps;
             std::string m_component;
             NiPoint3 m_force;
@@ -140,19 +140,19 @@ namespace CBP
             virtual void Run();
         };
 
-        typedef void (*mainLoopUpdateFunc_t)(SKSE::BSMain *a_main);
+        typedef void (*mainLoopUpdateFunc_t)(Game::BSMain *a_main);
 
     public:
 
         static bool LoadPaths();
         static void Initialize();
 
-        static void MainLoop_Hook(SKSE::BSMain* a_main);
+        static void MainLoop_Hook(Game::BSMain* a_main);
         static void OnCreateArmorNode(TESObjectREFR* a_ref, BipedParam* a_params);
         static NiAVObject* CreateArmorNode_Hook(NiAVObject* a_obj, Biped* a_info, BipedParam* a_params);
 
         static void DispatchActorTask(Actor* actor, UTTask::UTTAction action);
-        static void DispatchActorTask(SKSE::ObjectHandle handle, UTTask::UTTAction action);
+        static void DispatchActorTask(Game::ObjectHandle handle, UTTask::UTTAction action);
 
         [[nodiscard]] inline static const auto& GetSimActorList() {
             return m_Instance.m_updateTask.GetSimActorList();
@@ -162,16 +162,16 @@ namespace CBP
         static void UpdateGroupInfoOnAllActors();
         static void ResetPhysics();
         static void NiNodeUpdate();
-        static void NiNodeUpdate(SKSE::ObjectHandle a_handle);
+        static void NiNodeUpdate(Game::ObjectHandle a_handle);
         static void WeightUpdate();
-        static void WeightUpdate(SKSE::ObjectHandle a_handle);
+        static void WeightUpdate(Game::ObjectHandle a_handle);
         static void ClearArmorOverrides();
         static void UpdateArmorOverridesAll();
         static void ResetActors();
         static void UpdateDebugRendererState();
         static void UpdateDebugRendererSettings();
         static void UpdateProfilerSettings();
-        static void ApplyForce(SKSE::ObjectHandle a_handle, uint32_t a_steps, const std::string& a_component, const NiPoint3& a_force);
+        static void ApplyForce(Game::ObjectHandle a_handle, uint32_t a_steps, const std::string& a_component, const NiPoint3& a_force);
 
         static bool SaveAll();
 
@@ -264,7 +264,7 @@ namespace CBP
             m_Instance.m_inputEventHandler.UpdateKeys();
         }
 
-        inline static void SetMarkedActor(SKSE::ObjectHandle a_handle) {
+        inline static void SetMarkedActor(Game::ObjectHandle a_handle) {
             m_Instance.m_updateTask.SetMarkedActor(a_handle);
         }
 

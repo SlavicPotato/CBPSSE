@@ -7,7 +7,7 @@
 namespace CBP
 {
     __forceinline static void UpdateRaceNodeData(
-        SKSE::FormID a_formid,
+        Game::FormID a_formid,
         const std::string& a_node,
         const configNode_t& a_data,
         bool a_reset)
@@ -607,7 +607,7 @@ namespace CBP
 
     template <class T>
     UIRaceList<T>::UIRaceList() :
-        UIListBase<T, SKSE::FormID>()
+        UIListBase<T, Game::FormID>()
     {
     }
 
@@ -628,7 +628,7 @@ namespace CBP
     }
 
     template <class T>
-    void UIRaceList<T>::ListSetCurrentItem(SKSE::FormID a_formid)
+    void UIRaceList<T>::ListSetCurrentItem(Game::FormID a_formid)
     {
         m_listCurrent = a_formid;
     }
@@ -768,7 +768,7 @@ namespace CBP
     template <class T, class N>
     void UIRaceEditorBase<T, N>::Reset() {
 
-        UIListBase<T, SKSE::FormID>::ListReset();
+        UIListBase<T, Game::FormID>::ListReset();
         m_changed = false;
     }
 
@@ -777,7 +777,7 @@ namespace CBP
     {
     }
 
-    void UIRaceEditorNode::ListResetAllValues(SKSE::FormID a_formid)
+    void UIRaceEditorNode::ListResetAllValues(Game::FormID a_formid)
     {
         IConfig::EraseRaceNodeConfig(a_formid);
 
@@ -786,7 +786,7 @@ namespace CBP
         DCBP::ResetActors();
     }
 
-    auto UIRaceEditorNode::GetData(SKSE::FormID a_formid) const ->
+    auto UIRaceEditorNode::GetData(Game::FormID a_formid) const ->
         const entryValue_t&
     {
         return IConfig::GetRaceNodeConfig(a_formid);
@@ -819,7 +819,7 @@ namespace CBP
     }
 
     void UIRaceEditorNode::UpdateNodeData(
-        SKSE::FormID a_formid,
+        Game::FormID a_formid,
         const std::string& a_node,
         const configNode_t& a_data,
         bool a_reset)
@@ -996,7 +996,7 @@ namespace CBP
         DCBP::UpdateConfigOnAllActors();
     }
 
-    auto UIRaceEditorPhysics::GetData(SKSE::FormID a_formid) const ->
+    auto UIRaceEditorPhysics::GetData(Game::FormID a_formid) const ->
         const entryValue_t&
     {
         return IConfig::GetRacePhysicsConfig(a_formid);
@@ -1013,7 +1013,7 @@ namespace CBP
         return IConfig::GetGlobalConfig().ui.racePhysics;
     }
 
-    void UIRaceEditorPhysics::ListResetAllValues(SKSE::FormID a_formid)
+    void UIRaceEditorPhysics::ListResetAllValues(Game::FormID a_formid)
     {
         IConfig::EraseRacePhysicsConfig(a_formid);
 
@@ -1025,7 +1025,7 @@ namespace CBP
     }
 
     void UIRaceEditorPhysics::DrawConfGroupNodeMenu(
-        SKSE::FormID a_formid,
+        Game::FormID a_formid,
         nodeConfigList_t& a_nodeList
     )
     {
@@ -1033,7 +1033,7 @@ namespace CBP
     }
 
     void UIRaceEditorPhysics::OnSimSliderChange(
-        SKSE::FormID a_formid,
+        Game::FormID a_formid,
         configComponents_t& a_data,
         configComponentsValue_t& a_pair,
         const componentValueDescMap_t::vec_value_type& a_desc,
@@ -1069,7 +1069,7 @@ namespace CBP
     }
 
     void UIRaceEditorPhysics::OnColliderShapeChange(
-        SKSE::FormID a_formid,
+        Game::FormID a_formid,
         configComponents_t& a_data,
         configComponentsValue_t& a_pair,
         const componentValueDescMap_t::vec_value_type& a_desc)
@@ -1084,7 +1084,7 @@ namespace CBP
     }
 
     void UIRaceEditorPhysics::OnComponentUpdate(
-        SKSE::FormID a_formid,
+        Game::FormID a_formid,
         configComponents_t& a_data,
         configComponentsValue_t& a_pair)
     {
@@ -1099,7 +1099,7 @@ namespace CBP
     }
 
     bool UIRaceEditorPhysics::GetNodeConfig(
-        SKSE::FormID a_formid,
+        Game::FormID a_formid,
         const std::string& a_confGroup,
         nodeConfigList_t& a_out) const
     {
@@ -1122,7 +1122,7 @@ namespace CBP
     }
 
     void UIRaceEditorPhysics::UpdateNodeData(
-        SKSE::FormID a_formid,
+        Game::FormID a_formid,
         const std::string& a_node,
         const configNode_t& a_data,
         bool a_reset)
@@ -1132,7 +1132,7 @@ namespace CBP
     }
 
     bool UIRaceEditorPhysics::ShouldDrawComponent(
-        SKSE::FormID,
+        Game::FormID,
         nodeConfigList_t& a_nodeConfig) const
     {
         for (const auto& e : a_nodeConfig)
@@ -1469,7 +1469,7 @@ namespace CBP
 
     template <typename T>
     UIActorList<T>::UIActorList(bool a_mark) :
-        UIListBase<T, SKSE::ObjectHandle>(),
+        UIListBase<T, Game::ObjectHandle>(),
         m_lastCacheUpdateId(0),
         m_markActor(a_mark)
     {
@@ -1499,12 +1499,12 @@ namespace CBP
         }
 
         auto tmp(IConfig::GetTemplateBase<entryValue_t>());
-        IConfig::Copy(GetData(SKSE::ObjectHandle(0)), tmp);
+        IConfig::Copy(GetData(Game::ObjectHandle(0)), tmp);
         m_listData.try_emplace(0, "Global", std::move(tmp));
 
         if (m_listData.size() == 1) {
             _snprintf_s(m_listBuf1, _TRUNCATE, "No actors");
-            ListSetCurrentItem(SKSE::ObjectHandle(0));
+            ListSetCurrentItem(Game::ObjectHandle(0));
             return;
         }
 
@@ -1520,9 +1520,9 @@ namespace CBP
             }
         }
 
-        if (m_listCurrent != SKSE::ObjectHandle(0)) {
+        if (m_listCurrent != Game::ObjectHandle(0)) {
             if (m_listData.find(m_listCurrent) == m_listData.end())
-                ListSetCurrentItem(SKSE::ObjectHandle(0));
+                ListSetCurrentItem(Game::ObjectHandle(0));
         }
         else {
             if (actorConf.lastActor &&
@@ -1548,12 +1548,12 @@ namespace CBP
     template <typename T>
     void UIActorList<T>::ListReset()
     {
-        UIListBase<T, SKSE::ObjectHandle>::ListReset();
+        UIListBase<T, Game::ObjectHandle>::ListReset();
         m_lastCacheUpdateId = IData::GetActorCacheUpdateId() - 1;
     }
 
     template <typename T>
-    void UIActorList<T>::ListSetCurrentItem(SKSE::ObjectHandle a_handle)
+    void UIActorList<T>::ListSetCurrentItem(Game::ObjectHandle a_handle)
     {
         auto& globalConfig = IConfig::GetGlobalConfig();
         auto& actorConf = GetActorConfig();
@@ -1603,7 +1603,7 @@ namespace CBP
 
                 std::string label(e.second.first);
 
-                if (e.first != SKSE::ObjectHandle(0))
+                if (e.first != Game::ObjectHandle(0))
                 {
                     switch (GetActorClass(e.first))
                     {
@@ -1631,7 +1631,7 @@ namespace CBP
             ImGui::EndCombo();
         }
 
-        if (a_entry->first != SKSE::ObjectHandle(0))
+        if (a_entry->first != Game::ObjectHandle(0))
             ListDrawInfo(a_entry);
 
         ImGui::SameLine();
@@ -2039,7 +2039,7 @@ namespace CBP
                 if (ImGui::MenuItem("Weight update"))
                     DCBP::WeightUpdate();
 
-                if (a_entry->first != SKSE::ObjectHandle(0))
+                if (a_entry->first != Game::ObjectHandle(0))
                 {
                     ImGui::Separator();
 
@@ -2169,7 +2169,7 @@ namespace CBP
 
             ImGui::Separator();
 
-            if (m_listCurrent != SKSE::ObjectHandle(0)) {
+            if (m_listCurrent != Game::ObjectHandle(0)) {
                 m_scActor.DrawSimComponents(m_listCurrent, entry->second.second);
             }
             else {
@@ -2692,10 +2692,10 @@ namespace CBP
         ImGui::PopID();
     }
 
-    auto UIActorEditorNode::GetData(SKSE::ObjectHandle a_handle) const ->
+    auto UIActorEditorNode::GetData(Game::ObjectHandle a_handle) const ->
         const entryValue_t&
     {
-        return a_handle == SKSE::ObjectHandle(0) ?
+        return a_handle == Game::ObjectHandle(0) ?
             IConfig::GetGlobalNodeConfig() :
             IConfig::GetActorNodeConfig(a_handle);
     }
@@ -2703,7 +2703,7 @@ namespace CBP
     auto UIActorEditorNode::GetData(const listValue_t* a_data) const ->
         const entryValue_t&
     {
-        return a_data->first == SKSE::ObjectHandle(0) ?
+        return a_data->first == Game::ObjectHandle(0) ?
             IConfig::GetGlobalNodeConfig() :
             a_data->second.second;
     }
@@ -2712,7 +2712,7 @@ namespace CBP
     {
         auto& profileData = a_profile.Data();
 
-        if (a_data->first == SKSE::ObjectHandle(0))
+        if (a_data->first == Game::ObjectHandle(0))
         {
             IConfig::CopyBase(profileData, a_data->second.second);
             IConfig::SetGlobalNodeConfig(profileData);
@@ -2725,7 +2725,7 @@ namespace CBP
         DCBP::ResetActors();
     }
 
-    void UIActorEditorNode::ListResetAllValues(SKSE::ObjectHandle a_handle)
+    void UIActorEditorNode::ListResetAllValues(Game::ObjectHandle a_handle)
     {
         IConfig::EraseActorNodeConfig(a_handle);
 
@@ -2737,7 +2737,7 @@ namespace CBP
     }
 
     void UIActorEditorNode::UpdateNodeData(
-        SKSE::ObjectHandle a_handle,
+        Game::ObjectHandle a_handle,
         const std::string& a_node,
         const configNode_t& a_data,
         bool a_reset)
@@ -2763,7 +2763,7 @@ namespace CBP
         }
     }
 
-    ConfigClass UIActorEditorNode::GetActorClass(SKSE::ObjectHandle a_handle) const
+    ConfigClass UIActorEditorNode::GetActorClass(Game::ObjectHandle a_handle) const
     {
         return IConfig::GetActorNodeConfigClass(a_handle);
     }
@@ -2774,13 +2774,13 @@ namespace CBP
     }
 
     UIContext::UISimComponentActor::UISimComponentActor(UIContext& a_parent) :
-        UISimComponent<SKSE::ObjectHandle, UIEditorID::kMainEditor>(),
+        UISimComponent<Game::ObjectHandle, UIEditorID::kMainEditor>(),
         m_ctxParent(a_parent)
     {
     }
 
     void UIContext::UISimComponentActor::DrawConfGroupNodeMenu(
-        SKSE::ObjectHandle a_handle,
+        Game::ObjectHandle a_handle,
         nodeConfigList_t& a_nodeList
     )
     {
@@ -2788,7 +2788,7 @@ namespace CBP
     }
 
     void UIContext::UISimComponentActor::OnSimSliderChange(
-        SKSE::ObjectHandle a_handle,
+        Game::ObjectHandle a_handle,
         configComponents_t& a_data,
         configComponentsValue_t& a_pair,
         const componentValueDescMap_t::vec_value_type& a_desc,
@@ -2823,7 +2823,7 @@ namespace CBP
     }
 
     void UIContext::UISimComponentActor::OnColliderShapeChange(
-        SKSE::ObjectHandle a_handle,
+        Game::ObjectHandle a_handle,
         configComponents_t& a_data,
         configComponentsValue_t& a_pair,
         const componentValueDescMap_t::vec_value_type& a_desc)
@@ -2837,7 +2837,7 @@ namespace CBP
     }
 
     void UIContext::UISimComponentActor::OnComponentUpdate(
-        SKSE::ObjectHandle a_handle,
+        Game::ObjectHandle a_handle,
         configComponents_t& a_data,
         configComponentsValue_t& a_pair)
     {
@@ -2851,7 +2851,7 @@ namespace CBP
     }
 
     bool UIContext::UISimComponentActor::GetNodeConfig(
-        SKSE::ObjectHandle a_handle,
+        Game::ObjectHandle a_handle,
         const std::string& a_confGroup,
         nodeConfigList_t& a_out) const
     {
@@ -2874,7 +2874,7 @@ namespace CBP
     }
 
     void UIContext::UISimComponentActor::UpdateNodeData(
-        SKSE::ObjectHandle a_handle,
+        Game::ObjectHandle a_handle,
         const std::string& a_node,
         const configNode_t& a_data,
         bool a_reset)
@@ -2902,7 +2902,7 @@ namespace CBP
     }
 
     bool UIContext::UISimComponentActor::ShouldDrawComponent(
-        SKSE::ObjectHandle,
+        Game::ObjectHandle,
         nodeConfigList_t& a_nodeConfig) const
     {
         for (const auto& e : a_nodeConfig)
@@ -2933,20 +2933,20 @@ namespace CBP
     }
 
     const armorCacheEntry_t::mapped_type* UIContext::UISimComponentActor::GetArmorOverrideSection(
-        SKSE::ObjectHandle a_handle,
+        Game::ObjectHandle a_handle,
         const std::string& a_comp) const
     {
         return IConfig::GetArmorOverrideSection(a_handle, a_comp);
     }
 
     UIContext::UISimComponentGlobal::UISimComponentGlobal(UIContext& a_parent) :
-        UISimComponent<SKSE::ObjectHandle, UIEditorID::kMainEditor>(),
+        UISimComponent<Game::ObjectHandle, UIEditorID::kMainEditor>(),
         m_ctxParent(a_parent)
     {
     }
 
     void UIContext::UISimComponentGlobal::DrawConfGroupNodeMenu(
-        SKSE::ObjectHandle a_handle,
+        Game::ObjectHandle a_handle,
         nodeConfigList_t& a_nodeList
     )
     {
@@ -2954,7 +2954,7 @@ namespace CBP
     }
 
     void UIContext::UISimComponentGlobal::OnSimSliderChange(
-        SKSE::ObjectHandle a_handle,
+        Game::ObjectHandle a_handle,
         configComponents_t& a_data,
         configComponentsValue_t& a_pair,
         const componentValueDescMap_t::vec_value_type& a_desc,
@@ -2989,7 +2989,7 @@ namespace CBP
     }
 
     void UIContext::UISimComponentGlobal::OnColliderShapeChange(
-        SKSE::ObjectHandle,
+        Game::ObjectHandle,
         configComponents_t& a_data,
         configComponentsValue_t& a_pair,
         const componentValueDescMap_t::vec_value_type&)
@@ -3003,7 +3003,7 @@ namespace CBP
     }
 
     void UIContext::UISimComponentGlobal::OnComponentUpdate(
-        SKSE::ObjectHandle,
+        Game::ObjectHandle,
         configComponents_t& a_data,
         configComponentsValue_t& a_pair)
     {
@@ -3017,7 +3017,7 @@ namespace CBP
     }
 
     bool UIContext::UISimComponentGlobal::GetNodeConfig(
-        SKSE::ObjectHandle a_handle,
+        Game::ObjectHandle a_handle,
         const std::string& a_confGroup,
         nodeConfigList_t& a_out) const
     {
@@ -3041,7 +3041,7 @@ namespace CBP
     }
 
     void UIContext::UISimComponentGlobal::UpdateNodeData(
-        SKSE::ObjectHandle a_handle,
+        Game::ObjectHandle a_handle,
         const std::string& a_node,
         const configNode_t& a_data,
         bool a_reset)
@@ -3059,7 +3059,7 @@ namespace CBP
     }
 
     bool UIContext::UISimComponentGlobal::ShouldDrawComponent(
-        SKSE::ObjectHandle,
+        Game::ObjectHandle,
         nodeConfigList_t& a_nodeConfig) const
     {
         for (const auto& e : a_nodeConfig)
@@ -3103,7 +3103,7 @@ namespace CBP
     {
         auto& profileData = a_profile.Data();
 
-        if (a_data->first == SKSE::ObjectHandle(0))
+        if (a_data->first == Game::ObjectHandle(0))
         {
             IConfig::CopyBase(profileData, a_data->second.second);
             IConfig::SetGlobalPhysicsConfig(profileData);
@@ -3119,10 +3119,10 @@ namespace CBP
         }
     }
 
-    auto UIContext::GetData(SKSE::ObjectHandle a_handle) const ->
+    auto UIContext::GetData(Game::ObjectHandle a_handle) const ->
         const entryValue_t&
     {
-        return a_handle == SKSE::ObjectHandle(0) ?
+        return a_handle == Game::ObjectHandle(0) ?
             IConfig::GetGlobalPhysicsConfig() :
             IConfig::GetActorPhysicsConfig(a_handle);
     }
@@ -3130,12 +3130,12 @@ namespace CBP
     auto UIContext::GetData(const listValue_t* a_data) const ->
         const entryValue_t&
     {
-        return a_data->first == SKSE::ObjectHandle(0) ?
+        return a_data->first == Game::ObjectHandle(0) ?
             IConfig::GetGlobalPhysicsConfig() :
             a_data->second.second;
     }
 
-    void UIContext::ListResetAllValues(SKSE::ObjectHandle a_handle)
+    void UIContext::ListResetAllValues(Game::ObjectHandle a_handle)
     {
         IConfig::EraseActorConf(a_handle);
 
@@ -3144,7 +3144,7 @@ namespace CBP
             m_listData.at(a_handle).second);
     }
 
-    ConfigClass UIContext::GetActorClass(SKSE::ObjectHandle a_handle) const
+    ConfigClass UIContext::GetActorClass(Game::ObjectHandle a_handle) const
     {
         return IConfig::GetActorPhysicsConfigClass(a_handle);
     }

@@ -83,8 +83,8 @@ namespace fs = std::filesystem;
 //#define _CBP_ENABLE_DEBUG
 
 #include "plugin.h"
-#include "skse.h"
 #include "game.h"
+#include "skse.h"
 #include "config.h"
 #include "drivers/tasks.h"
 #include "drivers/events.h"

@@ -384,8 +384,8 @@ namespace CBP
                 globalConfig.ui.showKey = static_cast<UInt32>(ui.get("showKey", DIK_END).asUInt());
                 globalConfig.ui.comboKeyDR = static_cast<UInt32>(ui.get("comboKeyDR", DIK_LSHIFT).asUInt());
                 globalConfig.ui.showKeyDR = static_cast<UInt32>(ui.get("showKeyDR", DIK_PGDN).asUInt());
-                globalConfig.ui.actorPhysics.lastActor = static_cast<SKSE::ObjectHandle>(ui.get("lastActor", 0ULL).asUInt64());
-                globalConfig.ui.actorNode.lastActor = static_cast<SKSE::ObjectHandle>(ui.get("nodeLastActor", 0ULL).asUInt64());
+                globalConfig.ui.actorPhysics.lastActor = static_cast<Game::ObjectHandle>(ui.get("lastActor", 0ULL).asUInt64());
+                globalConfig.ui.actorNode.lastActor = static_cast<Game::ObjectHandle>(ui.get("nodeLastActor", 0ULL).asUInt64());
                 globalConfig.ui.fontScale = ui.get("fontScale", 1.0f).asFloat();
 
                 if (ui.isMember("import"))
@@ -847,10 +847,10 @@ namespace CBP
                 continue;
             }
 
-            SKSE::ObjectHandle handle;
+            Game::ObjectHandle handle;
 
             try {
-                handle = static_cast<SKSE::ObjectHandle>(std::stoull(it.key().asString()));
+                handle = static_cast<Game::ObjectHandle>(std::stoull(it.key().asString()));
             }
             catch (...) {
                 Error("Exception while trying to convert handle");
@@ -862,7 +862,7 @@ namespace CBP
                 continue;
             }
 
-            SKSE::ObjectHandle newHandle = 0;
+            Game::ObjectHandle newHandle = 0;
 
             if (intfc != nullptr)
             {
@@ -919,10 +919,10 @@ namespace CBP
                 continue;
             }
 
-            SKSE::FormID formID;
+            Game::FormID formID;
 
             try {
-                formID = static_cast<SKSE::FormID>(std::stoul(it.key().asString()));
+                formID = static_cast<Game::FormID>(std::stoul(it.key().asString()));
             }
             catch (...) {
                 Error("Exception while trying to convert formID");
@@ -934,7 +934,7 @@ namespace CBP
                 continue;
             }
 
-            SKSE::FormID newFormID = 0;
+            Game::FormID newFormID = 0;
 
             if (intfc != nullptr) {
                 if (!SKSE::ResolveRaceForm(intfc, formID, &newFormID)) {

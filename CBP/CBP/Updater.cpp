@@ -116,7 +116,7 @@ namespace CBP
     }
 #endif
 
-    void UpdateTask::PhysicsTick(SKSE::BSMain* a_main)
+    void UpdateTask::PhysicsTick(Game::BSMain* a_main)
     {
         if (a_main->freezeTime)
             return;
@@ -212,7 +212,7 @@ namespace CBP
         auto it = m_actors.begin();
         while (it != m_actors.end())
         {
-            auto actor = SKSE::ResolveObject<Actor>(it->first, Actor::kTypeID);
+            auto actor = Game::ResolveObject<Actor>(it->first, Actor::kTypeID);
 
             if (!ActorValid(actor))
             {
@@ -251,12 +251,12 @@ namespace CBP
         }
     }
 
-    void UpdateTask::AddActor(SKSE::ObjectHandle a_handle)
+    void UpdateTask::AddActor(Game::ObjectHandle a_handle)
     {
         if (m_actors.find(a_handle) != m_actors.end())
             return;
 
-        auto actor = SKSE::ResolveObject<Actor>(a_handle, Actor::kTypeID);
+        auto actor = Game::ResolveObject<Actor>(a_handle, Actor::kTypeID);
         if (!ActorValid(actor))
             return;
 
@@ -312,13 +312,13 @@ namespace CBP
         m_actors.try_emplace(a_handle, a_handle, actor, sex, m_nextGroupId++, descList);
     }
 
-    void UpdateTask::RemoveActor(SKSE::ObjectHandle a_handle)
+    void UpdateTask::RemoveActor(Game::ObjectHandle a_handle)
     {
         auto it = m_actors.find(a_handle);
         if (it != m_actors.end())
         {
 #ifdef _CBP_SHOW_STATS
-            auto actor = SKSE::ResolveObject<Actor>(a_handle, Actor::kTypeID);
+            auto actor = Game::ResolveObject<Actor>(a_handle, Actor::kTypeID);
             Debug("Removing %llX (%s)", a_handle, actor ? CALL_MEMBER_FN(actor, GetReferenceName)() : "nullptr");
 #endif
             it->second.Release();
@@ -339,7 +339,7 @@ namespace CBP
     {
         for (auto& e : m_actors)
         {
-            auto actor = SKSE::ResolveObject<Actor>(e.first, Actor::kTypeID);
+            auto actor = Game::ResolveObject<Actor>(e.first, Actor::kTypeID);
 
             if (!ActorValid(actor))
                 continue;
@@ -348,13 +348,13 @@ namespace CBP
         }
     }
 
-    void UpdateTask::UpdateConfig(SKSE::ObjectHandle a_handle)
+    void UpdateTask::UpdateConfig(Game::ObjectHandle a_handle)
     {
         auto it = m_actors.find(a_handle);
         if (it == m_actors.end())
             return;
 
-        auto actor = SKSE::ResolveObject<Actor>(it->first, Actor::kTypeID);
+        auto actor = Game::ResolveObject<Actor>(it->first, Actor::kTypeID);
 
         if (!ActorValid(actor))
             return;
@@ -362,7 +362,7 @@ namespace CBP
         DoConfigUpdate(a_handle, actor, it->second);
     }
 
-    void UpdateTask::DoConfigUpdate(SKSE::ObjectHandle a_handle, Actor* a_actor, SimObject& a_obj)
+    void UpdateTask::DoConfigUpdate(Game::ObjectHandle a_handle, Actor* a_actor, SimObject& a_obj)
     {
         auto& globalConfig = IConfig::GetGlobalConfig();
 
@@ -373,7 +373,7 @@ namespace CBP
     }
 
     void UpdateTask::ApplyForce(
-        SKSE::ObjectHandle a_handle,
+        Game::ObjectHandle a_handle,
         uint32_t a_steps,
         const std::string& a_component,
         const NiPoint3& a_force)
@@ -395,13 +395,13 @@ namespace CBP
         {
             if (a_reset)
             {
-                auto actor = SKSE::ResolveObject<Actor>(e.first, Actor::kTypeID);
+                auto actor = Game::ResolveObject<Actor>(e.first, Actor::kTypeID);
                 if (ActorValid(actor))
                     e.second.Reset();
             }
 
 #ifdef _CBP_SHOW_STATS
-            auto actor = SKSE::ResolveObject<Actor>(e.first, Actor::kTypeID);
+            auto actor = Game::ResolveObject<Actor>(e.first, Actor::kTypeID);
             Debug("CLR: Removing %llX (%s)", e.first, actor ? CALL_MEMBER_FN(actor, GetReferenceName)() : "nullptr");
 #endif
 
@@ -454,9 +454,9 @@ namespace CBP
         auto& globalConf = IConfig::GetGlobalConfig();
     }
 
-    void UpdateTask::WeightUpdate(SKSE::ObjectHandle a_handle)
+    void UpdateTask::WeightUpdate(Game::ObjectHandle a_handle)
     {
-        auto actor = SKSE::ResolveObject<Actor>(a_handle, Actor::kTypeID);
+        auto actor = Game::ResolveObject<Actor>(a_handle, Actor::kTypeID);
         if (ActorValid(actor)) {
             CALL_MEMBER_FN(actor, QueueNiNodeUpdate)(true);
             DTasks::AddTask(new UpdateWeightTask(a_handle));
@@ -469,9 +469,9 @@ namespace CBP
             WeightUpdate(e.first);
     }
 
-    void UpdateTask::NiNodeUpdate(SKSE::ObjectHandle a_handle)
+    void UpdateTask::NiNodeUpdate(Game::ObjectHandle a_handle)
     {
-        auto actor = SKSE::ResolveObject<Actor>(a_handle, Actor::kTypeID);
+        auto actor = Game::ResolveObject<Actor>(a_handle, Actor::kTypeID);
         if (ActorValid(actor))
             CALL_MEMBER_FN(actor, QueueNiNodeUpdate)(true);
     }
@@ -482,7 +482,7 @@ namespace CBP
             NiNodeUpdate(e.first);
     }
 
-    void UpdateTask::AddArmorOverride(SKSE::ObjectHandle a_handle, SKSE::FormID a_formid)
+    void UpdateTask::AddArmorOverride(Game::ObjectHandle a_handle, Game::FormID a_formid)
     {
         auto& globalConfig = IConfig::GetGlobalConfig();
         if (!globalConfig.general.armorOverrides)
@@ -492,7 +492,7 @@ namespace CBP
         if (it == m_actors.end())
             return;
 
-        auto actor = SKSE::ResolveObject<Actor>(a_handle, Actor::kTypeID);
+        auto actor = Game::ResolveObject<Actor>(a_handle, Actor::kTypeID);
         if (!actor)
             return;
 
@@ -528,7 +528,7 @@ namespace CBP
         DoConfigUpdate(a_handle, actor, it->second);
     }
 
-    void UpdateTask::UpdateArmorOverride(SKSE::ObjectHandle a_handle)
+    void UpdateTask::UpdateArmorOverride(Game::ObjectHandle a_handle)
     {
         auto& globalConfig = IConfig::GetGlobalConfig();
         if (!globalConfig.general.armorOverrides)
@@ -538,7 +538,7 @@ namespace CBP
         if (it == m_actors.end())
             return;
 
-        auto actor = SKSE::ResolveObject<Actor>(a_handle, Actor::kTypeID);
+        auto actor = Game::ResolveObject<Actor>(a_handle, Actor::kTypeID);
         if (!actor)
             return;
 
@@ -559,7 +559,7 @@ namespace CBP
             DoConfigUpdate(a_entry.first, a_actor, a_entry.second);
     }
 
-    bool UpdateTask::ApplyArmorOverride(SKSE::ObjectHandle a_handle, const armorOverrideResults_t& a_desc)
+    bool UpdateTask::ApplyArmorOverride(Game::ObjectHandle a_handle, const armorOverrideResults_t& a_desc)
     {
         auto current = IConfig::GetArmorOverride(a_handle);
 
@@ -589,7 +589,7 @@ namespace CBP
     }
 
     bool UpdateTask::BuildArmorOverride(
-        SKSE::ObjectHandle a_handle,
+        Game::ObjectHandle a_handle,
         const armorOverrideResults_t& a_in,
         armorOverrideDescriptor_t& a_out)
     {
@@ -623,7 +623,7 @@ namespace CBP
 
         for (auto& e : m_actors) {
 
-            auto actor = SKSE::ResolveObject<Actor>(e.first, Actor::kTypeID);
+            auto actor = Game::ResolveObject<Actor>(e.first, Actor::kTypeID);
             if (!actor)
                 return;
 
@@ -658,14 +658,14 @@ namespace CBP
         m_taskLock.Leave();
     }
 
-    void UpdateTask::AddTask(UTTask::UTTAction a_action, SKSE::ObjectHandle a_handle)
+    void UpdateTask::AddTask(UTTask::UTTAction a_action, Game::ObjectHandle a_handle)
     {
         m_taskLock.Enter();
         m_taskQueue.emplace(UTTask{ a_action, a_handle });
         m_taskLock.Leave();
     }
 
-    void UpdateTask::AddTask(UTTask::UTTAction a_action, SKSE::ObjectHandle a_handle, SKSE::FormID a_formid)
+    void UpdateTask::AddTask(UTTask::UTTAction a_action, Game::ObjectHandle a_handle, Game::FormID a_formid)
     {
         m_taskLock.Enter();
         m_taskQueue.emplace(UTTask{ a_action, a_handle, a_formid });
@@ -748,12 +748,12 @@ namespace CBP
         auto player = *g_thePlayer;
 
         if (ActorValid(player)) {
-            SKSE::ObjectHandle handle;
-            if (SKSE::GetHandle(player, player->formType, handle))
+            Game::ObjectHandle handle;
+            if (Game::GetHandle(player, player->formType, handle))
                 a_out.emplace(handle);
         }
 
-        auto pl = SKSE::ProcessLists::GetSingleton();
+        auto pl = Game::ProcessLists::GetSingleton();
         if (pl == nullptr)
             return;
 
@@ -772,8 +772,8 @@ namespace CBP
             if (!ActorValid(actor))
                 continue;
 
-            SKSE::ObjectHandle handle;
-            if (!SKSE::GetHandle(actor, actor->formType, handle))
+            Game::ObjectHandle handle;
+            if (!Game::GetHandle(actor, actor->formType, handle))
                 continue;
 
             a_out.emplace(handle);
@@ -781,7 +781,7 @@ namespace CBP
     }
 
     UpdateTask::UpdateWeightTask::UpdateWeightTask(
-        SKSE::ObjectHandle a_handle)
+        Game::ObjectHandle a_handle)
         :
         m_handle(a_handle)
     {
@@ -789,7 +789,7 @@ namespace CBP
 
     void UpdateTask::UpdateWeightTask::Run()
     {
-        auto actor = SKSE::ResolveObject<Actor>(m_handle, Actor::kTypeID);
+        auto actor = Game::ResolveObject<Actor>(m_handle, Actor::kTypeID);
         if (!actor)
             return;
 

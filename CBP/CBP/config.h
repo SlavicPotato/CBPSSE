@@ -108,7 +108,7 @@ namespace CBP
     struct configGlobalActor_t
     {
         bool showAll = true;
-        SKSE::ObjectHandle lastActor = 0;
+        Game::ObjectHandle lastActor = 0;
     };
 
     struct configGlobalSimComponent_t
@@ -385,8 +385,8 @@ namespace CBP
 
     typedef std::map<std::string, configComponent_t> configComponents_t;
     typedef configComponents_t::value_type configComponentsValue_t;
-    typedef std::unordered_map<SKSE::ObjectHandle, configComponents_t> actorConfigComponentsHolder_t;
-    typedef std::unordered_map<SKSE::FormID, configComponents_t> raceConfigComponentsHolder_t;
+    typedef std::unordered_map<Game::ObjectHandle, configComponents_t> actorConfigComponentsHolder_t;
+    typedef std::unordered_map<Game::FormID, configComponents_t> raceConfigComponentsHolder_t;
     typedef std::map<std::string, std::string> nodeMap_t;
     typedef std::unordered_map<std::string, std::vector<std::string>> configGroupMap_t;
 
@@ -394,9 +394,9 @@ namespace CBP
     typedef std::map<std::string, uint64_t> nodeCollisionGroupMap_t;
 
     typedef std::pair<std::set<std::string>, armorCacheEntry_t> armorOverrideDescriptor_t;
-    typedef std::unordered_map<SKSE::ObjectHandle, armorOverrideDescriptor_t> armorOverrides_t;
+    typedef std::unordered_map<Game::ObjectHandle, armorOverrideDescriptor_t> armorOverrides_t;
 
-    typedef std::unordered_map<SKSE::ObjectHandle, configComponents_t> mergedConfCache_t;
+    typedef std::unordered_map<Game::ObjectHandle, configComponents_t> mergedConfCache_t;
 
     struct configNode_t
     {
@@ -439,8 +439,8 @@ namespace CBP
 
     typedef std::map<std::string, configNode_t> configNodes_t;
     typedef configNodes_t::value_type configNodesValue_t;
-    typedef std::unordered_map<SKSE::ObjectHandle, configNodes_t> actorConfigNodesHolder_t;
-    typedef std::unordered_map<SKSE::FormID, configNodes_t> raceConfigNodesHolder_t;
+    typedef std::unordered_map<Game::ObjectHandle, configNodes_t> actorConfigNodesHolder_t;
+    typedef std::unordered_map<Game::FormID, configNodes_t> raceConfigNodesHolder_t;
 
     enum class ConfigClass
     {
@@ -472,28 +472,28 @@ namespace CBP
 
         static void Initialize();
 
-        [[nodiscard]] static ConfigClass GetActorPhysicsConfigClass(SKSE::ObjectHandle a_handle);
-        [[nodiscard]] static ConfigClass GetActorNodeConfigClass(SKSE::ObjectHandle a_handle);
+        [[nodiscard]] static ConfigClass GetActorPhysicsConfigClass(Game::ObjectHandle a_handle);
+        [[nodiscard]] static ConfigClass GetActorNodeConfigClass(Game::ObjectHandle a_handle);
 
         // Not guaranteed to be actual actor conf storage
-        [[nodiscard]] static const configComponents_t& GetActorPhysicsConfig(SKSE::ObjectHandle handle);
+        [[nodiscard]] static const configComponents_t& GetActorPhysicsConfig(Game::ObjectHandle handle);
 
-        [[nodiscard]] static const configComponents_t& GetActorPhysicsConfigAO(SKSE::ObjectHandle handle);
-        [[nodiscard]] static configComponents_t& GetOrCreateActorPhysicsConfig(SKSE::ObjectHandle handle);
-        static void SetActorPhysicsConfig(SKSE::ObjectHandle a_handle, const configComponents_t& a_conf);
-        static void SetActorPhysicsConfig(SKSE::ObjectHandle a_handle, configComponents_t&& a_conf);
+        [[nodiscard]] static const configComponents_t& GetActorPhysicsConfigAO(Game::ObjectHandle handle);
+        [[nodiscard]] static configComponents_t& GetOrCreateActorPhysicsConfig(Game::ObjectHandle handle);
+        static void SetActorPhysicsConfig(Game::ObjectHandle a_handle, const configComponents_t& a_conf);
+        static void SetActorPhysicsConfig(Game::ObjectHandle a_handle, configComponents_t&& a_conf);
 
-        inline static void EraseActorConf(SKSE::ObjectHandle handle) {
+        inline static void EraseActorConf(Game::ObjectHandle handle) {
             actorConfHolder.erase(handle);
         }
 
         // Not guaranteed to be actual race conf storage
-        [[nodiscard]] static const configComponents_t& GetRacePhysicsConfig(SKSE::FormID a_formid);
+        [[nodiscard]] static const configComponents_t& GetRacePhysicsConfig(Game::FormID a_formid);
 
-        [[nodiscard]] static configComponents_t& GetOrCreateRacePhysicsConfig(SKSE::FormID a_formid);
-        static void SetRacePhysicsConfig(SKSE::FormID a_formid, const configComponents_t& a_conf);
-        static void SetRacePhysicsConfig(SKSE::FormID a_formid, configComponents_t&& a_conf);
-        inline static void EraseRacePhysicsConfig(SKSE::FormID handle) {
+        [[nodiscard]] static configComponents_t& GetOrCreateRacePhysicsConfig(Game::FormID a_formid);
+        static void SetRacePhysicsConfig(Game::FormID a_formid, const configComponents_t& a_conf);
+        static void SetRacePhysicsConfig(Game::FormID a_formid, configComponents_t&& a_conf);
+        inline static void EraseRacePhysicsConfig(Game::FormID handle) {
             raceConfHolder.erase(handle);
         }
 
@@ -633,21 +633,21 @@ namespace CBP
             actorNodeConfigHolder = std::forward<actorConfigNodesHolder_t>(a_rhs);
         }
 
-        static const configNodes_t& GetActorNodeConfig(SKSE::ObjectHandle a_handle);
-        static const configNodes_t& GetRaceNodeConfig(SKSE::FormID a_formid);
-        static configNodes_t& GetOrCreateActorNodeConfig(SKSE::ObjectHandle a_handle);
-        static configNodes_t& GetOrCreateRaceNodeConfig(SKSE::FormID a_formid);
-        static bool GetActorNodeConfig(SKSE::ObjectHandle a_handle, const std::string& a_node, configNode_t& a_out);
-        static void SetActorNodeConfig(SKSE::ObjectHandle a_handle, const configNodes_t& a_conf);
-        static void SetActorNodeConfig(SKSE::ObjectHandle a_handle, configNodes_t&& a_conf);
-        static void SetRaceNodeConfig(SKSE::FormID a_handle, const configNodes_t& a_conf);
-        static void SetRaceNodeConfig(SKSE::FormID a_handle, configNodes_t&& a_conf);
+        static const configNodes_t& GetActorNodeConfig(Game::ObjectHandle a_handle);
+        static const configNodes_t& GetRaceNodeConfig(Game::FormID a_formid);
+        static configNodes_t& GetOrCreateActorNodeConfig(Game::ObjectHandle a_handle);
+        static configNodes_t& GetOrCreateRaceNodeConfig(Game::FormID a_formid);
+        static bool GetActorNodeConfig(Game::ObjectHandle a_handle, const std::string& a_node, configNode_t& a_out);
+        static void SetActorNodeConfig(Game::ObjectHandle a_handle, const configNodes_t& a_conf);
+        static void SetActorNodeConfig(Game::ObjectHandle a_handle, configNodes_t&& a_conf);
+        static void SetRaceNodeConfig(Game::FormID a_handle, const configNodes_t& a_conf);
+        static void SetRaceNodeConfig(Game::FormID a_handle, configNodes_t&& a_conf);
 
-        inline static void EraseActorNodeConfig(SKSE::ObjectHandle a_formid) {
+        inline static void EraseActorNodeConfig(Game::ObjectHandle a_formid) {
             actorNodeConfigHolder.erase(a_formid);
         }
 
-        inline static void EraseRaceNodeConfig(SKSE::FormID a_formid) {
+        inline static void EraseRaceNodeConfig(Game::FormID a_formid) {
             raceNodeConfigHolder.erase(a_formid);
         }
 
@@ -673,23 +673,23 @@ namespace CBP
             return defaultProfileStorage;
         }
 
-        [[nodiscard]] inline static bool HasArmorOverride(SKSE::ObjectHandle a_handle) {
+        [[nodiscard]] inline static bool HasArmorOverride(Game::ObjectHandle a_handle) {
             return armorOverrides.find(a_handle) != armorOverrides.end();
         }
 
-        [[nodiscard]] static const armorCacheEntry_t::mapped_type* GetArmorOverrideSection(SKSE::ObjectHandle a_handle, const std::string& a_sk);
+        [[nodiscard]] static const armorCacheEntry_t::mapped_type* GetArmorOverrideSection(Game::ObjectHandle a_handle, const std::string& a_sk);
 
-        static void SetArmorOverride(SKSE::ObjectHandle a_handle, const armorOverrideDescriptor_t& a_entry)
+        static void SetArmorOverride(Game::ObjectHandle a_handle, const armorOverrideDescriptor_t& a_entry)
         {
             armorOverrides.insert_or_assign(a_handle, a_entry);
         }
 
-        static void SetArmorOverride(SKSE::ObjectHandle a_handle, armorOverrideDescriptor_t&& a_entry)
+        static void SetArmorOverride(Game::ObjectHandle a_handle, armorOverrideDescriptor_t&& a_entry)
         {
             armorOverrides.insert_or_assign(a_handle, std::forward<armorOverrideDescriptor_t>(a_entry));
         }
 
-        [[nodiscard]] static armorOverrideDescriptor_t* GetArmorOverride(SKSE::ObjectHandle a_handle)
+        [[nodiscard]] static armorOverrideDescriptor_t* GetArmorOverride(Game::ObjectHandle a_handle)
         {
             auto it = armorOverrides.find(a_handle);
             if (it != armorOverrides.end())
@@ -698,7 +698,7 @@ namespace CBP
             return nullptr;
         }
 
-        inline static bool RemoveArmorOverride(SKSE::ObjectHandle a_handle) {
+        inline static bool RemoveArmorOverride(Game::ObjectHandle a_handle) {
             return armorOverrides.erase(a_handle) == 1;
         }
 

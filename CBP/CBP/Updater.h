@@ -27,26 +27,26 @@ namespace CBP
         };
 
         UTTAction m_action;
-        SKSE::ObjectHandle m_handle = 0;
-        SKSE::FormID m_formid = 0;
+        Game::ObjectHandle m_handle = 0;
+        Game::FormID m_formid = 0;
     };
 
     class UpdateTask :
         public TaskDelegateFixed,
         ILog
     {
-        typedef std::unordered_set<SKSE::ObjectHandle> handleSet_t;
+        typedef std::unordered_set<Game::ObjectHandle> handleSet_t;
 
         class UpdateWeightTask :
             public TaskDelegate
         {
         public:
-            UpdateWeightTask(SKSE::ObjectHandle a_handle);
+            UpdateWeightTask(Game::ObjectHandle a_handle);
 
             virtual void Run();
             virtual void Dispose();
         private:
-            SKSE::ObjectHandle m_handle;
+            Game::ObjectHandle m_handle;
         };
 
     public:
@@ -65,23 +65,23 @@ namespace CBP
         __forceinline uint32_t UpdatePhase2(float a_timeStep, float a_timeTick, float a_maxTime);
         __forceinline uint32_t UpdatePhase2Collisions(float a_timeStep, float a_timeTick, float a_maxTime);
 
-        void PhysicsTick(SKSE::BSMain *a_main);
+        void PhysicsTick(Game::BSMain *a_main);
 
-        void AddActor(SKSE::ObjectHandle a_handle);
-        void RemoveActor(SKSE::ObjectHandle a_handle);
+        void AddActor(Game::ObjectHandle a_handle);
+        void RemoveActor(Game::ObjectHandle a_handle);
         void UpdateConfigOnAllActors();
         void UpdateGroupInfoOnAllActors();
-        void UpdateConfig(SKSE::ObjectHandle a_handle);
-        void ApplyForce(SKSE::ObjectHandle a_handle, uint32_t a_steps, const std::string& a_component, const NiPoint3& a_force);
+        void UpdateConfig(Game::ObjectHandle a_handle);
+        void ApplyForce(Game::ObjectHandle a_handle, uint32_t a_steps, const std::string& a_component, const NiPoint3& a_force);
         void ClearActors(bool a_reset = true);
         void Reset();
         void PhysicsReset();
-        void NiNodeUpdate(SKSE::ObjectHandle a_handle);
-        void WeightUpdate(SKSE::ObjectHandle a_handle);
+        void NiNodeUpdate(Game::ObjectHandle a_handle);
+        void WeightUpdate(Game::ObjectHandle a_handle);
         void NiNodeUpdateAll();
         void WeightUpdateAll();
-        void AddArmorOverride(SKSE::ObjectHandle a_handle, SKSE::FormID a_formid);
-        void UpdateArmorOverride(SKSE::ObjectHandle a_handle);
+        void AddArmorOverride(Game::ObjectHandle a_handle, Game::FormID a_formid);
+        void UpdateArmorOverride(Game::ObjectHandle a_handle);
         void UpdateArmorOverridesAll();
         void ClearArmorOverrides();
 
@@ -90,8 +90,8 @@ namespace CBP
         void AddTask(const UTTask& a_task);
         void AddTask(UTTask&& a_task);
         void AddTask(UTTask::UTTAction a_action);
-        void AddTask(UTTask::UTTAction a_action, SKSE::ObjectHandle a_handle);
-        void AddTask(UTTask::UTTAction a_action, SKSE::ObjectHandle a_handle, SKSE::FormID a_formid);
+        void AddTask(UTTask::UTTAction a_action, Game::ObjectHandle a_handle);
+        void AddTask(UTTask::UTTAction a_action, Game::ObjectHandle a_handle, Game::FormID a_formid);
 
         inline const auto& GetSimActorList() {
             return m_actors;
@@ -105,7 +105,7 @@ namespace CBP
             m_averageInterval = a_val;
         }
 
-        inline void SetMarkedActor(SKSE::ObjectHandle a_handle) {
+        inline void SetMarkedActor(Game::ObjectHandle a_handle) {
             m_markedActor = a_handle;
         }
 
@@ -117,13 +117,13 @@ namespace CBP
         void ProcessTasks();
         void GatherActors(handleSet_t& a_out);
 
-        bool ApplyArmorOverride(SKSE::ObjectHandle a_handle, const armorOverrideResults_t& a_entry);
-        bool BuildArmorOverride(SKSE::ObjectHandle a_handle, const armorOverrideResults_t& a_in, armorOverrideDescriptor_t& a_out);
+        bool ApplyArmorOverride(Game::ObjectHandle a_handle, const armorOverrideResults_t& a_entry);
+        bool BuildArmorOverride(Game::ObjectHandle a_handle, const armorOverrideResults_t& a_in, armorOverrideDescriptor_t& a_out);
         void DoUpdateArmorOverride(simActorList_t::value_type& a_entry, Actor* a_actor);
-        __forceinline void DoConfigUpdate(SKSE::ObjectHandle a_handle, Actor* a_actor, SimObject& a_obj);
+        __forceinline void DoConfigUpdate(Game::ObjectHandle a_handle, Actor* a_actor, SimObject& a_obj);
 
         simActorList_t m_actors;
-        SKSE::ObjectHandle m_markedActor;
+        Game::ObjectHandle m_markedActor;
 
         std::queue<UTTask> m_taskQueue;
 

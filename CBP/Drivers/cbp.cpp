@@ -29,13 +29,13 @@ namespace CBP
     void DCBP::DispatchActorTask(Actor* actor, UTTask::UTTAction action)
     {
         if (actor != nullptr) {
-            SKSE::ObjectHandle handle;
-            if (SKSE::GetHandle(actor, actor->formType, handle))
+            Game::ObjectHandle handle;
+            if (Game::GetHandle(actor, actor->formType, handle))
                 m_Instance.m_updateTask.AddTask(action, handle);
         }
     }
 
-    void DCBP::DispatchActorTask(SKSE::ObjectHandle handle, UTTask::UTTAction action)
+    void DCBP::DispatchActorTask(Game::ObjectHandle handle, UTTask::UTTAction action)
     {
         m_Instance.m_updateTask.AddTask(action, handle);
     }
@@ -64,7 +64,7 @@ namespace CBP
             UTTask::UTTAction::NiNodeUpdateAll);
     }
 
-    void DCBP::NiNodeUpdate(SKSE::ObjectHandle a_handle)
+    void DCBP::NiNodeUpdate(Game::ObjectHandle a_handle)
     {
         m_Instance.m_updateTask.AddTask(
             UTTask::UTTAction::NiNodeUpdate, a_handle);
@@ -76,7 +76,7 @@ namespace CBP
             UTTask::UTTAction::WeightUpdateAll);
     }
 
-    void DCBP::WeightUpdate(SKSE::ObjectHandle a_handle)
+    void DCBP::WeightUpdate(Game::ObjectHandle a_handle)
     {
         m_Instance.m_updateTask.AddTask(
             UTTask::UTTAction::WeightUpdate, a_handle);
@@ -149,7 +149,7 @@ namespace CBP
     }
 
     void DCBP::ApplyForce(
-        SKSE::ObjectHandle a_handle,
+        Game::ObjectHandle a_handle,
         uint32_t a_steps,
         const std::string& a_component,
         const NiPoint3& a_force)
@@ -295,7 +295,7 @@ namespace CBP
         }
     }
 
-    void DCBP::MainLoop_Hook(SKSE::BSMain* a_main) {
+    void DCBP::MainLoop_Hook(Game::BSMain* a_main) {
         m_Instance.mainLoopUpdateFunc_o(a_main);
         m_Instance.m_updateTask.PhysicsTick(a_main);
     }
@@ -305,8 +305,8 @@ namespace CBP
         if (a_ref->formType != Actor::kTypeID)
             return;
 
-        SKSE::ObjectHandle handle;
-        if (!SKSE::GetHandle(a_ref, a_ref->formType, handle))
+        Game::ObjectHandle handle;
+        if (!Game::GetHandle(a_ref, a_ref->formType, handle))
             return;
 
         /*auto armor = a_params->data.armor;
@@ -910,7 +910,7 @@ namespace CBP
                 return false;
             }
 
-            auto pl = SKSE::ProcessLists::GetSingleton();
+            auto pl = Game::ProcessLists::GetSingleton();
             if (pl && pl->GuardsPursuing(player)) {
                 Game::Debug::Notification("CBP UI not available while pursued by guards");
                 return false;
@@ -1047,7 +1047,7 @@ namespace CBP
     }
 
     DCBP::ApplyForceTask::ApplyForceTask(
-        SKSE::ObjectHandle a_handle,
+        Game::ObjectHandle a_handle,
         uint32_t a_steps,
         const std::string& a_component,
         const NiPoint3& a_force)

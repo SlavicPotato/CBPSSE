@@ -58,7 +58,7 @@ namespace CBP
         const simActorList_t& a_actorList,
         float a_radius,
         bool a_centerOfMass,
-        SKSE::ObjectHandle a_markedHandle)
+        Game::ObjectHandle a_markedHandle)
     {
         for (const auto& e : a_actorList)
         {
@@ -94,7 +94,7 @@ namespace CBP
         const simActorList_t& a_actorList,
         float a_radius,
         bool a_centerOfMass,
-        SKSE::ObjectHandle a_markedHandle
+        Game::ObjectHandle a_markedHandle
     )
     {
         GenerateMovingNodes(a_actorList, a_radius, a_centerOfMass, a_markedHandle);

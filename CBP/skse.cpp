@@ -15,31 +15,6 @@ namespace SKSE
     size_t branchTrampolineSize = 0;
     size_t localTrampolineSize = 0;
 
-    bool GetHandle(void* src, UInt32 typeID, ObjectHandle& out)
-    {
-        auto policy = (*g_skyrimVM)->GetClassRegistry()->GetHandlePolicy();
-        auto handle = policy->Create(typeID, src);
-
-        if (handle == policy->GetInvalidHandle()) {
-            return false;
-        }
-
-        out = handle;
-
-        return true;
-    }
-
-    void* ResolveObject(UInt64 handle, UInt32 typeID)
-    {
-        auto policy = (*g_skyrimVM)->GetClassRegistry()->GetHandlePolicy();
-
-        if (handle == policy->GetInvalidHandle()) {
-            return NULL;
-        }
-
-        return policy->Resolve(typeID, handle);
-    }
-
     bool Query(const SKSEInterface* skse, PluginInfo* info)
     {
         gLogger.OpenRelative(CSIDL_MYDOCUMENTS, PLUGIN_LOG_PATH);
@@ -208,22 +183,4 @@ namespace SKSE
         return true;
     }
 
-    static auto s_processLists = IAL::Addr< ProcessLists**>(514167);
-
-    ProcessLists* ProcessLists::GetSingleton()
-    {
-        return *s_processLists;
-    }
-
-    bool ProcessLists::GuardsPursuing(Actor* a_actor)
-    {
-        return CALL_MEMBER_FN(this, _GuardsPursuing)(a_actor, 0x15, 0) != 0;
-    }
-
-    static auto s_BSMain = IAL::Addr<BSMain**>(516943);
-
-    BSMain* BSMain::GetSingleton()
-    {
-        return *s_BSMain;
-    }
 }

@@ -5,7 +5,7 @@ namespace CBP
     IData::raceList_t IData::raceList;
     IData::actorRefMap_t IData::actorNpcMap;
     IData::actorCache_t IData::actorCache;
-    SKSE::ObjectHandle IData::crosshairRef = 0;
+    Game::ObjectHandle IData::crosshairRef = 0;
     uint64_t IData::actorCacheUpdateId = 1;
     armorCache_t IData::armorCache;
 
@@ -13,7 +13,7 @@ namespace CBP
 
     except::descriptor IData::lastException;
 
-    std::unordered_set<SKSE::FormID> IData::ignoredRaces = {
+    std::unordered_set<Game::FormID> IData::ignoredRaces = {
         0x0002C65C,
         0x00108272,
         0x0002C659,
@@ -21,7 +21,7 @@ namespace CBP
         0x0002C65A
     };
 
-    void IData::UpdateActorMaps(SKSE::ObjectHandle a_handle, const Actor* a_actor)
+    void IData::UpdateActorMaps(Game::ObjectHandle a_handle, const Actor* a_actor)
     {
         actorRefData_t tmp;
 
@@ -45,16 +45,16 @@ namespace CBP
         }
     }
 
-    void IData::UpdateActorMaps(SKSE::ObjectHandle a_handle)
+    void IData::UpdateActorMaps(Game::ObjectHandle a_handle)
     {
-        auto actor = SKSE::ResolveObject<Actor>(a_handle, Actor::kTypeID);
+        auto actor = Game::ResolveObject<Actor>(a_handle, Actor::kTypeID);
         if (actor == nullptr)
             return;
 
         UpdateActorMaps(a_handle, actor);
     }
 
-    void IData::FillActorCacheEntry(SKSE::ObjectHandle a_handle, actorCacheEntry_t& a_out)
+    void IData::FillActorCacheEntry(Game::ObjectHandle a_handle, actorCacheEntry_t& a_out)
     {
         std::ostringstream ss;
 
@@ -67,13 +67,13 @@ namespace CBP
             a_out.base = it->second.npc;
             a_out.race = it->second.race.first ?
                 it->second.race.second :
-                SKSE::FormID(0);
+                Game::FormID(0);
             a_out.female = it->second.sex == 1;
             a_out.baseflags = it->second.baseflags;
         }
         else {
-            a_out.race = SKSE::FormID(0);
-            a_out.base = SKSE::FormID(0);
+            a_out.race = Game::FormID(0);
+            a_out.base = Game::FormID(0);
             a_out.female = false;
             a_out.baseflags = 0;
         }
@@ -92,7 +92,7 @@ namespace CBP
         if (a_actor->race != nullptr)
             a_out.race = a_actor->race->formID;
         else
-            a_out.race = SKSE::FormID(0);
+            a_out.race = Game::FormID(0);
 
         auto npc = DYNAMIC_CAST(a_actor->baseForm, TESForm, TESNPC);
         if (npc != nullptr)
@@ -102,7 +102,7 @@ namespace CBP
             a_out.baseflags = npc->flags;
         }
         else {
-            a_out.base = SKSE::FormID(0);
+            a_out.base = Game::FormID(0);
             a_out.female = false;
             a_out.baseflags = 0;
         }
@@ -111,7 +111,7 @@ namespace CBP
     }
 
     void IData::AddExtraActorEntry(
-        SKSE::ObjectHandle a_handle)
+        Game::ObjectHandle a_handle)
     {
         if (actorCache.find(a_handle) != actorCache.end())
             return;
@@ -119,7 +119,7 @@ namespace CBP
         actorCacheEntry_t tmp;
         tmp.active = false;
 
-        auto actor = SKSE::ResolveObject<Actor>(a_handle, Actor::kTypeID);
+        auto actor = Game::ResolveObject<Actor>(a_handle, Actor::kTypeID);
 
         if (actor)
             FillActorCacheEntry(actor, tmp);
@@ -136,7 +136,7 @@ namespace CBP
 
         for (const auto& e : a_list)
         {
-            auto actor = SKSE::ResolveObject<Actor>(e.first, Actor::kTypeID);
+            auto actor = Game::ResolveObject<Actor>(e.first, Actor::kTypeID);
             if (actor == nullptr)
                 continue;
 
@@ -162,8 +162,8 @@ namespace CBP
             LookupREFRByHandle(handle, ref);
             if (ref != nullptr) {
                 if (ref->formType == Actor::kTypeID) {
-                    SKSE::ObjectHandle handle;
-                    if (SKSE::GetHandle(ref, ref->formType, handle)) {
+                    Game::ObjectHandle handle;
+                    if (Game::GetHandle(ref, ref->formType, handle)) {
                         auto it = actorCache.find(handle);
                         if (it != actorCache.end()) {
                             crosshairRef = it->first;
@@ -241,7 +241,7 @@ namespace CBP
         return true;
     }
 
-    bool IData::GetActorName(SKSE::ObjectHandle a_handle, std::string& a_out)
+    bool IData::GetActorName(Game::ObjectHandle a_handle, std::string& a_out)
     {
         auto it = actorCache.find(a_handle);
         if (it != actorCache.end()) {

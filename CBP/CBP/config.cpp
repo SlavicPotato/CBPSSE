@@ -188,12 +188,12 @@ namespace CBP
         //physicsGlobalConfigDefaults = physicsGlobalConfig;
     }
 
-    ConfigClass IConfig::GetActorPhysicsConfigClass(SKSE::ObjectHandle a_handle)
+    ConfigClass IConfig::GetActorPhysicsConfigClass(Game::ObjectHandle a_handle)
     {
         if (actorConfHolder.find(a_handle) != actorConfHolder.end())
             return ConfigClass::kConfigActor;
 
-        std::pair<bool, SKSE::FormID> race;
+        std::pair<bool, Game::FormID> race;
 
         auto ac = IData::GetActorRefInfo(a_handle);
 
@@ -212,7 +212,7 @@ namespace CBP
         return ConfigClass::kConfigGlobal;
     }
 
-    ConfigClass IConfig::GetActorNodeConfigClass(SKSE::ObjectHandle a_handle)
+    ConfigClass IConfig::GetActorNodeConfigClass(Game::ObjectHandle a_handle)
     {
         if (actorNodeConfigHolder.find(a_handle) != actorNodeConfigHolder.end())
             return ConfigClass::kConfigActor;
@@ -232,12 +232,12 @@ namespace CBP
         return ConfigClass::kConfigGlobal;
     }
 
-    void IConfig::SetActorPhysicsConfig(SKSE::ObjectHandle a_handle, const configComponents_t& a_conf)
+    void IConfig::SetActorPhysicsConfig(Game::ObjectHandle a_handle, const configComponents_t& a_conf)
     {
         actorConfHolder.insert_or_assign(a_handle, a_conf);
     }
 
-    void IConfig::SetActorPhysicsConfig(SKSE::ObjectHandle a_handle, configComponents_t&& a_conf)
+    void IConfig::SetActorPhysicsConfig(Game::ObjectHandle a_handle, configComponents_t&& a_conf)
     {
         actorConfHolder.insert_or_assign(a_handle, std::forward<configComponents_t>(a_conf));
     }
@@ -263,7 +263,7 @@ namespace CBP
         return false;
     }
 
-    const configNodes_t& IConfig::GetActorNodeConfig(SKSE::ObjectHandle a_handle)
+    const configNodes_t& IConfig::GetActorNodeConfig(Game::ObjectHandle a_handle)
     {
         auto it = actorNodeConfigHolder.find(a_handle);
         if (it != actorNodeConfigHolder.end())
@@ -286,7 +286,7 @@ namespace CBP
         return IConfig::GetGlobalNodeConfig();
     }
 
-    const configNodes_t& IConfig::GetRaceNodeConfig(SKSE::FormID a_formid)
+    const configNodes_t& IConfig::GetRaceNodeConfig(Game::FormID a_formid)
     {
         auto it = raceNodeConfigHolder.find(a_formid);
         if (it != raceNodeConfigHolder.end()) {
@@ -296,7 +296,7 @@ namespace CBP
         return IConfig::GetGlobalNodeConfig();
     }
 
-    configNodes_t& IConfig::GetOrCreateActorNodeConfig(SKSE::ObjectHandle a_handle)
+    configNodes_t& IConfig::GetOrCreateActorNodeConfig(Game::ObjectHandle a_handle)
     {
         auto it = actorNodeConfigHolder.find(a_handle);
         if (it != actorNodeConfigHolder.end())
@@ -319,7 +319,7 @@ namespace CBP
         return (actorNodeConfigHolder[a_handle] = GetGlobalNodeConfig());
     }
 
-    configNodes_t& IConfig::GetOrCreateRaceNodeConfig(SKSE::FormID a_formid)
+    configNodes_t& IConfig::GetOrCreateRaceNodeConfig(Game::FormID a_formid)
     {
         auto it = raceNodeConfigHolder.find(a_formid);
         if (it != raceNodeConfigHolder.end()) {
@@ -330,7 +330,7 @@ namespace CBP
     }
 
 
-    bool IConfig::GetActorNodeConfig(SKSE::ObjectHandle a_handle, const std::string& a_node, configNode_t& a_out)
+    bool IConfig::GetActorNodeConfig(Game::ObjectHandle a_handle, const std::string& a_node, configNode_t& a_out)
     {
         auto& nodeConfig = GetActorNodeConfig(a_handle);
 
@@ -343,27 +343,27 @@ namespace CBP
         return false;
     }
 
-    void IConfig::SetActorNodeConfig(SKSE::ObjectHandle a_handle, const configNodes_t& a_conf)
+    void IConfig::SetActorNodeConfig(Game::ObjectHandle a_handle, const configNodes_t& a_conf)
     {
         actorNodeConfigHolder.insert_or_assign(a_handle, a_conf);
     }
 
-    void IConfig::SetActorNodeConfig(SKSE::ObjectHandle a_handle, configNodes_t&& a_conf)
+    void IConfig::SetActorNodeConfig(Game::ObjectHandle a_handle, configNodes_t&& a_conf)
     {
         actorNodeConfigHolder.insert_or_assign(a_handle, std::forward<configNodes_t>(a_conf));
     }
 
-    void IConfig::SetRaceNodeConfig(SKSE::FormID a_handle, const configNodes_t& a_conf)
+    void IConfig::SetRaceNodeConfig(Game::FormID a_handle, const configNodes_t& a_conf)
     {
         raceNodeConfigHolder.insert_or_assign(a_handle, a_conf);
     }
 
-    void IConfig::SetRaceNodeConfig(SKSE::FormID a_handle, configNodes_t&& a_conf)
+    void IConfig::SetRaceNodeConfig(Game::FormID a_handle, configNodes_t&& a_conf)
     {
         raceNodeConfigHolder.insert_or_assign(a_handle, std::forward<configNodes_t>(a_conf));
     }
 
-    configComponents_t& IConfig::GetOrCreateActorPhysicsConfig(SKSE::ObjectHandle a_handle)
+    configComponents_t& IConfig::GetOrCreateActorPhysicsConfig(Game::ObjectHandle a_handle)
     {
         auto ita = actorConfHolder.find(a_handle);
         if (ita != actorConfHolder.end())
@@ -387,7 +387,7 @@ namespace CBP
         return (actorConfHolder[a_handle] = physicsGlobalConfig);
     }
 
-    const configComponents_t& IConfig::GetActorPhysicsConfig(SKSE::ObjectHandle a_handle)
+    const configComponents_t& IConfig::GetActorPhysicsConfig(Game::ObjectHandle a_handle)
     {
         auto ita = actorConfHolder.find(a_handle);
         if (ita != actorConfHolder.end())
@@ -410,7 +410,7 @@ namespace CBP
         return physicsGlobalConfig;
     }
 
-    const configComponents_t& IConfig::GetActorPhysicsConfigAO(SKSE::ObjectHandle handle)
+    const configComponents_t& IConfig::GetActorPhysicsConfigAO(Game::ObjectHandle handle)
     {
         auto& conf = GetActorPhysicsConfig(handle);
 
@@ -442,7 +442,7 @@ namespace CBP
         return me;
     }
 
-    configComponents_t& IConfig::GetOrCreateRacePhysicsConfig(SKSE::FormID a_formid)
+    configComponents_t& IConfig::GetOrCreateRacePhysicsConfig(Game::FormID a_formid)
     {
         auto it = raceConfHolder.find(a_formid);
         if (it != raceConfHolder.end()) {
@@ -452,7 +452,7 @@ namespace CBP
         return (raceConfHolder[a_formid] = physicsGlobalConfig);
     }
 
-    const configComponents_t& IConfig::GetRacePhysicsConfig(SKSE::FormID a_formid)
+    const configComponents_t& IConfig::GetRacePhysicsConfig(Game::FormID a_formid)
     {
         auto it = raceConfHolder.find(a_formid);
         if (it != raceConfHolder.end()) {
@@ -462,12 +462,12 @@ namespace CBP
         return physicsGlobalConfig;
     }
 
-    void IConfig::SetRacePhysicsConfig(SKSE::FormID a_handle, const configComponents_t& a_conf)
+    void IConfig::SetRacePhysicsConfig(Game::FormID a_handle, const configComponents_t& a_conf)
     {
         raceConfHolder.insert_or_assign(a_handle, a_conf);
     }
 
-    void IConfig::SetRacePhysicsConfig(SKSE::FormID a_handle, configComponents_t&& a_conf)
+    void IConfig::SetRacePhysicsConfig(Game::FormID a_handle, configComponents_t&& a_conf)
     {
         raceConfHolder.insert_or_assign(a_handle, std::forward<configComponents_t>(a_conf));
     }
@@ -503,7 +503,7 @@ namespace CBP
     }
 
     const armorCacheEntry_t::mapped_type* IConfig::GetArmorOverrideSection(
-        SKSE::ObjectHandle a_handle,
+        Game::ObjectHandle a_handle,
         const std::string& a_sk)
     {
         auto entry = GetArmorOverride(a_handle);
