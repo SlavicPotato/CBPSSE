@@ -2,7 +2,7 @@
 
 namespace CBP
 {
-    class SimObject;
+    //class SimObject;
 
 #ifdef _CBP_ENABLE_DEBUG
     struct SimDebugInfo
@@ -27,6 +27,8 @@ namespace CBP
 
         class Collider
         {
+            static constexpr float crdrmul = std::numbers::pi_v<float> / 180.0f;
+
         public:
             Collider(SimComponent& a_parent);
 
@@ -41,12 +43,10 @@ namespace CBP
             
             inline void SetColliderRotation(float a_x, float a_y, float a_z)
             {
-                const float mul = static_cast<float>(M_PI) / 180.0f;
-
                 m_colRot = r3d::Quaternion::fromEulerAngles(
-                    a_x * mul,
-                    a_y * mul,
-                    a_z * mul
+                    a_x * crdrmul,
+                    a_y * crdrmul,
+                    a_z * crdrmul
                 );
             }
 
@@ -221,7 +221,7 @@ namespace CBP
 
         void UpdateConfig(
             Actor* a_actor,
-            const configComponent_t& centry,
+            const configComponent_t& a_physConf,
             bool a_collisions,
             bool a_movement,
             const configNode_t& a_nodeConf) noexcept;

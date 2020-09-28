@@ -124,9 +124,18 @@ namespace CBP
         {
             bool femaleOnly = true;
             bool armorOverrides = true;
+        } general;
+
+        struct
+        {
             bool enableProfiling = false;
             int profilingInterval = 1000;
-        } general;
+            bool enablePlot = true;
+            bool showAvg = true;
+            bool animatePlot = true;
+            int plotValues = 200;
+            float plotHeight = 30.0f;
+        } profiling;
 
         struct
         {
@@ -282,7 +291,7 @@ namespace CBP
 
             return true;
         }
-        
+
         __forceinline void Set(const componentValueDesc_t& a_desc, float a_value)
         {
             auto addr = reinterpret_cast<uintptr_t>(this) + a_desc.offset;
@@ -304,7 +313,7 @@ namespace CBP
             return true;
         }
 
-        __forceinline void Set(const componentValueDesc_t &a_desc, float* a_value, size_t a_size)
+        __forceinline void Set(const componentValueDesc_t& a_desc, float* a_value, size_t a_size)
         {
             auto addr = reinterpret_cast<uintptr_t>(this) + a_desc.offset;
 
@@ -347,7 +356,7 @@ namespace CBP
             float gravityBias = 0.0f;
             float gravityCorrection = 0.0f;
             float rotGravityCorrection = 0.0f;
-            float linear[3]{ 0.5f, 0.1f, 0.25f };
+            float linear[3]{ 0.275f, 0.1f, 0.275f };
             float rotational[3]{ 0.0f, 0.0f, 0.0f };
             float resistance = 0.0f;
             float mass = 1.0f;
@@ -461,7 +470,7 @@ namespace CBP
     public:
         typedef std::unordered_set<std::string> vKey_t;
 
-        static void LoadConfig();
+        static void Initialize();
 
         [[nodiscard]] static ConfigClass GetActorPhysicsConfigClass(SKSE::ObjectHandle a_handle);
         [[nodiscard]] static ConfigClass GetActorNodeConfigClass(SKSE::ObjectHandle a_handle);
@@ -488,31 +497,16 @@ namespace CBP
             raceConfHolder.erase(handle);
         }
 
-        static void CopyComponents(const configComponents_t& a_lhs, configComponents_t& a_rhs);
-        static void CopyNodes(const configNodes_t& a_lhs, configNodes_t& a_rhs);
-
         [[nodiscard]] inline static auto& GetGlobalPhysicsConfig() {
             return physicsGlobalConfig;
         }
 
         inline static void SetGlobalPhysicsConfig(const configComponents_t& a_rhs) noexcept {
-            physicsGlobalConfig = a_rhs;
+            physicsGlobalConfig = a_rhs;            
         }
 
         inline static void SetGlobalPhysicsConfig(configComponents_t&& a_rhs) noexcept {
             physicsGlobalConfig = std::forward<configComponents_t>(a_rhs);
-        }
-
-        inline static void CopyToGlobalPhysicsConfig(const configComponents_t& a_rhs) {
-            CopyComponents(a_rhs, physicsGlobalConfig);
-        }
-
-        inline static void CopyToGlobalNodeConfig(const configNodes_t& a_rhs) {
-            CopyNodes(a_rhs, globalNodeConfigHolder);
-        }
-
-        [[nodiscard]] inline static const auto& GetThingGlobalConfigDefaults() {
-            return physicsGlobalConfigDefaults;
         }
 
         [[nodiscard]] inline static auto& GetActorPhysicsConfigHolder() {
@@ -556,11 +550,11 @@ namespace CBP
         }
 
         inline static void ResetGlobalConfig() {
-            globalConfig = CBP::configGlobal_t();
+            globalConfig = configGlobal_t();
         }
 
         inline static void ClearGlobalPhysicsConfig() {
-            physicsGlobalConfig = physicsGlobalConfigDefaults;
+            physicsGlobalConfig.clear();
         }
 
         [[nodiscard]] inline static const auto& GetNodeMap() {
@@ -571,12 +565,8 @@ namespace CBP
             return nodeMap.find(a_key) != nodeMap.end();
         }
 
-        [[nodiscard]] inline static const auto& GetValidSimComponents() {
-            return validSimComponents;
-        }
-
-        [[nodiscard]] inline static bool IsValidSimComponent(const std::string& a_key) {
-            return validSimComponents.find(a_key) != validSimComponents.end();
+        [[nodiscard]] inline static bool IsValidConfigGroup(const std::string& a_key) {
+            return validConfGroups.find(a_key) != validConfGroups.end();
         }
 
         [[nodiscard]] inline static auto& GetCollisionGroups() {
@@ -614,19 +604,19 @@ namespace CBP
         }
 
         [[nodiscard]] inline static auto& GetGlobalNodeConfig() {
-            return globalNodeConfigHolder;
+            return nodeGlobalConfig;
         }
 
         inline static void SetGlobalNodeConfig(const configNodes_t& a_rhs) noexcept {
-            globalNodeConfigHolder = a_rhs;
+            nodeGlobalConfig = a_rhs;
         }
 
         inline static void SetGlobalNodeConfig(configNodes_t&& a_rhs) noexcept {
-            globalNodeConfigHolder = std::forward<configNodes_t>(a_rhs);
+            nodeGlobalConfig = std::forward<configNodes_t>(a_rhs);
         }
 
         inline static void ClearGlobalNodeConfig() {
-            globalNodeConfigHolder.clear();
+            nodeGlobalConfig.clear();
         }
 
         static bool GetGlobalNodeConfig(const std::string& a_node, configNode_t& a_out);
@@ -675,7 +665,7 @@ namespace CBP
 
         inline static void StoreDefaultProfile() {
             defaultProfileStorage.components = physicsGlobalConfig;
-            defaultProfileStorage.nodes = globalNodeConfigHolder;
+            defaultProfileStorage.nodes = nodeGlobalConfig;
             defaultProfileStorage.stored = true;
         }
 
@@ -719,22 +709,42 @@ namespace CBP
         inline static const auto& GetPhysicsTemplateBase() {
             return templateBasePhysicsHolder;
         }
-        
+
         inline static const auto& GetNodeTemplateBase() {
             return templateBaseNodeHolder;
         }
+
+        template <typename T, std::enable_if_t<std::is_same<T, configComponents_t>::value, int> = 0>
+        static T& GetTemplateBase()
+        {
+            return templateBasePhysicsHolder;
+        }
+
+        template <typename T, std::enable_if_t<std::is_same<T, configNodes_t>::value, int> = 0>
+        static T& GetTemplateBase()
+        {
+            return templateBaseNodeHolder;
+        }
+
+        static void Copy(const configComponents_t& a_lhs, configComponents_t& a_rhs);
+        static void Copy(const configNodes_t& a_lhs, configNodes_t& a_rhs);
+        
+        static void CopyBase(const configComponents_t& a_lhs, configComponents_t& a_rhs);
+        static void CopyBase(const configNodes_t& a_lhs, configNodes_t& a_rhs);
 
     private:
 
         [[nodiscard]] static bool LoadNodeMap(nodeMap_t& a_out);
         [[nodiscard]] static bool CompatLoadOldConf(configComponents_t& a_out);
 
+        template <typename T>
+        __forceinline static void CopyImpl(const T& a_lhs, T& a_rhs);
+
         static configComponents_t physicsGlobalConfig;
-        static configComponents_t physicsGlobalConfigDefaults;
         static actorConfigComponentsHolder_t actorConfHolder;
         static raceConfigComponentsHolder_t raceConfHolder;
         static configGlobal_t globalConfig;
-        static vKey_t validSimComponents;
+        static vKey_t validConfGroups;
 
         static nodeMap_t nodeMap;
         static configGroupMap_t configGroupMap;
@@ -742,7 +752,7 @@ namespace CBP
         static collisionGroups_t collisionGroups;
         static nodeCollisionGroupMap_t nodeCollisionGroupMap;
 
-        static configNodes_t globalNodeConfigHolder;
+        static configNodes_t nodeGlobalConfig;
         static actorConfigNodesHolder_t actorNodeConfigHolder;
         static raceConfigNodesHolder_t raceNodeConfigHolder;
 

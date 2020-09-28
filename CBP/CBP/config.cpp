@@ -3,18 +3,18 @@
 namespace CBP
 {
     configComponents_t IConfig::physicsGlobalConfig;
-    configComponents_t IConfig::physicsGlobalConfigDefaults;
+    //configComponents_t IConfig::physicsGlobalConfigDefaults;
     actorConfigComponentsHolder_t IConfig::actorConfHolder;
     raceConfigComponentsHolder_t IConfig::raceConfHolder;
     configGlobal_t IConfig::globalConfig;
-    IConfig::vKey_t IConfig::validSimComponents;
+    IConfig::vKey_t IConfig::validConfGroups;
     nodeMap_t IConfig::nodeMap;
     configGroupMap_t IConfig::configGroupMap;
 
     collisionGroups_t IConfig::collisionGroups;
     nodeCollisionGroupMap_t IConfig::nodeCollisionGroupMap;
 
-    configNodes_t IConfig::globalNodeConfigHolder;
+    configNodes_t IConfig::nodeGlobalConfig;
     actorConfigNodesHolder_t IConfig::actorNodeConfigHolder;
     raceConfigNodesHolder_t IConfig::raceNodeConfigHolder;
     combinedData_t IConfig::defaultProfileStorage;
@@ -60,9 +60,11 @@ namespace CBP
                 if (!it->isArray())
                     throw std::exception("Expected array");
 
-                std::string simComponent(it.key().asString());
-                if (simComponent.size() == 0)
-                    throw std::exception("Zero length node string");
+                std::string configGroup(it.key().asString());
+                if (configGroup.empty())
+                    throw std::exception("Zero length config group string");
+
+                transform(configGroup.begin(), configGroup.end(), configGroup.begin(), ::tolower);
 
                 for (auto& v : *it)
                 {
@@ -70,16 +72,17 @@ namespace CBP
                         throw std::exception("Expected string");
 
                     std::string k(v.asString());
-                    if (k.size() == 0)
-                        throw std::exception("Zero length config group string");
+                    if (k.empty())
+                        throw std::exception("Zero length node name string");
 
-                    a_out.insert_or_assign(k, simComponent);
+                    a_out.insert_or_assign(k, configGroup);
                 }
             }
 
             return true;
         }
-        catch (const std::system_error& e) {
+        catch (const std::system_error& e) 
+        {
             log.Error("%s: %s", __FUNCTION__, e.what());
         }
         catch (const std::exception& e)
@@ -151,7 +154,7 @@ namespace CBP
         return false;
     }
 
-    void IConfig::LoadConfig()
+    void IConfig::Initialize()
     {
         nodeMap_t nm;
         if (LoadNodeMap(nm))
@@ -159,25 +162,30 @@ namespace CBP
         else
             nodeMap = defaultNodeMap;
 
+        validConfGroups.clear();
+        templateBasePhysicsHolder.clear();
+        templateBaseNodeHolder.clear();
+        configGroupMap.clear();
+        physicsGlobalConfig.clear();
+
         for (const auto& v : nodeMap) 
         {
-            validSimComponents.insert(v.second);
+            validConfGroups.insert(v.second);
             templateBaseNodeHolder.try_emplace(v.first);
             configGroupMap[v.second].push_back(v.first);
         }
 
-        for (const auto& v : validSimComponents)
+        for (const auto& v : validConfGroups)
         {
             templateBasePhysicsHolder.try_emplace(v);
-            if (physicsGlobalConfig.find(v) == physicsGlobalConfig.end())
-                physicsGlobalConfig.try_emplace(v);
+            physicsGlobalConfig.try_emplace(v);
         }
 
         configComponents_t cc(physicsGlobalConfig);
         if (CompatLoadOldConf(cc))
             physicsGlobalConfig = std::move(cc);
 
-        physicsGlobalConfigDefaults = physicsGlobalConfig;
+        //physicsGlobalConfigDefaults = physicsGlobalConfig;
     }
 
     ConfigClass IConfig::GetActorPhysicsConfigClass(SKSE::ObjectHandle a_handle)
@@ -464,16 +472,32 @@ namespace CBP
         raceConfHolder.insert_or_assign(a_handle, std::forward<configComponents_t>(a_conf));
     }
 
-    void IConfig::CopyComponents(const configComponents_t& a_lhs, configComponents_t& a_rhs)
+    void IConfig::Copy(const configComponents_t& a_lhs, configComponents_t& a_rhs)
     {
-        for (const auto& e : a_lhs)
-            if (a_rhs.find(e.first) != a_rhs.end())
-                a_rhs.insert_or_assign(e.first, e.second);
+        CopyImpl(a_lhs, a_rhs);
     }
 
-    void IConfig::CopyNodes(const configNodes_t& a_lhs, configNodes_t& a_rhs)
+    void IConfig::Copy(const configNodes_t& a_lhs, configNodes_t& a_rhs)
     {
-        for (const auto& e : a_lhs)
+        CopyImpl(a_lhs, a_rhs);
+    }
+    
+    void IConfig::CopyBase(const configComponents_t& a_lhs, configComponents_t& a_rhs)
+    {
+        a_rhs = GetTemplateBase<configComponents_t>();
+        CopyImpl(a_lhs, a_rhs);
+    }
+
+    void IConfig::CopyBase(const configNodes_t& a_lhs, configNodes_t& a_rhs)
+    {
+        a_rhs = GetTemplateBase<configNodes_t>();
+        CopyImpl(a_lhs, a_rhs);
+    }
+
+    template <typename T>
+    void IConfig::CopyImpl(const T& a_lhs, T& a_rhs)
+    {
+        for (auto& e : a_lhs)
             if (a_rhs.find(e.first) != a_rhs.end())
                 a_rhs.insert_or_assign(e.first, e.second);
     }
@@ -482,7 +506,6 @@ namespace CBP
         SKSE::ObjectHandle a_handle,
         const std::string& a_sk)
     {
-
         auto entry = GetArmorOverride(a_handle);
         if (!entry)
             return nullptr;

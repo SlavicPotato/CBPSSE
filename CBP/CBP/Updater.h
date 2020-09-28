@@ -65,7 +65,7 @@ namespace CBP
         __forceinline uint32_t UpdatePhase2(float a_timeStep, float a_timeTick, float a_maxTime);
         __forceinline uint32_t UpdatePhase2Collisions(float a_timeStep, float a_timeTick, float a_maxTime);
 
-        void PhysicsTick();
+        void PhysicsTick(SKSE::BSMain *a_main);
 
         void AddActor(SKSE::ObjectHandle a_handle);
         void RemoveActor(SKSE::ObjectHandle a_handle);

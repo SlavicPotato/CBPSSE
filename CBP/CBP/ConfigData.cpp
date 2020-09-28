@@ -30,7 +30,7 @@ namespace CBP
         {"mox", {
             offsetof(configComponent_t, phys.maxOffset[0]),
             "",
-            0.0f, 100.0f,
+            0.0f, 255.0f,
             "Maximum amount the bone is allowed to move from target (X, Y, Z)",
             "Max. offset",
              DescUIMarker::Float3
@@ -38,14 +38,14 @@ namespace CBP
         {"moy", {
             offsetof(configComponent_t, phys.maxOffset[1]),
             "",
-            0.0f, 100.0f,
+            0.0f, 255.0f,
             "",
             ""
         }},
         {"moz", {
             offsetof(configComponent_t, phys.maxOffset[2]),
             "",
-            0.0f, 100.0f,
+            0.0f, 255.0f,
             "",
             ""
         }},

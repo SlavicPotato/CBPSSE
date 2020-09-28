@@ -14,7 +14,7 @@ namespace CBP
     {
         auto& nodeConfig = IConfig::GetActorNodeConfig(a_handle);
 
-        for (const auto& b : a_nodeMap)
+        for (auto& b : a_nodeMap)
         {
             BSFixedString cs(b.first.c_str());
 
@@ -22,15 +22,14 @@ namespace CBP
             if (!object || !object->m_parent)
                 continue;
 
-            auto it = a_config.find(b.second);
-            if (it == a_config.end())
+            if (!IConfig::IsValidConfigGroup(b.second))
                 continue;
 
-            configNode_t nodeConf;
-
             auto itn = nodeConfig.find(b.first);
-            if (itn != nodeConfig.end())
-                nodeConf = itn->second;
+            if (itn == nodeConfig.end())
+                continue; // nc defaults to everything off
+
+            auto& nodeConf = itn->second;
 
             bool collisions, movement;
             nodeConf.Get(a_sex, collisions, movement);
@@ -38,16 +37,18 @@ namespace CBP
             if (!collisions && !movement)
                 continue;
 
-            a_out.emplace_back(
-                nodeDesc_t{
-                    b.first,
-                    object,
-                    it->first,
-                    it->second,
-                    a_collisions && collisions,
-                    movement,
-                    nodeConf
-                });
+            auto& e = a_out.emplace_back();
+
+            auto it = a_config.find(b.second);
+            if (it != a_config.end())
+                e.physConf = it->second;
+
+            e.nodeName = b.first;
+            e.bone = object;
+            e.confGroup = b.second;
+            e.collisions = a_collisions && collisions;
+            e.movement = movement;
+            e.nodeConf = nodeConf;
         }
 
         return a_out.size();
@@ -73,14 +74,14 @@ namespace CBP
         m_actorName = CALL_MEMBER_FN(a_actor, GetReferenceName)();
 #endif
 
-        for (const auto& e : a_desc)
+        for (auto& e : a_desc)
         {
             m_things.try_emplace(
                 e.nodeName,
                 a_actor,
                 e.bone,
                 e.confGroup,
-                e.conf,
+                e.physConf,
                 a_Id,
                 IConfig::GetNodeCollisionGroupId(e.nodeName),
                 e.collisions,
@@ -91,7 +92,7 @@ namespace CBP
             m_configGroups.emplace(e.confGroup);
         }
 
-        m_actor = a_actor;
+        //m_actor = a_actor;
 
         BSFixedString n("NPC Head [Head]");
         m_objHead = a_actor->loadedState->node->GetObjectByName(&n.data);
@@ -127,8 +128,7 @@ namespace CBP
 
         for (auto& p : m_things)
         {
-            auto it2 = a_config.find(p.second.GetConfigGroupName());
-            if (it2 == a_config.end())
+            if (!IConfig::IsValidConfigGroup(p.second.GetConfigGroupName()))
                 continue;
 
             configNode_t nodeConf;
@@ -140,9 +140,11 @@ namespace CBP
             bool collisions, movement;
             nodeConf.Get(m_sex, collisions, movement);
 
+            auto it2 = a_config.find(p.second.GetConfigGroupName());
+
             p.second.UpdateConfig(
                 a_actor,
-                it2->second,
+                it2 != a_config.end() ? it2->second : configComponent_t(),
                 a_collisions && collisions,
                 movement,
                 nodeConf

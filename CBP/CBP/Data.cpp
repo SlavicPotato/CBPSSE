@@ -297,17 +297,13 @@ namespace CBP
                 if (!it1->isObject())
                     throw std::exception("Unexpected data");
 
-                auto k = it1.key();
-                if (!k.isString())
-                    throw std::exception("Invalid key");
+                std::string configGroup(it1.key().asString());
+                transform(configGroup.begin(), configGroup.end(), configGroup.begin(), ::tolower);
 
-                std::string componentName(k.asString());
-                transform(componentName.begin(), componentName.end(), componentName.begin(), ::tolower);
-
-                if (!IConfig::IsValidSimComponent(componentName))
+                if (!IConfig::IsValidConfigGroup(configGroup))
                     continue;
 
-                auto& e = entry[componentName];
+                auto& e = entry[configGroup];
 
                 for (auto it2 = it1->begin(); it2 != it1->end(); ++it2)
                 {
@@ -319,32 +315,35 @@ namespace CBP
 
                     auto& v = *it2;
 
-                    if (!v[0].isNumeric())
+                    auto& type = v[0];
+
+                    if (!type.isNumeric())
                         throw std::exception("Value type not numeric");
 
-                    if (!v[1].isNumeric())
+                    auto& value = v[1];
+
+                    if (!value.isNumeric())
                         throw std::exception("Value not numeric");
 
-                    uint32_t m = v[0].asUInt();
+                    uint32_t m = type.asUInt();
 
                     if (m > 1)
                         throw std::exception("Value type out of range");
 
-                    auto kt = it2.key();
-                    if (!kt.isString())
-                        throw std::exception("Invalid key");
-
-                    std::string valName(kt.asString());
+                    std::string valName(it2.key().asString());
                     transform(valName.begin(), valName.end(), valName.begin(), ::tolower);
+
+                    if (!configComponent_t::descMap.contains(valName)) {
+                        gLogger.Warning("%s: Unknown value name: %s", __FUNCTION__, valName.c_str());
+                        continue;
+                    }
 
                     auto& r = e[valName];
 
                     r.first = m;
-                    r.second = v[1].asFloat();
+                    r.second = value.asFloat();
                 }
             }
-
-            //entry.first = a_path;
 
             auto res = armorCache.insert_or_assign(a_path, std::move(entry));
             *a_out = std::addressof(res.first->second);

@@ -32,8 +32,8 @@ namespace CBP
 
         virtual ~Profile() noexcept = default;
 
-        virtual bool Load();
-        virtual bool Save(const T& a_data, bool a_store);
+        bool Load();
+        bool Save(const T& a_data, bool a_store);
 
         inline bool Save() {
             return Save(m_conf, false);
@@ -133,13 +133,13 @@ namespace CBP
         ProfileManager& operator=(const ProfileManager&) = delete;
         void operator=(ProfileManager&&) = delete;
 
-        virtual bool Load(const fs::path& a_path);
-        [[nodiscard]] virtual bool CreateProfile(const std::string& a_name, T& a_out);
+        bool Load(const fs::path& a_path);
+        [[nodiscard]] bool CreateProfile(const std::string& a_name, T& a_out);
 
-        [[nodiscard]] virtual bool AddProfile(const T& a_in);
-        [[nodiscard]] virtual bool AddProfile(T&& a_in);
-        [[nodiscard]] virtual bool DeleteProfile(const std::string& a_name);
-        [[nodiscard]] virtual bool RenameProfile(const std::string& a_oldName, const std::string& a_newName);
+        [[nodiscard]] bool AddProfile(const T& a_in);
+        [[nodiscard]] bool AddProfile(T&& a_in);
+        [[nodiscard]] bool DeleteProfile(const std::string& a_name);
+        [[nodiscard]] bool RenameProfile(const std::string& a_oldName, const std::string& a_newName);
 
         [[nodiscard]] inline profileStorage_t& Data() noexcept { return m_storage; }
         [[nodiscard]] inline const profileStorage_t& Data() const noexcept { return m_storage; }
@@ -153,7 +153,7 @@ namespace CBP
 
         //void MarkChanged(const std::string& a_key);
 
-        FN_NAMEPROC("CBP::ProfileManager");
+        FN_NAMEPROC("ProfileManager");
     private:
 
         void CheckProfileKey(const std::string& a_key) const;
@@ -169,6 +169,34 @@ namespace CBP
 
     class GlobalProfileManager
     {
+        class ProfileManagerPhysics :
+            public ProfileManager<PhysicsProfile>
+        {
+        public:
+
+            template<typename... Args>
+            ProfileManagerPhysics(Args... a_args) :
+                ProfileManager<PhysicsProfile>(a_args...)
+            {
+            }
+
+            FN_NAMEPROC("ProfileManagerPhysics");
+        };
+
+        class ProfileManagerNode :
+            public ProfileManager<NodeProfile>
+        {
+        public:
+
+            template<typename... Args>
+            ProfileManagerNode(Args... a_args) :
+                ProfileManager<NodeProfile>(a_args...)
+            {
+            }
+
+            FN_NAMEPROC("ProfileManagerNode");
+        };
+
     public:
         template <typename T, std::enable_if_t<std::is_same<T, PhysicsProfile>::value, int> = 0>
         [[nodiscard]] inline static ProfileManager<T>& GetSingleton() noexcept {
@@ -181,8 +209,10 @@ namespace CBP
         }
 
     private:
-        static ProfileManager<PhysicsProfile> m_Instance1;
-        static ProfileManager<NodeProfile> m_Instance2;
+        static ProfileManagerPhysics m_Instance1;
+        static ProfileManagerNode m_Instance2;
     };
 
 }
+
+#include "CBP/Profile.cpp"

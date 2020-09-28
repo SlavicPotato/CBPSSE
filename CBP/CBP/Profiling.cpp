@@ -5,12 +5,9 @@ namespace CBP
     Profiler::Profiler(
         long long a_interval
     ) :
-        m_perfTimer(a_interval),
-        m_current({ 0, 0, 0, 0 }),
-        m_numActorsAccum(0),
-        m_numStepsAccum(0),
-        m_runCount(0)
+        m_perfTimer(a_interval)
     {
+        Reset();
     }
 
     void Profiler::Begin()
@@ -18,11 +15,12 @@ namespace CBP
         m_perfTimer.Begin();
     }
 
-    void Profiler::End(uint32_t a_actors, uint32_t a_steps)
+    void Profiler::End(uint32_t a_actors, uint32_t a_steps, float a_time)
     {
         m_runCount++;
         m_numActorsAccum += a_actors;
         m_numStepsAccum += a_steps;
+        m_frameTimeAccum += a_time;
 
         if (m_perfTimer.End(m_current.avgTime))
         {
@@ -37,9 +35,14 @@ namespace CBP
                 else
                     m_current.avgStepRate = 0;
 
+                m_current.avgFrameTime = m_frameTimeAccum / static_cast<float>(m_runCount);
+
                 m_runCount = 0;
                 m_numActorsAccum = 0;
                 m_numStepsAccum = 0;
+                m_frameTimeAccum = 0.0f;
+
+                m_uid++;
             }
             else // overflow
                 Reset();
@@ -57,9 +60,12 @@ namespace CBP
         m_runCount = 0;
         m_numActorsAccum = 0;
         m_numStepsAccum = 0;
+        m_frameTimeAccum = 0.0f;
+        m_uid = 0;
         m_current.avgActorCount = 0;
         m_current.avgTime = 0;
         m_current.avgStepRate = 0;
         m_current.avgStepsPerUpdate = 0;
+        m_current.avgTime = 0.0f;
     }
 }

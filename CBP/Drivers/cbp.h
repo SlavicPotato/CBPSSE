@@ -140,14 +140,14 @@ namespace CBP
             virtual void Run();
         };
 
-        typedef void (*mainLoopUpdateFunc_t)(void* p1);
+        typedef void (*mainLoopUpdateFunc_t)(SKSE::BSMain *a_main);
 
     public:
 
         static bool LoadPaths();
         static void Initialize();
 
-        static void MainLoop_Hook(void* p1);
+        static void MainLoop_Hook(SKSE::BSMain* a_main);
         static void OnCreateArmorNode(TESObjectREFR* a_ref, BipedParam* a_params);
         static NiAVObject* CreateArmorNode_Hook(NiAVObject* a_obj, Biped* a_info, BipedParam* a_params);
 
@@ -270,6 +270,10 @@ namespace CBP
 
         inline static void QueueUIReset() {
             m_Instance.m_resetUI = true;
+        }
+
+        inline static auto& GetUIContext() {
+            return m_Instance.m_uiContext;
         }
 
         FN_NAMEPROC("CBP")

@@ -372,7 +372,7 @@ namespace CBP
                     }
                 }
 
-                DrawOptions();
+                DrawOptions(profile);
 
                 ImGui::Spacing();
 
@@ -431,7 +431,7 @@ namespace CBP
     }
 
     template <class T>
-    void UIProfileEditorBase<T>::DrawOptions() const
+    void UIProfileEditorBase<T>::DrawOptions(T& a_profile)
     {
     }
 
@@ -439,7 +439,7 @@ namespace CBP
         DrawSimComponents(0, a_profile.Data());
     }
 
-    void UIProfileEditorPhysics::DrawOptions() const
+    void UIProfileEditorPhysics::DrawOptions(PhysicsProfile& a_profile)
     {
         auto& globalConfig = IConfig::GetGlobalConfig();
 
@@ -452,6 +452,81 @@ namespace CBP
 
         CheckboxGlobal("Clamp values", &globalConfig.ui.profile.clampValues);
         HelpMarker(MiscHelpText::clampValues);
+
+        ImGui::Spacing();
+
+        auto& data = a_profile.Data();
+        auto& cgm = IConfig::GetConfigGroupMap();
+
+        if (ImGui::Button("Add group"))
+            ImGui::OpenPopup("add_cg");
+
+        ImGui::SameLine();
+
+        if (ImGui::Button("Remove unmapped"))
+        {
+            auto it = data.begin();
+            while (it != data.end())
+            {
+                if (!cgm.contains(it->first))
+                    it = data.erase(it);
+                else
+                    ++it;
+            }
+        }
+
+        if (ImGui::BeginPopup("add_cg"))
+        {
+            ImGui::SetWindowFontScale(globalConfig.ui.fontScale);
+
+            size_t delta(0);
+
+            for (auto& e : cgm)
+            {
+                if (data.contains(e.first))
+                    continue;
+
+                delta++;
+
+                if (ImGui::MenuItem(e.first.c_str()))
+                    data.try_emplace(e.first);
+            }
+
+            if (delta)
+            {
+                ImGui::Separator();
+
+                if (ImGui::MenuItem("All"))
+                {
+                    for (auto& e : cgm)
+                    {
+                        if (!data.contains(e.first))
+                            data.try_emplace(e.first);
+                    }
+                }
+            }
+
+            ImGui::EndPopup();
+        }
+    }
+
+    void UIProfileEditorPhysics::DrawGroupOptions(
+        int,
+        PhysicsProfile::base_type& a_data,
+        PhysicsProfile::base_type::value_type& a_pair,
+        nodeConfigList_t& a_nodeConfig)
+    {
+        ImGui::SameLine();
+        if (ImGui::Button("Remove"))
+            ImGui::OpenPopup("Remove group");
+
+        if (UICommon::ConfirmDialog(
+            "Remove group",
+            "Remove group configuration '%s' from the profile?",
+            a_pair.first.c_str()))
+        {
+            MarkCurrentForErase();
+        }
     }
 
     void UIProfileEditorPhysics::OnSimSliderChange(
@@ -584,8 +659,11 @@ namespace CBP
             else
                 ss << e.second.fullname;
 
+            auto tmp(IConfig::GetTemplateBase<entryValue_t>());
+            IConfig::Copy(GetData(e.first), tmp);
+
             m_listData.try_emplace(e.first,
-                std::move(ss.str()), GetData(e.first));
+                std::move(ss.str()), std::move(tmp));
         }
 
         if (m_listData.empty()) {
@@ -702,7 +780,8 @@ namespace CBP
     void UIRaceEditorNode::ListResetAllValues(SKSE::FormID a_formid)
     {
         IConfig::EraseRaceNodeConfig(a_formid);
-        m_listData.at(a_formid).second = IConfig::GetRaceNodeConfig(a_formid);
+
+        IConfig::CopyBase(GetData(a_formid), m_listData.at(a_formid).second);
 
         DCBP::ResetActors();
     }
@@ -729,12 +808,10 @@ namespace CBP
         if (!a_data)
             return;
 
-        configNodes_t tmp(IConfig::GetNodeTemplateBase());
+        auto& profileData = a_profile.Data();
 
-        IConfig::CopyNodes(a_profile.Data(), tmp);
-
-        a_data->second.second = tmp;
-        IConfig::SetRaceNodeConfig(a_data->first, std::move(tmp));
+        IConfig::CopyBase(profileData, a_data->second.second);
+        IConfig::SetRaceNodeConfig(a_data->first, profileData);
 
         MarkChanged();
 
@@ -910,12 +987,10 @@ namespace CBP
         if (!a_data)
             return;
 
-        configComponents_t tmp(IConfig::GetPhysicsTemplateBase());
+        auto& profileData = a_profile.Data();
 
-        IConfig::CopyComponents(a_profile.Data(), tmp);
-
-        a_data->second.second = tmp;
-        IConfig::SetRacePhysicsConfig(a_data->first, std::move(tmp));
+        IConfig::CopyBase(profileData, a_data->second.second);
+        IConfig::SetRacePhysicsConfig(a_data->first, profileData);
 
         MarkChanged();
         DCBP::UpdateConfigOnAllActors();
@@ -941,7 +1016,11 @@ namespace CBP
     void UIRaceEditorPhysics::ListResetAllValues(SKSE::FormID a_formid)
     {
         IConfig::EraseRacePhysicsConfig(a_formid);
-        m_listData.at(a_formid).second = IConfig::GetGlobalPhysicsConfig();
+
+        IConfig::CopyBase(
+            GetData(a_formid),
+            m_listData.at(a_formid).second);
+
         DCBP::UpdateConfigOnAllActors();
     }
 
@@ -1361,8 +1440,9 @@ namespace CBP
     template <class T, class P>
     void UIListBase<T, P>::ListUpdateCurrent()
     {
-        if (m_listCurrent)
-            m_listData.at(m_listCurrent).second = GetData(m_listCurrent);
+        auto it = m_listData.find(m_listCurrent);
+        if (it != m_listData.end())
+            IConfig::CopyBase(GetData(m_listCurrent), it->second.second);
     }
 
     template <class T, class P>
@@ -1390,7 +1470,6 @@ namespace CBP
     template <typename T>
     UIActorList<T>::UIActorList(bool a_mark) :
         UIListBase<T, SKSE::ObjectHandle>(),
-        m_globLabel("Global"),
         m_lastCacheUpdateId(0),
         m_markActor(a_mark)
     {
@@ -1413,16 +1492,23 @@ namespace CBP
             if (!actorConf.showAll && !e.second.active)
                 continue;
 
-            m_listData.try_emplace(e.first, e.second.name, GetData(e.first));
+            auto tmp(IConfig::GetTemplateBase<entryValue_t>());
+            IConfig::Copy(GetData(e.first), tmp);
+
+            m_listData.try_emplace(e.first, e.second.name, std::move(tmp));
         }
 
-        if (m_listData.size() == 0) {
+        auto tmp(IConfig::GetTemplateBase<entryValue_t>());
+        IConfig::Copy(GetData(SKSE::ObjectHandle(0)), tmp);
+        m_listData.try_emplace(0, "Global", std::move(tmp));
+
+        if (m_listData.size() == 1) {
             _snprintf_s(m_listBuf1, _TRUNCATE, "No actors");
-            ListSetCurrentItem(0);
+            ListSetCurrentItem(SKSE::ObjectHandle(0));
             return;
         }
 
-        _snprintf_s(m_listBuf1, _TRUNCATE, "%zu actors", m_listData.size());
+        _snprintf_s(m_listBuf1, _TRUNCATE, "%zu actors", m_listData.size() - 1);
 
         if (globalConfig.ui.selectCrosshairActor && !isFirstUpdate) {
             auto crosshairRef = IData::GetCrosshairRef();
@@ -1434,9 +1520,9 @@ namespace CBP
             }
         }
 
-        if (m_listCurrent != 0) {
+        if (m_listCurrent != SKSE::ObjectHandle(0)) {
             if (m_listData.find(m_listCurrent) == m_listData.end())
-                ListSetCurrentItem(0);
+                ListSetCurrentItem(SKSE::ObjectHandle(0));
         }
         else {
             if (actorConf.lastActor &&
@@ -1474,8 +1560,7 @@ namespace CBP
 
         m_listCurrent = a_handle;
 
-        if (a_handle != 0)
-            m_listData.at(a_handle).second = GetData(a_handle);
+        IConfig::CopyBase(GetData(a_handle), m_listData.at(a_handle).second);
 
         if (a_handle != actorConf.lastActor)
             SetGlobal(actorConf.lastActor, a_handle);
@@ -1488,11 +1573,8 @@ namespace CBP
     auto UIActorList<T>::ListGetSelected()
         -> listValue_t*
     {
-        if (m_listCurrent != 0)
-            return std::addressof(
-                *m_listData.find(m_listCurrent));
-
-        return nullptr;
+        return std::addressof(
+            *m_listData.find(m_listCurrent));
     }
 
     template <class T>
@@ -1500,9 +1582,7 @@ namespace CBP
         listValue_t*& a_entry,
         const char*& a_curSelName)
     {
-        a_curSelName = a_entry ?
-            a_entry->second.first.c_str() :
-            m_globLabel.c_str();
+        a_curSelName = a_entry->second.first.c_str();
 
         ListFilterSelected(a_entry, a_curSelName);
 
@@ -1510,19 +1590,6 @@ namespace CBP
 
         if (ImGui::BeginCombo(m_listBuf1, a_curSelName, ImGuiComboFlags_HeightLarge))
         {
-            if (m_listFilter.Test(m_globLabel))
-            {
-                ImGui::PushID(static_cast<const void*>(m_globLabel.c_str()));
-
-                if (ImGui::Selectable(m_globLabel.c_str(), 0 == m_listCurrent)) {
-                    ListSetCurrentItem(0);
-                    a_entry = nullptr;
-                    a_curSelName = m_globLabel.c_str();
-                }
-
-                ImGui::PopID();
-            }
-
             for (auto& e : m_listData)
             {
                 if (!m_listFilter.Test(e.second.first))
@@ -1536,17 +1603,20 @@ namespace CBP
 
                 std::string label(e.second.first);
 
-                switch (GetActorClass(e.first))
+                if (e.first != SKSE::ObjectHandle(0))
                 {
-                case ConfigClass::kConfigActor:
-                    label += " [A]";
-                    break;
-                case ConfigClass::kConfigRace:
-                    label += " [R]";
-                    break;
-                case ConfigClass::kConfigTemplate:
-                    label += " [T]";
-                    break;
+                    switch (GetActorClass(e.first))
+                    {
+                    case ConfigClass::kConfigActor:
+                        label += " [A]";
+                        break;
+                    case ConfigClass::kConfigRace:
+                        label += " [R]";
+                        break;
+                    case ConfigClass::kConfigTemplate:
+                        label += " [T]";
+                        break;
+                    }
                 }
 
                 if (ImGui::Selectable(label.c_str(), selected)) {
@@ -1561,7 +1631,7 @@ namespace CBP
             ImGui::EndCombo();
         }
 
-        if (a_entry)
+        if (a_entry->first != SKSE::ObjectHandle(0))
             ListDrawInfo(a_entry);
 
         ImGui::SameLine();
@@ -1577,12 +1647,8 @@ namespace CBP
         listValue_t*& a_entry,
         const char*& a_curSelName)
     {
-        if (m_listFilter.Test(a_entry ?
-            a_entry->second.first :
-            m_globLabel))
-        {
+        if (m_listFilter.Test(a_entry->second.first))
             return;
-        }
 
         for (auto& e : m_listData)
         {
@@ -1596,11 +1662,11 @@ namespace CBP
             return;
         }
 
-        if (m_listFilter.Test(m_globLabel)) {
+        /*if (m_listFilter.Test(m_globLabel)) {
             ListSetCurrentItem(0);
             a_entry = nullptr;
             a_curSelName = m_globLabel.c_str();
-        }
+        }*/
     }
 
     template <class T>
@@ -1862,6 +1928,11 @@ namespace CBP
     {
     }
 
+    void UIContext::Initialize()
+    {
+        m_profiling.Initialize();
+    }
+
     void UIContext::Reset(uint32_t a_loadInstance)
     {
         ListReset();
@@ -1954,7 +2025,7 @@ namespace CBP
                 ImGui::MenuItem("Log", nullptr, &ws.log);
 
                 ImGui::EndMenu();
-                }
+            }
 
             if (ImGui::BeginMenu("Actions"))
             {
@@ -1968,7 +2039,7 @@ namespace CBP
                 if (ImGui::MenuItem("Weight update"))
                     DCBP::WeightUpdate();
 
-                if (a_entry)
+                if (a_entry->first != SKSE::ObjectHandle(0))
                 {
                     ImGui::Separator();
 
@@ -1989,8 +2060,8 @@ namespace CBP
             }
 
             ImGui::EndMenuBar();
-            }
         }
+    }
 
     void UIContext::Draw(bool* a_active)
     {
@@ -1998,7 +2069,7 @@ namespace CBP
 
         ActorListTick();
 
-        if (m_listData.size() == 0) {
+        if (m_listData.size() == 1) {
             auto t = PerfCounter::Query();
             if (PerfCounter::delta_us(m_tsNoActors, t) >= 2500000LL) {
                 DCBP::QueueActorCacheUpdate();
@@ -2098,11 +2169,11 @@ namespace CBP
 
             ImGui::Separator();
 
-            if (m_listCurrent) {
+            if (m_listCurrent != SKSE::ObjectHandle(0)) {
                 m_scActor.DrawSimComponents(m_listCurrent, entry->second.second);
             }
             else {
-                m_scGlobal.DrawSimComponents(0, IConfig::GetGlobalPhysicsConfig());
+                m_scGlobal.DrawSimComponents(m_listCurrent, entry->second.second);
             }
 
             UICommon::MessageDialog(
@@ -2582,7 +2653,7 @@ namespace CBP
             if (ButtonRight("Rescan"))
                 DCBP::QueueActorCacheUpdate();
 
-            if (entry)
+            if (m_listCurrent)
             {
                 ImGui::SameLine(wcmx - GetNextTextOffset("Reset"));
                 if (ButtonRight("Reset"))
@@ -2624,29 +2695,31 @@ namespace CBP
     auto UIActorEditorNode::GetData(SKSE::ObjectHandle a_handle) const ->
         const entryValue_t&
     {
-        return IConfig::GetActorNodeConfig(a_handle);
+        return a_handle == SKSE::ObjectHandle(0) ?
+            IConfig::GetGlobalNodeConfig() :
+            IConfig::GetActorNodeConfig(a_handle);
     }
 
     auto UIActorEditorNode::GetData(const listValue_t* a_data) const ->
         const entryValue_t&
     {
-        return !a_data ? IConfig::GetGlobalNodeConfig() : a_data->second.second;
+        return a_data->first == SKSE::ObjectHandle(0) ?
+            IConfig::GetGlobalNodeConfig() :
+            a_data->second.second;
     }
 
     void UIActorEditorNode::ApplyProfile(listValue_t* a_data, const NodeProfile& a_profile)
     {
         auto& profileData = a_profile.Data();
 
-        configNodes_t tmp(IConfig::GetNodeTemplateBase());
-
-        IConfig::CopyNodes(profileData, tmp);
-
-        if (!a_data) {
-            IConfig::SetGlobalNodeConfig(std::move(tmp));
+        if (a_data->first == SKSE::ObjectHandle(0))
+        {
+            IConfig::CopyBase(profileData, a_data->second.second);
+            IConfig::SetGlobalNodeConfig(profileData);
         }
         else {
-            a_data->second.second = tmp;
-            IConfig::SetActorNodeConfig(a_data->first, std::move(tmp));
+            IConfig::CopyBase(profileData, a_data->second.second);
+            IConfig::SetActorNodeConfig(a_data->first, profileData);
         }
 
         DCBP::ResetActors();
@@ -2655,7 +2728,10 @@ namespace CBP
     void UIActorEditorNode::ListResetAllValues(SKSE::ObjectHandle a_handle)
     {
         IConfig::EraseActorNodeConfig(a_handle);
-        m_listData.at(a_handle).second = IConfig::GetActorNodeConfig(a_handle);
+
+        IConfig::CopyBase(
+            GetData(a_handle),
+            m_listData.at(a_handle).second);
 
         DCBP::ResetActors();
     }
@@ -2675,7 +2751,11 @@ namespace CBP
             else
                 DCBP::DispatchActorTask(a_handle, UTTask::UTTAction::UpdateConfig);
         }
-        else {
+        else
+        {
+            auto& nodeConfig = IConfig::GetGlobalNodeConfig();
+            nodeConfig.insert_or_assign(a_node, a_data);
+
             if (a_reset)
                 DCBP::ResetActors();
             else
@@ -2799,7 +2879,8 @@ namespace CBP
         const configNode_t& a_data,
         bool a_reset)
     {
-        if (a_handle) {
+        if (a_handle)
+        {
             auto& nodeConfig = IConfig::GetOrCreateActorNodeConfig(a_handle);
             nodeConfig.insert_or_assign(a_node, a_data);
 
@@ -2884,15 +2965,23 @@ namespace CBP
         if (globalConfig.ui.actor.clampValues)
             *a_val = std::clamp(*a_val, a_desc.second.min, a_desc.second.max);
 
-        Propagate(a_data, nullptr, a_pair, [&](configComponent_t& a_v) {
+        auto& conf = IConfig::GetGlobalPhysicsConfig();
+        auto& entry = conf[a_pair.first];
+
+        auto addr = reinterpret_cast<uintptr_t>(std::addressof(entry)) + a_desc.second.offset;
+
+        *reinterpret_cast<float*>(addr) = *a_val;
+
+        Propagate(a_data, std::addressof(conf), a_pair, [&](configComponent_t& a_v) {
             a_v.Set(a_desc.second, *a_val); });
 
         if (a_desc.second.counterpart.size() &&
             globalConfig.ui.actor.syncWeightSliders)
         {
             a_pair.second.Set(a_desc.second.counterpart, *a_val);
+            entry.Set(a_desc.second.counterpart, *a_val);
 
-            Propagate(a_data, nullptr, a_pair, [&](configComponent_t& a_v) {
+            Propagate(a_data, std::addressof(conf), a_pair, [&](configComponent_t& a_v) {
                 a_v.Set(a_desc.second.counterpart, *a_val); });
         }
 
@@ -2905,6 +2994,11 @@ namespace CBP
         configComponentsValue_t& a_pair,
         const componentValueDescMap_t::vec_value_type&)
     {
+        auto& conf = IConfig::GetGlobalPhysicsConfig();
+        auto& entry = conf[a_pair.first];
+
+        entry.ex.colShape = a_pair.second.ex.colShape;
+
         DCBP::UpdateConfigOnAllActors();
     }
 
@@ -2913,7 +3007,10 @@ namespace CBP
         configComponents_t& a_data,
         configComponentsValue_t& a_pair)
     {
-        Propagate(a_data, nullptr, a_pair, [&](configComponent_t& a_v) {
+        auto& conf = IConfig::GetGlobalPhysicsConfig();
+        conf[a_pair.first] = a_pair.second;
+
+        Propagate(a_data, std::addressof(conf), a_pair, [&](configComponent_t& a_v) {
             a_v = a_pair.second; });
 
         DCBP::UpdateConfigOnAllActors();
@@ -2929,9 +3026,10 @@ namespace CBP
         if (itc == cgMap.end())
             return false;
 
+        auto& nodeConf = IConfig::GetGlobalNodeConfig();
+
         for (const auto& e : itc->second)
         {
-            auto& nodeConf = IConfig::GetGlobalNodeConfig();
             auto it = nodeConf.find(e);
 
             a_out.emplace_back(e, it != nodeConf.end() ?
@@ -3005,50 +3103,45 @@ namespace CBP
     {
         auto& profileData = a_profile.Data();
 
-        configComponents_t tmp(IConfig::GetPhysicsTemplateBase());
+        if (a_data->first == SKSE::ObjectHandle(0))
+        {
+            IConfig::CopyBase(profileData, a_data->second.second);
+            IConfig::SetGlobalPhysicsConfig(profileData);
 
-        IConfig::CopyComponents(profileData, tmp);
-
-        if (!a_data) {
-            IConfig::SetGlobalPhysicsConfig(std::move(tmp));
             DCBP::UpdateConfigOnAllActors();
         }
         else
         {
-            a_data->second.second = tmp;
-            IConfig::SetActorPhysicsConfig(a_data->first, std::move(tmp));
+            IConfig::CopyBase(profileData, a_data->second.second);
+            IConfig::SetActorPhysicsConfig(a_data->first, profileData);
+
             DCBP::DispatchActorTask(a_data->first, UTTask::UTTAction::UpdateConfig);
         }
-    }
-
-    auto UIContext::GetData(const listValue_t* a_data) const ->
-        const entryValue_t&
-    {
-        return !a_data ? IConfig::GetGlobalPhysicsConfig() : a_data->second.second;
-    }
-
-    void UIContext::ListResetAllValues(SKSE::ObjectHandle a_handle)
-    {
-        IConfig::EraseActorConf(a_handle);
-        m_listData.at(a_handle).second = IConfig::GetActorPhysicsConfig(a_handle);
-    }
-
-    void UIContext::UpdateActorValues(SKSE::ObjectHandle a_handle)
-    {
-        if (a_handle)
-            m_listData.at(a_handle).second = IConfig::GetActorPhysicsConfig(a_handle);
-    }
-
-    void UIContext::UpdateActorValues(listValue_t* a_data)
-    {
-        if (a_data)
-            a_data->second.second = IConfig::GetActorPhysicsConfig(a_data->first);
     }
 
     auto UIContext::GetData(SKSE::ObjectHandle a_handle) const ->
         const entryValue_t&
     {
-        return IConfig::GetActorPhysicsConfig(a_handle);
+        return a_handle == SKSE::ObjectHandle(0) ?
+            IConfig::GetGlobalPhysicsConfig() :
+            IConfig::GetActorPhysicsConfig(a_handle);
+    }
+
+    auto UIContext::GetData(const listValue_t* a_data) const ->
+        const entryValue_t&
+    {
+        return a_data->first == SKSE::ObjectHandle(0) ?
+            IConfig::GetGlobalPhysicsConfig() :
+            a_data->second.second;
+    }
+
+    void UIContext::ListResetAllValues(SKSE::ObjectHandle a_handle)
+    {
+        IConfig::EraseActorConf(a_handle);
+
+        IConfig::CopyBase(
+            GetData(a_handle),
+            m_listData.at(a_handle).second);
     }
 
     ConfigClass UIContext::GetActorClass(SKSE::ObjectHandle a_handle) const
@@ -3070,15 +3163,22 @@ namespace CBP
         if (a_steps == 0)
             return;
 
-        SKSE::ObjectHandle handle = a_data ? a_data->first : 0;
-
-        DCBP::ApplyForce(handle, a_steps, a_component, a_force);
+        DCBP::ApplyForce(a_data->first, a_steps, a_component, a_force);
     }
 
     template <class T, UIEditorID ID>
     const PhysicsProfile* UISimComponent<T, ID>::GetSelectedProfile() const
     {
         return nullptr;
+    }
+
+    template <class T, UIEditorID ID>
+    void UISimComponent<T, ID>::DrawGroupOptions(
+        T a_handle,
+        configComponents_t& a_data,
+        configComponentsValue_t& a_pair,
+        nodeConfigList_t& a_nodeConfig)
+    {
     }
 
     template <class T, UIEditorID ID>
@@ -3163,17 +3263,26 @@ namespace CBP
 
             const auto& scConfig = GetSimComponentConfig();
 
-            for (auto& p : a_data)
+            auto it = a_data.begin();
+
+            while (it != a_data.end())
             {
-                if (!m_dataFilter.Test(p.first))
+                auto& p = *it;
+
+                if (!m_dataFilter.Test(p.first)) {
                     continue;
+                    ++it;
+                }
 
                 nodeConfigList_t nodeList;
                 GetNodeConfig(a_handle, p.first, nodeList);
 
                 if (!scConfig.showNodes &&
                     !ShouldDrawComponent(a_handle, nodeList))
+                {
+                    ++it;
                     continue;
+                }
 
                 auto headerName = p.first;
                 if (headerName.size() != 0)
@@ -3213,10 +3322,21 @@ namespace CBP
                         ImGui::EndPopup();
                     }
 
+                    ImGui::PushID("group_options");
+                    DrawGroupOptions(a_handle, a_data, p, nodeList);
+                    ImGui::PopID();
+
                     DrawSliders(a_handle, a_data, p, nodeList);
 
                     ImGui::PopID();
                 }
+
+                if (m_eraseCurrent) {
+                    m_eraseCurrent = false;
+                    it = a_data.erase(it);
+                }
+                else
+                    ++it;
             }
 
             ImGui::PopItemWidth();
@@ -3450,7 +3570,8 @@ namespace CBP
 
     template <class T, UIEditorID ID>
     UISimComponent<T, ID>::UISimComponent() :
-        UIMainItemFilter<ID>(MiscHelpText::dataFilterPhys)
+        UIMainItemFilter<ID>(MiscHelpText::dataFilterPhys),
+        m_eraseCurrent(false)
     {
     }
 
@@ -3755,10 +3876,107 @@ namespace CBP
         return ss.str();
     }
 
+    UIPlot::UIPlot(
+        const char* a_label,
+        const ImVec2& a_size,
+        bool a_avg,
+        uint32_t a_res)
+        :
+        m_plotScaleMin(0.0f),
+        m_plotScaleMax(1.0f),
+        m_label(a_label),
+        m_size(a_size),
+        m_avg(a_avg),
+        m_res(a_res)
+    {
+        m_strBuf1[0] = 0x0;
+    }
+
+    void UIPlot::Update(float a_value)
+    {
+        if (m_values.size() > m_res)
+            m_values.erase(m_values.begin());
+
+        m_values.push_back(static_cast<float>(a_value));
+
+        m_plotScaleMax = 1.0f;
+
+        for (const auto& e : m_values)
+        {
+            if (e > m_plotScaleMax)
+                m_plotScaleMax = e;
+        }
+
+        m_plotScaleMin = m_plotScaleMax;
+
+        float accum = 0.0f;
+
+        for (const auto& e : m_values)
+        {
+            if (e < m_plotScaleMin)
+                m_plotScaleMin = e;
+
+            accum += e;
+        }
+
+        m_plotScaleMin *= 0.96f;
+        m_plotScaleMax *= 1.04f;
+
+        _snprintf_s(m_strBuf1, _TRUNCATE, "avg %.1f", accum / static_cast<float>(m_values.size()));
+    }
+
+    void UIPlot::Draw()
+    {
+        ImGui::PlotLines(
+            m_label,
+            m_values.data(),
+            m_values.size(),
+            0,
+            m_avg ? m_strBuf1 : nullptr,
+            m_plotScaleMin,
+            m_plotScaleMax,
+            m_size,
+            sizeof(float));
+    }
+
+    void UIPlot::SetRes(int a_res)
+    {
+        m_res = std::max(a_res, decltype(a_res)(1));
+
+        while (m_values.size() > m_res)
+            m_values.erase(m_values.begin());
+    }
+
+    void UIPlot::SetHeight(float a_height)
+    {
+        m_size.y = a_height;
+    }
+
+    UIProfiling::UIProfiling() :
+        m_lastUID(0),
+        m_plotUpdateTime("Time/frame", ImVec2(0, 30.0f), false, 200),
+        m_plotFramerate("Timer", ImVec2(0, 30.0f), false, 200)
+    {
+    }
+
+    void UIProfiling::Initialize()
+    {
+        auto& globalConfig = IConfig::GetGlobalConfig();
+
+        m_plotUpdateTime.SetRes(globalConfig.profiling.plotValues);
+        m_plotFramerate.SetRes(globalConfig.profiling.plotValues);
+
+        m_plotUpdateTime.SetHeight(globalConfig.profiling.plotHeight);
+        m_plotFramerate.SetHeight(globalConfig.profiling.plotHeight);
+
+        m_plotUpdateTime.SetShowAvg(globalConfig.profiling.showAvg);
+        m_plotFramerate.SetShowAvg(globalConfig.profiling.showAvg);
+    }
+
     void UIProfiling::Draw(bool* a_active)
     {
         auto& io = ImGui::GetIO();
-        auto& globalConfig = IConfig::GetGlobalConfig();;
+        auto& globalConfig = IConfig::GetGlobalConfig();
 
         ImVec2 center(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f);
         ImGui::SetNextWindowPos(center, ImGuiCond_FirstUseEver, ImVec2(0.5f, 0.5f));
@@ -3768,15 +3986,16 @@ namespace CBP
 
         ImGui::SetNextWindowSizeConstraints(sizeMin, sizeMax);
 
-        ImGui::PushID(static_cast<const void*>(a_active));
+        ImGui::PushID(static_cast<const void*>(this));
 
         if (ImGui::Begin("Stats", a_active))
         {
             ImGui::SetWindowFontScale(globalConfig.ui.fontScale);
 
-            if (globalConfig.general.enableProfiling)
+            if (globalConfig.profiling.enableProfiling)
             {
-                auto& stats = DCBP::GetProfiler().Current();
+                auto& profiler = DCBP::GetProfiler();
+                auto& stats = profiler.Current();
 
                 ImGui::Columns(2, nullptr, false);
 
@@ -3784,6 +4003,8 @@ namespace CBP
                 ImGui::Text("Step rate:");
                 ImGui::Text("Sim. rate:");
                 HelpMarker(MiscHelpText::simRate);
+                ImGui::Text("Timer:");
+                HelpMarker(MiscHelpText::frameTimer);
                 ImGui::Text("Actors:");
 
                 ImGui::NextColumn();
@@ -3792,9 +4013,33 @@ namespace CBP
                 ImGui::Text("%lld/s (%u/frame)", stats.avgStepRate, stats.avgStepsPerUpdate);
                 ImGui::Text("%lld", stats.avgStepsPerUpdate > 0
                     ? stats.avgStepRate / stats.avgStepsPerUpdate : 0);
+                ImGui::Text("%.4f", stats.avgFrameTime);
                 ImGui::Text("%u", stats.avgActorCount);
 
                 ImGui::Columns(1);
+
+                if (globalConfig.profiling.enablePlot)
+                {
+                    if (globalConfig.profiling.animatePlot)
+                    {
+                        auto currentUID = profiler.GetUID();
+                        if (currentUID != m_lastUID)
+                        {
+                            m_plotUpdateTime.Update(stats.avgTime);
+                            m_plotFramerate.Update(stats.avgFrameTime >= _EPSILON ? 
+                                1.0f / stats.avgFrameTime : 0.0f);
+
+                            m_lastUID = currentUID;
+                        }
+                    }
+
+                    ImGui::PushItemWidth(ImGui::GetFontSize() * -6.0f);
+
+                    m_plotUpdateTime.Draw();
+                    m_plotFramerate.Draw();
+
+                    ImGui::PopItemWidth();
+                }
 
                 if (globalConfig.debugRenderer.enabled)
                 {
@@ -3814,13 +4059,37 @@ namespace CBP
             {
                 ImGui::PushItemWidth(ImGui::GetFontSize() * -8.0f);
 
-                if (CheckboxGlobal("Enabled", &globalConfig.general.enableProfiling))
-                    if (globalConfig.general.enableProfiling)
+                if (CheckboxGlobal("Enabled", &globalConfig.profiling.enableProfiling))
+                    if (globalConfig.profiling.enableProfiling)
                         DCBP::ResetProfiler();
 
-                if (SliderIntGlobal("Interval (ms)", &globalConfig.general.profilingInterval, 100, 10000))
+                if (SliderIntGlobal("Interval (ms)", &globalConfig.profiling.profilingInterval, 10, 10000))
                     DCBP::SetProfilerInterval(static_cast<long long>(
-                        globalConfig.general.profilingInterval) * 1000);
+                        globalConfig.profiling.profilingInterval) * 1000);
+
+                CheckboxGlobal("Enable plots", &globalConfig.profiling.enablePlot);
+
+                ImGui::SameLine();
+                if (CheckboxGlobal("Show avg", &globalConfig.profiling.showAvg))
+                {
+                    m_plotUpdateTime.SetShowAvg(globalConfig.profiling.showAvg);
+                    m_plotFramerate.SetShowAvg(globalConfig.profiling.showAvg);
+                }
+
+                ImGui::SameLine();
+                CheckboxGlobal("Animate", &globalConfig.profiling.animatePlot);
+
+                if (SliderIntGlobal("Plot values", &globalConfig.profiling.plotValues, 10, 2000))
+                {
+                    m_plotUpdateTime.SetRes(globalConfig.profiling.plotValues);
+                    m_plotFramerate.SetRes(globalConfig.profiling.plotValues);
+                }
+
+                if (SliderFloatGlobal("Plot height", &globalConfig.profiling.plotHeight, 10.0f, 200.0f))
+                {
+                    m_plotUpdateTime.SetHeight(globalConfig.profiling.plotHeight);
+                    m_plotFramerate.SetHeight(globalConfig.profiling.plotHeight);
+                }
 
                 ImGui::PopItemWidth();
             }
@@ -4295,4 +4564,4 @@ namespace CBP
 
         ImGui::PopID();
     }
-    }
+}

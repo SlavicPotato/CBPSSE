@@ -11,10 +11,10 @@ namespace CBP
         FN_NAMEPROC("Parser")
     public:
         void Create(const configComponents_t& a_in, Json::Value& a_out) const;
-        [[nodiscard]] bool Parse(const Json::Value& a_in, configComponents_t& a_out, bool a_allowUnknown = false) const;
+        [[nodiscard]] bool Parse(const Json::Value& a_in, configComponents_t& a_out) const;
 
         void Create(const configNodes_t& a_in, Json::Value& a_out) const;
-        [[nodiscard]] bool Parse(const Json::Value& a_in, configNodes_t& a_out, bool a_allowUnknown = false) const;
+        [[nodiscard]] bool Parse(const Json::Value& a_in, configNodes_t& a_out) const;
 
         void GetDefault(configComponents_t& a_out) const;
         void GetDefault(configNodes_t& a_out) const;

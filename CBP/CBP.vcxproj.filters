@@ -239,6 +239,9 @@
     <ClCompile Include="CBP\UIData.cpp">
       <Filter>Source Files\CBP</Filter>
     </ClCompile>
+    <ClCompile Include="CBP\ProfileData.cpp">
+      <Filter>Source Files\CBP</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="exports.def" />

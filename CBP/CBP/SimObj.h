@@ -7,10 +7,10 @@ namespace CBP
         std::string nodeName;
         NiAVObject* bone;
         std::string confGroup;
-        configComponent_t conf;
         bool collisions;
         bool movement;
         configNode_t nodeConf;
+        configComponent_t physConf;
     };
 
     typedef std::vector<nodeDesc_t> nodeDescList_t;
@@ -86,9 +86,9 @@ namespace CBP
         }
 #endif
 
-        [[nodiscard]] inline auto& GetActor() {
+        /*[[nodiscard]] inline auto& GetActor() {
             return m_actor;
-        }
+        }*/
 
         [[nodiscard]] inline const NiTransform* GetHeadTransform() const {
             if (m_objHead)
@@ -110,7 +110,7 @@ namespace CBP
 
         SKSE::ObjectHandle m_handle;
 
-        NiPointer<Actor> m_actor;
+        //NiPointer<Actor> m_actor;
         NiPointer<NiNode> m_node;
         NiPointer<NiAVObject> m_objHead;
 

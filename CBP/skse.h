@@ -74,4 +74,35 @@ namespace SKSE
 
     static_assert(sizeof(ProcessLists) == 0x1F0);
     static_assert(offsetof(ProcessLists, highActorHandles) == 0x30);
+
+    struct PositionPlayerEvent;
+    struct BSGamerProfileEvent;
+
+    // https://github.com/Ryan-rsm-McKenzie/CommonLibSSE/blob/master/include/RE/BSMain/Main.h
+    class BSMain :
+        BSTEventSink <PositionPlayerEvent>, // 00
+        BSTEventSink <BSGamerProfileEvent>  // 08
+    {
+    public:
+        virtual ~BSMain();
+
+        virtual EventResult	ReceiveEvent(PositionPlayerEvent* evn, EventDispatcher<PositionPlayerEvent>* dispatcher) override;
+        virtual EventResult	ReceiveEvent(BSGamerProfileEvent* evn, EventDispatcher<BSGamerProfileEvent>* dispatcher) override;
+
+        static BSMain* GetSingleton();
+
+        bool						 quitGame;					   // 010
+        bool						 resetGame;					   // 011
+        bool						 fullReset;					   // 012
+        bool						 gameActive;				   // 013
+        bool						 onIdle;					   // 014
+        bool						 reloadContent;				   // 015
+        bool						 freezeTime;				   // 016
+        bool						 freezeNextFrame;			   // 017
+
+        uint8_t pad[0x258];
+    };
+
+    static_assert(offsetof(BSMain, quitGame) == 0x10);
+    static_assert(sizeof(BSMain) == 0x270);
 }

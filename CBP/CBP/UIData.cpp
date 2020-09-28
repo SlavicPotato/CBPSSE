@@ -25,7 +25,8 @@ namespace CBP
         {MiscHelpText::applyForce, "Apply force to node along the X, Y and Z axes, respectively."},
         {MiscHelpText::showNodes, ""},
         {MiscHelpText::dataFilterPhys, "Filter by configuration group name. Press enter to apply."},
-        {MiscHelpText::dataFilterNode, "Filter by node name. Press enter to apply."}
+        {MiscHelpText::dataFilterNode, "Filter by node name. Press enter to apply."},
+        {MiscHelpText::frameTimer, "Skyrim's frame timer, affected by time modifier."}
         });
 
     const keyDesc_t UIBase::m_comboKeyDesc({

@@ -219,4 +219,11 @@ namespace SKSE
     {
         return CALL_MEMBER_FN(this, _GuardsPursuing)(a_actor, 0x15, 0) != 0;
     }
+
+    static auto s_BSMain = IAL::Addr<BSMain**>(516943);
+
+    BSMain* BSMain::GetSingleton()
+    {
+        return *s_BSMain;
+    }
 }

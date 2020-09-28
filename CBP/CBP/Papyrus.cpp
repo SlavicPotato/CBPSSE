@@ -82,7 +82,7 @@ namespace CBP
         transform(sect.begin(), sect.end(), sect.begin(), ::tolower);
         transform(key.begin(), key.end(), key.begin(), ::tolower);
 
-        auto& tgcd = IConfig::GetThingGlobalConfigDefaults();
+        auto& tgcd = IConfig::GetTemplateBase<configComponents_t>();
 
         auto it = tgcd.find(sect);
         if (it == tgcd.end())

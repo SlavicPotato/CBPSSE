@@ -28,30 +28,25 @@ namespace CBP
     void UpdateTask::UpdateDebugRenderer()
     {
         auto& globalConf = IConfig::GetGlobalConfig();
+        auto& renderer = DCBP::GetRenderer();
 
-        if (globalConf.debugRenderer.enabled &&
-            DCBP::GetDriverConfig().debug_renderer)
+        try
         {
-            auto& renderer = DCBP::GetRenderer();
+            renderer->Clear();
 
-            try
+            if (globalConf.debugRenderer.enableMovingNodes)
             {
-                renderer->Clear();
-
-                if (globalConf.debugRenderer.enableMovingNodes)
-                {
-                    renderer->UpdateMovingNodes(
-                        GetSimActorList(),
-                        globalConf.debugRenderer.movingNodesRadius,
-                        globalConf.debugRenderer.movingNodesCenterOfMass,
-                        m_markedActor);
-                }
-
-                renderer->Update(
-                    DCBP::GetWorld()->getDebugRenderer());
+                renderer->UpdateMovingNodes(
+                    GetSimActorList(),
+                    globalConf.debugRenderer.movingNodesRadius,
+                    globalConf.debugRenderer.movingNodesCenterOfMass,
+                    m_markedActor);
             }
-            catch (...) {}
+
+            renderer->Update(
+                DCBP::GetWorld()->getDebugRenderer());
         }
+        catch (...) {}
     }
 
     void UpdateTask::UpdatePhase1()
@@ -78,7 +73,7 @@ namespace CBP
             c++;
         }
 
-        UpdateActorsPhase2(a_timeStep);            
+        UpdateActorsPhase2(a_timeStep);
 
         return c;
     }
@@ -121,27 +116,38 @@ namespace CBP
     }
 #endif
 
-    void UpdateTask::PhysicsTick()
+    void UpdateTask::PhysicsTick(SKSE::BSMain* a_main)
     {
+        if (a_main->freezeTime)
+            return;
+
         auto mm = MenuManager::GetSingleton();
         if (mm && mm->InPausedMenu())
             return;
 
         float interval = *Game::frameTimerSlow;
 
-        if (interval < _EPSILON)
+        if (interval <= _EPSILON)
             return;
-
-        _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
 
         DCBP::Lock();
 
         auto& globalConf = IConfig::GetGlobalConfig();
 
-        if (globalConf.general.enableProfiling)
+        if (globalConf.profiling.enableProfiling)
             m_profiler.Begin();
 
-        UpdateDebugRenderer();
+        auto daz = _MM_GET_DENORMALS_ZERO_MODE();
+        auto ftz = _MM_GET_FLUSH_ZERO_MODE();
+
+        _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
+        _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
+
+        if (globalConf.debugRenderer.enabled &&
+            DCBP::GetDriverConfig().debug_renderer)
+        {
+            UpdateDebugRenderer();
+        }
 
         m_averageInterval = m_averageInterval * 0.875f + interval * 0.125f;
         auto timeTick = std::min(m_averageInterval, globalConf.phys.timeTick);
@@ -170,12 +176,14 @@ namespace CBP
 
             m_timeAccum = 0.0f;
         }
-        else {
+        else
             steps = 0;
-        }
 
-        if (globalConf.general.enableProfiling)
-            m_profiler.End(m_actors.size(), steps);
+        _MM_SET_DENORMALS_ZERO_MODE(daz);
+        _MM_SET_FLUSH_ZERO_MODE(ftz);
+
+        if (globalConf.profiling.enableProfiling)
+            m_profiler.End(static_cast<uint32_t>(m_actors.size()), steps, interval);
 
         DCBP::Unlock();
     }
@@ -281,7 +289,7 @@ namespace CBP
 
         IData::UpdateActorMaps(a_handle, actor);
 
-        auto& actorConf = IConfig::GetActorPhysicsConfigAO(a_handle);
+        auto& conf = IConfig::GetActorPhysicsConfigAO(a_handle);
         auto& nodeMap = IConfig::GetNodeMap();
 
         nodeDescList_t descList;
@@ -289,7 +297,7 @@ namespace CBP
             a_handle,
             actor,
             sex,
-            actorConf,
+            conf,
             nodeMap,
             globalConfig.phys.collisions,
             descList))

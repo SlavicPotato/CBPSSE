@@ -24,14 +24,16 @@ namespace CBP
             m_item = std::forward<T>(a_rhs);
         }
 
-        inline T& operator=(const T& a_rhs) {
+        inline UISelectedItem<T>& operator=(const T& a_rhs) {
             m_isSelected = true;
-            return (m_item = a_rhs);
+            m_item = a_rhs;
+            return *this;
         }
 
-        inline T& operator=(T&& a_rhs) {
+        inline UISelectedItem<T>& operator=(T&& a_rhs) {
             m_isSelected = true;
-            return (m_item = std::forward<T>(a_rhs));
+            m_item = std::forward<T>(a_rhs);
+            return *this;
         }
 
         inline void Clear() noexcept {
@@ -41,7 +43,7 @@ namespace CBP
         [[nodiscard]] inline const T& Get() const noexcept {
             return m_item;
         }
-
+        
         [[nodiscard]] inline const T& operator*() const noexcept {
             return m_item;
         }
@@ -93,7 +95,8 @@ namespace CBP
         applyForce,
         showNodes,
         dataFilterPhys,
-        dataFilterNode
+        dataFilterNode,
+        frameTimer
     };
 
     typedef std::pair<const std::string, configComponents_t> actorEntryPhysConf_t;
@@ -384,6 +387,12 @@ namespace CBP
 
         virtual const PhysicsProfile* GetSelectedProfile() const;
 
+        virtual void DrawGroupOptions(
+            T a_handle,
+            configComponents_t& a_data,
+            configComponentsValue_t& a_pair,
+            nodeConfigList_t& a_nodeConfig);
+
         void Propagate(
             configComponents_t& a_dl,
             configComponents_t* a_dg,
@@ -410,6 +419,10 @@ namespace CBP
         }
 
         float GetActualSliderValue(const armorCacheValue_t& a_cacheval, float a_baseval) const;
+
+        inline void MarkCurrentForErase() {
+            m_eraseCurrent = true;
+        }
 
     private:
         virtual bool ShouldDrawComponent(
@@ -459,6 +472,7 @@ namespace CBP
             const componentValueDescMap_t::vec_value_type& a_entry);
 
         char m_scBuffer1[64 + std::numeric_limits<float>::digits];
+        bool m_eraseCurrent;
     };
 
     template <class T, UIEditorID ID>
@@ -578,7 +592,7 @@ namespace CBP
         virtual void DrawItem(T& a_profile) = 0;
     private:
 
-        virtual void DrawOptions() const;
+        virtual void DrawOptions(T& a_profile);
 
         struct {
             char ren_input[60];
@@ -598,7 +612,13 @@ namespace CBP
             UIProfileEditorBase<PhysicsProfile>(a_name) {}
     private:
         virtual void DrawItem(PhysicsProfile& a_profile);
-        virtual void DrawOptions() const;
+        virtual void DrawOptions(PhysicsProfile& a_profile);
+
+        void DrawGroupOptions(
+            int,
+            PhysicsProfile::base_type& a_data,
+            PhysicsProfile::base_type::value_type& a_pair,
+            nodeConfigList_t& a_nodeConfig);
 
         virtual void OnSimSliderChange(
             int,
@@ -631,6 +651,8 @@ namespace CBP
             bool a_reset);
 
         virtual configGlobalSimComponent_t& GetSimComponentConfig() const;
+
+        //UISelectedItem<std::string> m_selectedConfGroup;
     };
 
     class UIProfileEditorNode :
@@ -737,7 +759,6 @@ namespace CBP
         uint64_t m_lastCacheUpdateId;
 
         bool m_markActor;
-        std::string m_globLabel;
     };
 
     template <class T>
@@ -927,11 +948,52 @@ namespace CBP
 
     };
 
+    class UIPlot
+    {
+    public:
+        UIPlot(
+            const char* a_label,
+            const ImVec2& a_size,
+            bool a_avg,
+            uint32_t a_res);
+
+        void Update(float a_value);
+        void Draw();
+        void SetRes(int a_res);
+        void SetHeight(float a_height);
+
+        inline void SetShowAvg(bool a_switch) {
+            m_avg = a_switch;
+        }
+
+    private:
+        std::vector<float> m_values;
+
+        float m_plotScaleMin;
+        float m_plotScaleMax;
+
+        char m_strBuf1[16 + std::numeric_limits<float>::digits];
+
+        const char* m_label;
+        ImVec2 m_size;
+        bool m_avg;
+        int m_res;
+    };
+
     class UIProfiling :
         UIBase
     {
     public:
+        UIProfiling();
+
+        void Initialize();
+
         void Draw(bool* a_active);
+    private:
+        uint32_t m_lastUID;
+
+        UIPlot m_plotUpdateTime;
+        UIPlot m_plotFramerate;
     };
 
 #ifdef _CBP_ENABLE_DEBUG
@@ -1172,6 +1234,8 @@ namespace CBP
 
         UIContext() noexcept;
 
+        void Initialize();
+
         void Reset(uint32_t a_loadInstance);
         void Draw(bool* a_active);
 
@@ -1202,9 +1266,6 @@ namespace CBP
 
         [[nodiscard]] virtual ConfigClass GetActorClass(SKSE::ObjectHandle a_handle) const;
         [[nodiscard]] virtual configGlobalActor_t& GetActorConfig() const;
-
-        void UpdateActorValues(SKSE::ObjectHandle a_handle);
-        void UpdateActorValues(listValue_t* a_data);
 
         uint32_t m_activeLoadInstance;
         long long m_tsNoActors;

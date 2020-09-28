@@ -4,9 +4,6 @@ namespace CBP
 {
     namespace fs = std::filesystem;
 
-    ProfileManager<PhysicsProfile> GlobalProfileManager::m_Instance1("^[a-zA-Z0-9_\\- ]+$");
-    ProfileManager<NodeProfile> GlobalProfileManager::m_Instance2("^[a-zA-Z0-9_\\- ]+$");
-
     template <class T>
     bool Profile<T>::Save(const T& a_data, bool a_store)
     {
@@ -59,7 +56,7 @@ namespace CBP
 
             T tmp;
 
-            if (!Parse(root, tmp, true))
+            if (!Parse(root, tmp))
                 throw std::exception("Parser error");
 
             auto& id = root["id"];
@@ -153,7 +150,7 @@ namespace CBP
             return true;
         }
         catch (const std::exception& e) {
-            Error("Load failed: %s", e.what());
+            Error("%s: %s", __FUNCTION__, e.what());
             m_lastExcept = e;
             return false;
         }
@@ -187,12 +184,14 @@ namespace CBP
 
             a_out.SetPath(path);
             a_out.SetDefaults();
+
             if (!a_out.Save())
                 throw a_out.GetLastException();
 
             return true;
         }
         catch (const std::exception& e) {
+            Error("%s: %s", __FUNCTION__, e.what());
             m_lastExcept = e;
             return false;
         }
@@ -215,6 +214,7 @@ namespace CBP
             return true;
         }
         catch (const std::exception& e) {
+            Error("%s: %s", __FUNCTION__, e.what());
             m_lastExcept = e;
             return false;
         }
@@ -237,6 +237,7 @@ namespace CBP
             return true;
         }
         catch (const std::exception& e) {
+            Error("%s: %s", __FUNCTION__, e.what());
             m_lastExcept = e;
             return false;
         }
@@ -278,13 +279,16 @@ namespace CBP
             return true;
         }
         catch (const std::exception& e) {
+            Error("%s: %s", __FUNCTION__, e.what());
             m_lastExcept = e;
             return false;
         }
     }
 
     template <class T>
-    bool ProfileManager<T>::RenameProfile(const std::string& a_oldName, const std::string& a_newName)
+    bool ProfileManager<T>::RenameProfile(
+        const std::string& a_oldName, 
+        const std::string& a_newName)
     {
         try
         {
@@ -324,6 +328,7 @@ namespace CBP
             return true;
         }
         catch (const std::exception& e) {
+            Error("%s: %s", __FUNCTION__, e.what());
             m_lastExcept = e;
             return false;
         }

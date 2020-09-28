@@ -145,7 +145,7 @@ namespace CBP
         auto& profiler = GetProfiler();
 
         profiler.SetInterval(static_cast<long long>(
-            std::max(globalConf.general.profilingInterval, 100)) * 1000);
+            std::max(globalConf.profiling.profilingInterval, 10)) * 1000);
     }
 
     void DCBP::ApplyForce(
@@ -295,9 +295,9 @@ namespace CBP
         }
     }
 
-    void DCBP::MainLoop_Hook(void* p1) {
-        m_Instance.mainLoopUpdateFunc_o(p1);
-        m_Instance.m_updateTask.PhysicsTick();
+    void DCBP::MainLoop_Hook(SKSE::BSMain* a_main) {
+        m_Instance.mainLoopUpdateFunc_o(a_main);
+        m_Instance.m_updateTask.PhysicsTick(a_main);
     }
 
     void DCBP::OnCreateArmorNode(TESObjectREFR* a_ref, BipedParam* a_params)
@@ -422,7 +422,7 @@ namespace CBP
             }
         }
 
-        IConfig::LoadConfig();
+        IConfig::Initialize();
 
         auto& driverConf = GetDriverConfig();
 
@@ -527,6 +527,9 @@ namespace CBP
             UpdateDebugRendererSettings();
             UpdateProfilerSettings();
 
+            if (GetDriverConfig().ui_enabled)
+                GetUIContext().Initialize();
+
             GetUpdateTask().UpdateTimeTick(IConfig::GetGlobalConfig().phys.timeTick);
             UpdateKeys();
 
@@ -572,7 +575,7 @@ namespace CBP
 
         std::unique_ptr<char[]> data(new char[dataLength]);
 
-        if (!intfc->ReadRecordData(data.get(), dataLength)) {
+        if (intfc->ReadRecordData(data.get(), dataLength) != dataLength) {
             m_Instance.Error("[%.4s]: Couldn't read record data", &a_type);
             return false;
         }
@@ -588,7 +591,7 @@ namespace CBP
             stream<Device> stream(data.get(), dataLength);
 
             filtering_streambuf<input> in;
-            in.push(gzip_decompressor(zlib::default_window_bits, 1024 * 128));
+            in.push(gzip_decompressor(zlib::default_window_bits, 1024 * 256));
             in.push(stream);
             length = copy(in, out);
         }
@@ -663,7 +666,7 @@ namespace CBP
     }
 
     template <typename T>
-    bool DCBP::SaveRecord(SKSESerializationInterface* intfc, UInt32 a_type, T a_func)
+    bool DCBP::SaveRecord(SKSESerializationInterface* a_intfc, UInt32 a_type, T a_func)
     {
         struct strsink : public boost::iostreams::sink
         {
@@ -703,7 +706,7 @@ namespace CBP
             using namespace boost::iostreams;
 
             filtering_streambuf<input> in;
-            in.push(gzip_compressor(gzip_params(driverConf.compression_level), 1024 * 128));
+            in.push(gzip_compressor(gzip_params(driverConf.compression_level), 1024 * 256));
             in.push(data);
             length = static_cast<UInt32>(copy(in, out));
         }
@@ -723,9 +726,20 @@ namespace CBP
             return false;
         }
 
-        intfc->OpenRecord(a_type, kDataVersion1);
-        intfc->WriteRecordData(&length, sizeof(length));
-        intfc->WriteRecordData(compressed.data(), length);
+        if (!a_intfc->OpenRecord(a_type, kDataVersion1)) {
+            m_Instance.Error("[%.4s]: OpenRecord failed", &a_type);
+            return false;
+        }
+
+        if (!a_intfc->WriteRecordData(&length, sizeof(length))) {
+            m_Instance.Error("[%.4s]: Failed writing record data length", &a_type);
+            return false;
+        }
+
+        if (!a_intfc->WriteRecordData(compressed.data(), length)) {
+            m_Instance.Error("[%.4s]: Failed writing record data (%u)", &a_type, length);
+            return false;
+        }
 
         m_Instance.Debug("%s [%.4s]: %zu record(s), %fs (%u)", __FUNCTION__, &a_type, num, pt.Stop(), length);
 

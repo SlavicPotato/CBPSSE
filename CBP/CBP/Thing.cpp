@@ -214,12 +214,12 @@ namespace CBP
 
     void SimComponent::UpdateConfig(
         Actor* a_actor,
-        const configComponent_t& a_config,
+        const configComponent_t& a_physConf,
         bool a_collisions,
         bool a_movement,
         const configNode_t& a_nodeConf) noexcept
     {
-        m_conf = a_config;
+        m_conf = a_physConf;
         m_collisions = a_collisions;
 
         if (a_movement != m_movement) {
@@ -227,12 +227,12 @@ namespace CBP
             m_applyForceQueue.swap(decltype(m_applyForceQueue)());
         }
 
-        if (!UpdateWeightData(a_actor, a_config, a_nodeConf)) {
-            m_colRad = a_config.phys.colSphereRadMax;
-            m_colHeight = std::max(a_config.phys.colHeightMax, 0.001f);
-            m_colOffsetX = a_config.phys.offsetMax[0] + a_nodeConf.colOffsetMax[0];
-            m_colOffsetY = a_config.phys.offsetMax[1] + a_nodeConf.colOffsetMax[1];
-            m_colOffsetZ = a_config.phys.offsetMax[2] + a_nodeConf.colOffsetMax[2];
+        if (!UpdateWeightData(a_actor, a_physConf, a_nodeConf)) {
+            m_colRad = a_physConf.phys.colSphereRadMax;
+            m_colHeight = std::max(a_physConf.phys.colHeightMax, 0.001f);
+            m_colOffsetX = a_physConf.phys.offsetMax[0] + a_nodeConf.colOffsetMax[0];
+            m_colOffsetY = a_physConf.phys.offsetMax[1] + a_nodeConf.colOffsetMax[1];
+            m_colOffsetZ = a_physConf.phys.offsetMax[2] + a_nodeConf.colOffsetMax[2];
         }
 
         if (m_collisions &&
@@ -292,13 +292,12 @@ namespace CBP
             m_obj->m_localTransform.pos = m_initialNodePos;
             m_obj->m_localTransform.rot = m_initialNodeRot;
             m_obj->UpdateWorldData(&m_updateCtx);
-
-            m_oldWorldPos = m_obj->m_worldTransform.pos;
         }
 
-        m_collisionData.Update();
-
+        m_oldWorldPos = m_obj->m_worldTransform.pos;
         m_velocity = NiPoint3();
+
+        m_collisionData.Update();
 
         m_applyForceQueue.swap(decltype(m_applyForceQueue)());
     }

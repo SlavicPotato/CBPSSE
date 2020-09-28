@@ -1,26 +1,58 @@
 #ifndef PCH_H
 #define PCH_H
 
+#include <ext/ICommon.h>
+#include <ext/IHook.h>
+#include <ext/ITasks.h>
+#include <ext/JITASM.h>
+#include <ext/INIReader.h>
+#include <common/IMemPool.h>
+#include <common/ICriticalSection.h>
+#include <skse64/PluginAPI.h>
+#include <skse64_common/skse_version.h>
+#include <skse64_common/BranchTrampoline.h>
+#include <skse64/PluginAPI.h>
+#include <skse64/NiNodes.h>
+#include <skse64/NiTypes.h>
+#include <skse64/NiObjects.h>
+#include <skse64/GameReferences.h>
+#include <skse64/GameData.h>
+#include <skse64/GameMenus.h>
+#include <skse64/GameExtraData.h>
+#include <skse64/PapyrusVM.h>
+#include <skse64/PapyrusNativeFunctions.h>
+#include <skse64/PapyrusEvents.h>
+#include <skse64/gamethreads.h>
+#include <skse64/GameRTTI.h>
+#include <skse64/NiRenderer.h>
+#include <skse64/NiExtraData.h>
+
 #include <map>
-#include <unordered_map>
 #include <set>
+#include <unordered_map>
 #include <unordered_set>
+#include <atomic>
+#include <string>
 #include <sstream>
 #include <fstream>
 #include <filesystem>
-#include <thread>
 #include <queue>
 #include <algorithm>
 #include <regex>
 #include <bitset>
+#include <functional>
+#include <numbers>
 
-#include <corecrt_math_defines.h>
+//#include <corecrt_math_defines.h>
 #include <ShlObj.h>
 
 #include <d3d11.h>
 #include <dxgi1_5.h>
 
 #include <wrl/client.h>
+
+#define DIRECTINPUT_VERSION 0x0800
+#include <dinput.h>
 
 #include <reactphysics3d/reactphysics3d.h>
 
@@ -38,47 +70,15 @@
 #include <boost/iostreams/copy.hpp>
 #include <boost/iostreams/filter/gzip.hpp>
 
-#include "json/json.h"
+#include <json/json.h>
 
-#define DIRECTINPUT_VERSION 0x0800
-#include <dinput.h>
+#include <imgui.h>
 
-#include "imgui.h"
 #include "imgui/imgui_impl_win32.h"
 #include "imgui/imgui_impl_dx11.h"
 
-#include "ext/ICommon.h"
-#include "ext/IHook.h"
-#include "ext/ITasks.h"
-#include "ext/JITASM.h"
-#include "ext/INIReader.h"
-#include "common/IMemPool.h"
-#include "common/ICriticalSection.h"
-#include "skse64/PluginAPI.h"
-#include "skse64_common/skse_version.h"
-#include "skse64_common/BranchTrampoline.h"
-#include "skse64/PluginAPI.h"
-#include "skse64/NiNodes.h"
-#include "skse64/NiTypes.h"
-#include "skse64/NiObjects.h"
-#include "skse64/GameReferences.h"
-#include "skse64/GameData.h"
-#include "skse64/GameMenus.h"
-#include "skse64/GameExtraData.h"
-#include "skse64/PapyrusVM.h"
-#include "skse64/PapyrusNativeFunctions.h"
-#include "skse64/PapyrusEvents.h"
-#include "skse64/gamethreads.h"
-#include "skse64/GameRTTI.h"
-#include "skse64/NiRenderer.h"
-#include "skse64/NiExtraData.h"
-
 namespace r3d = reactphysics3d;
-
-namespace CBP
-{
-    namespace fs = std::filesystem;
-}
+namespace fs = std::filesystem;
 
 //#define _CBP_ENABLE_DEBUG
 

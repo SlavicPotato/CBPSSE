@@ -2,36 +2,37 @@
 
 namespace CBP
 {
-    bool Parser::Parse(const Json::Value& a_in, configComponents_t& a_outData, bool a_allowUnknown) const
+    bool Parser::Parse(const Json::Value& a_in, configComponents_t& a_outData) const
     {
-        auto& data = a_in["data"];
-
-        if (data.empty())
-            return false;
-
-        if (!data.isObject()) {
-            Error("Expected an object");
-            return false;
-        }
-
         uint32_t version;
         if (!ParseVersion(a_in, "data_version", version)) {
             Error("Bad version data");
             return false;
         }
 
-        a_outData = IConfig::GetThingGlobalConfigDefaults();
+        if (!a_in.isMember("data"))
+            return false;        
+
+        auto& data = a_in["data"];
+
+        if (data.empty())
+            return true;
+
+        if (!data.isObject()) {
+            Error("Expected an object");
+            return false;
+        }
 
         for (auto it1 = data.begin(); it1 != data.end(); ++it1)
         {
-            std::string componentName(it1.key().asString());
+            std::string configGroup(it1.key().asString());
 
-            /* if (!a_allowUnknown) {
-                 if (!IConfig::IsValidSimComponent(componentName)) {
-                     Warning("Discarding unknown sim component: %s", componentName.c_str());
-                     continue;
-                 }
-             }*/
+            if (configGroup.empty()) {
+                Error("Empty config group name");
+                return false;
+            }
+
+            transform(configGroup.begin(), configGroup.end(), configGroup.begin(), ::tolower);
 
             configComponent_t tmp;
 
@@ -51,12 +52,12 @@ namespace CBP
                     auto& v = (*it1)["phys"];
 
                     if (v.empty()) {
-                        Error("%s: Missing physics data", componentName.c_str());
+                        Error("%s: Missing physics data", configGroup.c_str());
                         return false;
                     }
 
                     if (!v.isObject()) {
-                        Error("%s: Invalid physics data", componentName.c_str());
+                        Error("%s: Invalid physics data", configGroup.c_str());
                         return false;
                     }
 
@@ -68,7 +69,7 @@ namespace CBP
                     for (auto it2 = physData->begin(); it2 != physData->end(); ++it2)
                     {
                         if (!it2->isNumeric()) {
-                            Error("(%s) Bad value type, expected number: %d", componentName.c_str(), Enum::Underlying(it2->type()));
+                            Error("(%s) Bad value type, expected number: %d", configGroup.c_str(), Enum::Underlying(it2->type()));
                             return false;
                         }
 
@@ -86,7 +87,7 @@ namespace CBP
                         {
                             auto ik = configComponent_t::oldKeyMap.find(valName);
                             if (ik == configComponent_t::oldKeyMap.end()) {
-                                //Warning("(%s) Unknown value: %s", componentName.c_str(), valName.c_str());
+                                //Warning("(%s) Unknown value: %s", configGroup.c_str(), valName.c_str());
                                 continue;
                             }
 
@@ -103,7 +104,7 @@ namespace CBP
                         if (!v.isNumeric()) {
                             if (!v.isNull())
                                 Warning("(%s) (%s) Bad value type, expected number: %d",
-                                    componentName.c_str(), desc.first.c_str(), Enum::Underlying(v.type()));
+                                    configGroup.c_str(), desc.first.c_str(), Enum::Underlying(v.type()));
                             continue;
                         }
 
@@ -115,7 +116,7 @@ namespace CBP
 
                 if (!ex.empty())
                 {
-                    uint32_t s = ex.get("cs", 0).asUInt();
+                    uint32_t s = static_cast<uint32_t>(ex.get("cs", 0).asUInt());
 
                     switch (s)
                     {
@@ -129,7 +130,7 @@ namespace CBP
                 }
             }
 
-            a_outData.insert_or_assign(componentName, std::move(tmp));
+            a_outData.insert_or_assign(configGroup, std::move(tmp));
         }
 
         return true;
@@ -157,49 +158,24 @@ namespace CBP
         a_out["data_version"] = Json::Value::UInt(3);
     }
 
-    void Parser::Create(const configNodes_t& a_data, Json::Value& a_out) const
+    bool Parser::Parse(const Json::Value& a_in, configNodes_t& a_out) const
     {
-        auto& data = a_out["nodes"];
-
-        for (const auto& e : a_data) {
-            auto& n = data[e.first];
-
-            n["fm"] = e.second.femaleMovement;
-            n["fc"] = e.second.femaleCollisions;
-            n["mm"] = e.second.maleMovement;
-            n["mc"] = e.second.maleCollisions;
-
-            auto& offmin = n["o-"];
-
-            offmin[0] = e.second.colOffsetMin[0];
-            offmin[1] = e.second.colOffsetMin[1];
-            offmin[2] = e.second.colOffsetMin[2];
-
-            auto& offmax = n["o+"];
-
-            offmax[0] = e.second.colOffsetMax[0];
-            offmax[1] = e.second.colOffsetMax[1];
-            offmax[2] = e.second.colOffsetMax[2];
-        }
-
-        a_out["nodes_version"] = Json::Value::UInt(1);
-    }
-
-    bool Parser::Parse(const Json::Value& a_in, configNodes_t& a_out, bool a_allowUnknown) const
-    {
-        auto& data = a_in["nodes"];
-
-        if (data.empty())
-            return false;
-
-        if (!data.isObject()) {
-            Error("Expected an object");
-            return false;
-        }
-
         uint32_t version;
         if (!ParseVersion(a_in, "nodes_version", version)) {
             Error("Bad version data");
+            return false;
+        }
+
+        if (!a_in.isMember("nodes"))
+            return false;
+
+        auto& data = a_in["nodes"];
+
+        if (data.empty())
+            return true;
+
+        if (!data.isObject()) {
+            Error("Expected an object");
             return false;
         }
 
@@ -267,14 +243,42 @@ namespace CBP
         return true;
     }
 
+    void Parser::Create(const configNodes_t& a_data, Json::Value& a_out) const
+    {
+        auto& data = a_out["nodes"];
+
+        for (const auto& e : a_data) {
+            auto& n = data[e.first];
+
+            n["fm"] = e.second.femaleMovement;
+            n["fc"] = e.second.femaleCollisions;
+            n["mm"] = e.second.maleMovement;
+            n["mc"] = e.second.maleCollisions;
+
+            auto& offmin = n["o-"];
+
+            offmin[0] = e.second.colOffsetMin[0];
+            offmin[1] = e.second.colOffsetMin[1];
+            offmin[2] = e.second.colOffsetMin[2];
+
+            auto& offmax = n["o+"];
+
+            offmax[0] = e.second.colOffsetMax[0];
+            offmax[1] = e.second.colOffsetMax[1];
+            offmax[2] = e.second.colOffsetMax[2];
+        }
+
+        a_out["nodes_version"] = Json::Value::UInt(1);
+    }
+
     void Parser::GetDefault(configComponents_t& a_out) const
     {
-        a_out = IConfig::GetThingGlobalConfigDefaults();
+        a_out = IConfig::GetTemplateBase<configComponents_t>();
     }
 
     void Parser::GetDefault(configNodes_t& a_out) const
     {
-        a_out = IConfig::GetGlobalNodeConfig();
+        a_out = IConfig::GetTemplateBase<configNodes_t>();
     }
 
     bool Parser::ParseFloatArray(const Json::Value& a_in, float* a_out, size_t a_size) const
@@ -338,8 +342,13 @@ namespace CBP
                 const auto& general = root["general"];
 
                 globalConfig.general.femaleOnly = general.get("femaleOnly", true).asBool();
-                globalConfig.general.enableProfiling = general.get("enableProfiling", false).asBool();
-                globalConfig.general.profilingInterval = general.get("profilingInterval", 1000).asInt();
+                globalConfig.profiling.enableProfiling = general.get("enableProfiling", false).asBool();
+                globalConfig.profiling.profilingInterval = general.get("profilingInterval", 1000).asInt();
+                globalConfig.profiling.enablePlot = general.get("enablePlot", true).asBool();
+                globalConfig.profiling.showAvg = general.get("showAvg", false).asBool();
+                globalConfig.profiling.animatePlot = general.get("animatePlot", true).asBool();
+                globalConfig.profiling.plotValues = general.get("plotValues", 200).asInt();
+                globalConfig.profiling.plotHeight = general.get("plotHeight", 30.0f).asFloat();
             }
 
             if (root.isMember("physics"))
@@ -401,7 +410,7 @@ namespace CBP
                             std::string key(it.key().asString());
                             transform(key.begin(), key.end(), key.begin(), ::tolower);
 
-                            if (!IConfig::IsValidSimComponent(key))
+                            if (!IConfig::IsValidConfigGroup(key))
                                 continue;
 
                             auto& e = globalConfig.ui.forceActor[key];
@@ -454,7 +463,7 @@ namespace CBP
 
                                 std::string k(it2.key().asString());
 
-                                if (!IConfig::IsValidSimComponent(k))
+                                if (!IConfig::IsValidConfigGroup(k))
                                     continue;
 
                                 auto& me = mm[k];
@@ -466,7 +475,7 @@ namespace CBP
 
                                     k = it3.key().asString();
 
-                                    if (!IConfig::IsValidSimComponent(k))
+                                    if (!IConfig::IsValidConfigGroup(k))
                                         continue;
 
                                     me[k] = it3->asBool();
@@ -529,8 +538,13 @@ namespace CBP
             auto& general = root["general"];
 
             general["femaleOnly"] = globalConfig.general.femaleOnly;
-            general["enableProfiling"] = globalConfig.general.enableProfiling;
-            general["profilingInterval"] = globalConfig.general.profilingInterval;
+            general["enableProfiling"] = globalConfig.profiling.enableProfiling;
+            general["profilingInterval"] = globalConfig.profiling.profilingInterval;
+            general["enablePlot"] = globalConfig.profiling.enablePlot;
+            general["showAvg"] = globalConfig.profiling.showAvg;
+            general["animatePlot"] = globalConfig.profiling.animatePlot;
+            general["plotValues"] = globalConfig.profiling.plotValues;
+            general["plotHeight"] = globalConfig.profiling.plotHeight;
 
             auto& phys = root["physics"];
 
