@@ -61,7 +61,7 @@ namespace CBP
         if (form->formType != TESObjectARMO::kTypeID)
             return;
 
-        //gLogger.Debug(">>> unequip %X, %X", evn->actor->formID, form->formID);
+        //gLog.Debug(">>> unequip %X, %X", evn->actor->formID, form->formID);
 
         DCBP::DispatchActorTask(
             handle, UTTask::UTTAction::UpdateArmorOverride);

@@ -126,12 +126,6 @@
     <ClInclude Include="CBP\Serialization.h">
       <Filter>Header Files\CBP</Filter>
     </ClInclude>
-    <ClInclude Include="CBP\SimObj.h">
-      <Filter>Header Files\CBP</Filter>
-    </ClInclude>
-    <ClInclude Include="CBP\Thing.h">
-      <Filter>Header Files\CBP</Filter>
-    </ClInclude>
     <ClInclude Include="CBP\UI.h">
       <Filter>Header Files\CBP</Filter>
     </ClInclude>
@@ -145,6 +139,12 @@
       <Filter>Header Files\ImGui</Filter>
     </ClInclude>
     <ClInclude Include="CBP\Template.h">
+      <Filter>Header Files\CBP</Filter>
+    </ClInclude>
+    <ClInclude Include="CBP\SimObject.h">
+      <Filter>Header Files\CBP</Filter>
+    </ClInclude>
+    <ClInclude Include="CBP\SimComponent.h">
       <Filter>Header Files\CBP</Filter>
     </ClInclude>
   </ItemGroup>
@@ -212,12 +212,6 @@
     <ClCompile Include="CBP\Serialization.cpp">
       <Filter>Source Files\CBP</Filter>
     </ClCompile>
-    <ClCompile Include="CBP\SimObj.cpp">
-      <Filter>Source Files\CBP</Filter>
-    </ClCompile>
-    <ClCompile Include="CBP\Thing.cpp">
-      <Filter>Source Files\CBP</Filter>
-    </ClCompile>
     <ClCompile Include="CBP\UI.cpp">
       <Filter>Source Files\CBP</Filter>
     </ClCompile>
@@ -240,6 +234,12 @@
       <Filter>Source Files\CBP</Filter>
     </ClCompile>
     <ClCompile Include="CBP\ProfileData.cpp">
+      <Filter>Source Files\CBP</Filter>
+    </ClCompile>
+    <ClCompile Include="CBP\SimObject.cpp">
+      <Filter>Source Files\CBP</Filter>
+    </ClCompile>
+    <ClCompile Include="CBP\SimComponent.cpp">
       <Filter>Source Files\CBP</Filter>
     </ClCompile>
   </ItemGroup>

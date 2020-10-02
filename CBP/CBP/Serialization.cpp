@@ -91,7 +91,7 @@ namespace CBP
                                 continue;
                             }
 
-                            _assert(tmp.Set(ik->second, it2->asFloat()));
+                            ASSERT(tmp.Set(ik->second, it2->asFloat()));
                         }
                     }
                 }

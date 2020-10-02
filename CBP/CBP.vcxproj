@@ -295,6 +295,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Dep-AVX2|x64'" Label="Vcpkg">
     <VcpkgConfiguration>Release</VcpkgConfiguration>
     <VcpkgUseStatic>true</VcpkgUseStatic>
+    <VcpkgTriplet>x64-windows-avx2-static</VcpkgTriplet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='IntelRelAvx2MT|x64'" Label="Vcpkg">
     <VcpkgConfiguration>Release</VcpkgConfiguration>
@@ -886,9 +887,9 @@
     <ClInclude Include="CBP\Profiling.h" />
     <ClInclude Include="CBP\Renderer.h" />
     <ClInclude Include="CBP\Serialization.h" />
-    <ClInclude Include="CBP\SimObj.h" />
+    <ClInclude Include="CBP\SimObject.h" />
     <ClInclude Include="CBP\Template.h" />
-    <ClInclude Include="CBP\Thing.h" />
+    <ClInclude Include="CBP\SimComponent.h" />
     <ClInclude Include="CBP\UI.h" />
     <ClInclude Include="CBP\Updater.h" />
     <ClInclude Include="config.h" />
@@ -936,9 +937,9 @@
     <ClCompile Include="CBP\Profiling.cpp" />
     <ClCompile Include="CBP\Renderer.cpp" />
     <ClCompile Include="CBP\Serialization.cpp" />
-    <ClCompile Include="CBP\SimObj.cpp" />
+    <ClCompile Include="CBP\SimObject.cpp" />
     <ClCompile Include="CBP\Template.cpp" />
-    <ClCompile Include="CBP\Thing.cpp" />
+    <ClCompile Include="CBP\SimComponent.cpp" />
     <ClCompile Include="CBP\UI.cpp" />
     <ClCompile Include="CBP\UIData.cpp" />
     <ClCompile Include="CBP\Updater.cpp" />

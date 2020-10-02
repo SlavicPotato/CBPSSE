@@ -3,21 +3,21 @@
 static bool Initialize(const SKSEInterface* skse)
 {
     if (!IAL::IsLoaded()) {
-        gLogger.FatalError("Could not load the address library");
+        gLog.FatalError("Could not load the address library");
         return false;
     }
 
     if (IAL::HasBadQuery()) {
-        gLogger.FatalError("One or more addresses could not be retrieved from the database");
+        gLog.FatalError("One or more addresses could not be retrieved from the database");
         return false;
     }
 
     if (IConfigINI::Load() != 0) {
-        gLogger.Warning("Couldn't load configuration from '%s'", PLUGIN_INI_FILE);
+        gLog.Warning("Couldn't load configuration from '%s'", PLUGIN_INI_FILE);
     }
 
     if (!CBP::DCBP::LoadPaths()) {
-        gLogger.FatalError("Couldn't construct data paths, this is fatal. Make sure DataPath is set to an existing, writable folder.");
+        gLog.FatalError("Couldn't construct data paths, this is fatal. Make sure DataPath is set to an existing, writable folder.");
         return false;
     }
 
@@ -26,14 +26,14 @@ static bool Initialize(const SKSEInterface* skse)
     }
 
     if (!CBP::DTasks::Initialize()) {
-        gLogger.FatalError("Couldn't initialize task interface");
+        gLog.FatalError("Couldn't initialize task interface");
         return false;
     }
 
     CBP::IEvents::Initialize();
     CBP::DInput::Initialize();
     CBP::DCBP::Initialize();
-    _assert(CBP::DRender::Initialize());
+    ASSERT(CBP::DRender::Initialize());
 
     return true;
 }
@@ -42,12 +42,13 @@ extern "C"
 {
     bool SKSEPlugin_Query(const SKSEInterface* skse, PluginInfo* info)
     {
+        CBP::IEvents::AttachToLogger();
         return SKSE::Query(skse, info);
     }
 
     bool SKSEPlugin_Load(const SKSEInterface* skse)
     {
-        gLogger.Message("Initializing %s version %s (runtime %u.%u.%u.%u)",
+        gLog.Message("Initializing %s version %s (runtime %u.%u.%u.%u)",
             PLUGIN_NAME, PLUGIN_VERSION_VERSTRING,
             GET_EXE_VERSION_MAJOR(skse->runtimeVersion),
             GET_EXE_VERSION_MINOR(skse->runtimeVersion),

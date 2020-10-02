@@ -174,7 +174,7 @@ namespace CBP
                 TRecPlugin rec(path);
                 if (!rec.Load())
                 {
-                    gLogger.Error("%s:  %s: failed loading plugin data: %s",
+                    gLog.Error("%s:  %s: failed loading plugin data: %s",
                         __FUNCTION__, path.string().c_str(), rec.GetLastException().what());
                     continue;
                 }
@@ -203,7 +203,7 @@ namespace CBP
         {
             auto it = pm.Find(t.first);
             if (it == pm.End()) {
-                gLogger.Warning("%s: [%s] template not found: %s",
+                gLog.Warning("%s: [%s] template not found: %s",
                     __FUNCTION__, a_modData.name.c_str(), t.first.c_str());
                 continue;
             }
@@ -221,7 +221,7 @@ namespace CBP
                     }
                 );
 
-                //gLogger.Debug("!!>>> %X, %s | %hhd", modIndex, t.first.c_str(), Enum::Underlying(t.second.gender));
+                //gLog.Debug("!!>>> %X, %s | %hhd", modIndex, t.first.c_str(), Enum::Underlying(t.second.gender));
 
                 break;
             case TRecTargetType::FormIDs:
@@ -234,7 +234,7 @@ namespace CBP
 
                     auto form = LookupFormByID(formid);
                     if (!form) {
-                        gLogger.Warning("%s: [%s] [%s] %.8X: form not found",
+                        gLog.Warning("%s: [%s] [%s] %.8X: form not found",
                             __FUNCTION__, a_modData.name.c_str(), t.first.c_str(), formid);
                         continue;
                     }
@@ -257,11 +257,11 @@ namespace CBP
                     }
                     else
                     {
-                        gLogger.Warning("%s: [%s] [%s] %.8X: unexpected form type %hhu",
+                        gLog.Warning("%s: [%s] [%s] %.8X: unexpected form type %hhu",
                             __FUNCTION__, a_modData.name.c_str(), t.first.c_str(), formid, form->formType);
                     }
 
-                    //gLogger.Debug("!!>>> %hhu, 0x%X -> %s", form->formType, formid, t.first.c_str());
+                    //gLog.Debug("!!>>> %hhu, 0x%X -> %s", form->formType, formid, t.first.c_str());
                 }
             }
             break;
@@ -295,12 +295,12 @@ namespace CBP
 
             mm.emplace(std::move(tmp), e.second);
 
-            //gLogger.Debug(">> %s", modInfo->name);
+            //gLog.Debug(">> %s", modInfo->name);
         }
 
         for (const auto& rec : data)
         {
-            //gLogger.Debug("|| %s", rec.GetPluginName().c_str());
+            //gLog.Debug("|| %s", rec.GetPluginName().c_str());
 
             auto it1 = mm.find(rec.GetPluginName());
             if (it1 == mm.end())
@@ -319,7 +319,7 @@ namespace CBP
                 }
             }
 
-            //gLogger.Debug("!! 0x%X", it1->second->GetPartialIndex());
+            //gLog.Debug("!! 0x%X", it1->second->GetPartialIndex());
         }
 
         //std::_Exit(0);

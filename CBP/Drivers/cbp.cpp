@@ -21,7 +21,6 @@ namespace CBP
     DCBP::DCBP() :
         m_loadInstance(0),
         uiState({ false, false }),
-        m_backlog(1000),
         m_resetUI(false)
     {
     }
@@ -340,7 +339,7 @@ namespace CBP
     {
         m_Instance.LoadConfig();
 
-        _assert(Hook::Call5(
+        ASSERT(Hook::Call5(
             MainLoopAddr,
             reinterpret_cast<uintptr_t>(MainLoop_Hook),
             m_Instance.mainLoopUpdateFunc_o));
@@ -469,11 +468,10 @@ namespace CBP
         Unlock();
     }
 
-    void DCBP::OnLogMessage(Event, void* args)
+    void DCBP::OnLogMessage(Event, void* a_args)
     {
-        auto str = static_cast<const char*>(args);
+        auto str = static_cast<const char*>(a_args);
 
-        m_Instance.m_backlog.Add(str);
         m_Instance.m_uiContext.LogNotify();
     }
 
@@ -965,10 +963,11 @@ namespace CBP
         {
         case KeyEvent::KeyDown:
             if (m_comboKey && keyCode == m_comboKey)
-                combo_down = true;
-            else if (m_comboKeyDR && keyCode == m_comboKeyDR)
+                combo_down = true;            
+            if (m_comboKeyDR && keyCode == m_comboKeyDR)
                 combo_downDR = true;
-            else if (keyCode == m_showKey) {
+            
+            if (keyCode == m_showKey) {
                 if (m_comboKey && !combo_down)
                     break;
 
@@ -978,7 +977,7 @@ namespace CBP
 
                 DTasks::AddTask(&m_Instance.m_taskToggle);
             }
-            else if (keyCode == m_showKeyDR) {
+            if (keyCode == m_showKeyDR) {
                 if (m_comboKeyDR && !combo_downDR)
                     break;
 
@@ -996,7 +995,7 @@ namespace CBP
         case KeyEvent::KeyUp:
             if (m_comboKey && keyCode == m_comboKey)
                 combo_down = false;
-            else if (m_comboKeyDR && keyCode == m_comboKeyDR)
+            if (m_comboKeyDR && keyCode == m_comboKeyDR)
                 combo_downDR = false;
 
             break;

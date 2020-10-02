@@ -7,6 +7,11 @@ namespace CBP
 
     IEvents IEvents::m_Instance;
 
+    IEvents::IEvents() :
+        m_backLog(4000)
+    {
+    }
+
     void IEvents::Initialize()
     {
         SKSE::g_messaging->RegisterListener(SKSE::g_pluginHandle, "SKSE", MessageHandler);
@@ -16,8 +21,6 @@ namespace CBP
         SKSE::g_serialization->SetSaveCallback(SKSE::g_pluginHandle, SaveGameHandler);
         SKSE::g_serialization->SetLoadCallback(SKSE::g_pluginHandle, LoadGameHandler);
         //SKSE::g_serialization->SetFormDeleteCallback(SKSE::g_pluginHandle, FormDeleteHandler);
-
-        gLogger.SetWriteCallback(OnLogWrite);
 
         struct MessagePumpExitInject : JITASM::JITASM {
             MessagePumpExitInject(uintptr_t targetAddr
@@ -40,6 +43,11 @@ namespace CBP
 
         MessagePumpExitInject code(ExitGameAddr);
         g_branchTrampoline.Write6Branch(ExitGameAddr, code.get());
+    }
+
+    void IEvents::AttachToLogger()
+    {
+        gLog.SetWriteCallback(OnLogWrite);
     }
 
     void IEvents::ExitGame_Hook()
@@ -111,6 +119,7 @@ namespace CBP
 
     void IEvents::OnLogWrite(char* a_buffer)
     {
+        m_Instance.m_backLog.Add(a_buffer);
         TriggerEvent(OnLogMessage, a_buffer);
     }
 }

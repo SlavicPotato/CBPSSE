@@ -312,7 +312,7 @@ namespace CBP
                 throw std::exception("Profile name too long");
 
             auto newPath = it->second.Path();
-            _assert(newPath.has_filename());
+            ASSERT(newPath.has_filename());
             newPath.replace_filename(newFilename);
 
             if (fs::exists(newPath))

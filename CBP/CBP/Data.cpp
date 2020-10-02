@@ -334,7 +334,7 @@ namespace CBP
                     transform(valName.begin(), valName.end(), valName.begin(), ::tolower);
 
                     if (!configComponent_t::descMap.contains(valName)) {
-                        gLogger.Warning("%s: Unknown value name: %s", __FUNCTION__, valName.c_str());
+                        gLog.Warning("%s: Unknown value name: %s", __FUNCTION__, valName.c_str());
                         continue;
                     }
 

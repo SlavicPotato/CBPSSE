@@ -83,7 +83,7 @@ namespace CBP
         m_Instance.info.bufferSize.height = static_cast<float>(info->m_pSwapChainDesc->BufferDesc.Height);
         m_Instance.m_WindowHandle = info->m_pSwapChainDesc->OutputWindow;
 
-        _assert(IMGUI_CHECKVERSION());
+        ASSERT(IMGUI_CHECKVERSION());
         ImGui::CreateContext();
 
         ImGuiIO& io = ImGui::GetIO();

@@ -42,7 +42,7 @@ namespace CBP
 
     void DTasks::TaskInit_Hook()
     {
-        _assert(Hook::Call5(BSTaskPool_Enter1, uintptr_t(TaskInterface1_Hook), SKSE_BSTaskPoolProc1_O) &&
+        ASSERT(Hook::Call5(BSTaskPool_Enter1, uintptr_t(TaskInterface1_Hook), SKSE_BSTaskPoolProc1_O) &&
             Hook::Call5(BSTaskPool_Enter2, uintptr_t(TaskInterface2_Hook), SKSE_BSTaskPoolProc2_O));
 
         FlushInstructionCache(GetCurrentProcess(), NULL, 0);

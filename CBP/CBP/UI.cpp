@@ -196,7 +196,7 @@ namespace CBP
     bool UIBase::CanClip() const
     {
         auto window = ImGui::GetCurrentWindow();
-        _assert(window != nullptr);
+        ASSERT(window != nullptr);
         return window->SkipItems;
     }
 
@@ -4540,7 +4540,7 @@ namespace CBP
         {
             ImGui::SetWindowFontScale(globalConfig.ui.fontScale);
 
-            auto& backlog = DCBP::GetBackLog();
+            auto& backlog = IEvents::GetBackLog();
             {
                 IScopedCriticalSection _(std::addressof(backlog.GetLock()));
 

@@ -17,8 +17,8 @@ namespace SKSE
 
     bool Query(const SKSEInterface* skse, PluginInfo* info)
     {
-        gLogger.OpenRelative(CSIDL_MYDOCUMENTS, PLUGIN_LOG_PATH);
-        gLogger.SetLogLevel(Logger::LogLevel::Debug);
+        gLog.OpenRelative(CSIDL_MYDOCUMENTS, PLUGIN_LOG_PATH);
+        gLog.SetLogLevel(IDebugLog::LogLevel::Debug);
 
         info->infoVersion = PluginInfo::kInfoVersion;
         info->name = PLUGIN_NAME;
@@ -29,13 +29,13 @@ namespace SKSE
 
         if (skse->isEditor)
         {
-            gLogger.FatalError("Loaded in editor, marking as incompatible");
+            gLog.FatalError("Loaded in editor, marking as incompatible");
             return false;
         }
 
         if (skse->runtimeVersion < MIN_SKSE_VERSION)
         {
-            gLogger.FatalError("Unsupported runtime version %d.%d.%d.%d, expected >= %d.%d.%d.%d",
+            gLog.FatalError("Unsupported runtime version %d.%d.%d.%d, expected >= %d.%d.%d.%d",
                 GET_EXE_VERSION_MAJOR(skse->runtimeVersion),
                 GET_EXE_VERSION_MINOR(skse->runtimeVersion),
                 GET_EXE_VERSION_BUILD(skse->runtimeVersion),
@@ -56,62 +56,62 @@ namespace SKSE
     {
         g_messaging = (SKSEMessagingInterface*)skse->QueryInterface(kInterface_Messaging);
         if (g_messaging == NULL) {
-            gLogger.FatalError("Could not get messaging interface");
+            gLog.FatalError("Could not get messaging interface");
             return false;
         }
 
         if (g_messaging->interfaceVersion < 2) {
-            gLogger.FatalError("Messaging interface too old (%d expected %d)", g_messaging->interfaceVersion, 2);
+            gLog.FatalError("Messaging interface too old (%d expected %d)", g_messaging->interfaceVersion, 2);
             return false;
         }
 
         g_taskInterface = (SKSETaskInterface*)skse->QueryInterface(kInterface_Task);
         if (g_taskInterface == NULL) {
-            gLogger.FatalError("Couldn't get task interface.");
+            gLog.FatalError("Couldn't get task interface.");
             return false;
         }
 
         if (g_taskInterface->interfaceVersion < 2) {
-            gLogger.FatalError("Task interface too old (%d expected %d)", g_taskInterface->interfaceVersion, 2);
+            gLog.FatalError("Task interface too old (%d expected %d)", g_taskInterface->interfaceVersion, 2);
             return false;
         }
 
         g_papyrus = (SKSEPapyrusInterface*)skse->QueryInterface(kInterface_Papyrus);
         if (g_papyrus == NULL) {
-            gLogger.FatalError("Couldn't get papyrus interface.");
+            gLog.FatalError("Couldn't get papyrus interface.");
             return false;
         }
 
         if (g_papyrus->interfaceVersion < 1)
         {
-            gLogger.FatalError("Papyrus interface too old (%d expected %d)", g_papyrus->interfaceVersion, 1);
+            gLog.FatalError("Papyrus interface too old (%d expected %d)", g_papyrus->interfaceVersion, 1);
             return false;
         }
 
         g_serialization = (SKSESerializationInterface*)skse->QueryInterface(kInterface_Serialization);
         if (g_serialization == nullptr)
         {
-            gLogger.FatalError("Could not get get serialization interface");
+            gLog.FatalError("Could not get get serialization interface");
             return false;
         }
 
         if (g_serialization->version < SKSESerializationInterface::kVersion)
         {
-            gLogger.FatalError("Serialization interface too old (%d expected %d)", g_serialization->version, SKSESerializationInterface::kVersion);
+            gLog.FatalError("Serialization interface too old (%d expected %d)", g_serialization->version, SKSESerializationInterface::kVersion);
             return false;
         }
 
         branchTrampolineSize = Hook::InitBranchTrampoline(skse, MAX_TRAMPOLINE_BRANCH);
         if (!branchTrampolineSize)
         {
-            gLogger.FatalError("Could not create branch trampoline.");
+            gLog.FatalError("Could not create branch trampoline.");
             return false;
         }
         
         localTrampolineSize = Hook::InitLocalTrampoline(skse, MAX_TRAMPOLINE_CODEGEN);
         if (!localTrampolineSize)
         {
-            gLogger.FatalError("Could not create codegen buffer.");
+            gLog.FatalError("Could not create codegen buffer.");
             return false;
         }
 

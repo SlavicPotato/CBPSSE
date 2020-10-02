@@ -6,57 +6,7 @@ namespace CBP
         ILog,
         IConfigINI
     {
-        class BackLog
-        {
-            typedef std::vector<std::string> vec_t;
-
-            using iterator = typename vec_t::iterator;
-            using const_iterator = typename vec_t::const_iterator;
-
-        public:
-
-            BackLog(size_t a_limit) :
-                m_limit(a_limit)
-            {
-            }
-
-            [[nodiscard]] inline const_iterator begin() const noexcept {
-                return m_data.begin();
-            }
-            [[nodiscard]] inline const_iterator end() const noexcept {
-                return m_data.end();
-            }
-
-            inline void Lock() {
-                m_lock.Enter();
-            }
-
-            inline void Unlock() {
-                m_lock.Leave();
-            }
-
-            inline auto& GetLock() {
-                return m_lock;
-            }
-
-            inline void Add(const char* a_string)
-            {
-                m_lock.Enter();
-
-                m_data.emplace_back(a_string);
-                if (m_data.size() > m_limit)
-                    m_data.erase(m_data.begin());
-
-                m_lock.Leave();
-            }
-
-        private:
-            ICriticalSection m_lock;
-            std::vector<std::string> m_data;
-
-            size_t m_limit;
-        };
-
+        
         enum SerializationVersion {
             kDataVersion1 = 1
         };
@@ -256,10 +206,6 @@ namespace CBP
             return m_Instance.m_renderer;
         }
 
-        [[nodiscard]] inline static auto& GetBackLog() {
-            return m_Instance.m_backlog;
-        }
-
         inline static void UpdateKeys() {
             m_Instance.m_inputEventHandler.UpdateKeys();
         }
@@ -355,8 +301,6 @@ namespace CBP
         r3d::PhysicsCommon m_physicsCommon;
 
         mainLoopUpdateFunc_t mainLoopUpdateFunc_o;
-
-        BackLog m_backlog;
 
         bool m_resetUI;
 
