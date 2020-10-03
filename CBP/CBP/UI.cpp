@@ -3270,8 +3270,8 @@ namespace CBP
                 auto& p = *it;
 
                 if (!m_dataFilter.Test(p.first)) {
-                    continue;
                     ++it;
+                    continue;
                 }
 
                 nodeConfigList_t nodeList;
