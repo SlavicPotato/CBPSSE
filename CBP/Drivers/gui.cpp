@@ -65,12 +65,10 @@ namespace CBP
         ImGui::Render();
         ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
 
-        if (m_drawCallbacks.size() == 0) {
+        if (m_drawCallbacks.empty()) {
             ResetImGuiIO();
             Suspend();
         }
-
-        m_lock.Leave();
     }
 
     void DUI::OnD3D11PostCreate_DUI(Event, void* data)
