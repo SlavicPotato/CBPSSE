@@ -42,8 +42,8 @@ namespace CBP
 
         m_keyEvents.ProcessTasks();
 
-        ImGui_ImplDX11_NewFrame();
-        ImGui_ImplWin32_NewFrame();
+        ::ImGui_ImplDX11_NewFrame();
+        ::ImGui_ImplWin32_NewFrame();
 
         ImGui::NewFrame();
 
@@ -63,7 +63,7 @@ namespace CBP
         }
 
         ImGui::Render();
-        ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+        ::ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
 
         if (m_drawCallbacks.empty()) {
             ResetImGuiIO();
@@ -97,8 +97,8 @@ namespace CBP
 
         ImGui::StyleColorsDark();
 
-        ImGui_ImplWin32_Init(info->m_pSwapChainDesc->OutputWindow);
-        ImGui_ImplDX11_Init(info->m_pDevice, info->m_pImmediateContext);
+        ::ImGui_ImplWin32_Init(info->m_pSwapChainDesc->OutputWindow);
+        ::ImGui_ImplDX11_Init(info->m_pDevice, info->m_pImmediateContext);
 
         m_Instance.m_imInitialized = true;
 

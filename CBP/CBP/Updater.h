@@ -118,7 +118,6 @@ namespace CBP
 
         FN_NAMEPROC("UpdateTask")
     private:
-
         void ProcessTasks();
         void GatherActors(handleSet_t& a_out);
 

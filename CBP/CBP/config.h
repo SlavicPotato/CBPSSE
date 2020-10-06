@@ -132,11 +132,19 @@ namespace CBP
         None = 0,
         BeginGroup = 1 << 0,
         EndGroup = 1 << 1,
-        Misc1 = 1 << 2,
-        Float3 = 1 << 3
+        ColliderSphere = 1 << 2,
+        ColliderCapsule = 1 << 3,
+        ColliderBox = 1 << 4,
+        Float3 = 1 << 5
     };
 
     DEFINE_ENUM_CLASS_BITWISE(DescUIMarker);
+
+    constexpr auto UIMARKER_COL_SHAPE_FLAGS =
+        DescUIMarker::ColliderSphere | 
+        DescUIMarker::ColliderCapsule | 
+        DescUIMarker::ColliderBox;
+
 
     enum class DescUIGroupType : uint32_t
     {
@@ -148,7 +156,8 @@ namespace CBP
     enum class ColliderShape : uint32_t
     {
         Sphere = 0,
-        Capsule
+        Capsule,
+        Box
     };
 
     struct componentValueDesc_t
@@ -286,6 +295,8 @@ namespace CBP
             float offsetMax[3]{ 0.0f, 0.0f, 0.0f };
             float colHeightMin = 0.001f;
             float colHeightMax = 0.001f;
+            float colExtentMin[3]{ 1.0f, 1.0f, 1.0f };
+            float colExtentMax[3]{ 1.0f, 1.0f, 1.0f };
             float colRot[3]{ 0.0f, 0.0f, 0.0f };
             float colRestitutionCoefficient = 0.25f;
             float colPenBiasFactor = 1.0f;

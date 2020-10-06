@@ -127,6 +127,9 @@ namespace Serialization
                     case 1:
                         e.SetColShape(CBP::ColliderShape::Capsule);
                         break;
+                    case 2:
+                        e.SetColShape(CBP::ColliderShape::Box);
+                        break;
                     }
                 }
             }

@@ -158,7 +158,7 @@ namespace CBP
             0.0f, 100.0,
             "Collider radius (weigth 0)",
             "Radius min",
-            DescUIMarker::BeginGroup,
+            DescUIMarker::BeginGroup | DescUIMarker::ColliderSphere | DescUIMarker::ColliderCapsule,
             DescUIGroupType::Collisions,
             "Collisions"
         }},
@@ -168,6 +168,7 @@ namespace CBP
             0.0f, 100.0f,
             "Collider radius (weight 100)",
             "Radius max",
+            DescUIMarker::ColliderSphere | DescUIMarker::ColliderCapsule
         }},
         {"ch-", {
             offsetof(configComponent_t, phys.colHeightMin),
@@ -175,7 +176,7 @@ namespace CBP
             0.001f, 250.0f,
             "Capsule height (weight 0)",
             "Capsule height min",
-            DescUIMarker::Misc1
+            DescUIMarker::ColliderCapsule
         }},
         {"ch+", {
             offsetof(configComponent_t, phys.colHeightMax),
@@ -183,7 +184,7 @@ namespace CBP
             0.001f, 250.0f,
             "Capsule height (weight 100)",
             "Capsule height max",
-            DescUIMarker::Misc1
+            DescUIMarker::ColliderCapsule
         }},
         {"cox-", {
             offsetof(configComponent_t, phys.offsetMin[0]),
@@ -229,13 +230,61 @@ namespace CBP
             "",
             ""
         }},
+        {"ex-", {
+            offsetof(configComponent_t, phys.colExtentMin[0]),
+            "ex+",
+            0.001f, 50.0f,
+            "Extent (X, Y, Z, weight 0)",
+            "Extent min",
+            DescUIMarker::Float3 | DescUIMarker::ColliderBox
+        }},
+        {"ey-", {
+            offsetof(configComponent_t, phys.colExtentMin[1]),
+            "ey+",
+            0.001f, 50.0f,
+            "",
+            "",
+            DescUIMarker::ColliderBox
+        }},
+        {"ez-", {
+            offsetof(configComponent_t, phys.colExtentMin[2]),
+            "ez+",
+            0.001f, 50.0f,
+            "",
+            "",
+            DescUIMarker::ColliderBox
+        }},
+        {"ex+", {
+            offsetof(configComponent_t, phys.colExtentMax[0]),
+            "ex-",
+            0.001f, 50.0f,
+            "Extent (X, Y, Z, weight 100)",
+            "Extent max",
+            DescUIMarker::Float3 | DescUIMarker::ColliderBox
+        }},
+        {"ey+", {
+            offsetof(configComponent_t, phys.colExtentMax[1]),
+            "ey-",
+            0.001f, 50.0f,
+            "",
+            "",
+            DescUIMarker::ColliderBox
+        }},
+        {"ez+", {
+            offsetof(configComponent_t, phys.colExtentMax[2]),
+            "ez-",
+            0.001f, 50.0f,
+            "",
+            "",
+            DescUIMarker::ColliderBox
+        }},
         {"crx", {
             offsetof(configComponent_t, phys.colRot[0]),
             "",
             -360.0f, 360.0f,
             "Collider rotation in degrees around the X, Y and Z axes respectively.",
             "Collider rotation",
-            DescUIMarker::Misc1 | DescUIMarker::Float3
+            DescUIMarker::ColliderCapsule | DescUIMarker::ColliderBox | DescUIMarker::Float3
         }},
         {"cry", {
             offsetof(configComponent_t, phys.colRot[1]),
@@ -243,7 +292,7 @@ namespace CBP
             -360.0f, 360.0f,
             "",
             "",
-            DescUIMarker::Misc1
+            DescUIMarker::ColliderCapsule | DescUIMarker::ColliderBox
         }},
         {"crz", {
             offsetof(configComponent_t, phys.colRot[2]),
@@ -251,7 +300,7 @@ namespace CBP
             -360.0f, 360.0f,
             "",
             "",
-            DescUIMarker::Misc1
+            DescUIMarker::ColliderCapsule | DescUIMarker::ColliderBox
         }},
         {"cb", {
             offsetof(configComponent_t, phys.colRestitutionCoefficient),

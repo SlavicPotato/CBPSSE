@@ -561,7 +561,7 @@ namespace CBP
     {
         ListTick();
 
-        auto& globalConfig = IConfig::GetGlobal();
+        auto& globalConfig = IConfig::GetGlobal();;
 
         SetWindowDimensions(800.0f);
 
@@ -2893,6 +2893,9 @@ namespace CBP
         case ColliderShape::Capsule:
             desc = "Capsule";
             break;
+        case ColliderShape::Box:
+            desc = "Box";
+            break;
         default:
             throw std::exception("Not implemented");
         }
@@ -2903,8 +2906,14 @@ namespace CBP
                 a_pair.second.ex.colShape = ColliderShape::Sphere;
                 OnColliderShapeChange(a_handle, a_data, a_pair, a_entry);
             }
+
             if (ImGui::Selectable("Capsule", a_pair.second.ex.colShape == ColliderShape::Capsule)) {
                 a_pair.second.ex.colShape = ColliderShape::Capsule;
+                OnColliderShapeChange(a_handle, a_data, a_pair, a_entry);
+            }
+
+            if (ImGui::Selectable("Box", a_pair.second.ex.colShape == ColliderShape::Box)) {
+                a_pair.second.ex.colShape = ColliderShape::Box;
                 OnColliderShapeChange(a_handle, a_data, a_pair, a_entry);
             }
 
@@ -3015,12 +3024,30 @@ namespace CBP
                 }
 
             }
-            else if ((e.second.marker & DescUIMarker::Misc1) == DescUIMarker::Misc1)
+            
+            if (groupType == DescUIGroupType::Collisions)
             {
-                if (groupType == DescUIGroupType::Collisions &&
-                    a_pair.second.ex.colShape != ColliderShape::Capsule)
+                auto flags = e.second.marker & UIMARKER_COL_SHAPE_FLAGS;
+
+                if (flags != DescUIMarker::None)
                 {
-                    continue;
+                    auto f(DescUIMarker::None);
+
+                    switch (a_pair.second.ex.colShape)
+                    {
+                        case ColliderShape::Sphere:                            
+                            f |= (flags & DescUIMarker::ColliderSphere);
+                            break;
+                        case ColliderShape::Capsule:                            
+                            f |= (flags & DescUIMarker::ColliderCapsule);
+                            break;
+                        case ColliderShape::Box:                            
+                            f |= (flags & DescUIMarker::ColliderBox);
+                            break;
+                    }
+
+                    if (f == DescUIMarker::None)
+                        continue;
                 }
             }
 

@@ -33,6 +33,7 @@ namespace CBP
             Destroy();
         }
 
+        m_extent = { 1.0f, 1.0f, 1.0f };
         m_nodeScale = 1.0f;
         m_radius = 1.0f;
         m_height = 0.001f;
@@ -44,13 +45,22 @@ namespace CBP
 
         m_body = world->createCollisionBody(m_transform);
 
-        if (a_shape == ColliderShape::Capsule) {
+        switch (a_shape)
+        {
+        case ColliderShape::Capsule:
             m_capsuleShape = physicsCommon.createCapsuleShape(m_radius, m_height);
             m_collider = m_body->addCollider(m_capsuleShape, m_transform);
-        }
-        else {
+            break;
+        case ColliderShape::Box:
+            m_boxShape = physicsCommon.createBoxShape(m_extent);
+            m_collider = m_body->addCollider(m_boxShape, m_transform);
+            break;
+        case ColliderShape::Sphere:
             m_sphereShape = physicsCommon.createSphereShape(m_radius);
             m_collider = m_body->addCollider(m_sphereShape, m_transform);
+            break;
+        default:
+            ASSERT_STR(false, "Collider shape not implemented");
         }
 
         m_collider->setUserData(std::addressof(m_parent));
@@ -73,10 +83,20 @@ namespace CBP
 
         m_body->removeCollider(m_collider);
 
-        if (m_shape == ColliderShape::Capsule)
+        switch (m_shape)
+        {
+        case ColliderShape::Capsule:
             physicsCommon.destroyCapsuleShape(m_capsuleShape);
-        else
+            break;
+        case ColliderShape::Box:
+            physicsCommon.destroyBoxShape(m_boxShape);
+            break;
+        case ColliderShape::Sphere:
             physicsCommon.destroySphereShape(m_sphereShape);
+            break;
+        default:
+            ASSERT_STR(false, "Collider shape not implemented");
+        }
 
         world->destroyCollisionBody(m_body);
 
@@ -115,7 +135,8 @@ namespace CBP
 
         auto pos = m_parent.m_obj->m_worldTransform * m_bodyOffset;
 
-        if (m_shape == ColliderShape::Capsule)
+        if (m_shape == ColliderShape::Capsule ||
+            m_shape == ColliderShape::Box)
         {
             r3d::Quaternion quat(
                 reinterpret_cast<const r3d::Matrix3x3&>(
@@ -135,6 +156,7 @@ namespace CBP
             m_nodeScale = nodeScale;
             UpdateRadius();
             UpdateHeight();
+            UpdateExtent();
         }
     }
 
@@ -208,6 +230,10 @@ namespace CBP
             a_config.phys.offsetMin[2] + a_nodeConf.colOffsetMin[2],
             a_config.phys.offsetMax[2] + a_nodeConf.colOffsetMax[2]);
 
+        m_extent.x = std::max(mmw(weight, a_config.phys.colExtentMin[0], a_config.phys.colExtentMax[0]), 0.0f);
+        m_extent.y = std::max(mmw(weight, a_config.phys.colExtentMin[1], a_config.phys.colExtentMax[1]), 0.0f);
+        m_extent.z = std::max(mmw(weight, a_config.phys.colExtentMin[2], a_config.phys.colExtentMax[2]), 0.0f);
+
         return true;
     }
 
@@ -232,6 +258,11 @@ namespace CBP
             m_colOffsetX = a_physConf.phys.offsetMax[0] + a_nodeConf.colOffsetMax[0];
             m_colOffsetY = a_physConf.phys.offsetMax[1] + a_nodeConf.colOffsetMax[1];
             m_colOffsetZ = a_physConf.phys.offsetMax[2] + a_nodeConf.colOffsetMax[2];
+            m_extent = {
+                std::max(a_physConf.phys.colExtentMax[0], 0.0f),
+                std::max(a_physConf.phys.colExtentMax[1], 0.0f),
+                std::max(a_physConf.phys.colExtentMax[2], 0.0f)
+            };
         }
 
         if (m_collisions &&
@@ -246,15 +277,22 @@ namespace CBP
                 m_colOffsetZ
             );
 
-            if (m_collisionData.GetColliderShape() == ColliderShape::Capsule)
+            auto colShape = m_collisionData.GetColliderShape();
+
+            switch (colShape)
             {
+            case ColliderShape::Capsule:
                 m_collisionData.SetHeight(m_colHeight);
+            case ColliderShape::Box:
                 m_collisionData.SetColliderRotation(
                     m_conf.phys.colRot[0],
                     m_conf.phys.colRot[1],
                     m_conf.phys.colRot[2]
                 );
+                m_collisionData.SetExtent(m_extent);
+                break;
             }
+
         }
         else {
             m_collisionData.Destroy();

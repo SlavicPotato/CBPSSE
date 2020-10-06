@@ -40,7 +40,7 @@ namespace CBP
             bool Destroy();
             inline void Update();
             void Reset();
-            
+
             inline void SetColliderRotation(float a_x, float a_y, float a_z)
             {
                 m_colRot = r3d::Quaternion::fromEulerAngles(
@@ -55,7 +55,7 @@ namespace CBP
                 UpdateRadius();
             }
 
-            inline void UpdateRadius() 
+            inline void UpdateRadius()
             {
                 if (!m_created)
                     return;
@@ -64,21 +64,41 @@ namespace CBP
                 if (rad > 0.0f) {
                     if (m_shape == ColliderShape::Capsule)
                         m_capsuleShape->setRadius(rad);
-                    else
+                    else if (m_shape == ColliderShape::Sphere)
                         m_sphereShape->setRadius(rad);
                 }
             }
 
-            inline void UpdateHeight() 
+            inline void UpdateHeight()
             {
                 if (!m_created)
                     return;
 
                 if (m_shape == ColliderShape::Capsule) {
-                    auto height = m_height * m_nodeScale;
-                    if (height > 0.0f)
-                        m_capsuleShape->setHeight(height);
+                    auto height = std::max(m_height * m_nodeScale, 0.001f);
+                    m_capsuleShape->setHeight(height);
                 }
+            }
+
+            inline void SetExtent(const r3d::Vector3& a_extent)
+            {
+                m_extent = a_extent;
+                UpdateExtent();
+            }
+
+            inline void SetExtent(r3d::Vector3&& a_extent)
+            {
+                m_extent = std::move(a_extent);
+                UpdateExtent();
+            }
+
+            inline void UpdateExtent()
+            {
+                if (!m_created)
+                    return;
+
+                if (m_shape == ColliderShape::Box)
+                    m_boxShape->setHalfExtents(m_extent * m_nodeScale);
             }
 
             inline void SetHeight(float a_val) {
@@ -118,9 +138,14 @@ namespace CBP
             r3d::CollisionBody* m_body;
             r3d::Collider* m_collider;
 
-            r3d::SphereShape* m_sphereShape;
-            r3d::CapsuleShape* m_capsuleShape;
+            union
+            {
+                r3d::SphereShape* m_sphereShape;
+                r3d::CapsuleShape* m_capsuleShape;
+                r3d::BoxShape* m_boxShape;
+            };
 
+            r3d::Vector3 m_extent;
             NiPoint3 m_bodyOffset;
             r3d::Quaternion m_colRot;
             r3d::Transform m_transform;
@@ -171,6 +196,7 @@ namespace CBP
         float m_colOffsetY = 0.0f;
         float m_colOffsetZ = 0.0f;
         float m_resistance = 0.0f;
+        r3d::Vector3 m_extent;
 
         uint64_t m_groupId;
         uint64_t m_parentId;
@@ -210,7 +236,7 @@ namespace CBP
             uint64_t a_groupId,
             bool a_collisions,
             bool a_movement,
-            const configNode_t &a_nodeConf
+            const configNode_t& a_nodeConf
         );
 
         SimComponent() = delete;
@@ -246,6 +272,12 @@ namespace CBP
         __forceinline void SetVelocity(const NiPoint3& a_vel)
         {
             m_velocity = a_vel;
+            ClampVelocity();
+        }
+
+        __forceinline void SetVelocity(NiPoint3&& a_vel)
+        {
+            m_velocity = std::move(a_vel);
             ClampVelocity();
         }
 
@@ -295,12 +327,16 @@ namespace CBP
         [[nodiscard]] inline auto GetCenterOfMass() const {
             return m_obj->m_worldTransform * m_npCogOffset;
         }
-        
+
         [[nodiscard]] inline float GetNodeScale() const {
             return m_obj->m_worldTransform.scale;
         }
 
         [[nodiscard]] inline auto& GetCollider() {
+            return m_collisionData;
+        }
+
+        [[nodiscard]] inline const auto& GetCollider() const {
             return m_collisionData;
         }
 
