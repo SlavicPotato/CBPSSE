@@ -12,82 +12,6 @@ namespace CBP
         kRaceNodeEditor
     };
 
-    template <typename K, typename V>
-    class KVStorage
-    {
-        typedef std::unordered_map<K, const V&> keyMap_t;
-        typedef std::vector<std::pair<const K, const V>> keyVec_t;
-
-        using iterator = typename keyVec_t::iterator;
-        using const_iterator = typename keyVec_t::const_iterator;
-
-        using map_iterator = typename keyMap_t::iterator;
-        using map_const_iterator = typename keyMap_t::const_iterator;
-
-    public:
-
-        using vec_value_type = typename keyVec_t::value_type;
-        using key_type = typename keyMap_t::key_type;
-        using mapped_type = typename keyMap_t::mapped_type;
-
-        KVStorage(const keyVec_t& a_in) :
-            m_vec(a_in)
-        {
-            _init();
-        }
-
-        KVStorage(keyVec_t&& a_in) :
-            m_vec(std::forward<keyVec_t>(a_in))
-        {
-            _init();
-        }
-
-        iterator begin() = delete;
-        iterator end() = delete;
-
-        [[nodiscard]] inline const_iterator begin() const noexcept {
-            return m_vec.begin();
-        }
-
-        [[nodiscard]] inline const_iterator end() const noexcept {
-            return m_vec.end();
-        }
-
-        [[nodiscard]] inline map_const_iterator map_begin() const noexcept {
-            return m_map.begin();
-        }
-
-        [[nodiscard]] inline map_const_iterator map_end() const noexcept {
-            return m_map.end();
-        }
-
-        [[nodiscard]] inline map_const_iterator find(const key_type& a_key) const {
-            return m_map.find(a_key);
-        }
-
-        [[nodiscard]] inline bool contains(const key_type& a_key) const {
-            return m_map.find(a_key) != m_map.end();
-        }
-
-        [[nodiscard]] inline const mapped_type& at(const key_type& a_key) const {
-            return m_map.at(a_key);
-        }
-
-        [[nodiscard]] inline const keyMap_t* operator->() const {
-            return std::addressof(m_map);
-        }
-
-    private:
-        inline void _init()
-        {
-            for (const auto& p : m_vec)
-                m_map.emplace(p.first, p.second);
-        }
-
-        keyMap_t m_map;
-        const keyVec_t m_vec;
-    };
-
     struct configForce_t
     {
         NiPoint3 force;
@@ -95,9 +19,9 @@ namespace CBP
         int steps = 1;
     };
 
-    typedef std::unordered_map<std::string, std::map<std::string, bool>> configMirrorMap_t;
-    typedef std::unordered_map<std::string, configForce_t> configForceMap_t;
-    typedef std::unordered_map<std::string, bool> collapsibleStates_t;
+    typedef stl::iunordered_map<std::string, stl::imap<std::string, bool>> configMirrorMap_t;
+    typedef stl::iunordered_map<std::string, configForce_t> configForceMap_t;
+    typedef stl::iunordered_map<std::string, bool> collapsibleStates_t;
 
     struct configGlobalRace_t
     {
@@ -170,7 +94,7 @@ namespace CBP
 
             configForceMap_t forceActor;
             std::unordered_map<UIEditorID, configMirrorMap_t> mirror;
-            collapsibleStates_t colStates;
+            UIData::UICollapsibleStates colStates;
             std::string forceActorSelected;
 
             struct
@@ -195,15 +119,11 @@ namespace CBP
             bool drawBroadphaseAABB = false;
         } debugRenderer;
 
-        inline bool& GetColState(
+        __forceinline bool& GetColState(
             const std::string& a_key,
             bool a_default = true)
         {
-            auto it = ui.colStates.find(a_key);
-            if (it != ui.colStates.end())
-                return it->second;
-            else
-                return ui.colStates[a_key] = a_default;
+            return ui.colStates.Get(a_key, a_default);
         }
     };
 
@@ -244,7 +164,7 @@ namespace CBP
         std::string groupName;
     };
 
-    typedef KVStorage<std::string, const componentValueDesc_t> componentValueDescMap_t;
+    typedef iKVStorage<std::string, const componentValueDesc_t> componentValueDescMap_t;
 
     struct configComponent_t
     {
@@ -378,22 +298,22 @@ namespace CBP
         } ex;
 
         static const componentValueDescMap_t descMap;
-        static const std::unordered_map<std::string, std::string> oldKeyMap;
+        static const stl::iunordered_map<std::string, std::string> oldKeyMap;
     };
 
     //static_assert(sizeof(configComponent_t) == 0x5C);
 
-    typedef std::map<std::string, configComponent_t> configComponents_t;
+    typedef stl::imap<std::string, configComponent_t> configComponents_t;
     typedef configComponents_t::value_type configComponentsValue_t;
     typedef std::unordered_map<Game::ObjectHandle, configComponents_t> actorConfigComponentsHolder_t;
     typedef std::unordered_map<Game::FormID, configComponents_t> raceConfigComponentsHolder_t;
-    typedef std::map<std::string, std::string> nodeMap_t;
-    typedef std::unordered_map<std::string, std::vector<std::string>> configGroupMap_t;
+    typedef stl::imap<std::string, std::string> nodeMap_t;
+    typedef stl::iunordered_map<std::string, std::vector<std::string>> configGroupMap_t;
 
     typedef std::set<uint64_t> collisionGroups_t;
-    typedef std::map<std::string, uint64_t> nodeCollisionGroupMap_t;
+    typedef stl::imap<std::string, uint64_t> nodeCollisionGroupMap_t;
 
-    typedef std::pair<std::set<std::string>, armorCacheEntry_t> armorOverrideDescriptor_t;
+    typedef std::pair<stl::iset<std::string>, armorCacheEntry_t> armorOverrideDescriptor_t;
     typedef std::unordered_map<Game::ObjectHandle, armorOverrideDescriptor_t> armorOverrides_t;
 
     typedef std::unordered_map<Game::ObjectHandle, configComponents_t> mergedConfCache_t;
@@ -407,6 +327,9 @@ namespace CBP
 
         float colOffsetMin[3]{ 0.0f, 0.0f, 0.0f };
         float colOffsetMax[3]{ 0.0f, 0.0f, 0.0f };
+
+        bool overrideScale = false;
+        float nodeScale = 1.0f;
 
         inline void Get(char a_sex, bool& a_collisionsOut, bool& a_movementOut) const noexcept
         {
@@ -437,7 +360,7 @@ namespace CBP
         }
     };
 
-    typedef std::map<std::string, configNode_t> configNodes_t;
+    typedef stl::imap<std::string, configNode_t> configNodes_t;
     typedef configNodes_t::value_type configNodesValue_t;
     typedef std::unordered_map<Game::ObjectHandle, configNodes_t> actorConfigNodesHolder_t;
     typedef std::unordered_map<Game::FormID, configNodes_t> raceConfigNodesHolder_t;
@@ -468,105 +391,105 @@ namespace CBP
         };
 
     public:
-        typedef std::unordered_set<std::string> vKey_t;
+        typedef stl::iunordered_set<std::string> vKey_t;
 
         static void Initialize();
 
-        [[nodiscard]] static ConfigClass GetActorPhysicsConfigClass(Game::ObjectHandle a_handle);
-        [[nodiscard]] static ConfigClass GetActorNodeConfigClass(Game::ObjectHandle a_handle);
+        [[nodiscard]] static ConfigClass GetActorPhysicsClass(Game::ObjectHandle a_handle);
+        [[nodiscard]] static ConfigClass GetActorNodeClass(Game::ObjectHandle a_handle);
 
         // Not guaranteed to be actual actor conf storage
-        [[nodiscard]] static const configComponents_t& GetActorPhysicsConfig(Game::ObjectHandle handle);
+        [[nodiscard]] static const configComponents_t& GetActorPhysics(Game::ObjectHandle handle);
 
-        [[nodiscard]] static const configComponents_t& GetActorPhysicsConfigAO(Game::ObjectHandle handle);
-        [[nodiscard]] static configComponents_t& GetOrCreateActorPhysicsConfig(Game::ObjectHandle handle);
-        static void SetActorPhysicsConfig(Game::ObjectHandle a_handle, const configComponents_t& a_conf);
-        static void SetActorPhysicsConfig(Game::ObjectHandle a_handle, configComponents_t&& a_conf);
+        [[nodiscard]] static const configComponents_t& GetActorPhysicsAO(Game::ObjectHandle handle);
+        [[nodiscard]] static configComponents_t& GetOrCreateActorPhysics(Game::ObjectHandle handle);
+        static void SetActorPhysics(Game::ObjectHandle a_handle, const configComponents_t& a_conf);
+        static void SetActorPhysics(Game::ObjectHandle a_handle, configComponents_t&& a_conf);
 
-        inline static void EraseActorConf(Game::ObjectHandle handle) {
+        inline static void EraseActorPhysics(Game::ObjectHandle handle) {
             actorConfHolder.erase(handle);
         }
 
         // Not guaranteed to be actual race conf storage
-        [[nodiscard]] static const configComponents_t& GetRacePhysicsConfig(Game::FormID a_formid);
+        [[nodiscard]] static const configComponents_t& GetRacePhysics(Game::FormID a_formid);
 
-        [[nodiscard]] static configComponents_t& GetOrCreateRacePhysicsConfig(Game::FormID a_formid);
-        static void SetRacePhysicsConfig(Game::FormID a_formid, const configComponents_t& a_conf);
-        static void SetRacePhysicsConfig(Game::FormID a_formid, configComponents_t&& a_conf);
-        inline static void EraseRacePhysicsConfig(Game::FormID handle) {
+        [[nodiscard]] static configComponents_t& GetOrCreateRacePhysics(Game::FormID a_formid);
+        static void SetRacePhysics(Game::FormID a_formid, const configComponents_t& a_conf);
+        static void SetRacePhysics(Game::FormID a_formid, configComponents_t&& a_conf);
+        inline static void EraseRacePhysics(Game::FormID handle) {
             raceConfHolder.erase(handle);
         }
 
-        [[nodiscard]] inline static auto& GetGlobalPhysicsConfig() {
+        [[nodiscard]] inline static auto& GetGlobalPhysics() {
             return physicsGlobalConfig;
         }
 
-        inline static void SetGlobalPhysicsConfig(const configComponents_t& a_rhs) noexcept {
-            physicsGlobalConfig = a_rhs;            
+        inline static void SetGlobalPhysics(const configComponents_t& a_rhs) noexcept {
+            physicsGlobalConfig = a_rhs;
         }
 
-        inline static void SetGlobalPhysicsConfig(configComponents_t&& a_rhs) noexcept {
-            physicsGlobalConfig = std::forward<configComponents_t>(a_rhs);
+        inline static void SetGlobalPhysics(configComponents_t&& a_rhs) noexcept {
+            physicsGlobalConfig = std::move(a_rhs);
         }
 
-        [[nodiscard]] inline static auto& GetActorPhysicsConfigHolder() {
+        [[nodiscard]] inline static auto& GetActorPhysicsHolder() {
             return actorConfHolder;
         }
 
         inline static void SetActorPhysicsConfigHolder(actorConfigComponentsHolder_t&& a_rhs) noexcept {
-            actorConfHolder = std::forward<actorConfigComponentsHolder_t>(a_rhs);
+            actorConfHolder = std::move(a_rhs);
         }
 
-        [[nodiscard]] inline static auto& GetRacePhysicsConfigHolder() {
+        [[nodiscard]] inline static auto& GetRacePhysicsHolder() {
             return raceConfHolder;
         }
 
-        inline static void SetRacePhysicsConfigHolder(raceConfigComponentsHolder_t&& a_rhs) noexcept {
-            raceConfHolder = std::forward<raceConfigComponentsHolder_t>(a_rhs);
+        inline static void SetRacePhysicsHolder(raceConfigComponentsHolder_t&& a_rhs) noexcept {
+            raceConfHolder = std::move(a_rhs);
         }
 
-        inline static void SetRaceNodeConfigHolder(raceConfigNodesHolder_t&& a_rhs) noexcept {
-            raceNodeConfigHolder = std::forward<raceConfigNodesHolder_t>(a_rhs);
+        inline static void SetRaceNodeHolder(raceConfigNodesHolder_t&& a_rhs) noexcept {
+            raceNodeConfigHolder = std::move(a_rhs);
         }
 
-        inline static void ClearActorPhysicsConfigHolder() {
+        inline static void ClearActorPhysicsHolder() noexcept {
             actorConfHolder.clear();
         }
 
-        inline static void ClearRacePhysicsConfigHolder() {
+        inline static void ClearRacePhysicsHolder() noexcept {
             raceConfHolder.clear();
         }
 
-        [[nodiscard]] inline static auto& GetGlobalConfig() {
+        [[nodiscard]] inline static auto& GetGlobal() noexcept {
             return globalConfig;
         }
 
-        inline static void SetGlobalConfig(const configGlobal_t& a_rhs) noexcept {
+        inline static void SetGlobal(const configGlobal_t& a_rhs) noexcept {
             globalConfig = a_rhs;
         }
 
-        inline static void SetGlobalConfig(configGlobal_t&& a_rhs) noexcept {
-            globalConfig = std::forward<configGlobal_t>(a_rhs);
+        inline static void SetGlobal(configGlobal_t&& a_rhs) noexcept {
+            globalConfig = std::move(a_rhs);
         }
 
-        inline static void ResetGlobalConfig() {
+        inline static void ResetGlobal() noexcept {
             globalConfig = configGlobal_t();
         }
 
-        inline static void ClearGlobalPhysicsConfig() {
+        inline static void ClearGlobalPhysics() noexcept {
             physicsGlobalConfig.clear();
         }
 
-        [[nodiscard]] inline static const auto& GetNodeMap() {
+        [[nodiscard]] inline static const auto& GetNodeMap() noexcept {
             return nodeMap;
         }
 
-        [[nodiscard]] inline static bool IsValidNode(const std::string& a_key) {
-            return nodeMap.find(a_key) != nodeMap.end();
+        [[nodiscard]] inline static bool IsValidNode(const std::string& a_key) noexcept {
+            return nodeMap.contains(a_key);
         }
 
-        [[nodiscard]] inline static bool IsValidConfigGroup(const std::string& a_key) {
-            return validConfGroups.find(a_key) != validConfGroups.end();
+        [[nodiscard]] inline static bool IsValidGroup(const std::string& a_key) {
+            return validConfGroups.contains(a_key);
         }
 
         [[nodiscard]] inline static auto& GetCollisionGroups() {
@@ -578,7 +501,7 @@ namespace CBP
         }
 
         inline static void SetCollisionGroups(collisionGroups_t&& a_rhs) noexcept {
-            collisionGroups = std::forward<collisionGroups_t>(a_rhs);
+            collisionGroups = std::move(a_rhs);
         }
 
         inline static void ClearCollisionGroups() {
@@ -594,7 +517,7 @@ namespace CBP
         }
 
         inline static void SetNodeCollisionGroupMap(nodeCollisionGroupMap_t&& a_rhs) noexcept {
-            nodeCollisionGroupMap = std::forward<nodeCollisionGroupMap_t>(a_rhs);
+            nodeCollisionGroupMap = std::move(a_rhs);
         }
 
         [[nodiscard]] static uint64_t GetNodeCollisionGroupId(const std::string& a_node);
@@ -603,59 +526,59 @@ namespace CBP
             nodeCollisionGroupMap.clear();
         }
 
-        [[nodiscard]] inline static auto& GetGlobalNodeConfig() {
+        [[nodiscard]] inline static auto& GetGlobalNode() {
             return nodeGlobalConfig;
         }
 
-        inline static void SetGlobalNodeConfig(const configNodes_t& a_rhs) noexcept {
+        inline static void SetGlobalNode(const configNodes_t& a_rhs) noexcept {
             nodeGlobalConfig = a_rhs;
         }
 
-        inline static void SetGlobalNodeConfig(configNodes_t&& a_rhs) noexcept {
-            nodeGlobalConfig = std::forward<configNodes_t>(a_rhs);
+        inline static void SetGlobalNode(configNodes_t&& a_rhs) noexcept {
+            nodeGlobalConfig = std::move(a_rhs);
         }
 
-        inline static void ClearGlobalNodeConfig() {
+        inline static void ClearGlobalNode() {
             nodeGlobalConfig.clear();
         }
 
-        static bool GetGlobalNodeConfig(const std::string& a_node, configNode_t& a_out);
+        static bool GetGlobalNode(const std::string& a_node, configNode_t& a_out);
 
-        [[nodiscard]] inline static auto& GetActorNodeConfigHolder() {
+        [[nodiscard]] inline static auto& GetActorNodeHolder() {
             return actorNodeConfigHolder;
         }
 
-        [[nodiscard]] inline static auto& GetRaceNodeConfigHolder() {
+        [[nodiscard]] inline static auto& GetRaceNodeHolder() {
             return raceNodeConfigHolder;
         }
 
-        inline static void SetActorNodeConfigHolder(actorConfigNodesHolder_t&& a_rhs) noexcept {
-            actorNodeConfigHolder = std::forward<actorConfigNodesHolder_t>(a_rhs);
+        inline static void SetActorNodeHolder(actorConfigNodesHolder_t&& a_rhs) noexcept {
+            actorNodeConfigHolder = std::move(a_rhs);
         }
 
-        static const configNodes_t& GetActorNodeConfig(Game::ObjectHandle a_handle);
-        static const configNodes_t& GetRaceNodeConfig(Game::FormID a_formid);
-        static configNodes_t& GetOrCreateActorNodeConfig(Game::ObjectHandle a_handle);
-        static configNodes_t& GetOrCreateRaceNodeConfig(Game::FormID a_formid);
-        static bool GetActorNodeConfig(Game::ObjectHandle a_handle, const std::string& a_node, configNode_t& a_out);
-        static void SetActorNodeConfig(Game::ObjectHandle a_handle, const configNodes_t& a_conf);
-        static void SetActorNodeConfig(Game::ObjectHandle a_handle, configNodes_t&& a_conf);
-        static void SetRaceNodeConfig(Game::FormID a_handle, const configNodes_t& a_conf);
-        static void SetRaceNodeConfig(Game::FormID a_handle, configNodes_t&& a_conf);
+        static const configNodes_t& GetActorNode(Game::ObjectHandle a_handle);
+        static const configNodes_t& GetRaceNode(Game::FormID a_formid);
+        static configNodes_t& GetOrCreateActorNode(Game::ObjectHandle a_handle);
+        static configNodes_t& GetOrCreateRaceNode(Game::FormID a_formid);
+        static bool GetActorNode(Game::ObjectHandle a_handle, const std::string& a_node, configNode_t& a_out);
+        static void SetActorNode(Game::ObjectHandle a_handle, const configNodes_t& a_conf);
+        static void SetActorNode(Game::ObjectHandle a_handle, configNodes_t&& a_conf);
+        static void SetRaceNode(Game::FormID a_handle, const configNodes_t& a_conf);
+        static void SetRaceNode(Game::FormID a_handle, configNodes_t&& a_conf);
 
-        inline static void EraseActorNodeConfig(Game::ObjectHandle a_formid) {
+        inline static void EraseActorNode(Game::ObjectHandle a_formid) noexcept {
             actorNodeConfigHolder.erase(a_formid);
         }
 
-        inline static void EraseRaceNodeConfig(Game::FormID a_formid) {
+        inline static void EraseRaceNode(Game::FormID a_formid) noexcept {
             raceNodeConfigHolder.erase(a_formid);
         }
 
-        inline static void ClearActorNodeConfigHolder() {
+        inline static void ClearActorNodeHolder() {
             actorNodeConfigHolder.clear();
         }
 
-        inline static void ClearRaceNodeConfigHolder() {
+        inline static void ClearRaceNodeHolder() {
             raceNodeConfigHolder.clear();
         }
 
@@ -663,10 +586,13 @@ namespace CBP
             return configGroupMap;
         }
 
-        inline static void StoreDefaultProfile() {
-            defaultProfileStorage.components = physicsGlobalConfig;
-            defaultProfileStorage.nodes = nodeGlobalConfig;
-            defaultProfileStorage.stored = true;
+        inline static void StoreDefaultProfile() 
+        {
+            defaultProfileStorage = {
+                physicsGlobalConfig,
+                nodeGlobalConfig,
+                true
+            };
         }
 
         [[nodiscard]] inline static auto& GetDefaultProfile() {
@@ -686,7 +612,7 @@ namespace CBP
 
         static void SetArmorOverride(Game::ObjectHandle a_handle, armorOverrideDescriptor_t&& a_entry)
         {
-            armorOverrides.insert_or_assign(a_handle, std::forward<armorOverrideDescriptor_t>(a_entry));
+            armorOverrides.insert_or_assign(a_handle, std::move(a_entry));
         }
 
         [[nodiscard]] static armorOverrideDescriptor_t* GetArmorOverride(Game::ObjectHandle a_handle)
@@ -698,44 +624,48 @@ namespace CBP
             return nullptr;
         }
 
-        inline static bool RemoveArmorOverride(Game::ObjectHandle a_handle) {
+        inline static bool RemoveArmorOverride(Game::ObjectHandle a_handle) noexcept {
             return armorOverrides.erase(a_handle) == 1;
         }
 
-        inline static void ClearArmorOverrides() {
+        inline static void ClearArmorOverrides() noexcept {
             armorOverrides.clear();
         }
 
-        inline static const auto& GetPhysicsTemplateBase() {
+        inline static const auto& GetPhysicsTemplateBase() noexcept {
             return templateBasePhysicsHolder;
         }
 
-        inline static const auto& GetNodeTemplateBase() {
+        inline static const auto& GetNodeTemplateBase() noexcept {
             return templateBaseNodeHolder;
         }
 
         template <typename T, std::enable_if_t<std::is_same<T, configComponents_t>::value, int> = 0>
-        static T& GetTemplateBase()
+        inline static T& GetTemplateBase() noexcept
         {
             return templateBasePhysicsHolder;
         }
 
         template <typename T, std::enable_if_t<std::is_same<T, configNodes_t>::value, int> = 0>
-        static T& GetTemplateBase()
+        inline static T& GetTemplateBase() noexcept
         {
             return templateBaseNodeHolder;
         }
-
+        
         static void Copy(const configComponents_t& a_lhs, configComponents_t& a_rhs);
         static void Copy(const configNodes_t& a_lhs, configNodes_t& a_rhs);
-        
+
         static void CopyBase(const configComponents_t& a_lhs, configComponents_t& a_rhs);
         static void CopyBase(const configNodes_t& a_lhs, configNodes_t& a_rhs);
+
+        inline static void ClearMergedCache() noexcept {
+            mergedConfCache.clear();
+        }
 
     private:
 
         [[nodiscard]] static bool LoadNodeMap(nodeMap_t& a_out);
-        [[nodiscard]] static bool CompatLoadOldConf(configComponents_t& a_out);
+        [[nodiscard]] static bool CompatLoadOld(configComponents_t& a_out);
 
         template <typename T>
         __forceinline static void CopyImpl(const T& a_lhs, T& a_rhs);

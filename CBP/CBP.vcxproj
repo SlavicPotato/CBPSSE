@@ -282,7 +282,8 @@
   </PropertyGroup>
   <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='ReleaseAVX2 MT|x64'">
     <VcpkgConfiguration>Release</VcpkgConfiguration>
-    <VcpkgUseStatic>true</VcpkgUseStatic>
+    <VcpkgUseStatic>false</VcpkgUseStatic>
+    <VcpkgTriplet>x64-windows-avx2-static</VcpkgTriplet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseAVX2 MT W7|x64'" Label="Vcpkg">
     <VcpkgConfiguration>Release</VcpkgConfiguration>
@@ -294,7 +295,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Dep-AVX2|x64'" Label="Vcpkg">
     <VcpkgConfiguration>Release</VcpkgConfiguration>
-    <VcpkgUseStatic>true</VcpkgUseStatic>
+    <VcpkgUseStatic>false</VcpkgUseStatic>
     <VcpkgTriplet>x64-windows-avx2-static</VcpkgTriplet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='IntelRelAvx2MT|x64'" Label="Vcpkg">
@@ -892,8 +893,15 @@
     <ClInclude Include="CBP\SimComponent.h" />
     <ClInclude Include="CBP\UI.h" />
     <ClInclude Include="CBP\Updater.h" />
+    <ClInclude Include="Common\Data.h" />
+    <ClInclude Include="Common\Hash.h" />
+    <ClInclude Include="Common\ProfileManager.h" />
+    <ClInclude Include="Common\Serialization.h" />
+    <ClInclude Include="Common\UICommon.h" />
+    <ClInclude Include="Common\UIData.h" />
     <ClInclude Include="config.h" />
     <ClInclude Include="Drivers\cbp.h" />
+    <ClInclude Include="Drivers\data.h" />
     <ClInclude Include="Drivers\events.h" />
     <ClInclude Include="Drivers\gui.h" />
     <ClInclude Include="Drivers\input.h" />
@@ -916,23 +924,6 @@
     <ClCompile Include="CBP\Data.cpp" />
     <ClCompile Include="CBP\GameEventHandlers.cpp" />
     <ClCompile Include="CBP\Papyrus.cpp" />
-    <ClCompile Include="CBP\Profile.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='IntelRelAvx2MT|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='PreRelease|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dep-IntelAvx2MT|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseAVX2|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseAVX2 MT W7|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dep-AVX2|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='PreReleaseAVX2 MT|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dep-IntelSSE42MT|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseAVX2 MT|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release MT|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dep-Generic|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dep-AVX|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='PreRelease MT|x64'">true</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="CBP\ProfileData.cpp" />
     <ClCompile Include="CBP\Profiling.cpp" />
     <ClCompile Include="CBP\Renderer.cpp" />
@@ -943,9 +934,13 @@
     <ClCompile Include="CBP\UI.cpp" />
     <ClCompile Include="CBP\UIData.cpp" />
     <ClCompile Include="CBP\Updater.cpp" />
+    <ClCompile Include="Common\Serialization.cpp" />
+    <ClCompile Include="Common\UICommon.cpp" />
+    <ClCompile Include="Common\UIData.cpp" />
     <ClCompile Include="config.cpp" />
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="Drivers\cbp.cpp" />
+    <ClCompile Include="Drivers\data.cpp" />
     <ClCompile Include="Drivers\events.cpp" />
     <ClCompile Include="Drivers\gui.cpp" />
     <ClCompile Include="Drivers\input.cpp" />

@@ -150,8 +150,8 @@ namespace CBP
         NiPoint3 m_oldWorldPos;
         NiPoint3 m_velocity;
 
-        NiPoint3 m_initialNodePos;
-        NiMatrix33 m_initialNodeRot;
+        NiTransform m_initialTransform;
+        bool m_hasScaleOverride;
 
         Collider m_collisionData;
 
@@ -294,6 +294,10 @@ namespace CBP
 
         [[nodiscard]] inline auto GetCenterOfMass() const {
             return m_obj->m_worldTransform * m_npCogOffset;
+        }
+        
+        [[nodiscard]] inline float GetNodeScale() const {
+            return m_obj->m_worldTransform.scale;
         }
 
         [[nodiscard]] inline auto& GetCollider() {

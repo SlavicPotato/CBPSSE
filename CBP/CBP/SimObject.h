@@ -86,10 +86,6 @@ namespace CBP
         }
 #endif
 
-        /*[[nodiscard]] inline auto& GetActor() {
-            return m_actor;
-        }*/
-
         [[nodiscard]] inline const NiTransform* GetHeadTransform() const {
             if (m_objHead)
                 return std::addressof(m_objHead->m_worldTransform);
@@ -103,16 +99,20 @@ namespace CBP
             return m_suspended;
         }
 
+        /*[[nodiscard]] __forceinline auto& GetActor() const {
+            return m_actor;
+        }*/
+
     private:
 
         thingMap_t m_things;
-        std::unordered_set<std::string> m_configGroups;
+        stl::iunordered_set<std::string> m_configGroups;
 
         Game::ObjectHandle m_handle;
 
-        //NiPointer<Actor> m_actor;
         NiPointer<NiNode> m_node;
         NiPointer<NiAVObject> m_objHead;
+        //NiPointer<Actor> m_actor;
 
         char m_sex;
 

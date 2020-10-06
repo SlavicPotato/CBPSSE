@@ -12,7 +12,7 @@ namespace CBP
         nodeDescList_t& a_out)
         -> nodeDescList_t::size_type
     {
-        auto& nodeConfig = IConfig::GetActorNodeConfig(a_handle);
+        auto& nodeConfig = IConfig::GetActorNode(a_handle);
 
         for (auto& b : a_nodeMap)
         {
@@ -22,7 +22,7 @@ namespace CBP
             if (!object || !object->m_parent)
                 continue;
 
-            if (!IConfig::IsValidConfigGroup(b.second))
+            if (!IConfig::IsValidGroup(b.second))
                 continue;
 
             auto itn = nodeConfig.find(b.first);
@@ -62,9 +62,7 @@ namespace CBP
         const nodeDescList_t& a_desc)
         :
         m_handle(a_handle),
-#ifndef _CBP_ENABLE_DEBUG
-        m_things(a_desc.size()),
-#endif
+        //m_actor(a_actor),
         m_sex(a_sex),
         m_node(a_actor->loadedState->node),
         m_suspended(false)
@@ -92,7 +90,7 @@ namespace CBP
             m_configGroups.emplace(e.confGroup);
         }
 
-        //m_actor = a_actor;
+        //m_npc = a_actor;
 
         BSFixedString n("NPC Head [Head]");
         m_objHead = a_actor->loadedState->node->GetObjectByName(&n.data);
@@ -122,13 +120,16 @@ namespace CBP
             p.second.UpdateVelocity();
     }
 
-    void SimObject::UpdateConfig(Actor* a_actor, bool a_collisions, const configComponents_t& a_config)
+    void SimObject::UpdateConfig(
+        Actor* a_actor, 
+        bool a_collisions, 
+        const configComponents_t& a_config)
     {
-        auto& nodeConfig = IConfig::GetActorNodeConfig(m_handle);
+        auto& nodeConfig = IConfig::GetActorNode(m_handle);
 
         for (auto& p : m_things)
         {
-            if (!IConfig::IsValidConfigGroup(p.second.GetConfigGroupName()))
+            if (!IConfig::IsValidGroup(p.second.GetConfigGroupName()))
                 continue;
 
             configNode_t nodeConf;
@@ -152,7 +153,10 @@ namespace CBP
         }
     }
 
-    void SimObject::ApplyForce(uint32_t a_steps, const std::string& a_component, const NiPoint3& a_force)
+    void SimObject::ApplyForce(
+        uint32_t a_steps, 
+        const std::string& a_component, 
+        const NiPoint3& a_force)
     {
         for (auto& p : m_things)
             if (p.second.GetConfigGroupName() == a_component)

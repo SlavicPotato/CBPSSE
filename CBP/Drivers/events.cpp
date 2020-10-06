@@ -120,7 +120,7 @@ namespace CBP
     void IEvents::OnLogWrite(char* a_buffer)
     {
         m_Instance.m_backLog.Add(a_buffer);
-        TriggerEvent(OnLogMessage, a_buffer);
+        TriggerEvent(Event::OnLogMessage, a_buffer);
     }
 }
 

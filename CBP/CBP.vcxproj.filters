@@ -55,6 +55,12 @@
     <Filter Include="Installer">
       <UniqueIdentifier>{7bf4bb86-bf0e-4c8b-804a-c74a49dc08e4}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Common">
+      <UniqueIdentifier>{dd6b3026-fea7-4228-a182-5879c849cb3a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Common">
+      <UniqueIdentifier>{95edb7d9-3637-441e-a286-7007bda497ae}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">
@@ -147,6 +153,27 @@
     <ClInclude Include="CBP\SimComponent.h">
       <Filter>Header Files\CBP</Filter>
     </ClInclude>
+    <ClInclude Include="Common\Hash.h">
+      <Filter>Header Files\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Common\ProfileManager.h">
+      <Filter>Header Files\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Common\Serialization.h">
+      <Filter>Header Files\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Common\UICommon.h">
+      <Filter>Header Files\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Common\UIData.h">
+      <Filter>Header Files\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Drivers\data.h">
+      <Filter>Header Files\Drivers</Filter>
+    </ClInclude>
+    <ClInclude Include="Common\Data.h">
+      <Filter>Header Files\Common</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp">
@@ -200,9 +227,6 @@
     <ClCompile Include="CBP\Papyrus.cpp">
       <Filter>Source Files\CBP</Filter>
     </ClCompile>
-    <ClCompile Include="CBP\Profile.cpp">
-      <Filter>Source Files\CBP</Filter>
-    </ClCompile>
     <ClCompile Include="CBP\Profiling.cpp">
       <Filter>Source Files\CBP</Filter>
     </ClCompile>
@@ -241,6 +265,18 @@
     </ClCompile>
     <ClCompile Include="CBP\SimComponent.cpp">
       <Filter>Source Files\CBP</Filter>
+    </ClCompile>
+    <ClCompile Include="Common\Serialization.cpp">
+      <Filter>Source Files\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="Common\UICommon.cpp">
+      <Filter>Source Files\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="Common\UIData.cpp">
+      <Filter>Source Files\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="Drivers\data.cpp">
+      <Filter>Source Files\Drivers</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

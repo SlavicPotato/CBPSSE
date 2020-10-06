@@ -11,8 +11,8 @@ namespace CBP
                 DCBP::DispatchActorTask(
                     DYNAMIC_CAST(form, TESForm, Actor),
                     evn->loaded ?
-                    UTTask::UTTAction::Add :
-                    UTTask::UTTAction::Remove);
+                    ControllerInstruction::Action::AddActor :
+                    ControllerInstruction::Action::RemoveActor);
             }
         }
 
@@ -26,7 +26,7 @@ namespace CBP
             if (evn->reference->formType == Actor::kTypeID) {
                 DCBP::DispatchActorTask(
                     DYNAMIC_CAST(evn->reference, TESObjectREFR, Actor),
-                    UTTask::UTTAction::Add);
+                    ControllerInstruction::Action::AddActor);
             }
         }
 
@@ -64,7 +64,7 @@ namespace CBP
         //gLog.Debug(">>> unequip %X, %X", evn->actor->formID, form->formID);
 
         DCBP::DispatchActorTask(
-            handle, UTTask::UTTAction::UpdateArmorOverride);
+            handle, ControllerInstruction::Action::UpdateArmorOverride);
     }
 
     auto EventHandler::ReceiveEvent(TESEquipEvent* evn, EventDispatcher<TESEquipEvent>*)

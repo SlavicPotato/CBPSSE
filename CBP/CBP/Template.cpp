@@ -38,14 +38,14 @@ namespace CBP
             if (!pt.isString())
                 throw std::exception("Invalid plugin name");
 
-            auto pluginName = pt.asString();
+            std::string pluginName(pt.asString());
             if (!pluginName.size())
                 throw std::exception("Plugin name len == 0");
 
             if (pluginName.size() >= sizeof(ModInfo::name))
                 throw std::exception("Plugin name too long");
 
-            transform(pluginName.begin(), pluginName.end(), pluginName.begin(), ::tolower);
+            //transform(pluginName.begin(), pluginName.end(), pluginName.begin(), ::tolower);
 
             auto& data = root["data"];
 
@@ -79,8 +79,12 @@ namespace CBP
                     if (!it2->isObject())
                         throw std::exception("Unexpected data (2) (expected object)");
 
-                    auto templ = it2.key().asString();
-                    transform(templ.begin(), templ.end(), templ.begin(), ::tolower);
+                    std::string templ(it2.key().asString());
+
+                    if (templ.empty())
+                        throw std::exception("Zero length template name");
+
+                    //transform(templ.begin(), templ.end(), templ.begin(), ::tolower);
 
                     auto& t = (*it2)["target"];
 
@@ -284,16 +288,16 @@ namespace CBP
         if (!GatherPluginData(data))
             return false;
 
-        std::unordered_map<std::string, const modData_t&> mm;
+        stl::iunordered_map<std::string, const modData_t&> mm;
 
-        auto md = IData::GetModList();
+        auto md = DData::GetModList();
 
-        for (const auto &e: md)
+        for (auto &e: md)
         {
-            std::string tmp(e.second.name);
-            transform(tmp.begin(), tmp.end(), tmp.begin(), ::tolower);
+            //std::string tmp(e.second.name);
+            //transform(tmp.begin(), tmp.end(), tmp.begin(), ::tolower);
 
-            mm.emplace(std::move(tmp), e.second);
+            mm.emplace(e.second.name, e.second);
 
             //gLog.Debug(">> %s", modInfo->name);
         }

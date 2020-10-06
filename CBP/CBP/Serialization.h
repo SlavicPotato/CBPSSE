@@ -1,30 +1,25 @@
 #pragma once
 
+namespace Serialization
+{
+    template<>
+    bool Parser<CBP::configComponents_t>::Parse(const Json::Value& a_in, CBP::configComponents_t& a_outData) const;
+    template<>
+    void Parser<CBP::configComponents_t>::Create(const CBP::configComponents_t& a_data, Json::Value& a_out) const;
+
+    template<>
+    bool Parser<CBP::configNodes_t>::Parse(const Json::Value& a_in, CBP::configNodes_t& a_out) const;
+    template<>
+    void Parser<CBP::configNodes_t>::Create(const CBP::configNodes_t& a_data, Json::Value& a_out) const;
+
+    template<>
+    void Parser<CBP::configComponents_t>::GetDefault(CBP::configComponents_t& a_out) const;
+    template<>
+    void Parser<CBP::configNodes_t>::GetDefault(CBP::configNodes_t& a_out) const;
+}
+
 namespace CBP
 {
-    class Parser :
-        virtual protected ILog
-    {
-    public:
-        virtual ~Parser() noexcept = default;
-
-        FN_NAMEPROC("Parser")
-    public:
-        void Create(const configComponents_t& a_in, Json::Value& a_out) const;
-        [[nodiscard]] bool Parse(const Json::Value& a_in, configComponents_t& a_out) const;
-
-        void Create(const configNodes_t& a_in, Json::Value& a_out) const;
-        [[nodiscard]] bool Parse(const Json::Value& a_in, configNodes_t& a_out) const;
-
-        void GetDefault(configComponents_t& a_out) const;
-        void GetDefault(configNodes_t& a_out) const;
-
-    private:
-
-        bool ParseFloatArray(const Json::Value& a_in, float* a_out, size_t a_size) const;
-        bool ParseVersion(const Json::Value& a_in, const char *a_key, uint32_t& a_out) const;
-    };
-
     struct importInfo_t
     {
         size_t numActors;
@@ -37,9 +32,13 @@ namespace CBP
     {
     public:
 
-        static constexpr uint8_t IMPORT_GLOBAL = 1 << 0;
-        static constexpr uint8_t IMPORT_ACTORS = 1 << 1;
-        static constexpr uint8_t IMPORT_RACES = 1 << 2;
+        enum class ImportFlags : uint8_t
+        {
+            None = 0,
+            Global = 1 << 0,
+            Actors = 1 << 1,
+            Races = 1 << 2,
+        };
 
         enum Group : uint8_t
         {
@@ -66,10 +65,10 @@ namespace CBP
         void LoadCollisionGroups();
         bool SaveCollisionGroups();
 
-        bool Import(SKSESerializationInterface* intfc, const fs::path& a_path, uint8_t a_flags);
+        bool Import(SKSESerializationInterface* intfc, const fs::path& a_path, ImportFlags a_flags);
         bool Export(const fs::path& a_path);
 
-        bool ImportGetInfo(const fs::path& a_path, importInfo_t& a_out) const;
+        bool GetImportInfo(const fs::path& a_path, importInfo_t& a_out) const;
 
         inline void MarkForSave(Group a_grp) {
             m_pendingSave[a_grp] = true;
@@ -99,9 +98,6 @@ namespace CBP
 
         size_t _LoadGlobalProfile(const Json::Value& a_root);
 
-        [[nodiscard]] bool ReadJsonData(const std::filesystem::path& a_path, Json::Value& a_out) const;
-        void WriteJsonData(const std::filesystem::path& a_path, const Json::Value& a_root) const;
-
         except::descriptor m_lastException;
 
         template <typename T>
@@ -118,7 +114,9 @@ namespace CBP
 
         bool m_pendingSave[Group::kNumGroups];
 
-        Parser m_componentParser;
-        Parser m_nodeParser;
+        Serialization::Parser<configComponents_t> m_componentParser;
+        Serialization::Parser<configNodes_t> m_nodeParser;
     };
+
+    DEFINE_ENUM_CLASS_BITWISE(ISerialization::ImportFlags);
 }

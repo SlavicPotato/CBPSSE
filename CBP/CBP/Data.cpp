@@ -5,11 +5,9 @@ namespace CBP
     IData::raceList_t IData::raceList;
     IData::actorRefMap_t IData::actorNpcMap;
     IData::actorCache_t IData::actorCache;
-    Game::ObjectHandle IData::crosshairRef = 0;
+    SelectedItem<Game::ObjectHandle> IData::crosshairRef = 0;
     uint64_t IData::actorCacheUpdateId = 1;
     armorCache_t IData::armorCache;
-
-    std::map<UInt32, modData_t> IData::modList;
 
     except::descriptor IData::lastException;
 
@@ -39,6 +37,7 @@ namespace CBP
             tmp.npc = npc->formID;
             tmp.sex = CALL_MEMBER_FN(npc, GetSex)();
             tmp.baseflags = npc->flags;
+            tmp.weight = npc->weight;
 
             actorNpcMap.insert_or_assign(
                 a_handle, std::move(tmp));
@@ -70,12 +69,14 @@ namespace CBP
                 Game::FormID(0);
             a_out.female = it->second.sex == 1;
             a_out.baseflags = it->second.baseflags;
+            a_out.weight = it->second.weight;
         }
         else {
             a_out.race = Game::FormID(0);
             a_out.base = Game::FormID(0);
             a_out.female = false;
             a_out.baseflags = 0;
+            a_out.weight = 0.0f;
         }
 
         a_out.name = ss.str();
@@ -100,11 +101,13 @@ namespace CBP
             a_out.base = npc->formID;
             a_out.female = CALL_MEMBER_FN(npc, GetSex)() == 1;
             a_out.baseflags = npc->flags;
+            a_out.weight = npc->weight;
         }
         else {
             a_out.base = Game::FormID(0);
             a_out.female = false;
             a_out.baseflags = 0;
+            a_out.weight = 0.0f;
         }
 
         a_out.name = ss.str();
@@ -132,7 +135,7 @@ namespace CBP
     void IData::UpdateActorCache(const simActorList_t& a_list)
     {
         actorCache.clear();
-        crosshairRef = 0;
+        crosshairRef.Clear();
 
         for (const auto& e : a_list)
         {
@@ -148,10 +151,10 @@ namespace CBP
             actorCache.emplace(e.first, std::move(tmp));
         }
 
-        for (const auto& e : IConfig::GetActorPhysicsConfigHolder())
+        for (const auto& e : IConfig::GetActorPhysicsHolder())
             AddExtraActorEntry(e.first);
 
-        for (const auto& e : IConfig::GetActorNodeConfigHolder())
+        for (const auto& e : IConfig::GetActorNodeHolder())
             AddExtraActorEntry(e.first);
 
         auto refHolder = CrosshairRefHandleHolder::GetSingleton();
@@ -216,31 +219,6 @@ namespace CBP
         return true;
     }
 
-    bool IData::PopulateModList()
-    {
-        auto dh = DataHandler::GetSingleton();
-        if (!dh)
-            return false;
-
-        for (auto it = dh->modList.modInfoList.Begin(); !it.End(); ++it)
-        {
-            auto modInfo = it.Get();
-            if (!modInfo)
-                continue;
-
-            if (!modInfo->IsActive())
-                continue;
-
-            modList.try_emplace(it->GetPartialIndex(),
-                modInfo->fileFlags,
-                modInfo->modIndex,
-                modInfo->lightIndex,
-                modInfo->name);
-        }
-
-        return true;
-    }
-
     bool IData::GetActorName(Game::ObjectHandle a_handle, std::string& a_out)
     {
         auto it = actorCache.find(a_handle);
@@ -298,9 +276,9 @@ namespace CBP
                     throw std::exception("Unexpected data");
 
                 std::string configGroup(it1.key().asString());
-                transform(configGroup.begin(), configGroup.end(), configGroup.begin(), ::tolower);
+                //transform(configGroup.begin(), configGroup.end(), configGroup.begin(), ::tolower);
 
-                if (!IConfig::IsValidConfigGroup(configGroup))
+                if (!IConfig::IsValidGroup(configGroup))
                     continue;
 
                 auto& e = entry[configGroup];
@@ -331,7 +309,7 @@ namespace CBP
                         throw std::exception("Value type out of range");
 
                     std::string valName(it2.key().asString());
-                    transform(valName.begin(), valName.end(), valName.begin(), ::tolower);
+                    //transform(valName.begin(), valName.end(), valName.begin(), ::tolower);
 
                     if (!configComponent_t::descMap.contains(valName)) {
                         gLog.Warning("%s: Unknown value name: %s", __FUNCTION__, valName.c_str());

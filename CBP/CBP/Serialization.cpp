@@ -1,8 +1,9 @@
 #include "pch.h"
 
-namespace CBP
+namespace Serialization
 {
-    bool Parser::Parse(const Json::Value& a_in, configComponents_t& a_outData) const
+    template<>
+    bool Parser<CBP::configComponents_t>::Parse(const Json::Value& a_in, CBP::configComponents_t& a_outData) const
     {
         uint32_t version;
         if (!ParseVersion(a_in, "data_version", version)) {
@@ -11,7 +12,7 @@ namespace CBP
         }
 
         if (!a_in.isMember("data"))
-            return false;        
+            return false;
 
         auto& data = a_in["data"];
 
@@ -32,9 +33,9 @@ namespace CBP
                 return false;
             }
 
-            transform(configGroup.begin(), configGroup.end(), configGroup.begin(), ::tolower);
+            //transform(configGroup.begin(), configGroup.end(), configGroup.begin(), ::tolower);
 
-            configComponent_t tmp;
+            auto &e = a_outData.try_emplace(configGroup).first->second;
 
             if (!it1->isNull())
             {
@@ -74,30 +75,30 @@ namespace CBP
                         }
 
                         std::string valName = it2.key().asString();
-                        transform(valName.begin(), valName.end(), valName.begin(), ::tolower);
+                        //transform(valName.begin(), valName.end(), valName.begin(), ::tolower);
 
                         static const std::string m("maxoffset");
                         if (version < 2 && valName == m)
                         {
                             float v = it2->asFloat();
                             float tv[3] = { v, v, v };
-                            tmp.Set("mox", tv, 3);
+                            e.Set("mox", tv, 3);
                         }
                         else
                         {
-                            auto ik = configComponent_t::oldKeyMap.find(valName);
-                            if (ik == configComponent_t::oldKeyMap.end()) {
+                            auto ik = CBP::configComponent_t::oldKeyMap.find(valName);
+                            if (ik == CBP::configComponent_t::oldKeyMap.end()) {
                                 //Warning("(%s) Unknown value: %s", configGroup.c_str(), valName.c_str());
                                 continue;
                             }
 
-                            ASSERT(tmp.Set(ik->second, it2->asFloat()));
+                            ASSERT(e.Set(ik->second, it2->asFloat()));
                         }
                     }
                 }
                 else
                 {
-                    for (const auto& desc : configComponent_t::descMap)
+                    for (auto& desc : CBP::configComponent_t::descMap)
                     {
                         auto& v = (*physData)[desc.first];
 
@@ -108,7 +109,7 @@ namespace CBP
                             continue;
                         }
 
-                        tmp.Set(desc.second, v.asFloat());
+                        e.Set(desc.second, v.asFloat());
                     }
                 }
 
@@ -121,22 +122,21 @@ namespace CBP
                     switch (s)
                     {
                     case 0:
-                        tmp.SetColShape(ColliderShape::Sphere);
+                        e.SetColShape(CBP::ColliderShape::Sphere);
                         break;
                     case 1:
-                        tmp.SetColShape(ColliderShape::Capsule);
+                        e.SetColShape(CBP::ColliderShape::Capsule);
                         break;
                     }
                 }
             }
-
-            a_outData.insert_or_assign(configGroup, std::move(tmp));
         }
 
         return true;
     }
 
-    void Parser::Create(const configComponents_t& a_data, Json::Value& a_out) const
+    template<>
+    void Parser<CBP::configComponents_t>::Create(const CBP::configComponents_t& a_data, Json::Value& a_out) const
     {
         auto& data = a_out["data"];
 
@@ -158,7 +158,8 @@ namespace CBP
         a_out["data_version"] = Json::Value::UInt(3);
     }
 
-    bool Parser::Parse(const Json::Value& a_in, configNodes_t& a_out) const
+    template<>
+    bool Parser<CBP::configNodes_t>::Parse(const Json::Value& a_in, CBP::configNodes_t& a_out) const
     {
         uint32_t version;
         if (!ParseVersion(a_in, "nodes_version", version)) {
@@ -175,18 +176,30 @@ namespace CBP
             return true;
 
         if (!data.isObject()) {
-            Error("Expected an object");
+            Error("root: expected an object");
             return false;
         }
 
         for (auto it = data.begin(); it != data.end(); ++it)
         {
-            if (!it->isObject())
+            if (it->empty())
                 continue;
+
+            if (!it->isObject()) 
+            {
+                Error("Node entry not an object");
+                continue;
+            }
 
             std::string k(it.key().asString());
 
-            auto& nc = a_out[k];
+            if (k.empty())
+            {
+                Error("Zero length node name");
+                return false;
+            }
+
+            auto& nc = a_out.try_emplace(k).first->second;
 
             if (version < 1)
             {
@@ -237,17 +250,22 @@ namespace CBP
                         return false;
                     }
                 }
+
+                nc.nodeScale = std::clamp(it->get("s", 1.0f).asFloat(), 0.0f, 20.0f);
+                nc.overrideScale = it->get("o", false).asBool();
             }
         }
 
         return true;
     }
 
-    void Parser::Create(const configNodes_t& a_data, Json::Value& a_out) const
+    template<>
+    void Parser<CBP::configNodes_t>::Create(const CBP::configNodes_t& a_data, Json::Value& a_out) const
     {
         auto& data = a_out["nodes"];
 
-        for (const auto& e : a_data) {
+        for (const auto& e : a_data) 
+        {
             auto& n = data[e.first];
 
             n["fm"] = e.second.femaleMovement;
@@ -266,58 +284,30 @@ namespace CBP
             offmax[0] = e.second.colOffsetMax[0];
             offmax[1] = e.second.colOffsetMax[1];
             offmax[2] = e.second.colOffsetMax[2];
+
+            n["s"] = e.second.nodeScale;
+            n["o"] = e.second.overrideScale;
         }
 
         a_out["nodes_version"] = Json::Value::UInt(1);
     }
 
-    void Parser::GetDefault(configComponents_t& a_out) const
+    template<>
+    void Parser<CBP::configComponents_t>::GetDefault(CBP::configComponents_t& a_out) const
     {
-        a_out = IConfig::GetTemplateBase<configComponents_t>();
+        a_out = CBP::IConfig::GetTemplateBase<CBP::configComponents_t>();
     }
 
-    void Parser::GetDefault(configNodes_t& a_out) const
+    template<>
+    void Parser<CBP::configNodes_t>::GetDefault(CBP::configNodes_t& a_out) const
     {
-        a_out = IConfig::GetTemplateBase<configNodes_t>();
+        a_out = CBP::IConfig::GetTemplateBase<CBP::configNodes_t>();
     }
+}
 
-    bool Parser::ParseFloatArray(const Json::Value& a_in, float* a_out, size_t a_size) const
-    {
-        if (!a_in.isArray())
-            return false;
-
-        if (a_in.size() != a_size)
-            return false;
-
-        for (uint32_t i = 0; i < a_size; i++) 
-        {
-            auto& v = a_in[i];
-
-            if (!v.isNumeric())
-                return false;
-
-            a_out[i] = v.asFloat();
-        }
-
-        return true;
-    }
-
-    bool Parser::ParseVersion(const Json::Value& a_in, const char *a_key, uint32_t &a_out) const
-    {
-        if (a_in.isMember(a_key))
-        {
-            auto& v = a_in[a_key];
-
-            if (!v.isNumeric())
-                return false;
-            
-            a_out = static_cast<uint32_t>(v.asUInt());
-        }
-        else
-            a_out = 0;
-
-        return true;
-    }
+namespace CBP
+{
+    using namespace Serialization;
 
     void ISerialization::LoadGlobalConfig()
     {
@@ -408,9 +398,9 @@ namespace CBP
                                 continue;
 
                             std::string key(it.key().asString());
-                            transform(key.begin(), key.end(), key.begin(), ::tolower);
+                            //transform(key.begin(), key.end(), key.begin(), ::tolower);
 
-                            if (!IConfig::IsValidConfigGroup(key))
+                            if (!IConfig::IsValidGroup(key))
                                 continue;
 
                             auto& e = globalConfig.ui.forceActor[key];
@@ -429,7 +419,7 @@ namespace CBP
                     if (forceSelected.isString())
                     {
                         std::string v(ui.get("forceSelected", "").asString());
-                        transform(v.begin(), v.end(), v.begin(), ::tolower);
+                        //transform(v.begin(), v.end(), v.begin(), ::tolower);
 
                         globalConfig.ui.forceActorSelected = std::move(v);
                     }
@@ -463,7 +453,7 @@ namespace CBP
 
                                 std::string k(it2.key().asString());
 
-                                if (!IConfig::IsValidConfigGroup(k))
+                                if (!IConfig::IsValidGroup(k))
                                     continue;
 
                                 auto& me = mm[k];
@@ -475,7 +465,7 @@ namespace CBP
 
                                     k = it3.key().asString();
 
-                                    if (!IConfig::IsValidConfigGroup(k))
+                                    if (!IConfig::IsValidGroup(k))
                                         continue;
 
                                     me[k] = it3->asBool();
@@ -485,21 +475,7 @@ namespace CBP
                     }
                 }
 
-                if (ui.isMember("colStates")) {
-                    auto& colStates = ui["colStates"];
-
-                    if (colStates.isObject()) {
-                        for (auto it = colStates.begin(); it != colStates.end(); ++it)
-                        {
-                            if (!it->isBool())
-                                continue;
-
-                            std::string k(it.key().asString());
-
-                            globalConfig.ui.colStates[k] = it->asBool();
-                        }
-                    }
-                }
+                globalConfig.ui.colStates.Parse(ui["colStates"]);
             }
 
             if (root.isMember("debugRenderer")) {
@@ -518,7 +494,7 @@ namespace CBP
                 }
             }
 
-            IConfig::SetGlobalConfig(std::move(globalConfig));
+            IConfig::SetGlobal(std::move(globalConfig));
         }
         catch (const std::exception& e)
         {
@@ -531,7 +507,7 @@ namespace CBP
     {
         try
         {
-            auto& globalConfig = IConfig::GetGlobalConfig();
+            auto& globalConfig = IConfig::GetGlobal();
 
             Json::Value root;
 
@@ -613,11 +589,7 @@ namespace CBP
                 }
             }
 
-            auto& colStates = ui["colStates"];
-            for (const auto& e : globalConfig.ui.colStates)
-            {
-                colStates[e.first] = e.second;
-            }
+            globalConfig.ui.colStates.Create(ui["colStates"]);
 
             auto& debugRenderer = root["debugRenderer"];
 
@@ -760,7 +732,7 @@ namespace CBP
             configComponents_t componentData;
 
             if (m_componentParser.Parse(a_root, componentData))
-                IConfig::SetGlobalPhysicsConfig(std::move(componentData));
+                IConfig::SetGlobalPhysics(std::move(componentData));
 
             c++;
         }
@@ -774,7 +746,7 @@ namespace CBP
             configNodes_t nodeData;
 
             if (m_nodeParser.Parse(a_root, nodeData))
-                IConfig::SetGlobalNodeConfig(std::move(nodeData));
+                IConfig::SetGlobalNode(std::move(nodeData));
 
             c++;
         }
@@ -988,7 +960,7 @@ namespace CBP
             size_t res = _LoadActorProfiles(intfc, root, actorConfigComponents, actorConfigNodes);
 
             IConfig::SetActorPhysicsConfigHolder(std::move(actorConfigComponents));
-            IConfig::SetActorNodeConfigHolder(std::move(actorConfigNodes));
+            IConfig::SetActorNodeHolder(std::move(actorConfigNodes));
 
             return res;
         }
@@ -1016,7 +988,7 @@ namespace CBP
         }
     }
 
-    bool ISerialization::ImportGetInfo(const fs::path& a_path, importInfo_t& a_out) const
+    bool ISerialization::GetImportInfo(const fs::path& a_path, importInfo_t& a_out) const
     {
         try
         {
@@ -1036,7 +1008,7 @@ namespace CBP
         }
     }
 
-    bool ISerialization::Import(SKSESerializationInterface* intfc, const fs::path& a_path, uint8_t a_flags)
+    bool ISerialization::Import(SKSESerializationInterface* intfc, const fs::path& a_path, ImportFlags a_flags)
     {
         try
         {
@@ -1052,13 +1024,14 @@ namespace CBP
             configComponents_t globalComponentData;
             configNodes_t globalNodeData;
 
-            if (a_flags & IMPORT_ACTORS)
+            if ((a_flags & ImportFlags::Actors) == ImportFlags::Actors)
                 _LoadActorProfiles(intfc, root["actors"], actorConfigComponents, actorConfigNodes);
 
-            if (a_flags & IMPORT_RACES)
+            if ((a_flags & ImportFlags::Races) == ImportFlags::Races)
                 _LoadRaceProfiles(intfc, root["races"], raceConfigComponents, raceConfigNodes);
 
-            if (a_flags & IMPORT_GLOBAL) {
+            if ((a_flags & ImportFlags::Global) == ImportFlags::Global)
+            {
                 if (!m_componentParser.Parse(root["global"], globalComponentData))
                     throw std::exception("Error while parsing global component data");
 
@@ -1066,19 +1039,22 @@ namespace CBP
                     throw std::exception("Error while parsing global node data");
             }
 
-            if (a_flags & IMPORT_ACTORS) {
+            if ((a_flags & ImportFlags::Actors) == ImportFlags::Actors) 
+            {
                 IConfig::SetActorPhysicsConfigHolder(std::move(actorConfigComponents));
-                IConfig::SetActorNodeConfigHolder(std::move(actorConfigNodes));
+                IConfig::SetActorNodeHolder(std::move(actorConfigNodes));
             }
 
-            if (a_flags & IMPORT_RACES) {
-                IConfig::SetRacePhysicsConfigHolder(std::move(raceConfigComponents));
-                IConfig::SetRaceNodeConfigHolder(std::move(raceConfigNodes));
+            if ((a_flags & ImportFlags::Races) == ImportFlags::Races) 
+            {
+                IConfig::SetRacePhysicsHolder(std::move(raceConfigComponents));
+                IConfig::SetRaceNodeHolder(std::move(raceConfigNodes));
             }
 
-            if (a_flags & IMPORT_GLOBAL) {
-                IConfig::SetGlobalPhysicsConfig(std::move(globalComponentData));
-                IConfig::SetGlobalNodeConfig(std::move(globalNodeData));
+            if ((a_flags & ImportFlags::Global) == ImportFlags::Global) 
+            {
+                IConfig::SetGlobalPhysics(std::move(globalComponentData));
+                IConfig::SetGlobalNode(std::move(globalNodeData));
             }
 
             return true;
@@ -1099,32 +1075,32 @@ namespace CBP
 
             auto& actors = root["actors"];
 
-            for (const auto& e : IConfig::GetActorPhysicsConfigHolder()) {
+            for (const auto& e : IConfig::GetActorPhysicsHolder()) {
                 auto& actor = actors[std::to_string(e.first)];
                 m_componentParser.Create(e.second, actor);
             }
 
-            for (const auto& e : IConfig::GetActorNodeConfigHolder()) {
+            for (const auto& e : IConfig::GetActorNodeHolder()) {
                 auto& actor = actors[std::to_string(e.first)];
                 m_nodeParser.Create(e.second, actor);
             }
 
             auto& races = root["races"];
 
-            for (const auto& e : IConfig::GetRacePhysicsConfigHolder()) {
+            for (const auto& e : IConfig::GetRacePhysicsHolder()) {
                 auto& race = races[std::to_string(e.first)];
                 m_componentParser.Create(e.second, race);
             }
 
-            for (const auto& e : IConfig::GetRaceNodeConfigHolder()) {
+            for (const auto& e : IConfig::GetRaceNodeHolder()) {
                 auto& race = races[std::to_string(e.first)];
                 m_nodeParser.Create(e.second, race);
             }
 
             auto& global = root["global"];
 
-            m_componentParser.Create(IConfig::GetGlobalPhysicsConfig(), global);
-            m_nodeParser.Create(IConfig::GetGlobalNodeConfig(), global);
+            m_componentParser.Create(IConfig::GetGlobalPhysics(), global);
+            m_nodeParser.Create(IConfig::GetGlobalNode(), global);
 
             WriteJsonData(a_path, root);
 
@@ -1151,8 +1127,8 @@ namespace CBP
 
             size_t res = _LoadRaceProfiles(intfc, root, raceConfigComponents, raceConfigNodes);
 
-            IConfig::SetRacePhysicsConfigHolder(std::move(raceConfigComponents));
-            IConfig::SetRaceNodeConfigHolder(std::move(raceConfigNodes));
+            IConfig::SetRacePhysicsHolder(std::move(raceConfigComponents));
+            IConfig::SetRaceNodeHolder(std::move(raceConfigNodes));
 
             return res;
         }
@@ -1170,12 +1146,12 @@ namespace CBP
         {
             Json::Value root;
 
-            for (const auto& e : IConfig::GetActorPhysicsConfigHolder()) {
+            for (const auto& e : IConfig::GetActorPhysicsHolder()) {
                 auto& actor = root[std::to_string(e.first)];
                 m_componentParser.Create(e.second, actor);
             }
 
-            for (const auto& e : IConfig::GetActorNodeConfigHolder()) {
+            for (const auto& e : IConfig::GetActorNodeHolder()) {
                 auto& actor = root[std::to_string(e.first)];
                 m_nodeParser.Create(e.second, actor);
             }
@@ -1198,12 +1174,12 @@ namespace CBP
         {
             Json::Value root;
 
-            for (const auto& e : IConfig::GetRacePhysicsConfigHolder()) {
+            for (const auto& e : IConfig::GetRacePhysicsHolder()) {
                 auto& race = root[std::to_string(e.first)];
                 m_componentParser.Create(e.second, race);
             }
 
-            for (const auto& e : IConfig::GetRaceNodeConfigHolder()) {
+            for (const auto& e : IConfig::GetRaceNodeHolder()) {
                 auto& actor = root[std::to_string(e.first)];
                 m_nodeParser.Create(e.second, actor);
             }
@@ -1226,8 +1202,8 @@ namespace CBP
         {
             Json::Value root;
 
-            m_componentParser.Create(IConfig::GetGlobalPhysicsConfig(), root);
-            m_nodeParser.Create(IConfig::GetGlobalNodeConfig(), root);
+            m_componentParser.Create(IConfig::GetGlobalPhysics(), root);
+            m_nodeParser.Create(IConfig::GetGlobalNode(), root);
 
             a_out << root;
 
@@ -1247,8 +1223,8 @@ namespace CBP
         {
             Json::Value root;
 
-            m_componentParser.Create(IConfig::GetGlobalPhysicsConfig(), root);
-            m_nodeParser.Create(IConfig::GetGlobalNodeConfig(), root);
+            m_componentParser.Create(IConfig::GetGlobalPhysics(), root);
+            m_nodeParser.Create(IConfig::GetGlobalNode(), root);
 
             auto& driverConf = DCBP::GetDriverConfig();
 
@@ -1264,42 +1240,7 @@ namespace CBP
         }
     }
 
-    bool ISerialization::ReadJsonData(const fs::path& a_path, Json::Value& a_root) const
-    {
-        if (!fs::exists(a_path) || !fs::is_regular_file(a_path))
-            return false;
-
-        std::ifstream ifs;
-
-        ifs.open(a_path, std::ifstream::in | std::ifstream::binary);
-        if (!ifs.is_open())
-            throw std::exception("Could not open file for reading");
-
-        ifs >> a_root;
-
-        return true;
-    }
-
-    void ISerialization::WriteJsonData(const fs::path& a_path, const Json::Value& a_root) const
-    {
-        auto base = a_path.parent_path();
-
-        if (!fs::exists(base)) {
-            if (!fs::create_directories(base))
-                throw std::exception("Couldn't create profile directory");
-        }
-        else if (!fs::is_directory(base))
-            throw std::exception("Root path is not a directory");
-
-        std::ofstream ofs;
-        ofs.open(a_path, std::ofstream::out | std::ofstream::binary | std::ofstream::trunc);
-        if (!ofs.is_open()) {
-            throw std::exception("Could not open file for writing");
-        }
-
-        ofs << a_root << std::endl;
-    }
-
+    
     bool ISerialization::SavePending()
     {
         bool failed = false;

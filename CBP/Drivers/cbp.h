@@ -101,8 +101,8 @@ namespace CBP
         static void OnCreateArmorNode(TESObjectREFR* a_ref, BipedParam* a_params);
         static NiAVObject* CreateArmorNode_Hook(NiAVObject* a_obj, Biped* a_info, BipedParam* a_params);
 
-        static void DispatchActorTask(Actor* actor, UTTask::UTTAction action);
-        static void DispatchActorTask(Game::ObjectHandle handle, UTTask::UTTAction action);
+        static void DispatchActorTask(Actor* actor, ControllerInstruction::Action action);
+        static void DispatchActorTask(Game::ObjectHandle handle, ControllerInstruction::Action action);
 
         [[nodiscard]] inline static const auto& GetSimActorList() {
             return m_Instance.m_updateTask.GetSimActorList();
@@ -150,8 +150,8 @@ namespace CBP
         }
 
         static bool ExportData(const std::filesystem::path& a_path);
-        static bool ImportData(const std::filesystem::path& a_path, uint8_t a_flags);
-        static bool ImportGetInfo(const std::filesystem::path& a_path, importInfo_t& a_out);
+        static bool ImportData(const std::filesystem::path& a_path, ISerialization::ImportFlags a_flags);
+        static bool GetImportInfo(const std::filesystem::path& a_path, importInfo_t& a_out);
 
         [[nodiscard]] inline static const auto& GetLastSerializationException() {
             return m_Instance.m_serialization.GetLastException();
@@ -285,7 +285,7 @@ namespace CBP
         UIContext m_uiContext;
         uint32_t m_loadInstance;
 
-        UpdateTask m_updateTask;
+        ControllerTask m_updateTask;
         ToggleUITask m_taskToggle;
         UpdateActorCacheTask m_updateActorCacheTask;
 

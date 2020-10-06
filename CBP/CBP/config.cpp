@@ -64,7 +64,7 @@ namespace CBP
                 if (configGroup.empty())
                     throw std::exception("Zero length config group string");
 
-                transform(configGroup.begin(), configGroup.end(), configGroup.begin(), ::tolower);
+                //transform(configGroup.begin(), configGroup.end(), configGroup.begin(), ::tolower);
 
                 for (auto& v : *it)
                 {
@@ -93,7 +93,7 @@ namespace CBP
         return false;
     }
 
-    bool IConfig::CompatLoadOldConf(configComponents_t& a_out)
+    bool IConfig::CompatLoadOld(configComponents_t& a_out)
     {
         try
         {
@@ -125,13 +125,13 @@ namespace CBP
                     std::string sect(tok0);
                     std::string key(tok1);
 
-                    transform(sect.begin(), sect.end(), sect.begin(), ::tolower);
+                    //transform(sect.begin(), sect.end(), sect.begin(), ::tolower);
 
                     auto it = a_out.find(sect);
                     if (it == a_out.end())
                         continue;
 
-                    transform(key.begin(), key.end(), key.begin(), ::tolower);
+                    //transform(key.begin(), key.end(), key.begin(), ::tolower);
 
                     static const std::string rot("rotational");
 
@@ -156,10 +156,7 @@ namespace CBP
 
     void IConfig::Initialize()
     {
-        nodeMap_t nm;
-        if (LoadNodeMap(nm))
-            nodeMap = std::move(nm);
-        else
+        if (!LoadNodeMap(nodeMap))
             nodeMap = defaultNodeMap;
 
         validConfGroups.clear();
@@ -170,9 +167,9 @@ namespace CBP
 
         for (const auto& v : nodeMap) 
         {
-            validConfGroups.insert(v.second);
+            validConfGroups.emplace(v.second);
             templateBaseNodeHolder.try_emplace(v.first);
-            configGroupMap[v.second].push_back(v.first);
+            configGroupMap[v.second].emplace_back(v.first);
         }
 
         for (const auto& v : validConfGroups)
@@ -181,19 +178,17 @@ namespace CBP
             physicsGlobalConfig.try_emplace(v);
         }
 
-        configComponents_t cc(physicsGlobalConfig);
-        if (CompatLoadOldConf(cc))
-            physicsGlobalConfig = std::move(cc);
+        /*configComponents_t cc(physicsGlobalConfig);
+        if (CompatLoadOld(cc))
+            physicsGlobalConfig = std::move(cc);*/
 
         //physicsGlobalConfigDefaults = physicsGlobalConfig;
     }
 
-    ConfigClass IConfig::GetActorPhysicsConfigClass(Game::ObjectHandle a_handle)
+    ConfigClass IConfig::GetActorPhysicsClass(Game::ObjectHandle a_handle)
     {
         if (actorConfHolder.find(a_handle) != actorConfHolder.end())
             return ConfigClass::kConfigActor;
-
-        std::pair<bool, Game::FormID> race;
 
         auto ac = IData::GetActorRefInfo(a_handle);
 
@@ -212,7 +207,7 @@ namespace CBP
         return ConfigClass::kConfigGlobal;
     }
 
-    ConfigClass IConfig::GetActorNodeConfigClass(Game::ObjectHandle a_handle)
+    ConfigClass IConfig::GetActorNodeClass(Game::ObjectHandle a_handle)
     {
         if (actorNodeConfigHolder.find(a_handle) != actorNodeConfigHolder.end())
             return ConfigClass::kConfigActor;
@@ -232,14 +227,14 @@ namespace CBP
         return ConfigClass::kConfigGlobal;
     }
 
-    void IConfig::SetActorPhysicsConfig(Game::ObjectHandle a_handle, const configComponents_t& a_conf)
+    void IConfig::SetActorPhysics(Game::ObjectHandle a_handle, const configComponents_t& a_conf)
     {
         actorConfHolder.insert_or_assign(a_handle, a_conf);
     }
 
-    void IConfig::SetActorPhysicsConfig(Game::ObjectHandle a_handle, configComponents_t&& a_conf)
+    void IConfig::SetActorPhysics(Game::ObjectHandle a_handle, configComponents_t&& a_conf)
     {
-        actorConfHolder.insert_or_assign(a_handle, std::forward<configComponents_t>(a_conf));
+        actorConfHolder.insert_or_assign(a_handle, std::move(a_conf));
     }
 
     uint64_t IConfig::GetNodeCollisionGroupId(const std::string& a_node) {
@@ -250,9 +245,9 @@ namespace CBP
         return 0;
     }
 
-    bool IConfig::GetGlobalNodeConfig(const std::string& a_node, configNode_t& a_out)
+    bool IConfig::GetGlobalNode(const std::string& a_node, configNode_t& a_out)
     {
-        auto& nodeConfig = GetGlobalNodeConfig();
+        auto& nodeConfig = GetGlobalNode();
 
         auto it = nodeConfig.find(a_node);
         if (it != nodeConfig.end()) {
@@ -263,7 +258,7 @@ namespace CBP
         return false;
     }
 
-    const configNodes_t& IConfig::GetActorNodeConfig(Game::ObjectHandle a_handle)
+    const configNodes_t& IConfig::GetActorNode(Game::ObjectHandle a_handle)
     {
         auto it = actorNodeConfigHolder.find(a_handle);
         if (it != actorNodeConfigHolder.end())
@@ -283,20 +278,20 @@ namespace CBP
                 return profile->Data();
         }
 
-        return IConfig::GetGlobalNodeConfig();
+        return IConfig::GetGlobalNode();
     }
 
-    const configNodes_t& IConfig::GetRaceNodeConfig(Game::FormID a_formid)
+    const configNodes_t& IConfig::GetRaceNode(Game::FormID a_formid)
     {
         auto it = raceNodeConfigHolder.find(a_formid);
         if (it != raceNodeConfigHolder.end()) {
             return it->second;
         }
 
-        return IConfig::GetGlobalNodeConfig();
+        return IConfig::GetGlobalNode();
     }
 
-    configNodes_t& IConfig::GetOrCreateActorNodeConfig(Game::ObjectHandle a_handle)
+    configNodes_t& IConfig::GetOrCreateActorNode(Game::ObjectHandle a_handle)
     {
         auto it = actorNodeConfigHolder.find(a_handle);
         if (it != actorNodeConfigHolder.end())
@@ -316,23 +311,23 @@ namespace CBP
                 return (actorNodeConfigHolder[a_handle] = profile->Data());
         }
 
-        return (actorNodeConfigHolder[a_handle] = GetGlobalNodeConfig());
+        return (actorNodeConfigHolder[a_handle] = GetGlobalNode());
     }
 
-    configNodes_t& IConfig::GetOrCreateRaceNodeConfig(Game::FormID a_formid)
+    configNodes_t& IConfig::GetOrCreateRaceNode(Game::FormID a_formid)
     {
         auto it = raceNodeConfigHolder.find(a_formid);
         if (it != raceNodeConfigHolder.end()) {
             return it->second;
         }
 
-        return (raceNodeConfigHolder[a_formid] = IConfig::GetGlobalNodeConfig());
+        return (raceNodeConfigHolder[a_formid] = IConfig::GetGlobalNode());
     }
 
 
-    bool IConfig::GetActorNodeConfig(Game::ObjectHandle a_handle, const std::string& a_node, configNode_t& a_out)
+    bool IConfig::GetActorNode(Game::ObjectHandle a_handle, const std::string& a_node, configNode_t& a_out)
     {
-        auto& nodeConfig = GetActorNodeConfig(a_handle);
+        auto& nodeConfig = GetActorNode(a_handle);
 
         auto it = nodeConfig.find(a_node);
         if (it != nodeConfig.end()) {
@@ -343,27 +338,27 @@ namespace CBP
         return false;
     }
 
-    void IConfig::SetActorNodeConfig(Game::ObjectHandle a_handle, const configNodes_t& a_conf)
+    void IConfig::SetActorNode(Game::ObjectHandle a_handle, const configNodes_t& a_conf)
     {
         actorNodeConfigHolder.insert_or_assign(a_handle, a_conf);
     }
 
-    void IConfig::SetActorNodeConfig(Game::ObjectHandle a_handle, configNodes_t&& a_conf)
+    void IConfig::SetActorNode(Game::ObjectHandle a_handle, configNodes_t&& a_conf)
     {
-        actorNodeConfigHolder.insert_or_assign(a_handle, std::forward<configNodes_t>(a_conf));
+        actorNodeConfigHolder.insert_or_assign(a_handle, std::move(a_conf));
     }
 
-    void IConfig::SetRaceNodeConfig(Game::FormID a_handle, const configNodes_t& a_conf)
+    void IConfig::SetRaceNode(Game::FormID a_handle, const configNodes_t& a_conf)
     {
         raceNodeConfigHolder.insert_or_assign(a_handle, a_conf);
     }
 
-    void IConfig::SetRaceNodeConfig(Game::FormID a_handle, configNodes_t&& a_conf)
+    void IConfig::SetRaceNode(Game::FormID a_handle, configNodes_t&& a_conf)
     {
-        raceNodeConfigHolder.insert_or_assign(a_handle, std::forward<configNodes_t>(a_conf));
+        raceNodeConfigHolder.insert_or_assign(a_handle, std::move(a_conf));
     }
 
-    configComponents_t& IConfig::GetOrCreateActorPhysicsConfig(Game::ObjectHandle a_handle)
+    configComponents_t& IConfig::GetOrCreateActorPhysics(Game::ObjectHandle a_handle)
     {
         auto ita = actorConfHolder.find(a_handle);
         if (ita != actorConfHolder.end())
@@ -387,7 +382,7 @@ namespace CBP
         return (actorConfHolder[a_handle] = physicsGlobalConfig);
     }
 
-    const configComponents_t& IConfig::GetActorPhysicsConfig(Game::ObjectHandle a_handle)
+    const configComponents_t& IConfig::GetActorPhysics(Game::ObjectHandle a_handle)
     {
         auto ita = actorConfHolder.find(a_handle);
         if (ita != actorConfHolder.end())
@@ -410,9 +405,9 @@ namespace CBP
         return physicsGlobalConfig;
     }
 
-    const configComponents_t& IConfig::GetActorPhysicsConfigAO(Game::ObjectHandle handle)
+    const configComponents_t& IConfig::GetActorPhysicsAO(Game::ObjectHandle handle)
     {
-        auto& conf = GetActorPhysicsConfig(handle);
+        auto& conf = GetActorPhysics(handle);
 
         auto it = armorOverrides.find(handle);
         if (it == armorOverrides.end())
@@ -442,7 +437,7 @@ namespace CBP
         return me;
     }
 
-    configComponents_t& IConfig::GetOrCreateRacePhysicsConfig(Game::FormID a_formid)
+    configComponents_t& IConfig::GetOrCreateRacePhysics(Game::FormID a_formid)
     {
         auto it = raceConfHolder.find(a_formid);
         if (it != raceConfHolder.end()) {
@@ -452,24 +447,23 @@ namespace CBP
         return (raceConfHolder[a_formid] = physicsGlobalConfig);
     }
 
-    const configComponents_t& IConfig::GetRacePhysicsConfig(Game::FormID a_formid)
+    const configComponents_t& IConfig::GetRacePhysics(Game::FormID a_formid)
     {
         auto it = raceConfHolder.find(a_formid);
-        if (it != raceConfHolder.end()) {
+        if (it != raceConfHolder.end())
             return it->second;
-        }
-
+        
         return physicsGlobalConfig;
     }
 
-    void IConfig::SetRacePhysicsConfig(Game::FormID a_handle, const configComponents_t& a_conf)
+    void IConfig::SetRacePhysics(Game::FormID a_handle, const configComponents_t& a_conf)
     {
         raceConfHolder.insert_or_assign(a_handle, a_conf);
     }
 
-    void IConfig::SetRacePhysicsConfig(Game::FormID a_handle, configComponents_t&& a_conf)
+    void IConfig::SetRacePhysics(Game::FormID a_handle, configComponents_t&& a_conf)
     {
-        raceConfHolder.insert_or_assign(a_handle, std::forward<configComponents_t>(a_conf));
+        raceConfHolder.insert_or_assign(a_handle, std::move(a_conf));
     }
 
     void IConfig::Copy(const configComponents_t& a_lhs, configComponents_t& a_rhs)

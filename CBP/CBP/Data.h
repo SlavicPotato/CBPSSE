@@ -28,6 +28,7 @@ namespace CBP
         Game::FormID race;
         bool female;
         UInt32 baseflags;
+        float weight;
     };
 
     struct activeCache_t
@@ -41,66 +42,13 @@ namespace CBP
         std::pair<bool, Game::FormID> race;
         char sex;
         UInt32 baseflags;
+        float weight;
     };
 
-    struct modData_t
-    {
-        UInt32 fileFlags;
-        UInt32 modIndex;
-        UInt32 lightIndex;
-        std::string name;
-
-        bool isLight;
-        UInt32 partialIndex;
-
-        modData_t(
-            UInt32 a_fileFlags,
-            UInt8 a_modIndex,
-            UInt16 a_lightIndex,
-            const std::string& a_name)
-            :
-            fileFlags(a_fileFlags),
-            modIndex(a_modIndex),
-            lightIndex(a_lightIndex),
-            name(a_name)
-        {
-            isLight = (a_fileFlags & ModInfo::kFileFlags_Light) == ModInfo::kFileFlags_Light;
-            partialIndex = !isLight ? a_modIndex : (UInt32(0xFE000) | a_lightIndex);
-        }
-
-        inline bool IsFormInMod(UInt32 a_formID) const
-        {
-            UInt32 modID = (a_formID & 0xFF000000) >> 24;
-
-            if (!isLight && modID == modIndex)
-                return true;
-
-            if (isLight && modID == 0xFE && ((a_formID & 0x00FFF000) >> 12) == lightIndex)
-                return true;
-
-            return false;
-        }
-
-        inline UInt32 GetPartialIndex() const
-        {
-            return partialIndex;
-        }
-
-        inline bool IsLight() const {
-            return isLight;
-        }
-
-        inline UInt32 GetFormID(UInt32 a_formIDLower) const
-        {
-            return !isLight ?
-                modIndex << 24 | (a_formIDLower & 0xFFFFFF) :
-                0xFE000000 | (lightIndex << 12) | (a_formIDLower & 0xFFF);
-        }
-    };
 
     typedef std::pair<uint32_t, float> armorCacheValue_t;
-    typedef std::unordered_map<std::string, std::unordered_map<std::string, armorCacheValue_t>> armorCacheEntry_t;
-    typedef std::unordered_map<std::string, armorCacheEntry_t> armorCache_t;
+    typedef stl::iunordered_map<std::string, stl::iunordered_map<std::string, armorCacheValue_t>> armorCacheEntry_t;
+    typedef stl::iunordered_map<std::string, armorCacheEntry_t> armorCache_t;
 
     class IData
     {
@@ -112,7 +60,7 @@ namespace CBP
 
     public:
         [[nodiscard]] static bool PopulateRaceList();
-        [[nodiscard]] static bool PopulateModList();
+        //[[nodiscard]] static bool PopulateModList();
         static void UpdateActorMaps(Game::ObjectHandle a_handle, const Actor* a_actor);
         static void UpdateActorMaps(Game::ObjectHandle a_handle);
 
@@ -162,10 +110,6 @@ namespace CBP
             return ignoredRaces.find(a_formid) != ignoredRaces.end();
         }
 
-        [[nodiscard]] inline static auto& GetModList() {
-            return modList;
-        }
-
         static bool GetActorName(Game::ObjectHandle a_handle, std::string& a_out);
 
         static bool HasArmorCacheEntry(const std::string& a_path);
@@ -185,9 +129,8 @@ namespace CBP
         static raceList_t raceList;
         static actorRefMap_t actorNpcMap;
         static actorCache_t actorCache;
-        static Game::ObjectHandle crosshairRef;
+        static SelectedItem<Game::ObjectHandle> crosshairRef;
         static armorCache_t armorCache;
-        static std::map<UInt32, modData_t> modList;
 
         static uint64_t actorCacheUpdateId;
 

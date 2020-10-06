@@ -5,11 +5,12 @@
 
 namespace CBP
 {
-    struct UTTask
+    struct ControllerInstruction
     {
-        enum class UTTAction : uint32_t {
-            Add,
-            Remove,
+        enum class Action : uint32_t 
+        {
+            AddActor,
+            RemoveActor,
             UpdateConfig,
             UpdateConfigAll,
             Reset,
@@ -26,13 +27,13 @@ namespace CBP
             ClearArmorOverrides
         };
 
-        UTTAction m_action;
-        Game::ObjectHandle m_handle = 0;
-        Game::FormID m_formid = 0;
+        Action m_action;
+        Game::ObjectHandle m_handle{ 0 };
     };
 
-    class UpdateTask :
+    class ControllerTask :
         public TaskDelegateFixed,
+        public TaskQueueBase<ControllerInstruction>,
         ILog
     {
         typedef std::unordered_set<Game::ObjectHandle> handleSet_t;
@@ -43,16 +44,18 @@ namespace CBP
         public:
             UpdateWeightTask(Game::ObjectHandle a_handle);
 
-            virtual void Run();
-            virtual void Dispose();
+            virtual void Run() override;
+            virtual void Dispose() override;
         private:
             Game::ObjectHandle m_handle;
         };
 
     public:
-        UpdateTask();
+        ControllerTask();
 
-        virtual void Run();
+        virtual void Run() override;
+
+    private:
 
         __forceinline void CullActors();
         __forceinline void UpdatePhase1();
@@ -65,15 +68,11 @@ namespace CBP
         __forceinline uint32_t UpdatePhase2(float a_timeStep, float a_timeTick, float a_maxTime);
         __forceinline uint32_t UpdatePhase2Collisions(float a_timeStep, float a_timeTick, float a_maxTime);
 
-        void PhysicsTick(Game::BSMain *a_main);
-
         void AddActor(Game::ObjectHandle a_handle);
         void RemoveActor(Game::ObjectHandle a_handle);
         void UpdateConfigOnAllActors();
         void UpdateGroupInfoOnAllActors();
         void UpdateConfig(Game::ObjectHandle a_handle);
-        void ApplyForce(Game::ObjectHandle a_handle, uint32_t a_steps, const std::string& a_component, const NiPoint3& a_force);
-        void ClearActors(bool a_reset = true);
         void Reset();
         void PhysicsReset();
         void NiNodeUpdate(Game::ObjectHandle a_handle);
@@ -85,15 +84,21 @@ namespace CBP
         void UpdateArmorOverridesAll();
         void ClearArmorOverrides();
 
+    public:
+        void PhysicsTick(Game::BSMain* a_main);
+
+        void ClearActors(bool a_reset = true);
+        void ApplyForce(Game::ObjectHandle a_handle, uint32_t a_steps, const std::string& a_component, const NiPoint3& a_force);
+
         void UpdateDebugRenderer();
 
-        void AddTask(const UTTask& a_task);
+        /*void AddTask(const UTTask& a_task);
         void AddTask(UTTask&& a_task);
         void AddTask(UTTask::UTTAction a_action);
         void AddTask(UTTask::UTTAction a_action, Game::ObjectHandle a_handle);
-        void AddTask(UTTask::UTTAction a_action, Game::ObjectHandle a_handle, Game::FormID a_formid);
+        void AddTask(UTTask::UTTAction a_action, Game::ObjectHandle a_handle, Game::FormID a_formid);*/
 
-        inline const auto& GetSimActorList() {
+        inline const auto& GetSimActorList() const {
             return m_actors;
         };
 
@@ -113,7 +118,7 @@ namespace CBP
 
         FN_NAMEPROC("UpdateTask")
     private:
-        bool IsTaskQueueEmpty();
+
         void ProcessTasks();
         void GatherActors(handleSet_t& a_out);
 
@@ -124,10 +129,6 @@ namespace CBP
 
         simActorList_t m_actors;
         Game::ObjectHandle m_markedActor;
-
-        std::queue<UTTask> m_taskQueue;
-
-        ICriticalSection m_taskLock;
 
         float m_timeAccum;
         float m_averageInterval;

@@ -1,0 +1,496 @@
+#pragma once
+
+template <class T>
+class Profile :
+    Serialization::Parser<T>
+{
+public:
+    typedef typename T base_type;
+
+    Profile() :
+        m_id(0)
+    {
+    }
+
+    Profile(const std::string& a_path) :
+        m_path(a_path),
+        m_pathStr(a_path.string()),
+        m_id(0),
+        m_name(a_path.stem().string())
+    {
+    }
+
+    Profile(const std::filesystem::path& a_path) :
+        m_path(a_path),
+        m_pathStr(a_path.string()),
+        m_id(0),
+        m_name(a_path.stem().string())
+    {
+    }
+
+    virtual ~Profile() noexcept = default;
+
+    bool Load();
+    bool Save(const T& a_data, bool a_store);
+
+    inline bool Save() {
+        return Save(m_conf, false);
+    }
+
+    inline void SetPath(const std::filesystem::path& a_path) {
+        m_path = a_path;
+        m_name = a_path.stem().string();
+    }
+
+    [[nodiscard]] inline const std::string& Name() const noexcept {
+        return m_name;
+    }
+
+    [[nodiscard]] inline const std::filesystem::path& Path() const noexcept {
+        return m_path;
+    }
+
+    [[nodiscard]] inline const std::string& PathStr() const noexcept {
+        return m_pathStr;
+    }
+
+    [[nodiscard]] inline T& Data() noexcept {
+        return m_conf;
+    }
+
+    [[nodiscard]] inline const T& Data() const noexcept {
+        return m_conf;
+    }
+
+    [[nodiscard]] inline T& Get(const std::string& a_key) {
+        return m_conf.at(a_key);
+    }
+
+    [[nodiscard]] inline const T& Get(const std::string& a_key) const {
+        return m_conf.at(a_key);
+    };
+
+    [[nodiscard]] inline bool Get(const std::string& a_key, T& a_out) const
+    {
+        auto it = m_conf.find(a_key);
+        if (it != m_conf.end()) {
+            a_out = it->second;
+            return true;
+        }
+        return false;
+    }
+
+    inline void Set(const T& a_data) noexcept {
+        m_conf = a_data;
+    }
+
+    [[nodiscard]] inline const auto& GetLastException() const noexcept {
+        return m_lastExcept;
+    }
+
+    [[nodiscard]] inline uint64_t GetID() const noexcept {
+        return m_id;
+    }
+
+    inline void SetID(uint64_t a_id) noexcept {
+        m_id = a_id;
+    }
+
+    inline void SetDefaults() noexcept {
+        GetDefault(m_conf);
+    }
+
+private:
+
+    std::filesystem::path m_path;
+    std::string m_pathStr;
+    std::string m_name;
+    uint64_t m_id;
+    T m_conf;
+
+    except::descriptor m_lastExcept;
+};
+
+
+template <class T>
+bool Profile<T>::Save(const T& a_data, bool a_store)
+{
+    try
+    {
+        if (m_path.empty()) {
+            throw std::exception("Bad path");
+        }
+
+        std::ofstream fs;
+        fs.open(m_path, std::ofstream::out | std::ofstream::binary | std::ofstream::trunc);
+        if (!fs.is_open())
+            throw std::exception("Could not open file for writing");
+
+        Json::Value root;
+
+        Create(a_data, root);
+
+        root["id"] = m_id;
+
+        fs << root << std::endl;
+
+        if (a_store)
+            m_conf = a_data;
+
+        return true;
+    }
+    catch (const std::exception& e)
+    {
+        m_lastExcept = e;
+        return false;
+    }
+}
+
+template <class T>
+bool Profile<T>::Load()
+{
+    try
+    {
+        if (m_path.empty())
+            throw std::exception("Bad path");
+
+        std::ifstream fs;
+        fs.open(m_path, std::ifstream::in | std::ifstream::binary);
+        if (!fs.is_open())
+            throw std::exception("Could not open file for reading");
+
+        Json::Value root;
+        fs >> root;
+
+        T tmp;
+
+        if (!Parse(root, tmp))
+            throw std::exception("Parser error");
+
+        auto& id = root["id"];
+        if (!id.isNumeric())
+            m_id = 0;
+        else
+            m_id = static_cast<uint64_t>(id.asUInt64());
+
+        m_conf = std::move(tmp);
+
+        return true;
+    }
+    catch (const std::exception& e)
+    {
+        m_lastExcept = e;
+        return false;
+    }
+}
+
+
+template <class T>
+class ProfileManager
+    : ILog
+{
+    using profileStorage_t = stl::imap<std::string, T>;
+
+public:
+    ProfileManager(const std::string& a_fc);
+
+    ProfileManager() = delete;
+    virtual ~ProfileManager() noexcept = default;
+
+    ProfileManager(const ProfileManager&) = delete;
+    ProfileManager(ProfileManager&&) = delete;
+    ProfileManager& operator=(const ProfileManager&) = delete;
+    void operator=(ProfileManager&&) = delete;
+
+    bool Load(const fs::path& a_path);
+    [[nodiscard]] bool CreateProfile(const std::string& a_name, T& a_out, bool a_save = false);
+
+    [[nodiscard]] bool AddProfile(const T& a_in);
+    [[nodiscard]] bool AddProfile(T&& a_in);
+    [[nodiscard]] bool DeleteProfile(const std::string& a_name);
+    [[nodiscard]] bool RenameProfile(const std::string& a_oldName, const std::string& a_newName);
+
+    [[nodiscard]] inline profileStorage_t& Data() noexcept { return m_storage; }
+    [[nodiscard]] inline const profileStorage_t& Data() const noexcept { return m_storage; }
+    [[nodiscard]] inline T& Get(const std::string& a_key) { return m_storage.at(a_key); };
+    [[nodiscard]] inline typename profileStorage_t::const_iterator Find(const std::string& a_key) const { return m_storage.find(a_key); };
+    [[nodiscard]] inline typename profileStorage_t::const_iterator End() const { return m_storage.end(); };
+    [[nodiscard]] inline const T& Get(const std::string& a_key) const { return m_storage.at(a_key); };
+    [[nodiscard]] inline bool Contains(const std::string& a_key) const { return m_storage.contains(a_key); };
+    [[nodiscard]] inline const auto& GetLastException() const noexcept { return m_lastExcept; }
+    [[nodiscard]] inline bool IsInitialized() const noexcept { return m_isInitialized; }
+    [[nodiscard]] inline typename profileStorage_t::size_type Size() const noexcept { return m_storage.size(); }
+    [[nodiscard]] inline bool Empty() const noexcept { return m_storage.empty(); }
+
+    //void MarkChanged(const std::string& a_key);
+
+    FN_NAMEPROC("ProfileManager");
+private:
+
+    void CheckProfileKey(const std::string& a_key) const;
+
+    profileStorage_t m_storage;
+    fs::path m_root;
+    std::regex m_rFileCheck;
+    except::descriptor m_lastExcept;
+    bool m_isInitialized;
+};
+
+template <typename T>
+ProfileManager<T>::ProfileManager(
+    const std::string& a_fc)
+    :
+    m_isInitialized(false),
+    m_rFileCheck(a_fc,
+        std::regex_constants::ECMAScript)
+{
+}
+
+template <typename T>
+bool ProfileManager<T>::Load(const fs::path& a_path)
+{
+    try
+    {
+        if (!fs::exists(a_path)) {
+            if (!fs::create_directories(a_path)) {
+                throw std::exception("Couldn't create profile directory");
+            }
+        }
+        else if (!fs::is_directory(a_path))
+            throw std::exception("Root path is not a directory");
+
+        m_storage.clear();
+
+        m_root = a_path;
+        m_isInitialized = true;
+
+        fs::path ext(".json");
+
+        for (const auto& entry : fs::directory_iterator(a_path))
+        {
+            if (!entry.is_regular_file())
+                continue;
+
+            auto& path = entry.path();
+            if (!path.has_extension() || path.extension() != ext)
+                continue;
+
+            auto key = path.stem().string();
+            if (key.size() == 0)
+                continue;
+
+            if (!std::regex_match(key, m_rFileCheck)) {
+                Warning("Invalid characters in profile name: %s", key.c_str());
+                continue;
+            }
+
+            auto filename = path.filename().string();
+            if (filename.length() > 64) {
+                Warning("Filename too long: %s", filename.c_str());
+                continue;
+            }
+
+            T profile(path);
+            if (!profile.Load()) {
+                Warning("Failed loading profile '%s': %s",
+                    filename.c_str(), profile.GetLastException().what());
+                continue;
+            }
+
+            /*if (m_lowercase)
+                transform(key.begin(), key.end(), key.begin(), ::tolower);*/
+
+            m_storage.emplace(key, std::move(profile));
+        }
+
+        Debug("Loaded %zu profile(s)", m_storage.size());
+
+        return true;
+    }
+    catch (const std::exception& e) {
+        Error("%s: %s", __FUNCTION__, e.what());
+        m_lastExcept = e;
+        return false;
+    }
+}
+
+template <class T>
+bool ProfileManager<T>::CreateProfile(const std::string& a_name, T& a_out, bool a_save)
+{
+    try
+    {
+        if (!m_isInitialized)
+            throw std::exception("Not initialized");
+
+        if (!a_name.size())
+            throw std::exception("Profile name length == 0");
+
+        if (!std::regex_match(a_name, m_rFileCheck))
+            throw std::exception("Invalid characters in profile name");
+
+        fs::path path(m_root);
+
+        path /= a_name;
+        path += ".json";
+
+        auto filename = path.filename().string();
+        if (filename.length() > 64)
+            throw std::exception("Profile name too long");
+
+        if (fs::exists(path))
+            throw std::exception("Profile already exists");
+
+        a_out.SetPath(path);
+        a_out.SetDefaults();
+
+        if (a_save)
+        {
+            if (!a_out.Save())
+                throw std::exception(a_out.GetLastException().what());
+        }
+
+        return true;
+    }
+    catch (const std::exception& e) {
+        Error("%s: %s", __FUNCTION__, e.what());
+        m_lastExcept = e;
+        return false;
+    }
+}
+
+template <class T>
+bool ProfileManager<T>::AddProfile(const T& a_in)
+{
+    try
+    {
+        if (!m_isInitialized)
+            throw std::exception("Not initialized");
+
+        auto& key = a_in.Name();
+
+        CheckProfileKey(key);
+
+        m_storage.emplace(key, a_in);
+
+        return true;
+    }
+    catch (const std::exception& e) {
+        Error("%s: %s", __FUNCTION__, e.what());
+        m_lastExcept = e;
+        return false;
+    }
+}
+
+template <class T>
+bool ProfileManager<T>::AddProfile(T&& a_in)
+{
+    try
+    {
+        if (!m_isInitialized)
+            throw std::exception("Not initialized");
+
+        auto& key = a_in.Name();
+
+        CheckProfileKey(key);
+
+        m_storage.emplace(key, std::move(a_in));
+
+        return true;
+    }
+    catch (const std::exception& e) {
+        Error("%s: %s", __FUNCTION__, e.what());
+        m_lastExcept = e;
+        return false;
+    }
+}
+
+template <class T>
+void ProfileManager<T>::CheckProfileKey(const std::string& a_key) const
+{
+    if (m_storage.find(a_key) != m_storage.end())
+        throw std::exception("Profile already exists");
+
+    if (!std::regex_match(a_key, m_rFileCheck))
+        throw std::exception("Invalid characters in profile name");
+}
+
+template <class T>
+bool ProfileManager<T>::DeleteProfile(const std::string& a_name)
+{
+    try
+    {
+        if (!m_isInitialized) {
+            throw std::exception("Not initialized");
+        }
+
+        auto it = m_storage.find(a_name);
+        if (it == m_storage.end()) {
+            throw std::exception("No such profile exists");
+        }
+
+        if (fs::exists(it->second.Path()) &&
+            fs::is_regular_file(it->second.Path()))
+        {
+            if (!fs::remove(it->second.Path()))
+                throw std::exception("Failed to remove the file");
+        }
+
+        m_storage.erase(a_name);
+
+        return true;
+    }
+    catch (const std::exception& e) {
+        Error("%s: %s", __FUNCTION__, e.what());
+        m_lastExcept = e;
+        return false;
+    }
+}
+
+template <class T>
+bool ProfileManager<T>::RenameProfile(
+    const std::string& a_oldName,
+    const std::string& a_newName)
+{
+    try
+    {
+        if (!m_isInitialized)
+            throw std::exception("Not initialized");
+
+        if (!std::regex_match(a_newName, m_rFileCheck))
+            throw std::exception("Invalid characters in profile name");
+
+        auto it = m_storage.find(a_oldName);
+        if (it == m_storage.end())
+            throw std::exception("No such profile exists");
+
+        if (m_storage.find(a_newName) != m_storage.end())
+            throw std::exception("A profile with that name already exists");
+
+        fs::path newFilename(a_newName);
+        newFilename += ".json";
+
+        if (newFilename.string().length() > 64)
+            throw std::exception("Profile name too long");
+
+        auto newPath = it->second.Path();
+        ASSERT(newPath.has_filename());
+        newPath.replace_filename(newFilename);
+
+        if (fs::exists(newPath))
+            throw std::exception("A profile file with that name already exists");
+
+        fs::rename(it->second.Path(), newPath);
+
+        it->second.SetPath(newPath);
+
+        m_storage.emplace(a_newName, std::move(it->second));
+        m_storage.erase(a_oldName);
+
+        return true;
+    }
+    catch (const std::exception& e) {
+        Error("%s: %s", __FUNCTION__, e.what());
+        m_lastExcept = e;
+        return false;
+    }
+}

@@ -14,20 +14,30 @@ namespace CBP
         return true;
     }
 
-    std::atomic<uint64_t> UpdateTask::m_nextGroupId = 0;
+    __forceinline static bool ActorValid2(const Actor* actor)
+    {
+        if (actor->loadedState == nullptr ||
+            actor->loadedState->node == nullptr ||
+            (actor->flags & TESForm::kFlagIsDeleted))
+        {
+            return false;
+        }
+        return true;
+    }
 
-    UpdateTask::UpdateTask() :
+    std::atomic<uint64_t> ControllerTask::m_nextGroupId = 0;
+
+    ControllerTask::ControllerTask() :
         m_timeAccum(0.0f),
         m_averageInterval(1.0f / 60.0f),
         m_profiler(1000000),
         m_markedActor(0)
-        // m_pt(1000000)
     {
     }
 
-    void UpdateTask::UpdateDebugRenderer()
+    void ControllerTask::UpdateDebugRenderer()
     {
-        auto& globalConf = IConfig::GetGlobalConfig();
+        auto& globalConf = IConfig::GetGlobal();
         auto& renderer = DCBP::GetRenderer();
 
         try
@@ -49,19 +59,19 @@ namespace CBP
         catch (...) {}
     }
 
-    void UpdateTask::UpdatePhase1()
+    void ControllerTask::UpdatePhase1()
     {
         for (auto& e : m_actors)
             e.second.UpdateVelocity();
     }
 
-    void UpdateTask::UpdateActorsPhase2(float a_timeStep)
+    void ControllerTask::UpdateActorsPhase2(float a_timeStep)
     {
         for (auto& e : m_actors)
             e.second.UpdateMovement(a_timeStep);
     }
 
-    uint32_t UpdateTask::UpdatePhase2(float a_timeStep, float a_timeTick, float a_maxTime)
+    uint32_t ControllerTask::UpdatePhase2(float a_timeStep, float a_timeTick, float a_maxTime)
     {
         uint32_t c = 1;
 
@@ -78,7 +88,7 @@ namespace CBP
         return c;
     }
 
-    uint32_t UpdateTask::UpdatePhase2Collisions(float a_timeStep, float a_timeTick, float a_maxTime)
+    uint32_t ControllerTask::UpdatePhase2Collisions(float a_timeStep, float a_timeTick, float a_maxTime)
     {
         uint32_t c = 1;
 
@@ -116,7 +126,7 @@ namespace CBP
     }
 #endif
 
-    void UpdateTask::PhysicsTick(Game::BSMain* a_main)
+    void ControllerTask::PhysicsTick(Game::BSMain* a_main)
     {
         if (a_main->freezeTime)
             return;
@@ -132,7 +142,7 @@ namespace CBP
 
         DCBP::Lock();
 
-        auto& globalConf = IConfig::GetGlobalConfig();
+        auto& globalConf = IConfig::GetGlobal();
 
         if (globalConf.profiling.enableProfiling)
             m_profiler.Begin();
@@ -188,7 +198,7 @@ namespace CBP
         DCBP::Unlock();
     }
 
-    void UpdateTask::Run()
+    void ControllerTask::Run()
     {
         //m_pt.Begin();
 
@@ -207,7 +217,7 @@ namespace CBP
             Debug(">> %lld", t);*/
     }
 
-    void UpdateTask::CullActors()
+    void ControllerTask::CullActors()
     {
         auto it = m_actors.begin();
         while (it != m_actors.end())
@@ -251,7 +261,7 @@ namespace CBP
         }
     }
 
-    void UpdateTask::AddActor(Game::ObjectHandle a_handle)
+    void ControllerTask::AddActor(Game::ObjectHandle a_handle)
     {
         if (m_actors.find(a_handle) != m_actors.end())
             return;
@@ -268,7 +278,7 @@ namespace CBP
                 return;
         }
 
-        auto& globalConfig = IConfig::GetGlobalConfig();
+        auto& globalConfig = IConfig::GetGlobal();
 
         char sex;
         auto npc = DYNAMIC_CAST(actor->baseForm, TESForm, TESNPC);
@@ -289,7 +299,7 @@ namespace CBP
 
         IData::UpdateActorMaps(a_handle, actor);
 
-        auto& conf = IConfig::GetActorPhysicsConfigAO(a_handle);
+        auto& conf = IConfig::GetActorPhysicsAO(a_handle);
         auto& nodeMap = IConfig::GetNodeMap();
 
         nodeDescList_t descList;
@@ -312,7 +322,7 @@ namespace CBP
         m_actors.try_emplace(a_handle, a_handle, actor, sex, m_nextGroupId++, descList);
     }
 
-    void UpdateTask::RemoveActor(Game::ObjectHandle a_handle)
+    void ControllerTask::RemoveActor(Game::ObjectHandle a_handle)
     {
         auto it = m_actors.find(a_handle);
         if (it != m_actors.end())
@@ -329,13 +339,13 @@ namespace CBP
         }
     }
 
-    void UpdateTask::UpdateGroupInfoOnAllActors()
+    void ControllerTask::UpdateGroupInfoOnAllActors()
     {
         for (auto& a : m_actors)
             a.second.UpdateGroupInfo();
     }
 
-    void UpdateTask::UpdateConfigOnAllActors()
+    void ControllerTask::UpdateConfigOnAllActors()
     {
         for (auto& e : m_actors)
         {
@@ -348,7 +358,7 @@ namespace CBP
         }
     }
 
-    void UpdateTask::UpdateConfig(Game::ObjectHandle a_handle)
+    void ControllerTask::UpdateConfig(Game::ObjectHandle a_handle)
     {
         auto it = m_actors.find(a_handle);
         if (it == m_actors.end())
@@ -362,17 +372,17 @@ namespace CBP
         DoConfigUpdate(a_handle, actor, it->second);
     }
 
-    void UpdateTask::DoConfigUpdate(Game::ObjectHandle a_handle, Actor* a_actor, SimObject& a_obj)
+    void ControllerTask::DoConfigUpdate(Game::ObjectHandle a_handle, Actor* a_actor, SimObject& a_obj)
     {
-        auto& globalConfig = IConfig::GetGlobalConfig();
+        const auto& globalConfig = IConfig::GetGlobal();
 
         a_obj.UpdateConfig(
             a_actor,
             globalConfig.phys.collisions,
-            IConfig::GetActorPhysicsConfigAO(a_handle));
+            IConfig::GetActorPhysicsAO(a_handle));
     }
 
-    void UpdateTask::ApplyForce(
+    void ControllerTask::ApplyForce(
         Game::ObjectHandle a_handle,
         uint32_t a_steps,
         const std::string& a_component,
@@ -389,7 +399,7 @@ namespace CBP
         }
     }
 
-    void UpdateTask::ClearActors(bool a_reset)
+    void ControllerTask::ClearActors(bool a_reset)
     {
         for (auto& e : m_actors)
         {
@@ -414,7 +424,7 @@ namespace CBP
         IConfig::ClearArmorOverrides();
     }
 
-    void UpdateTask::Clear()
+    void ControllerTask::Clear()
     {
         for (auto& e : m_actors)
             e.second.Release();
@@ -424,7 +434,7 @@ namespace CBP
         IConfig::ClearArmorOverrides();
     }
 
-    void UpdateTask::Reset()
+    void ControllerTask::Reset()
     {
         handleSet_t handles;
 
@@ -446,45 +456,45 @@ namespace CBP
         }
     }
 
-    void UpdateTask::PhysicsReset()
+    void ControllerTask::PhysicsReset()
     {
         for (auto& e : m_actors)
             e.second.Reset();
 
-        auto& globalConf = IConfig::GetGlobalConfig();
+        auto& globalConf = IConfig::GetGlobal();
     }
 
-    void UpdateTask::WeightUpdate(Game::ObjectHandle a_handle)
+    void ControllerTask::WeightUpdate(Game::ObjectHandle a_handle)
     {
         auto actor = Game::ResolveObject<Actor>(a_handle, Actor::kTypeID);
         if (ActorValid(actor)) {
             CALL_MEMBER_FN(actor, QueueNiNodeUpdate)(true);
-            DTasks::AddTask(new UpdateWeightTask(a_handle));
+            DTasks::AddTask<UpdateWeightTask>(a_handle);
         }
     }
 
-    void UpdateTask::WeightUpdateAll()
+    void ControllerTask::WeightUpdateAll()
     {
         for (const auto& e : m_actors)
             WeightUpdate(e.first);
     }
 
-    void UpdateTask::NiNodeUpdate(Game::ObjectHandle a_handle)
+    void ControllerTask::NiNodeUpdate(Game::ObjectHandle a_handle)
     {
         auto actor = Game::ResolveObject<Actor>(a_handle, Actor::kTypeID);
         if (ActorValid(actor))
             CALL_MEMBER_FN(actor, QueueNiNodeUpdate)(true);
     }
 
-    void UpdateTask::NiNodeUpdateAll()
+    void ControllerTask::NiNodeUpdateAll()
     {
         for (const auto& e : m_actors)
             NiNodeUpdate(e.first);
     }
 
-    void UpdateTask::AddArmorOverride(Game::ObjectHandle a_handle, Game::FormID a_formid)
+    void ControllerTask::AddArmorOverride(Game::ObjectHandle a_handle, Game::FormID a_formid)
     {
-        auto& globalConfig = IConfig::GetGlobalConfig();
+        auto& globalConfig = IConfig::GetGlobal();
         if (!globalConfig.general.armorOverrides)
             return;
 
@@ -528,9 +538,9 @@ namespace CBP
         DoConfigUpdate(a_handle, actor, it->second);
     }
 
-    void UpdateTask::UpdateArmorOverride(Game::ObjectHandle a_handle)
+    void ControllerTask::UpdateArmorOverride(Game::ObjectHandle a_handle)
     {
-        auto& globalConfig = IConfig::GetGlobalConfig();
+        auto& globalConfig = IConfig::GetGlobal();
         if (!globalConfig.general.armorOverrides)
             return;
 
@@ -545,7 +555,7 @@ namespace CBP
         DoUpdateArmorOverride(*it, actor);
     }
 
-    void UpdateTask::DoUpdateArmorOverride(simActorList_t::value_type& a_entry, Actor* a_actor)
+    void ControllerTask::DoUpdateArmorOverride(simActorList_t::value_type& a_entry, Actor* a_actor)
     {
         bool updateConfig;
 
@@ -559,7 +569,7 @@ namespace CBP
             DoConfigUpdate(a_entry.first, a_actor, a_entry.second);
     }
 
-    bool UpdateTask::ApplyArmorOverride(Game::ObjectHandle a_handle, const armorOverrideResults_t& a_desc)
+    bool ControllerTask::ApplyArmorOverride(Game::ObjectHandle a_handle, const armorOverrideResults_t& a_desc)
     {
         auto current = IConfig::GetArmorOverride(a_handle);
 
@@ -588,7 +598,7 @@ namespace CBP
         return true;
     }
 
-    bool UpdateTask::BuildArmorOverride(
+    bool ControllerTask::BuildArmorOverride(
         Game::ObjectHandle a_handle,
         const armorOverrideResults_t& a_in,
         armorOverrideDescriptor_t& a_out)
@@ -615,9 +625,9 @@ namespace CBP
         return !a_out.first.empty();
     }
 
-    void UpdateTask::UpdateArmorOverridesAll()
+    void ControllerTask::UpdateArmorOverridesAll()
     {
-        auto& globalConfig = IConfig::GetGlobalConfig();
+        auto& globalConfig = IConfig::GetGlobal();
         if (!globalConfig.general.armorOverrides)
             return;
 
@@ -631,172 +641,108 @@ namespace CBP
         }
     }
 
-    void UpdateTask::ClearArmorOverrides()
+    void ControllerTask::ClearArmorOverrides()
     {
         IConfig::ClearArmorOverrides();
         UpdateConfigOnAllActors();
     }
 
-    void UpdateTask::AddTask(const UTTask& task)
+    void ControllerTask::ProcessTasks()
     {
-        m_taskLock.Enter();
-        m_taskQueue.push(task);
-        m_taskLock.Leave();
-    }
-
-    void UpdateTask::AddTask(UTTask&& task)
-    {
-        m_taskLock.Enter();
-        m_taskQueue.emplace(std::forward<UTTask>(task));
-        m_taskLock.Leave();
-    }
-
-    void UpdateTask::AddTask(UTTask::UTTAction a_action)
-    {
-        m_taskLock.Enter();
-        m_taskQueue.emplace(UTTask{ a_action });
-        m_taskLock.Leave();
-    }
-
-    void UpdateTask::AddTask(UTTask::UTTAction a_action, Game::ObjectHandle a_handle)
-    {
-        m_taskLock.Enter();
-        m_taskQueue.emplace(UTTask{ a_action, a_handle });
-        m_taskLock.Leave();
-    }
-
-    void UpdateTask::AddTask(UTTask::UTTAction a_action, Game::ObjectHandle a_handle, Game::FormID a_formid)
-    {
-        m_taskLock.Enter();
-        m_taskQueue.emplace(UTTask{ a_action, a_handle, a_formid });
-        m_taskLock.Leave();
-    }
-
-    bool UpdateTask::IsTaskQueueEmpty()
-    {
-        m_taskLock.Enter();
-        bool r = m_taskQueue.size() == 0;
-        m_taskLock.Leave();
-        return r;
-    }
-
-    void UpdateTask::ProcessTasks()
-    {
-        while (!IsTaskQueueEmpty())
+        while (!TaskQueueEmpty())
         {
-            m_taskLock.Enter();
-            auto task = m_taskQueue.front();
-            m_taskQueue.pop();
-            m_taskLock.Leave();
+            m_lock.Enter();
+            auto task = m_queue.front();
+            m_queue.pop();
+            m_lock.Leave();
 
             switch (task.m_action)
             {
-            case UTTask::UTTAction::Add:
+            case ControllerInstruction::Action::AddActor:
                 AddActor(task.m_handle);
                 break;
-            case UTTask::UTTAction::Remove:
+            case ControllerInstruction::Action::RemoveActor:
                 RemoveActor(task.m_handle);
                 break;
-            case UTTask::UTTAction::UpdateConfig:
+            case ControllerInstruction::Action::UpdateConfig:
                 UpdateConfig(task.m_handle);
                 break;
-            case UTTask::UTTAction::UpdateConfigAll:
+            case ControllerInstruction::Action::UpdateConfigAll:
                 UpdateConfigOnAllActors();
                 break;
-            case UTTask::UTTAction::Reset:
+            case ControllerInstruction::Action::Reset:
                 Reset();
                 break;
-            case UTTask::UTTAction::UIUpdateCurrentActor:
+            case ControllerInstruction::Action::UIUpdateCurrentActor:
                 DCBP::UIQueueUpdateCurrentActorA();
                 break;
-            case UTTask::UTTAction::UpdateGroupInfoAll:
+            case ControllerInstruction::Action::UpdateGroupInfoAll:
                 UpdateGroupInfoOnAllActors();
                 break;
-            case UTTask::UTTAction::PhysicsReset:
+            case ControllerInstruction::Action::PhysicsReset:
                 PhysicsReset();
                 break;
-            case UTTask::UTTAction::NiNodeUpdate:
+            case ControllerInstruction::Action::NiNodeUpdate:
                 NiNodeUpdate(task.m_handle);
                 break;
-            case UTTask::UTTAction::NiNodeUpdateAll:
+            case ControllerInstruction::Action::NiNodeUpdateAll:
                 NiNodeUpdateAll();
                 break;
-            case UTTask::UTTAction::WeightUpdate:
+            case ControllerInstruction::Action::WeightUpdate:
                 WeightUpdate(task.m_handle);
                 break;
-            case UTTask::UTTAction::WeightUpdateAll:
+            case ControllerInstruction::Action::WeightUpdateAll:
                 WeightUpdateAll();
                 break;
-            case UTTask::UTTAction::AddArmorOverride:
+            /*case ControllerInstruction::Action::AddArmorOverride:
                 AddArmorOverride(task.m_handle, task.m_formid);
-                break;
-            case UTTask::UTTAction::UpdateArmorOverride:
+                break;*/
+            case ControllerInstruction::Action::UpdateArmorOverride:
                 UpdateArmorOverride(task.m_handle);
                 break;
-            case UTTask::UTTAction::UpdateArmorOverridesAll:
+            case ControllerInstruction::Action::UpdateArmorOverridesAll:
                 UpdateArmorOverridesAll();
                 break;
-            case UTTask::UTTAction::ClearArmorOverrides:
+            case ControllerInstruction::Action::ClearArmorOverrides:
                 ClearArmorOverrides();
                 break;
             }
         }
     }
 
-    void UpdateTask::GatherActors(handleSet_t& a_out)
+    void ControllerTask::GatherActors(handleSet_t& a_out)
     {
-        auto player = *g_thePlayer;
+        Game::AIProcessVisitActors([&](Actor* a_actor)
+            {
+                if (!ActorValid2(a_actor))
+                    return;
 
-        if (ActorValid(player)) {
-            Game::ObjectHandle handle;
-            if (Game::GetHandle(player, player->formType, handle))
+                Game::ObjectHandle handle;
+                if (!Game::GetHandle(a_actor, a_actor->formType, handle))
+                    return;
+
                 a_out.emplace(handle);
-        }
-
-        auto pl = Game::ProcessLists::GetSingleton();
-        if (pl == nullptr)
-            return;
-
-        for (UInt32 i = 0; i < pl->highActorHandles.count; i++)
-        {
-            NiPointer<TESObjectREFR> ref;
-            LookupREFRByHandle(pl->highActorHandles[i], ref);
-
-            if (ref == nullptr)
-                continue;
-
-            if (ref->formType != Actor::kTypeID)
-                continue;
-
-            auto actor = DYNAMIC_CAST(ref, TESObjectREFR, Actor);
-            if (!ActorValid(actor))
-                continue;
-
-            Game::ObjectHandle handle;
-            if (!Game::GetHandle(actor, actor->formType, handle))
-                continue;
-
-            a_out.emplace(handle);
-        }
+            }
+        );
     }
 
-    UpdateTask::UpdateWeightTask::UpdateWeightTask(
+    ControllerTask::UpdateWeightTask::UpdateWeightTask(
         Game::ObjectHandle a_handle)
         :
         m_handle(a_handle)
     {
     }
 
-    void UpdateTask::UpdateWeightTask::Run()
+    void ControllerTask::UpdateWeightTask::Run()
     {
         auto actor = Game::ResolveObject<Actor>(m_handle, Actor::kTypeID);
         if (!actor)
             return;
 
-        TESNPC* npc = DYNAMIC_CAST(actor->baseForm, TESForm, TESNPC);
+        auto npc = DYNAMIC_CAST(actor->baseForm, TESForm, TESNPC);
         if (npc)
         {
-            BSFaceGenNiNode* faceNode = actor->GetFaceGenNiNode();
+            auto faceNode = actor->GetFaceGenNiNode();
             if (faceNode) {
                 CALL_MEMBER_FN(faceNode, AdjustHeadMorph)(BSFaceGenNiNode::kAdjustType_Neck, 0, 0.0f);
                 UpdateModelFace(faceNode);
@@ -809,7 +755,7 @@ namespace CBP
         }
     }
 
-    void UpdateTask::UpdateWeightTask::Dispose() {
+    void ControllerTask::UpdateWeightTask::Dispose() {
         delete this;
     }
 }

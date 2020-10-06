@@ -62,15 +62,18 @@ namespace CBP
     {
         for (const auto& e : a_actorList)
         {
+            if (e.second.IsSuspended())
+                continue;
+
             if (a_centerOfMass) {
                 for (const auto& n : e.second)
                     if (n.second.HasMovement())
-                        GenerateSphere(n.second.GetCenterOfMass(), a_radius, MOVING_NODES_COL);
+                        GenerateSphere(n.second.GetCenterOfMass(), a_radius * n.second.GetNodeScale(), MOVING_NODES_COL);
             }
             else {
                 for (const auto& n : e.second)
                     if (n.second.HasMovement())
-                        GenerateSphere(n.second.GetPos(), a_radius, MOVING_NODES_COL);
+                        GenerateSphere(n.second.GetPos(), a_radius * n.second.GetNodeScale(), MOVING_NODES_COL);
             }
 
             if (e.first == a_markedHandle)
@@ -118,7 +121,7 @@ namespace CBP
 
         m_batch->Begin();
 
-        auto& globalConfig = IConfig::GetGlobalConfig();
+        auto& globalConfig = IConfig::GetGlobal();
 
         for (const auto& e : m_lines)
             m_batch->DrawLine(e.pos1, e.pos2);

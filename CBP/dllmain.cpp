@@ -31,6 +31,7 @@ static bool Initialize(const SKSEInterface* skse)
     }
 
     CBP::IEvents::Initialize();
+    CBP::DData::Initialize();
     CBP::DInput::Initialize();
     CBP::DCBP::Initialize();
     ASSERT(CBP::DRender::Initialize());

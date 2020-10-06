@@ -9,7 +9,7 @@ namespace CBP
         std::unordered_set<TESObjectARMO*> results;
     };
 
-    typedef std::set<std::string> armorOverrideResults_t;
+    typedef stl::iunordered_set<std::string> armorOverrideResults_t;
 
     class IArmor
     {

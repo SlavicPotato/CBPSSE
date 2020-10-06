@@ -2,72 +2,7 @@
 
 namespace CBP
 {
-
     typedef KVStorage<UInt32, const char*> keyDesc_t;
-
-    template <class T>
-    class UISelectedItem
-    {
-    public:
-        UISelectedItem() noexcept :
-            m_isSelected(false) {}
-
-        virtual ~UISelectedItem() = default;
-
-        inline void Set(const T& a_rhs) {
-            m_isSelected = true;
-            m_item = a_rhs;
-        }
-
-        inline void Set(T&& a_rhs) {
-            m_isSelected = true;
-            m_item = std::forward<T>(a_rhs);
-        }
-
-        inline UISelectedItem<T>& operator=(const T& a_rhs) {
-            m_isSelected = true;
-            m_item = a_rhs;
-            return *this;
-        }
-
-        inline UISelectedItem<T>& operator=(T&& a_rhs) {
-            m_isSelected = true;
-            m_item = std::forward<T>(a_rhs);
-            return *this;
-        }
-
-        inline void Clear() noexcept {
-            m_isSelected = false;
-        }
-
-        [[nodiscard]] inline const T& Get() const noexcept {
-            return m_item;
-        }
-        
-        [[nodiscard]] inline const T& operator*() const noexcept {
-            return m_item;
-        }
-
-        [[nodiscard]] inline const T* operator->() const {
-            return std::addressof(m_item);
-        }
-
-        [[nodiscard]] inline T* operator->() {
-            return std::addressof(m_item);
-        }
-
-        [[nodiscard]] inline bool Has() const noexcept {
-            return m_isSelected;
-        }
-
-        [[nodiscard]] inline explicit operator bool() const noexcept {
-            return m_isSelected;
-        }
-
-    private:
-        T m_item;
-        bool m_isSelected;
-    };
 
     enum class MiscHelpText : int
     {
@@ -107,182 +42,32 @@ namespace CBP
 
     typedef std::vector<std::pair<const std::string, const configNode_t*>> nodeConfigList_t;
 
-    class UIBase
+    class UIBase :
+        virtual protected UICommon::UIWindow,
+        virtual protected UICommon::UIAlignment,
+        virtual protected UICommon::UICollapsibles,
+        virtual protected UICommon::UIControls
     {
     protected:
-        bool CollapsingHeader(
-            const std::string& a_key,
-            const char* a_label,
-            bool a_default = true) const;
-
-        bool Tree(
-            const std::string& a_key,
-            const char* a_label,
-            bool a_default = true) const;
 
         void HelpMarker(MiscHelpText a_id) const;
         void HelpMarker(const std::string& a_text) const;
 
-        inline float GetNextTextOffset(const char* a_text, bool a_clear = false)
-        {
-            if (a_clear)
-                ClearTextOffset();
-
-            auto it = m_ctlPositions.find(a_text);
-            if (it != m_ctlPositions.end())
-                return (m_posOffset += it->second + (m_posOffset == 0.0f ? 0.0f : 5.0f));
-
-            return (m_posOffset += ImGui::CalcTextSize(a_text).x + 5.0f);
-        }
-
-        inline void ClearTextOffset() {
-            m_posOffset = 0.0f;
-        }
-
-        inline bool ButtonRight(const char* a_text)
-        {
-            bool res = ImGui::Button(a_text);
-            m_ctlPositions[a_text] = ImGui::GetItemRectSize().x;
-            return res;
-        }
-
         template <typename T>
         inline void SetGlobal(T& a_member, T const a_value) const;
 
-        inline bool CheckboxGlobal(const char* a_label, bool* a_member) const;
-
-        inline bool SliderFloatGlobal(
-            const char* a_label,
-            float* a_member,
-            float a_min,
-            float a_max,
-            const char* a_fmt = "%.3f") const;
-
-        inline bool SliderFloat3Global(
-            const char* a_label,
-            float* a_member,
-            float a_min,
-            float a_max,
-            const char* a_fmt = "%.3f") const;
-
-        inline bool SliderIntGlobal(
-            const char* a_label,
-            int* a_member,
-            int a_min,
-            int a_max,
-            const char* a_fmt = "%d") const;
-
-        void SetWindowDimensions(float a_offsetX = 0.0f, float a_sizeX = -1.0f, float a_sizeY = -1.0f);
-
-        inline bool CanClip() const;
-
-    private:
-
-        float m_posOffset = 0.0f;
-
-        std::unordered_map<std::string, float> m_ctlPositions;
-
-        struct
-        {
-            ImVec2 sizeMin;
-            ImVec2 sizeMax;
-            ImVec2 pos;
-            ImVec2 size;
-            bool initialized = false;
-        } m_sizeData;
-
-        static const std::unordered_map<MiscHelpText, const char*> m_helpText;
-
     protected:
+
         static const keyDesc_t m_comboKeyDesc;
         static const keyDesc_t m_keyDesc;
-    };
-
-    template <typename T>
-    class UIFilterBase :
-        virtual protected UIBase
-    {
-    public:
-        void Draw();
-        void DrawButton();
-        void Clear();
-        void Toggle();
-
-        virtual bool Test(const std::string& a_haystack) const = 0;
-
-        inline bool IsOpen() const noexcept {
-            return m_searchOpen;
-        }
-
-        [[nodiscard]] inline explicit operator bool() const noexcept {
-            return m_filter.Has();
-        }
-
-        [[nodiscard]] inline const auto& operator*() const noexcept {
-            return m_filter;
-        }
-
-        [[nodiscard]] inline const auto* operator->() const noexcept {
-            return std::addressof(m_filter);
-        }
-
-        inline void NextSetFocus() {
-            m_nextSetFocus = true;
-        }
-
-    protected:
-
-        UIFilterBase();
-        UIFilterBase(bool a_isOpen);
-        UIFilterBase(bool a_isOpen, const char* a_label);
-        UIFilterBase(bool a_isOpen, const char* a_label, MiscHelpText a_helpText);
-
-        virtual void ProcessInput() = 0;
-
-        const char* m_label;
-        char m_filterBuf[128];
-
-        UISelectedItem<T> m_filter;
-        bool m_searchOpen;
-        bool m_nextSetFocus;
-
-        MiscHelpText m_helpText;
-    };
-
-    class UIGenericFilter :
-        public UIFilterBase<std::string>
-    {
-    public:
-
-        UIGenericFilter();
-        UIGenericFilter(bool a_isOpen);
-        UIGenericFilter(bool a_isOpen, const char* a_label);
-        UIGenericFilter(bool a_isOpen, const char* a_label, MiscHelpText a_helpText);
-
-        [[nodiscard]] virtual bool Test(const std::string& a_haystack) const;
-
-    protected:
-        virtual void ProcessInput();
-    };
-
-    class UIRegexFilter :
-        public UIFilterBase<std::regex>
-    {
-    public:
-
-        UIRegexFilter();
-        UIRegexFilter(bool a_isOpen);
-        UIRegexFilter(bool a_isOpen, const char* a_label);
-        UIRegexFilter(bool a_isOpen, const char* a_label, MiscHelpText a_helpText);
-
-        [[nodiscard]] virtual bool Test(const std::string& a_haystack) const;
-
-    protected:
-        virtual void ProcessInput();
 
     private:
 
-        UISelectedItem<except::descriptor> m_lastException;
+        virtual UIData::UICollapsibleStates& GetCollapsibleStatesData() const;
+        virtual void OnCollapsibleStatesUpdate() const;
+        virtual void OnControlValueChange() const;
+
+        static const std::unordered_map<MiscHelpText, const char*> m_helpText;
     };
 
     template <typename T>
@@ -338,7 +123,7 @@ namespace CBP
         virtual std::string GetGCSID(
             const std::string& a_name) const = 0;
 
-        UIRegexFilter m_dataFilter;
+        UICommon::UIRegexFilter m_dataFilter;
     };
 
     template <class T, UIEditorID ID>
@@ -442,7 +227,7 @@ namespace CBP
         virtual bool GetNodeConfig(
             T a_handle,
             const std::string& a_node,
-            nodeConfigList_t &a_out) const = 0;
+            nodeConfigList_t& a_out) const = 0;
 
         void DrawMirrorContextMenu(
             T a_handle,
@@ -498,60 +283,24 @@ namespace CBP
             ss << "UIND#" << Enum::Underlying(ID) << "#" << a_name;
             return ss.str();
         }
-        
+
         [[nodiscard]] virtual std::string GetGCSID(
             const std::string& a_name) const;
 
     };
 
-    template <class T, class C>
-    class UIDataBase
-    {
-    protected:
-        [[nodiscard]] virtual const C& GetData(const T* a_data) const = 0;
-    };
-
-    template <class T>
-    class UIProfileBase
-    {
-    public:
-        const T* GetCurrentProfile() const;
-    protected:
-        UIProfileBase() = default;
-        virtual ~UIProfileBase() noexcept = default;
-
-        void DrawCreateNew();
-
-        struct {
-            char new_input[60];
-            UISelectedItem<std::string> selected;
-            except::descriptor lastException;
-        } m_state;
-    };
-
     template <class T, class P>
     class UIProfileSelector :
-        virtual protected UIBase,
-        UIDataBase<T, typename P::base_type>,
-        public UIProfileBase<P>
+        public UICommon::UIProfileSelectorBase<T, P>
     {
     protected:
-        UIProfileSelector() = default;
-        virtual ~UIProfileSelector() = default;
-
-        void DrawProfileSelector(T* a_data);
-
-        virtual void ApplyProfile(
-            T* a_data,
-            const P& a_profile) = 0;
-
-    private:
+        virtual ProfileManager<P>& GetProfileManager() const;
     };
 
     template <class T>
     class UIApplyForce :
         virtual protected UIBase,
-        UIDataBase<T, configComponents_t>
+        UICommon::UIDataBase<T, configComponents_t>
     {
         static constexpr float FORCE_MIN = -1000.0f;
         static constexpr float FORCE_MAX = 1000.0f;
@@ -569,48 +318,21 @@ namespace CBP
 
     private:
         struct {
-            UISelectedItem<std::string> selected;
+            SelectedItem<std::string> selected;
         } m_forceState;
     };
 
-    template <class T>
-    class UIProfileEditorBase :
-        virtual protected UIBase,
-        UIProfileBase<T>
-    {
-    public:
-        UIProfileEditorBase(const char* a_name);
-        virtual ~UIProfileEditorBase() noexcept = default;
-
-        void Draw(bool* a_active);
-
-        inline const char* GetName() const {
-            return m_name;
-        }
-    protected:
-
-        virtual void DrawItem(T& a_profile) = 0;
-    private:
-
-        virtual void DrawOptions(T& a_profile);
-
-        struct {
-            char ren_input[60];
-        } ex_state;
-
-        UIGenericFilter m_filter;
-
-        const char* m_name;
-    };
-
     class UIProfileEditorPhysics :
-        public UIProfileEditorBase<PhysicsProfile>,
+        public UICommon::UIProfileEditorBase<PhysicsProfile>,
         UISimComponent<int, UIEditorID::kProfileEditorPhys>
     {
     public:
         UIProfileEditorPhysics(const char* a_name) :
-            UIProfileEditorBase<PhysicsProfile>(a_name) {}
+            UICommon::UIProfileEditorBase<PhysicsProfile>(a_name) {}
     private:
+
+        virtual ProfileManager<PhysicsProfile>& GetProfileManager() const;
+
         virtual void DrawItem(PhysicsProfile& a_profile);
         virtual void DrawOptions(PhysicsProfile& a_profile);
 
@@ -656,13 +378,16 @@ namespace CBP
     };
 
     class UIProfileEditorNode :
-        public UIProfileEditorBase<NodeProfile>,
+        public UICommon::UIProfileEditorBase<NodeProfile>,
         UINode<int, UIEditorID::kProfileEditorNode>
     {
     public:
         UIProfileEditorNode(const char* a_name) :
-            UIProfileEditorBase<NodeProfile>(a_name) {}
+            UICommon::UIProfileEditorBase<NodeProfile>(a_name) {}
     private:
+
+        virtual ProfileManager<NodeProfile>& GetProfileManager() const;
+
         virtual void DrawItem(NodeProfile& a_profile);
         virtual void UpdateNodeData(
             int,
@@ -717,8 +442,8 @@ namespace CBP
         virtual void ListSetCurrentItem(P a_handle) = 0;
         virtual void ListUpdate() = 0;
         virtual void ListResetAllValues(P a_handle) = 0;
-        [[nodiscard]] virtual const entryValue_t& GetData(P a_formid) const = 0;
-        [[nodiscard]] virtual const entryValue_t& GetData(const listValue_t* a_data) const = 0;
+        [[nodiscard]] virtual const entryValue_t& GetData(P a_formid) = 0;
+        [[nodiscard]] virtual const entryValue_t& GetData(const listValue_t* a_data) = 0;
 
         bool m_listFirstUpdate;
         bool m_listNextUpdateCurrent;
@@ -728,7 +453,7 @@ namespace CBP
         P m_listCurrent;
 
         char m_listBuf1[128];
-        UIGenericFilter m_listFilter;
+        UICommon::UIGenericFilter m_listFilter;
     };
 
     template <class T>
@@ -791,7 +516,7 @@ namespace CBP
 
         void Draw(bool* a_active);
     private:
-        UISelectedItem<uint64_t> m_selected;
+        SelectedItem<uint64_t> m_selected;
         uint64_t m_input;
     };
 
@@ -807,8 +532,8 @@ namespace CBP
         void Reset();
     private:
         virtual void ListResetAllValues(Game::ObjectHandle a_handle);
-        [[nodiscard]] virtual const entryValue_t& GetData(Game::ObjectHandle a_handle) const;
-        [[nodiscard]] virtual const entryValue_t& GetData(const listValue_t* a_data) const;
+        [[nodiscard]] virtual const entryValue_t& GetData(Game::ObjectHandle a_handle);
+        [[nodiscard]] virtual const entryValue_t& GetData(const listValue_t* a_data);
 
         virtual void ApplyProfile(listValue_t* a_data, const NodeProfile& a_profile);
 
@@ -830,6 +555,7 @@ namespace CBP
 
     template <class T, class N>
     class UIRaceEditorBase :
+        virtual protected UIBase,
         public UIRaceList<T>,
         protected UIProfileSelector<typename T::value_type, N>
     {
@@ -847,7 +573,7 @@ namespace CBP
         UIRaceEditorBase() noexcept;
         virtual ~UIRaceEditorBase() noexcept = default;
 
-        [[nodiscard]] virtual const entryValue_t& GetData(Game::FormID a_formid) const = 0;
+        [[nodiscard]] virtual const entryValue_t& GetData(Game::FormID a_formid) = 0;
 
         inline void MarkChanged() { m_changed = true; }
 
@@ -865,8 +591,8 @@ namespace CBP
 
     private:
 
-        [[nodiscard]] virtual const entryValue_t& GetData(Game::FormID a_formid) const;
-        [[nodiscard]] virtual const entryValue_t& GetData(const listValue_t* a_entry) const;
+        [[nodiscard]] virtual const entryValue_t& GetData(Game::FormID a_formid);
+        [[nodiscard]] virtual const entryValue_t& GetData(const listValue_t* a_entry);
 
         [[nodiscard]] virtual configGlobalRace_t& GetRaceConfig() const;
 
@@ -891,8 +617,8 @@ namespace CBP
     private:
 
         virtual void ApplyProfile(listValue_t* a_data, const PhysicsProfile& a_profile);
-        [[nodiscard]] virtual const entryValue_t& GetData(Game::FormID a_formid) const;
-        [[nodiscard]] virtual const entryValue_t& GetData(const listValue_t* a_entry) const;
+        [[nodiscard]] virtual const entryValue_t& GetData(Game::FormID a_formid);
+        [[nodiscard]] virtual const entryValue_t& GetData(const listValue_t* a_entry);
 
         [[nodiscard]] virtual configGlobalRace_t& GetRaceConfig() const;
 
@@ -1044,7 +770,7 @@ namespace CBP
         }
 
     private:
-        UISelectedItem<SelectedFile> m_selected;
+        SelectedItem<SelectedFile> m_selected;
         std::vector<fs::path> m_files;
 
         except::descriptor m_lastExcept;
@@ -1207,7 +933,7 @@ namespace CBP
                 nodeConfigList_t& a_nodeConfig) const;
 
             virtual bool HasMovement(
-                nodeConfigList_t &a_nodeConfig) const;
+                nodeConfigList_t& a_nodeConfig) const;
 
             virtual bool HasCollisions(
                 nodeConfigList_t& a_nodeConfig) const;
@@ -1261,8 +987,8 @@ namespace CBP
 
         virtual void ListResetAllValues(Game::ObjectHandle a_handle);
 
-        [[nodiscard]] virtual const entryValue_t& GetData(Game::ObjectHandle a_handle) const;
-        [[nodiscard]] virtual const entryValue_t& GetData(const listValue_t* a_data) const;
+        [[nodiscard]] virtual const entryValue_t& GetData(Game::ObjectHandle a_handle);
+        [[nodiscard]] virtual const entryValue_t& GetData(const listValue_t* a_data);
 
         [[nodiscard]] virtual ConfigClass GetActorClass(Game::ObjectHandle a_handle) const;
         [[nodiscard]] virtual configGlobalActor_t& GetActorConfig() const;

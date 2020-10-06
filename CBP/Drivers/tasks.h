@@ -8,6 +8,14 @@ namespace CBP
         static void AddTaskFixed(TaskDelegateFixed* cmd);
         static void AddTask(TaskDelegate* cmd);
 
+        template <class T, typename... Args>
+        __forceinline static void AddTask(Args&&... a_args)
+        {
+            static_assert(std::is_base_of<TaskDelegate, T>::value);
+
+            SKSE::g_taskInterface->AddTask(new T(std::forward<Args>(a_args)...));
+        }
+
         static bool Initialize();
     private:
         DTasks() = default;

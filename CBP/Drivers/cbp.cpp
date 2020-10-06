@@ -25,7 +25,7 @@ namespace CBP
     {
     }
 
-    void DCBP::DispatchActorTask(Actor* actor, UTTask::UTTAction action)
+    void DCBP::DispatchActorTask(Actor* actor, ControllerInstruction::Action action)
     {
         if (actor != nullptr) {
             Game::ObjectHandle handle;
@@ -34,7 +34,7 @@ namespace CBP
         }
     }
 
-    void DCBP::DispatchActorTask(Game::ObjectHandle handle, UTTask::UTTAction action)
+    void DCBP::DispatchActorTask(Game::ObjectHandle handle, ControllerInstruction::Action action)
     {
         m_Instance.m_updateTask.AddTask(action, handle);
     }
@@ -42,61 +42,61 @@ namespace CBP
     void DCBP::UpdateConfigOnAllActors()
     {
         m_Instance.m_updateTask.AddTask(
-            UTTask::UTTAction::UpdateConfigAll);
+            ControllerInstruction::Action::UpdateConfigAll);
     }
 
     void DCBP::UpdateGroupInfoOnAllActors()
     {
         m_Instance.m_updateTask.AddTask(
-            UTTask::UTTAction::UpdateGroupInfoAll);
+            ControllerInstruction::Action::UpdateGroupInfoAll);
     }
 
     void DCBP::ResetPhysics()
     {
         m_Instance.m_updateTask.AddTask(
-            UTTask::UTTAction::PhysicsReset);
+            ControllerInstruction::Action::PhysicsReset);
     }
 
     void DCBP::NiNodeUpdate()
     {
         m_Instance.m_updateTask.AddTask(
-            UTTask::UTTAction::NiNodeUpdateAll);
+            ControllerInstruction::Action::NiNodeUpdateAll);
     }
 
     void DCBP::NiNodeUpdate(Game::ObjectHandle a_handle)
     {
         m_Instance.m_updateTask.AddTask(
-            UTTask::UTTAction::NiNodeUpdate, a_handle);
+            ControllerInstruction::Action::NiNodeUpdate, a_handle);
     }
 
     void DCBP::WeightUpdate()
     {
         m_Instance.m_updateTask.AddTask(
-            UTTask::UTTAction::WeightUpdateAll);
+            ControllerInstruction::Action::WeightUpdateAll);
     }
 
     void DCBP::WeightUpdate(Game::ObjectHandle a_handle)
     {
         m_Instance.m_updateTask.AddTask(
-            UTTask::UTTAction::WeightUpdate, a_handle);
+            ControllerInstruction::Action::WeightUpdate, a_handle);
     }
 
     void DCBP::ResetActors()
     {
         m_Instance.m_updateTask.AddTask(
-            UTTask::UTTAction::Reset);
+            ControllerInstruction::Action::Reset);
     }
 
     void DCBP::ClearArmorOverrides()
     {
         m_Instance.m_updateTask.AddTask(
-            UTTask::UTTAction::ClearArmorOverrides);
+            ControllerInstruction::Action::ClearArmorOverrides);
     }
 
     void DCBP::UpdateArmorOverridesAll()
     {
         m_Instance.m_updateTask.AddTask(
-            UTTask::UTTAction::UpdateArmorOverridesAll);
+            ControllerInstruction::Action::UpdateArmorOverridesAll);
     }
 
     void DCBP::UpdateDebugRendererState()
@@ -104,16 +104,14 @@ namespace CBP
         if (!m_Instance.conf.debug_renderer)
             return;
 
-        auto& globalConf = IConfig::GetGlobalConfig();
+        const auto& globalConf = IConfig::GetGlobal();
         auto& debugRenderer = m_Instance.m_world->getDebugRenderer();
 
-        if (m_Instance.m_world->getIsDebugRenderingEnabled() !=
-            globalConf.debugRenderer.enabled)
-        {
-            m_Instance.m_world->setIsDebugRenderingEnabled(
-                globalConf.debugRenderer.enabled);
-            debugRenderer.reset();
-        }
+        DCBP::GetRenderer()->Clear();
+        debugRenderer.reset();
+
+        m_Instance.m_world->setIsDebugRenderingEnabled(
+            globalConf.debugRenderer.enabled);
     }
 
     void DCBP::UpdateDebugRendererSettings()
@@ -121,7 +119,7 @@ namespace CBP
         if (!m_Instance.conf.debug_renderer)
             return;
 
-        auto& globalConf = IConfig::GetGlobalConfig();
+        auto& globalConf = IConfig::GetGlobal();
 
         auto& debugRenderer = m_Instance.m_world->getDebugRenderer();
 
@@ -140,7 +138,7 @@ namespace CBP
 
     void DCBP::UpdateProfilerSettings()
     {
-        auto& globalConf = IConfig::GetGlobalConfig();
+        auto& globalConf = IConfig::GetGlobal();
         auto& profiler = GetProfiler();
 
         profiler.SetInterval(static_cast<long long>(
@@ -153,21 +151,18 @@ namespace CBP
         const std::string& a_component,
         const NiPoint3& a_force)
     {
-        DTasks::AddTask(
-            new ApplyForceTask(
-                a_handle,
-                a_steps,
-                a_component,
-                a_force
-            )
-        );
+        DTasks::AddTask<ApplyForceTask>(
+            a_handle,
+            a_steps,
+            a_component,
+            a_force);
     }
 
     void DCBP::UIQueueUpdateCurrentActor()
     {
         if (m_Instance.conf.ui_enabled)
-            m_Instance.m_updateTask.AddTask({
-                UTTask::UTTAction::UIUpdateCurrentActor });
+            m_Instance.m_updateTask.AddTask(
+                ControllerInstruction::Action::UIUpdateCurrentActor);
     }
 
     bool DCBP::ExportData(const std::filesystem::path& a_path)
@@ -176,7 +171,7 @@ namespace CBP
         return iface.Export(a_path);
     }
 
-    bool DCBP::ImportData(const std::filesystem::path& a_path, uint8_t a_flags)
+    bool DCBP::ImportData(const std::filesystem::path& a_path, ISerialization::ImportFlags a_flags)
     {
         auto& iface = m_Instance.m_serialization;
 
@@ -187,10 +182,10 @@ namespace CBP
         return res;
     }
 
-    bool DCBP::ImportGetInfo(const std::filesystem::path& a_path, importInfo_t& a_out)
+    bool DCBP::GetImportInfo(const std::filesystem::path& a_path, importInfo_t& a_out)
     {
         auto& iface = m_Instance.m_serialization;
-        return iface.ImportGetInfo(a_path, a_out);
+        return iface.GetImportInfo(a_path, a_out);
     }
 
     bool DCBP::SaveAll()
@@ -247,7 +242,7 @@ namespace CBP
         conf.force_ini_keys = GetConfigValue(SECTION_CBP, CKEY_FORCEINIKEYS, false);
         conf.compression_level = std::clamp(GetConfigValue(SECTION_CBP, CKEY_COMPLEVEL, 1), 0, 9);
 
-        auto& globalConfig = IConfig::GetGlobalConfig();
+        auto& globalConfig = IConfig::GetGlobal();
 
         globalConfig.ui.comboKey = conf.comboKey = ConfigGetComboKey(GetConfigValue(SECTION_CBP, CKEY_COMBOKEY, 1));
         globalConfig.ui.showKey = conf.showKey = std::clamp<UInt32>(
@@ -259,7 +254,7 @@ namespace CBP
     {
         auto& paths = m_Instance.conf.paths;
 
-        try 
+        try
         {
             paths.root = m_Instance.GetConfigValue(SECTION_CBP, CKEY_DATAPATH, CBP_DATA_BASE_PATH);
 
@@ -318,7 +313,7 @@ namespace CBP
                 CBP::UTTask::UTTAction::UpdateArmorOverride);*/
 
         DCBP::DispatchActorTask(handle,
-            CBP::UTTask::UTTAction::UpdateArmorOverride);
+            ControllerInstruction::Action::UpdateArmorOverride);
 
     }
 
@@ -425,10 +420,10 @@ namespace CBP
 
         auto& driverConf = GetDriverConfig();
 
-        auto& pms = CBP::GlobalProfileManager::GetSingleton<CBP::PhysicsProfile>();
+        auto& pms = GlobalProfileManager::GetSingleton<PhysicsProfile>();
         pms.Load(driverConf.paths.profilesPhysics);
 
-        auto& pmn = CBP::GlobalProfileManager::GetSingleton<CBP::NodeProfile>();
+        auto& pmn = GlobalProfileManager::GetSingleton<NodeProfile>();
         pmn.Load(driverConf.paths.profilesNode);
     }
 
@@ -449,12 +444,12 @@ namespace CBP
     {
         Lock();
 
-        auto& globalConf = IConfig::GetGlobalConfig();
+        auto& globalConf = IConfig::GetGlobal();
 
         if (globalConf.debugRenderer.enabled)
         {
-            auto mm = MenuManager::GetSingleton();
-            if (!mm || !mm->InPausedMenu()) {
+            if (!Game::InPausedMenu())
+            {
                 try {
                     m_Instance.m_renderer->Draw();
                 }
@@ -481,6 +476,9 @@ namespace CBP
 
         m_Instance.m_updateTask.Clear();
         SavePending();
+
+        if (m_Instance.m_renderer.get())
+            m_Instance.m_renderer.release();
 
         m_Instance.Debug("Shutting down");
     }
@@ -528,10 +526,10 @@ namespace CBP
             if (GetDriverConfig().ui_enabled)
                 GetUIContext().Initialize();
 
-            GetUpdateTask().UpdateTimeTick(IConfig::GetGlobalConfig().phys.timeTick);
+            GetUpdateTask().UpdateTimeTick(IConfig::GetGlobal().phys.timeTick);
             UpdateKeys();
 
-            if (IData::PopulateModList())
+            if (DData::HasModList())
             {
                 if (!ITemplate::LoadProfiles())
                     m_Instance.Error("%s: ITemplate::LoadProfiles failed: %s",
@@ -771,28 +769,28 @@ namespace CBP
     {
         m_Instance.Debug("Reverting..");
 
-        Lock();
+        IScopedCriticalSection _(std::addressof(GetLock()));
 
         if (GetDriverConfig().debug_renderer)
             GetRenderer()->Clear();
 
         m_Instance.m_loadInstance++;
 
-        IConfig::ClearActorPhysicsConfigHolder();
-        IConfig::ClearActorNodeConfigHolder();
-        IConfig::ClearRacePhysicsConfigHolder();
-        IConfig::ClearRaceNodeConfigHolder();
+        IConfig::ClearActorPhysicsHolder();
+        IConfig::ClearActorNodeHolder();
+        IConfig::ClearRacePhysicsHolder();
+        IConfig::ClearRaceNodeHolder();
 
         auto& iface = m_Instance.m_serialization;
         auto& dgp = IConfig::GetDefaultProfile();
 
         if (dgp.stored) {
-            IConfig::SetGlobalPhysicsConfig(dgp.components);
-            IConfig::SetGlobalNodeConfig(dgp.nodes);
+            IConfig::SetGlobalPhysics(dgp.components);
+            IConfig::SetGlobalNode(dgp.nodes);
         }
         else {
-            IConfig::ClearGlobalPhysicsConfig();
-            IConfig::ClearGlobalNodeConfig();
+            IConfig::ClearGlobalPhysics();
+            IConfig::ClearGlobalNode();
 
             if (iface.LoadDefaultProfile())
                 IConfig::StoreDefaultProfile();
@@ -800,8 +798,6 @@ namespace CBP
 
         GetUpdateTask().ClearActors();
         QueueUIReset();
-
-        Unlock();
     }
 
     static UInt32 controlDisableFlags =
@@ -813,7 +809,7 @@ namespace CBP
 
     bool DCBP::ProcessUICallbackImpl()
     {
-        Lock();
+        IScopedCriticalSection _(std::addressof(GetLock()));
 
         auto& io = ImGui::GetIO();
 
@@ -823,11 +819,12 @@ namespace CBP
             uiState.show = false;
         }
         else {
-            auto mm = MenuManager::GetSingleton();
-            if (mm && mm->InPausedMenu())
+            if (Game::InPausedMenu())
                 uiState.show = false;
-            else {
-                if (m_resetUI) {
+            else
+            {
+                if (m_resetUI)
+                {
                     m_resetUI = false;
                     m_uiContext.Reset(m_loadInstance);
                 }
@@ -836,13 +833,10 @@ namespace CBP
             }
         }
 
-        bool ret = uiState.show;
-        if (!ret)
-            DTasks::AddTask(new SwitchUITask(false));
+        if (!uiState.show)
+            DTasks::AddTask<SwitchUITask>(false);
 
-        Unlock();
-
-        return ret;
+        return uiState.show;
     }
 
     bool DCBP::UICallback()
@@ -857,7 +851,7 @@ namespace CBP
             player->byCharGenFlag |= byChargenDisableFlags;
         }
 
-        auto& globalConf = IConfig::GetGlobalConfig();
+        auto& globalConf = IConfig::GetGlobal();
 
         uiState.lockControls = globalConf.ui.lockControls;
 
@@ -894,51 +888,48 @@ namespace CBP
 
     bool DCBP::RunEnableUIChecks()
     {
-        auto mm = MenuManager::GetSingleton();
-        if (mm && mm->InPausedMenu()) {
-            Game::Debug::Notification("CBP UI not available while in menu");
+        if (Game::InPausedMenu()) {
+            Game::Debug::Notification("CBP UI unavailable while in menu");
             return false;
         }
 
         auto player = *g_thePlayer;
-        if (player)
-        {
-            if (player->IsInCombat()) {
-                Game::Debug::Notification("CBP UI not available while in combat");
-                return false;
-            }
+        if (!player)
+            return false;
 
-            auto pl = Game::ProcessLists::GetSingleton();
-            if (pl && pl->GuardsPursuing(player)) {
-                Game::Debug::Notification("CBP UI not available while pursued by guards");
-                return false;
-            }
-
-            auto tm = MenuTopicManager::GetSingleton();
-            if (tm && tm->GetDialogueTarget() != nullptr) {
-                Game::Debug::Notification("CBP UI not available while in a conversation");
-                return false;
-            }
-
-            if (player->unkBDA & PlayerCharacter::FlagBDA::kAIDriven) {
-                Game::Debug::Notification("CBP UI unavailable while player is AI driven");
-                return false;
-            }
-
-            if (player->byCharGenFlag & PlayerCharacter::ByCharGenFlag::kAll) {
-                Game::Debug::Notification("CBP UI currently unavailable");
-                return false;
-            }
-
-            return true;
+        if (player->IsInCombat()) {
+            Game::Debug::Notification("CBP UI unavailable while in combat");
+            return false;
         }
 
-        return false;
+        auto pl = Game::ProcessLists::GetSingleton();
+        if (pl && pl->GuardsPursuing(player)) {
+            Game::Debug::Notification("CBP UI unavailable while pursued by guards");
+            return false;
+        }
+
+        auto tm = MenuTopicManager::GetSingleton();
+        if (tm && tm->GetDialogueTarget() != nullptr) {
+            Game::Debug::Notification("CBP UI unavailable while in a conversation");
+            return false;
+        }
+
+        if (player->unkBDA & PlayerCharacter::FlagBDA::kAIDriven) {
+            Game::Debug::Notification("CBP UI unavailable while player is AI driven");
+            return false;
+        }
+
+        if (player->byCharGenFlag & PlayerCharacter::ByCharGenFlag::kAll) {
+            Game::Debug::Notification("CBP UI currently unavailable");
+            return false;
+        }
+
+        return true;
     }
 
     void DCBP::KeyPressHandler::UpdateKeys()
     {
-        auto& globalConfig = IConfig::GetGlobalConfig();
+        auto& globalConfig = IConfig::GetGlobal();
         auto& driverConf = GetDriverConfig();
 
         if (driverConf.force_ini_keys) {
@@ -963,10 +954,10 @@ namespace CBP
         {
         case KeyEvent::KeyDown:
             if (m_comboKey && keyCode == m_comboKey)
-                combo_down = true;            
+                combo_down = true;
             if (m_comboKeyDR && keyCode == m_comboKeyDR)
                 combo_downDR = true;
-            
+
             if (keyCode == m_showKey) {
                 if (m_comboKey && !combo_down)
                     break;
@@ -983,7 +974,7 @@ namespace CBP
 
                 Lock();
 
-                auto& globalConfig = IConfig::GetGlobalConfig();
+                auto& globalConfig = IConfig::GetGlobal();
                 globalConfig.debugRenderer.enabled = !globalConfig.debugRenderer.enabled;
 
                 MarkGlobalsForSave();

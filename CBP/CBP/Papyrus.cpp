@@ -79,8 +79,8 @@ namespace CBP
         std::string sect(a_sect.c_str());
         std::string key(a_key.c_str());
 
-        transform(sect.begin(), sect.end(), sect.begin(), ::tolower);
-        transform(key.begin(), key.end(), key.begin(), ::tolower);
+        //transform(sect.begin(), sect.end(), sect.begin(), ::tolower);
+        //transform(key.begin(), key.end(), key.begin(), ::tolower);
 
         auto& tgcd = IConfig::GetTemplateBase<configComponents_t>();
 
@@ -120,7 +120,7 @@ namespace CBP
 
         if (m_handle)
         {
-            auto& ach = IConfig::GetActorPhysicsConfigHolder();
+            auto& ach = IConfig::GetActorPhysicsHolder();
 
             auto ith = ach.find(m_handle);
             if (ith == ach.end())
@@ -132,10 +132,10 @@ namespace CBP
 
             if (itt->second.Set(m_key, m_val))
                 DCBP::DispatchActorTask(
-                    m_handle, UTTask::UTTAction::UpdateConfig);
+                    m_handle, ControllerInstruction::Action::UpdateConfig);
         }
         else {
-            auto& globalConfig = IConfig::GetGlobalPhysicsConfig();
+            auto& globalConfig = IConfig::GetGlobalPhysics();
 
             auto it = globalConfig.find(m_sect);
             if (it == globalConfig.end())

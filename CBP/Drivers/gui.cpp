@@ -6,7 +6,7 @@ namespace CBP
 
     DUI::DUI() :
         m_imInitialized(false),
-        m_isRunning(false),
+        m_suspended(false),
         m_nextResetIO(false)
     {
     }
@@ -30,12 +30,10 @@ namespace CBP
 
     void DUI::Present_Pre_Impl()
     {
-        m_lock.Enter();
-
-        if (m_drawCallbacks.size() == 0) {
-            m_lock.Leave();
+        if (m_suspended)
             return;
-        }
+
+        IScopedCriticalSection _(std::addressof(m_lock));
 
         if (m_nextResetIO) {
             m_nextResetIO = false;
@@ -69,7 +67,7 @@ namespace CBP
 
         if (m_drawCallbacks.size() == 0) {
             ResetImGuiIO();
-            m_isRunning = false;
+            Suspend();
         }
 
         m_lock.Leave();
@@ -153,26 +151,28 @@ namespace CBP
 
     void DUI::KeyPressHandler::ReceiveEvent(KeyEvent ev, UInt32 keyCode)
     {
-        if (!m_Instance.m_isRunning)
+        if (m_Instance.m_suspended)
             return;
+
+        auto& queue = GetKeyPressQueue();
 
         switch (keyCode)
         {
         case InputMap::kMacro_MouseButtonOffset:
-            m_Instance.m_keyEvents.AddTask(new KeyEventTask(ev, KeyEventTask::kMouseButton, 0U));
+            queue.AddTask<KeyEventTask>(ev, KeyEventType::MouseButton, 0U);
             break;
         case InputMap::kMacro_MouseButtonOffset + 1:
-            m_Instance.m_keyEvents.AddTask(new KeyEventTask(ev, KeyEventTask::kMouseButton, 1U));
+            queue.AddTask<KeyEventTask>(ev, KeyEventType::MouseButton, 1U);
             break;
         case InputMap::kMacro_MouseButtonOffset + 2:
-            m_Instance.m_keyEvents.AddTask(new KeyEventTask(ev, KeyEventTask::kMouseButton, 2U));
+            queue.AddTask<KeyEventTask>(ev, KeyEventType::MouseButton, 2U);
             break;
         case InputMap::kMacro_MouseWheelOffset:
-            m_Instance.m_keyEvents.AddTask(new KeyEventTask(ev, KeyEventTask::kMouseWheel, 1.0f));
+            queue.AddTask<KeyEventTask>(ev, KeyEventType::MouseWheel, 1.0f);
             break;
         case InputMap::kMacro_MouseWheelOffset + 1:
-            m_Instance.m_keyEvents.AddTask(new KeyEventTask(ev, KeyEventTask::kMouseWheel, -1.0f));
-            return;
+            queue.AddTask<KeyEventTask>(ev, KeyEventType::MouseWheel, -1.0f);
+            break;
         default:
             if (keyCode < InputMap::kMacro_NumKeyboardKeys)
             {
@@ -202,9 +202,10 @@ namespace CBP
                     }
                 }
 
-                WORD Char = 0;
+                WORD Char(0);
 
-                if (ev == KeyEvent::KeyDown) {
+                if (ev == KeyEvent::KeyDown)
+                {
                     if (GetKeyboardState(keyState)) {
                         if (!ToAscii(vkCode, keyCode, keyState, &Char, 0) != 0) {
                             Char = 0;
@@ -212,14 +213,7 @@ namespace CBP
                     }
                 }
 
-                m_Instance.m_keyEvents.AddTask(
-                    new KeyEventTask(
-                        ev,
-                        KeyEventTask::kKeyboard,
-                        vkCode,
-                        Char
-                    )
-                );
+                queue.AddTask<KeyEventTask>(ev, KeyEventType::Keyboard, vkCode, Char);
             }
 
             break;
@@ -255,15 +249,15 @@ namespace CBP
         auto& io = ImGui::GetIO();
 
         switch (m_eventType) {
-        case kMouseButton:
+        case KeyEventType::MouseButton:
             io.MouseDown[b.m_uval] = (m_event == KeyEvent::KeyDown ? true : false);
             /*if (!ImGui::IsAnyMouseDown() && ::GetCapture() == m_Instance.m_WindowHandle)
                 ::ReleaseCapture();*/
             break;
-        case kMouseWheel:
+        case KeyEventType::MouseWheel:
             io.MouseWheel += b.m_fval;
             break;
-        case kKeyboard:
+        case KeyEventType::Keyboard:
             if (m_event == KeyEvent::KeyDown)
             {
                 if (b.m_uval < ARRAYSIZE(io.KeysDown))
@@ -272,34 +266,33 @@ namespace CBP
                 if (m_k != 0)
                     io.AddInputCharacterUTF16(m_k);
             }
-            else {
+            else
+            {
                 if (b.m_uval < ARRAYSIZE(io.KeysDown))
                     io.KeysDown[b.m_uval] = false;
             }
-            break;
-        case kResetIO:
-            m_Instance.ResetImGuiIO();
             break;
         }
     }
 
     void DUI::AddCallback(uint32_t id, const uiDrawCallback_t f)
     {
-        m_Instance.m_lock.Enter();
+        IScopedCriticalSection _(std::addressof(m_Instance.m_lock));
+
         m_Instance.m_drawCallbacks.insert_or_assign(id, f);
-        m_Instance.m_isRunning = true;
-        m_Instance.m_lock.Leave();
+
+        if (m_Instance.m_suspended)
+            m_Instance.m_suspended = false;
     }
 
     void DUI::RemoveCallback(uint32_t id)
     {
-        m_Instance.m_lock.Enter();
+        IScopedCriticalSection _(std::addressof(m_Instance.m_lock));
+
         m_Instance.m_drawCallbacks.erase(id);
-        if (m_Instance.m_drawCallbacks.size() == 0) {
-            m_Instance.ResetImGuiIO();
-            m_Instance.m_isRunning = false;
-        }
-        m_Instance.m_lock.Leave();
+
+        if (m_Instance.m_drawCallbacks.empty())
+            m_Instance.Suspend();
     }
 
     void DUI::ResetImGuiIO()
@@ -317,137 +310,10 @@ namespace CBP
         m_keyEvents.ClearTasks();
     }
 
-    namespace UICommon
+    void DUI::Suspend()
     {
-        template<typename... Args>
-        bool ConfirmDialog(const char* name, const char* text, Args... args)
-        {
-            bool ret = false;
-            auto& io = ImGui::GetIO();
-
-            ImVec2 center(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f);
-            ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
-
-            if (ImGui::BeginPopupModal(name, nullptr, ImGuiWindowFlags_AlwaysAutoResize))
-            {
-                ImGui::PushTextWrapPos(ImGui::GetFontSize() * 22.0f);
-                ImGui::Text(text, args...);
-                ImGui::PopTextWrapPos();
-                ImGui::Separator();
-
-                if (ImGui::Button("OK", ImVec2(120, 0))) {
-                    ImGui::CloseCurrentPopup();
-                    ret = true;
-                }
-
-                ImGui::SetItemDefaultFocus();
-                ImGui::SameLine();
-                if (ImGui::Button("Cancel", ImVec2(120, 0))) {
-                    ImGui::CloseCurrentPopup();
-                }
-                ImGui::EndPopup();
-            }
-
-            return ret;
-        }
-
-        template bool ConfirmDialog<>(const char*, const char*);
-        template bool ConfirmDialog<const char*>(const char*, const char*, const char*);
-        template bool ConfirmDialog<const char*>(const char*, const char*, const char*, const char*);
-
-        template<typename... Args>
-        void MessageDialog(const char* name, const char* text, Args... args)
-        {
-            auto& io = ImGui::GetIO();
-
-            ImVec2 center(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f);
-            ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
-
-            if (ImGui::BeginPopupModal(name, nullptr, ImGuiWindowFlags_AlwaysAutoResize))
-            {
-                ImGui::PushTextWrapPos(ImGui::GetFontSize() * 30.0f);
-                ImGui::Text(text, args...);
-                ImGui::PopTextWrapPos();
-                ImGui::Separator();
-
-                ImGui::SetItemDefaultFocus();
-                if (ImGui::Button("OK", ImVec2(120, 0))) {
-                    ImGui::CloseCurrentPopup();
-                }
-
-                ImGui::EndPopup();
-            }
-        }
-
-        template void MessageDialog<>(const char*, const char*);
-        template void MessageDialog<const char*>(const char*, const char*, const char*);
-        template void MessageDialog<const char*, const char*>(const char*, const char*, const char*, const char*);
-        template void MessageDialog<const char*, const char*, const char*>(const char*, const char*, const char*, const char*, const char*);
-
-        template<typename... Args>
-        bool TextInputDialog(const char* a_name, const char* a_text, char* a_buf, size_t a_size, float a_scale, Args... args)
-        {
-            bool ret = false;
-
-            auto& io = ImGui::GetIO();
-
-            ImVec2 center(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f);
-            ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
-
-            if (ImGui::BeginPopupModal(a_name, nullptr, ImGuiWindowFlags_AlwaysAutoResize))
-            {
-                //kwek - fix for font scaling per SlavicPotato
-                ImGui::SetWindowFontScale(a_scale);
-
-                ImGui::PushTextWrapPos(ImGui::GetFontSize() * 30.0f);
-                ImGui::Text(a_text, args...);
-                ImGui::PopTextWrapPos();
-
-                ImGui::Spacing();
-
-                if (!ImGui::IsAnyItemActive())
-                    ImGui::SetKeyboardFocusHere();
-
-                if (ImGui::InputText("", a_buf, a_size, ImGuiInputTextFlags_EnterReturnsTrue)) {
-                    ImGui::CloseCurrentPopup();
-                    ret = true;
-                }
-
-                ImGui::Separator();
-
-                if (ImGui::Button("OK", ImVec2(120, 0))) {
-                    ImGui::CloseCurrentPopup();
-                    ret = true;
-                }
-
-                ImGui::SetItemDefaultFocus();
-                ImGui::SameLine();
-                if (ImGui::Button("Cancel", ImVec2(120, 0))) {
-                    ImGui::CloseCurrentPopup();
-                }
-
-                ImGui::EndPopup();
-            }
-
-            return ret;
-        }
-
-        template bool TextInputDialog<>(const char*, const char*, char*, size_t, float);
-
-        void HelpMarker(const char* desc, float a_scale)
-        {
-            //kwek - font scaling extended to help popups
-            ImGui::TextDisabled("[?]");
-            if (ImGui::IsItemHovered())
-            {
-                ImGui::BeginTooltip();
-                ImGui::SetWindowFontScale(a_scale);
-                ImGui::PushTextWrapPos(ImGui::GetFontSize() * a_scale * 35.0f);
-                ImGui::TextUnformatted(desc);
-                ImGui::PopTextWrapPos();
-                ImGui::EndTooltip();
-            }
-        }
+        ResetImGuiIO();
+        m_suspended = true;
     }
 
 }

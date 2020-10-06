@@ -20,16 +20,17 @@ namespace CBP
             BYTE keyState[256];
         };
 
+        enum class KeyEventType : uint32_t
+        {
+            MouseButton = 0,
+            MouseWheel,
+            Keyboard
+        };
+
         class KeyEventTask :
             public TaskDelegate
         {
         public:
-            enum KeyEventType {
-                kMouseButton = 0,
-                kMouseWheel,
-                kKeyboard,
-                kResetIO
-            };
 
             KeyEventTask(KeyEvent a_event, KeyEventType a_eventType, UINT a_val, WCHAR a_k = 0);
             KeyEventTask(KeyEvent a_event, KeyEventType a_eventType, float a_val);
@@ -77,6 +78,7 @@ namespace CBP
         }
 
         void ResetImGuiIO();
+        void Suspend();
 
         inline static void QueueResetIO()
         {
@@ -104,6 +106,10 @@ namespace CBP
         static void OnD3D11PostCreate_DUI(Event, void* data);
         static void OnExit_DUI(Event, void* data);
 
+        inline static auto& GetKeyPressQueue() {
+            return m_Instance.m_keyEvents;
+        }
+
         WNDPROC pfnWndProc;
 
         struct {
@@ -123,30 +129,16 @@ namespace CBP
         KeyPressHandler m_inputEventHandler;
 
         bool m_imInitialized;
-        bool m_isRunning;
+        bool m_suspended;
         HWND m_WindowHandle;
 
-        TaskQueueUnsafe m_keyEvents;
+        TaskQueue m_keyEvents;
 
         std::atomic<bool> m_nextResetIO;
 
         ICriticalSection m_lock;
 
         static DUI m_Instance;
-    };
-
-    namespace UICommon
-    {
-        template <typename... Args>
-        bool ConfirmDialog(const char* name, const char* text, Args... args);
-
-        template <typename... Args>
-        void MessageDialog(const char* name, const char* text, Args... args);
-
-        template<typename... Args>
-        bool TextInputDialog(const char* name, const char* text, char* buf, size_t size, float a_scale, Args... args);
-
-        void HelpMarker(const char* desc, float a_scale);
     };
 
 }

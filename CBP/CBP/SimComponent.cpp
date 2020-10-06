@@ -87,6 +87,9 @@ namespace CBP
 
     void SimComponent::Collider::Update()
     {
+        static_assert(sizeof(r3d::Matrix3x3) == sizeof(NiMatrix33));
+        static_assert(sizeof(r3d::Vector3) == sizeof(NiPoint3));
+
         if (!m_created)
             return;
 
@@ -114,21 +117,17 @@ namespace CBP
 
         if (m_shape == ColliderShape::Capsule)
         {
-            auto& mat = m_parent.m_obj->m_worldTransform.rot;
-
-            r3d::Quaternion quat(r3d::Matrix3x3(
-                mat.arr[0], mat.arr[1], mat.arr[2],
-                mat.arr[3], mat.arr[4], mat.arr[5],
-                mat.arr[6], mat.arr[7], mat.arr[8])
-            );
+            r3d::Quaternion quat(
+                reinterpret_cast<const r3d::Matrix3x3&>(
+                    m_parent.m_obj->m_worldTransform.rot));
 
             m_body->setTransform(r3d::Transform(
-                r3d::Vector3(pos.x, pos.y, pos.z),
+                reinterpret_cast<const r3d::Vector3&>(pos),
                 quat * m_colRot));
         }
         else
         {
-            m_transform.setPosition(r3d::Vector3(pos.x, pos.y, pos.z));
+            m_transform.setPosition(reinterpret_cast<const r3d::Vector3&>(pos));
             m_body->setTransform(m_transform);
         }
 
@@ -159,8 +158,8 @@ namespace CBP
         :
         m_configGroupName(a_configGroupName),
         m_oldWorldPos(a_obj->m_worldTransform.pos),
-        m_initialNodePos(a_obj->m_localTransform.pos),
-        m_initialNodeRot(a_obj->m_localTransform.rot),
+        m_initialTransform(a_obj->m_localTransform),
+        m_hasScaleOverride(false),
         m_collisionData(*this),
         m_parentId(a_parentId),
         m_groupId(a_groupId),
@@ -278,19 +277,41 @@ namespace CBP
 
         if (rot != m_rotScaleOn) {
             m_rotScaleOn = rot;
-            m_obj->m_localTransform.rot = m_initialNodeRot;
+            m_obj->m_localTransform.rot = m_initialTransform.rot;
         }
 
         m_conf.phys.mass = std::clamp(m_conf.phys.mass, 1.0f, 10000.0f);
         m_conf.phys.colPenMass = std::clamp(m_conf.phys.colPenMass, 1.0f, 100.0f);
+
+        if (a_nodeConf.overrideScale)
+        {
+            if (!m_hasScaleOverride)
+            {
+                m_initialTransform.scale = m_obj->m_localTransform.scale;
+                m_hasScaleOverride = true;
+            }
+
+            m_obj->m_localTransform.scale = std::clamp(a_nodeConf.nodeScale, 0.0f, 20.0f);
+        }
+        else
+        {
+            if (m_hasScaleOverride)
+            {
+                m_obj->m_localTransform.scale = m_initialTransform.scale;
+                m_hasScaleOverride = false;
+            }
+        }
+
+        m_obj->UpdateWorldData(&m_updateCtx);
     }
 
     void SimComponent::Reset()
     {
         if (m_movement)
         {
-            m_obj->m_localTransform.pos = m_initialNodePos;
-            m_obj->m_localTransform.rot = m_initialNodeRot;
+            m_obj->m_localTransform = m_initialTransform;
+            m_hasScaleOverride = false;
+
             m_obj->UpdateWorldData(&m_updateCtx);
         }
 
@@ -341,10 +362,10 @@ namespace CBP
             }
 
             float res = m_resistanceOn ?
-                (1.0f - 1.0f / ((m_velocity.Length() * 0.0075f) + 1.0f)) * m_resistance : 0.0f;
+                (1.0f - 1.0f / (m_velocity.Length() * 0.0075f + 1.0f)) * m_resistance + 1.0f : 1.0f;
 
-            SetVelocity((m_velocity + ((force / m_conf.phys.mass) * a_timeStep)) -
-                (m_velocity * ((m_conf.phys.damping * (1.0f + res)) * a_timeStep)));
+            SetVelocity((m_velocity + (force / m_conf.phys.mass * a_timeStep)) -
+                (m_velocity * ((m_conf.phys.damping * res) * a_timeStep)));
 
             auto invRot = m_objParent->m_worldTransform.rot.Transpose();
 
@@ -355,13 +376,16 @@ namespace CBP
             ldiff.y = std::clamp(ldiff.y, -m_conf.phys.maxOffset[1], m_conf.phys.maxOffset[1]);
             ldiff.z = std::clamp(ldiff.z, -m_conf.phys.maxOffset[2], m_conf.phys.maxOffset[2]);
 
-            m_oldWorldPos = (m_objParent->m_worldTransform.rot * ldiff) + target;
+            m_oldWorldPos = m_objParent->m_worldTransform.rot * ldiff + target;
 
-            m_obj->m_localTransform.pos.x = m_initialNodePos.x + (ldiff.x * m_conf.phys.linear[0]);
-            m_obj->m_localTransform.pos.y = m_initialNodePos.y + (ldiff.y * m_conf.phys.linear[1]);
-            m_obj->m_localTransform.pos.z = m_initialNodePos.z + (ldiff.z * m_conf.phys.linear[2]);
+            m_obj->m_localTransform.pos.x = m_initialTransform.pos.x + ldiff.x * m_conf.phys.linear[0];
+            m_obj->m_localTransform.pos.y = m_initialTransform.pos.y + ldiff.y * m_conf.phys.linear[1];
+            m_obj->m_localTransform.pos.z = m_initialTransform.pos.z + ldiff.z * m_conf.phys.linear[2];
 
             m_obj->m_localTransform.pos += invRot * m_npGravityCorrection;
+
+            /*if (m_formid == 0x14 && std::string(m_obj->m_name) == "NPC L Breast")
+                gLog.Debug(">> %f %f %f", dir.x, dir.y, dir.z);*/
 
             if (m_rotScaleOn)
                 m_obj->m_localTransform.rot.SetEulerAngles(
@@ -408,4 +432,4 @@ namespace CBP
         m_debugInfo.localTransformParent = m_objParent->m_localTransform;
     }
 #endif
-}
+    }

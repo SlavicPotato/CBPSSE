@@ -76,11 +76,8 @@ namespace CBP
                     if (data) {
                         auto extraData = ni_cast(data, NiStringExtraData);
 
-                        if (extraData && extraData->m_pString) {
-                            std::string tmp(extraData->m_pString);
-                            transform(tmp.begin(), tmp.end(), tmp.begin(), ::tolower);
-                            a_out.emplace(std::move(tmp));
-                        }
+                        if (extraData && extraData->m_pString) 
+                            a_out.emplace(extraData->m_pString);
                     }
 
                     return false;
@@ -172,11 +169,8 @@ namespace CBP
                         if (data) {
                             auto extraData = ni_cast(data, NiStringExtraData);
 
-                            if (extraData && extraData->m_pString) {
-                                std::string tmp(extraData->m_pString);
-                                transform(tmp.begin(), tmp.end(), tmp.begin(), ::tolower);
-                                a_out.emplace(std::move(tmp));
-                            }
+                            if (extraData && extraData->m_pString) 
+                                a_out.emplace(extraData->m_pString);
                         }
 
                         return false;

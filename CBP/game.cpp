@@ -57,6 +57,48 @@ namespace Game
         return policy->Resolve(typeID, handle);
     }
 
+    void AIProcessVisitActors(std::function<void(Actor*)> a_func)
+    {
+        auto player = *g_thePlayer;
+
+        if (player)
+            a_func(player);
+
+        auto pl = Game::ProcessLists::GetSingleton();
+        if (pl == nullptr)
+            return;
+
+        for (UInt32 i = 0; i < pl->highActorHandles.count; i++)
+        {
+            NiPointer<TESObjectREFR> ref;
+            LookupREFRByHandle(pl->highActorHandles[i], ref);
+
+            if (ref == nullptr)
+                continue;
+
+            if (ref->formType != Actor::kTypeID)
+                continue;
+
+            auto actor = DYNAMIC_CAST(ref, TESObjectREFR, Actor);
+
+            if (actor)
+                a_func(actor);
+        }
+    }
+
+    TESObjectREFR* GetReference(Game::FormID a_formid)
+    {
+        auto form = LookupFormByID(a_formid);
+        if (!form)
+            return nullptr;
+
+        auto actor = DYNAMIC_CAST(form, TESForm, TESObjectREFR);
+        if (!actor)
+            return nullptr;
+
+        return actor;
+    }
+
     static auto s_processLists = IAL::Addr< ProcessLists**>(514167);
 
     ProcessLists* ProcessLists::GetSingleton()

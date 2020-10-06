@@ -30,7 +30,7 @@ namespace CBP
         };
 
     public:
-        typedef std::unordered_map<std::string, profileTargetDesc_t> entry_t;
+        using entry_t = stl::iunordered_map<std::string, profileTargetDesc_t> ;
 
         TRecPlugin(const fs::path& a_path);
 
@@ -81,7 +81,7 @@ namespace CBP
 
         public:
             DataHolder(const std::string& a_fc) :
-                m_profileManager(a_fc, true)
+                m_profileManager(a_fc)
             {
             }
 

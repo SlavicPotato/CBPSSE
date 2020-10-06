@@ -2,8 +2,9 @@
 
 namespace CBP
 {
-    enum Event {
-        OnMessage = 0,
+    enum class Event : uint32_t 
+    {
+        OnMessage,
         OnGameSave,
         OnGameLoad,
         OnFormDelete,
@@ -15,7 +16,7 @@ namespace CBP
 
     typedef void (*EventCallback)(Event, void*);
 
-    template <typename E, typename C>
+    template <class E, class C>
     class EventTriggerDescriptor
     {
     public:
@@ -23,7 +24,7 @@ namespace CBP
             m_code(m_code), m_callback(callback)
         {}
 
-        int m_code;
+        E m_code;
         C m_callback;
     };
 

@@ -279,7 +279,7 @@ namespace CBP
         }
     );
 
-    const std::unordered_map<std::string, std::string> configComponent_t::oldKeyMap =
+    const stl::iunordered_map<std::string, std::string> configComponent_t::oldKeyMap =
     {
         {"stiffness", "s"},
         {"stiffness2", "sq"},

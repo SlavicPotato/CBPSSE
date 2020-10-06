@@ -69,6 +69,7 @@
 #include <boost/iostreams/filtering_streambuf.hpp>
 #include <boost/iostreams/copy.hpp>
 #include <boost/iostreams/filter/gzip.hpp>
+#include <boost/any.hpp>
 
 #include <json/json.h>
 
@@ -82,15 +83,22 @@ namespace fs = std::filesystem;
 
 //#define _CBP_ENABLE_DEBUG
 
+#include "Common/Hash.h"
+#include "Common/Data.h"
 #include "plugin.h"
 #include "game.h"
 #include "skse.h"
 #include "config.h"
 #include "drivers/tasks.h"
 #include "drivers/events.h"
+#include "drivers/data.h"
 #include "drivers/input.h"
 #include "drivers/render.h"
 #include "drivers/gui.h"
+#include "Common/Serialization.h"
+#include "Common/ProfileManager.h"
+#include "Common/UIData.h"
+#include "Common/UICommon.h"
 #include "cbp/Data.h"
 #include "cbp/Config.h"
 #include "cbp/Serialization.h"

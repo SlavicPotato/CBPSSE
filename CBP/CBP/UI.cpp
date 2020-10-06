@@ -15,7 +15,7 @@ namespace CBP
         if (!a_formid)
             return;
 
-        auto& nodeConfig = IConfig::GetOrCreateRaceNodeConfig(a_formid);
+        auto& nodeConfig = IConfig::GetOrCreateRaceNode(a_formid);
         nodeConfig.insert_or_assign(a_node, a_data);
 
         if (a_reset)
@@ -39,48 +39,24 @@ namespace CBP
         }
     }
 
-    bool UIBase::CollapsingHeader(
-        const std::string& a_key,
-        const char* a_label,
-        bool a_default) const
+    UIData::UICollapsibleStates& UIBase::GetCollapsibleStatesData() const
     {
-        auto& globalConfig = IConfig::GetGlobalConfig();;
-
-        bool& state = globalConfig.GetColState(a_key, a_default);
-        bool newState = ImGui::CollapsingHeader(a_label,
-            state ? ImGuiTreeNodeFlags_DefaultOpen : 0);
-
-        if (state != newState) {
-            state = newState;
-            DCBP::MarkGlobalsForSave();
-        }
-
-        return newState;
+        return IConfig::GetGlobal().ui.colStates;
     }
 
-    bool UIBase::Tree(
-        const std::string& a_key,
-        const char* a_label,
-        bool a_default) const
+    void UIBase::OnCollapsibleStatesUpdate() const
     {
-        auto& globalConfig = IConfig::GetGlobalConfig();;
-
-        bool& state = globalConfig.GetColState(a_key, a_default);
-        bool newState = ImGui::TreeNodeEx(a_label,
-            ImGuiTreeNodeFlags_SpanAvailWidth |
-            (state ? ImGuiTreeNodeFlags_DefaultOpen : 0));
-
-        if (state != newState) {
-            state = newState;
-            DCBP::MarkGlobalsForSave();
-        }
-
-        return newState;
+        DCBP::MarkGlobalsForSave();
+    }
+    
+    void UIBase::OnControlValueChange() const
+    {
+        DCBP::MarkGlobalsForSave();
     }
 
     void UIBase::HelpMarker(MiscHelpText a_id) const
     {
-        const auto& globalConfig = IConfig::GetGlobalConfig();
+        const auto& globalConfig = IConfig::GetGlobal();
 
         ImGui::SameLine();
         UICommon::HelpMarker(m_helpText.at(a_id), globalConfig.ui.fontScale);
@@ -88,7 +64,7 @@ namespace CBP
 
     void UIBase::HelpMarker(const std::string& a_text) const
     {
-        const auto& globalConfig = IConfig::GetGlobalConfig();
+        const auto& globalConfig = IConfig::GetGlobal();
 
         ImGui::SameLine();
         UICommon::HelpMarker(a_text.c_str(), globalConfig.ui.fontScale);
@@ -103,336 +79,9 @@ namespace CBP
         DCBP::MarkGlobalsForSave();
     }
 
-    bool UIBase::CheckboxGlobal(const char* a_label, bool* a_member) const
+    ProfileManager<PhysicsProfile>& UIProfileEditorPhysics::GetProfileManager() const
     {
-        bool res = ImGui::Checkbox(a_label, a_member);
-        if (res)
-            DCBP::MarkGlobalsForSave();
-
-        return res;
-    }
-
-    bool UIBase::SliderFloatGlobal(
-        const char* a_label,
-        float* a_member,
-        float a_min,
-        float a_max,
-        const char* a_fmt) const
-    {
-        bool res = ImGui::SliderFloat(a_label, a_member, a_min, a_max, a_fmt);
-        if (res)
-        {
-            *a_member = std::clamp(*a_member, a_min, a_max);
-            DCBP::MarkGlobalsForSave();
-        }
-
-        return res;
-    }
-
-    bool UIBase::SliderFloat3Global(
-        const char* a_label,
-        float* a_member,
-        float a_min,
-        float a_max,
-        const char* a_fmt) const
-    {
-        bool res = ImGui::SliderFloat3(a_label, a_member, a_min, a_max, a_fmt);
-        if (res)
-        {
-            for (uint32_t i = 0; i < 3; i++)
-                a_member[i] = std::clamp(a_member[i], a_min, a_max);
-
-            DCBP::MarkGlobalsForSave();
-        }
-
-        return res;
-    }
-
-    bool UIBase::SliderIntGlobal(
-        const char* a_label,
-        int* a_member,
-        int a_min,
-        int a_max,
-        const char* a_fmt) const
-    {
-        bool res = ImGui::SliderInt(a_label, a_member, a_min, a_max, a_fmt);
-        if (res) {
-            *a_member = std::clamp(*a_member, a_min, a_max);
-            DCBP::MarkGlobalsForSave();
-        }
-
-        return res;
-    }
-
-    void UIBase::SetWindowDimensions(float a_offsetX, float a_sizeX, float a_sizeY)
-    {
-        auto& io = ImGui::GetIO();
-
-        if (!m_sizeData.initialized)
-        {
-            m_sizeData.sizeMin = {
-                std::min(300.0f, io.DisplaySize.x - 40.0f),
-                std::min(200.0f, io.DisplaySize.y - 40.0f) };
-
-            m_sizeData.sizeMax = {
-                std::min(1920.0f, io.DisplaySize.x),
-                std::max(io.DisplaySize.y - 40.0f, m_sizeData.sizeMin.y)
-            };
-
-            m_sizeData.pos = { std::min(20.0f + a_offsetX, io.DisplaySize.x - 40.0f), 20.0f };
-            m_sizeData.size = {
-                a_sizeX < 0.0f ? 450.0f : a_sizeX,
-                a_sizeY < 0.0f ? io.DisplaySize.y : a_sizeY };
-
-            m_sizeData.initialized = true;
-        }
-
-        ImGui::SetNextWindowPos(m_sizeData.pos, ImGuiCond_FirstUseEver);
-        ImGui::SetNextWindowSize(m_sizeData.size, ImGuiCond_FirstUseEver);
-
-        ImGui::SetNextWindowSizeConstraints(m_sizeData.sizeMin, m_sizeData.sizeMax);
-    }
-
-    bool UIBase::CanClip() const
-    {
-        auto window = ImGui::GetCurrentWindow();
-        ASSERT(window != nullptr);
-        return window->SkipItems;
-    }
-
-    template <class T>
-    void UIProfileBase<T>::DrawCreateNew()
-    {
-        const auto& globalConfig = IConfig::GetGlobalConfig();;
-
-        if (UICommon::TextInputDialog("New profile", "Enter the profile name:",
-            m_state.new_input, sizeof(m_state.new_input), globalConfig.ui.fontScale))
-        {
-            if (strlen(m_state.new_input))
-            {
-                auto& pm = GlobalProfileManager::GetSingleton<T>();
-
-                T profile;
-                if (pm.CreateProfile(m_state.new_input, profile))
-                {
-                    std::string name(profile.Name());
-                    if (pm.AddProfile(std::move(profile))) {
-                        m_state.selected = std::move(name);
-                    }
-                    else {
-                        m_state.lastException = pm.GetLastException();
-                        ImGui::OpenPopup("Add Error");
-                    }
-                }
-                else {
-                    m_state.lastException = pm.GetLastException();
-                    ImGui::OpenPopup("Create Error");
-                }
-            }
-        }
-
-        UICommon::MessageDialog("Create Error", "Could not create the profile\n\n%s", m_state.lastException.what());
-        UICommon::MessageDialog("Add Error", "Could not add the profile\n\n%s", m_state.lastException.what());
-
-    }
-
-    template <class T>
-    const T* UIProfileBase<T>::GetCurrentProfile() const
-    {
-        if (!m_state.selected)
-            return nullptr;
-
-        auto& data = GlobalProfileManager::GetSingleton<T>();
-
-        auto it = data.Find(*m_state.selected);
-        if (it != data.End())
-            return std::addressof(it->second);
-
-        return nullptr;
-    }
-
-    template <class T>
-    UIProfileEditorBase<T>::UIProfileEditorBase(const char* a_name) :
-        m_name(a_name)
-    {
-    }
-
-    template <class T>
-    void UIProfileEditorBase<T>::Draw(bool* a_active)
-    {
-        const auto& globalConfig = IConfig::GetGlobalConfig();
-
-        SetWindowDimensions(400.0f);
-
-        ImGui::PushID(static_cast<const void*>(this));
-
-        if (ImGui::Begin(m_name, a_active))
-        {
-            ImGui::SetWindowFontScale(globalConfig.ui.fontScale);
-
-            ImGui::PushItemWidth(ImGui::GetFontSize() * -15.5f);
-
-            auto& data = GlobalProfileManager::GetSingleton<T>().Data();
-
-            const char* curSelName = nullptr;
-            if (m_state.selected) {
-                if (data.find(*m_state.selected) != data.end())
-                {
-                    curSelName = m_state.selected->c_str();
-
-                    if (!m_filter.Test(*m_state.selected))
-                    {
-                        for (const auto& e : data)
-                        {
-                            if (!m_filter.Test(e.first))
-                                continue;
-
-                            m_state.selected = e.first;
-                            curSelName = e.first.c_str();
-
-                            break;
-                        }
-                    }
-                }
-                else {
-                    m_state.selected.Clear();
-                }
-            }
-            else {
-                if (data.size()) {
-                    m_state.selected = data.begin()->first;
-                    curSelName = (*m_state.selected).c_str();
-                }
-            }
-
-            ImGui::PushItemWidth(ImGui::GetFontSize() * -9.0f);
-
-            if (ImGui::BeginCombo("Profile", curSelName, ImGuiComboFlags_HeightLarge))
-            {
-                for (const auto& e : data)
-                {
-                    if (!m_filter.Test(e.first))
-                        continue;
-
-                    ImGui::PushID(reinterpret_cast<const void*>(std::addressof(e.second)));
-
-                    bool selected = e.first == *m_state.selected;
-                    if (selected)
-                        if (ImGui::IsWindowAppearing()) ImGui::SetScrollHereY();
-
-                    if (ImGui::Selectable(e.second.Name().c_str(), selected))
-                        m_state.selected = e.first;
-
-                    ImGui::PopID();
-                }
-                ImGui::EndCombo();
-            }
-
-            ImGui::SameLine();
-            m_filter.DrawButton();
-
-            ImGui::SameLine(ImGui::GetWindowContentRegionMax().x - GetNextTextOffset("New", true));
-            if (ButtonRight("New")) {
-                ImGui::OpenPopup("New profile");
-                m_state.new_input[0] = 0;
-            }
-
-            m_filter.Draw();
-
-            ImGui::PopItemWidth();
-
-            DrawCreateNew();
-
-            if (m_state.selected)
-            {
-                auto& profile = data.at(*m_state.selected);
-
-                if (ImGui::Button("Save")) {
-                    if (!profile.Save()) {
-                        ImGui::OpenPopup("Save");
-                        m_state.lastException = profile.GetLastException();
-                    }
-                }
-
-                ImGui::SameLine();
-                if (ImGui::Button("Delete"))
-                    ImGui::OpenPopup("Delete");
-
-                ImGui::SameLine();
-                if (ImGui::Button("Rename")) {
-                    ImGui::OpenPopup("Rename");
-                    _snprintf_s(ex_state.ren_input, _TRUNCATE, "%s", (*m_state.selected).c_str());
-                }
-
-                ImGui::SameLine();
-                if (ImGui::Button("Reload")) {
-                    if (!profile.Load()) {
-                        ImGui::OpenPopup("Reload");
-                        m_state.lastException = profile.GetLastException();
-                    }
-                }
-
-                DrawOptions(profile);
-
-                ImGui::Spacing();
-
-                if (UICommon::ConfirmDialog(
-                    "Delete",
-                    "Are you sure you want to delete profile '%s'?\n\n", curSelName))
-                {
-                    auto& pm = GlobalProfileManager::GetSingleton<T>();
-                    if (pm.DeleteProfile(*m_state.selected)) {
-                        m_state.selected.Clear();
-                    }
-                    else {
-                        m_state.lastException = pm.GetLastException();
-                        ImGui::OpenPopup("Delete failed");
-                    }
-                }
-                else if (UICommon::TextInputDialog("Rename", "Enter the new profile name:",
-                    ex_state.ren_input, sizeof(ex_state.ren_input), globalConfig.ui.fontScale))
-                {
-                    auto& pm = GlobalProfileManager::GetSingleton<T>();
-                    std::string newName(ex_state.ren_input);
-
-                    if (pm.RenameProfile(*m_state.selected, newName)) {
-                        m_state.selected = newName;
-                    }
-                    else {
-                        m_state.lastException = pm.GetLastException();
-                        ImGui::OpenPopup("Rename failed");
-                    }
-                }
-                else {
-
-                    UICommon::MessageDialog("Save", "Saving profile '%s' to '%s' failed\n\n%s",
-                        profile.Name().c_str(), profile.PathStr().c_str(), m_state.lastException.what());
-
-                    UICommon::MessageDialog("Reload", "Loading profile '%s' from '%s' failed\n\n%s",
-                        profile.Name().c_str(), profile.PathStr().c_str(), m_state.lastException.what());
-
-                    ImGui::Separator();
-
-                    DrawItem(profile);
-                }
-
-                UICommon::MessageDialog("Delete failed",
-                    "Could not delete the profile\n\n%s", m_state.lastException.what());
-                UICommon::MessageDialog("Rename failed",
-                    "Could not rename the profile\n\n%s", m_state.lastException.what());
-            }
-
-            ImGui::PopItemWidth();
-        }
-
-        ImGui::End();
-
-        ImGui::PopID();
-    }
-
-    template <class T>
-    void UIProfileEditorBase<T>::DrawOptions(T& a_profile)
-    {
+        return GlobalProfileManager::GetSingleton<PhysicsProfile>();
     }
 
     void UIProfileEditorPhysics::DrawItem(PhysicsProfile& a_profile) {
@@ -441,16 +90,16 @@ namespace CBP
 
     void UIProfileEditorPhysics::DrawOptions(PhysicsProfile& a_profile)
     {
-        auto& globalConfig = IConfig::GetGlobalConfig();
+        auto& globalConfig = IConfig::GetGlobal();
 
         ImGui::Spacing();
 
-        CheckboxGlobal("Sync min/max weight sliders", &globalConfig.ui.profile.syncWeightSliders);
+        Checkbox("Sync min/max weight sliders", &globalConfig.ui.profile.syncWeightSliders);
         HelpMarker(MiscHelpText::syncMinMax);
 
         ImGui::Spacing();
 
-        CheckboxGlobal("Clamp values", &globalConfig.ui.profile.clampValues);
+        Checkbox("Clamp values", &globalConfig.ui.profile.clampValues);
         HelpMarker(MiscHelpText::clampValues);
 
         ImGui::Spacing();
@@ -536,7 +185,7 @@ namespace CBP
         const componentValueDescMap_t::vec_value_type& a_desc,
         float* a_val)
     {
-        const auto& globalConfig = IConfig::GetGlobalConfig();
+        const auto& globalConfig = IConfig::GetGlobal();
 
         if (globalConfig.ui.profile.clampValues)
             *a_val = std::clamp(*a_val, a_desc.second.min, a_desc.second.max);
@@ -589,7 +238,13 @@ namespace CBP
 
     configGlobalSimComponent_t& UIProfileEditorPhysics::GetSimComponentConfig() const
     {
-        return IConfig::GetGlobalConfig().ui.profile;
+        return IConfig::GetGlobal().ui.profile;
+    }
+
+
+    ProfileManager<NodeProfile>& UIProfileEditorNode::GetProfileManager() const
+    {
+        return GlobalProfileManager::GetSingleton<NodeProfile>();
     }
 
     void UIProfileEditorNode::DrawItem(NodeProfile& a_profile)
@@ -642,7 +297,7 @@ namespace CBP
 
         m_listData.clear();
 
-        const auto& globalConfig = IConfig::GetGlobalConfig();
+        const auto& globalConfig = IConfig::GetGlobal();
         const auto& raceConf = GetRaceConfig();
 
         for (const auto& e : IData::GetRaceList())
@@ -678,7 +333,7 @@ namespace CBP
             auto crosshairRef = IData::GetCrosshairRef();
             if (crosshairRef)
             {
-                auto ac = IData::GetActorRefInfo(crosshairRef);
+                auto ac = IData::GetActorRefInfo(*crosshairRef);
                 if (ac && ac->race.first) {
                     if (m_listData.find(ac->race.second) != m_listData.end()) {
                         ListSetCurrentItem(ac->race.second);
@@ -732,7 +387,7 @@ namespace CBP
         const auto& raceConf = GetRaceConfig();
 
         auto& raceCache = IData::GetRaceList();
-        auto& modList = IData::GetModList();
+        auto& modList = DData::GetModList();
 
         std::ostringstream ss;
 
@@ -779,28 +434,28 @@ namespace CBP
 
     void UIRaceEditorNode::ListResetAllValues(Game::FormID a_formid)
     {
-        IConfig::EraseRaceNodeConfig(a_formid);
+        IConfig::EraseRaceNode(a_formid);
 
         IConfig::CopyBase(GetData(a_formid), m_listData.at(a_formid).second);
 
         DCBP::ResetActors();
     }
 
-    auto UIRaceEditorNode::GetData(Game::FormID a_formid) const ->
+    auto UIRaceEditorNode::GetData(Game::FormID a_formid) ->
         const entryValue_t&
     {
-        return IConfig::GetRaceNodeConfig(a_formid);
+        return IConfig::GetRaceNode(a_formid);
     }
 
-    auto UIRaceEditorNode::GetData(const listValue_t* a_data) const ->
+    auto UIRaceEditorNode::GetData(const listValue_t* a_data) ->
         const entryValue_t&
     {
-        return !a_data ? IConfig::GetGlobalNodeConfig() : a_data->second.second;
+        return !a_data ? IConfig::GetGlobalNode() : a_data->second.second;
     }
 
     configGlobalRace_t& UIRaceEditorNode::GetRaceConfig() const
     {
-        return IConfig::GetGlobalConfig().ui.raceNode;
+        return IConfig::GetGlobal().ui.raceNode;
     }
 
     void UIRaceEditorNode::ApplyProfile(listValue_t* a_data, const NodeProfile& a_profile)
@@ -811,7 +466,7 @@ namespace CBP
         auto& profileData = a_profile.Data();
 
         IConfig::CopyBase(profileData, a_data->second.second);
-        IConfig::SetRaceNodeConfig(a_data->first, profileData);
+        IConfig::SetRaceNode(a_data->first, profileData);
 
         MarkChanged();
 
@@ -832,13 +487,13 @@ namespace CBP
     {
         ListTick();
 
-        auto& globalConfig = IConfig::GetGlobalConfig();;
+        auto& globalConfig = IConfig::GetGlobal();;
 
         SetWindowDimensions(800.0f);
 
         ImGui::PushID(static_cast<const void*>(this));
 
-        if (ImGui::Begin("Race nodes", a_active))
+        if (ImGui::Begin("Race nodes##CBP", a_active))
         {
             ImGui::SetWindowFontScale(globalConfig.ui.fontScale);
 
@@ -857,12 +512,12 @@ namespace CBP
                 ImGui::Text("Playable: %s", rlEntry.playable ? "yes" : "no");
 
                 ImGui::Spacing();
-                if (CheckboxGlobal("Playable only", &globalConfig.ui.raceNode.playableOnly))
+                if (Checkbox("Playable only", &globalConfig.ui.raceNode.playableOnly))
                     QueueListUpdate();
                 HelpMarker(MiscHelpText::playableOnly);
 
                 ImGui::Spacing();
-                if (CheckboxGlobal("Editor IDs", &globalConfig.ui.raceNode.showEditorIDs))
+                if (Checkbox("Editor IDs", &globalConfig.ui.raceNode.showEditorIDs))
                     QueueListUpdate();
                 HelpMarker(MiscHelpText::showEDIDs);
 
@@ -882,7 +537,7 @@ namespace CBP
 
                 ImGui::Spacing();
 
-                DrawProfileSelector(entry);
+                DrawProfileSelector(entry, globalConfig.ui.fontScale);
 
                 ImGui::Separator();
 
@@ -906,13 +561,13 @@ namespace CBP
     {
         ListTick();
 
-        auto& globalConfig = IConfig::GetGlobalConfig();;
+        auto& globalConfig = IConfig::GetGlobal();
 
         SetWindowDimensions(800.0f);
 
         ImGui::PushID(static_cast<const void*>(this));
 
-        if (ImGui::Begin("Race physics", a_active))
+        if (ImGui::Begin("Race physics##CBP", a_active))
         {
             ImGui::SetWindowFontScale(globalConfig.ui.fontScale);
 
@@ -931,26 +586,26 @@ namespace CBP
                 ImGui::Text("Playable: %s", rlEntry.playable ? "yes" : "no");
 
                 ImGui::Spacing();
-                if (CheckboxGlobal("Playable only", &globalConfig.ui.racePhysics.playableOnly))
+                if (Checkbox("Playable only", &globalConfig.ui.racePhysics.playableOnly))
                     QueueListUpdate();
                 HelpMarker(MiscHelpText::playableOnly);
 
                 ImGui::Spacing();
-                if (CheckboxGlobal("Editor IDs", &globalConfig.ui.racePhysics.showEditorIDs))
+                if (Checkbox("Editor IDs", &globalConfig.ui.racePhysics.showEditorIDs))
                     QueueListUpdate();
                 HelpMarker(MiscHelpText::showEDIDs);
 
                 ImGui::Spacing();
 
-                CheckboxGlobal("Clamp values", &globalConfig.ui.race.clampValues);
+                Checkbox("Clamp values", &globalConfig.ui.race.clampValues);
                 HelpMarker(MiscHelpText::clampValues);
 
                 ImGui::Spacing();
-                CheckboxGlobal("Sync min/max weight sliders", &globalConfig.ui.race.syncWeightSliders);
+                Checkbox("Sync min/max weight sliders", &globalConfig.ui.race.syncWeightSliders);
                 HelpMarker(MiscHelpText::syncMinMax);
 
                 ImGui::Spacing();
-                CheckboxGlobal("Show nodes", &globalConfig.ui.race.showNodes);
+                Checkbox("Show nodes", &globalConfig.ui.race.showNodes);
                 HelpMarker(MiscHelpText::showNodes);
 
                 ImGui::SameLine(ImGui::GetWindowContentRegionMax().x - GetNextTextOffset("Reset", true));
@@ -967,7 +622,7 @@ namespace CBP
 
                 ImGui::Spacing();
 
-                DrawProfileSelector(entry);
+                DrawProfileSelector(entry, globalConfig.ui.fontScale);
 
                 ImGui::Separator();
 
@@ -990,32 +645,32 @@ namespace CBP
         auto& profileData = a_profile.Data();
 
         IConfig::CopyBase(profileData, a_data->second.second);
-        IConfig::SetRacePhysicsConfig(a_data->first, profileData);
+        IConfig::SetRacePhysics(a_data->first, profileData);
 
         MarkChanged();
         DCBP::UpdateConfigOnAllActors();
     }
 
-    auto UIRaceEditorPhysics::GetData(Game::FormID a_formid) const ->
+    auto UIRaceEditorPhysics::GetData(Game::FormID a_formid) ->
         const entryValue_t&
     {
-        return IConfig::GetRacePhysicsConfig(a_formid);
+        return IConfig::GetRacePhysics(a_formid);
     }
 
-    auto UIRaceEditorPhysics::GetData(const listValue_t* a_data) const ->
+    auto UIRaceEditorPhysics::GetData(const listValue_t* a_data) ->
         const entryValue_t&
     {
-        return !a_data ? IConfig::GetGlobalPhysicsConfig() : a_data->second.second;
+        return !a_data ? IConfig::GetGlobalPhysics() : a_data->second.second;
     }
 
     configGlobalRace_t& UIRaceEditorPhysics::GetRaceConfig() const
     {
-        return IConfig::GetGlobalConfig().ui.racePhysics;
+        return IConfig::GetGlobal().ui.racePhysics;
     }
 
     void UIRaceEditorPhysics::ListResetAllValues(Game::FormID a_formid)
     {
-        IConfig::EraseRacePhysicsConfig(a_formid);
+        IConfig::EraseRacePhysics(a_formid);
 
         IConfig::CopyBase(
             GetData(a_formid),
@@ -1039,12 +694,12 @@ namespace CBP
         const componentValueDescMap_t::vec_value_type& a_desc,
         float* a_val)
     {
-        const auto& globalConfig = IConfig::GetGlobalConfig();
+        const auto& globalConfig = IConfig::GetGlobal();
 
         if (globalConfig.ui.race.clampValues)
             *a_val = std::clamp(*a_val, a_desc.second.min, a_desc.second.max);
 
-        auto& raceConf = IConfig::GetOrCreateRacePhysicsConfig(a_formid);
+        auto& raceConf = IConfig::GetOrCreateRacePhysics(a_formid);
         auto& entry = raceConf[a_pair.first];
 
         auto addr = reinterpret_cast<uintptr_t>(std::addressof(entry)) + a_desc.second.offset;
@@ -1074,7 +729,7 @@ namespace CBP
         configComponentsValue_t& a_pair,
         const componentValueDescMap_t::vec_value_type& a_desc)
     {
-        auto& raceConf = IConfig::GetOrCreateRacePhysicsConfig(a_formid);
+        auto& raceConf = IConfig::GetOrCreateRacePhysics(a_formid);
         auto& entry = raceConf[a_pair.first];
 
         entry.ex.colShape = a_pair.second.ex.colShape;
@@ -1088,7 +743,7 @@ namespace CBP
         configComponents_t& a_data,
         configComponentsValue_t& a_pair)
     {
-        auto& raceConf = IConfig::GetOrCreateRacePhysicsConfig(a_formid);
+        auto& raceConf = IConfig::GetOrCreateRacePhysics(a_formid);
         raceConf[a_pair.first] = a_pair.second;
 
         Propagate(a_data, std::addressof(raceConf), a_pair, [&](configComponent_t& a_v) {
@@ -1110,7 +765,7 @@ namespace CBP
 
         for (const auto& e : itc->second)
         {
-            auto& nodeConf = IConfig::GetRaceNodeConfig(a_formid);
+            auto& nodeConf = IConfig::GetRaceNode(a_formid);
             auto it = nodeConf.find(e);
 
             a_out.emplace_back(e, it != nodeConf.end() ?
@@ -1164,7 +819,7 @@ namespace CBP
 
     configGlobalSimComponent_t& UIRaceEditorPhysics::GetSimComponentConfig() const
     {
-        return IConfig::GetGlobalConfig().ui.race;
+        return IConfig::GetGlobal().ui.race;
     }
 
     const PhysicsProfile* UIRaceEditorPhysics::GetSelectedProfile() const
@@ -1172,99 +827,16 @@ namespace CBP
         return GetCurrentProfile();
     }
 
-    template<class T, class P>
-    void UIProfileSelector<T, P>::DrawProfileSelector(T* a_data)
+    template <class T, class P>
+    ProfileManager<P>& UIProfileSelector<T, P>::GetProfileManager() const
     {
-        auto& pm = GlobalProfileManager::GetSingleton<P>();
-        auto& data = pm.Data();
-
-        ImGui::PushID(std::addressof(pm));
-
-        const char* curSelName = nullptr;
-        if (m_state.selected) {
-            if (data.find(*m_state.selected) != data.end())
-                curSelName = m_state.selected->c_str();
-            else
-                m_state.selected.Clear();
-        }
-
-        if (ImGui::BeginCombo("Profile", curSelName, ImGuiComboFlags_HeightLarge))
-        {
-            for (const auto& e : data)
-            {
-                ImGui::PushID(reinterpret_cast<const void*>(std::addressof(e.second)));
-
-                bool selected = m_state.selected &&
-                    e.first == *m_state.selected;
-
-                if (selected)
-                    if (ImGui::IsWindowAppearing()) ImGui::SetScrollHereY();
-
-                if (ImGui::Selectable(e.second.Name().c_str(), selected)) {
-                    m_state.selected = e.first;
-                }
-
-                ImGui::PopID();
-            }
-            ImGui::EndCombo();
-        }
-
-        auto wcm = ImGui::GetWindowContentRegionMax();
-
-        ImGui::SameLine(wcm.x - GetNextTextOffset("New", true));
-        if (ButtonRight("New")) {
-            ImGui::OpenPopup("New profile");
-            m_state.new_input[0] = 0;
-        }
-
-        DrawCreateNew();
-
-        if (m_state.selected)
-        {
-            auto& profile = data.at(*m_state.selected);
-
-            ImGui::SameLine(wcm.x - GetNextTextOffset("Apply"));
-            if (ButtonRight("Apply")) {
-                ImGui::OpenPopup("Apply from profile");
-            }
-
-            if (UICommon::ConfirmDialog(
-                "Apply from profile",
-                "Load data from profile '%s'?\n\nCurrent values will be lost.\n\n",
-                profile.Name().c_str()))
-            {
-                ApplyProfile(a_data, profile);
-            }
-
-            ImGui::SameLine(wcm.x - GetNextTextOffset("Save"));
-            if (ButtonRight("Save")) {
-                ImGui::OpenPopup("Save to profile");
-            }
-
-            if (UICommon::ConfirmDialog(
-                "Save to profile",
-                "Save current values to profile '%s'?\n\n",
-                profile.Name().c_str()))
-            {
-                auto& data = GetData(a_data);
-                if (!profile.Save(data, true)) {
-                    m_state.lastException = profile.GetLastException();
-                    ImGui::OpenPopup("Save to profile error");
-                }
-            }
-
-            UICommon::MessageDialog("Save to profile error",
-                "Error saving to profile '%s'\n\n%s", profile.Name().c_str(),
-                m_state.lastException.what());
-        }
-
-        ImGui::PopID();
+        return GlobalProfileManager::GetSingleton<P>();
     }
 
     template<typename T>
     void UIApplyForce<T>::DrawForceSelector(T* a_data, configForceMap_t& a_forceData)
     {
-        auto& globalConfig = IConfig::GetGlobalConfig();;
+        auto& globalConfig = IConfig::GetGlobal();;
 
         ImGui::PushID(static_cast<const void*>(std::addressof(m_forceState)));
 
@@ -1332,7 +904,7 @@ namespace CBP
 
                 ImGui::Spacing();
 
-                SliderFloat3Global("Force", std::addressof(e.force.x), FORCE_MIN, FORCE_MAX, "%.0f");
+                SliderFloat3("Force", std::addressof(e.force.x), FORCE_MIN, FORCE_MAX, "%.0f");
                 HelpMarker(MiscHelpText::applyForce);
 
                 ImGui::SameLine(wcm.x - GetNextTextOffset("Reset", true));
@@ -1343,7 +915,7 @@ namespace CBP
 
                 ImGui::Spacing();
 
-                SliderIntGlobal("Steps", std::addressof(e.steps), 0, 100);
+                SliderInt("Steps", std::addressof(e.steps), 0, 100);
             }
 
             ImGui::TreePop();
@@ -1449,7 +1021,7 @@ namespace CBP
     void UIListBase<T, P>::ListDrawInfo(
         listValue_t* a_entry)
     {
-        const auto& globalConfig = IConfig::GetGlobalConfig();
+        const auto& globalConfig = IConfig::GetGlobal();
 
         ImGui::SameLine();
 
@@ -1482,7 +1054,7 @@ namespace CBP
 
         m_listFirstUpdate = true;
 
-        const auto& globalConfig = IConfig::GetGlobalConfig();
+        const auto& globalConfig = IConfig::GetGlobal();
         const auto& actorConf = GetActorConfig();
 
         m_listData.clear();
@@ -1513,8 +1085,8 @@ namespace CBP
         if (globalConfig.ui.selectCrosshairActor && !isFirstUpdate) {
             auto crosshairRef = IData::GetCrosshairRef();
             if (crosshairRef) {
-                if (m_listData.find(crosshairRef) != m_listData.end()) {
-                    ListSetCurrentItem(crosshairRef);
+                if (m_listData.find(*crosshairRef) != m_listData.end()) {
+                    ListSetCurrentItem(*crosshairRef);
                     return;
                 }
             }
@@ -1555,7 +1127,7 @@ namespace CBP
     template <typename T>
     void UIActorList<T>::ListSetCurrentItem(Game::ObjectHandle a_handle)
     {
-        auto& globalConfig = IConfig::GetGlobalConfig();
+        auto& globalConfig = IConfig::GetGlobal();
         auto& actorConf = GetActorConfig();
 
         m_listCurrent = a_handle;
@@ -1675,22 +1247,23 @@ namespace CBP
     {
         auto& actorCache = IData::GetActorCache();
         auto& raceCache = IData::GetRaceList();
-        auto& modList = IData::GetModList();
+        auto& modList = DData::GetModList();
 
         std::ostringstream ss;
 
         auto it = actorCache.find(a_entry->first);
         if (it != actorCache.end())
         {
-            ss << "Base:  " << sshex(8) << it->second.base << " [" << std::bitset<8>(it->second.baseflags) << "]" << std::endl;
+            ss << "Base:    " << sshex(8) << it->second.base << " [" << std::bitset<8>(it->second.baseflags) << "]" << std::endl;
 
             auto itr = raceCache.find(it->second.race);
             if (itr != raceCache.end())
-                ss << "Race:  " << itr->second.edid << " [" << sshex(8) << it->second.race << "]" << std::endl;
+                ss << "Race:    " << itr->second.edid << " [" << sshex(8) << it->second.race << "]" << std::endl;
             else
-                ss << "Race:  " << sshex(8) << it->second.race << std::endl;
+                ss << "Race:    " << sshex(8) << it->second.race << std::endl;
 
-            ss << "Sex:   " << (it->second.female ? "Female" : "Male") << std::endl;
+            ss << "Weight:  " << std::fixed << std::setprecision(0) << it->second.weight << std::endl;
+            ss << "Sex:     " << (it->second.female ? "Female" : "Male") << std::endl;
         }
 
         UInt32 modIndex;
@@ -1698,222 +1271,18 @@ namespace CBP
         {
             auto itm = modList.find(modIndex);
             if (itm != modList.end())
-                ss << "Mod:   " << itm->second.name << " [" << sshex(2) << itm->second.GetPartialIndex() << "]" << std::endl;
+                ss << "Mod:     " << itm->second.name << " [" << sshex(2) << itm->second.GetPartialIndex() << "]" << std::endl;
         }
 
         ss << std::endl << "Config:" << std::endl << std::endl;
 
-        auto cl = IConfig::GetActorPhysicsConfigClass(a_entry->first);
+        auto cl = IConfig::GetActorPhysicsClass(a_entry->first);
         ss << "Phys: " << TranslateConfigClass(cl) << std::endl;
 
-        cl = IConfig::GetActorNodeConfigClass(a_entry->first);
+        cl = IConfig::GetActorNodeClass(a_entry->first);
         ss << "Node: " << TranslateConfigClass(cl) << std::endl;
 
         ImGui::TextUnformatted(ss.str().c_str());
-    }
-
-    template <typename T>
-    UIFilterBase<T>::UIFilterBase() :
-        m_searchOpen(false),
-        m_label("Filter"),
-        m_helpText(MiscHelpText::none),
-        m_nextSetFocus(false)
-    {
-        m_filterBuf[0] = 0x0;
-    }
-
-    template <typename T>
-    UIFilterBase<T>::UIFilterBase(bool a_isOpen) :
-        m_searchOpen(a_isOpen),
-        m_label("Filter"),
-        m_helpText(MiscHelpText::none),
-        m_nextSetFocus(false)
-    {
-        m_filterBuf[0] = 0x0;
-    }
-
-    template <typename T>
-    UIFilterBase<T>::UIFilterBase(bool a_isOpen, const char* a_label) :
-        m_searchOpen(a_isOpen),
-        m_label(a_label),
-        m_helpText(MiscHelpText::none),
-        m_nextSetFocus(false)
-    {
-        m_filterBuf[0] = 0x0;
-    }
-
-    template <typename T>
-    UIFilterBase<T>::UIFilterBase(
-        bool a_isOpen,
-        const char* a_label,
-        MiscHelpText a_helpText)
-        :
-        m_searchOpen(a_isOpen),
-        m_label(a_label),
-        m_helpText(a_helpText)
-    {
-        m_filterBuf[0] = 0x0;
-    }
-
-    template <typename T>
-    void UIFilterBase<T>::DrawButton()
-    {
-        if (ImGui::Button(m_searchOpen ? "<" : ">"))
-            m_searchOpen = !m_searchOpen;
-    }
-
-    template <typename T>
-    void UIFilterBase<T>::Draw()
-    {
-        if (!m_searchOpen)
-            return;
-
-        ImGui::PushID(static_cast<const void*>(this));
-
-        ProcessInput();
-
-        ImGui::PopID();
-    }
-
-    template <typename T>
-    void UIFilterBase<T>::Toggle()
-    {
-        m_searchOpen = !m_searchOpen;
-    }
-
-    template <typename T>
-    void UIFilterBase<T>::Clear() {
-        m_filter.Clear();
-        m_filterBuf[0] = 0x0;
-    }
-
-    UIGenericFilter::UIGenericFilter() :
-        UIFilterBase<std::string>()
-    {
-    }
-
-    UIGenericFilter::UIGenericFilter(bool a_isOpen) :
-        UIFilterBase<std::string>(a_isOpen)
-    {
-    }
-
-    UIGenericFilter::UIGenericFilter(bool a_isOpen, const char* a_label) :
-        UIFilterBase<std::string>(a_isOpen, a_label)
-    {
-    }
-
-    UIGenericFilter::UIGenericFilter(bool a_isOpen, const char* a_label, MiscHelpText a_helpText) :
-        UIFilterBase<std::string>(a_isOpen, a_label, a_helpText)
-    {
-    }
-
-    void UIGenericFilter::ProcessInput()
-    {
-        if (ImGui::InputText(m_label, m_filterBuf, sizeof(m_filterBuf)))
-        {
-            if (strlen(m_filterBuf))
-                m_filter = m_filterBuf;
-            else
-                m_filter.Clear();
-        }
-    }
-
-    bool UIGenericFilter::Test(const std::string& a_haystack) const
-    {
-        if (!m_filter)
-            return true;
-
-        auto it = std::search(
-            a_haystack.begin(), a_haystack.end(),
-            m_filter->begin(), m_filter->end(),
-            [](char a_lhs, char a_rhs) {
-                return std::tolower(a_lhs) ==
-                    std::tolower(a_rhs);
-            }
-        );
-
-        return (it != a_haystack.end());
-    }
-
-    UIRegexFilter::UIRegexFilter() :
-        UIFilterBase<std::regex>()
-    {
-    }
-
-    UIRegexFilter::UIRegexFilter(bool a_isOpen) :
-        UIFilterBase<std::regex>(a_isOpen)
-    {
-    }
-
-    UIRegexFilter::UIRegexFilter(bool a_isOpen, const char* a_label) :
-        UIFilterBase<std::regex>(a_isOpen, a_label)
-    {
-    }
-
-    UIRegexFilter::UIRegexFilter(bool a_isOpen, const char* a_label, MiscHelpText a_helpText) :
-        UIFilterBase<std::regex>(a_isOpen, a_label, a_helpText)
-    {
-    }
-
-    void UIRegexFilter::ProcessInput()
-    {
-        if (m_nextSetFocus) {
-            m_nextSetFocus = false;
-            ImGui::SetKeyboardFocusHere();
-        }
-
-        if (ImGui::InputText(
-            m_label,
-            m_filterBuf,
-            sizeof(m_filterBuf),
-            ImGuiInputTextFlags_EnterReturnsTrue))
-        {
-            if (strlen(m_filterBuf))
-            {
-                try
-                {
-                    m_filter = std::regex(m_filterBuf,
-                        std::regex_constants::ECMAScript |
-                        std::regex_constants::optimize |
-                        std::regex_constants::icase);
-
-                    if (m_lastException)
-                        m_lastException.Clear();
-
-                }
-                catch (const std::regex_error& e)
-                {
-                    m_lastException = e;
-                    m_filter.Clear();
-                }
-            }
-            else
-            {
-                if (m_lastException)
-                    m_lastException.Clear();
-
-                m_filter.Clear();
-            }
-
-            NextSetFocus();
-        }
-
-        if (m_helpText != MiscHelpText::none)
-            HelpMarker(m_helpText);
-
-        if (m_lastException)
-        {
-            ImGui::TextWrapped(m_lastException->what());
-            ImGui::Spacing();
-        }
-    }
-
-    bool UIRegexFilter::Test(const std::string& a_haystack) const
-    {
-        if (!m_filter)
-            return true;
-
-        return std::regex_search(a_haystack, *m_filter);
     }
 
     UIContext::UIContext() noexcept :
@@ -1945,7 +1314,7 @@ namespace CBP
 
     void UIContext::DrawMenuBar(bool* a_active, const listValue_t* a_entry)
     {
-        auto& globalConfig = IConfig::GetGlobalConfig();;
+        auto& globalConfig = IConfig::GetGlobal();;
         auto& ws = m_state.windows;
 
         m_state.menu.saveAllFailed = false;
@@ -1996,6 +1365,8 @@ namespace CBP
 
                 if (ImGui::BeginMenu("Race editors"))
                 {
+                    ImGui::SetWindowFontScale(globalConfig.ui.fontScale);
+
                     ImGui::MenuItem("Physics", nullptr, &ws.race);
                     ImGui::MenuItem("Node", nullptr, &ws.raceNode);
 
@@ -2065,7 +1436,7 @@ namespace CBP
 
     void UIContext::Draw(bool* a_active)
     {
-        auto& globalConfig = IConfig::GetGlobalConfig();;
+        auto& globalConfig = IConfig::GetGlobal();
 
         ActorListTick();
 
@@ -2083,7 +1454,7 @@ namespace CBP
 
         ImGui::PushID(static_cast<const void*>(this));
 
-        if (ImGui::Begin("CBP Config Editor", a_active, ImGuiWindowFlags_MenuBar))
+        if (ImGui::Begin("CBP Config Editor##CBP", a_active, ImGuiWindowFlags_MenuBar))
         {
             ImGui::SetWindowFontScale(globalConfig.ui.fontScale);
 
@@ -2101,7 +1472,7 @@ namespace CBP
 
             if (m_listCurrent)
             {
-                auto confClass = IConfig::GetActorPhysicsConfigClass(m_listCurrent);
+                auto confClass = IConfig::GetActorPhysicsClass(m_listCurrent);
 
                 ImGui::Text("Config in use: %s", TranslateConfigClass(confClass));
 
@@ -2115,7 +1486,7 @@ namespace CBP
             }
 
             ImGui::Spacing();
-            if (CheckboxGlobal("Show all actors", &globalConfig.ui.actorPhysics.showAll))
+            if (Checkbox("Show all actors", &globalConfig.ui.actorPhysics.showAll))
                 DCBP::QueueActorCacheUpdate();
 
             HelpMarker(MiscHelpText::showAllActors);
@@ -2125,7 +1496,7 @@ namespace CBP
                 DCBP::QueueActorCacheUpdate();
 
             ImGui::Spacing();
-            CheckboxGlobal("Clamp values", &globalConfig.ui.actor.clampValues);
+            Checkbox("Clamp values", &globalConfig.ui.actor.clampValues);
             HelpMarker(MiscHelpText::clampValues);
 
             ImGui::SameLine(wcm.x - GetNextTextOffset("Reset", true));
@@ -2133,11 +1504,11 @@ namespace CBP
                 ImGui::OpenPopup("Reset");
 
             ImGui::Spacing();
-            CheckboxGlobal("Sync min/max weight sliders", &globalConfig.ui.actor.syncWeightSliders);
+            Checkbox("Sync min/max weight sliders", &globalConfig.ui.actor.syncWeightSliders);
             HelpMarker(MiscHelpText::syncMinMax);
 
             ImGui::Spacing();
-            CheckboxGlobal("Show nodes", &globalConfig.ui.actor.showNodes);
+            Checkbox("Show nodes", &globalConfig.ui.actor.showNodes);
             HelpMarker(MiscHelpText::showNodes);
 
             if (UICommon::ConfirmDialog(
@@ -2146,10 +1517,10 @@ namespace CBP
             {
                 if (m_listCurrent) {
                     ListResetAllValues(m_listCurrent);
-                    DCBP::DispatchActorTask(m_listCurrent, UTTask::UTTAction::UpdateConfig);
+                    DCBP::DispatchActorTask(m_listCurrent, ControllerInstruction::Action::UpdateConfig);
                 }
                 else {
-                    IConfig::ClearGlobalPhysicsConfig();
+                    IConfig::ClearGlobalPhysics();
                     DCBP::UpdateConfigOnAllActors();
                 }
             }
@@ -2161,7 +1532,7 @@ namespace CBP
 
             ImGui::Spacing();
 
-            DrawProfileSelector(entry);
+            DrawProfileSelector(entry, globalConfig.ui.fontScale);
 
             ImGui::Spacing();
 
@@ -2204,10 +1575,10 @@ namespace CBP
             m_options.Draw(&m_state.windows.options);
 
         if (m_state.windows.profileSim)
-            m_pePhysics.Draw(&m_state.windows.profileSim);
+            m_pePhysics.Draw(&m_state.windows.profileSim, globalConfig.ui.fontScale);
 
         if (m_state.windows.profileNodes)
-            m_peNodes.Draw(&m_state.windows.profileNodes);
+            m_peNodes.Draw(&m_state.windows.profileNodes, globalConfig.ui.fontScale);
 
         if (m_state.windows.race) {
             m_racePhysicsEditor.Draw(&m_state.windows.race);
@@ -2259,7 +1630,7 @@ namespace CBP
     void UIOptions::Draw(bool* a_active)
     {
         auto& io = ImGui::GetIO();
-        auto& globalConfig = IConfig::GetGlobalConfig();;
+        auto& globalConfig = IConfig::GetGlobal();;
 
         ImVec2 center(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f);
         ImGui::SetNextWindowPos(center, ImGuiCond_FirstUseEver, ImVec2(0.5f, 0.5f));
@@ -2267,19 +1638,19 @@ namespace CBP
 
         ImGui::PushID(static_cast<const void*>(this));
 
-        if (ImGui::Begin("Options", a_active))
+        if (ImGui::Begin("Options##CBP", a_active))
         {
             ImGui::SetWindowFontScale(globalConfig.ui.fontScale);
 
-            ImGui::PushItemWidth(ImGui::GetFontSize() * -14.5f);
+            ImGui::PushItemWidth(ImGui::GetFontSize() * -16.5f);
 
-            if (CollapsingHeader("Options#General", "General"))
+            if (Tree("Options#General", "General", true, true))
             {
                 ImGui::Spacing();
 
-                CheckboxGlobal("Select actor in crosshairs on open", &globalConfig.ui.selectCrosshairActor);
+                Checkbox("Select actor in crosshairs on open", &globalConfig.ui.selectCrosshairActor);
 
-                if (CheckboxGlobal("Armor overrides", &globalConfig.general.armorOverrides))
+                if (Checkbox("Armor overrides", &globalConfig.general.armorOverrides))
                 {
                     if (globalConfig.general.armorOverrides)
                         DCBP::UpdateArmorOverridesAll();
@@ -2288,18 +1659,22 @@ namespace CBP
                 }
 
                 ImGui::Spacing();
+
+                ImGui::TreePop();
             }
 
-            if (CollapsingHeader("Options#UI", "UI"))
+            if (Tree("Options#UI", "UI", true, true))
             {
                 ImGui::Spacing();
 
-                SliderFloatGlobal("Font scale", &globalConfig.ui.fontScale, 0.5f, 3.0f);
+                SliderFloat("Font scale", &globalConfig.ui.fontScale, 0.5f, 3.0f);
 
                 ImGui::Spacing();
+
+                ImGui::TreePop();
             }
 
-            if (CollapsingHeader("Options#Controls", "Controls"))
+            if (Tree("Options#Controls", "Controls", true, true))
             {
                 if (DCBP::GetDriverConfig().force_ini_keys)
                 {
@@ -2316,45 +1691,49 @@ namespace CBP
 
                 ImGui::Spacing();
 
-                CheckboxGlobal("Lock game controls while UI active", &globalConfig.ui.lockControls);
+                Checkbox("Lock game controls while UI active", &globalConfig.ui.lockControls);
 
                 ImGui::Spacing();
+
+                ImGui::TreePop();
             }
 
-            if (CollapsingHeader("Options#Simulation", "Simulation"))
+            if (Tree("Options#Simulation", "Simulation", true, true))
             {
                 ImGui::Spacing();
 
-                if (CheckboxGlobal("Female actors only", &globalConfig.general.femaleOnly))
+                if (Checkbox("Female actors only", &globalConfig.general.femaleOnly))
                     DCBP::ResetActors();
 
-                if (CheckboxGlobal("Enable collisions", &globalConfig.phys.collisions))
+                if (Checkbox("Enable collisions", &globalConfig.phys.collisions))
                     DCBP::ResetActors();
 
                 ImGui::Spacing();
 
                 float timeTick = 1.0f / globalConfig.phys.timeTick;
-                if (SliderFloatGlobal("Time tick", &timeTick, 1.0f, 300.0f, "%.0f"))
+                if (SliderFloat("Time tick", &timeTick, 1.0f, 300.0f, "%.0f"))
                     globalConfig.phys.timeTick = 1.0f / timeTick;
 
                 HelpMarker(MiscHelpText::timeTick);
 
-                SliderFloatGlobal("Max. substeps", &globalConfig.phys.maxSubSteps, 1.0f, 20.0f, "%.0f");
+                SliderFloat("Max. substeps", &globalConfig.phys.maxSubSteps, 1.0f, 20.0f, "%.0f");
                 HelpMarker(MiscHelpText::maxSubSteps);
 
                 ImGui::Spacing();
+
+                ImGui::TreePop();
             }
 
             if (DCBP::GetDriverConfig().debug_renderer)
             {
-                if (CollapsingHeader("Options#DebugRenderer", "Debug Renderer"))
+                if (Tree("Options#DebugRenderer", "Debug Renderer", true, true))
                 {
                     ImGui::Spacing();
 
-                    if (CheckboxGlobal("Enable", &globalConfig.debugRenderer.enabled))
+                    if (Checkbox("Enable", &globalConfig.debugRenderer.enabled))
                         DCBP::UpdateDebugRendererState();
 
-                    CheckboxGlobal("Wireframe", &globalConfig.debugRenderer.wireframe);
+                    Checkbox("Wireframe", &globalConfig.debugRenderer.wireframe);
 
                     ImGui::Spacing();
 
@@ -2367,26 +1746,28 @@ namespace CBP
 
                     ImGui::Spacing();
 
-                    if (SliderFloatGlobal("Contact point sphere radius", &globalConfig.debugRenderer.contactPointSphereRadius, 0.1f, 25.0f, "%.2f"))
+                    if (SliderFloat("Contact point sphere radius", &globalConfig.debugRenderer.contactPointSphereRadius, 0.1f, 25.0f, "%.2f"))
                         DCBP::UpdateDebugRendererSettings();
 
-                    if (SliderFloatGlobal("Contact normal length", &globalConfig.debugRenderer.contactNormalLength, 0.1f, 50.0f, "%.2f"))
+                    if (SliderFloat("Contact normal length", &globalConfig.debugRenderer.contactNormalLength, 0.1f, 50.0f, "%.2f"))
                         DCBP::UpdateDebugRendererSettings();
 
                     ImGui::Spacing();
 
-                    CheckboxGlobal("Draw moving nodes", &globalConfig.debugRenderer.enableMovingNodes);
-                    CheckboxGlobal("Show moving nodes center of mass", &globalConfig.debugRenderer.movingNodesCenterOfMass);
+                    Checkbox("Draw moving nodes", &globalConfig.debugRenderer.enableMovingNodes);
+                    Checkbox("Show moving nodes center of mass", &globalConfig.debugRenderer.movingNodesCenterOfMass);
 
-                    SliderFloatGlobal("Moving nodes sphere radius", &globalConfig.debugRenderer.movingNodesRadius, 0.1f, 10.0f, "%.2f");
+                    SliderFloat("Moving nodes sphere radius", &globalConfig.debugRenderer.movingNodesRadius, 0.1f, 10.0f, "%.2f");
 
                     ImGui::Spacing();
 
-                    if (CheckboxGlobal("Draw AABB", &globalConfig.debugRenderer.drawAABB))
+                    if (Checkbox("Draw AABB", &globalConfig.debugRenderer.drawAABB))
                         DCBP::UpdateDebugRendererSettings();
 
-                    if (CheckboxGlobal("Draw broadphase AABB", &globalConfig.debugRenderer.drawBroadphaseAABB))
+                    if (Checkbox("Draw broadphase AABB", &globalConfig.debugRenderer.drawBroadphaseAABB))
                         DCBP::UpdateDebugRendererSettings();
+
+                    ImGui::TreePop();
                 }
             }
 
@@ -2446,7 +1827,7 @@ namespace CBP
     void UICollisionGroups::Draw(bool* a_active)
     {
         auto& io = ImGui::GetIO();
-        const auto& globalConfig = IConfig::GetGlobalConfig();;
+        const auto& globalConfig = IConfig::GetGlobal();;
 
         ImVec2 center(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f);
         ImGui::SetNextWindowPos(center, ImGuiCond_FirstUseEver, ImVec2(0.5f, 0.5f));
@@ -2459,7 +1840,7 @@ namespace CBP
 
         ImGui::PushID(static_cast<const void*>(this));
 
-        if (ImGui::Begin("Node collision groups", a_active))
+        if (ImGui::Begin("Node collision groups##CBP", a_active))
         {
             ImGui::SetWindowFontScale(globalConfig.ui.fontScale);
 
@@ -2615,13 +1996,13 @@ namespace CBP
     {
         ActorListTick();
 
-        auto& globalConfig = IConfig::GetGlobalConfig();;
+        auto& globalConfig = IConfig::GetGlobal();;
 
         SetWindowDimensions(450.0f);
 
         ImGui::PushID(static_cast<const void*>(this));
 
-        if (ImGui::Begin("Actor nodes", a_active))
+        if (ImGui::Begin("Actor nodes##CBP", a_active))
         {
             ImGui::SetWindowFontScale(globalConfig.ui.fontScale);
 
@@ -2636,13 +2017,13 @@ namespace CBP
 
             if (m_listCurrent)
             {
-                auto confClass = IConfig::GetActorNodeConfigClass(m_listCurrent);
+                auto confClass = IConfig::GetActorNodeClass(m_listCurrent);
 
                 ImGui::Text("Config in use: %s", TranslateConfigClass(confClass));
             }
 
             ImGui::Spacing();
-            if (CheckboxGlobal("Show all actors", &globalConfig.ui.actorNode.showAll))
+            if (Checkbox("Show all actors", &globalConfig.ui.actorNode.showAll))
                 DCBP::QueueActorCacheUpdate();
 
             HelpMarker(MiscHelpText::showAllActors);
@@ -2671,7 +2052,7 @@ namespace CBP
 
             ImGui::PushItemWidth(ImGui::GetFontSize() * -14.0f);
 
-            DrawProfileSelector(entry);
+            DrawProfileSelector(entry, globalConfig.ui.fontScale);
 
             ImGui::PopItemWidth();
 
@@ -2682,7 +2063,7 @@ namespace CBP
             if (entry)
                 DrawNodes(entry->first, entry->second.second);
             else
-                DrawNodes(0, IConfig::GetGlobalNodeConfig());
+                DrawNodes(0, IConfig::GetGlobalNode());
 
             ImGui::PopItemWidth();
         }
@@ -2692,19 +2073,19 @@ namespace CBP
         ImGui::PopID();
     }
 
-    auto UIActorEditorNode::GetData(Game::ObjectHandle a_handle) const ->
+    auto UIActorEditorNode::GetData(Game::ObjectHandle a_handle) ->
         const entryValue_t&
     {
         return a_handle == Game::ObjectHandle(0) ?
-            IConfig::GetGlobalNodeConfig() :
-            IConfig::GetActorNodeConfig(a_handle);
+            IConfig::GetGlobalNode() :
+            IConfig::GetActorNode(a_handle);
     }
 
-    auto UIActorEditorNode::GetData(const listValue_t* a_data) const ->
+    auto UIActorEditorNode::GetData(const listValue_t* a_data) ->
         const entryValue_t&
     {
         return a_data->first == Game::ObjectHandle(0) ?
-            IConfig::GetGlobalNodeConfig() :
+            IConfig::GetGlobalNode() :
             a_data->second.second;
     }
 
@@ -2715,11 +2096,11 @@ namespace CBP
         if (a_data->first == Game::ObjectHandle(0))
         {
             IConfig::CopyBase(profileData, a_data->second.second);
-            IConfig::SetGlobalNodeConfig(profileData);
+            IConfig::SetGlobalNode(profileData);
         }
         else {
             IConfig::CopyBase(profileData, a_data->second.second);
-            IConfig::SetActorNodeConfig(a_data->first, profileData);
+            IConfig::SetActorNode(a_data->first, profileData);
         }
 
         DCBP::ResetActors();
@@ -2727,7 +2108,7 @@ namespace CBP
 
     void UIActorEditorNode::ListResetAllValues(Game::ObjectHandle a_handle)
     {
-        IConfig::EraseActorNodeConfig(a_handle);
+        IConfig::EraseActorNode(a_handle);
 
         IConfig::CopyBase(
             GetData(a_handle),
@@ -2743,17 +2124,17 @@ namespace CBP
         bool a_reset)
     {
         if (a_handle) {
-            auto& nodeConfig = IConfig::GetOrCreateActorNodeConfig(a_handle);
+            auto& nodeConfig = IConfig::GetOrCreateActorNode(a_handle);
             nodeConfig.insert_or_assign(a_node, a_data);
 
             if (a_reset)
                 DCBP::ResetActors();
             else
-                DCBP::DispatchActorTask(a_handle, UTTask::UTTAction::UpdateConfig);
+                DCBP::DispatchActorTask(a_handle, ControllerInstruction::Action::UpdateConfig);
         }
         else
         {
-            auto& nodeConfig = IConfig::GetGlobalNodeConfig();
+            auto& nodeConfig = IConfig::GetGlobalNode();
             nodeConfig.insert_or_assign(a_node, a_data);
 
             if (a_reset)
@@ -2765,12 +2146,12 @@ namespace CBP
 
     ConfigClass UIActorEditorNode::GetActorClass(Game::ObjectHandle a_handle) const
     {
-        return IConfig::GetActorNodeConfigClass(a_handle);
+        return IConfig::GetActorNodeClass(a_handle);
     }
 
     configGlobalActor_t& UIActorEditorNode::GetActorConfig() const
     {
-        return IConfig::GetGlobalConfig().ui.actorNode;
+        return IConfig::GetGlobal().ui.actorNode;
     }
 
     UIContext::UISimComponentActor::UISimComponentActor(UIContext& a_parent) :
@@ -2794,12 +2175,12 @@ namespace CBP
         const componentValueDescMap_t::vec_value_type& a_desc,
         float* a_val)
     {
-        const auto& globalConfig = IConfig::GetGlobalConfig();
+        const auto& globalConfig = IConfig::GetGlobal();
 
         if (globalConfig.ui.actor.clampValues)
             *a_val = std::clamp(*a_val, a_desc.second.min, a_desc.second.max);
 
-        auto& actorConf = IConfig::GetOrCreateActorPhysicsConfig(a_handle);
+        auto& actorConf = IConfig::GetOrCreateActorPhysics(a_handle);
         auto& entry = actorConf[a_pair.first];
 
         auto addr = reinterpret_cast<uintptr_t>(std::addressof(entry)) + a_desc.second.offset;
@@ -2819,7 +2200,7 @@ namespace CBP
                 a_v.Set(a_desc.second.counterpart, *a_val); });
         }
 
-        DCBP::DispatchActorTask(a_handle, UTTask::UTTAction::UpdateConfig);
+        DCBP::DispatchActorTask(a_handle, ControllerInstruction::Action::UpdateConfig);
     }
 
     void UIContext::UISimComponentActor::OnColliderShapeChange(
@@ -2828,12 +2209,12 @@ namespace CBP
         configComponentsValue_t& a_pair,
         const componentValueDescMap_t::vec_value_type& a_desc)
     {
-        auto& actorConf = IConfig::GetOrCreateActorPhysicsConfig(a_handle);
+        auto& actorConf = IConfig::GetOrCreateActorPhysics(a_handle);
         auto& entry = actorConf[a_pair.first];
 
         entry.ex.colShape = a_pair.second.ex.colShape;
 
-        DCBP::DispatchActorTask(a_handle, UTTask::UTTAction::UpdateConfig);
+        DCBP::DispatchActorTask(a_handle, ControllerInstruction::Action::UpdateConfig);
     }
 
     void UIContext::UISimComponentActor::OnComponentUpdate(
@@ -2841,13 +2222,13 @@ namespace CBP
         configComponents_t& a_data,
         configComponentsValue_t& a_pair)
     {
-        auto& actorConf = IConfig::GetOrCreateActorPhysicsConfig(a_handle);
+        auto& actorConf = IConfig::GetOrCreateActorPhysics(a_handle);
         actorConf[a_pair.first] = a_pair.second;
 
         Propagate(a_data, std::addressof(actorConf), a_pair, [&](configComponent_t& a_v) {
             a_v = a_pair.second; });
 
-        DCBP::DispatchActorTask(a_handle, UTTask::UTTAction::UpdateConfig);
+        DCBP::DispatchActorTask(a_handle, ControllerInstruction::Action::UpdateConfig);
     }
 
     bool UIContext::UISimComponentActor::GetNodeConfig(
@@ -2862,7 +2243,7 @@ namespace CBP
 
         for (const auto& e : itc->second)
         {
-            auto& nodeConf = IConfig::GetActorNodeConfig(a_handle);
+            auto& nodeConf = IConfig::GetActorNode(a_handle);
             auto it = nodeConf.find(e);
 
             a_out.emplace_back(e, it != nodeConf.end() ?
@@ -2881,19 +2262,19 @@ namespace CBP
     {
         if (a_handle)
         {
-            auto& nodeConfig = IConfig::GetOrCreateActorNodeConfig(a_handle);
+            auto& nodeConfig = IConfig::GetOrCreateActorNode(a_handle);
             nodeConfig.insert_or_assign(a_node, a_data);
 
             if (a_reset)
                 DCBP::ResetActors();
             else
-                DCBP::DispatchActorTask(a_handle, UTTask::UTTAction::UpdateConfig);
+                DCBP::DispatchActorTask(a_handle, ControllerInstruction::Action::UpdateConfig);
         }
     }
 
     configGlobalSimComponent_t& UIContext::UISimComponentActor::GetSimComponentConfig() const
     {
-        return IConfig::GetGlobalConfig().ui.actor;
+        return IConfig::GetGlobal().ui.actor;
     }
 
     const PhysicsProfile* UIContext::UISimComponentActor::GetSelectedProfile() const
@@ -2960,12 +2341,12 @@ namespace CBP
         const componentValueDescMap_t::vec_value_type& a_desc,
         float* a_val)
     {
-        const auto& globalConfig = IConfig::GetGlobalConfig();
+        const auto& globalConfig = IConfig::GetGlobal();
 
         if (globalConfig.ui.actor.clampValues)
             *a_val = std::clamp(*a_val, a_desc.second.min, a_desc.second.max);
 
-        auto& conf = IConfig::GetGlobalPhysicsConfig();
+        auto& conf = IConfig::GetGlobalPhysics();
         auto& entry = conf[a_pair.first];
 
         auto addr = reinterpret_cast<uintptr_t>(std::addressof(entry)) + a_desc.second.offset;
@@ -2994,7 +2375,7 @@ namespace CBP
         configComponentsValue_t& a_pair,
         const componentValueDescMap_t::vec_value_type&)
     {
-        auto& conf = IConfig::GetGlobalPhysicsConfig();
+        auto& conf = IConfig::GetGlobalPhysics();
         auto& entry = conf[a_pair.first];
 
         entry.ex.colShape = a_pair.second.ex.colShape;
@@ -3007,7 +2388,7 @@ namespace CBP
         configComponents_t& a_data,
         configComponentsValue_t& a_pair)
     {
-        auto& conf = IConfig::GetGlobalPhysicsConfig();
+        auto& conf = IConfig::GetGlobalPhysics();
         conf[a_pair.first] = a_pair.second;
 
         Propagate(a_data, std::addressof(conf), a_pair, [&](configComponent_t& a_v) {
@@ -3026,7 +2407,7 @@ namespace CBP
         if (itc == cgMap.end())
             return false;
 
-        auto& nodeConf = IConfig::GetGlobalNodeConfig();
+        auto& nodeConf = IConfig::GetGlobalNode();
 
         for (const auto& e : itc->second)
         {
@@ -3048,7 +2429,7 @@ namespace CBP
     {
         if (!a_handle)
         {
-            auto& nodeConfig = IConfig::GetGlobalNodeConfig();
+            auto& nodeConfig = IConfig::GetGlobalNode();
             nodeConfig.insert_or_assign(a_node, a_data);
 
             if (a_reset)
@@ -3091,7 +2472,7 @@ namespace CBP
 
     configGlobalSimComponent_t& UIContext::UISimComponentGlobal::GetSimComponentConfig() const
     {
-        return IConfig::GetGlobalConfig().ui.actor;
+        return IConfig::GetGlobal().ui.actor;
     }
 
     const PhysicsProfile* UIContext::UISimComponentGlobal::GetSelectedProfile() const
@@ -3106,38 +2487,38 @@ namespace CBP
         if (a_data->first == Game::ObjectHandle(0))
         {
             IConfig::CopyBase(profileData, a_data->second.second);
-            IConfig::SetGlobalPhysicsConfig(profileData);
+            IConfig::SetGlobalPhysics(profileData);
 
             DCBP::UpdateConfigOnAllActors();
         }
         else
         {
             IConfig::CopyBase(profileData, a_data->second.second);
-            IConfig::SetActorPhysicsConfig(a_data->first, profileData);
+            IConfig::SetActorPhysics(a_data->first, profileData);
 
-            DCBP::DispatchActorTask(a_data->first, UTTask::UTTAction::UpdateConfig);
+            DCBP::DispatchActorTask(a_data->first, ControllerInstruction::Action::UpdateConfig);
         }
     }
 
-    auto UIContext::GetData(Game::ObjectHandle a_handle) const ->
+    auto UIContext::GetData(Game::ObjectHandle a_handle) ->
         const entryValue_t&
     {
         return a_handle == Game::ObjectHandle(0) ?
-            IConfig::GetGlobalPhysicsConfig() :
-            IConfig::GetActorPhysicsConfig(a_handle);
+            IConfig::GetGlobalPhysics() :
+            IConfig::GetActorPhysics(a_handle);
     }
 
-    auto UIContext::GetData(const listValue_t* a_data) const ->
+    auto UIContext::GetData(const listValue_t* a_data) ->
         const entryValue_t&
     {
         return a_data->first == Game::ObjectHandle(0) ?
-            IConfig::GetGlobalPhysicsConfig() :
+            IConfig::GetGlobalPhysics() :
             a_data->second.second;
     }
 
     void UIContext::ListResetAllValues(Game::ObjectHandle a_handle)
     {
-        IConfig::EraseActorConf(a_handle);
+        IConfig::EraseActorPhysics(a_handle);
 
         IConfig::CopyBase(
             GetData(a_handle),
@@ -3146,12 +2527,12 @@ namespace CBP
 
     ConfigClass UIContext::GetActorClass(Game::ObjectHandle a_handle) const
     {
-        return IConfig::GetActorPhysicsConfigClass(a_handle);
+        return IConfig::GetActorPhysicsClass(a_handle);
     }
 
     configGlobalActor_t& UIContext::GetActorConfig() const
     {
-        return IConfig::GetGlobalConfig().ui.actorPhysics;
+        return IConfig::GetGlobal().ui.actorPhysics;
     }
 
     void UIContext::ApplyForce(
@@ -3197,7 +2578,7 @@ namespace CBP
         const configComponentsValue_t& a_pair,
         std::function<void(configComponent_t&)> a_func) const
     {
-        const auto& globalConfig = IConfig::GetGlobalConfig();
+        const auto& globalConfig = IConfig::GetGlobal();
 
         auto itm = globalConfig.ui.mirror.find(ID);
         if (itm == globalConfig.ui.mirror.end())
@@ -3225,7 +2606,7 @@ namespace CBP
 
     template <UIEditorID ID>
     UIMainItemFilter<ID>::UIMainItemFilter(MiscHelpText a_helpText) :
-        m_dataFilter(true, "Regex", a_helpText)
+        m_dataFilter(true, "Regex")
     {
     }
 
@@ -3351,7 +2732,7 @@ namespace CBP
         configComponents_t& a_data,
         configComponents_t::value_type& a_entry)
     {
-        auto& globalConfig = IConfig::GetGlobalConfig();
+        auto& globalConfig = IConfig::GetGlobal();
 
         auto& mirrorTo = globalConfig.ui.mirror[ID];
 
@@ -3586,7 +2967,7 @@ namespace CBP
         if (CanClip())
             return;
 
-        const auto& globalConfig = IConfig::GetGlobalConfig();
+        const auto& globalConfig = IConfig::GetGlobal();
         const auto& scConfig = GetSimComponentConfig();
 
         if (scConfig.showNodes)
@@ -3817,6 +3198,15 @@ namespace CBP
         changed2 |= ImGui::SliderFloat3("Offset max", a_conf.colOffsetMax, -250.0f, 250.0f);
         HelpMarker(MiscHelpText::offsetMax);
 
+        if (ImGui::SliderFloat("Scale", &a_conf.nodeScale, 0.0f, 20.0f)) 
+        {
+            a_conf.nodeScale = std::clamp(a_conf.nodeScale, 0.0f, 20.0f);
+            changed2 = true;
+        }
+
+        ImGui::SameLine();
+        changed2 |= ImGui::Checkbox("On", &a_conf.overrideScale);
+
         if (changed || changed2)
             UpdateNodeData(a_handle, a_nodeName, a_conf, changed);
     }
@@ -3887,9 +3277,9 @@ namespace CBP
         m_label(a_label),
         m_size(a_size),
         m_avg(a_avg),
-        m_res(a_res)
+        m_res(a_res),
+        m_strBuf1{ 0 }
     {
-        m_strBuf1[0] = 0x0;
     }
 
     void UIPlot::Update(float a_value)
@@ -3961,7 +3351,7 @@ namespace CBP
 
     void UIProfiling::Initialize()
     {
-        auto& globalConfig = IConfig::GetGlobalConfig();
+        auto& globalConfig = IConfig::GetGlobal();
 
         m_plotUpdateTime.SetRes(globalConfig.profiling.plotValues);
         m_plotFramerate.SetRes(globalConfig.profiling.plotValues);
@@ -3976,7 +3366,7 @@ namespace CBP
     void UIProfiling::Draw(bool* a_active)
     {
         auto& io = ImGui::GetIO();
-        auto& globalConfig = IConfig::GetGlobalConfig();
+        auto& globalConfig = IConfig::GetGlobal();
 
         ImVec2 center(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f);
         ImGui::SetNextWindowPos(center, ImGuiCond_FirstUseEver, ImVec2(0.5f, 0.5f));
@@ -3988,7 +3378,7 @@ namespace CBP
 
         ImGui::PushID(static_cast<const void*>(this));
 
-        if (ImGui::Begin("Stats", a_active))
+        if (ImGui::Begin("Stats##CBP", a_active))
         {
             ImGui::SetWindowFontScale(globalConfig.ui.fontScale);
 
@@ -4006,6 +3396,7 @@ namespace CBP
                 ImGui::Text("Timer:");
                 HelpMarker(MiscHelpText::frameTimer);
                 ImGui::Text("Actors:");
+                //ImGui::Text("UI:");
 
                 ImGui::NextColumn();
 
@@ -4015,18 +3406,21 @@ namespace CBP
                     ? stats.avgStepRate / stats.avgStepsPerUpdate : 0);
                 ImGui::Text("%.4f", stats.avgFrameTime);
                 ImGui::Text("%u", stats.avgActorCount);
+                //ImGui::Text("%lld us", SDT::DUI::GetPerf());
 
                 ImGui::Columns(1);
 
                 if (globalConfig.profiling.enablePlot)
                 {
+                    ImGui::Spacing();
+
                     if (globalConfig.profiling.animatePlot)
                     {
                         auto currentUID = profiler.GetUID();
                         if (currentUID != m_lastUID)
                         {
                             m_plotUpdateTime.Update(stats.avgTime);
-                            m_plotFramerate.Update(stats.avgFrameTime >= _EPSILON ? 
+                            m_plotFramerate.Update(stats.avgFrameTime >= _EPSILON ?
                                 1.0f / stats.avgFrameTime : 0.0f);
 
                             m_lastUID = currentUID;
@@ -4059,33 +3453,33 @@ namespace CBP
             {
                 ImGui::PushItemWidth(ImGui::GetFontSize() * -8.0f);
 
-                if (CheckboxGlobal("Enabled", &globalConfig.profiling.enableProfiling))
+                if (Checkbox("Enabled", &globalConfig.profiling.enableProfiling))
                     if (globalConfig.profiling.enableProfiling)
                         DCBP::ResetProfiler();
 
-                if (SliderIntGlobal("Interval (ms)", &globalConfig.profiling.profilingInterval, 10, 10000))
+                if (SliderInt("Interval (ms)", &globalConfig.profiling.profilingInterval, 10, 10000))
                     DCBP::SetProfilerInterval(static_cast<long long>(
                         globalConfig.profiling.profilingInterval) * 1000);
 
-                CheckboxGlobal("Enable plots", &globalConfig.profiling.enablePlot);
+                Checkbox("Enable plots", &globalConfig.profiling.enablePlot);
 
                 ImGui::SameLine();
-                if (CheckboxGlobal("Show avg", &globalConfig.profiling.showAvg))
+                if (Checkbox("Show avg", &globalConfig.profiling.showAvg))
                 {
                     m_plotUpdateTime.SetShowAvg(globalConfig.profiling.showAvg);
                     m_plotFramerate.SetShowAvg(globalConfig.profiling.showAvg);
                 }
 
                 ImGui::SameLine();
-                CheckboxGlobal("Animate", &globalConfig.profiling.animatePlot);
+                Checkbox("Animate", &globalConfig.profiling.animatePlot);
 
-                if (SliderIntGlobal("Plot values", &globalConfig.profiling.plotValues, 10, 2000))
+                if (SliderInt("Plot values", &globalConfig.profiling.plotValues, 10, 2000))
                 {
                     m_plotUpdateTime.SetRes(globalConfig.profiling.plotValues);
                     m_plotFramerate.SetRes(globalConfig.profiling.plotValues);
                 }
 
-                if (SliderFloatGlobal("Plot height", &globalConfig.profiling.plotHeight, 10.0f, 200.0f))
+                if (SliderFloat("Plot height", &globalConfig.profiling.plotHeight, 10.0f, 200.0f))
                 {
                     m_plotUpdateTime.SetHeight(globalConfig.profiling.plotHeight);
                     m_plotFramerate.SetHeight(globalConfig.profiling.plotHeight);
@@ -4136,7 +3530,7 @@ namespace CBP
 
         ImGui::PushID(static_cast<const void*>(a_active));
 
-        if (ImGui::Begin("Debug info", a_active))
+        if (ImGui::Begin("Debug info##CBP", a_active))
         {
             ImGui::SetWindowFontScale(globalConfig.ui.fontScale);
 
@@ -4217,7 +3611,7 @@ namespace CBP
 
     void UIFileSelector::SelectedFile::UpdateInfo()
     {
-        m_infoResult = DCBP::ImportGetInfo(m_path, m_info);
+        m_infoResult = DCBP::GetImportInfo(m_path, m_info);
     }
 
     UIFileSelector::UIFileSelector()
@@ -4314,7 +3708,7 @@ namespace CBP
     bool UIDialogImport::Draw(bool* a_active)
     {
         auto& io = ImGui::GetIO();
-        auto& globalConfig = IConfig::GetGlobalConfig();;
+        auto& globalConfig = IConfig::GetGlobal();;
 
         ImVec2 center(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f);
         ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
@@ -4323,7 +3717,7 @@ namespace CBP
 
         ImGui::PushID(static_cast<const void*>(this));
 
-        if (ImGui::Begin("Select file to import", a_active))
+        if (ImGui::Begin("Select file to import##CBP", a_active))
         {
             ImGui::SetWindowFontScale(globalConfig.ui.fontScale);
 
@@ -4372,11 +3766,11 @@ namespace CBP
 
             uint8_t importFlags = 0;
 
-            CheckboxGlobal("Global", &globalConfig.ui.import.global);
+            Checkbox("Global", &globalConfig.ui.import.global);
             ImGui::SameLine();
-            CheckboxGlobal("Actors", &globalConfig.ui.import.actors);
+            Checkbox("Actors", &globalConfig.ui.import.actors);
             ImGui::SameLine();
-            CheckboxGlobal("Races", &globalConfig.ui.import.races);
+            Checkbox("Races", &globalConfig.ui.import.races);
 
             ImGui::Separator();
 
@@ -4384,13 +3778,14 @@ namespace CBP
             {
                 if (selected && selected->m_infoResult)
                 {
-                    uint8_t flags = 0;
+                    ISerialization::ImportFlags flags(ISerialization::ImportFlags::None);
+
                     if (globalConfig.ui.import.global)
-                        flags |= ISerialization::IMPORT_GLOBAL;
+                        flags |= ISerialization::ImportFlags::Global;
                     if (globalConfig.ui.import.actors)
-                        flags |= ISerialization::IMPORT_ACTORS;
+                        flags |= ISerialization::ImportFlags::Actors;
                     if (globalConfig.ui.import.races)
-                        flags |= ISerialization::IMPORT_RACES;
+                        flags |= ISerialization::ImportFlags::Races;
 
                     if (DCBP::ImportData(selected->m_path, flags)) {
                         *a_active = false;
@@ -4483,7 +3878,7 @@ namespace CBP
 
     bool UIDialogExport::Draw()
     {
-        const auto& globalConfig = IConfig::GetGlobalConfig();;
+        const auto& globalConfig = IConfig::GetGlobal();;
 
         bool res(false);
 
@@ -4530,13 +3925,13 @@ namespace CBP
 
     void UILog::Draw(bool* a_active)
     {
-        const auto& globalConfig = IConfig::GetGlobalConfig();
+        const auto& globalConfig = IConfig::GetGlobal();
 
         SetWindowDimensions(20.0f, 800.0f, 400.0f);
 
         ImGui::PushID(static_cast<const void*>(this));
 
-        if (ImGui::Begin("Log", a_active))
+        if (ImGui::Begin("Log##CBP", a_active))
         {
             ImGui::SetWindowFontScale(globalConfig.ui.fontScale);
 

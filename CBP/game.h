@@ -24,6 +24,16 @@ namespace Game
         return reinterpret_cast<T*>(ResolveObject(handle, typeID));
     }
 
+    void AIProcessVisitActors(std::function<void(Actor*)> a_func);
+
+    __forceinline bool InPausedMenu()
+    {
+        auto mm = MenuManager::GetSingleton();
+        return mm && mm->InPausedMenu();
+    }
+
+    TESObjectREFR* GetReference(Game::FormID a_formid);
+
     // https://github.com/Ryan-rsm-McKenzie/CommonLibSSE/blob/master/include/RE/AI/ProcessLists.h
     class ProcessLists
     {
