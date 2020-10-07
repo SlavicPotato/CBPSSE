@@ -328,7 +328,7 @@ namespace CBP
                 std::move(ss.str()), GetData(e.first));
         }
 
-        if (m_listData.empty()) 
+        if (m_listData.empty())
         {
             _snprintf_s(m_listBuf1, _TRUNCATE, "No races");
             ListSetCurrentItem(0);
@@ -417,7 +417,7 @@ namespace CBP
         {
             auto itm = modList.find(modIndex);
             if (itm != modList.end())
-                ss << "Mod:   " << itm->second.name << " [" << 
+                ss << "Mod:   " << itm->second.name << " [" <<
                 sshex(2) << itm->second.GetPartialIndex() << "]" << std::endl;
         }
 
@@ -448,7 +448,7 @@ namespace CBP
         IConfig::EraseRaceNode(a_formid);
 
         IConfig::Copy(
-            GetData(a_formid), 
+            GetData(a_formid),
             m_listData.at(a_formid).second);
 
         DCBP::ResetActors();
@@ -472,7 +472,7 @@ namespace CBP
     }
 
     void UIRaceEditorNode::ApplyProfile(
-        listValue_t* a_data, 
+        listValue_t* a_data,
         const NodeProfile& a_profile)
     {
         if (!a_data)
@@ -865,7 +865,7 @@ namespace CBP
                 curSelName = (*m_forceState.selected).c_str();
             }
             else {
-                if (!globalConfig.ui.forceActorSelected.empty()) 
+                if (!globalConfig.ui.forceActorSelected.empty())
                 {
                     auto it = data.find(globalConfig.ui.forceActorSelected);
                     if (it != data.end()) {
@@ -874,7 +874,7 @@ namespace CBP
                     }
                 }
 
-                if (!m_forceState.selected) 
+                if (!m_forceState.selected)
                 {
                     auto it = data.begin();
                     if (it != data.end()) {
@@ -1072,10 +1072,11 @@ namespace CBP
 
         const auto& globalConfig = IConfig::GetGlobal();
         const auto& actorConf = GetActorConfig();
+        const auto& actorCache = IData::GetActorCache();
 
         m_listData.clear();
 
-        for (const auto& e : IData::GetActorCache())
+        for (auto& e : actorCache)
         {
             if (!actorConf.showAll && !e.second.active)
                 continue;
@@ -1119,8 +1120,10 @@ namespace CBP
     template <typename T>
     void UIActorList<T>::ActorListTick()
     {
-        auto cacheUpdateId = IData::GetActorCacheUpdateId();
-        if (cacheUpdateId != m_lastCacheUpdateId) {
+        const auto cacheUpdateId = IData::GetActorCacheUpdateId();
+
+        if (cacheUpdateId != m_lastCacheUpdateId)
+        {
             m_lastCacheUpdateId = cacheUpdateId;
             ListUpdate();
         }
@@ -1442,8 +1445,8 @@ namespace CBP
             }
 
             ImGui::EndMenuBar();
-            }
         }
+    }
 
     void UIContext::Draw(bool* a_active)
     {
@@ -1526,7 +1529,7 @@ namespace CBP
                 "Reset",
                 "%s: reset all values?\n\n", curSelName))
             {
-                ListResetAllValues(m_listCurrent);             
+                ListResetAllValues(m_listCurrent);
             }
 
             if (m_state.menu.saveAllFailed)
@@ -1628,7 +1631,7 @@ namespace CBP
 
             if (m_importDialog.Draw(&m_state.windows.importDialog))
                 Reset(m_activeLoadInstance);
-    }
+        }
     }
 
     void UIOptions::Draw(bool* a_active)
@@ -2524,7 +2527,7 @@ namespace CBP
 
             DCBP::UpdateConfigOnAllActors();
         }
-        else 
+        else
         {
             IConfig::EraseActorPhysics(a_handle);
 
@@ -2642,7 +2645,9 @@ namespace CBP
     }
 
     template <class T, UIEditorID ID>
-    void UISimComponent<T, ID>::DrawSimComponents(T a_handle, configComponents_t& a_data)
+    void UISimComponent<T, ID>::DrawSimComponents(
+        T a_handle,
+        configComponents_t& a_data)
     {
         DrawItemFilter();
 
@@ -2669,57 +2674,29 @@ namespace CBP
 
                 GetNodeConfig(a_handle, g, nodeList);
 
-                if (!scConfig.showNodes &&
-                    !ShouldDrawComponent(a_handle, a_data, g, nodeList))
-                {
-                    continue;
-                }
+                configComponentsValue_t* pair;
 
-                auto& p = *a_data.try_emplace(g.first).first;
+                if (ShouldDrawComponent(a_handle, a_data, g, nodeList))
+                    pair = std::addressof(*a_data.try_emplace(g.first).first);
+                else
+                    pair = nullptr;
 
-                auto headerName = p.first;
+                auto headerName = g.first;
                 if (headerName.size() != 0)
                     headerName[0] = std::toupper(headerName[0]);
 
-                if (CollapsingHeader(GetCSID(p.first), headerName.c_str()))
+                if (CollapsingHeader(GetCSID(g.first), headerName.c_str()))
                 {
-                    ImGui::PushID(static_cast<const void*>(std::addressof(p)));
+                    ImGui::PushID(static_cast<const void*>(std::addressof(g.second)));
 
-                    if (ImGui::Button("Mirroring >"))
-                        ImGui::OpenPopup("mirror_popup");
+                    if (pair)
+                        DrawComponentTab(a_handle, a_data, *pair, nodeList);
 
-                    auto profile = GetSelectedProfile();
-                    if (profile)
-                    {
-                        ImGui::SameLine();
-                        if (ImGui::Button("Copy from profile"))
-                            ImGui::OpenPopup("Copy from profile");
+                    if (scConfig.showNodes)
+                        DrawConfGroupNodeMenu(a_handle, nodeList);
 
-                        if (UICommon::ConfirmDialog(
-                            "Copy from profile",
-                            "Copy and apply all values for '%s' from profile '%s'?",
-                            p.first.c_str(), profile->Name().c_str()))
-                        {
-                            if (!CopyFromSelectedProfile(a_handle, a_data, p))
-                                ImGui::OpenPopup("Copy failed");
-                        }
-                    }
-
-                    UICommon::MessageDialog(
-                        "Copy failed",
-                        "Could not copy values from selected profile");
-
-                    if (ImGui::BeginPopup("mirror_popup"))
-                    {
-                        DrawMirrorContextMenu(a_handle, a_data, p);
-                        ImGui::EndPopup();
-                    }
-
-                    ImGui::PushID("group_options");
-                    DrawGroupOptions(a_handle, a_data, p, nodeList);
-                    ImGui::PopID();
-
-                    DrawSliders(a_handle, a_data, p, nodeList);
+                    if (pair)
+                        DrawSliders(a_handle, a_data, *pair, nodeList);
 
                     ImGui::PopID();
                 }
@@ -2734,6 +2711,49 @@ namespace CBP
         }
 
         ImGui::EndChild();
+    }
+
+    template <class T, UIEditorID ID>
+    void UISimComponent<T, ID>::DrawComponentTab(
+        T a_handle,
+        configComponents_t& a_data,
+        configComponentsValue_t& a_pair,
+        nodeConfigList_t& a_nodeConfig
+    )
+    {
+        if (ImGui::Button("Mirroring >"))
+            ImGui::OpenPopup("mirror_popup");
+
+        auto profile = GetSelectedProfile();
+        if (profile)
+        {
+            ImGui::SameLine();
+            if (ImGui::Button("Copy from profile"))
+                ImGui::OpenPopup("Copy from profile");
+
+            if (UICommon::ConfirmDialog(
+                "Copy from profile",
+                "Copy and apply all values for '%s' from profile '%s'?",
+                a_pair.first.c_str(), profile->Name().c_str()))
+            {
+                if (!CopyFromSelectedProfile(a_handle, a_data, a_pair))
+                    ImGui::OpenPopup("Copy failed");
+            }
+        }
+
+        UICommon::MessageDialog(
+            "Copy failed",
+            "Could not copy values from selected profile");
+
+        if (ImGui::BeginPopup("mirror_popup"))
+        {
+            DrawMirrorContextMenu(a_handle, a_data, a_pair);
+            ImGui::EndPopup();
+        }
+
+        ImGui::PushID("group_options");
+        DrawGroupOptions(a_handle, a_data, a_pair, a_nodeConfig);
+        ImGui::PopID();
     }
 
     template <class T, UIEditorID ID>
@@ -2992,10 +3012,6 @@ namespace CBP
             return;
 
         const auto& globalConfig = IConfig::GetGlobal();
-        const auto& scConfig = GetSimComponentConfig();
-
-        if (scConfig.showNodes)
-            DrawConfGroupNodeMenu(a_handle, a_nodeConfig);
 
         auto aoSect = GetArmorOverrideSection(a_handle, a_pair.first);
 

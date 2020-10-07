@@ -423,8 +423,8 @@ namespace CBP
         static void SetActorPhysics(Game::ObjectHandle a_handle, const configComponents_t& a_conf);
         static void SetActorPhysics(Game::ObjectHandle a_handle, configComponents_t&& a_conf);
 
-        inline static void EraseActorPhysics(Game::ObjectHandle handle) {
-            actorConfHolder.erase(handle);
+        inline static decltype(auto) EraseActorPhysics(Game::ObjectHandle handle) {
+            return actorConfHolder.erase(handle);
         }
 
         // Not guaranteed to be actual race conf storage
@@ -433,8 +433,8 @@ namespace CBP
         [[nodiscard]] static configComponents_t& GetOrCreateRacePhysics(Game::FormID a_formid);
         static void SetRacePhysics(Game::FormID a_formid, const configComponents_t& a_conf);
         static void SetRacePhysics(Game::FormID a_formid, configComponents_t&& a_conf);
-        inline static void EraseRacePhysics(Game::FormID handle) {
-            raceConfHolder.erase(handle);
+        inline static decltype(auto) EraseRacePhysics(Game::FormID handle) {
+            return raceConfHolder.erase(handle);
         }
 
         [[nodiscard]] inline static auto& GetGlobalPhysics() {

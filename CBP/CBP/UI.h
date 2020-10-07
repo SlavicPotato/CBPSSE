@@ -228,8 +228,15 @@ namespace CBP
 
         virtual bool GetNodeConfig(
             T a_handle,
-            const configGroupMap_t::value_type &cg_data,
+            const configGroupMap_t::value_type& cg_data,
             nodeConfigList_t& a_out) const = 0;
+
+        void DrawComponentTab(
+            T a_handle,
+            configComponents_t& a_data,
+            configComponentsValue_t& a_pair,
+            nodeConfigList_t& a_nodeConfig
+        );
 
         void DrawMirrorContextMenu(
             T a_handle,
@@ -669,7 +676,7 @@ namespace CBP
             bool a_reset);
 
         virtual bool ShouldDrawComponent(
-            Game::FormID a_handle, 
+            Game::FormID a_handle,
             configComponents_t& a_data,
             const configGroupMap_t::value_type& a_cgdata,
             nodeConfigList_t& a_nodeConfig) const;

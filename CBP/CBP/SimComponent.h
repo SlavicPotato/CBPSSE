@@ -160,6 +160,7 @@ namespace CBP
             bool m_created;
             bool m_active;
             bool m_process;
+            bool m_rotation;
 
             SimComponent& m_parent;
         };

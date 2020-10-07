@@ -16,6 +16,7 @@ namespace CBP
         m_created(false),
         m_active(true),
         m_process(true),
+        m_rotation(false),
         m_nodeScale(1.0f),
         m_radius(1.0f),
         m_height(0.001f),
@@ -68,6 +69,9 @@ namespace CBP
         m_created = true;
         m_active = true;
         m_shape = a_shape;
+        m_rotation = 
+            m_shape == ColliderShape::Capsule ||
+            m_shape == ColliderShape::Box;
 
         return true;
     }
@@ -134,8 +138,7 @@ namespace CBP
 
         auto pos = m_parent.m_obj->m_worldTransform * m_bodyOffset;
 
-        if (m_shape == ColliderShape::Capsule ||
-            m_shape == ColliderShape::Box)
+        if (m_rotation)
         {
             r3d::Quaternion quat(
                 reinterpret_cast<const r3d::Matrix3x3&>(
