@@ -447,7 +447,9 @@ namespace CBP
     {
         IConfig::EraseRaceNode(a_formid);
 
-        IConfig::CopyBase(GetData(a_formid), m_listData[a_formid].second);
+        IConfig::Copy(
+            GetData(a_formid), 
+            m_listData.at(a_formid).second);
 
         DCBP::ResetActors();
     }
@@ -478,7 +480,7 @@ namespace CBP
 
         auto& profileData = a_profile.Data();
 
-        IConfig::CopyBase(profileData, a_data->second.second);
+        IConfig::Copy(profileData, a_data->second.second);
         IConfig::SetRaceNode(a_data->first, profileData);
 
         MarkChanged();
@@ -542,9 +544,9 @@ namespace CBP
 
                 if (UICommon::ConfirmDialog(
                     "Reset",
-                    "%s: clear all values for race?\n\n", curSelName))
+                    "%s: reset all values?\n\n", curSelName))
                 {
-                    ListResetAllValues(m_listCurrent);
+                    ListResetAllValues(entry->first);
                     MarkChanged();
                 }
 
@@ -627,9 +629,9 @@ namespace CBP
 
                 if (UICommon::ConfirmDialog(
                     "Reset",
-                    "%s: clear all values for race?\n\n", curSelName))
+                    "%s: reset all values?\n\n", curSelName))
                 {
-                    ListResetAllValues(m_listCurrent);
+                    ListResetAllValues(entry->first);
                     MarkChanged();
                 }
 
@@ -657,7 +659,7 @@ namespace CBP
 
         auto& profileData = a_profile.Data();
 
-        IConfig::CopyBase(profileData, a_data->second.second);
+        IConfig::Copy(profileData, a_data->second.second);
         IConfig::SetRacePhysics(a_data->first, profileData);
 
         MarkChanged();
@@ -685,9 +687,9 @@ namespace CBP
     {
         IConfig::EraseRacePhysics(a_formid);
 
-        IConfig::CopyBase(
+        IConfig::Copy(
             GetData(a_formid),
-            m_listData[a_formid].second);
+            m_listData.at(a_formid).second);
 
         DCBP::UpdateConfigOnAllActors();
     }
@@ -1028,7 +1030,7 @@ namespace CBP
     {
         auto it = m_listData.find(m_listCurrent);
         if (it != m_listData.end())
-            IConfig::CopyBase(GetData(m_listCurrent), it->second.second);
+            IConfig::Copy(GetData(m_listCurrent), it->second.second);
     }
 
     template <class T, class P>
@@ -1141,7 +1143,7 @@ namespace CBP
 
         m_listCurrent = a_handle;
 
-        IConfig::CopyBase(GetData(a_handle), m_listData.at(a_handle).second);
+        IConfig::Copy(GetData(a_handle), m_listData.at(a_handle).second);
 
         if (a_handle != actorConf.lastActor)
             SetGlobal(actorConf.lastActor, a_handle);
@@ -1522,16 +1524,9 @@ namespace CBP
 
             if (UICommon::ConfirmDialog(
                 "Reset",
-                "%s: clear all values for actor?\n\n", curSelName))
+                "%s: reset all values?\n\n", curSelName))
             {
-                if (m_listCurrent) {
-                    ListResetAllValues(m_listCurrent);
-                    DCBP::DispatchActorTask(m_listCurrent, ControllerInstruction::Action::UpdateConfig);
-                }
-                else {
-                    IConfig::ClearGlobalPhysics();
-                    DCBP::UpdateConfigOnAllActors();
-                }
+                ListResetAllValues(m_listCurrent);             
             }
 
             if (m_state.menu.saveAllFailed)
@@ -2043,7 +2038,7 @@ namespace CBP
             if (ButtonRight("Rescan"))
                 DCBP::QueueActorCacheUpdate();
 
-            if (m_listCurrent)
+            if (entry)
             {
                 ImGui::SameLine(wcmx - GetNextTextOffset("Reset"));
                 if (ButtonRight("Reset"))
@@ -2051,7 +2046,7 @@ namespace CBP
 
                 if (UICommon::ConfirmDialog(
                     "Reset Node",
-                    "Reset all values for '%s'?\n\n", curSelName))
+                    "%s: reset all values?\n\n", curSelName))
                 {
                     ListResetAllValues(entry->first);
                 }
@@ -2104,11 +2099,11 @@ namespace CBP
 
         if (a_data->first == Game::ObjectHandle(0))
         {
-            IConfig::CopyBase(profileData, a_data->second.second);
+            IConfig::Copy(profileData, a_data->second.second);
             IConfig::SetGlobalNode(profileData);
         }
         else {
-            IConfig::CopyBase(profileData, a_data->second.second);
+            IConfig::Copy(profileData, a_data->second.second);
             IConfig::SetActorNode(a_data->first, profileData);
         }
 
@@ -2119,9 +2114,9 @@ namespace CBP
     {
         IConfig::EraseActorNode(a_handle);
 
-        IConfig::CopyBase(
+        IConfig::Copy(
             GetData(a_handle),
-            m_listData[a_handle].second);
+            m_listData.at(a_handle).second);
 
         DCBP::ResetActors();
     }
@@ -2489,14 +2484,14 @@ namespace CBP
 
         if (a_data->first == Game::ObjectHandle(0))
         {
-            IConfig::CopyBase(profileData, a_data->second.second);
+            IConfig::Copy(profileData, a_data->second.second);
             IConfig::SetGlobalPhysics(profileData);
 
             DCBP::UpdateConfigOnAllActors();
         }
         else
         {
-            IConfig::CopyBase(profileData, a_data->second.second);
+            IConfig::Copy(profileData, a_data->second.second);
             IConfig::SetActorPhysics(a_data->first, profileData);
 
             DCBP::DispatchActorTask(a_data->first, ControllerInstruction::Action::UpdateConfig);
@@ -2521,11 +2516,25 @@ namespace CBP
 
     void UIContext::ListResetAllValues(Game::ObjectHandle a_handle)
     {
-        IConfig::EraseActorPhysics(a_handle);
+        if (a_handle == Game::ObjectHandle(0))
+        {
+            IConfig::ClearGlobalPhysics();
 
-        IConfig::CopyBase(
-            GetData(a_handle),
-            m_listData[a_handle].second);
+            m_listData.at(a_handle).second.clear();
+
+            DCBP::UpdateConfigOnAllActors();
+        }
+        else 
+        {
+            IConfig::EraseActorPhysics(a_handle);
+
+            IConfig::Copy(
+                GetData(a_handle),
+                m_listData.at(a_handle).second);
+
+            DCBP::DispatchActorTask(
+                a_handle, ControllerInstruction::Action::UpdateConfig);
+        }
     }
 
     ConfigClass UIContext::GetActorClass(Game::ObjectHandle a_handle) const

@@ -676,8 +676,8 @@ namespace CBP
         /*static void Copy(const configComponents_t& a_lhs, configComponents_t& a_rhs);
         static void Copy(const configNodes_t& a_lhs, configNodes_t& a_rhs);*/
 
-        static void CopyBase(const configComponents_t& a_lhs, configComponents_t& a_rhs);
-        static void CopyBase(const configNodes_t& a_lhs, configNodes_t& a_rhs);
+        static void Copy(const configComponents_t& a_lhs, configComponents_t& a_rhs);
+        static void Copy(const configNodes_t& a_lhs, configNodes_t& a_rhs);
 
         inline static void ClearMergedCache() noexcept {
             mergedConfCache.clear();
