@@ -2,6 +2,19 @@
 
 namespace CBP
 {
+    const colliderDescMap_t configComponent_t::colDescMap({
+        { ColliderShape::Sphere, {
+            "Sphere"
+        }},
+        { ColliderShape::Capsule, {
+            "Capsule"
+        }},
+        { ColliderShape::Box, {
+            "Box"
+        }},
+        }
+    );
+
     const componentValueDescMap_t configComponent_t::descMap({
         {"s", {
             offsetof(configComponent_t, phys.stiffness),
@@ -233,7 +246,7 @@ namespace CBP
         {"ex-", {
             offsetof(configComponent_t, phys.colExtentMin[0]),
             "ex+",
-            0.001f, 50.0f,
+            0.0f, 50.0f,
             "Extent (X, Y, Z, weight 0)",
             "Extent min",
             DescUIMarker::Float3 | DescUIMarker::ColliderBox
@@ -241,7 +254,7 @@ namespace CBP
         {"ey-", {
             offsetof(configComponent_t, phys.colExtentMin[1]),
             "ey+",
-            0.001f, 50.0f,
+            0.0f, 50.0f,
             "",
             "",
             DescUIMarker::ColliderBox
@@ -249,7 +262,7 @@ namespace CBP
         {"ez-", {
             offsetof(configComponent_t, phys.colExtentMin[2]),
             "ez+",
-            0.001f, 50.0f,
+            0.0f, 50.0f,
             "",
             "",
             DescUIMarker::ColliderBox
@@ -257,7 +270,7 @@ namespace CBP
         {"ex+", {
             offsetof(configComponent_t, phys.colExtentMax[0]),
             "ex-",
-            0.001f, 50.0f,
+            0.0f, 50.0f,
             "Extent (X, Y, Z, weight 100)",
             "Extent max",
             DescUIMarker::Float3 | DescUIMarker::ColliderBox
@@ -265,7 +278,7 @@ namespace CBP
         {"ey+", {
             offsetof(configComponent_t, phys.colExtentMax[1]),
             "ey-",
-            0.001f, 50.0f,
+            0.0f, 50.0f,
             "",
             "",
             DescUIMarker::ColliderBox
@@ -273,7 +286,7 @@ namespace CBP
         {"ez+", {
             offsetof(configComponent_t, phys.colExtentMax[2]),
             "ez-",
-            0.001f, 50.0f,
+            0.0f, 50.0f,
             "",
             "",
             DescUIMarker::ColliderBox

@@ -48,7 +48,7 @@ namespace CBP
     {
         DCBP::MarkGlobalsForSave();
     }
-    
+
     void UIBase::OnControlValueChange() const
     {
         DCBP::MarkGlobalsForSave();
@@ -222,10 +222,19 @@ namespace CBP
 
     bool UIProfileEditorPhysics::GetNodeConfig(
         int,
-        const std::string&,
+        const configGroupMap_t::value_type&,
         nodeConfigList_t&) const
     {
         return false;
+    }
+
+    bool UIProfileEditorPhysics::ShouldDrawComponent(
+        int a_handle,
+        PhysicsProfile::base_type& a_data,
+        const configGroupMap_t::value_type& a_cgdata,
+        nodeConfigList_t& a_nodeConfig) const
+    {
+        return a_data.contains(a_cgdata.first);
     }
 
     void UIProfileEditorPhysics::UpdateNodeData(
@@ -299,8 +308,9 @@ namespace CBP
 
         const auto& globalConfig = IConfig::GetGlobal();
         const auto& raceConf = GetRaceConfig();
+        const auto& rl = IData::GetRaceList();
 
-        for (const auto& e : IData::GetRaceList())
+        for (auto& e : rl)
         {
             if (raceConf.playableOnly && !e.second.playable)
                 continue;
@@ -314,14 +324,12 @@ namespace CBP
             else
                 ss << e.second.fullname;
 
-            auto tmp(IConfig::GetTemplateBase<entryValue_t>());
-            IConfig::Copy(GetData(e.first), tmp);
-
             m_listData.try_emplace(e.first,
-                std::move(ss.str()), std::move(tmp));
+                std::move(ss.str()), GetData(e.first));
         }
 
-        if (m_listData.empty()) {
+        if (m_listData.empty()) 
+        {
             _snprintf_s(m_listBuf1, _TRUNCATE, "No races");
             ListSetCurrentItem(0);
             return;
@@ -329,12 +337,14 @@ namespace CBP
 
         _snprintf_s(m_listBuf1, _TRUNCATE, "%zu races", m_listData.size());
 
-        if (globalConfig.ui.selectCrosshairActor && !isFirstUpdate) {
+        if (globalConfig.ui.selectCrosshairActor && !isFirstUpdate)
+        {
             auto crosshairRef = IData::GetCrosshairRef();
             if (crosshairRef)
             {
                 auto ac = IData::GetActorRefInfo(*crosshairRef);
-                if (ac && ac->race.first) {
+                if (ac && ac->race.first)
+                {
                     if (m_listData.find(ac->race.second) != m_listData.end()) {
                         ListSetCurrentItem(ac->race.second);
                         return;
@@ -407,7 +417,8 @@ namespace CBP
         {
             auto itm = modList.find(modIndex);
             if (itm != modList.end())
-                ss << "Mod:   " << itm->second.name << " [" << sshex(2) << itm->second.GetPartialIndex() << "]" << std::endl;
+                ss << "Mod:   " << itm->second.name << " [" << 
+                sshex(2) << itm->second.GetPartialIndex() << "]" << std::endl;
         }
 
         ImGui::TextUnformatted(ss.str().c_str());
@@ -436,7 +447,7 @@ namespace CBP
     {
         IConfig::EraseRaceNode(a_formid);
 
-        IConfig::CopyBase(GetData(a_formid), m_listData.at(a_formid).second);
+        IConfig::CopyBase(GetData(a_formid), m_listData[a_formid].second);
 
         DCBP::ResetActors();
     }
@@ -458,7 +469,9 @@ namespace CBP
         return IConfig::GetGlobal().ui.raceNode;
     }
 
-    void UIRaceEditorNode::ApplyProfile(listValue_t* a_data, const NodeProfile& a_profile)
+    void UIRaceEditorNode::ApplyProfile(
+        listValue_t* a_data, 
+        const NodeProfile& a_profile)
     {
         if (!a_data)
             return;
@@ -674,7 +687,7 @@ namespace CBP
 
         IConfig::CopyBase(
             GetData(a_formid),
-            m_listData.at(a_formid).second);
+            m_listData[a_formid].second);
 
         DCBP::UpdateConfigOnAllActors();
     }
@@ -755,15 +768,10 @@ namespace CBP
 
     bool UIRaceEditorPhysics::GetNodeConfig(
         Game::FormID a_formid,
-        const std::string& a_confGroup,
+        const configGroupMap_t::value_type& cg_data,
         nodeConfigList_t& a_out) const
     {
-        auto& cgMap = CBP::IConfig::GetConfigGroupMap();
-        auto itc = cgMap.find(a_confGroup);
-        if (itc == cgMap.end())
-            return false;
-
-        for (const auto& e : itc->second)
+        for (const auto& e : cg_data.second)
         {
             auto& nodeConf = IConfig::GetRaceNode(a_formid);
             auto it = nodeConf.find(e);
@@ -788,6 +796,8 @@ namespace CBP
 
     bool UIRaceEditorPhysics::ShouldDrawComponent(
         Game::FormID,
+        configComponents_t&,
+        const configGroupMap_t::value_type&,
         nodeConfigList_t& a_nodeConfig) const
     {
         for (const auto& e : a_nodeConfig)
@@ -834,24 +844,27 @@ namespace CBP
     }
 
     template<typename T>
+    const std::string UIApplyForce<T>::m_chKey("Main#Force");
+
+    template<typename T>
     void UIApplyForce<T>::DrawForceSelector(T* a_data, configForceMap_t& a_forceData)
     {
         auto& globalConfig = IConfig::GetGlobal();;
 
         ImGui::PushID(static_cast<const void*>(std::addressof(m_forceState)));
 
-        static const std::string chKey("Main#Force");
-
-        if (Tree(chKey, "Force", false))
+        if (Tree(m_chKey, "Force", false))
         {
-            auto& data = GetData(a_data);
+            auto& data = IConfig::GetConfigGroupMap();
 
-            const char* curSelName = nullptr;
+            const char* curSelName(nullptr);
+
             if (m_forceState.selected) {
                 curSelName = (*m_forceState.selected).c_str();
             }
             else {
-                if (globalConfig.ui.forceActorSelected.size()) {
+                if (!globalConfig.ui.forceActorSelected.empty()) 
+                {
                     auto it = data.find(globalConfig.ui.forceActorSelected);
                     if (it != data.end()) {
                         m_forceState.selected = it->first;
@@ -859,7 +872,8 @@ namespace CBP
                     }
                 }
 
-                if (!m_forceState.selected) {
+                if (!m_forceState.selected) 
+                {
                     auto it = data.begin();
                     if (it != data.end()) {
                         m_forceState.selected = it->first;
@@ -872,7 +886,7 @@ namespace CBP
             {
                 for (const auto& e : data)
                 {
-                    ImGui::PushID(reinterpret_cast<const void*>(std::addressof(e.second)));
+                    ImGui::PushID(static_cast<const void*>(std::addressof(e.second)));
 
                     bool selected = m_forceState.selected &&
                         e.first == *m_forceState.selected;
@@ -1064,15 +1078,10 @@ namespace CBP
             if (!actorConf.showAll && !e.second.active)
                 continue;
 
-            auto tmp(IConfig::GetTemplateBase<entryValue_t>());
-            IConfig::Copy(GetData(e.first), tmp);
-
-            m_listData.try_emplace(e.first, e.second.name, std::move(tmp));
+            m_listData.try_emplace(e.first, e.second.name, GetData(e.first));
         }
 
-        auto tmp(IConfig::GetTemplateBase<entryValue_t>());
-        IConfig::Copy(GetData(Game::ObjectHandle(0)), tmp);
-        m_listData.try_emplace(0, "Global", std::move(tmp));
+        m_listData.try_emplace(0, "Global", GetData(Game::ObjectHandle(0)));
 
         if (m_listData.size() == 1) {
             _snprintf_s(m_listBuf1, _TRUNCATE, "No actors");
@@ -1431,8 +1440,8 @@ namespace CBP
             }
 
             ImGui::EndMenuBar();
+            }
         }
-    }
 
     void UIContext::Draw(bool* a_active)
     {
@@ -1624,7 +1633,7 @@ namespace CBP
 
             if (m_importDialog.Draw(&m_state.windows.importDialog))
                 Reset(m_activeLoadInstance);
-        }
+    }
     }
 
     void UIOptions::Draw(bool* a_active)
@@ -2112,7 +2121,7 @@ namespace CBP
 
         IConfig::CopyBase(
             GetData(a_handle),
-            m_listData.at(a_handle).second);
+            m_listData[a_handle].second);
 
         DCBP::ResetActors();
     }
@@ -2233,15 +2242,10 @@ namespace CBP
 
     bool UIContext::UISimComponentActor::GetNodeConfig(
         Game::ObjectHandle a_handle,
-        const std::string& a_confGroup,
+        const configGroupMap_t::value_type& cg_data,
         nodeConfigList_t& a_out) const
     {
-        auto& cgMap = CBP::IConfig::GetConfigGroupMap();
-        auto itc = cgMap.find(a_confGroup);
-        if (itc == cgMap.end())
-            return false;
-
-        for (const auto& e : itc->second)
+        for (const auto& e : cg_data.second)
         {
             auto& nodeConf = IConfig::GetActorNode(a_handle);
             auto it = nodeConf.find(e);
@@ -2284,6 +2288,8 @@ namespace CBP
 
     bool UIContext::UISimComponentActor::ShouldDrawComponent(
         Game::ObjectHandle,
+        configComponents_t&,
+        const configGroupMap_t::value_type&,
         nodeConfigList_t& a_nodeConfig) const
     {
         for (const auto& e : a_nodeConfig)
@@ -2399,17 +2405,12 @@ namespace CBP
 
     bool UIContext::UISimComponentGlobal::GetNodeConfig(
         Game::ObjectHandle a_handle,
-        const std::string& a_confGroup,
+        const configGroupMap_t::value_type& cg_data,
         nodeConfigList_t& a_out) const
     {
-        auto& cgMap = CBP::IConfig::GetConfigGroupMap();
-        auto itc = cgMap.find(a_confGroup);
-        if (itc == cgMap.end())
-            return false;
-
         auto& nodeConf = IConfig::GetGlobalNode();
 
-        for (const auto& e : itc->second)
+        for (const auto& e : cg_data.second)
         {
             auto it = nodeConf.find(e);
 
@@ -2441,6 +2442,8 @@ namespace CBP
 
     bool UIContext::UISimComponentGlobal::ShouldDrawComponent(
         Game::ObjectHandle,
+        configComponents_t&,
+        const configGroupMap_t::value_type&,
         nodeConfigList_t& a_nodeConfig) const
     {
         for (const auto& e : a_nodeConfig)
@@ -2522,7 +2525,7 @@ namespace CBP
 
         IConfig::CopyBase(
             GetData(a_handle),
-            m_listData.at(a_handle).second);
+            m_listData[a_handle].second);
     }
 
     ConfigClass UIContext::GetActorClass(Game::ObjectHandle a_handle) const
@@ -2642,28 +2645,28 @@ namespace CBP
         {
             ImGui::PushItemWidth(ImGui::GetFontSize() * -16.0f);
 
+            nodeConfigList_t nodeList;
+
             const auto& scConfig = GetSimComponentConfig();
 
-            auto it = a_data.begin();
+            auto& cg = IConfig::GetConfigGroupMap();
 
-            while (it != a_data.end())
+            for (const auto& g : cg)
             {
-                auto& p = *it;
-
-                if (!m_dataFilter.Test(p.first)) {
-                    ++it;
+                if (!m_dataFilter.Test(g.first))
                     continue;
-                }
 
-                nodeConfigList_t nodeList;
-                GetNodeConfig(a_handle, p.first, nodeList);
+                nodeList.clear();
+
+                GetNodeConfig(a_handle, g, nodeList);
 
                 if (!scConfig.showNodes &&
-                    !ShouldDrawComponent(a_handle, nodeList))
+                    !ShouldDrawComponent(a_handle, a_data, g, nodeList))
                 {
-                    ++it;
                     continue;
                 }
+
+                auto& p = *a_data.try_emplace(g.first).first;
 
                 auto headerName = p.first;
                 if (headerName.size() != 0)
@@ -2714,10 +2717,8 @@ namespace CBP
 
                 if (m_eraseCurrent) {
                     m_eraseCurrent = false;
-                    it = a_data.erase(it);
+                    a_data.erase(g.first);
                 }
-                else
-                    ++it;
             }
 
             ImGui::PopItemWidth();
@@ -2739,16 +2740,23 @@ namespace CBP
         auto c = mirrorTo.try_emplace(a_entry.first);
         auto& d = c.first->second;
 
-        for (const auto& e : a_data)
+        nodeConfigList_t nodeList;
+
+        auto& cg = IConfig::GetConfigGroupMap();
+
+        for (const auto& g : cg)
         {
-            if (e.first == a_entry.first)
+            if (g.first == a_entry.first)
                 continue;
 
-            nodeConfigList_t nodeList;
-            GetNodeConfig(a_handle, e.first, nodeList);
+            nodeList.clear();
 
-            if (!ShouldDrawComponent(a_handle, nodeList))
+            GetNodeConfig(a_handle, g, nodeList);
+
+            if (!ShouldDrawComponent(a_handle, a_data, g, nodeList))
                 continue;
+
+            auto& e = *a_data.try_emplace(g.first).first;
 
             auto headerName = e.first;
             if (headerName.size() != 0)
@@ -2902,19 +2910,17 @@ namespace CBP
 
         if (ImGui::BeginCombo("Collider shape", desc))
         {
-            if (ImGui::Selectable("Sphere", a_pair.second.ex.colShape == ColliderShape::Sphere)) {
-                a_pair.second.ex.colShape = ColliderShape::Sphere;
-                OnColliderShapeChange(a_handle, a_data, a_pair, a_entry);
-            }
+            for (auto& e : configComponent_t::colDescMap)
+            {
+                bool selected = a_pair.second.ex.colShape == e.first;
+                if (selected)
+                    if (ImGui::IsWindowAppearing()) ImGui::SetScrollHereY();
 
-            if (ImGui::Selectable("Capsule", a_pair.second.ex.colShape == ColliderShape::Capsule)) {
-                a_pair.second.ex.colShape = ColliderShape::Capsule;
-                OnColliderShapeChange(a_handle, a_data, a_pair, a_entry);
-            }
-
-            if (ImGui::Selectable("Box", a_pair.second.ex.colShape == ColliderShape::Box)) {
-                a_pair.second.ex.colShape = ColliderShape::Box;
-                OnColliderShapeChange(a_handle, a_data, a_pair, a_entry);
+                if (ImGui::Selectable(e.second.name.c_str(), selected))
+                {
+                    a_pair.second.ex.colShape = e.first;
+                    OnColliderShapeChange(a_handle, a_data, a_pair, a_entry);
+                }
             }
 
             ImGui::EndCombo();
@@ -3024,7 +3030,7 @@ namespace CBP
                 }
 
             }
-            
+
             if (groupType == DescUIGroupType::Collisions)
             {
                 auto flags = e.second.marker & UIMARKER_COL_SHAPE_FLAGS;
@@ -3035,15 +3041,15 @@ namespace CBP
 
                     switch (a_pair.second.ex.colShape)
                     {
-                        case ColliderShape::Sphere:                            
-                            f |= (flags & DescUIMarker::ColliderSphere);
-                            break;
-                        case ColliderShape::Capsule:                            
-                            f |= (flags & DescUIMarker::ColliderCapsule);
-                            break;
-                        case ColliderShape::Box:                            
-                            f |= (flags & DescUIMarker::ColliderBox);
-                            break;
+                    case ColliderShape::Sphere:
+                        f |= (flags & DescUIMarker::ColliderSphere);
+                        break;
+                    case ColliderShape::Capsule:
+                        f |= (flags & DescUIMarker::ColliderCapsule);
+                        break;
+                    case ColliderShape::Box:
+                        f |= (flags & DescUIMarker::ColliderBox);
+                        break;
                     }
 
                     if (f == DescUIMarker::None)
@@ -3132,6 +3138,8 @@ namespace CBP
     template <class T, UIEditorID ID>
     bool UISimComponent<T, ID>::ShouldDrawComponent(
         T,
+        configComponents_t&,
+        const configGroupMap_t::value_type&,
         nodeConfigList_t&) const
     {
         return true;
@@ -3225,7 +3233,7 @@ namespace CBP
         changed2 |= ImGui::SliderFloat3("Offset max", a_conf.colOffsetMax, -250.0f, 250.0f);
         HelpMarker(MiscHelpText::offsetMax);
 
-        if (ImGui::SliderFloat("Scale", &a_conf.nodeScale, 0.0f, 20.0f)) 
+        if (ImGui::SliderFloat("Scale", &a_conf.nodeScale, 0.0f, 20.0f))
         {
             a_conf.nodeScale = std::clamp(a_conf.nodeScale, 0.0f, 20.0f);
             changed2 = true;
@@ -3423,7 +3431,7 @@ namespace CBP
                 ImGui::Text("Timer:");
                 HelpMarker(MiscHelpText::frameTimer);
                 ImGui::Text("Actors:");
-                //ImGui::Text("UI:");
+                ImGui::Text("UI:");
 
                 ImGui::NextColumn();
 
@@ -3433,7 +3441,7 @@ namespace CBP
                     ? stats.avgStepRate / stats.avgStepsPerUpdate : 0);
                 ImGui::Text("%.4f", stats.avgFrameTime);
                 ImGui::Text("%u", stats.avgActorCount);
-                //ImGui::Text("%lld us", SDT::DUI::GetPerf());
+                ImGui::Text("%lld us", DUI::GetPerf());
 
                 ImGui::Columns(1);
 

@@ -298,13 +298,13 @@ namespace Serialization
     template<>
     void Parser<CBP::configComponents_t>::GetDefault(CBP::configComponents_t& a_out) const
     {
-        a_out = CBP::IConfig::GetTemplateBase<CBP::configComponents_t>();
+        a_out = CBP::configComponents_t();
     }
 
     template<>
     void Parser<CBP::configNodes_t>::GetDefault(CBP::configNodes_t& a_out) const
     {
-        a_out = CBP::IConfig::GetTemplateBase<CBP::configNodes_t>();
+        a_out = CBP::configNodes_t();
     }
 }
 

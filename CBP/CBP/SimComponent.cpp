@@ -48,20 +48,19 @@ namespace CBP
         switch (a_shape)
         {
         case ColliderShape::Capsule:
-            m_capsuleShape = physicsCommon.createCapsuleShape(m_radius, m_height);
-            m_collider = m_body->addCollider(m_capsuleShape, m_transform);
+            m_collisionShape = physicsCommon.createCapsuleShape(m_radius, m_height);
             break;
         case ColliderShape::Box:
-            m_boxShape = physicsCommon.createBoxShape(m_extent);
-            m_collider = m_body->addCollider(m_boxShape, m_transform);
+            m_collisionShape = physicsCommon.createBoxShape(m_extent);
             break;
         case ColliderShape::Sphere:
-            m_sphereShape = physicsCommon.createSphereShape(m_radius);
-            m_collider = m_body->addCollider(m_sphereShape, m_transform);
+            m_collisionShape = physicsCommon.createSphereShape(m_radius);
             break;
         default:
             ASSERT_STR(false, "Collider shape not implemented");
         }
+
+        m_collider = m_body->addCollider(m_collisionShape, m_transform);
 
         m_collider->setUserData(std::addressof(m_parent));
         m_body->setIsActive(m_process);

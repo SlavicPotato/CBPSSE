@@ -212,6 +212,8 @@ namespace CBP
     private:
         virtual bool ShouldDrawComponent(
             T a_handle,
+            configComponents_t& a_data,
+            const configGroupMap_t::value_type& a_cgdata,
             nodeConfigList_t& a_nodeConfig) const;
 
         virtual bool HasMovement(
@@ -226,7 +228,7 @@ namespace CBP
 
         virtual bool GetNodeConfig(
             T a_handle,
-            const std::string& a_node,
+            const configGroupMap_t::value_type &cg_data,
             nodeConfigList_t& a_out) const = 0;
 
         void DrawMirrorContextMenu(
@@ -320,6 +322,8 @@ namespace CBP
         struct {
             SelectedItem<std::string> selected;
         } m_forceState;
+
+        static const std::string m_chKey;
     };
 
     class UIProfileEditorPhysics :
@@ -363,8 +367,14 @@ namespace CBP
 
         virtual bool GetNodeConfig(
             int a_handle,
-            const std::string& a_node,
+            const configGroupMap_t::value_type& cg_data,
             nodeConfigList_t& a_out) const;
+
+        virtual bool ShouldDrawComponent(
+            int a_handle,
+            PhysicsProfile::base_type& a_data,
+            const configGroupMap_t::value_type& a_cgdata,
+            nodeConfigList_t& a_nodeConfig) const;
 
         virtual void UpdateNodeData(
             int a_handle,
@@ -649,7 +659,7 @@ namespace CBP
 
         virtual bool GetNodeConfig(
             Game::FormID a_handle,
-            const std::string& a_node,
+            const configGroupMap_t::value_type& cg_data,
             nodeConfigList_t& a_out) const;
 
         virtual void UpdateNodeData(
@@ -659,7 +669,9 @@ namespace CBP
             bool a_reset);
 
         virtual bool ShouldDrawComponent(
-            Game::FormID a_handle,
+            Game::FormID a_handle, 
+            configComponents_t& a_data,
+            const configGroupMap_t::value_type& a_cgdata,
             nodeConfigList_t& a_nodeConfig) const;
 
         virtual bool HasMovement(
@@ -867,6 +879,8 @@ namespace CBP
 
             virtual bool ShouldDrawComponent(
                 Game::ObjectHandle a_handle,
+                configComponents_t& a_data,
+                const configGroupMap_t::value_type& a_cgdata,
                 nodeConfigList_t& a_nodeConfig) const;
 
             virtual bool HasMovement(
@@ -881,7 +895,7 @@ namespace CBP
 
             virtual bool GetNodeConfig(
                 Game::ObjectHandle a_handle,
-                const std::string& a_node,
+                const configGroupMap_t::value_type& cg_data,
                 nodeConfigList_t& a_out) const;
 
             virtual void UpdateNodeData(
@@ -930,6 +944,8 @@ namespace CBP
 
             virtual bool ShouldDrawComponent(
                 Game::ObjectHandle a_handle,
+                configComponents_t& a_data,
+                const configGroupMap_t::value_type& a_cgdata,
                 nodeConfigList_t& a_nodeConfig) const;
 
             virtual bool HasMovement(
@@ -940,7 +956,7 @@ namespace CBP
 
             virtual bool GetNodeConfig(
                 Game::ObjectHandle a_handle,
-                const std::string& a_node,
+                const configGroupMap_t::value_type& cg_data,
                 nodeConfigList_t& a_out) const;
 
             virtual void UpdateNodeData(

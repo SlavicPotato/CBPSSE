@@ -595,7 +595,7 @@ namespace UICommon
                             }
                         }
                         else {
-                            m_state.lastException = pm.GetLastException();
+                            m_state.lastException = profile.GetLastException();
                             ImGui::OpenPopup("Save Error");
                         }
                     }
@@ -953,6 +953,19 @@ namespace UICommon
     void UIProfileEditorBase<T>::DrawOptions(T& a_profile)
     {
     }
+
+    class UITextFileEditor
+    {
+    public:
+        UITextFileEditor(const fs::path &a_path) :
+            m_path(a_path)
+        {
+        }
+
+    private:
+
+        fs::path m_path;
+    };
 
 
     void HelpMarker(const char* desc, float a_scale);

@@ -130,12 +130,12 @@ namespace CBP
     enum class DescUIMarker : uint32_t
     {
         None = 0,
-        BeginGroup = 1 << 0,
-        EndGroup = 1 << 1,
-        ColliderSphere = 1 << 2,
-        ColliderCapsule = 1 << 3,
-        ColliderBox = 1 << 4,
-        Float3 = 1 << 5
+        BeginGroup = 1U << 0,
+        EndGroup = 1U << 1,
+        Float3 = 1U << 5,
+        ColliderSphere = 1U << 10,
+        ColliderCapsule = 1U << 11,
+        ColliderBox = 1U << 12
     };
 
     DEFINE_ENUM_CLASS_BITWISE(DescUIMarker);
@@ -144,7 +144,6 @@ namespace CBP
         DescUIMarker::ColliderSphere | 
         DescUIMarker::ColliderCapsule | 
         DescUIMarker::ColliderBox;
-
 
     enum class DescUIGroupType : uint32_t
     {
@@ -156,8 +155,8 @@ namespace CBP
     enum class ColliderShape : uint32_t
     {
         Sphere = 0,
-        Capsule,
-        Box
+        Capsule = 1,
+        Box = 2
     };
 
     struct componentValueDesc_t
@@ -173,7 +172,13 @@ namespace CBP
         std::string groupName;
     };
 
+    struct colliderDesc_t
+    {
+        std::string name;
+    };
+
     typedef iKVStorage<std::string, const componentValueDesc_t> componentValueDescMap_t;
+    typedef KVStorage<ColliderShape, const colliderDesc_t> colliderDescMap_t;
 
     struct configComponent_t
     {
@@ -295,8 +300,8 @@ namespace CBP
             float offsetMax[3]{ 0.0f, 0.0f, 0.0f };
             float colHeightMin = 0.001f;
             float colHeightMax = 0.001f;
-            float colExtentMin[3]{ 1.0f, 1.0f, 1.0f };
-            float colExtentMax[3]{ 1.0f, 1.0f, 1.0f };
+            float colExtentMin[3]{ 2.5f, 2.5f, 2.5f };
+            float colExtentMax[3]{ 2.5f, 2.5f, 2.5f };
             float colRot[3]{ 0.0f, 0.0f, 0.0f };
             float colRestitutionCoefficient = 0.25f;
             float colPenBiasFactor = 1.0f;
@@ -309,17 +314,18 @@ namespace CBP
         } ex;
 
         static const componentValueDescMap_t descMap;
+        static const colliderDescMap_t colDescMap;
         static const stl::iunordered_map<std::string, std::string> oldKeyMap;
     };
 
     //static_assert(sizeof(configComponent_t) == 0x5C);
 
-    typedef stl::imap<std::string, configComponent_t> configComponents_t;
+    typedef stl::iunordered_map<std::string, configComponent_t> configComponents_t;
     typedef configComponents_t::value_type configComponentsValue_t;
     typedef std::unordered_map<Game::ObjectHandle, configComponents_t> actorConfigComponentsHolder_t;
     typedef std::unordered_map<Game::FormID, configComponents_t> raceConfigComponentsHolder_t;
     typedef stl::imap<std::string, std::string> nodeMap_t;
-    typedef stl::iunordered_map<std::string, std::vector<std::string>> configGroupMap_t;
+    typedef stl::imap<std::string, std::vector<std::string>> configGroupMap_t;
 
     typedef std::set<uint64_t> collisionGroups_t;
     typedef stl::imap<std::string, uint64_t> nodeCollisionGroupMap_t;
@@ -371,7 +377,7 @@ namespace CBP
         }
     };
 
-    typedef stl::imap<std::string, configNode_t> configNodes_t;
+    typedef stl::iunordered_map<std::string, configNode_t> configNodes_t;
     typedef configNodes_t::value_type configNodesValue_t;
     typedef std::unordered_map<Game::ObjectHandle, configNodes_t> actorConfigNodesHolder_t;
     typedef std::unordered_map<Game::FormID, configNodes_t> raceConfigNodesHolder_t;
@@ -501,6 +507,10 @@ namespace CBP
 
         [[nodiscard]] inline static bool IsValidGroup(const std::string& a_key) {
             return validConfGroups.contains(a_key);
+        }
+
+        [[nodiscard]] inline static const auto& GetConfigGroups() {
+            return validConfGroups;
         }
 
         [[nodiscard]] inline static auto& GetCollisionGroups() {
@@ -663,8 +673,8 @@ namespace CBP
             return templateBaseNodeHolder;
         }
         
-        static void Copy(const configComponents_t& a_lhs, configComponents_t& a_rhs);
-        static void Copy(const configNodes_t& a_lhs, configNodes_t& a_rhs);
+        /*static void Copy(const configComponents_t& a_lhs, configComponents_t& a_rhs);
+        static void Copy(const configNodes_t& a_lhs, configNodes_t& a_rhs);*/
 
         static void CopyBase(const configComponents_t& a_lhs, configComponents_t& a_rhs);
         static void CopyBase(const configNodes_t& a_lhs, configNodes_t& a_rhs);

@@ -18,24 +18,51 @@ namespace Serialization
         return true;
     }
 
+    static __forceinline void SafeCleanup(const fs::path& a_path) noexcept
+    {
+        try
+        {
+            fs::remove(a_path);
+        }
+        catch (...)
+        {
+        }
+    }
+
     void WriteJsonData(const fs::path& a_path, const Json::Value& a_root)
     {
         auto base = a_path.parent_path();
 
         if (!fs::exists(base)) {
             if (!fs::create_directories(base))
-                throw std::exception("Couldn't create profile directory");
+                throw std::exception("Couldn't create base directory");
         }
         else if (!fs::is_directory(base))
             throw std::exception("Root path is not a directory");
 
-        std::ofstream ofs;
-        ofs.open(a_path, std::ofstream::out | std::ofstream::binary | std::ofstream::trunc);
-        if (!ofs.is_open()) {
-            throw std::exception("Could not open file for writing");
-        }
+        auto tmpPath = a_path;
+        tmpPath += fs::path(".tmp");
 
-        ofs << a_root << std::endl;
+        std::ofstream ofs;
+        ofs.open(tmpPath, std::ofstream::out | std::ofstream::binary | std::ofstream::trunc);
+
+        if (!ofs.is_open())
+            throw std::system_error(errno, std::system_category(), tmpPath.string());
+
+        try
+        {
+            ofs << a_root << std::endl;
+            ofs.close();
+
+            fs::rename(tmpPath, a_path);
+
+            SafeCleanup(tmpPath);
+        }
+        catch (const std::exception& e)
+        {
+            SafeCleanup(tmpPath);
+            throw e;
+        }
     }
 
 }

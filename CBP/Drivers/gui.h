@@ -89,6 +89,10 @@ namespace CBP
             m_Instance.conf.imgui_ini = a_path.string();
         }
 
+        inline static auto GetPerf() {
+            return m_Instance.m_uiRenderPerf.current;
+        }
+
         FN_NAMEPROC("UI")
     private:
         DUI();
@@ -123,6 +127,12 @@ namespace CBP
         struct {
             std::string imgui_ini;
         } conf;
+
+        struct
+        {
+            PerfTimerInt timer;
+            long long current = 0;
+        } m_uiRenderPerf;
 
         std::map<uint32_t, uiDrawCallback_t> m_drawCallbacks;
 

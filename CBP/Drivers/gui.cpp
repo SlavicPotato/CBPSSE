@@ -7,7 +7,8 @@ namespace CBP
     DUI::DUI() :
         m_imInitialized(false),
         m_suspended(false),
-        m_nextResetIO(false)
+        m_nextResetIO(false),
+        m_uiRenderPerf({ 1000000LL, 0 })
     {
     }
 
@@ -34,6 +35,8 @@ namespace CBP
             return;
 
         IScopedCriticalSection _(std::addressof(m_lock));
+
+        m_uiRenderPerf.timer.Begin();
 
         if (m_nextResetIO) {
             m_nextResetIO = false;
@@ -65,10 +68,14 @@ namespace CBP
         ImGui::Render();
         ::ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
 
-        if (m_drawCallbacks.empty()) {
+        if (m_drawCallbacks.empty()) 
+        {
             ResetImGuiIO();
             Suspend();
         }
+
+        m_uiRenderPerf.timer.End(
+            m_uiRenderPerf.current);
     }
 
     void DUI::OnD3D11PostCreate_DUI(Event, void* data)

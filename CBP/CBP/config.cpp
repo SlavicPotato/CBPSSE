@@ -466,7 +466,7 @@ namespace CBP
         raceConfHolder.insert_or_assign(a_handle, std::move(a_conf));
     }
 
-    void IConfig::Copy(const configComponents_t& a_lhs, configComponents_t& a_rhs)
+    /*void IConfig::Copy(const configComponents_t& a_lhs, configComponents_t& a_rhs)
     {
         CopyImpl(a_lhs, a_rhs);
     }
@@ -474,18 +474,20 @@ namespace CBP
     void IConfig::Copy(const configNodes_t& a_lhs, configNodes_t& a_rhs)
     {
         CopyImpl(a_lhs, a_rhs);
-    }
+    }*/
     
     void IConfig::CopyBase(const configComponents_t& a_lhs, configComponents_t& a_rhs)
     {
-        a_rhs = GetTemplateBase<configComponents_t>();
-        CopyImpl(a_lhs, a_rhs);
+        a_rhs = a_lhs;
+        /*a_rhs = GetTemplateBase<configComponents_t>();
+        CopyImpl(a_lhs, a_rhs);*/
     }
 
     void IConfig::CopyBase(const configNodes_t& a_lhs, configNodes_t& a_rhs)
     {
-        a_rhs = GetTemplateBase<configNodes_t>();
-        CopyImpl(a_lhs, a_rhs);
+        a_rhs = a_lhs;
+        /*a_rhs = GetTemplateBase<configNodes_t>();
+        CopyImpl(a_lhs, a_rhs);*/
     }
 
     template <typename T>

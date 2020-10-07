@@ -143,6 +143,7 @@ namespace CBP
                 r3d::SphereShape* m_sphereShape;
                 r3d::CapsuleShape* m_capsuleShape;
                 r3d::BoxShape* m_boxShape;
+                r3d::CollisionShape* m_collisionShape;
             };
 
             r3d::Vector3 m_extent;

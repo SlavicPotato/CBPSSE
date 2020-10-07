@@ -12,14 +12,6 @@ public:
     {
     }
 
-    Profile(const std::string& a_path) :
-        m_path(a_path),
-        m_pathStr(a_path.string()),
-        m_id(0),
-        m_name(a_path.stem().string())
-    {
-    }
-
     Profile(const std::filesystem::path& a_path) :
         m_path(a_path),
         m_pathStr(a_path.string()),
@@ -34,12 +26,28 @@ public:
     bool Save(const T& a_data, bool a_store);
 
     inline bool Save() {
-        return Save(m_conf, false);
+        return Save(m_data, false);
     }
 
-    inline void SetPath(const std::filesystem::path& a_path) {
+    inline void SetPath(const std::filesystem::path& a_path) noexcept {
         m_path = a_path;
         m_name = a_path.stem().string();
+    }
+
+    inline void SetDescription(const std::string& a_text) noexcept {
+        m_desc = a_text;
+    }
+    
+    inline void SetDescription(std::string&& a_text) noexcept {
+        m_desc = std::move(a_text);
+    }
+
+    inline void ClearDescription() noexcept {
+        m_desc.Clear();
+    }
+
+    [[nodiscard]] inline const auto& GetDescription() const noexcept {
+        return m_desc;
     }
 
     [[nodiscard]] inline const std::string& Name() const noexcept {
@@ -55,33 +63,11 @@ public:
     }
 
     [[nodiscard]] inline T& Data() noexcept {
-        return m_conf;
+        return m_data;
     }
 
     [[nodiscard]] inline const T& Data() const noexcept {
-        return m_conf;
-    }
-
-    [[nodiscard]] inline T& Get(const std::string& a_key) {
-        return m_conf.at(a_key);
-    }
-
-    [[nodiscard]] inline const T& Get(const std::string& a_key) const {
-        return m_conf.at(a_key);
-    };
-
-    [[nodiscard]] inline bool Get(const std::string& a_key, T& a_out) const
-    {
-        auto it = m_conf.find(a_key);
-        if (it != m_conf.end()) {
-            a_out = it->second;
-            return true;
-        }
-        return false;
-    }
-
-    inline void Set(const T& a_data) noexcept {
-        m_conf = a_data;
+        return m_data;
     }
 
     [[nodiscard]] inline const auto& GetLastException() const noexcept {
@@ -97,7 +83,7 @@ public:
     }
 
     inline void SetDefaults() noexcept {
-        GetDefault(m_conf);
+        GetDefault(m_data);
     }
 
 private:
@@ -105,8 +91,11 @@ private:
     std::filesystem::path m_path;
     std::string m_pathStr;
     std::string m_name;
+
     uint64_t m_id;
-    T m_conf;
+    SelectedItem<std::string> m_desc;
+
+    T m_data;
 
     except::descriptor m_lastExcept;
 };
@@ -117,25 +106,21 @@ bool Profile<T>::Save(const T& a_data, bool a_store)
 {
     try
     {
-        if (m_path.empty()) {
-            throw std::exception("Bad path");
-        }
-
-        std::ofstream fs;
-        fs.open(m_path, std::ofstream::out | std::ofstream::binary | std::ofstream::trunc);
-        if (!fs.is_open())
-            throw std::exception("Could not open file for writing");
+        if (m_path.empty())
+            throw std::exception("Bad path");        
 
         Json::Value root;
 
         Create(a_data, root);
 
         root["id"] = m_id;
+        if (m_desc)
+            root["desc"] = *m_desc;
 
-        fs << root << std::endl;
+        Serialization::WriteJsonData(m_path, root);
 
         if (a_store)
-            m_conf = a_data;
+            m_data = a_data;
 
         return true;
     }
@@ -173,7 +158,13 @@ bool Profile<T>::Load()
         else
             m_id = static_cast<uint64_t>(id.asUInt64());
 
-        m_conf = std::move(tmp);
+        auto& desc = root["desc"];
+        if (!desc.isString())
+            m_desc.Clear();
+        else
+            m_desc = desc.asString();
+
+        m_data = std::move(tmp);
 
         return true;
     }
@@ -351,7 +342,8 @@ bool ProfileManager<T>::CreateProfile(const std::string& a_name, T& a_out, bool 
 
         return true;
     }
-    catch (const std::exception& e) {
+    catch (const std::exception& e) 
+    {
         Error("%s: %s", __FUNCTION__, e.what());
         m_lastExcept = e;
         return false;

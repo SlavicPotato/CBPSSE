@@ -79,9 +79,6 @@ namespace CBP
         std::string sect(a_sect.c_str());
         std::string key(a_key.c_str());
 
-        //transform(sect.begin(), sect.end(), sect.begin(), ::tolower);
-        //transform(key.begin(), key.end(), key.begin(), ::tolower);
-
         auto& tgcd = IConfig::GetTemplateBase<configComponents_t>();
 
         auto it = tgcd.find(sect);

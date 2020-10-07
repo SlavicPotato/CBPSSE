@@ -219,10 +219,12 @@ namespace CBP
 
     void ControllerTask::CullActors()
     {
+        auto policy = (*g_skyrimVM)->GetClassRegistry()->GetHandlePolicy();
+
         auto it = m_actors.begin();
         while (it != m_actors.end())
         {
-            auto actor = Game::ResolveObject<Actor>(it->first, Actor::kTypeID);
+            auto actor = static_cast<Actor*>(policy->Resolve(Actor::kTypeID, it->first));
 
             if (!ActorValid(actor))
             {
