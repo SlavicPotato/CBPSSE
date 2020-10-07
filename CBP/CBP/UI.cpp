@@ -2676,10 +2676,16 @@ namespace CBP
 
                 configComponentsValue_t* pair;
 
-                if (ShouldDrawComponent(a_handle, a_data, g, nodeList))
+                if (ShouldDrawComponent(a_handle, a_data, g, nodeList)) {
                     pair = std::addressof(*a_data.try_emplace(g.first).first);
+                }
                 else
+                {
+                    if (!scConfig.showNodes)
+                        continue;
+
                     pair = nullptr;
+                }
 
                 auto headerName = g.first;
                 if (headerName.size() != 0)
