@@ -803,20 +803,13 @@ namespace CBP
         auto intfc = static_cast<SKSESerializationInterface*>(args);
         auto& iface = m_Instance.m_serialization;
 
-        /*PerfTimer pt;
-        pt.Start();*/
-
-        Lock();
+        IScopedCriticalSection _(std::addressof(GetLock()));
 
         SavePending();
 
         intfc->OpenRecord('DPBC', kDataVersion2);
 
         SerializeToSave(intfc, 'EPBC', &CBP::ISerialization::BinSerializeSave);
-
-        Unlock();
-
-        //m_Instance.Debug("%s: %fs", __FUNCTION__, pt.Stop());
     }
 
     void DCBP::RevertHandler(Event, void*)

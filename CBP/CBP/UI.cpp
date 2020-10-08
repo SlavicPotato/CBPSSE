@@ -4017,7 +4017,7 @@ namespace CBP
                 IScopedCriticalSection _(std::addressof(backlog.GetLock()));
 
                 for (const auto& e : backlog)
-                    ImGui::TextWrapped(e.c_str());
+                    ImGui::TextWrapped("%s", e.c_str());
             }
 
             if (m_doScrollBottom)
