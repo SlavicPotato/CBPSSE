@@ -64,12 +64,21 @@
 #include <Inc/DirectXHelpers.h>
 #include <Src/PlatformHelpers.h>
 
+#include <boost/any.hpp>
+
 #include <boost/iostreams/device/array.hpp>
 #include <boost/iostreams/stream.hpp>
 #include <boost/iostreams/filtering_streambuf.hpp>
 #include <boost/iostreams/copy.hpp>
 #include <boost/iostreams/filter/gzip.hpp>
-#include <boost/any.hpp>
+
+#include <boost/archive/binary_oarchive.hpp> 
+#include <boost/archive/binary_iarchive.hpp> 
+
+#include <boost/serialization/map.hpp> 
+#include <boost/serialization/unordered_map.hpp> 
+//#include <boost/serialization/split_member.hpp>
+#include <boost/serialization/version.hpp>
 
 #include <json/json.h>
 

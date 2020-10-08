@@ -39,6 +39,8 @@ namespace CBP
         }
     }
 
+    static ImVec4 s_colorWarning(1.0f, 0.66f, 0.13f, 1.0f);
+
     UIData::UICollapsibleStates& UIBase::GetCollapsibleStatesData() const
     {
         return IConfig::GetGlobal().ui.colStates;
@@ -1492,7 +1494,7 @@ namespace CBP
 
                 if (IConfig::HasArmorOverride(m_listCurrent))
                 {
-                    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.66f, 0.13f, 1.0f));
+                    ImGui::PushStyleColor(ImGuiCol_Text, s_colorWarning);
                     ImGui::SameLine(wcm.x - GetNextTextOffset("Armor overrides active", true));
                     ImGui::Text("Armor overrides active");
                     ImGui::PopStyleColor();
@@ -1686,7 +1688,7 @@ namespace CBP
                 if (DCBP::GetDriverConfig().force_ini_keys)
                 {
                     ImGui::Spacing();
-                    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.66f, 0.13f, 1.0f));
+                    ImGui::PushStyleColor(ImGuiCol_Text, s_colorWarning);
                     ImGui::TextWrapped("ForceINIKeys is enabled, keys configured here will have no effect");
                     ImGui::PopStyleColor();
                 }
@@ -2889,7 +2891,7 @@ namespace CBP
         if (it == a_cacheEntry->end())
             return DrawSlider(a_entry, a_pValue, a_scalar);
 
-        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.66f, 0.13f, 1.0f));
+        ImGui::PushStyleColor(ImGuiCol_Text, s_colorWarning);
 
         _snprintf_s(m_scBuffer1, _TRUNCATE, "%s [%u|%.3f]", "%.3f",
             it->second.first, GetActualSliderValue(it->second, *a_pValue));
@@ -3466,7 +3468,16 @@ namespace CBP
 
                 ImGui::NextColumn();
 
+                bool tWarn(stats.avgStepsPerUpdate > 1);
+
+                if (tWarn)
+                    ImGui::PushStyleColor(ImGuiCol_Text, s_colorWarning);
+
                 ImGui::Text("%lld us", stats.avgTime);
+
+                if (tWarn)
+                    ImGui::PopStyleColor();
+
                 ImGui::Text("%lld/s (%u/frame)", stats.avgStepRate, stats.avgStepsPerUpdate);
                 ImGui::Text("%lld", stats.avgStepsPerUpdate > 0
                     ? stats.avgStepRate / stats.avgStepsPerUpdate : 0);
@@ -3504,7 +3515,7 @@ namespace CBP
                 if (globalConfig.debugRenderer.enabled)
                 {
                     ImGui::Spacing();
-                    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.66f, 0.13f, 1.0f));
+                    ImGui::PushStyleColor(ImGuiCol_Text, s_colorWarning);
                     ImGui::TextWrapped("WARNING: Disable debug renderer for accurate measurement");
                     ImGui::PopStyleColor();
                     ImGui::Spacing();

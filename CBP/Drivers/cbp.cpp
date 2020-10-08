@@ -550,14 +550,32 @@ namespace CBP
         }
     }
 
+    void DCBP::SerializationStats(UInt32 a_type, const CBP::ISerialization::stats_t& a_stats)
+    {
+        m_Instance.Debug("%s [%.4s]: GlobalPhysics: %fs", __FUNCTION__, &a_type, a_stats.globalPhysics.time);
+        m_Instance.Debug("%s [%.4s]: GlobalNode: %fs", __FUNCTION__, &a_type, a_stats.globalNode.time);
+
+        if (a_stats.actorPhysics.num > 0)
+            m_Instance.Debug("%s [%.4s]: ActorPhysics: %zu record(s), %fs", __FUNCTION__, &a_type, a_stats.actorPhysics.num, a_stats.actorPhysics.time);
+
+        if (a_stats.actorNode.num > 0)
+            m_Instance.Debug("%s [%.4s]: ActorNode: %zu record(s), %fs", __FUNCTION__, &a_type, a_stats.actorNode.num, a_stats.actorNode.time);
+
+        if (a_stats.racePhysics.num > 0)
+            m_Instance.Debug("%s [%.4s]: RacePhysics: %zu record(s), %fs", __FUNCTION__, &a_type, a_stats.racePhysics.num, a_stats.racePhysics.time);
+
+        if (a_stats.raceNode.num > 0)
+            m_Instance.Debug("%s [%.4s]: RacePhysics: %zu record(s), %fs", __FUNCTION__, &a_type, a_stats.raceNode.num, a_stats.raceNode.time);
+    }
+
     template <typename T>
-    bool DCBP::LoadRecord(SKSESerializationInterface* intfc, UInt32 a_type, T a_func)
+    bool DCBP::LoadRecord(SKSESerializationInterface* a_intfc, UInt32 a_type, bool a_bin, T a_func)
     {
         PerfTimer pt;
         pt.Start();
 
         UInt32 dataLength;
-        if (!intfc->ReadRecordData(&dataLength, sizeof(dataLength)))
+        if (!a_intfc->ReadRecordData(&dataLength, sizeof(dataLength)))
         {
             m_Instance.Error("[%.4s]: Couldn't read record data length", &a_type);
             return false;
@@ -571,7 +589,7 @@ namespace CBP
 
         std::unique_ptr<char[]> data(new char[dataLength]);
 
-        if (intfc->ReadRecordData(data.get(), dataLength) != dataLength) {
+        if (a_intfc->ReadRecordData(data.get(), dataLength) != dataLength) {
             m_Instance.Error("[%.4s]: Couldn't read record data", &a_type);
             return false;
         }
@@ -608,13 +626,20 @@ namespace CBP
         }
 
         auto& iface = m_Instance.m_serialization;
-        auto& func = std::bind(
+
+        size_t num = std::bind(
             a_func,
             std::addressof(iface),
             std::placeholders::_1,
-            std::placeholders::_2);
+            std::placeholders::_2)(a_intfc, out);
 
-        size_t num = func(intfc, out);
+        if (!num)
+            return false;
+
+        if (a_bin)
+        {
+            SerializationStats(a_type, iface.GetStats());
+        }
 
         m_Instance.Debug("%s [%.4s]: %zu record(s), %fs (%u/%lld)", __FUNCTION__, &a_type, num, pt.Stop(), dataLength, length);
 
@@ -630,25 +655,48 @@ namespace CBP
 
         Lock();
 
-        while (intfc->GetNextRecordInfo(&type, &currentVersion, &length))
+        if (version == kDataVersion1)
         {
-            if (!length)
-                continue;
+            while (intfc->GetNextRecordInfo(&type, &currentVersion, &length))
+            {
+                if (!length)
+                    continue;
 
-            switch (type) {
-            case 'GPBC':
-                LoadRecord(intfc, type, &ISerialization::LoadGlobalProfile);
-                break;
-            case 'APBC':
-                LoadRecord(intfc, type, &ISerialization::LoadActorProfiles);
-                break;
-            case 'RPBC':
-                LoadRecord(intfc, type, &ISerialization::LoadRaceProfiles);
-                break;
-            default:
-                m_Instance.Warning("Unknown record '%.4s'", &type);
-                break;
+                switch (type) {
+                case 'GPBC':
+                    LoadRecord(intfc, type, false, &CBP::ISerialization::LoadGlobalProfile);
+                    break;
+                case 'APBC':
+                    LoadRecord(intfc, type, false, &CBP::ISerialization::LoadActorProfiles);
+                    break;
+                case 'RPBC':
+                    LoadRecord(intfc, type, false, &CBP::ISerialization::LoadRaceProfiles);
+                    break;
+                default:
+                    m_Instance.Warning("Unknown record '%.4s'", &type);
+                    break;
+                }
             }
+        }
+        else if (version == kDataVersion2)
+        {
+            while (intfc->GetNextRecordInfo(&type, &currentVersion, &length))
+            {
+                if (!length)
+                    continue;
+
+                switch (type) {
+                case 'EPBC':
+                    LoadRecord(intfc, type, true, &CBP::ISerialization::BinSerializeLoad);
+                    break;
+                default:
+                    m_Instance.Warning("Unknown record '%.4s'", &type);
+                    break;
+                }
+            }
+        }
+        else {
+            m_Instance.Error("Unrecognized data version: %u", version);
         }
 
         GetProfiler().Reset();
@@ -662,9 +710,10 @@ namespace CBP
     }
 
     template <typename T>
-    bool DCBP::SaveRecord(SKSESerializationInterface* a_intfc, UInt32 a_type, T a_func)
+    bool DCBP::SerializeToSave(SKSESerializationInterface* a_intfc, UInt32 a_type, T a_func)
     {
-        struct strsink : public boost::iostreams::sink
+        struct strsink :
+            public boost::iostreams::sink
         {
             strsink(std::string& a_dataHolder) :
                 data(a_dataHolder)
@@ -686,13 +735,18 @@ namespace CBP
 
         auto& iface = m_Instance.m_serialization;
 
-        std::stringstream data;
+        std::stringstream ss;
+        boost::archive::binary_oarchive data(ss);
         std::string compressed;
         strsink out(compressed);
         UInt32 length;
 
-        size_t num = std::bind(a_func, std::addressof(iface), std::placeholders::_1)(data);
-        if (num == 0)
+        size_t num = std::bind(
+            a_func,
+            std::addressof(iface),
+            std::placeholders::_1)(data);
+
+        if (!num)
             return false;
 
         auto& driverConf = GetDriverConfig();
@@ -703,7 +757,7 @@ namespace CBP
 
             filtering_streambuf<input> in;
             in.push(gzip_compressor(gzip_params(driverConf.compression_level), 1024 * 256));
-            in.push(data);
+            in.push(ss);
             length = static_cast<UInt32>(copy(in, out));
         }
         catch (const boost::iostreams::gzip_error& e)
@@ -722,7 +776,7 @@ namespace CBP
             return false;
         }
 
-        if (!a_intfc->OpenRecord(a_type, kDataVersion1)) {
+        if (!a_intfc->OpenRecord(a_type, kDataVersion2)) {
             m_Instance.Error("[%.4s]: OpenRecord failed", &a_type);
             return false;
         }
@@ -737,7 +791,9 @@ namespace CBP
             return false;
         }
 
-        m_Instance.Debug("%s [%.4s]: %zu record(s), %fs (%u)", __FUNCTION__, &a_type, num, pt.Stop(), length);
+        SerializationStats(a_type, iface.GetStats());
+
+        m_Instance.Debug("%s [%.4s]: %zu record(s), %fs (%u b)", __FUNCTION__, &a_type, num, pt.Stop(), length);
 
         return true;
     }
@@ -747,22 +803,20 @@ namespace CBP
         auto intfc = static_cast<SKSESerializationInterface*>(args);
         auto& iface = m_Instance.m_serialization;
 
-        PerfTimer pt;
-        pt.Start();
+        /*PerfTimer pt;
+        pt.Start();*/
 
         Lock();
 
-        iface.SaveGlobalConfig();
+        SavePending();
 
-        intfc->OpenRecord('DPBC', kDataVersion1);
+        intfc->OpenRecord('DPBC', kDataVersion2);
 
-        SaveRecord(intfc, 'GPBC', &ISerialization::SerializeGlobalProfile);
-        SaveRecord(intfc, 'APBC', &ISerialization::SerializeActorProfiles);
-        SaveRecord(intfc, 'RPBC', &ISerialization::SerializeRaceProfiles);
+        SerializeToSave(intfc, 'EPBC', &CBP::ISerialization::BinSerializeSave);
 
         Unlock();
 
-        m_Instance.Debug("%s: %f", __FUNCTION__, pt.Stop());
+        //m_Instance.Debug("%s: %fs", __FUNCTION__, pt.Stop());
     }
 
     void DCBP::RevertHandler(Event, void*)

@@ -7,8 +7,9 @@ namespace CBP
         IConfigINI
     {
         
-        enum SerializationVersion {
-            kDataVersion1 = 1
+        enum SerializationVersion : UInt32 {
+            kDataVersion1 = 1,
+            kDataVersion2 = 2,
         };
 
         class KeyPressHandler : public KeyEventHandler
@@ -238,10 +239,12 @@ namespace CBP
         static void LoadGameHandler(SKSESerializationInterface* intfc, UInt32 type, UInt32 length, UInt32 version);
         static void SaveGameHandler(Event m_code, void* args);
 
+        static void SerializationStats(UInt32 a_type, const CBP::ISerialization::stats_t& a_stats);
+
         template <typename T>
-        static bool SaveRecord(SKSESerializationInterface* intfc, UInt32 a_type, T a_func);
+        static bool LoadRecord(SKSESerializationInterface* intfc, UInt32 a_type, bool a_bin, T a_func);
         template <typename T>
-        static bool LoadRecord(SKSESerializationInterface* intfc, UInt32 a_type, T a_func);
+        static bool SerializeToSave(SKSESerializationInterface* intfc, UInt32 a_type, T a_func);
 
         static void OnD3D11PostCreate_CBP(Event code, void* data);
         static void Present_Pre();

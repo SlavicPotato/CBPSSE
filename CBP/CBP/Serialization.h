@@ -47,6 +47,22 @@ namespace CBP
             kNumGroups
         };
 
+        struct statsEntry_t
+        {
+            float time;
+            size_t num;
+        };
+
+        struct stats_t
+        {
+            statsEntry_t globalPhysics;
+            statsEntry_t globalNode;
+            statsEntry_t actorPhysics;
+            statsEntry_t actorNode;
+            statsEntry_t racePhysics;
+            statsEntry_t raceNode;
+        };
+
         void LoadGlobalConfig();
         bool SaveGlobalConfig();
 
@@ -80,8 +96,35 @@ namespace CBP
 
         bool SavePending();
 
+        size_t BinSerializeSave(boost::archive::binary_oarchive& a_out);
+        size_t BinSerializeLoad(SKSESerializationInterface* intfc, std::stringstream& a_in);
+
+        const auto& GetStats() {
+            return m_stats;
+        }
+
         FN_NAMEPROC("Serialization")
     private:
+
+        template <class T>
+        void MoveActorConfig(SKSESerializationInterface* intfc, const T& a_in, T& a_out);
+        template <class T>
+        void MoveRaceConfig(SKSESerializationInterface* intfc, const T& a_in, T& a_out);
+
+        size_t BinSerializeGlobalPhysics(boost::archive::binary_oarchive& a_out);
+        size_t BinSerializeGlobalNode(boost::archive::binary_oarchive& a_out);
+        size_t BinSerializeRacePhysics(boost::archive::binary_oarchive& a_out);
+        size_t BinSerializeRaceNode(boost::archive::binary_oarchive& a_out);
+        size_t BinSerializeActorPhysics(boost::archive::binary_oarchive& a_out);
+        size_t BinSerializeActorNode(boost::archive::binary_oarchive& a_out);
+
+        size_t BinSerializeGlobalPhysics(boost::archive::binary_iarchive& a_in, configComponents_t& a_out);
+        size_t BinSerializeGlobalNode(boost::archive::binary_iarchive& a_in, configNodes_t& a_out);
+        size_t BinSerializeRacePhysics(boost::archive::binary_iarchive& a_in, raceConfigComponentsHolder_t& a_out);
+        size_t BinSerializeRaceNode(boost::archive::binary_iarchive& a_in, raceConfigNodesHolder_t& a_out);
+        size_t BinSerializeActorPhysics(boost::archive::binary_iarchive& a_in, actorConfigComponentsHolder_t& a_out);
+        size_t BinSerializeActorNode(boost::archive::binary_iarchive& a_in, actorConfigNodesHolder_t& a_out);
+
         void ReadImportData(const fs::path& a_path, Json::Value& a_out) const;
 
         size_t _LoadActorProfiles(
@@ -112,6 +155,8 @@ namespace CBP
             return true;
         }
 
+        stats_t m_stats;
+
         bool m_pendingSave[Group::kNumGroups];
 
         Serialization::Parser<configComponents_t> m_componentParser;
@@ -119,4 +164,41 @@ namespace CBP
     };
 
     DEFINE_ENUM_CLASS_BITWISE(ISerialization::ImportFlags);
+
+    template <class T>
+    void ISerialization::MoveActorConfig(SKSESerializationInterface* intfc, const T& a_in, T& a_out)
+    {
+        a_out.clear();
+
+        for (const auto& e : a_in)
+        {
+            Game::ObjectHandle newHandle(0);
+
+            if (!SKSE::ResolveHandle(intfc, e.first, &newHandle)) {
+                _ERROR("0x%llX: Couldn't resolve handle, discarding", e.first);
+                continue;
+            }
+
+            a_out.emplace(e.first, std::move(e.second));
+        }
+    }
+
+    template <class T>
+    void ISerialization::MoveRaceConfig(SKSESerializationInterface* intfc, const T& a_in, T& a_out)
+    {
+        a_out.clear();
+
+        for (const auto& e : a_in)
+        {
+            Game::FormID newFormID(0);
+
+            if (!SKSE::ResolveRaceForm(intfc, e.first, &newFormID)) {
+                Error("0x%lX: Couldn't resolve handle, discarding", e.first);
+                continue;
+            }
+
+            a_out.emplace(e.first, std::move(e.second));
+        }
+    }
+
 }

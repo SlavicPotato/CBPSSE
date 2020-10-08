@@ -141,8 +141,8 @@ namespace CBP
     DEFINE_ENUM_CLASS_BITWISE(DescUIMarker);
 
     constexpr auto UIMARKER_COL_SHAPE_FLAGS =
-        DescUIMarker::ColliderSphere | 
-        DescUIMarker::ColliderCapsule | 
+        DescUIMarker::ColliderSphere |
+        DescUIMarker::ColliderCapsule |
         DescUIMarker::ColliderBox;
 
     enum class DescUIGroupType : uint32_t
@@ -182,7 +182,14 @@ namespace CBP
 
     struct configComponent_t
     {
+        friend class boost::serialization::access;
+
     public:
+
+        enum class Serialization : unsigned int
+        {
+            DataVersion1 = 1
+        };
 
         [[nodiscard]] __forceinline bool Get(const std::string& a_key, float& a_out) const
         {
@@ -313,9 +320,52 @@ namespace CBP
             ColliderShape colShape = ColliderShape::Sphere;
         } ex;
 
+
         static const componentValueDescMap_t descMap;
         static const colliderDescMap_t colDescMap;
         static const stl::iunordered_map<std::string, std::string> oldKeyMap;
+
+    private:
+
+        template<class Archive>
+        void serialize(Archive& ar, const unsigned int version)
+        {
+            ar& phys.stiffness;
+            ar& phys.stiffness2;
+            ar& phys.damping;
+            ar& phys.maxOffset;
+            ar& phys.cogOffset;
+            ar& phys.gravityBias;
+            ar& phys.gravityCorrection;
+            ar& phys.rotGravityCorrection;
+            ar& phys.linear;
+            ar& phys.rotational;
+            ar& phys.resistance;
+            ar& phys.mass;
+            ar& phys.colSphereRadMin;
+            ar& phys.colSphereRadMax;
+            ar& phys.offsetMin;
+            ar& phys.offsetMax;
+            ar& phys.colHeightMin;
+            ar& phys.colHeightMax;
+            ar& phys.colExtentMin;
+            ar& phys.colExtentMax;
+            ar& phys.colRot;
+            ar& phys.colRestitutionCoefficient;
+            ar& phys.colPenBiasFactor;
+            ar& phys.colPenMass;
+
+            ar& ex.colShape;
+        }
+
+        /*template<class Archive>
+        void load(Archive& ar, const unsigned int version)
+        {
+
+        }*/
+
+        //BOOST_SERIALIZATION_SPLIT_MEMBER()
+
     };
 
     //static_assert(sizeof(configComponent_t) == 0x5C);
@@ -337,6 +387,14 @@ namespace CBP
 
     struct configNode_t
     {
+        friend class boost::serialization::access;
+
+    public:
+        enum class Serialization : unsigned int
+        {
+            DataVersion1 = 1
+        };
+
         bool femaleMovement = false;
         bool femaleCollisions = false;
         bool maleMovement = false;
@@ -360,9 +418,9 @@ namespace CBP
             }
         }
 
-        [[nodiscard]] inline explicit operator bool() const noexcept {
+        /*[[nodiscard]] inline explicit operator bool() const noexcept {
             return femaleMovement || femaleCollisions || maleMovement || maleCollisions;
-        }
+        }*/
 
         [[nodiscard]] inline bool Enabled() const noexcept {
             return femaleMovement || femaleCollisions || maleMovement || maleCollisions;
@@ -374,6 +432,21 @@ namespace CBP
 
         [[nodiscard]] inline bool HasCollisions() const noexcept {
             return femaleCollisions || maleCollisions;
+        }
+
+    private:
+
+        template<class Archive>
+        void serialize(Archive& ar, const unsigned int version)
+        {
+            ar& femaleMovement;
+            ar& femaleCollisions;
+            ar& maleMovement;
+            ar& maleCollisions;
+            ar& colOffsetMin;
+            ar& colOffsetMax;
+            ar& overrideScale;
+            ar& nodeScale;
         }
     };
 
@@ -607,7 +680,7 @@ namespace CBP
             return configGroupMap;
         }
 
-        inline static void StoreDefaultProfile() 
+        inline static void StoreDefaultProfile()
         {
             defaultProfileStorage = {
                 physicsGlobalConfig,
@@ -672,7 +745,7 @@ namespace CBP
         {
             return templateBaseNodeHolder;
         }
-        
+
         /*static void Copy(const configComponents_t& a_lhs, configComponents_t& a_rhs);
         static void Copy(const configNodes_t& a_lhs, configNodes_t& a_rhs);*/
 
@@ -718,3 +791,6 @@ namespace CBP
         static IConfigLog log;
     };
 }
+
+BOOST_CLASS_VERSION(CBP::configComponent_t, Enum::Underlying(CBP::configComponent_t::Serialization::DataVersion1))
+BOOST_CLASS_VERSION(CBP::configNode_t, Enum::Underlying(CBP::configNode_t::Serialization::DataVersion1))

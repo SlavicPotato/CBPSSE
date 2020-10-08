@@ -107,7 +107,7 @@ namespace CBP
         while (intfc->GetNextRecordInfo(&type, &version, &length)) {
             auto it = m_Instance.m_loadgame_events.find(type);
             if (it != m_Instance.m_loadgame_events.end()) {
-                it->second(intfc, type, version, length);
+                it->second(intfc, type, length, version);
             }
         }
     }

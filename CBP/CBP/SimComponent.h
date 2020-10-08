@@ -23,6 +23,7 @@ namespace CBP
         {
             uint32_t steps;
             NiPoint3 force;
+            float mag;
         };
 
         class Collider
@@ -327,7 +328,7 @@ namespace CBP
         }
 
         [[nodiscard]] inline auto GetCenterOfMass() const {
-            return m_obj->m_worldTransform * m_npCogOffset;
+            return m_objParent->m_worldTransform * m_npCogOffset;
         }
 
         [[nodiscard]] inline float GetNodeScale() const {

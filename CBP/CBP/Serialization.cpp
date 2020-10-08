@@ -35,7 +35,7 @@ namespace Serialization
 
             //transform(configGroup.begin(), configGroup.end(), configGroup.begin(), ::tolower);
 
-            auto &e = a_outData.try_emplace(configGroup).first->second;
+            auto& e = a_outData.try_emplace(configGroup).first->second;
 
             if (!it1->isNull())
             {
@@ -188,7 +188,7 @@ namespace Serialization
             if (it->empty())
                 continue;
 
-            if (!it->isObject()) 
+            if (!it->isObject())
             {
                 Error("Node entry not an object");
                 continue;
@@ -267,7 +267,7 @@ namespace Serialization
     {
         auto& data = a_out["nodes"];
 
-        for (const auto& e : a_data) 
+        for (const auto& e : a_data)
         {
             auto& n = data[e.first];
 
@@ -1042,19 +1042,19 @@ namespace CBP
                     throw std::exception("Error while parsing global node data");
             }
 
-            if ((a_flags & ImportFlags::Actors) == ImportFlags::Actors) 
+            if ((a_flags & ImportFlags::Actors) == ImportFlags::Actors)
             {
                 IConfig::SetActorPhysicsConfigHolder(std::move(actorConfigComponents));
                 IConfig::SetActorNodeHolder(std::move(actorConfigNodes));
             }
 
-            if ((a_flags & ImportFlags::Races) == ImportFlags::Races) 
+            if ((a_flags & ImportFlags::Races) == ImportFlags::Races)
             {
                 IConfig::SetRacePhysicsHolder(std::move(raceConfigComponents));
                 IConfig::SetRaceNodeHolder(std::move(raceConfigNodes));
             }
 
-            if ((a_flags & ImportFlags::Global) == ImportFlags::Global) 
+            if ((a_flags & ImportFlags::Global) == ImportFlags::Global)
             {
                 IConfig::SetGlobalPhysics(std::move(globalComponentData));
                 IConfig::SetGlobalNode(std::move(globalNodeData));
@@ -1243,7 +1243,7 @@ namespace CBP
         }
     }
 
-    
+
     bool ISerialization::SavePending()
     {
         bool failed = false;
@@ -1253,4 +1253,350 @@ namespace CBP
 
         return !failed;
     }
+
+    size_t ISerialization::BinSerializeGlobalPhysics(
+        boost::archive::binary_oarchive& a_out)
+    {
+        try
+        {
+            PerfTimer pt;
+            pt.Start();
+
+            a_out << IConfig::GetGlobalPhysics();
+
+            m_stats.globalPhysics.time = pt.Stop();
+
+            return size_t(1);
+        }
+        catch (const std::exception& e)
+        {
+            Error("%s: %s", __FUNCTION__, e.what());
+            throw e;
+        }
+    }
+
+    size_t ISerialization::BinSerializeGlobalNode(
+        boost::archive::binary_oarchive& a_out)
+    {
+        try
+        {
+            PerfTimer pt;
+            pt.Start();
+
+            a_out << IConfig::GetGlobalNode();
+
+            m_stats.globalNode.time = pt.Stop();
+
+            return size_t(1);
+        }
+        catch (const std::exception& e)
+        {
+            Error("%s: %s", __FUNCTION__, e.what());
+            throw e;
+        }
+    }
+
+    size_t ISerialization::BinSerializeRacePhysics(
+        boost::archive::binary_oarchive& a_out)
+    {
+        try
+        {
+            PerfTimer pt;
+            pt.Start();
+
+            auto& data = IConfig::GetRacePhysicsHolder();
+
+            a_out << data;
+
+            m_stats.racePhysics = {
+                pt.Stop(),
+                data.size()
+            };
+
+            return data.size();
+        }
+        catch (const std::exception& e)
+        {
+            Error("%s: %s", __FUNCTION__, e.what());
+            throw e;
+        }
+    }
+
+    size_t ISerialization::BinSerializeRaceNode(
+        boost::archive::binary_oarchive& a_out)
+    {
+        try
+        {
+            PerfTimer pt;
+            pt.Start();
+
+            auto& data = IConfig::GetRaceNodeHolder();
+
+            a_out << data;
+
+            m_stats.raceNode = {
+                pt.Stop(),
+                data.size()
+            };
+
+            return data.size();
+        }
+        catch (const std::exception& e)
+        {
+            Error("%s: %s", __FUNCTION__, e.what());
+            throw e;
+        }
+    }
+
+    size_t ISerialization::BinSerializeActorPhysics(
+        boost::archive::binary_oarchive& a_out)
+    {
+        try
+        {
+            PerfTimer pt;
+            pt.Start();
+
+            auto& data = IConfig::GetActorPhysicsHolder();
+
+            a_out << data;
+
+            m_stats.actorPhysics = {
+                pt.Stop(),
+                data.size()
+            };
+
+            return data.size();
+        }
+        catch (const std::exception& e)
+        {
+            Error("%s: %s", __FUNCTION__, e.what());
+            throw e;
+        }
+    }
+
+    size_t ISerialization::BinSerializeActorNode(
+        boost::archive::binary_oarchive& a_out)
+    {
+        try
+        {
+            PerfTimer pt;
+            pt.Start();
+
+            auto& data = IConfig::GetActorNodeHolder();
+
+            a_out << data;
+
+            m_stats.actorNode = {
+                pt.Stop(),
+                data.size()
+            };
+
+            return data.size();
+        }
+        catch (const std::exception& e)
+        {
+            Error("%s: %s", __FUNCTION__, e.what());
+            throw e;
+        }
+    }
+
+    size_t ISerialization::BinSerializeGlobalPhysics(boost::archive::binary_iarchive& a_in, configComponents_t& a_out)
+    {
+        try
+        {
+            PerfTimer pt;
+            pt.Start();
+
+            a_in >> a_out;
+
+            m_stats.globalPhysics.time = pt.Stop();
+
+            return size_t(1);
+        }
+        catch (const std::exception& e)
+        {
+            Error("%s: %s", __FUNCTION__, e.what());
+            throw e;
+        }
+    }
+
+    size_t ISerialization::BinSerializeGlobalNode(boost::archive::binary_iarchive& a_in, configNodes_t& a_out)
+    {
+        try
+        {
+            PerfTimer pt;
+            pt.Start();
+
+            a_in >> a_out;
+
+            m_stats.globalNode.time = pt.Stop();
+
+            return size_t(1);
+        }
+        catch (const std::exception& e)
+        {
+            Error("%s: %s", __FUNCTION__, e.what());
+            throw e;
+        }
+    }
+
+    size_t ISerialization::BinSerializeRacePhysics(boost::archive::binary_iarchive& a_in, raceConfigComponentsHolder_t& a_out)
+    {
+        try
+        {
+            PerfTimer pt;
+            pt.Start();
+
+            a_in >> a_out;
+
+            m_stats.racePhysics = {
+                pt.Stop(),
+                a_out.size()
+            };
+
+            return a_out.size();
+        }
+        catch (const std::exception& e)
+        {
+            Error("%s: %s", __FUNCTION__, e.what());
+            throw e;
+        }
+    }
+
+    size_t ISerialization::BinSerializeRaceNode(boost::archive::binary_iarchive& a_in, raceConfigNodesHolder_t& a_out)
+    {
+        try
+        {
+            PerfTimer pt;
+            pt.Start();
+
+            a_in >> a_out;
+
+            m_stats.raceNode = {
+                pt.Stop(),
+                a_out.size()
+            };
+
+            return a_out.size();
+        }
+        catch (const std::exception& e)
+        {
+            Error("%s: %s", __FUNCTION__, e.what());
+            throw e;
+        }
+    }
+
+
+    size_t ISerialization::BinSerializeActorPhysics(boost::archive::binary_iarchive& a_in, actorConfigComponentsHolder_t& a_out)
+    {
+        try
+        {
+            PerfTimer pt;
+            pt.Start();
+
+            a_in >> a_out;
+
+            m_stats.actorPhysics = {
+                pt.Stop(),
+                a_out.size()
+            };
+
+            return a_out.size();
+        }
+        catch (const std::exception& e)
+        {
+            Error("%s: %s", __FUNCTION__, e.what());
+            throw e;
+        }
+    }
+
+    size_t ISerialization::BinSerializeActorNode(boost::archive::binary_iarchive& a_in, actorConfigNodesHolder_t& a_out)
+    {
+        try
+        {
+            PerfTimer pt;
+            pt.Start();
+
+            a_in >> a_out;
+
+            m_stats.actorNode = {
+                pt.Stop(),
+                a_out.size()
+            };
+
+            return a_out.size();
+        }
+        catch (const std::exception& e)
+        {
+            Error("%s: %s", __FUNCTION__, e.what());
+            throw e;
+        }
+    }
+
+    size_t ISerialization::BinSerializeSave(boost::archive::binary_oarchive& a_out)
+    {
+        try
+        {
+            size_t num(0);
+
+            num += BinSerializeGlobalPhysics(a_out);
+            num += BinSerializeGlobalNode(a_out);
+
+            num += BinSerializeActorPhysics(a_out);
+            num += BinSerializeActorNode(a_out);
+
+            num += BinSerializeRacePhysics(a_out);
+            num += BinSerializeRaceNode(a_out);
+
+            return num;
+        }
+        catch (...)
+        {
+            return 0;
+        }
+    }
+
+    size_t ISerialization::BinSerializeLoad(SKSESerializationInterface* intfc, std::stringstream& a_in)
+    {
+        try
+        {
+            boost::archive::binary_iarchive ia(a_in);
+
+            configComponents_t globalComponentData;
+            configNodes_t globalNodeData;
+
+            actorConfigComponentsHolder_t actorConfigComponents;
+            actorConfigNodesHolder_t actorConfigNodes;
+
+            raceConfigComponentsHolder_t raceConfigComponents;
+            raceConfigNodesHolder_t raceConfigNodes;
+
+            size_t num(0);
+
+            num += BinSerializeGlobalPhysics(ia, globalComponentData);
+            num += BinSerializeGlobalNode(ia, globalNodeData);
+
+            num += BinSerializeActorPhysics(ia, actorConfigComponents);
+            num += BinSerializeActorNode(ia, actorConfigNodes);
+
+            num += BinSerializeRacePhysics(ia, raceConfigComponents);
+            num += BinSerializeRaceNode(ia, raceConfigNodes);
+
+            IConfig::SetGlobalPhysics(std::move(globalComponentData));
+            IConfig::SetGlobalNode(std::move(globalNodeData));
+
+            MoveActorConfig(intfc, actorConfigComponents, IConfig::GetActorPhysicsHolder());
+            MoveActorConfig(intfc, actorConfigNodes, IConfig::GetActorNodeHolder());
+
+            MoveRaceConfig(intfc, raceConfigComponents, IConfig::GetRacePhysicsHolder());
+            MoveRaceConfig(intfc, raceConfigNodes, IConfig::GetRaceNodeHolder());
+
+            return num;
+        }
+        catch (...)
+        {
+            return 0;
+        }
+    }
+
 }

@@ -210,6 +210,7 @@ namespace CBP
         }
 
     private:
+
         virtual bool ShouldDrawComponent(
             T a_handle,
             configComponents_t& a_data,

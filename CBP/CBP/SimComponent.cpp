@@ -391,11 +391,10 @@ namespace CBP
             {
                 auto& current = m_applyForceQueue.front();
 
-                float forceMag = current.force.Length();
                 auto vDir = m_objParent->m_worldTransform.rot * current.force;
                 vDir.Normalize();
 
-                force += (vDir * forceMag) / a_timeStep;
+                force += (vDir * current.mag) / a_timeStep;
 
                 if (!current.steps--)
                     m_applyForceQueue.pop();
@@ -458,7 +457,7 @@ namespace CBP
             return;*/
 
         m_applyForceQueue.emplace(
-            Force{ a_steps, a_force }
+            Force{ a_steps, a_force, a_force.Length() }
         );
     }
 
