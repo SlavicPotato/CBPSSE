@@ -175,11 +175,16 @@ namespace CBP
             Game::ObjectHandle newHandle(0);
 
             if (!SKSE::ResolveHandle(intfc, e.first, &newHandle)) {
-                _ERROR("0x%llX: Couldn't resolve handle, discarding", e.first);
+                Error("0x%llX: Couldn't resolve handle, discarding", e.first);
                 continue;
             }
 
-            a_out.emplace(e.first, std::move(e.second));
+            if (newHandle == Game::ObjectHandle(0)) {
+                Error("ObjectHandle == 0");
+                continue;
+            }
+
+            a_out.emplace(newHandle, std::move(e.second));
         }
     }
 
@@ -193,11 +198,16 @@ namespace CBP
             Game::FormID newFormID(0);
 
             if (!SKSE::ResolveRaceForm(intfc, e.first, &newFormID)) {
-                Error("0x%lX: Couldn't resolve handle, discarding", e.first);
+                Error("0x%lX: Couldn't resolve form, discarding", e.first);
                 continue;
             }
 
-            a_out.emplace(e.first, std::move(e.second));
+            if (newFormID == Game::FormID(0)) {
+                Error("FormID == 0");
+                continue;
+            }
+
+            a_out.emplace(newFormID, std::move(e.second));
         }
     }
 
