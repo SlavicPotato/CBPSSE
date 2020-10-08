@@ -184,6 +184,8 @@ namespace CBP
                 continue;
             }
 
+            IData::UpdateActorMaps(newHandle);
+
             a_out.emplace(newHandle, std::move(e.second));
         }
     }
@@ -191,6 +193,8 @@ namespace CBP
     template <class T>
     void ISerialization::MoveRaceConfig(SKSESerializationInterface* intfc, const T& a_in, T& a_out)
     {
+        auto& rl = IData::GetRaceList();
+
         a_out.clear();
 
         for (const auto& e : a_in)
@@ -204,6 +208,11 @@ namespace CBP
 
             if (newFormID == Game::FormID(0)) {
                 Error("FormID == 0");
+                continue;
+            }
+
+            if (rl.find(newFormID) == rl.end()) {
+                Warning("0x%X: race record not found", newFormID);
                 continue;
             }
 

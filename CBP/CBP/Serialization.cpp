@@ -928,7 +928,7 @@ namespace CBP
 
             auto& rl = IData::GetRaceList();
             if (rl.find(newFormID) == rl.end()) {
-                Warning("0x%lX: race record not found", newFormID);
+                Warning("0x%X: race record not found", newFormID);
                 continue;
             }
 
