@@ -86,6 +86,18 @@ namespace CBP
         m_Instance.info.bufferSize.height = static_cast<float>(info->m_pSwapChainDesc->BufferDesc.Height);
         m_Instance.m_WindowHandle = info->m_pSwapChainDesc->OutputWindow;
 
+        RECT rect;
+        if (::GetClientRect(info->m_pSwapChainDesc->OutputWindow, &rect) == TRUE)
+        {
+            m_Instance.m_ioUserData.btsRatio =
+            {
+                static_cast<float>(info->m_pSwapChainDesc->BufferDesc.Width) / rect.right,
+                static_cast<float>(info->m_pSwapChainDesc->BufferDesc.Height) / rect.bottom,
+            };
+        }
+        else
+            m_Instance.m_ioUserData.btsRatio = { 1.0f, 1.0f };
+
         ASSERT(IMGUI_CHECKVERSION());
         ImGui::CreateContext();
 
@@ -96,6 +108,7 @@ namespace CBP
         io.DisplaySize = ImVec2(m_Instance.info.bufferSize.width, m_Instance.info.bufferSize.height);
         io.MousePos.x = io.DisplaySize.x / 2.0f;
         io.MousePos.y = io.DisplaySize.y / 2.0f;
+        io.UserData = static_cast<void*>(&m_Instance.m_ioUserData);
 
         if (!m_Instance.conf.imgui_ini.empty())
             io.IniFilename = m_Instance.conf.imgui_ini.c_str();

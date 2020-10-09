@@ -142,6 +142,7 @@ namespace CBP
         bool m_suspended;
         HWND m_WindowHandle;
 
+        IOUserData m_ioUserData;
         TaskQueue m_keyEvents;
 
         std::atomic<bool> m_nextResetIO;

@@ -1712,11 +1712,9 @@ namespace CBP
     void UIOptions::Draw(bool* a_active)
     {
         auto& io = ImGui::GetIO();
-        auto& globalConfig = IConfig::GetGlobal();;
+        auto& globalConfig = IConfig::GetGlobal();
 
-        ImVec2 center(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f);
-        ImGui::SetNextWindowPos(center, ImGuiCond_FirstUseEver, ImVec2(0.5f, 0.5f));
-        ImGui::SetNextWindowSizeConstraints(ImVec2(400.0f, 100.0f), ImVec2(800.0f, 800.0f));
+        SetWindowDimensions(0.0f, 400, 800.0f, true);
 
         ImGui::PushID(static_cast<const void*>(this));
 
@@ -1911,14 +1909,7 @@ namespace CBP
         auto& io = ImGui::GetIO();
         const auto& globalConfig = IConfig::GetGlobal();;
 
-        ImVec2 center(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f);
-        ImGui::SetNextWindowPos(center, ImGuiCond_FirstUseEver, ImVec2(0.5f, 0.5f));
-
-        ImVec2 sizeMin(std::min(300.0f, io.DisplaySize.x - 40.0f), std::min(100.0f, io.DisplaySize.y - 40.0f));
-        ImVec2 sizeMax(std::min(1920.0f, io.DisplaySize.x), std::max(io.DisplaySize.y - 40.0f, sizeMin.y));
-
-        ImGui::SetNextWindowSizeConstraints(sizeMin, sizeMax);
-        ImGui::SetNextWindowSize(ImVec2(400.0f, io.DisplaySize.y), ImGuiCond_FirstUseEver);
+        SetWindowDimensions(0.0f, 400.0f, -1.0f, true);
 
         ImGui::PushID(static_cast<const void*>(this));
 
@@ -3527,13 +3518,7 @@ namespace CBP
         auto& io = ImGui::GetIO();
         auto& globalConfig = IConfig::GetGlobal();
 
-        ImVec2 center(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f);
-        ImGui::SetNextWindowPos(center, ImGuiCond_FirstUseEver, ImVec2(0.5f, 0.5f));
-
-        ImVec2 sizeMin(std::min(300.0f, io.DisplaySize.x - 40.0f), std::min(100.0f, io.DisplaySize.y - 40.0f));
-        ImVec2 sizeMax(std::min(1920.0f, io.DisplaySize.x), std::max(io.DisplaySize.y - 40.0f, sizeMin.y));
-
-        ImGui::SetNextWindowSizeConstraints(sizeMin, sizeMax);
+        SetWindowDimensions(0.0f, 400.0f, 400.0f, true);
 
         ImGui::PushID(static_cast<const void*>(this));
 

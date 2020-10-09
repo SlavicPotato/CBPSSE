@@ -15,7 +15,7 @@ namespace UICommon
                 std::min(200.0f, io.DisplaySize.y - 40.0f) };
 
             m_sizeData.sizeMax = {
-                std::min(1920.0f, io.DisplaySize.x),
+                io.DisplaySize.x,
                 std::max(io.DisplaySize.y - 40.0f, m_sizeData.sizeMin.y)
             };
 

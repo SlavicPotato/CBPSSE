@@ -161,8 +161,10 @@ static void ImGui_ImplWin32_UpdateMousePos()
     POINT pos;
     if (HWND active_window = ::GetForegroundWindow())
         if (active_window == g_hWnd || ::IsChild(active_window, g_hWnd))
-            if (::GetCursorPos(&pos) && ::ScreenToClient(g_hWnd, &pos))
-                io.MousePos = ImVec2((float)pos.x, (float)pos.y);
+            if (::GetCursorPos(&pos) && ::ScreenToClient(g_hWnd, &pos)) {
+                auto ud = static_cast<IOUserData*>(io.UserData);
+                io.MousePos = ImVec2((float)pos.x * ud->btsRatio.X, (float)pos.y * ud->btsRatio.Y);
+            }
 }
 
 // Gamepad navigation mapping
