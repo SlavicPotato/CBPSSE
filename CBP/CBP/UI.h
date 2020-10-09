@@ -228,9 +228,12 @@ namespace CBP
             const std::string& a_comp) const;
 
         virtual bool GetNodeConfig(
-            T a_handle,
+            const configNodes_t& a_nodeConf,
             const configGroupMap_t::value_type& cg_data,
             nodeConfigList_t& a_out) const = 0;
+
+        virtual const configNodes_t &GetNodeData(
+            T a_handle) const = 0;
 
         void DrawComponentTab(
             T a_handle,
@@ -374,9 +377,12 @@ namespace CBP
             PhysicsProfile::base_type::value_type& a_pair);
 
         virtual bool GetNodeConfig(
-            int a_handle,
+            const configNodes_t& a_nodeConf,
             const configGroupMap_t::value_type& cg_data,
             nodeConfigList_t& a_out) const;
+
+        virtual const configNodes_t& GetNodeData(
+            int a_handle) const;
 
         virtual bool ShouldDrawComponent(
             int a_handle,
@@ -506,7 +512,7 @@ namespace CBP
 
     template <class T>
     class UIRaceList :
-        protected UIListBase<T, Game::FormID>
+        public UIListBase<T, Game::FormID>
     {
     protected:
         using listValue_t = typename UIListBase<T, Game::FormID>::listValue_t;
@@ -666,9 +672,12 @@ namespace CBP
             configComponentsValue_t& a_pair);
 
         virtual bool GetNodeConfig(
-            Game::FormID a_handle,
+            const configNodes_t& a_nodeConf,
             const configGroupMap_t::value_type& cg_data,
             nodeConfigList_t& a_out) const;
+
+        virtual const configNodes_t& GetNodeData(
+            Game::FormID a_handle) const;
 
         virtual void UpdateNodeData(
             Game::FormID a_handle,
@@ -852,7 +861,8 @@ namespace CBP
         virtual UIBase,
         public UIActorList<actorListPhysConf_t>,
         public UIProfileSelector<actorListPhysConf_t::value_type, PhysicsProfile>,
-        UIApplyForce<actorListPhysConf_t::value_type>
+        UIApplyForce<actorListPhysConf_t::value_type>,
+        ILog
     {
         class UISimComponentActor :
             public UISimComponent<Game::ObjectHandle, UIEditorID::kMainEditor>
@@ -902,9 +912,12 @@ namespace CBP
                 const std::string& a_comp) const;
 
             virtual bool GetNodeConfig(
-                Game::ObjectHandle a_handle,
+                const configNodes_t& a_nodeConf,
                 const configGroupMap_t::value_type& cg_data,
                 nodeConfigList_t& a_out) const;
+
+            virtual const configNodes_t& GetNodeData(
+                Game::ObjectHandle a_handle) const;
 
             virtual void UpdateNodeData(
                 Game::ObjectHandle a_handle,
@@ -963,9 +976,12 @@ namespace CBP
                 nodeConfigList_t& a_nodeConfig) const;
 
             virtual bool GetNodeConfig(
-                Game::ObjectHandle a_handle,
+                const configNodes_t& a_nodeConf,
                 const configGroupMap_t::value_type& cg_data,
                 nodeConfigList_t& a_out) const;
+
+            virtual const configNodes_t& GetNodeData(
+                Game::ObjectHandle a_handle) const;
 
             virtual void UpdateNodeData(
                 Game::ObjectHandle a_handle,
@@ -1044,6 +1060,8 @@ namespace CBP
 
             except::descriptor lastException;
         } m_state;
+
+        UICommon::UIPopupQueue<UICommon::UIPopupData> m_popup;
 
         UIProfileEditorPhysics m_pePhysics;
         UIProfileEditorNode m_peNodes;

@@ -81,7 +81,7 @@ namespace CBP
 
             return true;
         }
-        catch (const std::system_error& e) 
+        catch (const std::system_error& e)
         {
             log.Error("%s: %s", __FUNCTION__, e.what());
         }
@@ -165,7 +165,7 @@ namespace CBP
         configGroupMap.clear();
         physicsGlobalConfig.clear();
 
-        for (const auto& v : nodeMap) 
+        for (const auto& v : nodeMap)
         {
             validConfGroups.emplace(v.second);
             templateBaseNodeHolder.try_emplace(v.first);
@@ -177,17 +177,11 @@ namespace CBP
             templateBasePhysicsHolder.try_emplace(v);
             physicsGlobalConfig.try_emplace(v);
         }
-
-        /*configComponents_t cc(physicsGlobalConfig);
-        if (CompatLoadOld(cc))
-            physicsGlobalConfig = std::move(cc);*/
-
-        //physicsGlobalConfigDefaults = physicsGlobalConfig;
     }
 
     ConfigClass IConfig::GetActorPhysicsClass(Game::ObjectHandle a_handle)
     {
-        if (actorConfHolder.find(a_handle) != actorConfHolder.end())
+        if (actorConfHolder.contains(a_handle))
             return ConfigClass::kConfigActor;
 
         auto ac = IData::GetActorRefInfo(a_handle);
@@ -195,7 +189,7 @@ namespace CBP
         if (ac)
         {
             if (ac->race.first)
-                if (raceConfHolder.find(ac->race.second) != raceConfHolder.end())
+                if (raceConfHolder.contains(ac->race.second))
                     return ConfigClass::kConfigRace;
 
             auto profile = ITemplate::GetProfile<PhysicsProfile>(ac);
@@ -209,14 +203,14 @@ namespace CBP
 
     ConfigClass IConfig::GetActorNodeClass(Game::ObjectHandle a_handle)
     {
-        if (actorNodeConfigHolder.find(a_handle) != actorNodeConfigHolder.end())
+        if (actorNodeConfigHolder.contains(a_handle))
             return ConfigClass::kConfigActor;
 
         auto ac = IData::GetActorRefInfo(a_handle);
         if (ac)
         {
             if (ac->race.first)
-                if (raceNodeConfigHolder.find(ac->race.second) != raceNodeConfigHolder.end())
+                if (raceNodeConfigHolder.contains(ac->race.second))
                     return ConfigClass::kConfigRace;
 
             auto profile = ITemplate::GetProfile<NodeProfile>(ac);
@@ -452,7 +446,7 @@ namespace CBP
         auto it = raceConfHolder.find(a_formid);
         if (it != raceConfHolder.end())
             return it->second;
-        
+
         return physicsGlobalConfig;
     }
 
@@ -475,7 +469,7 @@ namespace CBP
     {
         CopyImpl(a_lhs, a_rhs);
     }*/
-    
+
     void IConfig::Copy(const configComponents_t& a_lhs, configComponents_t& a_rhs)
     {
         a_rhs = a_lhs;
@@ -511,5 +505,111 @@ namespace CBP
             return std::addressof(its->second);
 
         return nullptr;
+    }
+
+    static bool HasEnabledNodeConfig(const configNodes_t& nodeConf, const configGroupMap_t::value_type& cg_data)
+    {
+
+        for (const auto& e : cg_data.second)
+        {
+            auto it = nodeConf.find(e);
+
+            if (it == nodeConf.end())
+                continue;
+
+            if (it->second.Enabled())
+                return true;
+        }
+
+        return false;
+    }
+
+    static size_t PruneComponent(const configNodes_t& nodeConf, configComponents_t& e)
+    {
+        size_t n(0);
+
+        auto& cgmap = IConfig::GetConfigGroupMap();
+
+        auto itc = e.begin();
+
+        while (itc != e.end())
+        {
+            auto itg = cgmap.find(itc->first);
+            if (itg != cgmap.end())
+            {
+                if (HasEnabledNodeConfig(nodeConf, *itg)) {
+                    ++itc;
+                    continue;
+                }
+            }
+
+            n++;
+
+            itc = e.erase(itc);
+        }
+
+        return n;
+    }
+
+    size_t IConfig::PruneAll()
+    {
+        size_t n;
+
+        n = PruneInactivePhysics();
+        n += PruneInactiveRace();
+        n += PruneComponent(GetGlobalNode(), GetGlobalPhysics());
+
+        return n;
+    }
+    
+    size_t IConfig::PruneActorPhysics(Game::ObjectHandle a_handle)
+    {
+        size_t n(0);
+
+        if (a_handle == Game::ObjectHandle(0))
+            n += PruneComponent(GetGlobalNode(), GetGlobalPhysics());
+        else
+        {
+            auto& data = GetActorPhysicsHolder();
+
+            auto it = data.find(a_handle);
+            if (it != data.end())
+            {
+                auto& nodeConf = GetActorNode(a_handle);
+                n += PruneComponent(nodeConf, it->second);
+            }
+        }
+
+        return n;
+    }
+
+    size_t IConfig::PruneInactivePhysics()
+    {
+        size_t n(0);
+
+        auto& data = GetActorPhysicsHolder();
+
+        for (auto& e : data)
+        {
+            auto& nodeConf = GetActorNode(e.first);
+            n += PruneComponent(nodeConf, e.second);
+        }
+
+        return n;
+    }
+
+    size_t IConfig::PruneInactiveRace()
+    {
+        size_t n(0);
+
+        auto& data = GetRacePhysicsHolder();
+
+        for (auto& e : data)
+        {
+            auto& nodeConf = GetRaceNode(e.first);
+            n += PruneComponent(nodeConf, e.second);
+        }
+
+        return n;
     }
 }

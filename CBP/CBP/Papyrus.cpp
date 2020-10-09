@@ -113,7 +113,7 @@ namespace CBP
 
     void ConfigUpdateTask::Run()
     {
-        IScopedCriticalSection m(std::addressof(DCBP::GetLock()));
+        IScopedCriticalSection m(DCBP::GetLock());
 
         if (m_handle)
         {

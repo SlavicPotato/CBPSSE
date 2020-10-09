@@ -169,7 +169,7 @@ namespace UICommon
         bool res = ImGui::SliderInt(
             a_label, a_value, a_min, a_max, std::forward<Args>(a_args)...);
 
-        if (res) 
+        if (res)
         {
             *a_value = std::clamp(*a_value, a_min, a_max);
 
@@ -303,7 +303,7 @@ namespace UICommon
     }
 
     template <typename T>
-    void UIFilterBase<T>::Clear() 
+    void UIFilterBase<T>::Clear()
     {
         m_filter.Clear();
         m_filterBuf[0] = 0x0;
@@ -359,7 +359,7 @@ namespace UICommon
 
         typedef typename UIPopupAction<T> action_type;
 
-        void Run();
+        void Run(float a_fontScale);
 
         template <class... Args>
         inline decltype(auto) push(Args&&... a_v) {
@@ -371,7 +371,7 @@ namespace UICommon
     };
 
     template <class T>
-    void UIPopupQueue<T>::Run()
+    void UIPopupQueue<T>::Run(float a_fontScale)
     {
         if (!m_queue.empty())
         {
@@ -392,6 +392,7 @@ namespace UICommon
             case UIPopupType::Confirm:
                 res = ConfirmDialog2(
                     e.m_key.c_str(),
+                    a_fontScale,
                     e.m_buf
                 );
                 break;
@@ -401,12 +402,13 @@ namespace UICommon
                     e.m_buf,
                     e.m_input,
                     sizeof(e.m_input),
-                    1.0f
+                    a_fontScale
                 );
                 break;
             case UIPopupType::Message:
                 res = MessageDialog2(
                     e.m_key.c_str(),
+                    a_fontScale,
                     e.m_buf
                 );
                 break;
@@ -668,7 +670,7 @@ namespace UICommon
                     e.first == *m_state.selected;
 
                 if (selected)
-                    if (ImGui::IsWindowAppearing()) 
+                    if (ImGui::IsWindowAppearing())
                         ImGui::SetScrollHereY();
 
                 if (ImGui::Selectable(e.second.Name().c_str(), selected)) {
@@ -957,7 +959,7 @@ namespace UICommon
     class UITextFileEditor
     {
     public:
-        UITextFileEditor(const fs::path &a_path) :
+        UITextFileEditor(const fs::path& a_path) :
             m_path(a_path)
         {
         }
@@ -1003,7 +1005,7 @@ namespace UICommon
     }
 
     template<typename... Args>
-    int ConfirmDialog2(const char* name, const char* text, Args... args)
+    int ConfirmDialog2(const char* name, float a_fontScale, const char* text, Args... args)
     {
         int ret = 0;
         auto& io = ImGui::GetIO();
@@ -1013,6 +1015,7 @@ namespace UICommon
 
         if (ImGui::BeginPopupModal(name, nullptr, ImGuiWindowFlags_AlwaysAutoResize))
         {
+            ImGui::SetWindowFontScale(a_fontScale);
             ImGui::PushTextWrapPos(ImGui::GetFontSize() * 25.0f);
             ImGui::Text(text, args...);
             ImGui::PopTextWrapPos();
@@ -1060,7 +1063,7 @@ namespace UICommon
     }
 
     template<typename... Args>
-    int MessageDialog2(const char* name, const char* text, Args... args)
+    int MessageDialog2(const char* name, float a_fontScale, const char* text, Args... args)
     {
         auto& io = ImGui::GetIO();
 
@@ -1071,6 +1074,7 @@ namespace UICommon
 
         if (ImGui::BeginPopupModal(name, nullptr, ImGuiWindowFlags_AlwaysAutoResize))
         {
+            ImGui::SetWindowFontScale(a_fontScale);
             ImGui::PushTextWrapPos(ImGui::GetFontSize() * 30.0f);
             ImGui::Text(text, args...);
             ImGui::PopTextWrapPos();
@@ -1125,9 +1129,8 @@ namespace UICommon
 
             ImGui::SetItemDefaultFocus();
             ImGui::SameLine();
-            if (ImGui::Button("Cancel", ImVec2(120, 0))) {
+            if (ImGui::Button("Cancel", ImVec2(120, 0)))
                 ImGui::CloseCurrentPopup();
-            }
 
             ImGui::EndPopup();
         }

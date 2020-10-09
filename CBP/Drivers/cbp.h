@@ -194,8 +194,8 @@ namespace CBP
             m_Instance.m_lock.Leave();
         }
 
-        inline static auto& GetLock() {
-            return m_Instance.m_lock;
+        inline static auto GetLock() {
+            return std::addressof(m_Instance.m_lock);
         }
 
         [[nodiscard]] inline static const auto& GetDriverConfig()

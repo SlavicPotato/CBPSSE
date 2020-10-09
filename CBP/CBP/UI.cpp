@@ -6,6 +6,8 @@
 
 namespace CBP
 {
+    using namespace UICommon;
+
     __forceinline static void UpdateRaceNodeData(
         Game::FormID a_formid,
         const std::string& a_node,
@@ -223,11 +225,17 @@ namespace CBP
     }
 
     bool UIProfileEditorPhysics::GetNodeConfig(
-        int,
+        const configNodes_t& a_nodeConf,
         const configGroupMap_t::value_type&,
         nodeConfigList_t&) const
     {
         return false;
+    }
+
+    const configNodes_t& UIProfileEditorPhysics::GetNodeData(
+        int) const
+    {
+        return IConfig::GetGlobalNode();
     }
 
     bool UIProfileEditorPhysics::ShouldDrawComponent(
@@ -771,21 +779,26 @@ namespace CBP
     }
 
     bool UIRaceEditorPhysics::GetNodeConfig(
-        Game::FormID a_formid,
+        const configNodes_t& a_nodeConf,
         const configGroupMap_t::value_type& cg_data,
         nodeConfigList_t& a_out) const
     {
         for (const auto& e : cg_data.second)
         {
-            auto& nodeConf = IConfig::GetRaceNode(a_formid);
-            auto it = nodeConf.find(e);
+            auto it = a_nodeConf.find(e);
 
-            a_out.emplace_back(e, it != nodeConf.end() ?
+            a_out.emplace_back(e, it != a_nodeConf.end() ?
                 std::addressof(it->second) :
                 nullptr);
         }
 
         return !a_out.empty();
+    }
+
+    const configNodes_t& UIRaceEditorPhysics::GetNodeData(
+        Game::FormID a_handle) const
+    {
+        return IConfig::GetRaceNode(a_handle);
     }
 
     void UIRaceEditorPhysics::UpdateNodeData(
@@ -1426,6 +1439,64 @@ namespace CBP
                 if (ImGui::MenuItem("Weight update"))
                     DCBP::WeightUpdate();
 
+                if (ImGui::BeginMenu("Maint"))
+                {
+                    ImGui::SetWindowFontScale(globalConfig.ui.fontScale);
+                    if (ImGui::MenuItem("Prune"))
+                    {
+                        m_popup.push(
+                            UIPopupType::Confirm,
+                            "Clear Key",
+                            "This will remove ALL inactive physics component records. Are you sure?"
+                        ).call([&](...)
+                            {
+                                auto num = IConfig::PruneAll();
+                                Debug("%zu pruned", num);
+                                if (num > 0)
+                                {
+                                    QueueListUpdate();
+                                    m_racePhysicsEditor.QueueListUpdate();
+                                    m_actorNodeEditor.QueueListUpdate();
+                                    m_raceNodeEditor.QueueListUpdate();
+                                    DCBP::ResetActors();
+                                }
+                            }
+                        );
+                    }
+
+                    ImGui::Separator();
+
+                    if (ImGui::BeginMenu(a_entry->second.first.c_str()))
+                    {
+                        if (ImGui::MenuItem("Prune"))
+                        {
+                            m_popup.push(
+                                UIPopupType::Confirm,
+                                UIPopupData(a_entry->first),
+                                "Clear Key",
+                                "This will remove inactive physics component records for '%s'. Are you sure?",
+                                a_entry->second.first.c_str()
+                            ).call([&](auto&, auto& a_d)
+                                {
+                                    auto num = IConfig::PruneActorPhysics(a_d.get<Game::ObjectHandle>(0));
+                                    Debug("%zu pruned", num);
+                                    if (num > 0)
+                                    {
+                                        QueueListUpdate();
+                                        DCBP::DispatchActorTask(
+                                            a_entry->first, ControllerInstruction::Action::UpdateConfig);
+                                    }
+                                }
+                            );
+
+                        }
+
+                        ImGui::EndMenu();
+                    }
+
+                    ImGui::EndMenu();
+                }
+
                 if (a_entry->first != Game::ObjectHandle(0))
                 {
                     ImGui::Separator();
@@ -1593,7 +1664,7 @@ namespace CBP
             m_racePhysicsEditor.Draw(&m_state.windows.race);
             if (m_racePhysicsEditor.GetChanged())
                 QueueListUpdateCurrent();
-        }
+    }
 
         if (m_state.windows.raceNode) {
             m_raceNodeEditor.Draw(&m_state.windows.raceNode);
@@ -1634,7 +1705,9 @@ namespace CBP
             if (m_importDialog.Draw(&m_state.windows.importDialog))
                 Reset(m_activeLoadInstance);
         }
-    }
+
+        m_popup.Run(globalConfig.ui.fontScale);
+}
 
     void UIOptions::Draw(bool* a_active)
     {
@@ -2139,7 +2212,8 @@ namespace CBP
             if (a_reset)
                 DCBP::ResetActors();
             else
-                DCBP::DispatchActorTask(a_handle, ControllerInstruction::Action::UpdateConfig);
+                DCBP::DispatchActorTask(
+                    a_handle, ControllerInstruction::Action::UpdateConfig);
         }
         else
         {
@@ -2209,7 +2283,8 @@ namespace CBP
                 a_v.Set(a_desc.second.counterpart, *a_val); });
         }
 
-        DCBP::DispatchActorTask(a_handle, ControllerInstruction::Action::UpdateConfig);
+        DCBP::DispatchActorTask(
+            a_handle, ControllerInstruction::Action::UpdateConfig);
     }
 
     void UIContext::UISimComponentActor::OnColliderShapeChange(
@@ -2223,7 +2298,8 @@ namespace CBP
 
         entry.ex.colShape = a_pair.second.ex.colShape;
 
-        DCBP::DispatchActorTask(a_handle, ControllerInstruction::Action::UpdateConfig);
+        DCBP::DispatchActorTask(
+            a_handle, ControllerInstruction::Action::UpdateConfig);
     }
 
     void UIContext::UISimComponentActor::OnComponentUpdate(
@@ -2237,25 +2313,31 @@ namespace CBP
         Propagate(a_data, std::addressof(actorConf), a_pair, [&](configComponent_t& a_v) {
             a_v = a_pair.second; });
 
-        DCBP::DispatchActorTask(a_handle, ControllerInstruction::Action::UpdateConfig);
+        DCBP::DispatchActorTask(
+            a_handle, ControllerInstruction::Action::UpdateConfig);
     }
 
     bool UIContext::UISimComponentActor::GetNodeConfig(
-        Game::ObjectHandle a_handle,
+        const configNodes_t& a_nodeConf,
         const configGroupMap_t::value_type& cg_data,
         nodeConfigList_t& a_out) const
     {
         for (const auto& e : cg_data.second)
         {
-            auto& nodeConf = IConfig::GetActorNode(a_handle);
-            auto it = nodeConf.find(e);
+            auto it = a_nodeConf.find(e);
 
-            a_out.emplace_back(e, it != nodeConf.end() ?
+            a_out.emplace_back(e, it != a_nodeConf.end() ?
                 std::addressof(it->second) :
                 nullptr);
         }
 
         return !a_out.empty();
+    }
+
+    const configNodes_t& UIContext::UISimComponentActor::GetNodeData(
+        Game::ObjectHandle a_handle) const
+    {
+        return IConfig::GetActorNode(a_handle);
     }
 
     void UIContext::UISimComponentActor::UpdateNodeData(
@@ -2272,7 +2354,8 @@ namespace CBP
             if (a_reset)
                 DCBP::ResetActors();
             else
-                DCBP::DispatchActorTask(a_handle, ControllerInstruction::Action::UpdateConfig);
+                DCBP::DispatchActorTask(
+                    a_handle, ControllerInstruction::Action::UpdateConfig);
         }
     }
 
@@ -2404,22 +2487,26 @@ namespace CBP
     }
 
     bool UIContext::UISimComponentGlobal::GetNodeConfig(
-        Game::ObjectHandle a_handle,
+        const configNodes_t& a_nodeConf,
         const configGroupMap_t::value_type& cg_data,
         nodeConfigList_t& a_out) const
     {
-        auto& nodeConf = IConfig::GetGlobalNode();
-
         for (const auto& e : cg_data.second)
         {
-            auto it = nodeConf.find(e);
+            auto it = a_nodeConf.find(e);
 
-            a_out.emplace_back(e, it != nodeConf.end() ?
+            a_out.emplace_back(e, it != a_nodeConf.end() ?
                 std::addressof(it->second) :
                 nullptr);
         }
 
         return !a_out.empty();
+    }
+
+    const configNodes_t& UIContext::UISimComponentGlobal::GetNodeData(
+        Game::ObjectHandle) const
+    {
+        return IConfig::GetGlobalNode();
     }
 
     void UIContext::UISimComponentGlobal::UpdateNodeData(
@@ -2499,7 +2586,8 @@ namespace CBP
             IConfig::Copy(profileData, a_data->second.second);
             IConfig::SetActorPhysics(a_data->first, profileData);
 
-            DCBP::DispatchActorTask(a_data->first, ControllerInstruction::Action::UpdateConfig);
+            DCBP::DispatchActorTask(
+                a_data->first, ControllerInstruction::Action::UpdateConfig);
         }
     }
 
@@ -2605,7 +2693,8 @@ namespace CBP
         if (it == itm->second.end())
             return;
 
-        for (auto& e : it->second) {
+        for (auto& e : it->second)
+        {
             if (!e.second)
                 continue;
 
@@ -2666,6 +2755,7 @@ namespace CBP
             const auto& scConfig = GetSimComponentConfig();
 
             auto& cg = IConfig::GetConfigGroupMap();
+            auto& nodeConf = GetNodeData(a_handle);
 
             for (const auto& g : cg)
             {
@@ -2674,7 +2764,7 @@ namespace CBP
 
                 nodeList.clear();
 
-                GetNodeConfig(a_handle, g, nodeList);
+                GetNodeConfig(nodeConf, g, nodeList);
 
                 configComponentsValue_t* pair;
 
@@ -2780,6 +2870,7 @@ namespace CBP
         nodeConfigList_t nodeList;
 
         auto& cg = IConfig::GetConfigGroupMap();
+        auto& nodeConf = GetNodeData(a_handle);
 
         for (const auto& g : cg)
         {
@@ -2788,7 +2879,7 @@ namespace CBP
 
             nodeList.clear();
 
-            GetNodeConfig(a_handle, g, nodeList);
+            GetNodeConfig(nodeConf, g, nodeList);
 
             if (!ShouldDrawComponent(a_handle, a_data, g, nodeList))
                 continue;
@@ -3661,18 +3752,18 @@ namespace CBP
 
                         ImGui::Columns(1);
                         ImGui::Separator();
-                    }
+            }
 
                     if (!m_sized)
                         m_sized = true;
-                }
-            }
+        }
+    }
         }
 
         ImGui::End();
 
         ImGui::PopID();
-    }
+}
 #endif
 
     UIFileSelector::SelectedFile::SelectedFile() :

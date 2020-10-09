@@ -472,7 +472,7 @@ namespace CBP
 
     void DCBP::OnExit(Event, void* data)
     {
-        IScopedCriticalSection _(std::addressof(GetLock()));
+        IScopedCriticalSection _(GetLock());
 
         m_Instance.m_updateTask.Clear();
         SavePending();
@@ -803,7 +803,7 @@ namespace CBP
         auto intfc = static_cast<SKSESerializationInterface*>(args);
         auto& iface = m_Instance.m_serialization;
 
-        IScopedCriticalSection _(std::addressof(GetLock()));
+        IScopedCriticalSection _(GetLock());
 
         SavePending();
 
@@ -816,7 +816,7 @@ namespace CBP
     {
         m_Instance.Debug("Reverting..");
 
-        IScopedCriticalSection _(std::addressof(GetLock()));
+        IScopedCriticalSection _(GetLock());
 
         if (GetDriverConfig().debug_renderer)
             GetRenderer()->Clear();
@@ -856,7 +856,7 @@ namespace CBP
 
     bool DCBP::ProcessUICallbackImpl()
     {
-        IScopedCriticalSection _(std::addressof(GetLock()));
+        IScopedCriticalSection _(GetLock());
 
         auto& io = ImGui::GetIO();
 
@@ -1056,7 +1056,7 @@ namespace CBP
     auto DCBP::ToggleUITask::Toggle() ->
         ToggleResult
     {
-        IScopedCriticalSection m(std::addressof(DCBP::GetLock()));
+        IScopedCriticalSection _(DCBP::GetLock());
 
         if (m_Instance.uiState.show) {
             m_Instance.uiState.show = false;

@@ -211,7 +211,7 @@ namespace CBP
                 continue;
             }
 
-            if (rl.find(newFormID) == rl.end()) {
+            if (!rl.contains(newFormID)) {
                 Warning("0x%X: race record not found", newFormID);
                 continue;
             }

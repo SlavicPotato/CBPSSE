@@ -119,12 +119,6 @@ namespace CBP
             bool drawBroadphaseAABB = false;
         } debugRenderer;
 
-        __forceinline bool& GetColState(
-            const std::string& a_key,
-            bool a_default = true)
-        {
-            return ui.colStates.Get(a_key, a_default);
-        }
     };
 
     enum class DescUIMarker : uint32_t
@@ -186,7 +180,7 @@ namespace CBP
 
     public:
 
-        enum class Serialization : unsigned int
+        enum Serialization : unsigned int
         {
             DataVersion1 = 1
         };
@@ -275,7 +269,7 @@ namespace CBP
             return true;
         }
 
-        [[nodiscard]] inline float& operator[](const std::string& a_key) const
+        [[nodiscard]] __forceinline float& operator[](const std::string& a_key) const
         {
             auto addr = reinterpret_cast<uintptr_t>(this) +
                 descMap.at(a_key).offset;
@@ -283,7 +277,7 @@ namespace CBP
             return *reinterpret_cast<float*>(addr);
         }
 
-        inline void SetColShape(ColliderShape a_shape) {
+        __forceinline void SetColShape(ColliderShape a_shape) {
             ex.colShape = a_shape;
         }
 
@@ -328,7 +322,7 @@ namespace CBP
     private:
 
         template<class Archive>
-        void serialize(Archive& ar, const unsigned int version)
+        void save(Archive& ar, const unsigned int version) const
         {
             ar& phys.stiffness;
             ar& phys.stiffness2;
@@ -358,13 +352,38 @@ namespace CBP
             ar& ex.colShape;
         }
 
-        /*template<class Archive>
+        template<class Archive>
         void load(Archive& ar, const unsigned int version)
         {
+            ar& phys.stiffness;
+            ar& phys.stiffness2;
+            ar& phys.damping;
+            ar& phys.maxOffset;
+            ar& phys.cogOffset;
+            ar& phys.gravityBias;
+            ar& phys.gravityCorrection;
+            ar& phys.rotGravityCorrection;
+            ar& phys.linear;
+            ar& phys.rotational;
+            ar& phys.resistance;
+            ar& phys.mass;
+            ar& phys.colSphereRadMin;
+            ar& phys.colSphereRadMax;
+            ar& phys.offsetMin;
+            ar& phys.offsetMax;
+            ar& phys.colHeightMin;
+            ar& phys.colHeightMax;
+            ar& phys.colExtentMin;
+            ar& phys.colExtentMax;
+            ar& phys.colRot;
+            ar& phys.colRestitutionCoefficient;
+            ar& phys.colPenBiasFactor;
+            ar& phys.colPenMass;
 
-        }*/
+            ar& ex.colShape;
+        }
 
-        //BOOST_SERIALIZATION_SPLIT_MEMBER()
+        BOOST_SERIALIZATION_SPLIT_MEMBER()
 
     };
 
@@ -390,7 +409,7 @@ namespace CBP
         friend class boost::serialization::access;
 
     public:
-        enum class Serialization : unsigned int
+        enum Serialization : unsigned int
         {
             DataVersion1 = 1
         };
@@ -418,10 +437,6 @@ namespace CBP
             }
         }
 
-        /*[[nodiscard]] inline explicit operator bool() const noexcept {
-            return femaleMovement || femaleCollisions || maleMovement || maleCollisions;
-        }*/
-
         [[nodiscard]] inline bool Enabled() const noexcept {
             return femaleMovement || femaleCollisions || maleMovement || maleCollisions;
         }
@@ -437,7 +452,7 @@ namespace CBP
     private:
 
         template<class Archive>
-        void serialize(Archive& ar, const unsigned int version)
+        void save(Archive& ar, const unsigned int version) const
         {
             ar& femaleMovement;
             ar& femaleCollisions;
@@ -448,6 +463,21 @@ namespace CBP
             ar& overrideScale;
             ar& nodeScale;
         }
+
+        template<class Archive>
+        void load(Archive& ar, const unsigned int version)
+        {
+            ar& femaleMovement;
+            ar& femaleCollisions;
+            ar& maleMovement;
+            ar& maleCollisions;
+            ar& colOffsetMin;
+            ar& colOffsetMax;
+            ar& overrideScale;
+            ar& nodeScale;
+        }
+
+        BOOST_SERIALIZATION_SPLIT_MEMBER()
     };
 
     typedef stl::iunordered_map<std::string, configNode_t> configNodes_t;
@@ -694,7 +724,7 @@ namespace CBP
         }
 
         [[nodiscard]] inline static bool HasArmorOverride(Game::ObjectHandle a_handle) {
-            return armorOverrides.find(a_handle) != armorOverrides.end();
+            return armorOverrides.contains(a_handle);
         }
 
         [[nodiscard]] static const armorCacheEntry_t::mapped_type* GetArmorOverrideSection(Game::ObjectHandle a_handle, const std::string& a_sk);
@@ -756,6 +786,11 @@ namespace CBP
             mergedConfCache.clear();
         }
 
+        static size_t PruneAll();
+        static size_t PruneActorPhysics(Game::ObjectHandle a_handle);
+        static size_t PruneInactivePhysics();
+        static size_t PruneInactiveRace();
+
     private:
 
         [[nodiscard]] static bool LoadNodeMap(nodeMap_t& a_out);
@@ -792,5 +827,5 @@ namespace CBP
     };
 }
 
-BOOST_CLASS_VERSION(CBP::configComponent_t, Enum::Underlying(CBP::configComponent_t::Serialization::DataVersion1))
-BOOST_CLASS_VERSION(CBP::configNode_t, Enum::Underlying(CBP::configNode_t::Serialization::DataVersion1))
+BOOST_CLASS_VERSION(CBP::configComponent_t, CBP::configComponent_t::Serialization::DataVersion1)
+BOOST_CLASS_VERSION(CBP::configNode_t, CBP::configNode_t::Serialization::DataVersion1)
