@@ -758,6 +758,7 @@ namespace CBP
         auto& entry = raceConf[a_pair.first];
 
         entry.ex.colShape = a_pair.second.ex.colShape;
+        entry.ex.colConvexMesh = a_pair.second.ex.colConvexMesh;
 
         MarkChanged();
         DCBP::UpdateConfigOnAllActors();
@@ -2288,6 +2289,7 @@ namespace CBP
         auto& entry = actorConf[a_pair.first];
 
         entry.ex.colShape = a_pair.second.ex.colShape;
+        entry.ex.colConvexMesh = a_pair.second.ex.colConvexMesh;
 
         DCBP::DispatchActorTask(
             a_handle, ControllerInstruction::Action::UpdateConfig);
@@ -2459,6 +2461,7 @@ namespace CBP
         auto& entry = conf[a_pair.first];
 
         entry.ex.colShape = a_pair.second.ex.colShape;
+        entry.ex.colConvexMesh = a_pair.second.ex.colConvexMesh;
 
         DCBP::UpdateConfigOnAllActors();
     }
@@ -2770,11 +2773,7 @@ namespace CBP
                     pair = nullptr;
                 }
 
-                auto headerName = g.first;
-                if (headerName.size() != 0)
-                    headerName[0] = std::toupper(headerName[0]);
-
-                if (CollapsingHeader(GetCSID(g.first), headerName.c_str()))
+                if (CollapsingHeader(GetCSID(g.first), g.first.c_str()))
                 {
                     ImGui::PushID(static_cast<const void*>(std::addressof(g.second)));
 
@@ -2877,12 +2876,8 @@ namespace CBP
 
             auto& e = *a_data.try_emplace(g.first).first;
 
-            auto headerName = e.first;
-            if (headerName.size() != 0)
-                headerName[0] = std::toupper(headerName[0]);
-
             auto i = d.try_emplace(e.first, false);
-            if (ImGui::MenuItem(headerName.c_str(), nullptr, std::addressof(i.first->second)))
+            if (ImGui::MenuItem(e.first.c_str(), nullptr, std::addressof(i.first->second)))
             {
                 auto f = mirrorTo.try_emplace(e.first);
                 f.first->second.insert_or_assign(a_entry.first, i.first->second);
@@ -3023,9 +3018,14 @@ namespace CBP
         case ColliderShape::Box:
             desc = "Box";
             break;
+        case ColliderShape::Convex:
+            desc = "Convex";
+            break;
         default:
             throw std::exception("Not implemented");
         }
+
+        auto& pm = ProfileManagerCollider::GetSingleton();
 
         if (ImGui::BeginCombo("Collider shape", desc))
         {
@@ -3038,11 +3038,49 @@ namespace CBP
                 if (ImGui::Selectable(e.second.name.c_str(), selected))
                 {
                     a_pair.second.ex.colShape = e.first;
+
+                    if (e.first == ColliderShape::Convex)
+                    {
+                        auto it = pm.Find(a_pair.second.ex.colConvexMesh);
+
+                        if (it == pm.End())
+                        {
+                            auto& data = pm.Data();
+                            if (!data.empty())
+                                a_pair.second.ex.colConvexMesh = data.begin()->first;
+                            else
+                                a_pair.second.ex.colConvexMesh.clear();
+                        }
+                    }
+
                     OnColliderShapeChange(a_handle, a_data, a_pair, a_entry);
                 }
             }
 
             ImGui::EndCombo();
+        }
+
+        if (a_pair.second.ex.colShape == ColliderShape::Convex)
+        {
+            if (ImGui::BeginCombo("Mesh", a_pair.second.ex.colConvexMesh.c_str()))
+            {
+                auto& data = pm.Data();
+
+                for (const auto& e : data)
+                {
+                    bool selected = a_pair.second.ex.colConvexMesh == e.first;
+                    if (selected)
+                        if (ImGui::IsWindowAppearing()) ImGui::SetScrollHereY();
+
+                    if (ImGui::Selectable(e.first.c_str(), selected))
+                    {
+                        a_pair.second.ex.colConvexMesh = e.first;
+                        OnColliderShapeChange(a_handle, a_data, a_pair, a_entry);
+                    }
+                }
+
+                ImGui::EndCombo();
+            }
         }
     }
 
@@ -3164,6 +3202,9 @@ namespace CBP
                         break;
                     case ColliderShape::Box:
                         f |= (flags & DescUIMarker::ColliderBox);
+                        break;
+                    case ColliderShape::Convex:
+                        f |= (flags & DescUIMarker::ColliderConvex);
                         break;
                     }
 
@@ -3428,7 +3469,8 @@ namespace CBP
         m_size(a_size),
         m_avg(a_avg),
         m_res(a_res),
-        m_strBuf1{ 0 }
+        m_strBuf1{ 0 },
+        m_values(a_res, 0.0f)
     {
     }
 
@@ -3485,6 +3527,9 @@ namespace CBP
 
         while (m_values.size() > m_res)
             m_values.erase(m_values.begin());
+
+        while (m_values.size() < m_res)
+            m_values.emplace_back(0.0f);
     }
 
     void UIPlot::SetHeight(float a_height)

@@ -129,7 +129,8 @@ namespace CBP
         Float3 = 1U << 5,
         ColliderSphere = 1U << 10,
         ColliderCapsule = 1U << 11,
-        ColliderBox = 1U << 12
+        ColliderBox = 1U << 12,
+        ColliderConvex = 1U << 13
     };
 
     DEFINE_ENUM_CLASS_BITWISE(DescUIMarker);
@@ -137,7 +138,8 @@ namespace CBP
     constexpr auto UIMARKER_COL_SHAPE_FLAGS =
         DescUIMarker::ColliderSphere |
         DescUIMarker::ColliderCapsule |
-        DescUIMarker::ColliderBox;
+        DescUIMarker::ColliderBox |
+        DescUIMarker::ColliderConvex;
 
     enum class DescUIGroupType : uint32_t
     {
@@ -150,7 +152,8 @@ namespace CBP
     {
         Sphere = 0,
         Capsule = 1,
-        Box = 2
+        Box = 2,
+        Convex = 3
     };
 
     struct componentValueDesc_t
@@ -182,7 +185,8 @@ namespace CBP
 
         enum Serialization : unsigned int
         {
-            DataVersion1 = 1
+            DataVersion1 = 1,
+            DataVersion2 = 2
         };
 
         [[nodiscard]] __forceinline bool Get(const std::string& a_key, float& a_out) const
@@ -312,8 +316,8 @@ namespace CBP
         struct
         {
             ColliderShape colShape = ColliderShape::Sphere;
+            std::string colConvexMesh;
         } ex;
-
 
         static const componentValueDescMap_t descMap;
         static const colliderDescMap_t colDescMap;
@@ -350,6 +354,7 @@ namespace CBP
             ar& phys.colPenMass;
 
             ar& ex.colShape;
+            ar& ex.colConvexMesh;
         }
 
         template<class Archive>
@@ -381,6 +386,8 @@ namespace CBP
             ar& phys.colPenMass;
 
             ar& ex.colShape;
+            if (version == DataVersion2)
+                ar& ex.colConvexMesh;
         }
 
         BOOST_SERIALIZATION_SPLIT_MEMBER()
@@ -827,5 +834,5 @@ namespace CBP
     };
 }
 
-BOOST_CLASS_VERSION(CBP::configComponent_t, CBP::configComponent_t::Serialization::DataVersion1)
+BOOST_CLASS_VERSION(CBP::configComponent_t, CBP::configComponent_t::Serialization::DataVersion2)
 BOOST_CLASS_VERSION(CBP::configNode_t, CBP::configNode_t::Serialization::DataVersion1)

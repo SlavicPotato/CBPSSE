@@ -24,12 +24,83 @@ namespace CBP
         m_shape(ColliderShape::Sphere)
     {}
 
+    void SimComponent::Collider::CopyColliderData(
+        const ColliderData& a_data)
+    {
+        m_colliderData.m_vertices = std::make_unique<MeshPoint[]>(a_data.numVertices);
+
+        memcpy(m_colliderData.m_vertices.get(), a_data.m_vertices.get(), a_data.numVertices * sizeof(MeshPoint));
+
+        m_colliderData.m_persistent = std::addressof(a_data);
+
+        m_colliderData.m_polyVertexArray = std::make_unique<r3d::PolygonVertexArray>(
+            a_data.numVertices, m_colliderData.m_vertices.get(), sizeof(MeshPoint),
+            a_data.m_indices.get(), sizeof(int),
+            a_data.numFaces, a_data.m_faces.get(),
+            r3d::PolygonVertexArray::VertexDataType::VERTEX_FLOAT_TYPE,
+            r3d::PolygonVertexArray::IndexDataType::INDEX_INTEGER_TYPE);
+    }
+
+    void SimComponent::Collider::ScaleVertices(const r3d::Vector3& a_scale)
+    {
+        for (unsigned int i = 0; i < m_colliderData.m_persistent->numVertices; i++)
+        {
+            auto& e = m_colliderData.m_persistent->m_vertices[i];
+            auto& f = m_colliderData.m_vertices[i];
+
+            f.x = e.x * std::max(a_scale.x, 0.01f);
+            f.y = e.y * std::max(a_scale.y, 0.01f);
+            f.z = e.z * std::max(a_scale.z, 0.01f);
+        }
+    }
+
+    void SimComponent::Collider::UpdateExtent()
+    {
+        if (!m_created)
+            return;
+
+        if (m_shape == ColliderShape::Box)
+            m_boxShape->setHalfExtents(m_extent * m_nodeScale);
+        else if (m_shape == ColliderShape::Convex)
+        {
+            if (!m_body->isActive())
+                return;
+
+            auto scale = m_extent * m_nodeScale;
+
+            m_body->removeCollider(m_collider);
+
+            auto& physicsCommon = DCBP::GetPhysicsCommon();
+
+            physicsCommon.destroyConvexMeshShape(m_convexShape);
+            physicsCommon.destroyPolyhedronMesh(m_polyhedronMesh);
+
+            ScaleVertices(scale);
+
+            m_polyhedronMesh = physicsCommon.createPolyhedronMesh(m_colliderData.m_polyVertexArray.get());
+            ASSERT(m_polyhedronMesh != nullptr);
+            m_collisionShape = physicsCommon.createConvexMeshShape(m_polyhedronMesh);
+
+            m_collider = m_body->addCollider(m_collisionShape, m_transform);
+            m_collider->setUserData(std::addressof(m_parent));
+        }
+    }
+    
     bool SimComponent::Collider::Create(ColliderShape a_shape)
     {
         if (m_created)
         {
             if (m_shape == a_shape)
-                return false;
+            {
+                if (a_shape == ColliderShape::Convex)
+                {
+                    if (m_parent.m_conf.ex.colConvexMesh == m_currentConvexShape)
+                        return true;
+                }
+                else {
+                    return true;
+                }
+            }
 
             Destroy();
         }
@@ -44,34 +115,63 @@ namespace CBP
         auto world = DCBP::GetWorld();
         auto& physicsCommon = DCBP::GetPhysicsCommon();
 
-        m_body = world->createCollisionBody(m_transform);
-
         switch (a_shape)
         {
+        case ColliderShape::Sphere:
+            m_collisionShape = physicsCommon.createSphereShape(m_radius);
+            break;
         case ColliderShape::Capsule:
             m_collisionShape = physicsCommon.createCapsuleShape(m_radius, m_height);
             break;
         case ColliderShape::Box:
             m_collisionShape = physicsCommon.createBoxShape(m_extent);
             break;
-        case ColliderShape::Sphere:
-            m_collisionShape = physicsCommon.createSphereShape(m_radius);
-            break;
+        case ColliderShape::Convex:
+        {
+            auto& pm = ProfileManagerCollider::GetSingleton();
+
+            if (m_parent.m_conf.ex.colConvexMesh.empty())
+                return false;
+
+            auto it = pm.Find(m_parent.m_conf.ex.colConvexMesh);
+            if (it == pm.End()) {
+                Warning("%s: couldn't find convex mesh",
+                    m_parent.m_conf.ex.colConvexMesh.c_str());
+                return false;
+            }
+
+            CopyColliderData(it->second.Data());
+
+            m_polyhedronMesh = physicsCommon.createPolyhedronMesh(m_colliderData.m_polyVertexArray.get());
+            if (!m_polyhedronMesh) {
+                Warning("%s: createPolyhedronMesh mesh failed",
+                    m_parent.m_conf.ex.colConvexMesh.c_str());
+                return false;
+            }
+
+            m_currentConvexShape = m_parent.m_conf.ex.colConvexMesh;
+            
+            m_collisionShape = physicsCommon.createConvexMeshShape(m_polyhedronMesh);
+        }
+        break;
         default:
             ASSERT_STR(false, "Collider shape not implemented");
         }
 
-        m_collider = m_body->addCollider(m_collisionShape, m_transform);
+        m_body = world->createCollisionBody(m_transform);
 
+        m_collider = m_body->addCollider(m_collisionShape, m_transform);
         m_collider->setUserData(std::addressof(m_parent));
+
         m_body->setIsActive(m_process);
 
         m_created = true;
         m_active = true;
         m_shape = a_shape;
-        m_rotation = 
+        m_rotation =
             m_shape == ColliderShape::Capsule ||
-            m_shape == ColliderShape::Box;
+            m_shape == ColliderShape::Box ||
+            m_shape == ColliderShape::Convex;
 
         return true;
     }
@@ -84,24 +184,28 @@ namespace CBP
         auto world = DCBP::GetWorld();
         auto& physicsCommon = DCBP::GetPhysicsCommon();
 
-        m_body->removeCollider(m_collider);
+        world->destroyCollisionBody(m_body);
 
         switch (m_shape)
         {
+        case ColliderShape::Sphere:
+            physicsCommon.destroySphereShape(m_sphereShape);
+            break;
         case ColliderShape::Capsule:
             physicsCommon.destroyCapsuleShape(m_capsuleShape);
             break;
         case ColliderShape::Box:
             physicsCommon.destroyBoxShape(m_boxShape);
             break;
-        case ColliderShape::Sphere:
-            physicsCommon.destroySphereShape(m_sphereShape);
-            break;
-        default:
-            ASSERT_STR(false, "Collider shape not implemented");
-        }
+        case ColliderShape::Convex:
+            physicsCommon.destroyConvexMeshShape(m_convexShape);
+            physicsCommon.destroyPolyhedronMesh(m_polyhedronMesh);
 
-        world->destroyCollisionBody(m_body);
+            m_colliderData.m_vertices.release();
+            m_colliderData.m_polyVertexArray.release();
+
+            break;
+        }
 
         m_created = false;
 
@@ -174,11 +278,11 @@ namespace CBP
         NiAVObject* a_obj,
         const std::string& a_configGroupName,
         const configComponent_t& a_config,
+        const configNode_t& a_nodeConf,
         uint64_t a_parentId,
         uint64_t a_groupId,
         bool a_collisions,
-        bool a_movement,
-        const configNode_t& a_nodeConf)
+        bool a_movement)
         :
         m_configGroupName(a_configGroupName),
         m_oldWorldPos(a_obj->m_worldTransform.pos),
@@ -197,13 +301,13 @@ namespace CBP
 #ifdef _CBP_ENABLE_DEBUG
         m_debugInfo.parentNodeName = a_obj->m_parent->m_name;
 #endif
-        UpdateConfig(a_actor, a_config, a_collisions, a_movement, a_nodeConf);
-        m_collisionData.Update();
+        UpdateConfig(a_actor, a_config, a_nodeConf, a_collisions, a_movement);
     }
 
     void SimComponent::Release()
     {
         m_collisionData.Destroy();
+        m_obj->m_localTransform = m_initialTransform;
     }
 
     bool SimComponent::UpdateWeightData(
@@ -220,7 +324,7 @@ namespace CBP
 
         float weight = std::clamp(npc->weight, 0.0f, 100.0f);
 
-        m_colRad = std::max(mmw(weight, a_config.phys.colSphereRadMin, a_config.phys.colSphereRadMax), 0.0f);
+        m_colRad = std::max(mmw(weight, a_config.phys.colSphereRadMin, a_config.phys.colSphereRadMax), 0.001f);
         m_colHeight = std::max(mmw(weight, a_config.phys.colHeightMin, a_config.phys.colHeightMax), 0.001f);
         m_colOffsetX = mmw(weight,
             a_config.phys.offsetMin[0] + a_nodeConf.colOffsetMin[0],
@@ -242,9 +346,9 @@ namespace CBP
     void SimComponent::UpdateConfig(
         Actor* a_actor,
         const configComponent_t& a_physConf,
+        const configNode_t& a_nodeConf,
         bool a_collisions,
-        bool a_movement,
-        const configNode_t& a_nodeConf) noexcept
+        bool a_movement) noexcept
     {
         m_conf = a_physConf;
         m_collisions = a_collisions;
@@ -255,7 +359,7 @@ namespace CBP
         }
 
         if (!UpdateWeightData(a_actor, a_physConf, a_nodeConf)) {
-            m_colRad = a_physConf.phys.colSphereRadMax;
+            m_colRad = std::max(a_physConf.phys.colSphereRadMax, 0.001f);
             m_colHeight = std::max(a_physConf.phys.colHeightMax, 0.001f);
             m_colOffsetX = a_physConf.phys.offsetMax[0] + a_nodeConf.colOffsetMax[0];
             m_colOffsetY = a_physConf.phys.offsetMax[1] + a_nodeConf.colOffsetMax[1];
@@ -267,34 +371,33 @@ namespace CBP
             };
         }
 
-        if (m_collisions &&
-            m_colRad > 0.0f)
+        if (m_collisions)
         {
-            m_collisionData.Create(m_conf.ex.colShape);
-
-            m_collisionData.SetRadius(m_colRad);
-            m_collisionData.SetOffset(
-                m_colOffsetX,
-                m_colOffsetY,
-                m_colOffsetZ
-            );
-
-            auto colShape = m_collisionData.GetColliderShape();
-
-            switch (colShape)
+            if (m_collisionData.Create(m_conf.ex.colShape))
             {
-            case ColliderShape::Capsule:
-                m_collisionData.SetHeight(m_colHeight);
-            case ColliderShape::Box:
-                m_collisionData.SetColliderRotation(
-                    m_conf.phys.colRot[0],
-                    m_conf.phys.colRot[1],
-                    m_conf.phys.colRot[2]
+                m_collisionData.SetOffset(
+                    m_colOffsetX,
+                    m_colOffsetY,
+                    m_colOffsetZ
                 );
-                m_collisionData.SetExtent(m_extent);
-                break;
-            }
 
+                switch (m_conf.ex.colShape)
+                {
+                case ColliderShape::Sphere:
+                case ColliderShape::Capsule:
+                    m_collisionData.SetRadius(m_colRad);
+                    m_collisionData.SetHeight(m_colHeight);
+                case ColliderShape::Box:
+                case ColliderShape::Convex:
+                    m_collisionData.SetColliderRotation(
+                        m_conf.phys.colRot[0],
+                        m_conf.phys.colRot[1],
+                        m_conf.phys.colRot[2]
+                    );
+                    m_collisionData.SetExtent(m_extent);
+                    break;
+                }
+            }
         }
         else {
             m_collisionData.Destroy();
@@ -331,7 +434,9 @@ namespace CBP
                 m_hasScaleOverride = true;
             }
 
-            m_obj->m_localTransform.scale = std::clamp(a_nodeConf.nodeScale, 0.0f, 20.0f);
+            m_nodeScale = std::clamp(a_nodeConf.nodeScale, 0.0f, 20.0f);
+
+            m_obj->m_localTransform.scale = m_nodeScale;
         }
         else
         {
@@ -343,15 +448,17 @@ namespace CBP
         }
 
         m_obj->UpdateWorldData(&m_updateCtx);
+
+        m_collisionData.Update();
     }
 
     void SimComponent::Reset()
     {
         if (m_movement)
         {
-            m_obj->m_localTransform = m_initialTransform;
-            m_hasScaleOverride = false;
-
+            m_obj->m_localTransform.pos = m_initialTransform.pos;
+            m_obj->m_localTransform.rot = m_initialTransform.rot;
+            
             m_obj->UpdateWorldData(&m_updateCtx);
         }
 
@@ -471,4 +578,4 @@ namespace CBP
         m_debugInfo.localTransformParent = m_objParent->m_localTransform;
     }
 #endif
-    }
+}

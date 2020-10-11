@@ -616,7 +616,6 @@ namespace UICommon
         UICommon::MessageDialog("Create Error", "Could not create the profile\n\n%s", m_state.lastException.what());
         UICommon::MessageDialog("Save Error", "Could not save the profile\n\n%s", m_state.lastException.what());
         UICommon::MessageDialog("Add Error", "Could not add the profile\n\n%s", m_state.lastException.what());
-
     }
 
     template <class T>

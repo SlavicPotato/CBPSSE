@@ -80,11 +80,11 @@ namespace CBP
                 e.bone,
                 e.confGroup,
                 e.physConf,
+                e.nodeConf,
                 a_Id,
                 IConfig::GetNodeCollisionGroupId(e.nodeName),
                 e.collisions,
-                e.movement,
-                e.nodeConf
+                e.movement
             );
 
             m_configGroups.emplace(e.confGroup);
@@ -121,8 +121,8 @@ namespace CBP
     }
 
     void SimObject::UpdateConfig(
-        Actor* a_actor, 
-        bool a_collisions, 
+        Actor* a_actor,
+        bool a_collisions,
         const configComponents_t& a_config)
     {
         auto& nodeConfig = IConfig::GetActorNode(m_handle);
@@ -146,20 +146,20 @@ namespace CBP
             p.second.UpdateConfig(
                 a_actor,
                 it2 != a_config.end() ? it2->second : configComponent_t(),
+                nodeConf,
                 a_collisions && collisions,
-                movement,
-                nodeConf
+                movement
             );
         }
     }
 
     void SimObject::ApplyForce(
-        uint32_t a_steps, 
-        const std::string& a_component, 
+        uint32_t a_steps,
+        const std::string& a_component,
         const NiPoint3& a_force)
     {
         for (auto& p : m_things)
-            if (p.second.GetConfigGroupName() == a_component)
+            if (boost::iequals(p.second.GetConfigGroupName(), a_component))
                 p.second.ApplyForce(a_steps, a_force);
     }
 
@@ -188,7 +188,9 @@ namespace CBP
         m_suspended = a_switch;
 
         for (auto& e : m_things)
+        {
             e.second.GetCollider().SetShouldProcess(!a_switch);
+        }
 
         if (!a_switch)
             Reset();

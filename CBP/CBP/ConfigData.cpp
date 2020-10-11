@@ -12,6 +12,9 @@ namespace CBP
         { ColliderShape::Box, {
             "Box"
         }},
+        { ColliderShape::Convex, {
+            "Convex"
+        }},
         }
     );
 
@@ -168,7 +171,7 @@ namespace CBP
         {"cr-", {
             offsetof(configComponent_t, phys.colSphereRadMin),
             "cr+",
-            0.0f, 100.0,
+            0.001f, 100.0,
             "Collider radius (weigth 0)",
             "Radius min",
             DescUIMarker::BeginGroup | DescUIMarker::ColliderSphere | DescUIMarker::ColliderCapsule,
@@ -178,7 +181,7 @@ namespace CBP
         {"cr+", {
             offsetof(configComponent_t, phys.colSphereRadMax),
             "cr-",
-            0.0f, 100.0f,
+            0.001f, 100.0f,
             "Collider radius (weight 100)",
             "Radius max",
             DescUIMarker::ColliderSphere | DescUIMarker::ColliderCapsule
@@ -249,7 +252,7 @@ namespace CBP
             0.0f, 50.0f,
             "Extent (X, Y, Z, weight 0)",
             "Extent min",
-            DescUIMarker::Float3 | DescUIMarker::ColliderBox
+            DescUIMarker::Float3 | DescUIMarker::ColliderBox | DescUIMarker::ColliderConvex
         }},
         {"ey-", {
             offsetof(configComponent_t, phys.colExtentMin[1]),
@@ -257,7 +260,7 @@ namespace CBP
             0.0f, 50.0f,
             "",
             "",
-            DescUIMarker::ColliderBox
+            DescUIMarker::ColliderBox | DescUIMarker::ColliderConvex
         }},
         {"ez-", {
             offsetof(configComponent_t, phys.colExtentMin[2]),
@@ -265,7 +268,7 @@ namespace CBP
             0.0f, 50.0f,
             "",
             "",
-            DescUIMarker::ColliderBox
+            DescUIMarker::ColliderBox | DescUIMarker::ColliderConvex
         }},
         {"ex+", {
             offsetof(configComponent_t, phys.colExtentMax[0]),
@@ -273,7 +276,7 @@ namespace CBP
             0.0f, 50.0f,
             "Extent (X, Y, Z, weight 100)",
             "Extent max",
-            DescUIMarker::Float3 | DescUIMarker::ColliderBox
+            DescUIMarker::Float3 | DescUIMarker::ColliderBox | DescUIMarker::ColliderConvex
         }},
         {"ey+", {
             offsetof(configComponent_t, phys.colExtentMax[1]),
@@ -281,7 +284,7 @@ namespace CBP
             0.0f, 50.0f,
             "",
             "",
-            DescUIMarker::ColliderBox
+            DescUIMarker::ColliderBox | DescUIMarker::ColliderConvex
         }},
         {"ez+", {
             offsetof(configComponent_t, phys.colExtentMax[2]),
@@ -289,7 +292,7 @@ namespace CBP
             0.0f, 50.0f,
             "",
             "",
-            DescUIMarker::ColliderBox
+            DescUIMarker::ColliderBox | DescUIMarker::ColliderConvex
         }},
         {"crx", {
             offsetof(configComponent_t, phys.colRot[0]),
@@ -297,7 +300,7 @@ namespace CBP
             -360.0f, 360.0f,
             "Collider rotation in degrees around the X, Y and Z axes respectively.",
             "Collider rotation",
-            DescUIMarker::ColliderCapsule | DescUIMarker::ColliderBox | DescUIMarker::Float3
+            DescUIMarker::ColliderCapsule | DescUIMarker::ColliderBox | DescUIMarker::ColliderConvex | DescUIMarker::Float3
         }},
         {"cry", {
             offsetof(configComponent_t, phys.colRot[1]),
@@ -305,7 +308,7 @@ namespace CBP
             -360.0f, 360.0f,
             "",
             "",
-            DescUIMarker::ColliderCapsule | DescUIMarker::ColliderBox
+            DescUIMarker::ColliderCapsule | DescUIMarker::ColliderBox | DescUIMarker::ColliderConvex | DescUIMarker::ColliderBox
         }},
         {"crz", {
             offsetof(configComponent_t, phys.colRot[2]),
@@ -313,7 +316,7 @@ namespace CBP
             -360.0f, 360.0f,
             "",
             "",
-            DescUIMarker::ColliderCapsule | DescUIMarker::ColliderBox
+            DescUIMarker::ColliderCapsule | DescUIMarker::ColliderBox | DescUIMarker::ColliderConvex | DescUIMarker::ColliderBox
         }},
         {"cb", {
             offsetof(configComponent_t, phys.colRestitutionCoefficient),

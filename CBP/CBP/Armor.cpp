@@ -143,13 +143,12 @@ namespace CBP
             root[1] = nullptr;
 
         BSFixedString pcName("CBPA");
+        BSFixedString aaName(buf);
 
         for (int i = 0; i < 2; i++)
         {
             if (!root[i])
                 continue;
-
-            BSFixedString aaName(buf);
 
             NiAVObject* armorNode = root[i]->GetObjectByName(&aaName.data);
 

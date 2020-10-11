@@ -13,12 +13,12 @@ namespace CBP
         public:
 
             template<typename... Args>
-            ProfileManagerPhysics(Args... a_args) :
-                ProfileManager<PhysicsProfile>(a_args...)
+            ProfileManagerPhysics(Args&&... a_args) :
+                ProfileManager<PhysicsProfile>(std::forward<Args>(a_args)...)
             {
             }
 
-            FN_NAMEPROC("ProfileManagerPhysics");
+            FN_NAMEPROC("CBP::ProfileManagerPhysics");
         };
 
         class ProfileManagerNode :
@@ -27,12 +27,12 @@ namespace CBP
         public:
 
             template<typename... Args>
-            ProfileManagerNode(Args... a_args) :
-                ProfileManager<NodeProfile>(a_args...)
+            ProfileManagerNode(Args&&... a_args) :
+                ProfileManager<NodeProfile>(std::forward<Args>(a_args)...)
             {
             }
 
-            FN_NAMEPROC("ProfileManagerNode");
+            FN_NAMEPROC("CBP::ProfileManagerNode");
         };
 
     public:

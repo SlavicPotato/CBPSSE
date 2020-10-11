@@ -3,6 +3,128 @@
 namespace CBP
 {
     ICollision ICollision::m_Instance;
+    ProfileManagerCollider ProfileManagerCollider::m_Instance("^[a-zA-Z0-9_\\- ]+$", ".obj");
+
+    bool ColliderProfile::Save(const ColliderData& a_data, bool a_store)
+    {
+        try
+        {
+            throw std::exception("Not implemented");
+
+            return true;
+        }
+        catch (const std::exception& e)
+        {
+            m_lastExcept = e;
+            return false;
+        }
+    }
+
+    bool ColliderProfile::Load()
+    {
+        try
+        {
+            if (m_path.empty())
+                throw std::exception("Bad path");
+
+            Assimp::Importer importer;
+
+            importer.SetPropertyInteger(AI_CONFIG_PP_RVC_FLAGS, IMPORT_RVC_FLAGS);
+
+            auto scene = importer.ReadFile(m_pathStr, IMPORT_FLAGS);
+
+            if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
+                throw std::exception("No mesh was loaded");
+
+            if (!scene->mMeshes || scene->mNumMeshes < 1)
+                throw std::exception("No data");
+
+            auto mesh = scene->mMeshes[0];
+
+            if (!mesh->HasPositions() || !mesh->HasFaces())
+                throw std::exception("Missing data");
+
+            auto numVertices = mesh->mNumVertices;
+            auto numFaces = mesh->mNumFaces;
+
+            if (!numVertices)
+                throw std::exception("No vertices");
+
+            if (!numFaces)
+                throw std::exception("No faces");
+
+            ColliderData tmp;
+
+            tmp.m_vertices = std::make_shared<MeshPoint[]>(numVertices);
+
+            for (size_t i = 0; i < numVertices; i++)
+            {
+                auto& e = mesh->mVertices[i];
+
+                tmp.m_vertices[i].x = e.x;
+                tmp.m_vertices[i].y = e.y;
+                tmp.m_vertices[i].z = e.z;
+            }
+
+            tmp.m_faces = std::make_shared<r3d::PolygonVertexArray::PolygonFace[]>(numFaces);
+            r3d::PolygonVertexArray::PolygonFace* face = tmp.m_faces.get();
+
+            unsigned int numIndices(0);
+
+            for (unsigned int i = 0; i < mesh->mNumFaces; i++)
+                numIndices += mesh->mFaces[i].mNumIndices;
+
+            if (!numIndices)
+                throw std::exception("No indices");
+
+            tmp.m_indices = std::make_shared<int[]>(numIndices);
+
+            for (unsigned int i = 0, n = 0; i < mesh->mNumFaces; i++)
+            {
+                auto& e = mesh->mFaces[i];
+
+                if (!e.mNumIndices)
+                    throw std::exception("aiFace.mNumIndices == 0");
+
+                face->indexBase = n;
+                face->nbVertices = e.mNumIndices;
+
+                face++;
+
+                for (size_t j = 0; j < e.mNumIndices; j++)
+                {
+                    tmp.m_indices[n] = static_cast<int>(e.mIndices[j]);
+                    n++;
+                }
+            }
+
+            tmp.m_polyVertexArray = std::make_shared<r3d::PolygonVertexArray>(
+                numVertices, tmp.m_vertices.get(), sizeof(MeshPoint),
+                tmp.m_indices.get(), sizeof(int),
+                numFaces, tmp.m_faces.get(),
+                r3d::PolygonVertexArray::VertexDataType::VERTEX_FLOAT_TYPE,
+                r3d::PolygonVertexArray::IndexDataType::INDEX_INTEGER_TYPE);
+
+            tmp.numVertices = numVertices;
+            tmp.numIndices = numIndices;
+            tmp.numFaces = numFaces;
+
+            Debug("%s: vertices: %u, indices: %u, faces: %u", m_name.c_str(), numVertices, numIndices, numFaces);
+
+            m_data = std::move(tmp);
+
+            return true;
+        }
+        catch (const std::exception& e)
+        {
+            m_lastExcept = e;
+            return false;
+        }
+    }
+
+    void ColliderProfile::SetDefaults() noexcept {
+
+    }
 
     void ICollision::Initialize(r3d::PhysicsWorld* a_world)
     {
@@ -48,15 +170,15 @@ namespace CBP
 
                     auto& _n = contactPoint.getWorldNormal();
 
-                    auto n = NiPoint3(_n.x, _n.y, _n.z);
+                    NiPoint3 n(_n.x, _n.y, _n.z);
                     auto deltaV = v1 - v2;
 
-                    auto deltaVDotN =
+                    float deltaVDotN =
                         deltaV.x * n.x +
                         deltaV.y * n.y +
                         deltaV.z * n.z;
 
-                    auto pbf = std::max(conf1.phys.colPenBiasFactor, conf2.phys.colPenBiasFactor);
+                    float pbf = std::max(conf1.phys.colPenBiasFactor, conf2.phys.colPenBiasFactor);
 
                     float bias = depth > 0.01f ?
                         (m_timeStep * (2880.0f * pbf)) * std::max(depth - 0.01f, 0.0f) : 0.0f;
@@ -96,3 +218,4 @@ namespace CBP
         return !sc1->IsSameGroup(*sc2);
     }
 }
+

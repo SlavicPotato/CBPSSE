@@ -618,7 +618,7 @@ namespace CBP
 
             for (const auto& ea : *entry)
             {
-                auto r = a_out.second.emplace(ea.first, ea.second);
+                auto &r = a_out.second.emplace(ea.first, ea.second);
                 for (const auto& eb : ea.second)
                     r.first->second.insert_or_assign(eb.first, eb.second);
             }

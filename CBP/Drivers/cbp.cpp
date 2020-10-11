@@ -280,7 +280,7 @@ namespace CBP
             paths.templateProfilesPhysics = paths.root / PLUGIN_CBP_TEMP_PROF_PHYS_R;
             paths.templateProfilesNode = paths.root / PLUGIN_CBP_TEMP_PROF_NODE_R;
             paths.templatePlugins = paths.root / PLUGIN_CBP_TEMP_PLUG_R;
-            paths.imguiSettings = paths.root / PLUGIN_IMGUI_INI_FILE_R;
+            paths.colliderData = paths.root / PLUGIN_CBP_COLLIDER_DATA_R;
 
             return true;
         }
@@ -425,6 +425,9 @@ namespace CBP
 
         auto& pmn = GlobalProfileManager::GetSingleton<NodeProfile>();
         pmn.Load(driverConf.paths.profilesNode);
+
+        auto& pmc = CBP::ProfileManagerCollider::GetSingleton();
+        pmc.Load(driverConf.paths.colliderData);
     }
 
     void DCBP::OnD3D11PostCreate_CBP(Event, void* data)

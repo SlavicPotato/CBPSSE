@@ -130,7 +130,12 @@ namespace Serialization
                     case 2:
                         e.SetColShape(CBP::ColliderShape::Box);
                         break;
+                    case 3:
+                        e.SetColShape(CBP::ColliderShape::Convex);
+                        break;
                     }
+
+                    e.ex.colConvexMesh = ex.get("cm", "").asString();
                 }
             }
         }
@@ -156,6 +161,7 @@ namespace Serialization
             auto& ex = simComponent["ex"];
 
             ex["cs"] = Enum::Underlying(v.second.ex.colShape);
+            ex["cm"] = v.second.ex.colConvexMesh;
         }
 
         a_out["data_version"] = Json::Value::UInt(3);

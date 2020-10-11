@@ -280,6 +280,7 @@ namespace CBP
                 fs::path templateProfilesPhysics;
                 fs::path templateProfilesNode;
                 fs::path templatePlugins;
+                fs::path colliderData;
                 fs::path imguiSettings;
             } paths;
         } conf;

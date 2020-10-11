@@ -1,18 +1,16 @@
 #pragma once
 
 template <class T>
-class Profile :
-    Serialization::Parser<T>
+class ProfileBase
 {
-public:
-    typedef typename T base_type;
+protected:
 
-    Profile() :
+    ProfileBase() :
         m_id(0)
     {
     }
 
-    Profile(const std::filesystem::path& a_path) :
+    ProfileBase(const std::filesystem::path& a_path) :
         m_path(a_path),
         m_pathStr(a_path.string()),
         m_id(0),
@@ -20,14 +18,13 @@ public:
     {
     }
 
-    virtual ~Profile() noexcept = default;
+public:
 
-    bool Load();
-    bool Save(const T& a_data, bool a_store);
+    typedef typename T base_type;
 
-    inline bool Save() {
-        return Save(m_data, false);
-    }
+    virtual bool Load() = 0;
+    virtual bool Save(const T& a_data, bool a_store) = 0;
+    virtual void SetDefaults() noexcept = 0;
 
     inline void SetPath(const std::filesystem::path& a_path) noexcept {
         m_path = a_path;
@@ -37,7 +34,7 @@ public:
     inline void SetDescription(const std::string& a_text) noexcept {
         m_desc = a_text;
     }
-    
+
     inline void SetDescription(std::string&& a_text) noexcept {
         m_desc = std::move(a_text);
     }
@@ -82,12 +79,7 @@ public:
         m_id = a_id;
     }
 
-    inline void SetDefaults() noexcept {
-        GetDefault(m_data);
-    }
-
-private:
-
+protected:
     std::filesystem::path m_path;
     std::string m_pathStr;
     std::string m_name;
@@ -98,6 +90,31 @@ private:
     T m_data;
 
     except::descriptor m_lastExcept;
+
+};
+
+template <class T>
+class Profile :
+    public ProfileBase<T>,
+    Serialization::Parser<T>
+{
+public:
+    template <typename... Args>
+    Profile(Args&&... a_args) :
+        ProfileBase<T>(std::forward<Args>(a_args)...)
+    {
+    }
+
+    virtual ~Profile() noexcept = default;
+
+    virtual bool Load();
+    virtual bool Save(const T& a_data, bool a_store);
+    virtual void SetDefaults() noexcept;
+
+    inline bool Save() {
+        return Save(m_data, false);
+    }
+
 };
 
 
@@ -107,7 +124,7 @@ bool Profile<T>::Save(const T& a_data, bool a_store)
     try
     {
         if (m_path.empty())
-            throw std::exception("Bad path");        
+            throw std::exception("Bad path");
 
         Json::Value root;
 
@@ -175,15 +192,22 @@ bool Profile<T>::Load()
     }
 }
 
+template <class T>
+void Profile<T>::SetDefaults() noexcept 
+{
+    GetDefault(m_data);
+}
+
 
 template <class T>
 class ProfileManager
     : ILog
 {
+    //using profile_type = ProfileBase<T>;
     using profileStorage_t = stl::imap<std::string, T>;
 
 public:
-    ProfileManager(const std::string& a_fc);
+    ProfileManager(const std::string& a_fc, const fs::path &a_ext = ".json");
 
     ProfileManager() = delete;
     virtual ~ProfileManager() noexcept = default;
@@ -222,6 +246,7 @@ private:
 
     profileStorage_t m_storage;
     fs::path m_root;
+    fs::path m_ext;
     std::regex m_rFileCheck;
     except::descriptor m_lastExcept;
     bool m_isInitialized;
@@ -229,11 +254,13 @@ private:
 
 template <typename T>
 ProfileManager<T>::ProfileManager(
-    const std::string& a_fc)
+    const std::string& a_fc,
+    const fs::path &a_ext)
     :
     m_isInitialized(false),
     m_rFileCheck(a_fc,
-        std::regex_constants::ECMAScript)
+        std::regex_constants::ECMAScript),
+    m_ext(a_ext)
 {
 }
 
@@ -255,15 +282,13 @@ bool ProfileManager<T>::Load(const fs::path& a_path)
         m_root = a_path;
         m_isInitialized = true;
 
-        fs::path ext(".json");
-
         for (const auto& entry : fs::directory_iterator(a_path))
         {
             if (!entry.is_regular_file())
                 continue;
 
             auto& path = entry.path();
-            if (!path.has_extension() || path.extension() != ext)
+            if (!path.has_extension() || path.extension() != m_ext)
                 continue;
 
             auto key = path.stem().string();
@@ -342,7 +367,7 @@ bool ProfileManager<T>::CreateProfile(const std::string& a_name, T& a_out, bool 
 
         return true;
     }
-    catch (const std::exception& e) 
+    catch (const std::exception& e)
     {
         Error("%s: %s", __FUNCTION__, e.what());
         m_lastExcept = e;

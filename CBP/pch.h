@@ -43,7 +43,6 @@
 #include <functional>
 #include <numbers>
 
-//#include <corecrt_math_defines.h>
 #include <ShlObj.h>
 
 #include <d3d11.h>
@@ -75,14 +74,20 @@
 #include <boost/archive/binary_oarchive.hpp> 
 #include <boost/archive/binary_iarchive.hpp> 
 
-#include <boost/serialization/map.hpp> 
 #include <boost/serialization/unordered_map.hpp> 
-//#include <boost/serialization/split_member.hpp>
+#include <boost/serialization/string.hpp> 
+#include <boost/serialization/split_member.hpp>
 #include <boost/serialization/version.hpp>
+
+#include <boost/algorithm/string.hpp>
 
 #include <json/json.h>
 
 #include <imgui.h>
+
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
 
 #include "imgui/imgui_impl_win32.h"
 #include "imgui/imgui_impl_dx11.h"

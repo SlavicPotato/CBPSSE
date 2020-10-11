@@ -20,19 +20,19 @@ namespace Serialization
     template <class T>
     void Parser<T>::Create(const T& a_in, Json::Value& a_out) const
     {
-        static_assert(false, "Not implemented");
+        ASSERT_STR(false, "Not implemented");
     }
 
     template <class T>
     bool Parser<T>::Parse(const Json::Value& a_in, T& a_out) const
     {
-        static_assert(false, "Not implemented");
+        ASSERT_STR(false, "Not implemented");
     }
 
     template <class T>
     void Parser<T>::GetDefault(T& a_out) const
     {
-        static_assert(false, "Not implemented");
+        ASSERT_STR(false, "Not implemented");
     }
 
     template <class T>

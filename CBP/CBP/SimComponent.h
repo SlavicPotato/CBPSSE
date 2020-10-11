@@ -17,6 +17,36 @@ namespace CBP
     };
 #endif
 
+    struct MeshPoint
+    {
+        float x;
+        float y;
+        float z;
+    };
+
+    static_assert(sizeof(MeshPoint) == 12);
+
+    struct ColliderData
+    {
+        std::shared_ptr<MeshPoint[]> m_vertices;
+        std::shared_ptr<int[]> m_indices;
+
+        unsigned int numVertices;
+        unsigned int numIndices;
+        unsigned int numFaces;
+
+        std::shared_ptr<r3d::PolygonVertexArray::PolygonFace[]> m_faces;
+        std::shared_ptr<r3d::PolygonVertexArray> m_polyVertexArray;
+    };
+
+    struct ColliderActiveData
+    {
+        std::unique_ptr<MeshPoint[]> m_vertices;
+        std::unique_ptr<r3d::PolygonVertexArray> m_polyVertexArray;
+
+        const ColliderData *m_persistent;
+    };
+
     class SimComponent
     {
         struct Force
@@ -26,7 +56,8 @@ namespace CBP
             float mag;
         };
 
-        class Collider
+        class Collider :
+            ILog
         {
             static constexpr float crdrmul = std::numbers::pi_v<float> / 180.0f;
 
@@ -56,55 +87,15 @@ namespace CBP
                 UpdateRadius();
             }
 
-            inline void UpdateRadius()
-            {
-                if (!m_created)
-                    return;
-
-                auto rad = m_radius * m_nodeScale;
-                if (rad > 0.0f) {
-                    if (m_shape == ColliderShape::Capsule)
-                        m_capsuleShape->setRadius(rad);
-                    else if (m_shape == ColliderShape::Sphere)
-                        m_sphereShape->setRadius(rad);
-                }
-            }
-
-            inline void UpdateHeight()
-            {
-                if (!m_created)
-                    return;
-
-                if (m_shape == ColliderShape::Capsule) {
-                    auto height = std::max(m_height * m_nodeScale, 0.001f);
-                    m_capsuleShape->setHeight(height);
-                }
+            inline void SetHeight(float a_val) {
+                m_height = a_val;
+                UpdateHeight();
             }
 
             inline void SetExtent(const r3d::Vector3& a_extent)
             {
                 m_extent = a_extent;
                 UpdateExtent();
-            }
-
-            inline void SetExtent(r3d::Vector3&& a_extent)
-            {
-                m_extent = std::move(a_extent);
-                UpdateExtent();
-            }
-
-            inline void UpdateExtent()
-            {
-                if (!m_created)
-                    return;
-
-                if (m_shape == ColliderShape::Box)
-                    m_boxShape->setHalfExtents(m_extent * m_nodeScale);
-            }
-
-            inline void SetHeight(float a_val) {
-                m_height = a_val;
-                UpdateHeight();
             }
 
             inline void SetOffset(const NiPoint3& a_offset) {
@@ -131,11 +122,48 @@ namespace CBP
 
             inline void SetShouldProcess(bool a_switch) {
                 m_process = a_switch;
-                if (IsActive())
+                if (IsActive()) {
                     m_body->setIsActive(a_switch);
+                    if (a_switch && m_shape == ColliderShape::Convex)
+                        UpdateExtent();
+                }
             }
 
+
         private:
+
+            void CopyColliderData(const ColliderData& a_data);
+            void ScaleVertices(const r3d::Vector3& a_scale);
+
+
+            inline void UpdateRadius()
+            {
+                if (!m_created)
+                    return;
+
+                auto rad = m_radius * m_nodeScale;
+                if (rad > 0.0f) {
+                    if (m_shape == ColliderShape::Capsule)
+                        m_capsuleShape->setRadius(rad);
+                    else if (m_shape == ColliderShape::Sphere)
+                        m_sphereShape->setRadius(rad);
+                }
+            }
+
+
+            inline void UpdateHeight()
+            {
+                if (!m_created)
+                    return;
+
+                if (m_shape == ColliderShape::Capsule) {
+                    auto height = std::max(m_height * m_nodeScale, 0.001f);
+                    m_capsuleShape->setHeight(height);
+                }
+            }
+
+            void UpdateExtent();
+
             r3d::CollisionBody* m_body;
             r3d::Collider* m_collider;
 
@@ -144,8 +172,15 @@ namespace CBP
                 r3d::SphereShape* m_sphereShape;
                 r3d::CapsuleShape* m_capsuleShape;
                 r3d::BoxShape* m_boxShape;
+                r3d::ConvexMeshShape* m_convexShape;
                 r3d::CollisionShape* m_collisionShape;
             };
+
+            ColliderActiveData m_colliderData;
+
+            r3d::PolyhedronMesh* m_polyhedronMesh;
+
+            std::string m_currentConvexShape;
 
             r3d::Vector3 m_extent;
             NiPoint3 m_bodyOffset;
@@ -199,6 +234,7 @@ namespace CBP
         float m_colOffsetY = 0.0f;
         float m_colOffsetZ = 0.0f;
         float m_resistance = 0.0f;
+        float m_nodeScale = 1.0f;
         r3d::Vector3 m_extent;
 
         uint64_t m_groupId;
@@ -229,17 +265,18 @@ namespace CBP
             m_velocity.z /= len;
             m_velocity *= 1000.0f;
         }
+
     public:
         SimComponent(
             Actor* a_actor,
             NiAVObject* m_obj,
             const std::string& a_configBoneName,
             const configComponent_t& config,
+            const configNode_t& a_nodeConf,
             uint64_t a_parentId,
             uint64_t a_groupId,
             bool a_collisions,
-            bool a_movement,
-            const configNode_t& a_nodeConf
+            bool a_movement
         );
 
         SimComponent() = delete;
@@ -251,9 +288,9 @@ namespace CBP
         void UpdateConfig(
             Actor* a_actor,
             const configComponent_t& a_physConf,
+            const configNode_t& a_nodeConf,
             bool a_collisions,
-            bool a_movement,
-            const configNode_t& a_nodeConf) noexcept;
+            bool a_movement) noexcept;
 
         void UpdateMovement(float timeStep);
         void UpdateVelocity();
@@ -319,9 +356,9 @@ namespace CBP
             return m_collisionData.IsActive();
         }
 
-        [[nodiscard]] inline bool HasCollision() const {
+        /*[[nodiscard]] inline bool HasCollision() const {
             return m_collisions;
-        }
+        }*/
 
         [[nodiscard]] inline const auto& GetPos() const {
             return m_obj->m_worldTransform.pos;

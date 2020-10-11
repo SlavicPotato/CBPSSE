@@ -8,7 +8,7 @@ Modified version of [CBP Physics for Skyrim SE](https://github.com/cbpphysics/CB
 * Version independent (requires [Address Library for SKSE Plugins](https://www.nexusmods.com/skyrimspecialedition/mods/32444))
 * Simulate any valid node
 * Per actor/race physics and node configuration via [in-game UI](https://i.imgur.com/Vf1kF8L.jpg) (ImGUI)
-* Collisions (reactphysics3d)
+* Collisions (currently implements sphere, capsule and box collider shapes)
 * Renderer to aid in configuring collision bodies
 * Physics configuration overrides for individual armors
 
@@ -19,3 +19,4 @@ Modified version of [CBP Physics for Skyrim SE](https://github.com/cbpphysics/CB
 * [reactphysics3d](https://github.com/DanielChappuis/reactphysics3d)
 * [DirectXTK](https://github.com/Microsoft/DirectXTK)
 * [boost](https://github.com/boostorg/boost)
+* [assimp (OBJ format only)](https://github.com/assimp/assimp)
