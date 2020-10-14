@@ -16,7 +16,7 @@ Modified version of [CBP Physics for Skyrim SE](https://github.com/cbpphysics/CB
 * [sse-build-resources](https://github.com/SlavicPotato/sse-build-resources)
 * [ImGui](https://github.com/ocornut/imgui)
 * [JsonCpp](https://github.com/open-source-parsers/jsoncpp)
-* [reactphysics3d](https://github.com/DanielChappuis/reactphysics3d)
+* [reactphysics3d](https://github.com/SlavicPotato/reactphysics3d/tree/patch-1)
 * [DirectXTK](https://github.com/Microsoft/DirectXTK)
 * [boost](https://github.com/boostorg/boost)
 * [assimp (OBJ format only)](https://github.com/assimp/assimp)
