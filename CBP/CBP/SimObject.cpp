@@ -159,7 +159,7 @@ namespace CBP
         const NiPoint3& a_force)
     {
         for (auto& p : m_things)
-            if (boost::iequals(p.second.GetConfigGroupName(), a_component))
+            if (_stricmp(p.second.GetConfigGroupName().c_str(), a_component.c_str()) == 0)
                 p.second.ApplyForce(a_steps, a_force);
     }
 

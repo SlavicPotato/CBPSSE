@@ -2,7 +2,7 @@
 
 #include <boost/container_hash/hash.hpp>
 
-#define ERRMSG_HASH_NOT_IMPL "Not implmented"
+#define ERRMSG_HASH_NOT_IMPL "Not implemented"
 
 namespace hash
 {

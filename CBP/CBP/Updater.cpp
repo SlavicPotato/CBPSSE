@@ -90,7 +90,7 @@ namespace CBP
 
     uint32_t ControllerTask::UpdatePhase2Collisions(float a_timeStep, float a_timeTick, float a_maxTime)
     {
-        uint32_t c = 1;
+        uint32_t c(1);
 
         auto world = DCBP::GetWorld();
 
@@ -109,9 +109,7 @@ namespace CBP
         }
 
         UpdateActorsPhase2(a_timeStep);
-
         ICollision::SetTimeStep(a_timeStep);
-
         world->setIsDebugRenderingEnabled(debugRendererEnabled);
         world->update(a_timeStep);
 
@@ -126,56 +124,42 @@ namespace CBP
     }
 #endif
 
-    void ControllerTask::PhysicsTick(Game::BSMain* a_main)
+    void ControllerTask::ComputeDebugRendererPrimitives()
     {
-        if (a_main->freezeTime)
-            return;
+        auto world = DCBP::GetWorld();
+        auto& dr = world->getDebugRenderer();
 
-        auto mm = MenuManager::GetSingleton();
-        if (mm && mm->InPausedMenu())
-            return;
+        dr.computeDebugRenderingPrimitives(*world);
+    }
 
-        float interval = *Game::frameTimerSlow;
-
-        if (interval <= _EPSILON)
-            return;
-
-        DCBP::Lock();
-
-        auto& globalConf = IConfig::GetGlobal();
-
-        if (globalConf.profiling.enableProfiling)
-            m_profiler.Begin();
-
-        auto daz = _MM_GET_DENORMALS_ZERO_MODE();
-        auto ftz = _MM_GET_FLUSH_ZERO_MODE();
-
-        _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
-        _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
-
-        if (globalConf.debugRenderer.enabled &&
-            DCBP::GetDriverConfig().debug_renderer)
+    uint32_t ControllerTask::UpdatePhysics(Game::BSMain* a_main, float a_interval)
+    {
+        if (a_main->freezeTime ||
+            Game::InPausedMenu() ||
+            a_interval <= _EPSILON)
         {
-            UpdateDebugRenderer();
+            return 0;
         }
 
-        m_averageInterval = m_averageInterval * 0.875f + interval * 0.125f;
-        auto timeTick = std::min(m_averageInterval, globalConf.phys.timeTick);
+        const auto& globalConfig = IConfig::GetGlobal();
 
-        m_timeAccum += interval;
+        m_averageInterval = m_averageInterval * 0.875f + a_interval * 0.125f;
+        auto timeTick = std::min(m_averageInterval, globalConfig.phys.timeTick);
+
+        m_timeAccum += a_interval;
 
         uint32_t steps;
 
         if (m_timeAccum > timeTick * 0.25f)
         {
             float timeStep = std::min(m_timeAccum,
-                timeTick * globalConf.phys.maxSubSteps);
+                timeTick * globalConfig.phys.maxSubSteps);
 
             float maxTime = timeTick * 1.25f;
 
             UpdatePhase1();
 
-            if (globalConf.phys.collisions)
+            if (globalConfig.phys.collisions)
                 steps = UpdatePhase2Collisions(timeStep, timeTick, maxTime);
             else
                 steps = UpdatePhase2(timeStep, timeTick, maxTime);
@@ -189,11 +173,45 @@ namespace CBP
         else
             steps = 0;
 
+        return steps;
+    }
+
+    void ControllerTask::PhysicsTick(Game::BSMain* a_main)
+    {
+        DCBP::Lock();
+
+        const auto& globalConfig = IConfig::GetGlobal();
+
+        if (globalConfig.profiling.enableProfiling)
+            m_profiler.Begin();
+
+        bool debugRendererEnabled = 
+            globalConfig.debugRenderer.enabled &&
+            DCBP::GetDriverConfig().debug_renderer;
+
+        if (debugRendererEnabled)
+            DCBP::GetWorld()->getDebugRenderer().reset();
+
+        auto daz = _MM_GET_DENORMALS_ZERO_MODE();
+        auto ftz = _MM_GET_FLUSH_ZERO_MODE();
+
+        _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
+        _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
+
+        float interval = *Game::frameTimerSlow;
+
+        auto steps = UpdatePhysics(a_main, interval);
+
         _MM_SET_DENORMALS_ZERO_MODE(daz);
         _MM_SET_FLUSH_ZERO_MODE(ftz);
 
-        if (globalConf.profiling.enableProfiling)
+        if (globalConfig.profiling.enableProfiling)
             m_profiler.End(static_cast<uint32_t>(m_actors.size()), steps, interval);
+
+        if (debugRendererEnabled) {
+            ComputeDebugRendererPrimitives();
+            UpdateDebugRenderer();
+        }
 
         DCBP::Unlock();
     }
@@ -401,17 +419,10 @@ namespace CBP
         }
     }
 
-    void ControllerTask::ClearActors(bool a_reset)
+    void ControllerTask::ClearActors()
     {
         for (auto& e : m_actors)
         {
-            if (a_reset)
-            {
-                auto actor = Game::ResolveObject<Actor>(e.first, Actor::kTypeID);
-                if (ActorValid(actor))
-                    e.second.Reset();
-            }
-
 #ifdef _CBP_SHOW_STATS
             auto actor = Game::ResolveObject<Actor>(e.first, Actor::kTypeID);
             Debug("CLR: Removing %llX (%s)", e.first, actor ? CALL_MEMBER_FN(actor, GetReferenceName)() : "nullptr");
@@ -426,22 +437,12 @@ namespace CBP
         IConfig::ClearArmorOverrides();
     }
 
-    void ControllerTask::Clear()
-    {
-        for (auto& e : m_actors)
-            e.second.Release();
-
-        m_actors.clear();
-
-        IConfig::ClearArmorOverrides();
-    }
-
     void ControllerTask::Reset()
     {
         handleSet_t handles;
 
-        for (const auto& e : m_actors)
-            handles.emplace(e.first);
+        /*for (const auto& e : m_actors)
+            handles.emplace(e.first);*/
 
         GatherActors(handles);
 
@@ -618,7 +619,7 @@ namespace CBP
 
             for (const auto& ea : *entry)
             {
-                auto &r = a_out.second.emplace(ea.first, ea.second);
+                auto& r = a_out.second.emplace(ea.first, ea.second);
                 for (const auto& eb : ea.second)
                     r.first->second.insert_or_assign(eb.first, eb.second);
             }
@@ -696,9 +697,9 @@ namespace CBP
             case ControllerInstruction::Action::WeightUpdateAll:
                 WeightUpdateAll();
                 break;
-            /*case ControllerInstruction::Action::AddArmorOverride:
-                AddArmorOverride(task.m_handle, task.m_formid);
-                break;*/
+                /*case ControllerInstruction::Action::AddArmorOverride:
+                    AddArmorOverride(task.m_handle, task.m_formid);
+                    break;*/
             case ControllerInstruction::Action::UpdateArmorOverride:
                 UpdateArmorOverride(task.m_handle);
                 break;

@@ -61,6 +61,9 @@ namespace CBP
         __forceinline void UpdatePhase1();
         __forceinline void UpdateActorsPhase2(float a_timeStep);
 
+        void ComputeDebugRendererPrimitives();
+        __forceinline uint32_t UpdatePhysics(Game::BSMain* a_main, float a_interval);
+
 #ifdef _CBP_ENABLE_DEBUG
         __forceinline void UpdatePhase3();
 #endif
@@ -87,7 +90,7 @@ namespace CBP
     public:
         void PhysicsTick(Game::BSMain* a_main);
 
-        void ClearActors(bool a_reset = true);
+        void ClearActors();
         void ApplyForce(Game::ObjectHandle a_handle, uint32_t a_steps, const std::string& a_component, const NiPoint3& a_force);
 
         void UpdateDebugRenderer();
@@ -113,8 +116,6 @@ namespace CBP
         inline void SetMarkedActor(Game::ObjectHandle a_handle) {
             m_markedActor = a_handle;
         }
-
-        void Clear();
 
         FN_NAMEPROC("UpdateTask")
     private:

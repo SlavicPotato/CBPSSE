@@ -105,4 +105,18 @@ namespace Game
 
     static_assert(offsetof(BSMain, quitGame) == 0x10);
     static_assert(sizeof(BSMain) == 0x18);
+
+
+    class Unk00
+    {
+    public:
+        static Unk00* GetSingleton();
+
+        void SetGlobalTimeMultiplier(float a_scale, bool a_unk);
+
+    private:
+        MEMBER_FN_PREFIX(Unk00);
+        DEFINE_MEMBER_FN(_SetGlobalTimeMultiplier, void, 0xC078B0, float a_scale, bool a_unk);
+    };
+
 }

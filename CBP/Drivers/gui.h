@@ -8,6 +8,39 @@ namespace CBP
         float height;
     };
 
+    class UIRenderTaskBase
+    {
+        friend class DUI;
+
+    public:
+        virtual bool Run() = 0;
+
+        inline void SetLock(bool a_switch) {
+            m_options.lock = a_switch;
+        }
+
+        inline void SetFreeze(bool a_switch) {
+            m_options.freeze = a_switch;
+        }
+
+        inline bool GetFreeze() {
+            return m_options.freeze;
+        }
+
+    private:
+        struct
+        {
+            bool lock = true;
+            bool freeze = false;
+        } m_options;
+
+        struct
+        {
+            bool holdsLock;
+            bool holdsFreeze;
+        } m_state;
+    };
+
     class DUI :
         ILog
     {

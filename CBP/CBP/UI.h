@@ -500,6 +500,7 @@ namespace CBP
 
         virtual ConfigClass GetActorClass(Game::ObjectHandle a_handle) const = 0;
         [[nodiscard]] virtual configGlobalActor_t& GetActorConfig() const = 0;
+        [[nodiscard]] virtual bool HasArmorOverride(Game::ObjectHandle a_handle) const = 0;
     private:
         virtual void ListUpdate();
         virtual void ListFilterSelected(listValue_t*& a_entry, const char*& a_curSelName);
@@ -569,6 +570,7 @@ namespace CBP
 
         [[nodiscard]] virtual ConfigClass GetActorClass(Game::ObjectHandle a_handle) const;
         [[nodiscard]] virtual configGlobalActor_t& GetActorConfig() const;
+        [[nodiscard]] virtual bool HasArmorOverride(Game::ObjectHandle a_handle) const;
     };
 
     typedef std::pair<const std::string, configComponents_t> raceEntryPhysConf_t;
@@ -1032,6 +1034,7 @@ namespace CBP
 
         [[nodiscard]] virtual ConfigClass GetActorClass(Game::ObjectHandle a_handle) const;
         [[nodiscard]] virtual configGlobalActor_t& GetActorConfig() const;
+        [[nodiscard]] virtual bool HasArmorOverride(Game::ObjectHandle a_handle) const;
 
         uint32_t m_activeLoadInstance;
         long long m_tsNoActors;

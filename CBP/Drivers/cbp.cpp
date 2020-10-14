@@ -477,7 +477,7 @@ namespace CBP
     {
         IScopedCriticalSection _(GetLock());
 
-        m_Instance.m_updateTask.Clear();
+        m_Instance.m_updateTask.ClearActors();
         SavePending();
 
         if (m_Instance.m_renderer.get())

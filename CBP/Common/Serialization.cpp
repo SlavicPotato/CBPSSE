@@ -29,6 +29,8 @@ namespace Serialization
         }
     }
 
+    static const fs::path s_tmpExt(".tmp");
+
     void WriteJsonData(const fs::path& a_path, const Json::Value& a_root)
     {
         auto base = a_path.parent_path();
@@ -41,7 +43,7 @@ namespace Serialization
             throw std::exception("Root path is not a directory");
 
         auto tmpPath = a_path;
-        tmpPath += fs::path(".tmp");
+        tmpPath += s_tmpExt;
 
         std::ofstream ofs;
         ofs.open(tmpPath, std::ofstream::out | std::ofstream::binary | std::ofstream::trunc);
@@ -55,8 +57,6 @@ namespace Serialization
             ofs.close();
 
             fs::rename(tmpPath, a_path);
-
-            SafeCleanup(tmpPath);
         }
         catch (const std::exception& e)
         {

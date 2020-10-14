@@ -1205,6 +1205,8 @@ namespace CBP
 
                 std::string label(e.second.first);
 
+                bool hasArmorOverride;
+
                 if (e.first != Game::ObjectHandle(0))
                 {
                     switch (GetActorClass(e.first))
@@ -1219,13 +1221,22 @@ namespace CBP
                         label += " [T]";
                         break;
                     }
+
+                    hasArmorOverride = HasArmorOverride(e.first);
+                    if (hasArmorOverride)
+                        ImGui::PushStyleColor(ImGuiCol_Text, s_colorWarning);
                 }
+                else
+                    hasArmorOverride = false;
 
                 if (ImGui::Selectable(label.c_str(), selected)) {
                     ListSetCurrentItem(e.first);
                     a_entry = std::addressof(e);
                     a_curSelName = e.second.first.c_str();
                 }
+
+                if (hasArmorOverride)
+                    ImGui::PopStyleColor();
 
                 ImGui::PopID();
             }
@@ -1665,7 +1676,7 @@ namespace CBP
             m_racePhysicsEditor.Draw(&m_state.windows.race);
             if (m_racePhysicsEditor.GetChanged())
                 QueueListUpdateCurrent();
-    }
+        }
 
         if (m_state.windows.raceNode) {
             m_raceNodeEditor.Draw(&m_state.windows.raceNode);
@@ -1708,7 +1719,7 @@ namespace CBP
         }
 
         m_popup.Run(globalConfig.ui.fontScale);
-}
+    }
 
     void UIOptions::Draw(bool* a_active)
     {
@@ -1811,8 +1822,7 @@ namespace CBP
                 {
                     ImGui::Spacing();
 
-                    if (Checkbox("Enable", &globalConfig.debugRenderer.enabled))
-                        DCBP::UpdateDebugRendererState();
+                    Checkbox("Enable", &globalConfig.debugRenderer.enabled);
 
                     Checkbox("Wireframe", &globalConfig.debugRenderer.wireframe);
 
@@ -2229,6 +2239,11 @@ namespace CBP
         return IConfig::GetGlobal().ui.actorNode;
     }
 
+    bool UIActorEditorNode::HasArmorOverride(Game::ObjectHandle a_handle) const
+    {
+        return false;
+    }
+
     UIContext::UISimComponentActor::UISimComponentActor(UIContext& a_parent) :
         UISimComponent<Game::ObjectHandle, UIEditorID::kMainEditor>(),
         m_ctxParent(a_parent)
@@ -2634,6 +2649,11 @@ namespace CBP
         return IConfig::GetGlobal().ui.actorPhysics;
     }
 
+    bool UIContext::HasArmorOverride(Game::ObjectHandle a_handle) const
+    {
+        return IConfig::HasArmorOverride(a_handle);
+    }
+
     void UIContext::ApplyForce(
         listValue_t* a_data,
         uint32_t a_steps,
@@ -2864,7 +2884,7 @@ namespace CBP
 
         for (const auto& g : cg)
         {
-            if (g.first == a_entry.first)
+            if (_stricmp(g.first.c_str(), a_entry.first.c_str()) == 0)
                 continue;
 
             nodeList.clear();
@@ -2970,8 +2990,8 @@ namespace CBP
 
         ImGui::PushStyleColor(ImGuiCol_Text, s_colorWarning);
 
-        _snprintf_s(m_scBuffer1, _TRUNCATE, "%s [%u|%.3f]", "%.3f",
-            it->second.first, GetActualSliderValue(it->second, *a_pValue));
+        _snprintf_s(m_scBuffer1, _TRUNCATE, "%s [%c|%.3f]", "%.3f",
+            it->second.first == 1 ? 'M' : 'A', GetActualSliderValue(it->second, *a_pValue));
 
         bool res;
 
@@ -3782,18 +3802,18 @@ namespace CBP
 
                         ImGui::Columns(1);
                         ImGui::Separator();
-            }
+                    }
 
                     if (!m_sized)
                         m_sized = true;
-        }
-    }
+                }
+            }
         }
 
         ImGui::End();
 
         ImGui::PopID();
-}
+    }
 #endif
 
     UIFileSelector::SelectedFile::SelectedFile() :

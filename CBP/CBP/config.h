@@ -71,6 +71,7 @@ namespace CBP
         struct
         {
             bool lockControls = true;
+            bool freezeTime = false;
 
             configGlobalActor_t actorPhysics;
             configGlobalActor_t actorNode;

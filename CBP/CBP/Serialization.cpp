@@ -354,8 +354,8 @@ namespace CBP
             {
                 const auto& phys = root["physics"];
 
-                globalConfig.phys.timeTick = phys.get("timeTick", 1.0f / 60.0f).asFloat();
-                globalConfig.phys.maxSubSteps = phys.get("maxSubSteps", 5.0f).asFloat();
+                globalConfig.phys.timeTick = std::max(phys.get("timeTick", 1.0f / 60.0f).asFloat(), 1.0f);
+                globalConfig.phys.maxSubSteps = std::max(phys.get("maxSubSteps", 5.0f).asFloat(), 1.0f);
                 globalConfig.phys.collisions = phys.get("collisions", true).asBool();
             }
 
@@ -364,6 +364,7 @@ namespace CBP
                 const auto& ui = root["ui"];
 
                 globalConfig.ui.lockControls = ui.get("lockControls", true).asBool();
+                globalConfig.ui.freezeTime = ui.get("freezeTime", false).asBool();
                 globalConfig.ui.actorPhysics.showAll = ui.get("showAllActors", false).asBool();
                 globalConfig.ui.actorNode.showAll = ui.get("nodeShowAllActors", false).asBool();
                 globalConfig.ui.actor.clampValues = ui.get("clampValuesMain", true).asBool();
@@ -540,6 +541,7 @@ namespace CBP
             auto& ui = root["ui"];
 
             ui["lockControls"] = globalConfig.ui.lockControls;
+            ui["freezeTime"] = globalConfig.ui.freezeTime;
             ui["showAllActors"] = globalConfig.ui.actorPhysics.showAll;
             ui["nodeShowAllActors"] = globalConfig.ui.actorNode.showAll;
             ui["clampValuesMain"] = globalConfig.ui.actor.clampValues;

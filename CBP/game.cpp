@@ -117,4 +117,17 @@ namespace Game
     {
         return *s_BSMain;
     }
+
+    static Unk00* s_Unk00 = IAL::Addr<Unk00*>(523657);
+
+    Unk00* Unk00::GetSingleton()
+    {
+        return s_Unk00;
+    }
+
+    void Unk00::SetGlobalTimeMultiplier(float a_scale, bool a_unk)
+    {
+        CALL_MEMBER_FN(this, _SetGlobalTimeMultiplier)(a_scale, a_unk);
+    }
+
 }

@@ -317,8 +317,8 @@ namespace CBP
     {
         auto& io = ImGui::GetIO();
 
-        memset(&io.KeysDown, 0x0, sizeof(io.KeysDown));
-        memset(&io.MouseDown, 0x0, sizeof(io.MouseDown));
+        memset(io.KeysDown, 0x0, sizeof(io.KeysDown));
+        memset(io.MouseDown, 0x0, sizeof(io.MouseDown));
 
         io.MouseWheel = 0.0f;
         io.KeyCtrl = false;

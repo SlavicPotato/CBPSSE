@@ -57,7 +57,7 @@ namespace CBP
 
             tmp.m_vertices = std::make_shared<MeshPoint[]>(numVertices);
 
-            for (size_t i = 0; i < numVertices; i++)
+            for (unsigned int i = 0; i < numVertices; i++)
             {
                 auto& e = mesh->mVertices[i];
 
@@ -91,7 +91,7 @@ namespace CBP
 
                 face++;
 
-                for (size_t j = 0; j < e.mNumIndices; j++)
+                for (unsigned int j = 0; j < e.mNumIndices; j++)
                 {
                     tmp.m_indices[n] = static_cast<int>(e.mIndices[j]);
                     n++;
@@ -105,13 +105,14 @@ namespace CBP
                 r3d::PolygonVertexArray::VertexDataType::VERTEX_FLOAT_TYPE,
                 r3d::PolygonVertexArray::IndexDataType::INDEX_INTEGER_TYPE);
 
-            tmp.numVertices = numVertices;
-            tmp.numIndices = numIndices;
-            tmp.numFaces = numFaces;
-
-            Debug("%s: vertices: %u, indices: %u, faces: %u", m_name.c_str(), numVertices, numIndices, numFaces);
+            Debug("%s: vertices: %u, indices: %u, faces: %u", 
+                m_name.c_str(), numVertices, numIndices, numFaces);
 
             m_data = std::move(tmp);
+
+            m_data.numVertices = numVertices;
+            m_data.numIndices = numIndices;
+            m_data.numFaces = numFaces;
 
             return true;
         }

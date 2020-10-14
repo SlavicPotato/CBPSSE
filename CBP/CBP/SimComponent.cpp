@@ -204,6 +204,8 @@ namespace CBP
             m_colliderData.m_vertices.release();
             m_colliderData.m_polyVertexArray.release();
 
+            m_currentConvexShape.clear();
+
             break;
         }
 
@@ -528,7 +530,7 @@ namespace CBP
             m_obj->m_localTransform.pos.y = m_initialTransform.pos.y + ldiff.y * m_conf.phys.linear[1];
             m_obj->m_localTransform.pos.z = m_initialTransform.pos.z + ldiff.z * m_conf.phys.linear[2];
 
-            m_obj->m_localTransform.pos += invRot * m_npGravityCorrection;
+            m_obj->m_localTransform.pos += (invRot * m_npGravityCorrection) * m_obj->m_localTransform.scale;
 
             /*if (m_formid == 0x14 && std::string(m_obj->m_name) == "NPC L Breast")
                 gLog.Debug(">> %f %f %f", dir.x, dir.y, dir.z);*/
