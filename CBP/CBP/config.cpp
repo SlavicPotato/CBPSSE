@@ -25,6 +25,8 @@ namespace CBP
     configNodes_t IConfig::templateBaseNodeHolder;
     configComponents_t IConfig::templateBasePhysicsHolder;
 
+    configComponent_t IConfig::defaultPhysicsConfig;
+
     IConfig::IConfigLog IConfig::log;
 
     static const nodeMap_t defaultNodeMap
@@ -496,7 +498,7 @@ namespace CBP
         Game::ObjectHandle a_handle,
         const std::string& a_sk)
     {
-        auto entry = GetArmorOverride(a_handle);
+        auto entry = GetArmorOverrides(a_handle);
         if (!entry)
             return nullptr;
 
@@ -561,7 +563,7 @@ namespace CBP
 
         return n;
     }
-    
+
     size_t IConfig::PruneActorPhysics(Game::ObjectHandle a_handle)
     {
         size_t n(0);

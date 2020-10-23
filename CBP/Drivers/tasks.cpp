@@ -3,6 +3,7 @@
 namespace CBP
 {
     std::vector<TaskDelegateFixed*> DTasks::s_tasks_fixed;
+    TaskQueue DTasks::s_tasks;
 
     typedef void (*mainInitHook_t)(void);
     typedef void(*BSTaskPoolProc_t)(BSTaskPool*);
@@ -22,6 +23,8 @@ namespace CBP
 
     void DTasks::RunTasks()
     {
+        s_tasks.ProcessTasks();
+
         for (auto cmd : s_tasks_fixed)
             cmd->Run();
     }
@@ -59,6 +62,6 @@ namespace CBP
 
     void DTasks::AddTask(TaskDelegate* cmd)
     {
-        SKSE::g_taskInterface->AddTask(cmd);
+        s_tasks.AddTask(cmd);
     }
 }

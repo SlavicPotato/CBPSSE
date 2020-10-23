@@ -3,18 +3,38 @@
 namespace CBP
 {
     const colliderDescMap_t configComponent_t::colDescMap({
-        { ColliderShape::Sphere, {
-            "Sphere"
+        { ColliderShapeType::Sphere, {
+            "Sphere",
+            "Implicit sphere shape."
         }},
-        { ColliderShape::Capsule, {
-            "Capsule"
+        { ColliderShapeType::Capsule, {
+            "Capsule",
+            "Capsule shape, aligned around the Y axis."
         }},
-        { ColliderShape::Box, {
-            "Box"
+        { ColliderShapeType::Box, {
+            "Box",
+            "Box shape primitive."
         }},
-        { ColliderShape::Convex, {
-            "Convex"
+        { ColliderShapeType::Cone, {
+            "Cone",
+            "Cone shape primitive, aligned with the Y axis."
         }},
+        { ColliderShapeType::Cylinder, {
+            "Cylinder",
+            "Cylinder shape primitive. Central axis is Y aligned."
+        }},
+        { ColliderShapeType::Tetrahedron, {
+            "Tetrahedron",
+            "Tetrahedron shape, simple convex mesh with four vertices."
+        }},
+        { ColliderShapeType::ConvexHull, {
+            "Convex Hull",
+            "Creates a convex hull based on the supplied mesh. Relatively fast collision detection using GJK and EPA. Prefer this over mesh whenever possible."
+        }},
+        { ColliderShapeType::Mesh, {
+            "Mesh",
+            "Concave/convex shapes. Uses GIMPACT algorithm. Very expensive, consider using convex hull instead."
+        }}
         }
     );
 
@@ -145,6 +165,13 @@ namespace CBP
             "Object mass",
             "Mass"
         }},
+        {"mv", {
+            offsetof(configComponent_t, phys.maxVelocity),
+            "",
+            0.0f, 10000.0f,
+            "Maximum object velocity",
+            "Max velocity"
+        }},
         {"gb", {
             offsetof(configComponent_t, phys.gravityBias),
             "",
@@ -172,9 +199,9 @@ namespace CBP
             offsetof(configComponent_t, phys.colSphereRadMin),
             "cr+",
             0.001f, 100.0,
-            "Collider radius (weigth 0)",
+            "Collider object radius (weigth 0)",
             "Radius min",
-            DescUIMarker::BeginGroup | DescUIMarker::ColliderSphere | DescUIMarker::ColliderCapsule,
+            DescUIMarker::BeginGroup | DescUIMarker::ColliderSphere | DescUIMarker::ColliderCapsule | DescUIMarker::ColliderCone | DescUIMarker::ColliderCylinder,
             DescUIGroupType::Collisions,
             "Collisions"
         }},
@@ -182,31 +209,31 @@ namespace CBP
             offsetof(configComponent_t, phys.colSphereRadMax),
             "cr-",
             0.001f, 100.0f,
-            "Collider radius (weight 100)",
+            "Collider object radius (weight 100)",
             "Radius max",
-            DescUIMarker::ColliderSphere | DescUIMarker::ColliderCapsule
+            DescUIMarker::ColliderSphere | DescUIMarker::ColliderCapsule | DescUIMarker::ColliderCone | DescUIMarker::ColliderCylinder
         }},
         {"ch-", {
             offsetof(configComponent_t, phys.colHeightMin),
             "ch+",
             0.001f, 250.0f,
-            "Capsule height (weight 0)",
-            "Capsule height min",
-            DescUIMarker::ColliderCapsule
+            "Collider object height (weight 0)",
+            "Height min",
+            DescUIMarker::ColliderCapsule | DescUIMarker::ColliderCone | DescUIMarker::ColliderCylinder
         }},
         {"ch+", {
             offsetof(configComponent_t, phys.colHeightMax),
             "ch-",
             0.001f, 250.0f,
-            "Capsule height (weight 100)",
-            "Capsule height max",
-            DescUIMarker::ColliderCapsule
+            "Collider object height (weight 100)",
+            "Height max",
+            DescUIMarker::ColliderCapsule | DescUIMarker::ColliderCone | DescUIMarker::ColliderCylinder
         }},
         {"cox-", {
             offsetof(configComponent_t, phys.offsetMin[0]),
             "cox+",
             -50.0f, 50.0f,
-            "Collider body offset (X, Y, Z, weight 0)",
+            "Collider object offset (X, Y, Z, weight 0)",
             "Offset min",
             DescUIMarker::Float3
         }},
@@ -252,7 +279,7 @@ namespace CBP
             0.0f, 50.0f,
             "Extent (X, Y, Z, weight 0)",
             "Extent min",
-            DescUIMarker::Float3 | DescUIMarker::ColliderBox | DescUIMarker::ColliderConvex
+            DescUIMarker::Float3 | DescUIMarker::ColliderBox | DescUIMarker::ColliderMesh | DescUIMarker::ColliderTetrahedron | DescUIMarker::ColliderConvexHull
         }},
         {"ey-", {
             offsetof(configComponent_t, phys.colExtentMin[1]),
@@ -260,7 +287,7 @@ namespace CBP
             0.0f, 50.0f,
             "",
             "",
-            DescUIMarker::ColliderBox | DescUIMarker::ColliderConvex
+            DescUIMarker::ColliderBox | DescUIMarker::ColliderMesh |  DescUIMarker::ColliderTetrahedron | DescUIMarker::ColliderConvexHull
         }},
         {"ez-", {
             offsetof(configComponent_t, phys.colExtentMin[2]),
@@ -268,7 +295,7 @@ namespace CBP
             0.0f, 50.0f,
             "",
             "",
-            DescUIMarker::ColliderBox | DescUIMarker::ColliderConvex
+            DescUIMarker::ColliderBox | DescUIMarker::ColliderMesh | DescUIMarker::ColliderTetrahedron | DescUIMarker::ColliderConvexHull
         }},
         {"ex+", {
             offsetof(configComponent_t, phys.colExtentMax[0]),
@@ -276,7 +303,7 @@ namespace CBP
             0.0f, 50.0f,
             "Extent (X, Y, Z, weight 100)",
             "Extent max",
-            DescUIMarker::Float3 | DescUIMarker::ColliderBox | DescUIMarker::ColliderConvex
+            DescUIMarker::Float3 | DescUIMarker::ColliderBox | DescUIMarker::ColliderMesh | DescUIMarker::ColliderTetrahedron | DescUIMarker::ColliderConvexHull
         }},
         {"ey+", {
             offsetof(configComponent_t, phys.colExtentMax[1]),
@@ -284,7 +311,7 @@ namespace CBP
             0.0f, 50.0f,
             "",
             "",
-            DescUIMarker::ColliderBox | DescUIMarker::ColliderConvex
+            DescUIMarker::ColliderBox | DescUIMarker::ColliderMesh | DescUIMarker::ColliderTetrahedron | DescUIMarker::ColliderConvexHull
         }},
         {"ez+", {
             offsetof(configComponent_t, phys.colExtentMax[2]),
@@ -292,7 +319,7 @@ namespace CBP
             0.0f, 50.0f,
             "",
             "",
-            DescUIMarker::ColliderBox | DescUIMarker::ColliderConvex
+            DescUIMarker::ColliderBox | DescUIMarker::ColliderMesh | DescUIMarker::ColliderTetrahedron | DescUIMarker::ColliderConvexHull
         }},
         {"crx", {
             offsetof(configComponent_t, phys.colRot[0]),
@@ -300,7 +327,7 @@ namespace CBP
             -360.0f, 360.0f,
             "Collider rotation in degrees around the X, Y and Z axes respectively.",
             "Collider rotation",
-            DescUIMarker::ColliderCapsule | DescUIMarker::ColliderBox | DescUIMarker::ColliderConvex | DescUIMarker::Float3
+            DescUIMarker::ColliderCapsule | DescUIMarker::ColliderBox | DescUIMarker::ColliderMesh | DescUIMarker::ColliderCylinder | DescUIMarker::ColliderTetrahedron | DescUIMarker::ColliderConvexHull | DescUIMarker::ColliderCone | DescUIMarker::Float3
         }},
         {"cry", {
             offsetof(configComponent_t, phys.colRot[1]),
@@ -308,7 +335,7 @@ namespace CBP
             -360.0f, 360.0f,
             "",
             "",
-            DescUIMarker::ColliderCapsule | DescUIMarker::ColliderBox | DescUIMarker::ColliderConvex | DescUIMarker::ColliderBox
+            DescUIMarker::ColliderCapsule | DescUIMarker::ColliderBox | DescUIMarker::ColliderMesh | DescUIMarker::ColliderCylinder | DescUIMarker::ColliderTetrahedron | DescUIMarker::ColliderConvexHull | DescUIMarker::ColliderCone
         }},
         {"crz", {
             offsetof(configComponent_t, phys.colRot[2]),
@@ -316,7 +343,7 @@ namespace CBP
             -360.0f, 360.0f,
             "",
             "",
-            DescUIMarker::ColliderCapsule | DescUIMarker::ColliderBox | DescUIMarker::ColliderConvex | DescUIMarker::ColliderBox
+            DescUIMarker::ColliderCapsule | DescUIMarker::ColliderBox | DescUIMarker::ColliderMesh |DescUIMarker::ColliderCylinder | DescUIMarker::ColliderTetrahedron | DescUIMarker::ColliderConvexHull | DescUIMarker::ColliderCone
         }},
         {"cb", {
             offsetof(configComponent_t, phys.colRestitutionCoefficient),
@@ -329,10 +356,10 @@ namespace CBP
             offsetof(configComponent_t, phys.colPenMass),
             "",
             1.0f, 100.0f,
-            "Determines how deep objects will penetrate when colliding. ",
+            "Determines how deep objects will penetrate when colliding.",
             "Penetration mass"
         }},
-        {"ce", { // consider removing, probably useless
+        {"ce", {
             offsetof(configComponent_t, phys.colPenBiasFactor),
             "",
             0.0f, 5.0f,
@@ -340,6 +367,16 @@ namespace CBP
             "Pen. bias factor",
             DescUIMarker::EndGroup,
             DescUIGroupType::Collisions
+        }},
+        {"moc", {
+            offsetof(configComponent_t, phys.maxOffsetConstraint),
+            "",
+            1.0f, 50.0f,
+            "Determines how velocity is removed when exceeding the movement constraint (with lower values object stops more abruptly)",
+            "Max offset constraint",
+            DescUIMarker::BeginGroup | DescUIMarker::EndGroup | DescUIMarker::Collapsed,
+            DescUIGroupType::PhysicsExtra,
+            "Physics extra"
         }}
         }
     );

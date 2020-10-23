@@ -242,7 +242,7 @@ namespace CBP
         int a_handle,
         PhysicsProfile::base_type& a_data,
         const configGroupMap_t::value_type& a_cgdata,
-        nodeConfigList_t& a_nodeConfig) const
+        const nodeConfigList_t& a_nodeConfig) const
     {
         return a_data.contains(a_cgdata.first);
     }
@@ -259,7 +259,6 @@ namespace CBP
     {
         return IConfig::GetGlobal().ui.profile;
     }
-
 
     ProfileManager<NodeProfile>& UIProfileEditorNode::GetProfileManager() const
     {
@@ -758,7 +757,7 @@ namespace CBP
         auto& entry = raceConf[a_pair.first];
 
         entry.ex.colShape = a_pair.second.ex.colShape;
-        entry.ex.colConvexMesh = a_pair.second.ex.colConvexMesh;
+        entry.ex.colMesh = a_pair.second.ex.colMesh;
 
         MarkChanged();
         DCBP::UpdateConfigOnAllActors();
@@ -816,7 +815,7 @@ namespace CBP
         Game::FormID,
         configComponents_t&,
         const configGroupMap_t::value_type&,
-        nodeConfigList_t& a_nodeConfig) const
+        const nodeConfigList_t& a_nodeConfig) const
     {
         for (const auto& e : a_nodeConfig)
             if (e.second && e.second->Enabled())
@@ -826,7 +825,7 @@ namespace CBP
     }
 
     bool UIRaceEditorPhysics::HasMovement(
-        nodeConfigList_t& a_nodeConfig) const
+        const nodeConfigList_t& a_nodeConfig) const
     {
         for (const auto& e : a_nodeConfig)
             if (e.second && e.second->HasMovement())
@@ -836,7 +835,7 @@ namespace CBP
     }
 
     bool UIRaceEditorPhysics::HasCollisions(
-        nodeConfigList_t& a_nodeConfig) const
+        const nodeConfigList_t& a_nodeConfig) const
     {
         for (const auto& e : a_nodeConfig)
             if (e.second && e.second->HasCollisions())
@@ -1355,10 +1354,9 @@ namespace CBP
 
     void UIContext::DrawMenuBar(bool* a_active, const listValue_t* a_entry)
     {
-        auto& globalConfig = IConfig::GetGlobal();;
+        auto& globalConfig = IConfig::GetGlobal();
         auto& ws = m_state.windows;
 
-        m_state.menu.saveAllFailed = false;
         m_state.menu.saveToDefaultGlob = false;
         m_state.menu.openImportDialog = false;
         m_state.menu.openExportDialog = false;
@@ -1367,13 +1365,6 @@ namespace CBP
         {
             if (ImGui::BeginMenu("File"))
             {
-                if (ImGui::MenuItem("Save settings"))
-                    if (!DCBP::SaveAll()) {
-                        m_state.menu.saveAllFailed = true;
-                        m_state.lastException =
-                            DCBP::GetLastSerializationException();
-                    }
-
                 if (ImGui::BeginMenu("Misc"))
                 {
                     ImGui::SetWindowFontScale(globalConfig.ui.fontScale);
@@ -2304,7 +2295,7 @@ namespace CBP
         auto& entry = actorConf[a_pair.first];
 
         entry.ex.colShape = a_pair.second.ex.colShape;
-        entry.ex.colConvexMesh = a_pair.second.ex.colConvexMesh;
+        entry.ex.colMesh = a_pair.second.ex.colMesh;
 
         DCBP::DispatchActorTask(
             a_handle, ControllerInstruction::Action::UpdateConfig);
@@ -2381,7 +2372,7 @@ namespace CBP
         Game::ObjectHandle,
         configComponents_t&,
         const configGroupMap_t::value_type&,
-        nodeConfigList_t& a_nodeConfig) const
+        const nodeConfigList_t& a_nodeConfig) const
     {
         for (const auto& e : a_nodeConfig)
             if (e.second && e.second->Enabled())
@@ -2391,7 +2382,7 @@ namespace CBP
     }
 
     bool UIContext::UISimComponentActor::HasMovement(
-        nodeConfigList_t& a_nodeConfig) const
+        const nodeConfigList_t& a_nodeConfig) const
     {
         for (const auto& e : a_nodeConfig)
             if (e.second && e.second->HasMovement())
@@ -2401,7 +2392,7 @@ namespace CBP
     }
 
     bool UIContext::UISimComponentActor::HasCollisions(
-        nodeConfigList_t& a_nodeConfig) const
+        const nodeConfigList_t& a_nodeConfig) const
     {
         for (const auto& e : a_nodeConfig)
             if (e.second && e.second->HasCollisions())
@@ -2476,7 +2467,7 @@ namespace CBP
         auto& entry = conf[a_pair.first];
 
         entry.ex.colShape = a_pair.second.ex.colShape;
-        entry.ex.colConvexMesh = a_pair.second.ex.colConvexMesh;
+        entry.ex.colMesh = a_pair.second.ex.colMesh;
 
         DCBP::UpdateConfigOnAllActors();
     }
@@ -2540,7 +2531,7 @@ namespace CBP
         Game::ObjectHandle,
         configComponents_t&,
         const configGroupMap_t::value_type&,
-        nodeConfigList_t& a_nodeConfig) const
+        const nodeConfigList_t& a_nodeConfig) const
     {
         for (const auto& e : a_nodeConfig)
             if (e.second && e.second->Enabled())
@@ -2550,7 +2541,7 @@ namespace CBP
     }
 
     bool UIContext::UISimComponentGlobal::HasMovement(
-        nodeConfigList_t& a_nodeConfig) const
+        const nodeConfigList_t& a_nodeConfig) const
     {
         for (const auto& e : a_nodeConfig)
             if (e.second && e.second->HasMovement())
@@ -2560,7 +2551,7 @@ namespace CBP
     }
 
     bool UIContext::UISimComponentGlobal::HasCollisions(
-        nodeConfigList_t& a_nodeConfig) const
+        const nodeConfigList_t& a_nodeConfig) const
     {
         for (const auto& e : a_nodeConfig)
             if (e.second && e.second->HasCollisions())
@@ -3026,28 +3017,11 @@ namespace CBP
         configComponentsValue_t& a_pair,
         const componentValueDescMap_t::vec_value_type& a_entry)
     {
-        const char* desc;
-        switch (a_pair.second.ex.colShape)
-        {
-        case ColliderShape::Sphere:
-            desc = "Sphere";
-            break;
-        case ColliderShape::Capsule:
-            desc = "Capsule";
-            break;
-        case ColliderShape::Box:
-            desc = "Box";
-            break;
-        case ColliderShape::Convex:
-            desc = "Convex";
-            break;
-        default:
-            throw std::exception("Not implemented");
-        }
-
+        auto &desc = configComponent_t::colDescMap.at(a_pair.second.ex.colShape);
+        
         auto& pm = ProfileManagerCollider::GetSingleton();
 
-        if (ImGui::BeginCombo("Collider shape", desc))
+        if (ImGui::BeginCombo("Collider shape", desc.name.c_str()))
         {
             for (auto& e : configComponent_t::colDescMap)
             {
@@ -3059,17 +3033,17 @@ namespace CBP
                 {
                     a_pair.second.ex.colShape = e.first;
 
-                    if (e.first == ColliderShape::Convex)
+                    if (e.first == ColliderShapeType::Mesh)
                     {
-                        auto it = pm.Find(a_pair.second.ex.colConvexMesh);
+                        auto it = pm.Find(a_pair.second.ex.colMesh);
 
                         if (it == pm.End())
                         {
                             auto& data = pm.Data();
                             if (!data.empty())
-                                a_pair.second.ex.colConvexMesh = data.begin()->first;
+                                a_pair.second.ex.colMesh = data.begin()->first;
                             else
-                                a_pair.second.ex.colConvexMesh.clear();
+                                a_pair.second.ex.colMesh.clear();
                         }
                     }
 
@@ -3080,26 +3054,46 @@ namespace CBP
             ImGui::EndCombo();
         }
 
-        if (a_pair.second.ex.colShape == ColliderShape::Convex)
-        {
-            if (ImGui::BeginCombo("Mesh", a_pair.second.ex.colConvexMesh.c_str()))
-            {
-                auto& data = pm.Data();
+        HelpMarker(desc.desc);
 
+        if (a_pair.second.ex.colShape == ColliderShapeType::Mesh ||
+            a_pair.second.ex.colShape == ColliderShapeType::ConvexHull)
+        {
+            auto& data = pm.Data();
+
+            if (a_pair.second.ex.colMesh.empty() && !data.empty())
+            {
+                a_pair.second.ex.colMesh = data.begin()->first;
+                OnColliderShapeChange(a_handle, a_data, a_pair, a_entry);
+            }
+
+            if (ImGui::BeginCombo(desc.name.c_str(), a_pair.second.ex.colMesh.c_str()))
+            {
                 for (const auto& e : data)
                 {
-                    bool selected = a_pair.second.ex.colConvexMesh == e.first;
+                    bool selected = _stricmp(a_pair.second.ex.colMesh.c_str(), e.first.c_str()) == 0;
                     if (selected)
                         if (ImGui::IsWindowAppearing()) ImGui::SetScrollHereY();
 
                     if (ImGui::Selectable(e.first.c_str(), selected))
                     {
-                        a_pair.second.ex.colConvexMesh = e.first;
+                        a_pair.second.ex.colMesh = e.first;
                         OnColliderShapeChange(a_handle, a_data, a_pair, a_entry);
                     }
                 }
 
                 ImGui::EndCombo();
+            }
+
+            if (!a_pair.second.ex.colMesh.empty())
+            {
+                auto it = data.find(a_pair.second.ex.colMesh);
+                if (it != data.end())
+                {
+                    auto& pdesc = it->second.GetDescription();
+                    if (pdesc)
+                        HelpMarker(*pdesc);
+                }
             }
         }
     }
@@ -3183,7 +3177,8 @@ namespace CBP
 
             if ((e.second.marker & DescUIMarker::BeginGroup) == DescUIMarker::BeginGroup)
             {
-                if (e.second.groupType == DescUIGroupType::Physics)
+                if (e.second.groupType == DescUIGroupType::Physics || 
+                    e.second.groupType == DescUIGroupType::PhysicsExtra)
                     showCurrentGroup = HasMovement(a_nodeConfig);
                 else if (e.second.groupType == DescUIGroupType::Collisions)
                     showCurrentGroup = HasCollisions(a_nodeConfig);
@@ -3196,7 +3191,8 @@ namespace CBP
                 if (showCurrentGroup) {
                     openState = Tree(
                         GetCSSID(a_pair.first, e.second.groupName.c_str()),
-                        e.second.groupName.c_str());
+                        e.second.groupName.c_str(),
+                        (e.second.marker & DescUIMarker::Collapsed) != DescUIMarker::Collapsed);
 
                     if (openState && e.second.groupType == DescUIGroupType::Collisions)
                         DrawColliderShapeCombo(a_handle, a_data, a_pair, e);
@@ -3214,17 +3210,29 @@ namespace CBP
 
                     switch (a_pair.second.ex.colShape)
                     {
-                    case ColliderShape::Sphere:
+                    case ColliderShapeType::Sphere:
                         f |= (flags & DescUIMarker::ColliderSphere);
                         break;
-                    case ColliderShape::Capsule:
+                    case ColliderShapeType::Capsule:
                         f |= (flags & DescUIMarker::ColliderCapsule);
                         break;
-                    case ColliderShape::Box:
+                    case ColliderShapeType::Box:
                         f |= (flags & DescUIMarker::ColliderBox);
                         break;
-                    case ColliderShape::Convex:
-                        f |= (flags & DescUIMarker::ColliderConvex);
+                    case ColliderShapeType::Cone:
+                        f |= (flags & DescUIMarker::ColliderCone);
+                        break;
+                    case ColliderShapeType::Tetrahedron:
+                        f |= (flags & DescUIMarker::ColliderTetrahedron);
+                        break;
+                    case ColliderShapeType::Cylinder:
+                        f |= (flags & DescUIMarker::ColliderCylinder);
+                        break;
+                    case ColliderShapeType::Mesh:
+                        f |= (flags & DescUIMarker::ColliderMesh);
+                        break;
+                    case ColliderShapeType::ConvexHull:
+                        f |= (flags & DescUIMarker::ColliderConvexHull);
                         break;
                     }
 
@@ -3316,21 +3324,21 @@ namespace CBP
         T,
         configComponents_t&,
         const configGroupMap_t::value_type&,
-        nodeConfigList_t&) const
+        const nodeConfigList_t&) const
     {
         return true;
     }
 
     template <class T, UIEditorID ID>
     bool UISimComponent<T, ID>::HasMovement(
-        nodeConfigList_t&) const
+        const nodeConfigList_t&) const
     {
         return true;
     }
 
     template <class T, UIEditorID ID>
     bool UISimComponent<T, ID>::HasCollisions(
-        nodeConfigList_t&) const
+        const nodeConfigList_t&) const
     {
         return true;
     }
@@ -3342,28 +3350,6 @@ namespace CBP
     {
         return nullptr;
     }
-
-    /*template <class T>
-    void UINodeCommon<T>::DrawConfigGroupNodeItems(
-        T a_handle,
-        const std::string& a_confGroup,
-        configNodes_t& a_data
-    )
-    {
-        auto& cgMap = IConfig::GetConfigGroupMap();
-
-        auto it = cgMap.find(a_confGroup);
-        if (it == cgMap.end())
-            return;
-
-        for (const auto& e : it->second)
-        {
-            if (ImGui::CollapsingHeader(e.c_str()))
-            {
-                DrawNodeItem(a_handle, e, a_data);
-            }
-        }
-    }*/
 
     template <class T>
     void UINodeCommon<T>::DrawNodeItem(
@@ -3737,14 +3723,7 @@ namespace CBP
         auto& io = ImGui::GetIO();
         const auto& globalConfig = IConfig::GetGlobalConfig();;
 
-        ImVec2 center(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f);
-        ImGui::SetNextWindowPos(center, ImGuiCond_FirstUseEver, ImVec2(0.5f, 0.5f));
-
-        ImVec2 sizeMin(min(300.0f, io.DisplaySize.x - 40.0f), min(100.0f, io.DisplaySize.y - 40.0f));
-        ImVec2 sizeMax(min(1920.0f, io.DisplaySize.x), std::max(io.DisplaySize.y - 40.0f, sizeMin.y));
-
-        ImGui::SetNextWindowSizeConstraints(sizeMin, sizeMax);
-        ImGui::SetNextWindowSize(ImVec2(400.0f, 600.0f), ImGuiCond_FirstUseEver);
+        SetWindowDimensions(0.0f, 800.0f, 600.0f, true);
 
         ImGui::PushID(static_cast<const void*>(a_active));
 

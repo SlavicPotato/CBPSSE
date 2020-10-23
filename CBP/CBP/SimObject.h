@@ -52,8 +52,6 @@ namespace CBP
 
         void UpdateGroupInfo();
 
-        void Release();
-
         [[nodiscard]] inline bool HasNode(const std::string& a_node) const {
             return m_things.find(a_node) != m_things.end();
         }

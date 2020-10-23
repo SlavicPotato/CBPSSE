@@ -49,7 +49,7 @@ namespace CBP
 
         struct statsEntry_t
         {
-            float time;
+            double time;
             size_t num;
         };
 

@@ -128,10 +128,15 @@ namespace CBP
         BeginGroup = 1U << 0,
         EndGroup = 1U << 1,
         Float3 = 1U << 5,
+        Collapsed = 1U << 6,
         ColliderSphere = 1U << 10,
         ColliderCapsule = 1U << 11,
         ColliderBox = 1U << 12,
-        ColliderConvex = 1U << 13
+        ColliderCone = 1U << 13,
+        ColliderTetrahedron = 1U << 14,
+        ColliderCylinder = 1U << 15,
+        ColliderMesh = 1U << 16,
+        ColliderConvexHull = 1U << 17,
     };
 
     DEFINE_ENUM_CLASS_BITWISE(DescUIMarker);
@@ -140,21 +145,30 @@ namespace CBP
         DescUIMarker::ColliderSphere |
         DescUIMarker::ColliderCapsule |
         DescUIMarker::ColliderBox |
-        DescUIMarker::ColliderConvex;
+        DescUIMarker::ColliderCone |
+        DescUIMarker::ColliderTetrahedron |
+        DescUIMarker::ColliderCylinder |
+        DescUIMarker::ColliderMesh |
+        DescUIMarker::ColliderConvexHull;
 
     enum class DescUIGroupType : uint32_t
     {
         None,
         Physics,
-        Collisions
+        Collisions,
+        PhysicsExtra
     };
 
-    enum class ColliderShape : uint32_t
+    enum class ColliderShapeType : uint32_t
     {
         Sphere = 0,
         Capsule = 1,
         Box = 2,
-        Convex = 3
+        Cone = 3,
+        Tetrahedron = 4,
+        Cylinder = 5,
+        Mesh = 6,
+        ConvexHull = 7
     };
 
     struct componentValueDesc_t
@@ -173,12 +187,14 @@ namespace CBP
     struct colliderDesc_t
     {
         std::string name;
+        std::string desc;
     };
 
     typedef iKVStorage<std::string, const componentValueDesc_t> componentValueDescMap_t;
-    typedef KVStorage<ColliderShape, const colliderDesc_t> colliderDescMap_t;
+    typedef KVStorage<ColliderShapeType, const colliderDesc_t> colliderDescMap_t;
 
-    struct configComponent_t
+
+    __declspec(align(16)) struct configComponent_t
     {
         friend class boost::serialization::access;
 
@@ -187,8 +203,15 @@ namespace CBP
         enum Serialization : unsigned int
         {
             DataVersion1 = 1,
-            DataVersion2 = 2
+            DataVersion2 = 2,
+            DataVersion3 = 3,
+            DataVersion4 = 4
         };
+
+        /*__forceinline configComponent_t& operator=(const configComponent_t& a_rhs)
+        {
+            return *this;
+        }*/
 
         [[nodiscard]] __forceinline bool Get(const std::string& a_key, float& a_out) const
         {
@@ -282,7 +305,7 @@ namespace CBP
             return *reinterpret_cast<float*>(addr);
         }
 
-        __forceinline void SetColShape(ColliderShape a_shape) {
+        __forceinline void SetColShape(ColliderShapeType a_shape) {
             ex.colShape = a_shape;
         }
 
@@ -292,6 +315,7 @@ namespace CBP
             float stiffness2 = 10.0f;
             float damping = 0.95f;
             float maxOffset[3]{ 20.0f, 20.0f, 20.0f };
+            float maxOffsetConstraint = 15.0f;
             float cogOffset[3]{ 0.0f, 5.0f, 0.0f };
             float gravityBias = 0.0f;
             float gravityCorrection = 0.0f;
@@ -300,14 +324,15 @@ namespace CBP
             float rotational[3]{ 0.0f, 0.0f, 0.0f };
             float resistance = 0.0f;
             float mass = 1.0f;
+            float maxVelocity = 4000.0f;
             float colSphereRadMin = 4.0f;
             float colSphereRadMax = 4.0f;
             float offsetMin[3]{ 0.0f, 0.0f, 0.0f };
             float offsetMax[3]{ 0.0f, 0.0f, 0.0f };
             float colHeightMin = 0.001f;
             float colHeightMax = 0.001f;
-            float colExtentMin[3]{ 2.5f, 2.5f, 2.5f };
-            float colExtentMax[3]{ 2.5f, 2.5f, 2.5f };
+            float colExtentMin[3]{ 4.0f, 4.0f, 4.0f };
+            float colExtentMax[3]{ 4.0f, 4.0f, 4.0f };
             float colRot[3]{ 0.0f, 0.0f, 0.0f };
             float colRestitutionCoefficient = 0.25f;
             float colPenBiasFactor = 1.0f;
@@ -316,8 +341,8 @@ namespace CBP
 
         struct
         {
-            ColliderShape colShape = ColliderShape::Sphere;
-            std::string colConvexMesh;
+            ColliderShapeType colShape = ColliderShapeType::Sphere;
+            std::string colMesh;
         } ex;
 
         static const componentValueDescMap_t descMap;
@@ -355,7 +380,10 @@ namespace CBP
             ar& phys.colPenMass;
 
             ar& ex.colShape;
-            ar& ex.colConvexMesh;
+            ar& ex.colMesh;
+
+            ar& phys.maxOffsetConstraint;
+            ar& phys.maxVelocity;
         }
 
         template<class Archive>
@@ -387,12 +415,23 @@ namespace CBP
             ar& phys.colPenMass;
 
             ar& ex.colShape;
-            if (version == DataVersion2)
-                ar& ex.colConvexMesh;
+            if (version >= DataVersion2)
+            {
+                ar& ex.colMesh;
+
+                if (version >= DataVersion3)
+                {
+                    ar& phys.maxOffsetConstraint;
+
+                    if (version >= DataVersion4)
+                    {
+                        ar& phys.maxVelocity;
+                    }
+                }
+            }
         }
 
         BOOST_SERIALIZATION_SPLIT_MEMBER()
-
     };
 
     //static_assert(sizeof(configComponent_t) == 0x5C);
@@ -412,7 +451,7 @@ namespace CBP
 
     typedef std::unordered_map<Game::ObjectHandle, configComponents_t> mergedConfCache_t;
 
-    struct configNode_t
+    __declspec(align(16)) struct configNode_t
     {
         friend class boost::serialization::access;
 
@@ -747,7 +786,7 @@ namespace CBP
             armorOverrides.insert_or_assign(a_handle, std::move(a_entry));
         }
 
-        [[nodiscard]] static armorOverrideDescriptor_t* GetArmorOverride(Game::ObjectHandle a_handle)
+        [[nodiscard]] static armorOverrideDescriptor_t* GetArmorOverrides(Game::ObjectHandle a_handle)
         {
             auto it = armorOverrides.find(a_handle);
             if (it != armorOverrides.end())
@@ -799,6 +838,10 @@ namespace CBP
         static size_t PruneInactivePhysics();
         static size_t PruneInactiveRace();
 
+        static const auto& GetDefaultPhysics() {
+            return defaultPhysicsConfig;
+        }
+
     private:
 
         [[nodiscard]] static bool LoadNodeMap(nodeMap_t& a_out);
@@ -831,9 +874,11 @@ namespace CBP
         static configNodes_t templateBaseNodeHolder;
         static configComponents_t templateBasePhysicsHolder;
 
+        static configComponent_t defaultPhysicsConfig;
+
         static IConfigLog log;
     };
 }
 
-BOOST_CLASS_VERSION(CBP::configComponent_t, CBP::configComponent_t::Serialization::DataVersion2)
+BOOST_CLASS_VERSION(CBP::configComponent_t, CBP::configComponent_t::Serialization::DataVersion4)
 BOOST_CLASS_VERSION(CBP::configNode_t, CBP::configNode_t::Serialization::DataVersion1)

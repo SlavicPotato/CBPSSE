@@ -118,8 +118,12 @@ namespace CBP
             m_Instance.m_nextResetIO = true;
         }
 
-        inline static void SetImGuiIni(const fs::path& a_path) {
-            m_Instance.conf.imgui_ini = a_path.string();
+        inline static void SetImGuiIni(const std::string& a_path) {
+            m_Instance.conf.imgui_ini = a_path;
+        }
+        
+        inline static void SetImGuiIni(std::string&& a_path) {
+            m_Instance.conf.imgui_ini = std::move(a_path);
         }
 
         inline static auto GetPerf() {

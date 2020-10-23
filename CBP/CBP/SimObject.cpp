@@ -143,9 +143,11 @@ namespace CBP
 
             auto it2 = a_config.find(p.second.GetConfigGroupName());
 
+            auto& physConf = it2 != a_config.end() ? it2->second : IConfig::GetDefaultPhysics();
+
             p.second.UpdateConfig(
                 a_actor,
-                it2 != a_config.end() ? it2->second : configComponent_t(),
+                std::addressof(physConf),
                 nodeConf,
                 a_collisions && collisions,
                 movement
@@ -178,19 +180,12 @@ namespace CBP
                 IConfig::GetNodeCollisionGroupId(p.first));
     }
 
-    void SimObject::Release() {
-        for (auto& p : m_things)
-            p.second.Release();
-    }
-
     void SimObject::SetSuspended(bool a_switch)
     {
         m_suspended = a_switch;
 
         for (auto& e : m_things)
-        {
             e.second.GetCollider().SetShouldProcess(!a_switch);
-        }
 
         if (!a_switch)
             Reset();

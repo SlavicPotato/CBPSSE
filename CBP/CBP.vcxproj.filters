@@ -135,9 +135,6 @@
     <ClInclude Include="CBP\UI.h">
       <Filter>Header Files\CBP</Filter>
     </ClInclude>
-    <ClInclude Include="CBP\Updater.h">
-      <Filter>Header Files\CBP</Filter>
-    </ClInclude>
     <ClInclude Include="ImGui\imgui_impl_dx11.h">
       <Filter>Header Files\ImGui</Filter>
     </ClInclude>
@@ -173,6 +170,9 @@
     </ClInclude>
     <ClInclude Include="Common\Data.h">
       <Filter>Header Files\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="CBP\Controller.h">
+      <Filter>Header Files\CBP</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -239,9 +239,6 @@
     <ClCompile Include="CBP\UI.cpp">
       <Filter>Source Files\CBP</Filter>
     </ClCompile>
-    <ClCompile Include="CBP\Updater.cpp">
-      <Filter>Source Files\CBP</Filter>
-    </ClCompile>
     <ClCompile Include="ImGui\imgui_impl_dx11.cpp">
       <Filter>Source Files\ImGui</Filter>
     </ClCompile>
@@ -277,6 +274,9 @@
     </ClCompile>
     <ClCompile Include="Drivers\data.cpp">
       <Filter>Source Files\Drivers</Filter>
+    </ClCompile>
+    <ClCompile Include="CBP\Controller.cpp">
+      <Filter>Source Files\CBP</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

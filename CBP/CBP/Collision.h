@@ -21,7 +21,7 @@ namespace CBP
         static constexpr int IMPORT_FLAGS =
             aiProcess_FindInvalidData |
             aiProcess_RemoveComponent |
-           // aiProcess_Triangulate |
+            aiProcess_Triangulate |
             aiProcess_ValidateDataStructure |
             aiProcess_JoinIdenticalVertices;
     public:
@@ -62,20 +62,28 @@ namespace CBP
         static ProfileManagerCollider m_Instance;
     };
 
-    class ICollision :
-        public r3d::EventListener
+    class ICollision 
     {
+        struct overlapFilter :
+            public btOverlapFilterCallback
+        {
+            virtual bool needBroadphaseCollision(btBroadphaseProxy* proxy0, btBroadphaseProxy* proxy1) const;
+        };
+
     public:
 
         [[nodiscard]] inline static auto& GetSingleton() {
             return m_Instance;
         }
 
-        inline static void SetTimeStep(float a_timeStep) {
-            m_Instance.m_timeStep = a_timeStep;
+        [[nodiscard]] inline static auto GetWorld() {
+            return m_Instance.m_ptrs.bt_collision_world;
         }
 
-        static void Initialize(r3d::PhysicsWorld* a_world);
+        static void Initialize();
+        static void Update(float a_timeStep);
+
+        static void CleanProxyFromPairs(btCollisionObject* a_collider);
 
         ICollision(const ICollision&) = delete;
         ICollision(ICollision&&) = delete;
@@ -85,11 +93,15 @@ namespace CBP
     private:
         ICollision() = default;
 
-        virtual void onContact(const CollisionCallback::CallbackData& callbackData) override;
+        struct
+        {
+            btCollisionConfiguration* bt_collision_configuration;
+            btCollisionDispatcher* bt_dispatcher;
+            btBroadphaseInterface* bt_broadphase;
+            btCollisionWorld* bt_collision_world;
+        } m_ptrs;
 
-        static bool collisionCheckFunc(r3d::Collider* a_lhs, r3d::Collider* a_rhs);
-
-        float m_timeStep = 1.0f / 60.0f;
+        overlapFilter m_overlapFilter;
 
         static ICollision m_Instance;
     };

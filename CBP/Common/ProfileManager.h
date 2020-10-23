@@ -47,15 +47,15 @@ public:
         return m_desc;
     }
 
-    [[nodiscard]] inline const std::string& Name() const noexcept {
+    [[nodiscard]] inline const auto& Name() const noexcept {
         return m_name;
     }
-
-    [[nodiscard]] inline const std::filesystem::path& Path() const noexcept {
+    
+    [[nodiscard]] inline const auto& Path() const noexcept {
         return m_path;
     }
 
-    [[nodiscard]] inline const std::string& PathStr() const noexcept {
+    [[nodiscard]] inline const auto& PathStr() const noexcept {
         return m_pathStr;
     }
 

@@ -7,7 +7,6 @@ namespace SKSE
 
     PluginHandle g_pluginHandle = kPluginHandle_Invalid;
 
-    SKSETaskInterface* g_taskInterface;
     SKSEMessagingInterface* g_messaging;
     SKSEPapyrusInterface* g_papyrus;
     SKSESerializationInterface* g_serialization;
@@ -62,17 +61,6 @@ namespace SKSE
 
         if (g_messaging->interfaceVersion < 2) {
             gLog.FatalError("Messaging interface too old (%d expected %d)", g_messaging->interfaceVersion, 2);
-            return false;
-        }
-
-        g_taskInterface = (SKSETaskInterface*)skse->QueryInterface(kInterface_Task);
-        if (g_taskInterface == NULL) {
-            gLog.FatalError("Couldn't get task interface.");
-            return false;
-        }
-
-        if (g_taskInterface->interfaceVersion < 2) {
-            gLog.FatalError("Task interface too old (%d expected %d)", g_taskInterface->interfaceVersion, 2);
             return false;
         }
 

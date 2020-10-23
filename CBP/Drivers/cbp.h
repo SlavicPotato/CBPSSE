@@ -158,7 +158,6 @@ namespace CBP
             return m_Instance.m_serialization.GetLastException();
         }
 
-        static void UIQueueUpdateCurrentActor();
         inline static void UIQueueUpdateCurrentActorA() {
             m_Instance.m_uiContext.QueueListUpdateCurrent();
         }
@@ -169,14 +168,6 @@ namespace CBP
 
         [[nodiscard]] inline static auto& GetUpdateTask() {
             return m_Instance.m_updateTask;
-        }
-
-        [[nodiscard]] inline static auto GetWorld() {
-            return m_Instance.m_world;
-        }
-
-        [[nodiscard]] inline static auto& GetPhysicsCommon() {
-            return m_Instance.m_physicsCommon;
         }
 
         static void ResetProfiler();
@@ -200,7 +191,7 @@ namespace CBP
 
         [[nodiscard]] inline static const auto& GetDriverConfig()
         {
-            return m_Instance.conf;
+            return m_Instance.m_conf;
         }
 
         inline static auto& GetRenderer() {
@@ -281,9 +272,10 @@ namespace CBP
                 fs::path templateProfilesNode;
                 fs::path templatePlugins;
                 fs::path colliderData;
-                fs::path imguiSettings;
             } paths;
-        } conf;
+
+            std::string imguiIni;
+        } m_conf;
 
         KeyPressHandler m_inputEventHandler;
         UIContext m_uiContext;
@@ -300,9 +292,6 @@ namespace CBP
 
         ISerialization m_serialization;
         std::unique_ptr<Renderer> m_renderer;
-
-        r3d::PhysicsWorld* m_world;
-        r3d::PhysicsCommon m_physicsCommon;
 
         mainLoopUpdateFunc_t mainLoopUpdateFunc_o;
 

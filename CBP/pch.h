@@ -42,6 +42,7 @@
 #include <bitset>
 #include <functional>
 #include <numbers>
+#include <queue>
 
 #include <ShlObj.h>
 
@@ -53,7 +54,10 @@
 #define DIRECTINPUT_VERSION 0x0800
 #include <dinput.h>
 
-#include <reactphysics3d/reactphysics3d.h>
+#include <btBulletCollisionCommon.h>
+#include <BulletCollision/CollisionShapes/btShapeHull.h>
+#include <BulletCollision/Gimpact/btGImpactShape.h>
+#include <BulletCollision/Gimpact/btGImpactCollisionAlgorithm.h>
 
 #include <Inc/CommonStates.h>
 #include <Inc/SimpleMath.h>
@@ -92,7 +96,6 @@
 #include "imgui/imgui_impl_win32.h"
 #include "imgui/imgui_impl_dx11.h"
 
-namespace r3d = reactphysics3d;
 namespace fs = std::filesystem;
 
 //#define _CBP_ENABLE_DEBUG
@@ -126,7 +129,7 @@ namespace fs = std::filesystem;
 #include "cbp/Papyrus.h"
 #include "cbp/Renderer.h"
 #include "cbp/Profiling.h"
-#include "cbp/Updater.h"
+#include "cbp/Controller.h"
 #include "cbp/GameEventHandlers.h"
 #include "drivers/cbp.h"
 

@@ -17,6 +17,7 @@ namespace CBP
     constexpr const char* CKEY_FORCEINIKEYS = "ForceINIKeys";
     constexpr const char* CKEY_COMPLEVEL = "CompressionLevel";
     constexpr const char* CKEY_DATAPATH = "DataPath";
+    constexpr const char* CKEY_IMGUIINI = "ImGuiSettings";
 
     DCBP::DCBP() :
         m_loadInstance(0),
@@ -101,39 +102,33 @@ namespace CBP
 
     void DCBP::UpdateDebugRendererState()
     {
-        if (!m_Instance.conf.debug_renderer)
+        auto& driverConfig = GetDriverConfig();
+        if (!driverConfig.debug_renderer)
             return;
 
-        const auto& globalConf = IConfig::GetGlobal();
-        auto& debugRenderer = m_Instance.m_world->getDebugRenderer();
-
-        DCBP::GetRenderer()->Clear();
-        debugRenderer.reset();
-
-        m_Instance.m_world->setIsDebugRenderingEnabled(
-            globalConf.debugRenderer.enabled);
+        GetRenderer()->Clear();
     }
 
     void DCBP::UpdateDebugRendererSettings()
     {
-        if (!m_Instance.conf.debug_renderer)
+        auto& driverConfig = GetDriverConfig();
+        if (!driverConfig.debug_renderer)
             return;
 
-        auto& globalConf = IConfig::GetGlobal();
+        const auto& globalConf = CBP::IConfig::GetGlobal();
 
-        auto& debugRenderer = m_Instance.m_world->getDebugRenderer();
+        auto& r = GetRenderer();
 
-        debugRenderer.setContactPointSphereRadius(
-            globalConf.debugRenderer.contactPointSphereRadius);
-        debugRenderer.setContactNormalLength(
-            globalConf.debugRenderer.contactNormalLength);
+        r->Clear();
 
-        debugRenderer.setIsDebugItemDisplayed(
-            r3d::DebugRenderer::DebugItem::COLLIDER_AABB,
-            globalConf.debugRenderer.drawAABB);
-        debugRenderer.setIsDebugItemDisplayed(
-            r3d::DebugRenderer::DebugItem::COLLIDER_BROADPHASE_AABB,
-            globalConf.debugRenderer.drawBroadphaseAABB);
+        int flags(r->DBG_DrawWireframe | r->DBG_DrawContactPoints);
+
+        if (globalConf.debugRenderer.drawAABB)
+            flags |= r->DBG_DrawAabb;
+
+        r->setDebugMode(flags);
+        r->SetContactPointSphereRadius(globalConf.debugRenderer.contactPointSphereRadius);
+        r->SetContactNormalLength(globalConf.debugRenderer.contactNormalLength);
     }
 
     void DCBP::UpdateProfilerSettings()
@@ -156,13 +151,6 @@ namespace CBP
             a_steps,
             a_component,
             a_force);
-    }
-
-    void DCBP::UIQueueUpdateCurrentActor()
-    {
-        if (m_Instance.conf.ui_enabled)
-            m_Instance.m_updateTask.AddTask(
-                ControllerInstruction::Action::UIUpdateCurrentActor);
     }
 
     bool DCBP::ExportData(const std::filesystem::path& a_path)
@@ -237,22 +225,23 @@ namespace CBP
 
     void DCBP::LoadConfig()
     {
-        conf.ui_enabled = GetConfigValue(SECTION_CBP, CKEY_UIENABLED, true);
-        conf.debug_renderer = GetConfigValue(SECTION_CBP, CKEY_DEBUGRENDERER, false);
-        conf.force_ini_keys = GetConfigValue(SECTION_CBP, CKEY_FORCEINIKEYS, false);
-        conf.compression_level = std::clamp(GetConfigValue(SECTION_CBP, CKEY_COMPLEVEL, 1), 0, 9);
+        m_conf.ui_enabled = GetConfigValue(SECTION_CBP, CKEY_UIENABLED, true);
+        m_conf.debug_renderer = GetConfigValue(SECTION_CBP, CKEY_DEBUGRENDERER, false);
+        m_conf.force_ini_keys = GetConfigValue(SECTION_CBP, CKEY_FORCEINIKEYS, false);
+        m_conf.compression_level = std::clamp(GetConfigValue(SECTION_CBP, CKEY_COMPLEVEL, 1), 0, 9);
+        m_conf.imguiIni = GetConfigValue(SECTION_CBP, CKEY_IMGUIINI, PLUGIN_IMGUI_INI_FILE);
 
         auto& globalConfig = IConfig::GetGlobal();
 
-        globalConfig.ui.comboKey = conf.comboKey = ConfigGetComboKey(GetConfigValue(SECTION_CBP, CKEY_COMBOKEY, 1));
-        globalConfig.ui.showKey = conf.showKey = std::clamp<UInt32>(
+        globalConfig.ui.comboKey = m_conf.comboKey = ConfigGetComboKey(GetConfigValue(SECTION_CBP, CKEY_COMBOKEY, 1));
+        globalConfig.ui.showKey = m_conf.showKey = std::clamp<UInt32>(
             GetConfigValue<UInt32>(SECTION_CBP, CKEY_SHOWKEY, DIK_END),
             1, InputMap::kMacro_NumKeyboardKeys - 1);
     }
 
     bool DCBP::LoadPaths()
     {
-        auto& paths = m_Instance.conf.paths;
+        auto& paths = m_Instance.m_conf.paths;
 
         try
         {
@@ -385,35 +374,27 @@ namespace CBP
 
         SKSE::g_papyrus->Register(RegisterFuncs);
 
-        m_Instance.m_world = m_Instance.m_physicsCommon.createPhysicsWorld();
-        m_Instance.m_world->setEventListener(std::addressof(ICollision::GetSingleton()));
+        CBP::ICollision::Initialize();
 
-        ICollision::Initialize(m_Instance.m_world);
-
-        if (m_Instance.conf.debug_renderer)
+        if (m_Instance.m_conf.debug_renderer)
         {
             IEvents::RegisterForEvent(Event::OnD3D11PostCreate, OnD3D11PostCreate_CBP);
 
             DRender::AddPresentCallback(Present_Pre);
 
-            auto& debugRenderer = m_Instance.m_world->getDebugRenderer();
-            debugRenderer.setIsDebugItemDisplayed(r3d::DebugRenderer::DebugItem::COLLISION_SHAPE, true);
-            debugRenderer.setIsDebugItemDisplayed(r3d::DebugRenderer::DebugItem::CONTACT_POINT, true);
-            debugRenderer.setIsDebugItemDisplayed(r3d::DebugRenderer::DebugItem::CONTACT_NORMAL, true);
-
             m_Instance.Message("Debug renderer enabled");
         }
 
-        if (m_Instance.conf.ui_enabled)
+        if (m_Instance.m_conf.ui_enabled)
         {
-            if (DUI::Initialize())
-            {
-                DUI::SetImGuiIni(m_Instance.conf.paths.imguiSettings);
+            DUI::Initialize();
 
-                DInput::RegisterForKeyEvents(&m_Instance.m_inputEventHandler);
+            DUI::SetImGuiIni(m_Instance.m_conf.imguiIni);
 
-                m_Instance.Message("UI enabled");
-            }
+            DInput::RegisterForKeyEvents(&m_Instance.m_inputEventHandler);
+
+            m_Instance.Message("UI enabled");
+
         }
 
         IConfig::Initialize();
@@ -434,10 +415,16 @@ namespace CBP
     {
         auto info = static_cast<D3D11CreateEventPost*>(data);
 
-        if (m_Instance.conf.debug_renderer)
+        if (m_Instance.m_conf.debug_renderer)
         {
             m_Instance.m_renderer = std::make_unique<Renderer>(
                 info->m_pDevice, info->m_pImmediateContext);
+
+            auto& r = m_Instance.m_renderer;
+
+            r->setDebugMode(r->DBG_DrawWireframe | r->DBG_DrawContactPoints);
+
+            CBP::ICollision::GetWorld()->setDebugDrawer(r.get());
 
             m_Instance.Debug("Renderer initialized");
         }

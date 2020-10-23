@@ -7,7 +7,9 @@ namespace CBP
         ID3D11DeviceContext* a_pImmediateContext)
         :
         m_pDevice(a_pDevice),
-        m_pImmediateContext(a_pImmediateContext)
+        m_pImmediateContext(a_pImmediateContext),
+        m_contactPointSphereRadius(1.5f),
+        m_contactNormalLength(3.0f)
     {
         m_states = std::make_unique<DirectX::CommonStates>(a_pDevice);
         m_effect = std::make_unique<DirectX::BasicEffect>(a_pDevice);
@@ -20,38 +22,6 @@ namespace CBP
         );
 
         m_batch = std::make_unique<DirectX::PrimitiveBatch<VertexType>>(a_pImmediateContext);
-    }
-
-    void Renderer::GenerateLines(const r3d::DebugRenderer& a_dr)
-    {
-        for (const auto& line : a_dr.getLines())
-        {
-            ItemLine item;
-
-            if (!GetScreenPt(line.point1, line.color1, item.pos1))
-                continue;
-            if (!GetScreenPt(line.point2, line.color2, item.pos2))
-                continue;
-
-            m_lines.emplace_back(item);
-        }
-    }
-
-    void Renderer::GenerateTris(const r3d::DebugRenderer& a_dr)
-    {
-        for (const auto& tri : a_dr.getTriangles())
-        {
-            ItemTri item;
-
-            if (!GetScreenPt(tri.point1, tri.color1, item.pos1))
-                continue;
-            if (!GetScreenPt(tri.point2, tri.color2, item.pos2))
-                continue;
-            if (!GetScreenPt(tri.point3, tri.color3, item.pos3))
-                continue;
-
-            m_tris.emplace_back(item);
-        }
     }
 
     void Renderer::GenerateMovingNodes(
@@ -85,12 +55,6 @@ namespace CBP
                         2.0f, ACTOR_MARKER_COL);
             }
         }
-    }
-
-    void Renderer::Update(const r3d::DebugRenderer& a_dr)
-    {
-        GenerateLines(a_dr);
-        GenerateTris(a_dr);
     }
 
     void Renderer::UpdateMovingNodes(
@@ -139,22 +103,15 @@ namespace CBP
         m_batch->End();
     }
 
-    bool Renderer::GetScreenPt(const r3d::Vector3& a_pos, r3d::uint32 a_col, VertexType& a_out)
+    
+    bool Renderer::GetScreenPt(const btVector3& a_pos, const btVector3& a_col, VertexType& a_out)
     {
-        static_assert(sizeof(a_col) == 0x4);
-
-        static_assert(sizeof(Vector3::x) == sizeof(NiPoint3::x));
-        static_assert(sizeof(Vector3::y) == sizeof(NiPoint3::y));
-        static_assert(sizeof(Vector3::z) == sizeof(NiPoint3::z));
-        static_assert(offsetof(Vector3, x) == offsetof(NiPoint3, x));
-        static_assert(offsetof(Vector3, y) == offsetof(NiPoint3, y));
-        static_assert(offsetof(Vector3, z) == offsetof(NiPoint3, z));
+        NiPoint3 tmp(a_pos.x(), a_pos.y(), a_pos.z());
 
         if (!WorldPtToScreenPt3_Internal(
             g_worldToCamMatrix,
             g_viewPort,
-            reinterpret_cast<NiPoint3*>(
-                const_cast<r3d::Vector3*>(std::addressof(a_pos))),
+            &tmp,
             &a_out.position.x,
             &a_out.position.y,
             &a_out.position.z,
@@ -171,12 +128,10 @@ namespace CBP
         a_out.position.y = (a_out.position.y * 2.0f) - 1.0f;
         a_out.position.z = (a_out.position.z * 2.0f) - 1.0f;
 
-        auto b = reinterpret_cast<const uint8_t*>(&a_col);
-
-        a_out.color.x = static_cast<float>(b[0]);
-        a_out.color.y = static_cast<float>(b[1]);
-        a_out.color.z = static_cast<float>(b[2]);
-        a_out.color.w = static_cast<float>(b[3]);
+        a_out.color.x = a_col.x();
+        a_out.color.y = a_col.y();
+        a_out.color.z = a_col.z();
+        a_out.color.w = 1.0f;
 
         return true;
     }
@@ -269,6 +224,54 @@ namespace CBP
                 }
             }
         }
+    }
+
+    void Renderer::drawLine(const btVector3& from, const btVector3& to, const btVector3& color)
+    {
+        ItemLine item;
+
+        if (!GetScreenPt(from, color, item.pos1))
+            return;
+        if (!GetScreenPt(to, color, item.pos2))
+            return;
+
+        m_lines.emplace_back(std::move(item));
+    }
+
+    void Renderer::drawTriangle(const btVector3& v0, const btVector3& v1, const btVector3& v2, const btVector3& color, btScalar /*alpha*/)
+    {
+        ItemTri item;
+
+        if (!GetScreenPt(v0, color, item.pos1))
+            return;
+        if (!GetScreenPt(v1, color, item.pos2))
+            return;
+        if (!GetScreenPt(v2, color, item.pos3))
+            return;
+
+        m_tris.emplace_back(std::move(item));
+    }
+
+    void Renderer::drawContactPoint(const btVector3& PointOnB, const btVector3& normalOnB, btScalar distance, int lifeTime, const btVector3& color) 
+    {
+        drawSphere(PointOnB, m_contactPointSphereRadius, color);
+        drawLine(PointOnB, PointOnB + normalOnB * m_contactNormalLength, color);
+    }
+
+    void Renderer::draw3dText(const btVector3& location, const char* textString)
+    {
+    }
+
+    void Renderer::reportErrorWarning(const char* warningString) 
+    {
+    }
+
+    void Renderer::setDebugMode(int debugMode) {
+        m_debugMode = debugMode;
+    }
+
+    int Renderer::getDebugMode() const { 
+        return m_debugMode; 
     }
 
 }

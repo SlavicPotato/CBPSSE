@@ -4,7 +4,6 @@ namespace SKSE
 {
     extern PluginHandle g_pluginHandle;
 
-    extern SKSETaskInterface* g_taskInterface;
     extern SKSEMessagingInterface* g_messaging;
     extern SKSEPapyrusInterface* g_papyrus;
     extern SKSESerializationInterface* g_serialization;

@@ -6,7 +6,6 @@ namespace CBP
 
     enum class MiscHelpText : int
     {
-        none,
         timeTick,
         maxSubSteps,
         timeScale,
@@ -215,13 +214,13 @@ namespace CBP
             T a_handle,
             configComponents_t& a_data,
             const configGroupMap_t::value_type& a_cgdata,
-            nodeConfigList_t& a_nodeConfig) const;
+            const nodeConfigList_t& a_nodeConfig) const;
 
         virtual bool HasMovement(
-            nodeConfigList_t& a_nodeConfig) const;
+            const nodeConfigList_t& a_nodeConfig) const;
 
         virtual bool HasCollisions(
-            nodeConfigList_t& a_nodeConfig) const;
+            const nodeConfigList_t& a_nodeConfig) const;
 
         virtual const armorCacheEntry_t::mapped_type* GetArmorOverrideSection(
             T a_handle,
@@ -388,7 +387,7 @@ namespace CBP
             int a_handle,
             PhysicsProfile::base_type& a_data,
             const configGroupMap_t::value_type& a_cgdata,
-            nodeConfigList_t& a_nodeConfig) const;
+            const nodeConfigList_t& a_nodeConfig) const;
 
         virtual void UpdateNodeData(
             int a_handle,
@@ -691,13 +690,13 @@ namespace CBP
             Game::FormID a_handle,
             configComponents_t& a_data,
             const configGroupMap_t::value_type& a_cgdata,
-            nodeConfigList_t& a_nodeConfig) const;
+            const nodeConfigList_t& a_nodeConfig) const;
 
         virtual bool HasMovement(
-            nodeConfigList_t& a_nodeConfig) const;
+            const nodeConfigList_t& a_nodeConfig) const;
 
         virtual bool HasCollisions(
-            nodeConfigList_t& a_nodeConfig) const;
+            const nodeConfigList_t& a_nodeConfig) const;
 
         virtual configGlobalSimComponent_t& GetSimComponentConfig() const;
 
@@ -901,13 +900,13 @@ namespace CBP
                 Game::ObjectHandle a_handle,
                 configComponents_t& a_data,
                 const configGroupMap_t::value_type& a_cgdata,
-                nodeConfigList_t& a_nodeConfig) const;
+                const nodeConfigList_t& a_nodeConfig) const;
 
             virtual bool HasMovement(
-                nodeConfigList_t& a_nodeConfig) const;
+                const nodeConfigList_t& a_nodeConfig) const;
 
             virtual bool HasCollisions(
-                nodeConfigList_t& a_nodeConfig) const;
+                const nodeConfigList_t& a_nodeConfig) const;
 
             virtual const armorCacheEntry_t::mapped_type* GetArmorOverrideSection(
                 Game::ObjectHandle a_handle,
@@ -969,13 +968,13 @@ namespace CBP
                 Game::ObjectHandle a_handle,
                 configComponents_t& a_data,
                 const configGroupMap_t::value_type& a_cgdata,
-                nodeConfigList_t& a_nodeConfig) const;
+                const nodeConfigList_t& a_nodeConfig) const;
 
             virtual bool HasMovement(
-                nodeConfigList_t& a_nodeConfig) const;
+                const nodeConfigList_t& a_nodeConfig) const;
 
             virtual bool HasCollisions(
-                nodeConfigList_t& a_nodeConfig) const;
+                const nodeConfigList_t& a_nodeConfig) const;
 
             virtual bool GetNodeConfig(
                 const configNodes_t& a_nodeConf,

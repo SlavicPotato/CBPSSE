@@ -25,7 +25,7 @@ namespace CBP
         return true;
     }
 
-    std::atomic<uint64_t> ControllerTask::m_nextGroupId = 0;
+    uint64_t ControllerTask::m_nextGroupId(0);
 
     ControllerTask::ControllerTask() :
         m_timeAccum(0.0f),
@@ -42,7 +42,7 @@ namespace CBP
 
         try
         {
-            renderer->Clear();
+            //renderer->Clear();
 
             if (globalConf.debugRenderer.enableMovingNodes)
             {
@@ -53,8 +53,7 @@ namespace CBP
                     m_markedActor);
             }
 
-            renderer->Update(
-                DCBP::GetWorld()->getDebugRenderer());
+            //renderer->Update();
         }
         catch (...) {}
     }
@@ -73,7 +72,7 @@ namespace CBP
 
     uint32_t ControllerTask::UpdatePhase2(float a_timeStep, float a_timeTick, float a_maxTime)
     {
-        uint32_t c = 1;
+        uint32_t c(1);
 
         while (a_timeStep >= a_maxTime)
         {
@@ -92,45 +91,36 @@ namespace CBP
     {
         uint32_t c(1);
 
-        auto world = DCBP::GetWorld();
-
-        bool debugRendererEnabled = world->getIsDebugRenderingEnabled();
-        world->setIsDebugRenderingEnabled(false);
-
-        ICollision::SetTimeStep(a_timeTick);
-
         while (a_timeStep >= a_maxTime)
         {
             UpdateActorsPhase2(a_timeTick);
-            world->update(a_timeTick);
+            ICollision::Update(a_timeTick);
             a_timeStep -= a_timeTick;
 
             c++;
         }
 
         UpdateActorsPhase2(a_timeStep);
-        ICollision::SetTimeStep(a_timeStep);
-        world->setIsDebugRenderingEnabled(debugRendererEnabled);
-        world->update(a_timeStep);
+        ICollision::Update(a_timeStep);
 
         return c;
     }
 
 #ifdef _CBP_ENABLE_DEBUG
-    void UpdateTask::UpdatePhase3()
+    void ControllerTask::UpdatePhase3()
     {
         for (auto& e : m_actors)
             e.second.UpdateDebugInfo();
     }
 #endif
 
-    void ControllerTask::ComputeDebugRendererPrimitives()
+    /*void ControllerTask::ComputeDebugRendererPrimitives()
     {
         auto world = DCBP::GetWorld();
-        auto& dr = world->getDebugRenderer();
 
+        auto& dr = world->getDebugRenderer();
         dr.computeDebugRenderingPrimitives(*world);
-    }
+    }*/
 
     uint32_t ControllerTask::UpdatePhysics(Game::BSMain* a_main, float a_interval)
     {
@@ -148,8 +138,6 @@ namespace CBP
 
         m_timeAccum += a_interval;
 
-        uint32_t steps;
-
         if (m_timeAccum > timeTick * 0.25f)
         {
             float timeStep = std::min(m_timeAccum,
@@ -158,6 +146,8 @@ namespace CBP
             float maxTime = timeTick * 1.25f;
 
             UpdatePhase1();
+
+            uint32_t steps;
 
             if (globalConfig.phys.collisions)
                 steps = UpdatePhase2Collisions(timeStep, timeTick, maxTime);
@@ -169,11 +159,11 @@ namespace CBP
 #endif
 
             m_timeAccum = 0.0f;
+
+            return steps;
         }
         else
-            steps = 0;
-
-        return steps;
+            return 0;
     }
 
     void ControllerTask::PhysicsTick(Game::BSMain* a_main)
@@ -185,12 +175,12 @@ namespace CBP
         if (globalConfig.profiling.enableProfiling)
             m_profiler.Begin();
 
-        bool debugRendererEnabled = 
+        bool debugRendererEnabled =
             globalConfig.debugRenderer.enabled &&
             DCBP::GetDriverConfig().debug_renderer;
 
         if (debugRendererEnabled)
-            DCBP::GetWorld()->getDebugRenderer().reset();
+            DCBP::GetRenderer()->Clear();
 
         auto daz = _MM_GET_DENORMALS_ZERO_MODE();
         auto ftz = _MM_GET_FLUSH_ZERO_MODE();
@@ -208,9 +198,11 @@ namespace CBP
         if (globalConfig.profiling.enableProfiling)
             m_profiler.End(static_cast<uint32_t>(m_actors.size()), steps, interval);
 
-        if (debugRendererEnabled) {
-            ComputeDebugRendererPrimitives();
+        if (debugRendererEnabled) 
+        {            
             UpdateDebugRenderer();
+            auto world = ICollision::GetWorld();
+            world->debugDrawWorld();
         }
 
         DCBP::Unlock();
@@ -249,7 +241,6 @@ namespace CBP
 #ifdef _CBP_SHOW_STATS
                 Debug("Actor 0x%llX (%s) no longer valid", it->first, actor ? CALL_MEMBER_FN(actor, GetReferenceName)() : nullptr);
 #endif
-                it->second.Release();
                 it = m_actors.erase(it);
             }
             else
@@ -290,7 +281,8 @@ namespace CBP
         if (!ActorValid(actor))
             return;
 
-        if (actor->race != nullptr) {
+        if (actor->race != nullptr)
+        {
             if (actor->race->data.raceFlags & TESRace::kRace_Child)
                 return;
 
@@ -311,10 +303,11 @@ namespace CBP
         if (sex == 0 && globalConfig.general.femaleOnly)
             return;
 
-        if (globalConfig.general.armorOverrides) {
+        if (globalConfig.general.armorOverrides)
+        {
             armorOverrideResults_t ovResult;
             if (IArmor::FindOverrides(actor, ovResult))
-                ApplyArmorOverride(a_handle, ovResult);
+                ApplyArmorOverrides(a_handle, ovResult);
         }
 
         IData::UpdateActorMaps(a_handle, actor);
@@ -351,10 +344,8 @@ namespace CBP
             auto actor = Game::ResolveObject<Actor>(a_handle, Actor::kTypeID);
             Debug("Removing %llX (%s)", a_handle, actor ? CALL_MEMBER_FN(actor, GetReferenceName)() : "nullptr");
 #endif
-            it->second.Release();
             m_actors.erase(it);
 
-            //IData::RemoveHandleNpcMap(a_handle);
             IConfig::RemoveArmorOverride(a_handle);
         }
     }
@@ -421,16 +412,13 @@ namespace CBP
 
     void ControllerTask::ClearActors()
     {
+#ifdef _CBP_SHOW_STATS
         for (auto& e : m_actors)
         {
-#ifdef _CBP_SHOW_STATS
             auto actor = Game::ResolveObject<Actor>(e.first, Actor::kTypeID);
             Debug("CLR: Removing %llX (%s)", e.first, actor ? CALL_MEMBER_FN(actor, GetReferenceName)() : "nullptr");
-#endif
-
-            e.second.Release();
-            //IData::RemoveHandleNpcMap(e.first);
         }
+#endif
 
         m_actors.clear();
 
@@ -451,12 +439,6 @@ namespace CBP
             AddActor(e);
 
         IData::UpdateActorCache(m_actors);
-
-        if (DCBP::GetDriverConfig().debug_renderer)
-        {
-            DCBP::GetRenderer()->Clear();
-            DCBP::GetWorld()->getDebugRenderer().reset();
-        }
     }
 
     void ControllerTask::PhysicsReset()
@@ -495,7 +477,9 @@ namespace CBP
             NiNodeUpdate(e.first);
     }
 
-    void ControllerTask::AddArmorOverride(Game::ObjectHandle a_handle, Game::FormID a_formid)
+    void ControllerTask::AddArmorOverrides(
+        Game::ObjectHandle a_handle,
+        Game::FormID a_formid)
     {
         auto& globalConfig = IConfig::GetGlobal();
         if (!globalConfig.general.armorOverrides)
@@ -524,7 +508,7 @@ namespace CBP
         if (!IArmor::FindOverrides(actor, armor, ovResults))
             return;
 
-        auto current = IConfig::GetArmorOverride(a_handle);
+        auto current = IConfig::GetArmorOverrides(a_handle);
         if (current) {
             armorOverrideDescriptor_t r;
             if (!BuildArmorOverride(a_handle, ovResults, *current))
@@ -541,7 +525,7 @@ namespace CBP
         DoConfigUpdate(a_handle, actor, it->second);
     }
 
-    void ControllerTask::UpdateArmorOverride(Game::ObjectHandle a_handle)
+    void ControllerTask::UpdateArmorOverrides(Game::ObjectHandle a_handle)
     {
         auto& globalConfig = IConfig::GetGlobal();
         if (!globalConfig.general.armorOverrides)
@@ -555,16 +539,18 @@ namespace CBP
         if (!actor)
             return;
 
-        DoUpdateArmorOverride(*it, actor);
+        DoUpdateArmorOverrides(*it, actor);
     }
 
-    void ControllerTask::DoUpdateArmorOverride(simActorList_t::value_type& a_entry, Actor* a_actor)
+    void ControllerTask::DoUpdateArmorOverrides(
+        simActorList_t::value_type& a_entry,
+        Actor* a_actor)
     {
         bool updateConfig;
 
         armorOverrideResults_t ovResult;
         if (IArmor::FindOverrides(a_actor, ovResult))
-            updateConfig = ApplyArmorOverride(a_entry.first, ovResult);
+            updateConfig = ApplyArmorOverrides(a_entry.first, ovResult);
         else
             updateConfig = IConfig::RemoveArmorOverride(a_entry.first);
 
@@ -572,9 +558,11 @@ namespace CBP
             DoConfigUpdate(a_entry.first, a_actor, a_entry.second);
     }
 
-    bool ControllerTask::ApplyArmorOverride(Game::ObjectHandle a_handle, const armorOverrideResults_t& a_desc)
+    bool ControllerTask::ApplyArmorOverrides(
+        Game::ObjectHandle a_handle,
+        const armorOverrideResults_t& a_desc)
     {
-        auto current = IConfig::GetArmorOverride(a_handle);
+        auto current = IConfig::GetArmorOverrides(a_handle);
 
         if (current != nullptr)
         {
@@ -640,7 +628,7 @@ namespace CBP
             if (!actor)
                 return;
 
-            DoUpdateArmorOverride(e, actor);
+            DoUpdateArmorOverrides(e, actor);
         }
     }
 
@@ -676,9 +664,6 @@ namespace CBP
             case ControllerInstruction::Action::Reset:
                 Reset();
                 break;
-            case ControllerInstruction::Action::UIUpdateCurrentActor:
-                DCBP::UIQueueUpdateCurrentActorA();
-                break;
             case ControllerInstruction::Action::UpdateGroupInfoAll:
                 UpdateGroupInfoOnAllActors();
                 break;
@@ -701,7 +686,7 @@ namespace CBP
                     AddArmorOverride(task.m_handle, task.m_formid);
                     break;*/
             case ControllerInstruction::Action::UpdateArmorOverride:
-                UpdateArmorOverride(task.m_handle);
+                UpdateArmorOverrides(task.m_handle);
                 break;
             case ControllerInstruction::Action::UpdateArmorOverridesAll:
                 UpdateArmorOverridesAll();
@@ -715,7 +700,8 @@ namespace CBP
 
     void ControllerTask::GatherActors(handleSet_t& a_out)
     {
-        Game::AIProcessVisitActors([&](Actor* a_actor)
+        Game::AIProcessVisitActors(
+            [&](Actor* a_actor)
             {
                 if (!ActorValid2(a_actor))
                     return;

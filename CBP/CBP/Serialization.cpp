@@ -122,20 +122,29 @@ namespace Serialization
                     switch (s)
                     {
                     case 0:
-                        e.SetColShape(CBP::ColliderShape::Sphere);
+                        e.SetColShape(CBP::ColliderShapeType::Sphere);
                         break;
                     case 1:
-                        e.SetColShape(CBP::ColliderShape::Capsule);
+                        e.SetColShape(CBP::ColliderShapeType::Capsule);
                         break;
                     case 2:
-                        e.SetColShape(CBP::ColliderShape::Box);
+                        e.SetColShape(CBP::ColliderShapeType::Box);
                         break;
                     case 3:
-                        e.SetColShape(CBP::ColliderShape::Convex);
+                        e.SetColShape(CBP::ColliderShapeType::Cone);
+                        break;
+                    case 4:
+                        e.SetColShape(CBP::ColliderShapeType::Tetrahedron);
+                        break;
+                    case 5:
+                        e.SetColShape(CBP::ColliderShapeType::Mesh);
+                        break;
+                    case 6:
+                        e.SetColShape(CBP::ColliderShapeType::Cylinder);
                         break;
                     }
 
-                    e.ex.colConvexMesh = ex.get("cm", "").asString();
+                    e.ex.colMesh = ex.get("cm", "").asString();
                 }
             }
         }
@@ -161,7 +170,7 @@ namespace Serialization
             auto& ex = simComponent["ex"];
 
             ex["cs"] = Enum::Underlying(v.second.ex.colShape);
-            ex["cm"] = v.second.ex.colConvexMesh;
+            ex["cm"] = v.second.ex.colMesh;
         }
 
         a_out["data_version"] = Json::Value::UInt(3);
@@ -354,7 +363,7 @@ namespace CBP
             {
                 const auto& phys = root["physics"];
 
-                globalConfig.phys.timeTick = std::max(phys.get("timeTick", 1.0f / 60.0f).asFloat(), 1.0f);
+                globalConfig.phys.timeTick = std::clamp(phys.get("timeTick", 1.0f / 60.0f).asFloat(), 1.0f / 300.0f, 1.0f);
                 globalConfig.phys.maxSubSteps = std::max(phys.get("maxSubSteps", 5.0f).asFloat(), 1.0f);
                 globalConfig.phys.collisions = phys.get("collisions", true).asBool();
             }

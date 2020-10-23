@@ -13,7 +13,7 @@ namespace CBP
         {
             static_assert(std::is_base_of<TaskDelegate, T>::value);
 
-            SKSE::g_taskInterface->AddTask(new T(std::forward<Args>(a_args)...));
+            s_tasks.AddTask<T>(std::forward<Args>(a_args)...);
         }
 
         static bool Initialize();
@@ -28,5 +28,6 @@ namespace CBP
         static void RunTasks();
 
         static std::vector<TaskDelegateFixed*> s_tasks_fixed;
+        static TaskQueue s_tasks;
     };
 }

@@ -14,7 +14,6 @@ namespace CBP
             UpdateConfig,
             UpdateConfigAll,
             Reset,
-            UIUpdateCurrentActor,
             UpdateGroupInfoAll,
             PhysicsReset,
             NiNodeUpdate,
@@ -61,15 +60,22 @@ namespace CBP
         __forceinline void UpdatePhase1();
         __forceinline void UpdateActorsPhase2(float a_timeStep);
 
-        void ComputeDebugRendererPrimitives();
+       // void ComputeDebugRendererPrimitives();
         __forceinline uint32_t UpdatePhysics(Game::BSMain* a_main, float a_interval);
 
 #ifdef _CBP_ENABLE_DEBUG
         __forceinline void UpdatePhase3();
 #endif
 
-        __forceinline uint32_t UpdatePhase2(float a_timeStep, float a_timeTick, float a_maxTime);
-        __forceinline uint32_t UpdatePhase2Collisions(float a_timeStep, float a_timeTick, float a_maxTime);
+        __forceinline uint32_t UpdatePhase2(
+            float a_timeStep, 
+            float a_timeTick, 
+            float a_maxTime);
+
+        __forceinline uint32_t UpdatePhase2Collisions(
+            float a_timeStep,
+            float a_timeTick, 
+            float a_maxTime);
 
         void AddActor(Game::ObjectHandle a_handle);
         void RemoveActor(Game::ObjectHandle a_handle);
@@ -82,8 +88,8 @@ namespace CBP
         void WeightUpdate(Game::ObjectHandle a_handle);
         void NiNodeUpdateAll();
         void WeightUpdateAll();
-        void AddArmorOverride(Game::ObjectHandle a_handle, Game::FormID a_formid);
-        void UpdateArmorOverride(Game::ObjectHandle a_handle);
+        void AddArmorOverrides(Game::ObjectHandle a_handle, Game::FormID a_formid);
+        void UpdateArmorOverrides(Game::ObjectHandle a_handle);
         void UpdateArmorOverridesAll();
         void ClearArmorOverrides();
 
@@ -91,15 +97,14 @@ namespace CBP
         void PhysicsTick(Game::BSMain* a_main);
 
         void ClearActors();
-        void ApplyForce(Game::ObjectHandle a_handle, uint32_t a_steps, const std::string& a_component, const NiPoint3& a_force);
+
+        void ApplyForce(
+            Game::ObjectHandle a_handle,
+            uint32_t a_steps,
+            const std::string& a_component, 
+            const NiPoint3& a_force);
 
         void UpdateDebugRenderer();
-
-        /*void AddTask(const UTTask& a_task);
-        void AddTask(UTTask&& a_task);
-        void AddTask(UTTask::UTTAction a_action);
-        void AddTask(UTTask::UTTAction a_action, Game::ObjectHandle a_handle);
-        void AddTask(UTTask::UTTAction a_action, Game::ObjectHandle a_handle, Game::FormID a_formid);*/
 
         inline const auto& GetSimActorList() const {
             return m_actors;
@@ -122,10 +127,23 @@ namespace CBP
         void ProcessTasks();
         void GatherActors(handleSet_t& a_out);
 
-        bool ApplyArmorOverride(Game::ObjectHandle a_handle, const armorOverrideResults_t& a_entry);
-        bool BuildArmorOverride(Game::ObjectHandle a_handle, const armorOverrideResults_t& a_in, armorOverrideDescriptor_t& a_out);
-        void DoUpdateArmorOverride(simActorList_t::value_type& a_entry, Actor* a_actor);
-        __forceinline void DoConfigUpdate(Game::ObjectHandle a_handle, Actor* a_actor, SimObject& a_obj);
+        bool ApplyArmorOverrides(
+            Game::ObjectHandle a_handle, 
+            const armorOverrideResults_t& a_entry);
+
+        bool BuildArmorOverride(
+            Game::ObjectHandle a_handle, 
+            const armorOverrideResults_t& a_in,
+            armorOverrideDescriptor_t& a_out);
+
+        void DoUpdateArmorOverrides(
+            simActorList_t::value_type& a_entry,
+            Actor* a_actor);
+
+        __forceinline void DoConfigUpdate(
+            Game::ObjectHandle a_handle, 
+            Actor* a_actor, 
+            SimObject& a_obj);
 
         simActorList_t m_actors;
         Game::ObjectHandle m_markedActor;
@@ -133,7 +151,7 @@ namespace CBP
         float m_timeAccum;
         float m_averageInterval;
 
-        static std::atomic<uint64_t> m_nextGroupId;
+        static uint64_t m_nextGroupId;
 
         Profiler m_profiler;
         //PerfTimerInt m_pt;
