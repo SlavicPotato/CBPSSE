@@ -1846,9 +1846,6 @@ namespace CBP
                     if (Checkbox("Draw AABB", &globalConfig.debugRenderer.drawAABB))
                         DCBP::UpdateDebugRendererSettings();
 
-                    if (Checkbox("Draw broadphase AABB", &globalConfig.debugRenderer.drawBroadphaseAABB))
-                        DCBP::UpdateDebugRendererSettings();
-
                     ImGui::TreePop();
                 }
             }

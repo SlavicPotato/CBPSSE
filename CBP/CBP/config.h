@@ -117,7 +117,6 @@ namespace CBP
             bool movingNodesCenterOfMass = false;
             float movingNodesRadius = 0.75f;
             bool drawAABB = false;
-            bool drawBroadphaseAABB = false;
         } debugRenderer;
 
     };

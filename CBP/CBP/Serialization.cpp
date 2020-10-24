@@ -509,7 +509,6 @@ namespace CBP
                     globalConfig.debugRenderer.movingNodesRadius = debugRenderer.get("movingNodesRadius", 0.75f).asFloat();
                     globalConfig.debugRenderer.movingNodesCenterOfMass = debugRenderer.get("movingNodesCenterOfMass", false).asBool();
                     globalConfig.debugRenderer.drawAABB = debugRenderer.get("drawAABB", false).asBool();
-                    globalConfig.debugRenderer.drawBroadphaseAABB = debugRenderer.get("drawBroadphaseAABB", false).asBool();
                 }
             }
 
@@ -621,7 +620,6 @@ namespace CBP
             debugRenderer["movingNodesCenterOfMass"] = globalConfig.debugRenderer.movingNodesCenterOfMass;
             debugRenderer["movingNodesRadius"] = globalConfig.debugRenderer.movingNodesRadius;
             debugRenderer["drawAABB"] = globalConfig.debugRenderer.drawAABB;
-            debugRenderer["drawBroadphaseAABB"] = globalConfig.debugRenderer.drawBroadphaseAABB;
 
             auto& driverConf = DCBP::GetDriverConfig();
 

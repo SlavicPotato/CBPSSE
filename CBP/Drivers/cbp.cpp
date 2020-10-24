@@ -467,8 +467,7 @@ namespace CBP
         m_Instance.m_updateTask.ClearActors();
         SavePending();
 
-        if (m_Instance.m_renderer.get())
-            m_Instance.m_renderer.release();
+        m_Instance.m_renderer.reset();
 
         m_Instance.Debug("Shutting down");
     }

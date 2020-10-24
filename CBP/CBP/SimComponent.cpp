@@ -180,8 +180,8 @@ namespace CBP
 
         Deactivate();
 
-        m_collider.release();
-        m_colshape.release();
+        m_collider.reset();
+        m_colshape.reset();
 
         m_meshShape.clear();
 
