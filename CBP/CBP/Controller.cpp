@@ -114,14 +114,6 @@ namespace CBP
     }
 #endif
 
-    /*void ControllerTask::ComputeDebugRendererPrimitives()
-    {
-        auto world = DCBP::GetWorld();
-
-        auto& dr = world->getDebugRenderer();
-        dr.computeDebugRenderingPrimitives(*world);
-    }*/
-
     uint32_t ControllerTask::UpdatePhysics(Game::BSMain* a_main, float a_interval)
     {
         if (a_main->freezeTime ||
@@ -198,8 +190,8 @@ namespace CBP
         if (globalConfig.profiling.enableProfiling)
             m_profiler.End(static_cast<uint32_t>(m_actors.size()), steps, interval);
 
-        if (debugRendererEnabled) 
-        {            
+        if (debugRendererEnabled)
+        {
             UpdateDebugRenderer();
             auto world = ICollision::GetWorld();
             world->debugDrawWorld();
@@ -229,6 +221,8 @@ namespace CBP
 
     void ControllerTask::CullActors()
     {
+        const auto& globalConfig = IConfig::GetGlobal();
+
         auto policy = (*g_skyrimVM)->GetClassRegistry()->GetHandlePolicy();
 
         auto it = m_actors.begin();
@@ -238,37 +232,47 @@ namespace CBP
 
             if (!ActorValid(actor))
             {
-#ifdef _CBP_SHOW_STATS
-                Debug("Actor 0x%llX (%s) no longer valid", it->first, actor ? CALL_MEMBER_FN(actor, GetReferenceName)() : nullptr);
-#endif
-                it = m_actors.erase(it);
-            }
-            else
-            {
-                bool attached = actor->parentCell && actor->parentCell->cellState == TESObjectCELL::kAttached;
-
-                if (it->second.IsSuspended())
+                if (globalConfig.general.controllerStats)
                 {
-                    if (attached)
-                    {
-                        it->second.SetSuspended(false);
-#ifdef _CBP_SHOW_STATS
-                        Debug("Actor 0x%llX (%s) unsuspended", it->first, CALL_MEMBER_FN(actor, GetReferenceName)());
-#endif
-                    }
-                }
-                else {
-                    if (!attached)
-                    {
-                        it->second.SetSuspended(true);
-#ifdef _CBP_SHOW_STATS
-                        Debug("Actor 0x%llX (%s) suspended", it->first, CALL_MEMBER_FN(actor, GetReferenceName)());
-#endif
-                    }
+                    Debug("Removing [%.8llX] [%s] (no longer valid)", GetFormID(it->first), GetActorName(actor));
                 }
 
-                ++it;
+                IConfig::RemoveArmorOverride(it->first);
+                IConfig::ClearMergedCacheThreshold();
+
+                it = m_actors.erase(it);
+
+                continue;
             }
+
+            bool attached = actor->parentCell && actor->parentCell->cellState == TESObjectCELL::kAttached;
+
+            if (!it->second.IsSuspended())
+            {
+                if (!attached)
+                {
+                    it->second.SetSuspended(true);
+
+                    if (globalConfig.general.controllerStats)
+                    {
+                        Debug("Suspended [%.8llX] [%s]", GetFormID(it->first), GetActorName(actor));
+                    }
+                }
+            }
+            else 
+            {
+                if (attached)
+                {
+                    it->second.SetSuspended(false);
+
+                    if (globalConfig.general.controllerStats)
+                    {
+                        Debug("Unsuspended [%.8llX] [%s]", GetFormID(it->first), GetActorName(actor));
+                    }
+                }
+            }
+
+            ++it;
         }
     }
 
@@ -328,9 +332,10 @@ namespace CBP
             return;
         }
 
-#ifdef _CBP_SHOW_STATS
-        Debug("Adding %.16llX (%s)", a_handle, CALL_MEMBER_FN(actor, GetReferenceName)());
-#endif
+        if (globalConfig.general.controllerStats)
+        {
+            Debug("Adding [%.8llX] [%s]", actor->formID, CALL_MEMBER_FN(actor, GetReferenceName)());
+        }
 
         m_actors.try_emplace(a_handle, a_handle, actor, sex, m_nextGroupId++, descList);
     }
@@ -340,15 +345,20 @@ namespace CBP
         auto it = m_actors.find(a_handle);
         if (it != m_actors.end())
         {
-#ifdef _CBP_SHOW_STATS
-            auto actor = Game::ResolveObject<Actor>(a_handle, Actor::kTypeID);
-            Debug("Removing %llX (%s)", a_handle, actor ? CALL_MEMBER_FN(actor, GetReferenceName)() : "nullptr");
-#endif
+            const auto& globalConfig = IConfig::GetGlobal();
+
+            if (globalConfig.general.controllerStats)
+            {
+                auto actor = Game::ResolveObject<Actor>(a_handle, Actor::kTypeID);
+                Debug("Removing [%.8llX] [%s]", GetFormID(a_handle), GetActorName(actor));
+            }
+
             m_actors.erase(it);
 
             IConfig::RemoveArmorOverride(a_handle);
-        }
+            IConfig::ClearMergedCacheThreshold();
     }
+}
 
     void ControllerTask::UpdateGroupInfoOnAllActors()
     {
@@ -412,21 +422,32 @@ namespace CBP
 
     void ControllerTask::ClearActors()
     {
-#ifdef _CBP_SHOW_STATS
-        for (auto& e : m_actors)
+        const auto& globalConfig = IConfig::GetGlobal();
+
+        if (globalConfig.general.controllerStats)
         {
-            auto actor = Game::ResolveObject<Actor>(e.first, Actor::kTypeID);
-            Debug("CLR: Removing %llX (%s)", e.first, actor ? CALL_MEMBER_FN(actor, GetReferenceName)() : "nullptr");
+            for (auto& e : m_actors)
+            {
+                auto actor = Game::ResolveObject<Actor>(e.first, Actor::kTypeID);
+                Debug("Removing [%.8llX] [%s] (CLR)", GetFormID(e.first), GetActorName(actor));
+            }
         }
-#endif
 
         m_actors.clear();
 
+        IConfig::ClearMergedCache();
         IConfig::ClearArmorOverrides();
     }
 
     void ControllerTask::Reset()
     {
+        const auto& globalConfig = IConfig::GetGlobal();
+
+        if (globalConfig.general.controllerStats)
+        {
+            Debug("Resetting");
+        }
+
         handleSet_t handles;
 
         /*for (const auto& e : m_actors)

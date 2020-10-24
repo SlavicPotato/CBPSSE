@@ -1467,34 +1467,37 @@ namespace CBP
                         );
                     }
 
-                    ImGui::Separator();
-
-                    if (ImGui::BeginMenu(a_entry->second.first.c_str()))
+                    if (a_entry->first != Game::ObjectHandle(0))
                     {
-                        if (ImGui::MenuItem("Prune"))
+                        ImGui::Separator();
+
+                        if (ImGui::BeginMenu(a_entry->second.first.c_str()))
                         {
-                            m_popup.push(
-                                UIPopupType::Confirm,
-                                UIPopupData(a_entry->first),
-                                "Clear Key",
-                                "This will remove inactive physics component records for '%s'. Are you sure?",
-                                a_entry->second.first.c_str()
-                            ).call([&](auto&, auto& a_d)
-                                {
-                                    auto num = IConfig::PruneActorPhysics(a_d.get<Game::ObjectHandle>(0));
-                                    Debug("%zu pruned", num);
-                                    if (num > 0)
+                            if (ImGui::MenuItem("Prune"))
+                            {
+                                m_popup.push(
+                                    UIPopupType::Confirm,
+                                    UIPopupData(a_entry->first),
+                                    "Clear Key",
+                                    "This will remove inactive physics component records for '%s'. Are you sure?",
+                                    a_entry->second.first.c_str()
+                                ).call([&](auto&, auto& a_d)
                                     {
-                                        QueueListUpdate();
-                                        DCBP::DispatchActorTask(
-                                            a_entry->first, ControllerInstruction::Action::UpdateConfig);
+                                        auto num = IConfig::PruneActorPhysics(a_d.get<Game::ObjectHandle>(0));
+                                        Debug("%zu pruned", num);
+                                        if (num > 0)
+                                        {
+                                            QueueListUpdate();
+                                            DCBP::DispatchActorTask(
+                                                a_entry->first, ControllerInstruction::Action::UpdateConfig);
+                                        }
                                     }
-                                }
-                            );
+                                );
 
+                            }
+
+                            ImGui::EndMenu();
                         }
-
-                        ImGui::EndMenu();
                     }
 
                     ImGui::EndMenu();
@@ -1741,6 +1744,8 @@ namespace CBP
                         DCBP::ClearArmorOverrides();
                 }
 
+                Checkbox("Controller stats", &globalConfig.general.controllerStats);
+
                 ImGui::Spacing();
 
                 ImGui::TreePop();
@@ -1751,6 +1756,9 @@ namespace CBP
                 ImGui::Spacing();
 
                 SliderFloat("Font scale", &globalConfig.ui.fontScale, 0.5f, 3.0f);
+
+                if (SliderInt("Backlog limit", &globalConfig.ui.backlogLimit, 1, 20000))
+                    IEvents::GetBackLog().SetLimit(globalConfig.ui.backlogLimit);
 
                 ImGui::Spacing();
 
@@ -1775,6 +1783,16 @@ namespace CBP
                 ImGui::Spacing();
 
                 Checkbox("Lock game controls while UI active", &globalConfig.ui.lockControls);
+
+                /*if (Checkbox("Lock game controls while UI active", &globalConfig.ui.lockControls)) {
+                    DCBP::GetUIRenderTask().SetLock(globalConfig.ui.lockControls);
+                    DUI::EvaluateTaskState();
+                }
+
+                if (Checkbox("Freeze time while UI active", &globalConfig.ui.freezeTime)) {
+                    DCBP::GetUIRenderTask().SetFreeze(globalConfig.ui.freezeTime);
+                    DUI::EvaluateTaskState();
+                }*/
 
                 ImGui::Spacing();
 
@@ -1845,6 +1863,9 @@ namespace CBP
 
                     if (Checkbox("Draw AABB", &globalConfig.debugRenderer.drawAABB))
                         DCBP::UpdateDebugRendererSettings();
+
+                    /*if (Checkbox("Draw broadphase AABB", &globalConfig.debugRenderer.drawBroadphaseAABB))
+                        DCBP::UpdateDebugRendererSettings();*/
 
                     ImGui::TreePop();
                 }
@@ -3014,8 +3035,8 @@ namespace CBP
         configComponentsValue_t& a_pair,
         const componentValueDescMap_t::vec_value_type& a_entry)
     {
-        auto &desc = configComponent_t::colDescMap.at(a_pair.second.ex.colShape);
-        
+        auto& desc = configComponent_t::colDescMap.at(a_pair.second.ex.colShape);
+
         auto& pm = ProfileManagerCollider::GetSingleton();
 
         if (ImGui::BeginCombo("Collider shape", desc.name.c_str()))
@@ -3174,7 +3195,7 @@ namespace CBP
 
             if ((e.second.marker & DescUIMarker::BeginGroup) == DescUIMarker::BeginGroup)
             {
-                if (e.second.groupType == DescUIGroupType::Physics || 
+                if (e.second.groupType == DescUIGroupType::Physics ||
                     e.second.groupType == DescUIGroupType::PhysicsExtra)
                     showCurrentGroup = HasMovement(a_nodeConfig);
                 else if (e.second.groupType == DescUIGroupType::Collisions)
@@ -3472,9 +3493,9 @@ namespace CBP
         m_size(a_size),
         m_avg(a_avg),
         m_res(a_res),
-        m_strBuf1{ 0 },
-        m_values(a_res, 0.0f)
+        m_strBuf1{ 0 }
     {
+        m_values.reserve(a_res);
     }
 
     void UIPlot::Update(float a_value)
@@ -3494,7 +3515,7 @@ namespace CBP
 
         m_plotScaleMin = m_plotScaleMax;
 
-        float accum = 0.0f;
+        float accum(0.0f);
 
         for (const auto& e : m_values)
         {
@@ -3526,13 +3547,13 @@ namespace CBP
 
     void UIPlot::SetRes(int a_res)
     {
-        m_res = std::max(a_res, decltype(a_res)(1));
+        m_res = std::max<int>(a_res, 1);
 
         while (m_values.size() > m_res)
             m_values.erase(m_values.begin());
 
-        while (m_values.size() < m_res)
-            m_values.emplace_back(0.0f);
+        if (m_res > m_values.size())
+            m_values.reserve(m_res);
     }
 
     void UIPlot::SetHeight(float a_height)
@@ -4117,6 +4138,12 @@ namespace CBP
         ImGui::PopID();
     }
 
+    UILog::UILog() :
+        m_doScrollBottom(false),
+        m_initialScroll(2)
+    {
+    }
+
     void UILog::Draw(bool* a_active)
     {
         const auto& globalConfig = IConfig::GetGlobal();
@@ -4133,17 +4160,24 @@ namespace CBP
             {
                 IScopedCriticalSection _(std::addressof(backlog.GetLock()));
 
-                for (const auto& e : backlog)
+                for (auto& e : backlog)
                     ImGui::TextWrapped("%s", e.c_str());
             }
 
-            if (m_doScrollBottom)
+            if (m_initialScroll > 0)
             {
-                if (!m_initialScroll || ImGui::GetScrollY() > ImGui::GetScrollMaxY() - 50.0f)
-                    ImGui::SetScrollHereY(0.0f);
+                m_initialScroll--;
 
-                m_doScrollBottom = false;
-                m_initialScroll = true;
+                if (!m_initialScroll)
+                    ImGui::SetScrollHereY(0.0f);
+            }
+            else
+            {
+                if (m_doScrollBottom)
+                {
+                    if (ImGui::GetScrollY() > ImGui::GetScrollMaxY() - 50.0f)
+                        ImGui::SetScrollHereY(0.0f);
+                }
             }
 
             ImGui::Dummy(ImVec2(0, 0));

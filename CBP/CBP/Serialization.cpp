@@ -350,6 +350,7 @@ namespace CBP
                 const auto& general = root["general"];
 
                 globalConfig.general.femaleOnly = general.get("femaleOnly", true).asBool();
+                globalConfig.general.controllerStats = general.get("controllerStats", false).asBool();
                 globalConfig.profiling.enableProfiling = general.get("enableProfiling", false).asBool();
                 globalConfig.profiling.profilingInterval = general.get("profilingInterval", 1000).asInt();
                 globalConfig.profiling.enablePlot = general.get("enablePlot", true).asBool();
@@ -396,6 +397,7 @@ namespace CBP
                 globalConfig.ui.actorPhysics.lastActor = static_cast<Game::ObjectHandle>(ui.get("lastActor", 0ULL).asUInt64());
                 globalConfig.ui.actorNode.lastActor = static_cast<Game::ObjectHandle>(ui.get("nodeLastActor", 0ULL).asUInt64());
                 globalConfig.ui.fontScale = ui.get("fontScale", 1.0f).asFloat();
+                globalConfig.ui.backlogLimit = ui.get("backlogLimit", 2000).asInt();
 
                 if (ui.isMember("import"))
                 {
@@ -509,6 +511,7 @@ namespace CBP
                     globalConfig.debugRenderer.movingNodesRadius = debugRenderer.get("movingNodesRadius", 0.75f).asFloat();
                     globalConfig.debugRenderer.movingNodesCenterOfMass = debugRenderer.get("movingNodesCenterOfMass", false).asBool();
                     globalConfig.debugRenderer.drawAABB = debugRenderer.get("drawAABB", false).asBool();
+                    //globalConfig.debugRenderer.drawBroadphaseAABB = debugRenderer.get("drawBroadphaseAABB", false).asBool();
                 }
             }
 
@@ -532,6 +535,7 @@ namespace CBP
             auto& general = root["general"];
 
             general["femaleOnly"] = globalConfig.general.femaleOnly;
+            general["controllerStats"] = globalConfig.general.controllerStats;
             general["enableProfiling"] = globalConfig.profiling.enableProfiling;
             general["profilingInterval"] = globalConfig.profiling.profilingInterval;
             general["enablePlot"] = globalConfig.profiling.enablePlot;
@@ -572,6 +576,7 @@ namespace CBP
             ui["lastActor"] = static_cast<uint64_t>(globalConfig.ui.actorPhysics.lastActor);
             ui["nodeLastActor"] = static_cast<uint64_t>(globalConfig.ui.actorNode.lastActor);
             ui["fontScale"] = globalConfig.ui.fontScale;
+            ui["backlogLimit"] = globalConfig.ui.backlogLimit;
 
             auto& import = ui["import"];
 
@@ -620,6 +625,7 @@ namespace CBP
             debugRenderer["movingNodesCenterOfMass"] = globalConfig.debugRenderer.movingNodesCenterOfMass;
             debugRenderer["movingNodesRadius"] = globalConfig.debugRenderer.movingNodesRadius;
             debugRenderer["drawAABB"] = globalConfig.debugRenderer.drawAABB;
+            //debugRenderer["drawBroadphaseAABB"] = globalConfig.debugRenderer.drawBroadphaseAABB;
 
             auto& driverConf = DCBP::GetDriverConfig();
 
@@ -627,7 +633,8 @@ namespace CBP
 
             return true;
         }
-        catch (const std::exception& e) {
+        catch (const std::exception& e) 
+        {
             m_lastException = e;
             Error("%s: %s", __FUNCTION__, e.what());
             return false;

@@ -255,6 +255,10 @@ namespace CBP
             bool force_ini_keys;
             int compression_level;
 
+            bool use_epa;
+            int maxPersistentManifoldPoolSize;
+            int maxCollisionAlgorithmPoolSize;
+
             UInt32 comboKey;
             UInt32 showKey;
 

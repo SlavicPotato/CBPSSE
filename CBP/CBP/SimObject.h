@@ -39,8 +39,8 @@ namespace CBP
         SimObject(const SimObject& a_rhs) = delete;
         SimObject(SimObject&& a_rhs) = delete;
 
-        void UpdateMovement(float a_timeStep);
-        void UpdateVelocity();
+        __forceinline void UpdateMovement(float a_timeStep);
+        __forceinline void UpdateVelocity();
         void UpdateConfig(Actor* a_actor, bool a_collisions, const configComponents_t& a_config);
         void Reset();
 
@@ -120,5 +120,23 @@ namespace CBP
         std::string m_actorName;
 #endif
     };
+
+    void SimObject::UpdateMovement(float a_timeStep)
+    {
+        if (m_suspended)
+            return;
+
+        for (auto& p : m_things)
+            p.second.UpdateMovement(a_timeStep);
+    }
+
+    void SimObject::UpdateVelocity()
+    {
+        if (m_suspended)
+            return;
+
+        for (auto& p : m_things)
+            p.second.UpdateVelocity();
+    }
 
 }

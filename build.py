@@ -20,7 +20,7 @@ FOMOD = 'installer\\generateFomod.py'
 SLN = 'CBP.sln'
 
 DLL = 'CBP.dll'
-CONFIGS = ['Dep-AVX2', 'Dep-AVX', 'Dep-Generic']
+CONFIGS = ['Dep-AVX2', 'Dep-AVX', 'Dep-SSE2']
 
 parser = argparse.ArgumentParser()
 parser.register('type', 'bool', lambda x: x.lower() in ("yes", "true", "1"))

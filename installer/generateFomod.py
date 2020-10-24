@@ -22,7 +22,7 @@ OUT_PATH = 'releases'
 PACKAGE_COMPRESSION_FORMAT = 'zip'
 
 PKG_BIN_MAP = {
-    'Dep-Generic': 'Generic x64',
+    'Dep-SSE2': 'SSE2',
     'Dep-AVX': 'AVX',
     'Dep-AVX2': 'AVX2'
 }

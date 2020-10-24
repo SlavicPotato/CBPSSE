@@ -102,24 +102,6 @@ namespace CBP
             p.second.Reset();
     }
 
-    void SimObject::UpdateMovement(float a_timeStep)
-    {
-        if (m_suspended)
-            return;
-
-        for (auto& p : m_things)
-            p.second.UpdateMovement(a_timeStep);
-    }
-
-    void SimObject::UpdateVelocity()
-    {
-        if (m_suspended)
-            return;
-
-        for (auto& p : m_things)
-            p.second.UpdateVelocity();
-    }
-
     void SimObject::UpdateConfig(
         Actor* a_actor,
         bool a_collisions,

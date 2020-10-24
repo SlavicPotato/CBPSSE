@@ -1,6 +1,5 @@
 #pragma once
 
-//#define _CBP_SHOW_STATS
 //#define _CBP_MEASURE_PERF
 
 namespace CBP
@@ -122,7 +121,7 @@ namespace CBP
             m_markedActor = a_handle;
         }
 
-        FN_NAMEPROC("UpdateTask")
+        FN_NAMEPROC("Controller")
     private:
         void ProcessTasks();
         void GatherActors(handleSet_t& a_out);
@@ -144,6 +143,14 @@ namespace CBP
             Game::ObjectHandle a_handle, 
             Actor* a_actor, 
             SimObject& a_obj);
+
+        __forceinline const char* GetActorName(Actor* a_actor) {
+            return a_actor ? CALL_MEMBER_FN(a_actor, GetReferenceName)() : "nullptr";
+        }
+
+        __forceinline Game::FormID GetFormID(Game::ObjectHandle a_handle) {
+            return Game::FormID(a_handle & 0xFFFFFFFF);
+        }
 
         simActorList_t m_actors;
         Game::ObjectHandle m_markedActor;

@@ -2,7 +2,7 @@
 
 namespace CBP
 {
-    class Renderer : public btIDebugDraw
+    __declspec(align(16)) class Renderer : public btIDebugDraw
     {
         using VertexType = DirectX::VertexPositionColor;
 

@@ -841,11 +841,7 @@ namespace CBP
         UIBase
     {
     public:
-        UILog() :
-            m_doScrollBottom(true),
-            m_initialScroll(false)
-        {
-        }
+        UILog();
 
         void Draw(bool* a_active);
 
@@ -855,7 +851,7 @@ namespace CBP
 
     private:
         bool m_doScrollBottom;
-        bool m_initialScroll;
+        int8_t m_initialScroll;
     };
 
     class UIContext :

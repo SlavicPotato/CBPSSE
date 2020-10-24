@@ -48,6 +48,7 @@ namespace CBP
         {
             bool femaleOnly = true;
             bool armorOverrides = true;
+            bool controllerStats = false;
         } general;
 
         struct
@@ -105,6 +106,7 @@ namespace CBP
                 bool races = true;
             } import;
 
+            int32_t backlogLimit = 2000;
         } ui;
 
         struct
@@ -117,6 +119,7 @@ namespace CBP
             bool movingNodesCenterOfMass = false;
             float movingNodesRadius = 0.75f;
             bool drawAABB = false;
+            //bool drawBroadphaseAABB = false;
         } debugRenderer;
 
     };
@@ -830,6 +833,15 @@ namespace CBP
 
         inline static void ClearMergedCache() noexcept {
             mergedConfCache.clear();
+        }
+
+        inline static void RemoveMergedCacheEntry(Game::ObjectHandle a_handle) noexcept {
+            mergedConfCache.erase(a_handle);
+        }
+
+        inline static void ClearMergedCacheThreshold(mergedConfCache_t::size_type a_threshold = 200) noexcept {
+            if (mergedConfCache.size() > a_threshold)
+                mergedConfCache.clear();
         }
 
         static size_t PruneAll();

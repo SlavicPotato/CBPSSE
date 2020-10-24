@@ -31,16 +31,16 @@ namespace CBP
 
     void DTasks::TaskInterface1_Hook(BSTaskPool* taskpool)
     {
-        SKSE_BSTaskPoolProc1_O(taskpool);
-
         RunTasks();
+
+        SKSE_BSTaskPoolProc1_O(taskpool);
     }
 
     void DTasks::TaskInterface2_Hook(BSTaskPool* taskpool)
     {
-        SKSE_BSTaskPoolProc2_O(taskpool);
-
         RunTasks();
+
+        SKSE_BSTaskPoolProc2_O(taskpool);
     }
 
     void DTasks::TaskInit_Hook()

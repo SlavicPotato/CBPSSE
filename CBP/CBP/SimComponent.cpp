@@ -10,24 +10,259 @@ namespace CBP
         return mmg(a_val / 100.0f, a_min, a_max);
     }
 
-    __forceinline static float norm(float a_val, float a_min, float a_max) {
-        return (a_val - a_min) / (a_max - a_min);
+    void CollisionShape::SetRadius(float a_radius)
+    {
     }
 
-    __forceinline static float normc(float a_val, float a_min, float a_max) {
-        return std::clamp(norm(a_val, a_min, a_max), 0.0f, 1.0f);
+    void CollisionShape::SetHeight(float a_height)
+    {
     }
 
-    __forceinline static constexpr float sgn(float a_val) {
-        return a_val < 0.0f ? -1.0f : 1.0f;
+    void CollisionShape::SetExtent(const btVector3& a_extent)
+    {
     }
 
-    const btVector3 Collider::m_tetrahedronVertices[4]{
-        {0.0f, 1.0f, 0.0f},
-        {0.942809f, -0.333333f, 0.0f},
-        {-0.471405, -0.333333f, -0.816497f},
-        {-0.471405f, -0.333333f, 0.816497f}
-    };
+    void CollisionShape::SetNodeScale(float a_scale)
+    {
+        m_nodeScale = a_scale;
+        UpdateShape();
+    }
+
+    CollisionShape::CollisionShape(float a_nodeScale) :
+        m_nodeScale(a_nodeScale)
+    {
+    }
+
+    template <class T>
+    template <typename... Args>
+    CollisionShapeBase<T>::CollisionShapeBase(btCollisionObject* a_collider, Args&&... a_args) :
+        CollisionShape(1.0f),
+        m_collider(a_collider)
+    {
+        m_shape = new T(std::forward<Args>(a_args)...);
+    }
+
+    template <class T>
+    CollisionShapeBase<T>::~CollisionShapeBase() noexcept
+    {
+        delete m_shape;
+    }
+
+    template <class T>
+    btCollisionShape* CollisionShapeBase<T>::GetBTShape()
+    {
+        return m_baseShape;
+    }
+
+    template <class T>
+    template <typename... Args>
+    void CollisionShapeBase<T>::RecreateShape(Args&&... a_args)
+    {
+        delete m_shape;
+        m_shape = new T(std::forward<Args>(a_args)...);
+    }
+
+    template <class T>
+    void CollisionShapeBase<T>::PostUpdateShape()
+    {
+        m_collider->setCollisionShape(m_shape);
+        ICollision::CleanProxyFromPairs(m_collider);
+    }
+
+    template <class T>
+    template <typename... Args>
+    CollisionShapeTemplRH<T>::CollisionShapeTemplRH(
+        btCollisionObject* a_collider, 
+        Args&&... a_args) 
+        :
+        CollisionShapeBase<T>(a_collider, std::forward<Args>(a_args)...)
+    {
+    }
+
+    template <class T>
+    void CollisionShapeTemplRH<T>::UpdateShape()
+    {
+        auto rad = m_radius * m_nodeScale;
+        if (rad <= 0.0f)
+            return;
+
+        auto height = std::max(m_height * m_nodeScale, 0.001f);
+        if (rad == m_currentRadius && height == m_currentHeight)
+            return;
+
+        DoRecreateShape(rad, height);
+        PostUpdateShape();
+
+        m_currentRadius = rad;
+        m_currentHeight = height;
+    }
+
+
+    template <class T>
+    void CollisionShapeTemplRH<T>::SetRadius(float a_radius)
+    {
+        m_radius = a_radius;
+        UpdateShape();
+    }
+
+    template <class T>
+    void CollisionShapeTemplRH<T>::SetHeight(float a_height)
+    {
+        m_height = a_height;
+        UpdateShape();
+    }
+
+    template <class T>
+    template <typename... Args>
+    CollisionShapeTemplExtent<T>::CollisionShapeTemplExtent(
+        btCollisionObject* a_collider, 
+        Args&&... a_args) 
+        :
+        CollisionShapeBase<T>(a_collider, std::forward<Args>(a_args)...)
+    {
+    }
+
+    template <class T>
+    void CollisionShapeTemplExtent<T>::SetShapeProperties(const btVector3& a_extent)
+    {
+    }
+
+    template <class T>
+    void CollisionShapeTemplExtent<T>::UpdateShape()
+    {
+        auto extent(m_extent * m_nodeScale);
+        if (extent == m_currentExtent)
+            return;
+
+        DoRecreateShape(extent);
+        SetShapeProperties(extent);
+        PostUpdateShape();
+
+        m_currentExtent = extent;
+    }
+
+    template <class T>
+    void CollisionShapeTemplExtent<T>::SetExtent(const btVector3& a_extent)
+    {
+        m_extent = a_extent;
+        UpdateShape();
+
+    }
+
+    CollisionShapeSphere::CollisionShapeSphere(
+        btCollisionObject* a_collider, 
+        float a_radius) 
+        :
+        CollisionShapeBase<btSphereShape>(a_collider, a_radius)
+    {
+        m_radius = m_currentRadius = a_radius;
+    }
+
+    void CollisionShapeSphere::UpdateShape()
+    {
+        auto rad = m_radius * m_nodeScale;
+        if (rad <= 0.0f || rad == m_currentRadius)
+            return;
+
+        RecreateShape(rad);
+        PostUpdateShape();
+
+        m_currentRadius = rad;
+    }
+
+    void CollisionShapeSphere::SetRadius(float a_radius)
+    {
+        m_radius = a_radius;
+        UpdateShape();
+    }
+
+    CollisionShapeCapsule::CollisionShapeCapsule(
+        btCollisionObject* a_collider, 
+        float a_radius, 
+        float a_height) 
+        :
+        CollisionShapeTemplRH<btCapsuleShape>(a_collider, a_radius, a_height)
+    {
+        m_radius = m_currentRadius = a_radius;
+        m_height = m_currentHeight = a_height;
+    }
+
+    void CollisionShapeCapsule::DoRecreateShape(float a_radius, float a_height)
+    {
+        RecreateShape(a_radius, a_height);
+    }
+
+    CollisionShapeCone::CollisionShapeCone(
+        btCollisionObject* a_collider, 
+        float a_radius, 
+        float a_height) 
+        :
+        CollisionShapeTemplRH<btConeShape>(a_collider, a_radius, a_height)
+    {
+        m_radius = m_currentRadius = a_radius;
+        m_height = m_currentHeight = a_height;
+    }
+
+    void CollisionShapeCone::DoRecreateShape(float a_radius, float a_height)
+    {
+        RecreateShape(a_radius, a_height);
+    }
+
+    CollisionShapeBox::CollisionShapeBox(
+        btCollisionObject* a_collider, 
+        const btVector3& a_extent) 
+        :
+        CollisionShapeTemplExtent<btBoxShape>(a_collider, a_extent)
+    {
+        m_extent = m_currentExtent = a_extent;
+    }
+
+    void CollisionShapeBox::DoRecreateShape(const btVector3& a_extent)
+    {
+        RecreateShape(a_extent);
+    }
+
+    CollisionShapeCylinder::CollisionShapeCylinder(
+        btCollisionObject* a_collider, 
+        float a_radius, 
+        float a_height) 
+        :
+        CollisionShapeTemplRH<btCylinderShape>(a_collider, btVector3(a_radius, a_height, 1.0f))
+    {
+        m_radius = m_currentRadius = a_radius;
+        m_height = m_currentHeight = a_height;
+    }
+
+    void CollisionShapeCylinder::DoRecreateShape(float a_radius, float a_height)
+    {
+        RecreateShape(btVector3(a_radius, a_height, 1.0f));
+    }
+
+    CollisionShapeTetrahedron::CollisionShapeTetrahedron(
+        btCollisionObject* a_collider, 
+        const btVector3& a_extent)
+        :
+        CollisionShapeTemplExtent<btTetrahedronShapeEx>(a_collider)
+    {
+        m_extent = m_currentExtent = a_extent;
+
+        SetShapeProperties(a_extent);
+    }
+
+    void CollisionShapeTetrahedron::DoRecreateShape(const btVector3& a_extent)
+    {
+        RecreateShape();
+    }
+
+    void CollisionShapeTetrahedron::SetShapeProperties(const btVector3& a_extent)
+    {
+        m_shape->setVertices(
+            m_vertices[0] * a_extent,
+            m_vertices[1] * a_extent,
+            m_vertices[2] * a_extent,
+            m_vertices[3] * a_extent
+        );
+    }
 
     const btVector3 CollisionShapeTetrahedron::m_vertices[4]{
         {0.0f, 1.0f, 0.0f},
@@ -35,6 +270,58 @@ namespace CBP
         {-0.471405, -0.333333f, -0.816497f},
         {-0.471405f, -0.333333f, 0.816497f}
     };
+
+    CollisionShapeMesh::CollisionShapeMesh(
+        btCollisionObject* a_collider,
+        const std::shared_ptr<btTriangleIndexVertexArray>& a_data,
+        const btVector3& a_extent)
+        :
+        CollisionShapeTemplExtent<btGImpactMeshShape>(a_collider, a_data.get()),
+        m_triVertexArray(a_data)
+    {
+        m_extent = m_currentExtent = a_extent;
+
+        SetShapeProperties(a_extent);
+    }
+
+    void CollisionShapeMesh::DoRecreateShape(const btVector3& a_extent)
+    {
+        RecreateShape(m_triVertexArray.get());
+    }
+
+    void CollisionShapeMesh::SetShapeProperties(const btVector3& a_extent)
+    {
+        m_shape->setLocalScaling(a_extent);
+        m_shape->updateBound();
+    }
+
+    CollisionShapeConvexHull::CollisionShapeConvexHull(
+        btCollisionObject* a_collider,
+        const std::shared_ptr<MeshPoint[]>& a_data,
+        int a_numVertices,
+        const btVector3& a_extent)
+        :
+        CollisionShapeTemplExtent<btConvexHullShape>(a_collider, reinterpret_cast<const btScalar*>(a_data.get()), a_numVertices, sizeof(MeshPoint)),
+        m_convexHullPoints(a_data),
+        m_convexHullNumVertices(a_numVertices)
+    {
+        m_extent = m_currentExtent = a_extent;
+
+        SetShapeProperties(a_extent);
+    }
+
+    void CollisionShapeConvexHull::DoRecreateShape(const btVector3& a_extent)
+    {
+        RecreateShape(reinterpret_cast<const btScalar*>(m_convexHullPoints.get()), m_convexHullNumVertices);
+    }
+
+    void CollisionShapeConvexHull::SetShapeProperties(const btVector3& a_extent)
+    {
+        m_shape->setLocalScaling(a_extent);
+        m_shape->recalcLocalAabb();
+    }
+
+
 
     Collider::Collider(
         SimComponent& a_parent)
@@ -127,7 +414,7 @@ namespace CBP
             if (a_shape == ColliderShapeType::Mesh)
             {
                 m_colshape = std::make_unique<CollisionShapeMesh>(
-                    collider.get(), data.m_data, m_parent.m_extent);
+                    collider.get(), data.m_triVertexArray, m_parent.m_extent);
             }
             else
             {
@@ -182,80 +469,12 @@ namespace CBP
 
         m_collider.reset();
         m_colshape.reset();
-
+               
         m_meshShape.clear();
 
         m_created = false;
 
         return true;
-    }
-
-    void Collider::Update()
-    {
-        if (!m_created)
-            return;
-
-        auto nodeScale = m_parent.m_obj->m_worldTransform.scale;
-
-        if (!m_active)
-        {
-            if (nodeScale > 0.0f)
-            {
-                m_active = true;
-                if (m_process)
-                    Activate();
-            }
-            else
-                return;
-        }
-        else
-        {
-            if (nodeScale <= 0.0f)
-            {
-                m_active = false;
-                Deactivate();
-                return;
-            }
-        }
-
-        auto& transform = m_collider->getWorldTransform();
-
-        auto pos = m_parent.m_obj->m_worldTransform * m_bodyOffset;
-
-        transform.setOrigin({ pos.x, pos.y, pos.z });
-
-        if (m_rotation)
-        {
-            auto& m = m_parent.m_obj->m_worldTransform.rot;
-            auto& b = transform.getBasis();
-
-#if defined(BT_USE_SIMD_VECTOR3) && defined(BT_USE_SSE_IN_API) && defined(BT_USE_SSE)
-
-            // kinda fucky but much faster
-
-            static_assert(sizeof(b) == sizeof(btVector3) * 3);
-
-            auto el = reinterpret_cast<btVector3*>(&b);
-
-            el[0].mVec128 = _mm_and_ps(_mm_loadu_ps(m.data[0]), btvFFF0fMask);
-            el[1].mVec128 = _mm_and_ps(_mm_loadu_ps(m.data[1]), btvFFF0fMask);
-            el[2].mVec128 = _mm_and_ps(_mm_loadu_ps(m.data[2]), btvFFF0fMask); // should be safe since there's stuff after matrix
-
-#else
-            b.setValue(
-                m.arr[0], m.arr[1], m.arr[2],
-                m.arr[3], m.arr[4], m.arr[5],
-                m.arr[6], m.arr[7], m.arr[8]);
-#endif
-
-            b *= m_colRot;
-        }
-
-        if (nodeScale != m_nodeScale)
-        {
-            m_nodeScale = nodeScale;
-            m_colshape->SetNodeScale(nodeScale);
-        }
     }
 
     void Collider::Activate()
@@ -316,7 +535,8 @@ namespace CBP
         m_objParent(a_obj->m_parent),
         m_updateCtx({ 0.0f, 0 }),
         m_formid(a_actor->formID),
-        m_conf(a_config)
+        m_conf(a_config),
+        m_movement(a_movement)
     {
 #ifdef _CBP_ENABLE_DEBUG
         m_debugInfo.parentNodeName = a_obj->m_parent->m_name;
@@ -326,7 +546,8 @@ namespace CBP
 
     SimComponent::~SimComponent()
     {
-        m_obj->m_localTransform = m_initialTransform;
+        if (m_movement)
+            m_obj->m_localTransform = m_initialTransform;
     }
 
     bool SimComponent::ColUpdateWeightData(
@@ -374,12 +595,13 @@ namespace CBP
 
         m_collisions = a_collisions;
 
-        if (a_movement != m_movement) {
+        if (a_movement != m_movement) 
+        {
             m_movement = a_movement;
             m_applyForceQueue.swap(decltype(m_applyForceQueue)());
         }
 
-        if (m_collisions)
+        if (a_collisions)
         {
             if (!ColUpdateWeightData(a_actor, m_conf, a_nodeConf))
             {
@@ -440,7 +662,7 @@ namespace CBP
 
         if (m_conf.phys.resistance > 0.0f) {
             m_resistanceOn = true;
-            m_conf.phys.resistance = std::clamp(m_conf.phys.resistance, 0.0f, 50.0f);
+            m_conf.phys.resistance = std::clamp(m_conf.phys.resistance, 0.0f, 250.0f);
         }
         else
             m_resistanceOn = false;
@@ -503,137 +725,6 @@ namespace CBP
         m_collider.Update();
 
         m_applyForceQueue.swap(decltype(m_applyForceQueue)());
-    }
-
-    void SimComponent::ConstrainMotion(
-        const NiMatrix33& a_invRot,
-        const NiPoint3& a_target,
-        float a_timeStep,
-        NiPoint3& a_ldiff
-    )
-    {
-        NiPoint3 diff;
-        uint32_t flags(0);
-
-        if (fabs(a_ldiff.x) > m_conf.phys.maxOffset[0])
-        {
-            diff.x = a_ldiff.x;
-            flags |= CONSTRAIN_X;
-        }
-
-        if (fabs(a_ldiff.y) > m_conf.phys.maxOffset[1])
-        {
-            diff.y = a_ldiff.y;
-            flags |= CONSTRAIN_Y;
-        }
-
-        if (fabs(a_ldiff.z) > m_conf.phys.maxOffset[2])
-        {
-            diff.z = a_ldiff.z;
-            flags |= CONSTRAIN_Z;
-        }
-
-        if (!flags)
-            return;
-
-        auto n = m_objParent->m_worldTransform.rot * diff;
-        n.Normalize();
-
-        float vdotn = m_velocity.Dot(n);
-
-        if (vdotn > 0.0f)
-        {
-            if (flags & CONSTRAIN_X)
-                diff.x -= diff.x < 0.0f ? -m_conf.phys.maxOffset[0] : m_conf.phys.maxOffset[0];
-            if (flags & CONSTRAIN_Y)
-                diff.y -= diff.y < 0.0f ? -m_conf.phys.maxOffset[1] : m_conf.phys.maxOffset[1];
-            if (flags & CONSTRAIN_Z)
-                diff.z -= diff.z < 0.0f ? -m_conf.phys.maxOffset[2] : m_conf.phys.maxOffset[2];
-
-            m_velocity -= n * (vdotn * normc(diff.Length(), 0.0f, m_conf.phys.maxOffsetConstraint));
-
-            a_ldiff = a_invRot * ((m_oldWorldPos + m_velocity * a_timeStep) - a_target);
-        }
-    }
-
-    void SimComponent::UpdateMovement(float a_timeStep)
-    {
-        if (m_movement)
-        {
-            //Offset to move Center of Mass make rotational motion more significant  
-            NiPoint3 target(m_objParent->m_worldTransform * m_npCogOffset);
-
-            NiPoint3 diff(target - m_oldWorldPos);
-
-            float ax = std::fabs(diff.x);
-            float ay = std::fabs(diff.y);
-            float az = std::fabs(diff.z);
-
-            if (ax > 512.0f || ay > 512.0f || az > 512.0f) {
-                Reset();
-                return;
-            }
-
-            // Compute the "Spring" Force
-            NiPoint3 diff2(diff.x * ax, diff.y * ay, diff.z * az);
-            NiPoint3 force((diff * m_conf.phys.stiffness) + (diff2 * m_conf.phys.stiffness2));
-
-            force.z -= m_conf.phys.gravityBias * m_conf.phys.mass;
-
-            if (!m_applyForceQueue.empty())
-            {
-                auto& current = m_applyForceQueue.front();
-
-                auto vDir = m_objParent->m_worldTransform.rot * current.force;
-                vDir.Normalize();
-
-                force += (vDir * current.mag) / a_timeStep;
-
-                if (!current.steps--)
-                    m_applyForceQueue.pop();
-            }
-
-            float res = m_resistanceOn ?
-                (1.0f - 1.0f / (m_velocity.Length() * 0.0075f + 1.0f)) * m_conf.phys.resistance + 1.0f : 1.0f;
-
-            SetVelocity((m_velocity + (force / m_conf.phys.mass * a_timeStep)) -
-                (m_velocity * ((m_conf.phys.damping * res) * a_timeStep)));
-
-            auto invRot = m_objParent->m_worldTransform.rot.Transpose();
-            auto ldiff = invRot * ((m_oldWorldPos + m_velocity * a_timeStep) - target);
-
-            ConstrainMotion(invRot, target, a_timeStep, ldiff);
-
-            m_oldWorldPos = m_objParent->m_worldTransform.rot * ldiff + target;
-
-            m_obj->m_localTransform.pos.x = m_initialTransform.pos.x + ldiff.x * m_conf.phys.linear[0];
-            m_obj->m_localTransform.pos.y = m_initialTransform.pos.y + ldiff.y * m_conf.phys.linear[1];
-            m_obj->m_localTransform.pos.z = m_initialTransform.pos.z + ldiff.z * m_conf.phys.linear[2];
-
-            /*if (m_formid == 0x14 && std::string(m_obj->m_name) == "NPC L Breast")
-                gLog.Debug(">> %f %f %f", dir.x, dir.y, dir.z);*/
-
-            m_obj->m_localTransform.pos += (invRot * m_npGravityCorrection) * m_obj->m_localTransform.scale;
-
-            if (m_rotScaleOn)
-                m_obj->m_localTransform.rot.SetEulerAngles(
-                    ldiff.x * m_conf.phys.rotational[0],
-                    ldiff.y * m_conf.phys.rotational[1],
-                    (ldiff.z + m_conf.phys.rotGravityCorrection) * m_conf.phys.rotational[2]);
-
-            m_obj->UpdateWorldData(&m_updateCtx);
-        }
-
-        m_collider.Update();
-    }
-
-    void SimComponent::UpdateVelocity()
-    {
-        if (m_movement)
-            return;
-
-        m_velocity = m_obj->m_worldTransform.pos - m_oldWorldPos;
-        m_oldWorldPos = m_obj->m_worldTransform.pos;
     }
 
     void SimComponent::ApplyForce(uint32_t a_steps, const NiPoint3& a_force)

@@ -67,9 +67,9 @@ group_exec = pyfomod.Group()
 group_exec.name = 'DLL'
 group_exec.type = pyfomod.GroupType.EXACTLYONE
 
-group_exec.append(mkfile('Generic x64', 'For any x64 processor. Use only if you run a potato built before 2008.', ('00_binaries\\generic\\cbp.dll', T_DLL)))
-group_exec.append(mkfile('AVX', '.', ('00_binaries\\avx\\cbp.dll', T_DLL)))
 group_exec.append(mkfile('AVX2', 'For Intel Haswell / AMD Excavator or later. Haswell was launched in 2013, Excavator in 2015. Best performance.', ('00_binaries\\avx2\\cbp.dll', T_DLL)))
+group_exec.append(mkfile('AVX', '.', ('00_binaries\\avx\\cbp.dll', T_DLL)))
+group_exec.append(mkfile('SSE2', 'For any x64 processor. Use only if you run a potato built before 2008.', ('00_binaries\\sse2\\cbp.dll', T_DLL)))
 
 page_exec.append(group_exec)
 

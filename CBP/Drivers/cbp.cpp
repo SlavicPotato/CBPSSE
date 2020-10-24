@@ -18,6 +18,9 @@ namespace CBP
     constexpr const char* CKEY_COMPLEVEL = "CompressionLevel";
     constexpr const char* CKEY_DATAPATH = "DataPath";
     constexpr const char* CKEY_IMGUIINI = "ImGuiSettings";
+    constexpr const char* CKEY_BTEPA = "UseEpaPenetrationAlgorithm";
+    constexpr const char* CKEY_BTMANIFOLDPOOLSIZE = "MaxPersistentManifoldPoolSize";
+    constexpr const char* CKEY_BTALGOPOOLSIZE = "MaxCollisionAlgorithmPoolSize";
 
     DCBP::DCBP() :
         m_loadInstance(0),
@@ -231,6 +234,10 @@ namespace CBP
         m_conf.compression_level = std::clamp(GetConfigValue(SECTION_CBP, CKEY_COMPLEVEL, 1), 0, 9);
         m_conf.imguiIni = GetConfigValue(SECTION_CBP, CKEY_IMGUIINI, PLUGIN_IMGUI_INI_FILE);
 
+        m_conf.use_epa = GetConfigValue(SECTION_CBP, CKEY_BTEPA, true);
+        m_conf.maxPersistentManifoldPoolSize = GetConfigValue(SECTION_CBP, CKEY_BTMANIFOLDPOOLSIZE, 4096);
+        m_conf.maxCollisionAlgorithmPoolSize = GetConfigValue(SECTION_CBP, CKEY_BTALGOPOOLSIZE, 4096);
+
         auto& globalConfig = IConfig::GetGlobal();
 
         globalConfig.ui.comboKey = m_conf.comboKey = ConfigGetComboKey(GetConfigValue(SECTION_CBP, CKEY_COMBOKEY, 1));
@@ -374,7 +381,11 @@ namespace CBP
 
         SKSE::g_papyrus->Register(RegisterFuncs);
 
-        CBP::ICollision::Initialize();
+        ICollision::Initialize(
+            m_Instance.m_conf.use_epa,
+            m_Instance.m_conf.maxPersistentManifoldPoolSize,
+            m_Instance.m_conf.maxCollisionAlgorithmPoolSize
+        );
 
         if (m_Instance.m_conf.debug_renderer)
         {
@@ -515,7 +526,9 @@ namespace CBP
             if (GetDriverConfig().ui_enabled)
                 GetUIContext().Initialize();
 
-            GetUpdateTask().UpdateTimeTick(IConfig::GetGlobal().phys.timeTick);
+            const auto& globalConf = CBP::IConfig::GetGlobal();
+
+            GetUpdateTask().UpdateTimeTick(globalConf.phys.timeTick);
             UpdateKeys();
 
             if (DData::HasModList())
@@ -527,6 +540,8 @@ namespace CBP
             else
                 m_Instance.Error("%s: failed to populate mod list, templates will be unavailable");
 
+
+            IEvents::GetBackLog().SetLimit(globalConf.ui.backlogLimit);
 
             Unlock();
 
