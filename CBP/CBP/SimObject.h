@@ -43,6 +43,7 @@ namespace CBP
         __forceinline void UpdateVelocity();
         void UpdateConfig(Actor* a_actor, bool a_collisions, const configComponents_t& a_config);
         void Reset();
+        bool ValidateNodes(Actor* a_actor);
 
         void ApplyForce(uint32_t a_steps, const std::string& a_component, const NiPoint3& a_force);
 

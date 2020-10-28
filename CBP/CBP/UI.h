@@ -1052,8 +1052,6 @@ namespace CBP
             struct {
                 bool openExportDialog;
                 bool openImportDialog;
-                bool saveAllFailed;
-                bool saveToDefaultGlob;
             } menu;
 
             except::descriptor lastException;

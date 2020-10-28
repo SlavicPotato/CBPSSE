@@ -326,11 +326,6 @@ namespace CBP
 
     __declspec(align(16)) class SimComponent
     {
-
-        static constexpr uint32_t CONSTRAIN_X = 0x1;
-        static constexpr uint32_t CONSTRAIN_Y = 0x2;
-        static constexpr uint32_t CONSTRAIN_Z = 0x4;
-
         struct Force
         {
             uint32_t steps;
@@ -351,6 +346,7 @@ namespace CBP
         NiPoint3 m_npGravityCorrection;
 
         NiPoint3 m_oldWorldPos;
+        NiPoint3 m_virtld;
         NiPoint3 m_velocity;
 
         NiTransform m_initialTransform;
@@ -375,6 +371,7 @@ namespace CBP
         float m_colOffsetY = 0.0f;
         float m_colOffsetZ = 0.0f;
         float m_nodeScale = 1.0f;
+        float m_massInv = 1.0f;
 
         uint64_t m_groupId;
         uint64_t m_parentId;
@@ -415,7 +412,7 @@ namespace CBP
     public:
         SimComponent(
             Actor* a_actor,
-            NiAVObject* m_obj,
+            NiAVObject* a_obj,
             const std::string& a_configBoneName,
             const configComponent_t& config,
             const configNode_t& a_nodeConf,
@@ -441,6 +438,7 @@ namespace CBP
         __forceinline void UpdateMovement(float timeStep);
         __forceinline void UpdateVelocity();
         void Reset();
+        bool ValidateNodes(NiAVObject* a_obj);
 
         void ApplyForce(uint32_t a_steps, const NiPoint3& a_force);
 
@@ -505,8 +503,20 @@ namespace CBP
             return m_obj->m_worldTransform.pos;
         }
 
+        [[nodiscard]] inline const auto& GetWorldTransform() const {
+            return m_obj->m_worldTransform;
+        }
+
+        [[nodiscard]] inline const auto& GetParentWorldTransform() const {
+            return m_objParent->m_worldTransform;
+        }
+
+        [[nodiscard]] inline const auto& GetVirtualPos() const {
+            return m_virtld;
+        }
+
         [[nodiscard]] inline auto GetCenterOfMass() const {
-            return m_objParent->m_worldTransform * m_npCogOffset;
+            return m_npCogOffset;
         }
 
         [[nodiscard]] inline float GetNodeScale() const {
@@ -521,6 +531,10 @@ namespace CBP
             return m_collider;
         }
 
+        [[nodiscard]] inline const float GetMassInverse() const {
+            return m_massInv;
+        }
+
 #ifdef _CBP_ENABLE_DEBUG
         [[nodiscard]] inline const auto& GetDebugInfo() const {
             return m_debugInfo;
@@ -528,16 +542,19 @@ namespace CBP
 #endif
     };
 
-    __forceinline static float norm(float a_val, float a_min, float a_max) {
-        return (a_val - a_min) / (a_max - a_min);
-    }
+    namespace Math
+    {
+        __forceinline float norm(float a_val, float a_min, float a_max) {
+            return (a_val - a_min) / (a_max - a_min);
+        }
 
-    __forceinline static float normc(float a_val, float a_min, float a_max) {
-        return std::clamp(norm(a_val, a_min, a_max), 0.0f, 1.0f);
-    }
+        __forceinline float normc(float a_val, float a_min, float a_max) {
+            return std::clamp(norm(a_val, a_min, a_max), 0.0f, 1.0f);
+        }
 
-    __forceinline static constexpr float sgn(float a_val) {
-        return a_val < 0.0f ? -1.0f : 1.0f;
+        __forceinline constexpr float sgn(float a_val) {
+            return a_val < 0.0f ? -1.0f : 1.0f;
+        }
     }
 
     void Collider::Update()
@@ -617,49 +634,66 @@ namespace CBP
     )
     {
         NiPoint3 diff;
-        uint32_t flags(0);
+        NiPoint3 depth;
+        bool constrain(false);
 
-        if (fabs(a_ldiff.x) > m_conf.phys.maxOffset[0])
+        if (a_ldiff.x > m_conf.phys.maxOffsetP[0])
         {
             diff.x = a_ldiff.x;
-            flags |= CONSTRAIN_X;
+            depth.x = diff.x - m_conf.phys.maxOffsetP[0];
+            constrain = true;
+        }
+        else if (a_ldiff.x < m_conf.phys.maxOffsetN[0])
+        {
+            diff.x = a_ldiff.x;
+            depth.x = diff.x - m_conf.phys.maxOffsetN[0];
+            constrain = true;
         }
 
-        if (fabs(a_ldiff.y) > m_conf.phys.maxOffset[1])
+        if (a_ldiff.y > m_conf.phys.maxOffsetP[1])
         {
             diff.y = a_ldiff.y;
-            flags |= CONSTRAIN_Y;
+            depth.y = diff.y - m_conf.phys.maxOffsetP[1];
+            constrain = true;
+        }
+        else if (a_ldiff.y < m_conf.phys.maxOffsetN[1])
+        {
+            diff.y = a_ldiff.y;
+            depth.y = diff.y - m_conf.phys.maxOffsetN[1];
+            constrain = true;
         }
 
-        if (fabs(a_ldiff.z) > m_conf.phys.maxOffset[2])
+        if (a_ldiff.z > m_conf.phys.maxOffsetP[2])
         {
             diff.z = a_ldiff.z;
-            flags |= CONSTRAIN_Z;
+            depth.z = diff.z - m_conf.phys.maxOffsetP[2];
+            constrain = true;
+        }
+        else if (a_ldiff.z < m_conf.phys.maxOffsetN[2])
+        {
+            diff.z = a_ldiff.z;
+            depth.z = diff.z - m_conf.phys.maxOffsetN[2];
+            constrain = true;
         }
 
-        if (!flags)
+        if (!constrain)
             return;
 
         auto n = m_objParent->m_worldTransform.rot * diff;
         n.Normalize();
 
+        auto mag = depth.Length();
+
+        float bias = mag > 0.1f ?
+            (a_timeStep * 2880.0f) * std::clamp(mag - 0.1f, 0.0f, m_conf.phys.maxOffsetMaxBiasMag) : 0.0f;
+
         float vdotn = m_velocity.Dot(n);
+        float impulse = std::max(vdotn + bias, 0.0f);
+        float J = (1.0f + m_conf.phys.maxOffsetRestitutionCoefficient) * impulse;
 
-        if (vdotn > 0.0f)
-        {
-            if (flags & CONSTRAIN_X)
-                diff.x -= diff.x < 0.0f ? -m_conf.phys.maxOffset[0] : m_conf.phys.maxOffset[0];
-            if (flags & CONSTRAIN_Y)
-                diff.y -= diff.y < 0.0f ? -m_conf.phys.maxOffset[1] : m_conf.phys.maxOffset[1];
-            if (flags & CONSTRAIN_Z)
-                diff.z -= diff.z < 0.0f ? -m_conf.phys.maxOffset[2] : m_conf.phys.maxOffset[2];
+        m_velocity -= n * (J * m_conf.phys.maxOffsetVelResponseScale);
 
-            auto mag = diff.Length();
-
-            m_velocity -= n * (vdotn * normc(mag, 0.0f, m_conf.phys.maxOffsetConstraint));
-
-            a_ldiff = a_invRot * ((m_oldWorldPos + m_velocity * a_timeStep) - a_target);
-        }
+        a_ldiff = a_invRot * ((m_oldWorldPos + m_velocity * a_timeStep) - a_target);
     }
 
     void SimComponent::UpdateMovement(float a_timeStep)
@@ -675,7 +709,7 @@ namespace CBP
             float ay = std::fabs(diff.y);
             float az = std::fabs(diff.z);
 
-            if (ax > 512.0f || ay > 512.0f || az > 512.0f) {
+            if (ax > 256.0f || ay > 256.0f || az > 256.0f) {
                 Reset();
                 return;
             }
@@ -706,15 +740,15 @@ namespace CBP
                 (m_velocity * ((m_conf.phys.damping * res) * a_timeStep)));
 
             auto invRot = m_objParent->m_worldTransform.rot.Transpose();
-            auto ldiff = invRot * ((m_oldWorldPos + m_velocity * a_timeStep) - target);
+            m_virtld = invRot * ((m_oldWorldPos + m_velocity * a_timeStep) - target);
 
-            ConstrainMotion(invRot, target, a_timeStep, ldiff);
+            ConstrainMotion(invRot, target, a_timeStep, m_virtld);
 
-            m_oldWorldPos = m_objParent->m_worldTransform.rot * ldiff + target;
+            m_oldWorldPos = m_objParent->m_worldTransform.rot * m_virtld + target;
 
-            m_obj->m_localTransform.pos.x = m_initialTransform.pos.x + ldiff.x * m_conf.phys.linear[0];
-            m_obj->m_localTransform.pos.y = m_initialTransform.pos.y + ldiff.y * m_conf.phys.linear[1];
-            m_obj->m_localTransform.pos.z = m_initialTransform.pos.z + ldiff.z * m_conf.phys.linear[2];
+            m_obj->m_localTransform.pos.x = m_initialTransform.pos.x + m_virtld.x * m_conf.phys.linear[0];
+            m_obj->m_localTransform.pos.y = m_initialTransform.pos.y + m_virtld.y * m_conf.phys.linear[1];
+            m_obj->m_localTransform.pos.z = m_initialTransform.pos.z + m_virtld.z * m_conf.phys.linear[2];
 
             /*if (m_formid == 0x14 && std::string(m_obj->m_name) == "NPC L Breast")
                 gLog.Debug(">> %f %f %f", dir.x, dir.y, dir.z);*/
@@ -723,9 +757,9 @@ namespace CBP
 
             if (m_rotScaleOn)
                 m_obj->m_localTransform.rot.SetEulerAngles(
-                    ldiff.x * m_conf.phys.rotational[0],
-                    ldiff.y * m_conf.phys.rotational[1],
-                    (ldiff.z + m_conf.phys.rotGravityCorrection) * m_conf.phys.rotational[2]);
+                    m_virtld.x * m_conf.phys.rotational[0],
+                    m_virtld.y * m_conf.phys.rotational[1],
+                    (m_virtld.z + m_conf.phys.rotGravityCorrection) * m_conf.phys.rotational[2]);
 
             m_obj->UpdateWorldData(&m_updateCtx);
         }

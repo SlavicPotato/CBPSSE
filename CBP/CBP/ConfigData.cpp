@@ -62,29 +62,7 @@ namespace CBP
             0.0f, 10.0f,
             "Velocity removed/tick 1.0 would be all velocity removed",
             "Velocity damping"
-        }},
-        {"mox", {
-            offsetof(configComponent_t, phys.maxOffset[0]),
-            "",
-            0.0f, 255.0f,
-            "Maximum amount the bone is allowed to move from target (X, Y, Z)",
-            "Max. offset",
-             DescUIMarker::Float3
-        }},
-        {"moy", {
-            offsetof(configComponent_t, phys.maxOffset[1]),
-            "",
-            0.0f, 255.0f,
-            "",
-            ""
-        }},
-        {"moz", {
-            offsetof(configComponent_t, phys.maxOffset[2]),
-            "",
-            0.0f, 255.0f,
-            "",
-            ""
-        }},
+        }},        
         {"lx", {
             offsetof(configComponent_t, phys.linear[0]),
             "",
@@ -368,15 +346,65 @@ namespace CBP
             DescUIMarker::EndGroup,
             DescUIGroupType::Collisions
         }},
-        {"moc", {
-            offsetof(configComponent_t, phys.maxOffsetConstraint),
+        {"mox", {
+            offsetof(configComponent_t, phys.maxOffsetP[0]),
             "",
-            1.0f, 50.0f,
-            "Determines how velocity is removed when exceeding the movement constraint (with lower values object stops more abruptly)",
-            "Max offset constraint",
-            DescUIMarker::BeginGroup | DescUIMarker::EndGroup | DescUIMarker::Collapsed,
+            0.0f, 128.0f,
+            "Maximum amount the bone is allowed to move from target (+X, +Y, +Z)",
+            "Max. offset +",
+            DescUIMarker::Float3 | DescUIMarker::BeginGroup | DescUIMarker::Collapsed,
             DescUIGroupType::PhysicsExtra,
-            "Physics extra"
+            "Movement constraints"
+        }},
+        {"moy", {
+            offsetof(configComponent_t, phys.maxOffsetP[1]),
+            "",
+            0.0f, 128.0f
+        }},
+        {"moz", {
+            offsetof(configComponent_t, phys.maxOffsetP[2]),
+            "",
+            0.0f, 128.0f
+        }},
+        { "mox-", {
+            offsetof(configComponent_t, phys.maxOffsetN[0]),
+            "",
+            -128.0f, 0.0f,
+            "Maximum amount the bone is allowed to move from target (-X, -Y, -Z)",
+            "Max. offset -",
+            DescUIMarker::Float3
+        }},
+        {"moy-", {
+            offsetof(configComponent_t, phys.maxOffsetN[1]),
+            "",
+            -128.0f, 0.0f
+        }},
+        { "moz-", {
+            offsetof(configComponent_t, phys.maxOffsetN[2]),
+            "",
+            -128.0f, 0.0f
+        }},
+        {"moc", {
+            offsetof(configComponent_t, phys.maxOffsetVelResponseScale),
+            "",
+            0.0f, 1.0f,
+            "Max offset - velocity response scale",
+            "MO constraint"
+        }},
+        {"mod", {
+            offsetof(configComponent_t, phys.maxOffsetMaxBiasMag),
+            "",
+            0.5f, 50.0f,
+            "Max offset - penetration bias depth limit",
+            "MO bias limit"
+        }},
+        {"moe", {
+            offsetof(configComponent_t, phys.maxOffsetRestitutionCoefficient),
+            "",
+            0.0f, 1.0f,
+            "Max offset - restitution coefficient",
+            "MO restitution coef.",
+            DescUIMarker::EndGroup
         }}
         }
     );

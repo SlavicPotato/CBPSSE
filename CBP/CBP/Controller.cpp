@@ -42,18 +42,17 @@ namespace CBP
 
         try
         {
-            //renderer->Clear();
+            if (globalConf.debugRenderer.enableMovementConstraints)
+                renderer->GenerateMovementConstraints(GetSimActorList());
 
             if (globalConf.debugRenderer.enableMovingNodes)
             {
-                renderer->UpdateMovingNodes(
+                renderer->GenerateMovingNodes(
                     GetSimActorList(),
                     globalConf.debugRenderer.movingNodesRadius,
                     globalConf.debugRenderer.movingNodesCenterOfMass,
                     m_markedActor);
             }
-
-            //renderer->Update();
         }
         catch (...) {}
     }
@@ -259,7 +258,7 @@ namespace CBP
                     }
                 }
             }
-            else 
+            else
             {
                 if (attached)
                 {
@@ -278,7 +277,10 @@ namespace CBP
 
     void ControllerTask::AddActor(Game::ObjectHandle a_handle)
     {
-        if (m_actors.find(a_handle) != m_actors.end())
+        const auto& globalConfig = IConfig::GetGlobal();
+
+        auto it = m_actors.find(a_handle);
+        if (it != m_actors.end())
             return;
 
         auto actor = Game::ResolveObject<Actor>(a_handle, Actor::kTypeID);
@@ -293,8 +295,6 @@ namespace CBP
             if (IData::IsIgnoredRace(actor->race->formID))
                 return;
         }
-
-        auto& globalConfig = IConfig::GetGlobal();
 
         char sex;
         auto npc = DYNAMIC_CAST(actor->baseForm, TESForm, TESNPC);
@@ -343,22 +343,31 @@ namespace CBP
     void ControllerTask::RemoveActor(Game::ObjectHandle a_handle)
     {
         auto it = m_actors.find(a_handle);
-        if (it != m_actors.end())
+        if (it == m_actors.end())
+            return;
+
+        const auto& globalConfig = IConfig::GetGlobal();
+
+        if (globalConfig.general.controllerStats)
         {
-            const auto& globalConfig = IConfig::GetGlobal();
+            auto actor = Game::ResolveObject<Actor>(a_handle, Actor::kTypeID);
+            Debug("Removing [%.8llX] [%s]", GetFormID(a_handle), GetActorName(actor));
+        }
 
-            if (globalConfig.general.controllerStats)
-            {
-                auto actor = Game::ResolveObject<Actor>(a_handle, Actor::kTypeID);
-                Debug("Removing [%.8llX] [%s]", GetFormID(a_handle), GetActorName(actor));
-            }
+        m_actors.erase(it);
 
-            m_actors.erase(it);
-
-            IConfig::RemoveArmorOverride(a_handle);
-            IConfig::ClearMergedCacheThreshold();
+        IConfig::RemoveArmorOverride(a_handle);
+        IConfig::ClearMergedCacheThreshold();
     }
-}
+
+    bool ControllerTask::ValidateActor(simActorList_t::value_type& a_entry)
+    {
+        auto actor = Game::ResolveObject<Actor>(a_entry.first, Actor::kTypeID);
+        if (!ActorValid(actor))
+            return false;
+
+        return a_entry.second.ValidateNodes(actor);
+    }
 
     void ControllerTask::UpdateGroupInfoOnAllActors()
     {

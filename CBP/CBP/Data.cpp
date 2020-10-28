@@ -24,24 +24,24 @@ namespace CBP
         actorRefData_t tmp;
 
         auto npc = DYNAMIC_CAST(a_actor->baseForm, TESForm, TESNPC);
-        if (npc != nullptr)
+        if (npc == nullptr)
+            return;
+
+        if (a_actor->race != nullptr)
         {
-            if (a_actor->race != nullptr)
-            {
-                tmp.race.first = true;
-                tmp.race.second = a_actor->race->formID;
-            }
-            else
-                tmp.race.first = false;
-
-            tmp.npc = npc->formID;
-            tmp.sex = CALL_MEMBER_FN(npc, GetSex)();
-            tmp.baseflags = npc->flags;
-            tmp.weight = npc->weight;
-
-            actorNpcMap.insert_or_assign(
-                a_handle, std::move(tmp));
+            tmp.race.first = true;
+            tmp.race.second = a_actor->race->formID;
         }
+        else
+            tmp.race.first = false;
+
+        tmp.npc = npc->formID;
+        tmp.sex = CALL_MEMBER_FN(npc, GetSex)();
+        tmp.baseflags = npc->flags;
+        tmp.weight = npc->weight;
+
+        actorNpcMap.insert_or_assign(
+            a_handle, std::move(tmp));
     }
 
     void IData::UpdateActorMaps(Game::ObjectHandle a_handle)
@@ -212,7 +212,7 @@ namespace CBP
 
             bool playable = (race->data.raceFlags & TESRace::kRace_Playable) != 0;
 
-            raceList.emplace(race->formID, 
+            raceList.emplace(race->formID,
                 raceCacheEntry_t{ playable, fullName, edid, race->data.raceFlags });
         }
 

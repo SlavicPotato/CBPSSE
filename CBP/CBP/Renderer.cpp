@@ -37,34 +37,58 @@ namespace CBP
 
             if (a_centerOfMass) {
                 for (const auto& n : e.second)
-                    if (n.second.HasMovement())
-                        GenerateSphere(n.second.GetCenterOfMass(), a_radius * n.second.GetNodeScale(), MOVING_NODES_COL);
+                    if (n.second.HasMovement()) {
+                        auto& tf = n.second.GetParentWorldTransform();
+                        GenerateSphere(tf * n.second.GetCenterOfMass(), a_radius * tf.scale, MOVING_NODES_COL);
+                    }
             }
             else {
                 for (const auto& n : e.second)
-                    if (n.second.HasMovement())
-                        GenerateSphere(n.second.GetPos(), a_radius * n.second.GetNodeScale(), MOVING_NODES_COL);
+                    if (n.second.HasMovement()) {
+                        auto& tf = n.second.GetWorldTransform();
+                        GenerateSphere(tf.pos, a_radius * tf.scale, MOVING_NODES_COL);
+                    }
             }
 
             if (e.first == a_markedHandle)
             {
                 auto ht = e.second.GetHeadTransform();
-                if (ht)
+                if (ht) {
                     GenerateSphere(
                         *ht * NiPoint3(0.0f, 0.0f, 20.0f),
-                        2.0f, ACTOR_MARKER_COL);
+                        2.0f * ht->scale, ACTOR_MARKER_COL);
+                }
             }
         }
     }
 
-    void Renderer::UpdateMovingNodes(
-        const simActorList_t& a_actorList,
-        float a_radius,
-        bool a_centerOfMass,
-        Game::ObjectHandle a_markedHandle
-    )
+    void Renderer::GenerateMovementConstraints(
+        const simActorList_t& a_actorList)
     {
-        GenerateMovingNodes(a_actorList, a_radius, a_centerOfMass, a_markedHandle);
+        for (const auto& e : a_actorList)
+        {
+            if (e.second.IsSuspended())
+                continue;
+
+            for (const auto& n : e.second)
+            {
+                if (!n.second.HasMovement())
+                    continue;
+
+                auto& conf = n.second.GetConfig();
+
+                drawBox(
+                    NiPoint3(conf.phys.maxOffsetN[0], conf.phys.maxOffsetN[1], conf.phys.maxOffsetN[2]),
+                    NiPoint3(conf.phys.maxOffsetP[0], conf.phys.maxOffsetP[1], conf.phys.maxOffsetP[2]),
+                    n.second.GetParentWorldTransform(),
+                    CONSTRAINT_BOX_COL
+                );
+
+                auto& tf = n.second.GetParentWorldTransform();
+
+                GenerateSphere(tf * n.second.GetVirtualPos(), 0.8f * tf.scale, VIRTUAL_POS_COL);
+            }
+        }
     }
 
     void Renderer::Clear()
@@ -103,7 +127,7 @@ namespace CBP
         m_batch->End();
     }
 
-    
+
     bool Renderer::GetScreenPt(const btVector3& a_pos, const btVector3& a_col, VertexType& a_out)
     {
         NiPoint3 tmp(a_pos.x(), a_pos.y(), a_pos.z());
@@ -238,6 +262,34 @@ namespace CBP
         m_lines.emplace_back(std::move(item));
     }
 
+    void Renderer::drawLine(const NiPoint3& from, const NiPoint3& to, const DirectX::XMFLOAT4& color)
+    {
+        ItemLine item;
+
+        if (!GetScreenPt(from, color, item.pos1))
+            return;
+        if (!GetScreenPt(to, color, item.pos2))
+            return;
+
+        m_lines.emplace_back(std::move(item));
+    }
+
+    void Renderer::drawBox(const NiPoint3& bbMin, const NiPoint3& bbMax, const NiTransform& trans, const DirectX::XMFLOAT4& color)
+    {
+        drawLine(trans * NiPoint3(bbMin.x, bbMin.y, bbMin.z), trans * NiPoint3(bbMax.x, bbMin.y, bbMin.z), color);
+        drawLine(trans * NiPoint3(bbMax.x, bbMin.y, bbMin.z), trans * NiPoint3(bbMax.x, bbMax.y, bbMin.z), color);
+        drawLine(trans * NiPoint3(bbMax.x, bbMax.y, bbMin.z), trans * NiPoint3(bbMin.x, bbMax.y, bbMin.z), color);
+        drawLine(trans * NiPoint3(bbMin.x, bbMax.y, bbMin.z), trans * NiPoint3(bbMin.x, bbMin.y, bbMin.z), color);
+        drawLine(trans * NiPoint3(bbMin.x, bbMin.y, bbMin.z), trans * NiPoint3(bbMin.x, bbMin.y, bbMax.z), color);
+        drawLine(trans * NiPoint3(bbMax.x, bbMin.y, bbMin.z), trans * NiPoint3(bbMax.x, bbMin.y, bbMax.z), color);
+        drawLine(trans * NiPoint3(bbMax.x, bbMax.y, bbMin.z), trans * NiPoint3(bbMax.x, bbMax.y, bbMax.z), color);
+        drawLine(trans * NiPoint3(bbMin.x, bbMax.y, bbMin.z), trans * NiPoint3(bbMin.x, bbMax.y, bbMax.z), color);
+        drawLine(trans * NiPoint3(bbMin.x, bbMin.y, bbMax.z), trans * NiPoint3(bbMax.x, bbMin.y, bbMax.z), color);
+        drawLine(trans * NiPoint3(bbMax.x, bbMin.y, bbMax.z), trans * NiPoint3(bbMax.x, bbMax.y, bbMax.z), color);
+        drawLine(trans * NiPoint3(bbMax.x, bbMax.y, bbMax.z), trans * NiPoint3(bbMin.x, bbMax.y, bbMax.z), color);
+        drawLine(trans * NiPoint3(bbMin.x, bbMax.y, bbMax.z), trans * NiPoint3(bbMin.x, bbMin.y, bbMax.z), color);
+    }
+
     void Renderer::drawTriangle(const btVector3& v0, const btVector3& v1, const btVector3& v2, const btVector3& color, btScalar /*alpha*/)
     {
         ItemTri item;
@@ -252,7 +304,7 @@ namespace CBP
         m_tris.emplace_back(std::move(item));
     }
 
-    void Renderer::drawContactPoint(const btVector3& PointOnB, const btVector3& normalOnB, btScalar distance, int lifeTime, const btVector3& color) 
+    void Renderer::drawContactPoint(const btVector3& PointOnB, const btVector3& normalOnB, btScalar distance, int lifeTime, const btVector3& color)
     {
         drawSphere(PointOnB, m_contactPointSphereRadius, color);
         drawLine(PointOnB, PointOnB + normalOnB * m_contactNormalLength, color);
@@ -262,7 +314,7 @@ namespace CBP
     {
     }
 
-    void Renderer::reportErrorWarning(const char* warningString) 
+    void Renderer::reportErrorWarning(const char* warningString)
     {
     }
 
@@ -270,8 +322,8 @@ namespace CBP
         m_debugMode = debugMode;
     }
 
-    int Renderer::getDebugMode() const { 
-        return m_debugMode; 
+    int Renderer::getDebugMode() const {
+        return m_debugMode;
     }
 
 }

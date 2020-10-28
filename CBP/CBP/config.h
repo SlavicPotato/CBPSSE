@@ -116,6 +116,7 @@ namespace CBP
             float contactPointSphereRadius = 0.5f;
             float contactNormalLength = 2.0f;
             bool enableMovingNodes = false;
+            bool enableMovementConstraints = false;
             bool movingNodesCenterOfMass = false;
             float movingNodesRadius = 0.75f;
             bool drawAABB = false;
@@ -207,7 +208,8 @@ namespace CBP
             DataVersion1 = 1,
             DataVersion2 = 2,
             DataVersion3 = 3,
-            DataVersion4 = 4
+            DataVersion4 = 4,
+            DataVersion5 = 5,
         };
 
         /*__forceinline configComponent_t& operator=(const configComponent_t& a_rhs)
@@ -316,8 +318,11 @@ namespace CBP
             float stiffness = 10.0f;
             float stiffness2 = 10.0f;
             float damping = 0.95f;
-            float maxOffset[3]{ 20.0f, 20.0f, 20.0f };
-            float maxOffsetConstraint = 15.0f;
+            float maxOffsetP[3]{ 20.0f, 20.0f, 20.0f };
+            float maxOffsetN[3]{ -20.0f, -20.0f, -20.0f };
+            float maxOffsetVelResponseScale = 0.1f;
+            float maxOffsetMaxBiasMag = 5.0f;
+            float maxOffsetRestitutionCoefficient = 0.0f;
             float cogOffset[3]{ 0.0f, 5.0f, 0.0f };
             float gravityBias = 0.0f;
             float gravityCorrection = 0.0f;
@@ -359,7 +364,7 @@ namespace CBP
             ar& phys.stiffness;
             ar& phys.stiffness2;
             ar& phys.damping;
-            ar& phys.maxOffset;
+            ar& phys.maxOffsetP;
             ar& phys.cogOffset;
             ar& phys.gravityBias;
             ar& phys.gravityCorrection;
@@ -384,8 +389,11 @@ namespace CBP
             ar& ex.colShape;
             ar& ex.colMesh;
 
-            ar& phys.maxOffsetConstraint;
+            ar& phys.maxOffsetVelResponseScale;
             ar& phys.maxVelocity;
+            ar& phys.maxOffsetMaxBiasMag;
+            ar& phys.maxOffsetN;
+            ar& phys.maxOffsetRestitutionCoefficient;
         }
 
         template<class Archive>
@@ -394,7 +402,7 @@ namespace CBP
             ar& phys.stiffness;
             ar& phys.stiffness2;
             ar& phys.damping;
-            ar& phys.maxOffset;
+            ar& phys.maxOffsetP;
             ar& phys.cogOffset;
             ar& phys.gravityBias;
             ar& phys.gravityCorrection;
@@ -423,11 +431,18 @@ namespace CBP
 
                 if (version >= DataVersion3)
                 {
-                    ar& phys.maxOffsetConstraint;
+                    ar& phys.maxOffsetVelResponseScale;
 
                     if (version >= DataVersion4)
                     {
                         ar& phys.maxVelocity;
+
+                        if (version >= DataVersion5)
+                        {
+                            ar& phys.maxOffsetMaxBiasMag;
+                            ar& phys.maxOffsetN;
+                            ar& phys.maxOffsetRestitutionCoefficient;
+                        }
                     }
                 }
             }
@@ -891,5 +906,5 @@ namespace CBP
     };
 }
 
-BOOST_CLASS_VERSION(CBP::configComponent_t, CBP::configComponent_t::Serialization::DataVersion4)
+BOOST_CLASS_VERSION(CBP::configComponent_t, CBP::configComponent_t::Serialization::DataVersion5)
 BOOST_CLASS_VERSION(CBP::configNode_t, CBP::configNode_t::Serialization::DataVersion1)

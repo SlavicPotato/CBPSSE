@@ -29,7 +29,9 @@ namespace CBP
         Renderer() = delete;
 
         void Draw();
-        void UpdateMovingNodes(const simActorList_t& a_actorList, float a_radius, bool a_centerOfMass, Game::ObjectHandle a_markedHandle);
+        void GenerateMovingNodes(const simActorList_t& a_actorList, float a_radius, bool a_centerOfMass, Game::ObjectHandle a_markedHandle);
+        void GenerateMovementConstraints(const simActorList_t& a_actorList);
+
         void Clear();
 
         inline void SetContactPointSphereRadius(btScalar a_val) {
@@ -44,8 +46,11 @@ namespace CBP
         static constexpr int NB_SECTORS_SPHERE = 9;
         static constexpr int NB_STACKS_SPHERE = 5;
 
-        static constexpr auto MOVING_NODES_COL = DirectX::XMFLOAT4(1.0f, 0.0f, 0.0f, 0.75f);
-        static constexpr auto ACTOR_MARKER_COL = DirectX::XMFLOAT4(0.921f, 0.596f, 0.203f, 0.75f);
+        static constexpr auto MOVING_NODES_COL = DirectX::XMFLOAT4(1.0f, 0.0f, 0.0f, 0.85f);
+        static constexpr auto ACTOR_MARKER_COL = DirectX::XMFLOAT4(0.921f, 0.596f, 0.203f, 0.85f);
+
+        static constexpr auto CONSTRAINT_BOX_COL = DirectX::XMFLOAT4(0.2f, 0.9f, 0.5f, 0.85f);
+        static constexpr auto VIRTUAL_POS_COL = DirectX::XMFLOAT4(0.3f, 0.7f, 0.7f, 0.85f);
 
         std::unique_ptr<DirectX::BasicEffect> m_effect;
         std::unique_ptr<DirectX::CommonStates> m_states;
@@ -62,8 +67,6 @@ namespace CBP
         btScalar m_contactPointSphereRadius;
         btScalar m_contactNormalLength;
 
-        void GenerateMovingNodes(const simActorList_t& a_actorList, float a_radius, bool a_centerOfMass, Game::ObjectHandle a_markedHandle);
-
         void GenerateSphere(const NiPoint3& a_pos, float a_radius, const DirectX::XMFLOAT4& a_col);
 
         __forceinline bool GetScreenPt(const btVector3& a_pos, const btVector3 &a_col, VertexType& a_out);
@@ -74,6 +77,9 @@ namespace CBP
         virtual void drawContactPoint(const btVector3& PointOnB, const btVector3& normalOnB, btScalar distance, int lifeTime, const btVector3& color) override;
         virtual void draw3dText(const btVector3& location, const char* textString) override;
         virtual void reportErrorWarning(const char* warningString) override;
+
+        void drawLine(const NiPoint3& from, const NiPoint3& to, const DirectX::XMFLOAT4& color);
+        void drawBox(const NiPoint3& bbMin, const NiPoint3& bbMax, const NiTransform& trans, const DirectX::XMFLOAT4& color);
 
     public:
         virtual void setDebugMode(int debugMode) override;

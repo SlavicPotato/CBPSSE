@@ -72,8 +72,8 @@ namespace CBP
     template <class T>
     template <typename... Args>
     CollisionShapeTemplRH<T>::CollisionShapeTemplRH(
-        btCollisionObject* a_collider, 
-        Args&&... a_args) 
+        btCollisionObject* a_collider,
+        Args&&... a_args)
         :
         CollisionShapeBase<T>(a_collider, std::forward<Args>(a_args)...)
     {
@@ -86,11 +86,11 @@ namespace CBP
         if (rad <= 0.0f)
             return;
 
-        auto height = std::max(m_height * m_nodeScale, 0.001f);
+        auto height = std::clamp(m_height * m_nodeScale, 0.001f, 1000.0f);
         if (rad == m_currentRadius && height == m_currentHeight)
             return;
 
-        DoRecreateShape(rad, height);
+        DoRecreateShape(std::min(rad, 1000.0f), height);
         PostUpdateShape();
 
         m_currentRadius = rad;
@@ -115,8 +115,8 @@ namespace CBP
     template <class T>
     template <typename... Args>
     CollisionShapeTemplExtent<T>::CollisionShapeTemplExtent(
-        btCollisionObject* a_collider, 
-        Args&&... a_args) 
+        btCollisionObject* a_collider,
+        Args&&... a_args)
         :
         CollisionShapeBase<T>(a_collider, std::forward<Args>(a_args)...)
     {
@@ -146,12 +146,11 @@ namespace CBP
     {
         m_extent = a_extent;
         UpdateShape();
-
     }
 
     CollisionShapeSphere::CollisionShapeSphere(
-        btCollisionObject* a_collider, 
-        float a_radius) 
+        btCollisionObject* a_collider,
+        float a_radius)
         :
         CollisionShapeBase<btSphereShape>(a_collider, a_radius)
     {
@@ -164,7 +163,7 @@ namespace CBP
         if (rad <= 0.0f || rad == m_currentRadius)
             return;
 
-        RecreateShape(rad);
+        RecreateShape(std::min(rad, 1000.0f));
         PostUpdateShape();
 
         m_currentRadius = rad;
@@ -177,9 +176,9 @@ namespace CBP
     }
 
     CollisionShapeCapsule::CollisionShapeCapsule(
-        btCollisionObject* a_collider, 
-        float a_radius, 
-        float a_height) 
+        btCollisionObject* a_collider,
+        float a_radius,
+        float a_height)
         :
         CollisionShapeTemplRH<btCapsuleShape>(a_collider, a_radius, a_height)
     {
@@ -193,9 +192,9 @@ namespace CBP
     }
 
     CollisionShapeCone::CollisionShapeCone(
-        btCollisionObject* a_collider, 
-        float a_radius, 
-        float a_height) 
+        btCollisionObject* a_collider,
+        float a_radius,
+        float a_height)
         :
         CollisionShapeTemplRH<btConeShape>(a_collider, a_radius, a_height)
     {
@@ -209,8 +208,8 @@ namespace CBP
     }
 
     CollisionShapeBox::CollisionShapeBox(
-        btCollisionObject* a_collider, 
-        const btVector3& a_extent) 
+        btCollisionObject* a_collider,
+        const btVector3& a_extent)
         :
         CollisionShapeTemplExtent<btBoxShape>(a_collider, a_extent)
     {
@@ -223,9 +222,9 @@ namespace CBP
     }
 
     CollisionShapeCylinder::CollisionShapeCylinder(
-        btCollisionObject* a_collider, 
-        float a_radius, 
-        float a_height) 
+        btCollisionObject* a_collider,
+        float a_radius,
+        float a_height)
         :
         CollisionShapeTemplRH<btCylinderShape>(a_collider, btVector3(a_radius, a_height, 1.0f))
     {
@@ -239,7 +238,7 @@ namespace CBP
     }
 
     CollisionShapeTetrahedron::CollisionShapeTetrahedron(
-        btCollisionObject* a_collider, 
+        btCollisionObject* a_collider,
         const btVector3& a_extent)
         :
         CollisionShapeTemplExtent<btTetrahedronShapeEx>(a_collider)
@@ -469,7 +468,7 @@ namespace CBP
 
         m_collider.reset();
         m_colshape.reset();
-               
+
         m_meshShape.clear();
 
         m_created = false;
@@ -564,8 +563,8 @@ namespace CBP
 
         float weight = std::clamp(npc->weight, 0.0f, 100.0f);
 
-        m_colRad = std::max(mmw(weight, a_config.phys.colSphereRadMin, a_config.phys.colSphereRadMax), 0.001f);
-        m_colHeight = std::max(mmw(weight, a_config.phys.colHeightMin, a_config.phys.colHeightMax), 0.001f);
+        m_colRad = std::clamp(mmw(weight, a_config.phys.colSphereRadMin, a_config.phys.colSphereRadMax), 0.001f, 1000.0f);
+        m_colHeight = std::clamp(mmw(weight, a_config.phys.colHeightMin, a_config.phys.colHeightMax), 0.001f, 1000.0f);
         m_colOffsetX = mmw(weight,
             a_config.phys.offsetMin[0] + a_nodeConf.colOffsetMin[0],
             a_config.phys.offsetMax[0] + a_nodeConf.colOffsetMax[0]);
@@ -576,9 +575,9 @@ namespace CBP
             a_config.phys.offsetMin[2] + a_nodeConf.colOffsetMin[2],
             a_config.phys.offsetMax[2] + a_nodeConf.colOffsetMax[2]);
 
-        m_extent = { std::max(mmw(weight, a_config.phys.colExtentMin[0], a_config.phys.colExtentMax[0]), 0.0f),
-                     std::max(mmw(weight, a_config.phys.colExtentMin[1], a_config.phys.colExtentMax[1]), 0.0f),
-                     std::max(mmw(weight, a_config.phys.colExtentMin[2], a_config.phys.colExtentMax[2]), 0.0f) };
+        m_extent = { std::clamp(mmw(weight, a_config.phys.colExtentMin[0], a_config.phys.colExtentMax[0]), 0.0f, 1000.0f),
+                     std::clamp(mmw(weight, a_config.phys.colExtentMin[1], a_config.phys.colExtentMax[1]), 0.0f, 1000.0f),
+                     std::clamp(mmw(weight, a_config.phys.colExtentMin[2], a_config.phys.colExtentMax[2]), 0.0f, 1000.0f) };
 
         return true;
     }
@@ -595,7 +594,7 @@ namespace CBP
 
         m_collisions = a_collisions;
 
-        if (a_movement != m_movement) 
+        if (a_movement != m_movement)
         {
             m_movement = a_movement;
             m_applyForceQueue.swap(decltype(m_applyForceQueue)());
@@ -605,15 +604,15 @@ namespace CBP
         {
             if (!ColUpdateWeightData(a_actor, m_conf, a_nodeConf))
             {
-                m_colRad = std::max(m_conf.phys.colSphereRadMax, 0.001f);
-                m_colHeight = std::max(m_conf.phys.colHeightMax, 0.001f);
+                m_colRad = std::clamp(m_conf.phys.colSphereRadMax, 0.001f, 1000.0f);
+                m_colHeight = std::clamp(m_conf.phys.colHeightMax, 0.001f, 1000.0f);
                 m_colOffsetX = m_conf.phys.offsetMax[0] + a_nodeConf.colOffsetMax[0];
                 m_colOffsetY = m_conf.phys.offsetMax[1] + a_nodeConf.colOffsetMax[1];
                 m_colOffsetZ = m_conf.phys.offsetMax[2] + a_nodeConf.colOffsetMax[2];
                 m_extent = {
-                    std::max(m_conf.phys.colExtentMax[0], 0.0f),
-                    std::max(m_conf.phys.colExtentMax[1], 0.0f),
-                    std::max(m_conf.phys.colExtentMax[2], 0.0f)
+                    std::clamp(m_conf.phys.colExtentMax[0], 0.0f, 1000.0f),
+                    std::clamp(m_conf.phys.colExtentMax[1], 0.0f, 1000.0f),
+                    std::clamp(m_conf.phys.colExtentMax[2], 0.0f, 1000.0f)
                 };
             }
 
@@ -679,7 +678,20 @@ namespace CBP
 
         m_conf.phys.mass = std::clamp(m_conf.phys.mass, 1.0f, 10000.0f);
         m_conf.phys.colPenMass = std::clamp(m_conf.phys.colPenMass, 1.0f, 100.0f);
-        m_conf.phys.maxOffsetConstraint = std::max(m_conf.phys.maxOffsetConstraint, 1.0f);
+        m_conf.phys.maxOffsetVelResponseScale = std::clamp(m_conf.phys.maxOffsetVelResponseScale, 0.0f, 1.0f);
+        m_conf.phys.maxVelocity = std::clamp(m_conf.phys.maxVelocity, 0.0f, 10000.0f);
+        m_conf.phys.maxOffsetRestitutionCoefficient = std::clamp(m_conf.phys.maxOffsetRestitutionCoefficient, 0.0f, 4.0f);
+        m_conf.phys.maxOffsetMaxBiasMag = std::max(m_conf.phys.maxOffsetMaxBiasMag, 0.0f);
+
+        m_conf.phys.maxOffsetP[0] = std::max(m_conf.phys.maxOffsetP[0], 0.0f);
+        m_conf.phys.maxOffsetP[1] = std::max(m_conf.phys.maxOffsetP[1], 0.0f);
+        m_conf.phys.maxOffsetP[2] = std::max(m_conf.phys.maxOffsetP[2], 0.0f);
+
+        m_conf.phys.maxOffsetN[0] = std::min(m_conf.phys.maxOffsetN[0], 0.0f);
+        m_conf.phys.maxOffsetN[1] = std::min(m_conf.phys.maxOffsetN[1], 0.0f);
+        m_conf.phys.maxOffsetN[2] = std::min(m_conf.phys.maxOffsetN[2], 0.0f);
+
+        m_massInv = m_movement ? 1.0f / m_conf.phys.mass : 0.0f;
 
         if (a_nodeConf.overrideScale)
         {
@@ -702,8 +714,6 @@ namespace CBP
             }
         }
 
-        m_conf.phys.maxVelocity = std::max(m_conf.phys.maxVelocity, 0.0f);
-
         m_obj->UpdateWorldData(&m_updateCtx);
 
         m_collider.Update();
@@ -720,11 +730,17 @@ namespace CBP
         }
 
         m_oldWorldPos = m_obj->m_worldTransform.pos;
+        m_virtld = NiPoint3();
         m_velocity = NiPoint3();
 
         m_collider.Update();
 
         m_applyForceQueue.swap(decltype(m_applyForceQueue)());
+    }
+
+    bool SimComponent::ValidateNodes(NiAVObject* a_obj)
+    {
+        return m_obj == a_obj && m_objParent == a_obj->m_parent;
     }
 
     void SimComponent::ApplyForce(uint32_t a_steps, const NiPoint3& a_force)

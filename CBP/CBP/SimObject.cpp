@@ -102,6 +102,28 @@ namespace CBP
             p.second.Reset();
     }
 
+    bool SimObject::ValidateNodes(Actor *a_actor)
+    {
+        BSFixedString n("NPC Head [Head]");
+        auto head = a_actor->loadedState->node->GetObjectByName(&n.data);
+        if (head != m_objHead)
+            return false;
+
+        for (auto& p : m_things)
+        {
+            BSFixedString cs(p.first.c_str());
+
+            auto object = a_actor->loadedState->node->GetObjectByName(&cs.data);
+            if (!object || !object->m_parent)
+                return false;
+
+            if (!p.second.ValidateNodes(object))
+                return false;
+        }
+
+        return true;
+    }
+
     void SimObject::UpdateConfig(
         Actor* a_actor,
         bool a_collisions,

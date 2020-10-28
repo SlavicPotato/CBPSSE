@@ -508,6 +508,7 @@ namespace CBP
                     globalConfig.debugRenderer.contactPointSphereRadius = debugRenderer.get("contactPointSphereRadius", 0.5f).asFloat();
                     globalConfig.debugRenderer.contactNormalLength = debugRenderer.get("contactNormalLength", 2.0f).asFloat();
                     globalConfig.debugRenderer.enableMovingNodes = debugRenderer.get("enableMovingNodes", false).asBool();
+                    globalConfig.debugRenderer.enableMovementConstraints = debugRenderer.get("enableMovementConstraints", false).asBool();
                     globalConfig.debugRenderer.movingNodesRadius = debugRenderer.get("movingNodesRadius", 0.75f).asFloat();
                     globalConfig.debugRenderer.movingNodesCenterOfMass = debugRenderer.get("movingNodesCenterOfMass", false).asBool();
                     globalConfig.debugRenderer.drawAABB = debugRenderer.get("drawAABB", false).asBool();
@@ -622,6 +623,7 @@ namespace CBP
             debugRenderer["contactPointSphereRadius"] = globalConfig.debugRenderer.contactPointSphereRadius;
             debugRenderer["contactNormalLength"] = globalConfig.debugRenderer.contactNormalLength;
             debugRenderer["enableMovingNodes"] = globalConfig.debugRenderer.enableMovingNodes;
+            debugRenderer["enableMovementConstraints"] = globalConfig.debugRenderer.enableMovementConstraints;
             debugRenderer["movingNodesCenterOfMass"] = globalConfig.debugRenderer.movingNodesCenterOfMass;
             debugRenderer["movingNodesRadius"] = globalConfig.debugRenderer.movingNodesRadius;
             debugRenderer["drawAABB"] = globalConfig.debugRenderer.drawAABB;

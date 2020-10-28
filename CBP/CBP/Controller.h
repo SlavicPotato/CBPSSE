@@ -78,6 +78,7 @@ namespace CBP
 
         void AddActor(Game::ObjectHandle a_handle);
         void RemoveActor(Game::ObjectHandle a_handle);
+        bool ValidateActor(simActorList_t::value_type &a_entry);
         void UpdateConfigOnAllActors();
         void UpdateGroupInfoOnAllActors();
         void UpdateConfig(Game::ObjectHandle a_handle);

@@ -713,6 +713,7 @@
       <EnableUAC>false</EnableUAC>
       <ModuleDefinitionFile>exports.def</ModuleDefinitionFile>
       <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+      <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
     </Link>
     <PostBuildEvent>
       <Command>copy "$(TargetPath)" "$(SSEPath)\Data\SKSE\Plugins" /Y</Command>
@@ -749,6 +750,7 @@
       <EnableUAC>false</EnableUAC>
       <ModuleDefinitionFile>exports.def</ModuleDefinitionFile>
       <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+      <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
     </Link>
     <PostBuildEvent>
       <Command>copy "$(TargetPath)" "$(SSEPath)\Data\SKSE\Plugins" /Y</Command>
@@ -835,6 +837,7 @@
       <EnableUAC>false</EnableUAC>
       <ModuleDefinitionFile>exports.def</ModuleDefinitionFile>
       <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+      <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
     </Link>
     <PostBuildEvent>
       <Command>copy "$(TargetPath)" "$(SSEPath)\Data\SKSE\Plugins" /Y</Command>

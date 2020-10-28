@@ -1354,12 +1354,8 @@ namespace CBP
 
     void UIContext::DrawMenuBar(bool* a_active, const listValue_t* a_entry)
     {
-        auto& globalConfig = IConfig::GetGlobal();
+        const auto& globalConfig = IConfig::GetGlobal();
         auto& ws = m_state.windows;
-
-        m_state.menu.saveToDefaultGlob = false;
-        m_state.menu.openImportDialog = false;
-        m_state.menu.openExportDialog = false;
 
         if (ImGui::BeginMenuBar())
         {
@@ -1369,8 +1365,27 @@ namespace CBP
                 {
                     ImGui::SetWindowFontScale(globalConfig.ui.fontScale);
 
-                    m_state.menu.saveToDefaultGlob =
-                        ImGui::MenuItem("Store default profile");
+                    if (ImGui::MenuItem("Store default profile"))
+                    {
+                        m_popup.push(
+                            UIPopupType::Confirm,
+                            "Store default profile",
+                            "Are you sure you want to save current global physics and node configuration as the default?"
+                        ).call([&](...)
+                            {
+                                if (!DCBP::SaveToDefaultGlobalProfile())
+                                {
+                                    auto& e = DCBP::GetLastSerializationException();
+                                    m_popup.push(
+                                        UIPopupType::Message,
+                                        "Store global failed",
+                                        "Could not save current globals to the default profile.\nThe last exception was:\n\n%s",
+                                        e.what()
+                                    );
+                                }
+                            }
+                        );
+                    }
 
                     ImGui::EndMenu();
                 }
@@ -1545,6 +1560,9 @@ namespace CBP
 
         auto entry = ListGetSelected();
 
+        m_state.menu.openImportDialog = false;
+        m_state.menu.openExportDialog = false;
+
         ImGui::PushID(static_cast<const void*>(this));
 
         if (ImGui::Begin("CBP Config Editor##CBP", a_active, ImGuiWindowFlags_MenuBar))
@@ -1611,11 +1629,6 @@ namespace CBP
                 ListResetAllValues(m_listCurrent);
             }
 
-            if (m_state.menu.saveAllFailed)
-                ImGui::OpenPopup("Save failed");
-            else if (m_state.menu.saveToDefaultGlob)
-                ImGui::OpenPopup("Store global");
-
             ImGui::Spacing();
 
             DrawProfileSelector(entry, globalConfig.ui.fontScale);
@@ -1632,23 +1645,6 @@ namespace CBP
             else {
                 m_scGlobal.DrawSimComponents(m_listCurrent, entry->second.second);
             }
-
-            UICommon::MessageDialog(
-                "Save failed",
-                "Saving one or more files failed.\nThe last exception was:\n\n%s",
-                m_state.lastException.what());
-
-            if (UICommon::ConfirmDialog("Store global", "Are you sure you want to save current global physics and node configuration as the default?")) {
-                if (!DCBP::SaveToDefaultGlobalProfile()) {
-                    m_state.lastException = DCBP::GetLastSerializationException();
-                    ImGui::OpenPopup("Store global failed");
-                }
-            }
-
-            UICommon::MessageDialog(
-                "Store global failed",
-                "Could not save current globals to the default profile.\nThe last exception was:\n\n%s",
-                m_state.lastException.what());
 
             ImGui::PopItemWidth();
 
@@ -1784,16 +1780,6 @@ namespace CBP
 
                 Checkbox("Lock game controls while UI active", &globalConfig.ui.lockControls);
 
-                /*if (Checkbox("Lock game controls while UI active", &globalConfig.ui.lockControls)) {
-                    DCBP::GetUIRenderTask().SetLock(globalConfig.ui.lockControls);
-                    DUI::EvaluateTaskState();
-                }
-
-                if (Checkbox("Freeze time while UI active", &globalConfig.ui.freezeTime)) {
-                    DCBP::GetUIRenderTask().SetFreeze(globalConfig.ui.freezeTime);
-                    DUI::EvaluateTaskState();
-                }*/
-
                 ImGui::Spacing();
 
                 ImGui::TreePop();
@@ -1855,6 +1841,7 @@ namespace CBP
                     ImGui::Spacing();
 
                     Checkbox("Draw moving nodes", &globalConfig.debugRenderer.enableMovingNodes);
+                    Checkbox("Draw movement constraints", &globalConfig.debugRenderer.enableMovementConstraints);
                     Checkbox("Show moving nodes center of mass", &globalConfig.debugRenderer.movingNodesCenterOfMass);
 
                     SliderFloat("Moving nodes sphere radius", &globalConfig.debugRenderer.movingNodesRadius, 0.1f, 10.0f, "%.2f");
@@ -1863,9 +1850,6 @@ namespace CBP
 
                     if (Checkbox("Draw AABB", &globalConfig.debugRenderer.drawAABB))
                         DCBP::UpdateDebugRendererSettings();
-
-                    /*if (Checkbox("Draw broadphase AABB", &globalConfig.debugRenderer.drawBroadphaseAABB))
-                        DCBP::UpdateDebugRendererSettings();*/
 
                     ImGui::TreePop();
                 }

@@ -126,6 +126,11 @@ namespace CBP
         {
             auto contactManifold = dispatcher->getManifoldByIndexInternal(i);
 
+            int numContacts = contactManifold->getNumContacts();
+
+            if (!numContacts)
+                continue;
+
             auto obA = contactManifold->getBody0();
             auto obB = contactManifold->getBody1();
 
@@ -135,14 +140,20 @@ namespace CBP
             auto& conf1 = sc1->GetConfig();
             auto& conf2 = sc2->GetConfig();
 
-            int numContacts = contactManifold->getNumContacts();
+            bool mova = sc1->HasMovement();
+            bool movb = sc2->HasMovement();
+
+            float sma = sc1->GetMassInverse();
+            float smb = sc2->GetMassInverse();
+
+            float pbf = std::max(conf1.phys.colPenBiasFactor, conf2.phys.colPenBiasFactor);
+            float spm = 1.0f / std::max(conf1.phys.colPenMass, conf2.phys.colPenMass);
 
             for (int j = 0; j < numContacts; j++)
             {
                 auto& contactPoint = contactManifold->getContactPoint(j);
 
                 auto depth = contactPoint.getDistance();
-
                 if (depth >= 0.0f)
                     continue;
 
@@ -158,31 +169,24 @@ namespace CBP
 
                 float deltaVDotN = deltaV.Dot(n);
 
-                float pbf = std::max(conf1.phys.colPenBiasFactor, conf2.phys.colPenBiasFactor);
-
                 float bias = depth > 0.01f ?
                     (a_timeStep * (2880.0f * pbf)) * std::max(depth - 0.01f, 0.0f) : 0.0f;
 
-                float sma = 1.0f / conf1.phys.mass;
-                float smb = 1.0f / conf2.phys.mass;
-                float spm = 1.0f / std::max(conf1.phys.colPenMass, conf2.phys.colPenMass);
-
                 float impulse = std::max((deltaVDotN + bias) / (sma + smb), 0.0f);
 
-                if (sc1->HasMovement())
+                if (mova)
                 {
                     float Jm = (1.0f + conf1.phys.colRestitutionCoefficient) * impulse;
-                    sc1->AddVelocity((n * Jm) * (sma * spm));
+                    sc1->AddVelocity(n * (Jm * sma * spm));
                 }
 
-                if (sc2->HasMovement())
+                if (movb)
                 {
                     float Jm = (1.0f + conf2.phys.colRestitutionCoefficient) * impulse;
-                    sc2->AddVelocity((n * -Jm) * (smb * spm));
+                    sc2->AddVelocity(n * -(Jm * smb * spm));
                 }
             }
         }
-
     }
 
 }
