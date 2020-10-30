@@ -4,13 +4,7 @@ namespace CBP
 {
     class SimObject;
 
-    typedef
-#ifdef _CBP_ENABLE_DEBUG
-        std::map
-#else
-        std::unordered_map
-#endif
-        <Game::ObjectHandle, SimObject> simActorList_t;
+    typedef std::map<Game::ObjectHandle, SimObject> simActorList_t;
 
     struct raceCacheEntry_t
     {

@@ -4,29 +4,43 @@ namespace CBP
 {
     struct nodeDesc_t
     {
-        std::string nodeName;
-        NiAVObject* bone;
-        std::string confGroup;
+        nodeDesc_t(
+            const std::string& a_nodeName,
+            NiAVObject* a_node,
+            const std::string& a_confGroup,
+            bool a_collisions,
+            bool a_movement,
+            const configComponent_t& a_physConf,
+            const configNode_t& a_nodeConf)
+            :
+            nodeName(a_nodeName),
+            node(a_node),
+            confGroup(a_confGroup),
+            collisions(a_collisions),
+            movement(a_movement),
+            physConf(a_physConf),
+            nodeConf(a_nodeConf)
+        {
+
+        }
+
+        const std::string &nodeName;
+        NiAVObject* node;
+        const std::string &confGroup;
         bool collisions;
         bool movement;
-        configNode_t nodeConf;
-        configComponent_t physConf;
+        const configComponent_t& physConf;
+        const configNode_t& nodeConf;
     };
 
     typedef std::vector<nodeDesc_t> nodeDescList_t;
 
     class SimObject
     {
-        typedef
-#ifdef _CBP_ENABLE_DEBUG
-            std::map
-#else
-            std::unordered_map
-#endif
-            <std::string, SimComponent> thingMap_t;
+        typedef stl::imap<std::string, SimComponent> thingMap_t;
 
         using iterator = typename thingMap_t::iterator;
-        using const_iterator = typename thingMap_t::const_iterator;
+        using const_iterator = typename std::vector<SimComponent*>::const_iterator;
     public:
         SimObject(
             Game::ObjectHandle a_handle,
@@ -57,9 +71,9 @@ namespace CBP
             return m_things.find(a_node) != m_things.end();
         }
 
-        [[nodiscard]] inline bool HasConfigGroup(const std::string& a_cg) const {
+        /*[[nodiscard]] inline bool HasConfigGroup(const std::string& a_cg) const {
             return m_configGroups.find(a_cg) != m_configGroups.end();
-        }
+        }*/
 
         [[nodiscard]] static auto CreateNodeDescriptorList(
             Game::ObjectHandle a_handle,
@@ -72,11 +86,11 @@ namespace CBP
             ->nodeDescList_t::size_type;
 
         [[nodiscard]] inline const_iterator begin() const noexcept {
-            return m_things.begin();
+            return m_thingList.begin();
         }
 
         [[nodiscard]] inline const_iterator end() const noexcept {
-            return m_things.end();
+            return m_thingList.end();
         }
 
 #ifdef _CBP_ENABLE_DEBUG
@@ -105,13 +119,12 @@ namespace CBP
     private:
 
         thingMap_t m_things;
-        stl::iunordered_set<std::string> m_configGroups;
+        std::vector<SimComponent*> m_thingList;
 
         Game::ObjectHandle m_handle;
 
         NiPointer<NiNode> m_node;
         NiPointer<NiAVObject> m_objHead;
-        //NiPointer<Actor> m_actor;
 
         char m_sex;
 
@@ -127,8 +140,8 @@ namespace CBP
         if (m_suspended)
             return;
 
-        for (auto& p : m_things)
-            p.second.UpdateMovement(a_timeStep);
+        for (auto p : m_thingList)
+            p->UpdateMovement(a_timeStep);
     }
 
     void SimObject::UpdateVelocity()
@@ -136,8 +149,8 @@ namespace CBP
         if (m_suspended)
             return;
 
-        for (auto& p : m_things)
-            p.second.UpdateVelocity();
+        for (auto p : m_thingList)
+            p->UpdateVelocity();
     }
 
 }

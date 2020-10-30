@@ -132,6 +132,7 @@ namespace CBP
         EndGroup = 1U << 1,
         Float3 = 1U << 5,
         Collapsed = 1U << 6,
+        MirrorNegate = 1U << 7,
         ColliderSphere = 1U << 10,
         ColliderCapsule = 1U << 11,
         ColliderBox = 1U << 12,
@@ -185,6 +186,22 @@ namespace CBP
         DescUIMarker marker = DescUIMarker::None;
         DescUIGroupType groupType = DescUIGroupType::None;
         std::string groupName;
+
+        [[nodiscard]] __forceinline float GetCounterpartValue(const float* a_pvalue) const
+        {
+            if ((marker & DescUIMarker::MirrorNegate) == DescUIMarker::MirrorNegate)
+            {
+                float v(*a_pvalue);
+
+                if (v == 0.0f)
+                    return v;
+
+                return -v;
+            }
+            else {
+                return *a_pvalue;
+            }
+        }
     };
 
     struct colliderDesc_t
@@ -210,6 +227,7 @@ namespace CBP
             DataVersion3 = 3,
             DataVersion4 = 4,
             DataVersion5 = 5,
+            DataVersion6 = 6
         };
 
         /*__forceinline configComponent_t& operator=(const configComponent_t& a_rhs)
@@ -265,6 +283,13 @@ namespace CBP
 
             *reinterpret_cast<float*>(addr) = a_value;
         }
+        
+        __forceinline void Set(const componentValueDesc_t& a_desc, const float *a_pvalue)
+        {
+            auto addr = reinterpret_cast<uintptr_t>(this) + a_desc.offset;
+
+            *reinterpret_cast<float*>(addr) = *a_pvalue;
+        }
 
         __forceinline bool Set(const std::string& a_key, float* a_value, size_t a_size)
         {
@@ -313,13 +338,19 @@ namespace CBP
             ex.colShape = a_shape;
         }
 
+        [[nodiscard]] __forceinline float* GetAddress(const componentValueDesc_t& a_desc)
+        {
+            auto addr = reinterpret_cast<uintptr_t>(this) + a_desc.offset;
+            return reinterpret_cast<float*>(addr);
+        }
+
         struct
         {
             float stiffness = 10.0f;
             float stiffness2 = 10.0f;
             float damping = 0.95f;
-            float maxOffsetP[3]{ 20.0f, 20.0f, 20.0f };
             float maxOffsetN[3]{ -20.0f, -20.0f, -20.0f };
+            float maxOffsetP[3]{ 20.0f, 20.0f, 20.0f };
             float maxOffsetVelResponseScale = 0.1f;
             float maxOffsetMaxBiasMag = 5.0f;
             float maxOffsetRestitutionCoefficient = 0.0f;
@@ -344,6 +375,7 @@ namespace CBP
             float colRestitutionCoefficient = 0.25f;
             float colPenBiasFactor = 1.0f;
             float colPenMass = 1.0f;
+            float colMotionScale = 1.0f;
         } phys;
 
         struct
@@ -394,6 +426,8 @@ namespace CBP
             ar& phys.maxOffsetMaxBiasMag;
             ar& phys.maxOffsetN;
             ar& phys.maxOffsetRestitutionCoefficient;
+
+            ar& phys.colMotionScale;
         }
 
         template<class Archive>
@@ -442,6 +476,11 @@ namespace CBP
                             ar& phys.maxOffsetMaxBiasMag;
                             ar& phys.maxOffsetN;
                             ar& phys.maxOffsetRestitutionCoefficient;
+
+                            if (version >= DataVersion6)
+                            {
+                                ar& phys.colMotionScale;
+                            }
                         }
                     }
                 }
@@ -906,5 +945,5 @@ namespace CBP
     };
 }
 
-BOOST_CLASS_VERSION(CBP::configComponent_t, CBP::configComponent_t::Serialization::DataVersion5)
+BOOST_CLASS_VERSION(CBP::configComponent_t, CBP::configComponent_t::Serialization::DataVersion6)
 BOOST_CLASS_VERSION(CBP::configNode_t, CBP::configNode_t::Serialization::DataVersion1)

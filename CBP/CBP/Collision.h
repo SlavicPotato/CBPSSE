@@ -30,6 +30,7 @@ namespace CBP
         ColliderProfile(Args&&... a_args) :
             ProfileBase<ColliderData>(std::forward<Args>(a_args)...)
         {
+            m_data.m_triVertexArray = nullptr;
         }
 
         virtual ~ColliderProfile() noexcept = default;

@@ -36,16 +36,16 @@ namespace CBP
                 continue;
 
             if (a_centerOfMass) {
-                for (const auto& n : e.second)
-                    if (n.second.HasMovement()) {
-                        auto& tf = n.second.GetParentWorldTransform();
-                        GenerateSphere(tf * n.second.GetCenterOfMass(), a_radius * tf.scale, MOVING_NODES_COL);
+                for (const auto n : e.second)
+                    if (n->HasMovement()) {
+                        auto& tf = n->GetParentWorldTransform();
+                        GenerateSphere(tf * n->GetCenterOfMass(), a_radius * tf.scale, MOVING_NODES_COL);
                     }
             }
             else {
-                for (const auto& n : e.second)
-                    if (n.second.HasMovement()) {
-                        auto& tf = n.second.GetWorldTransform();
+                for (const auto n : e.second)
+                    if (n->HasMovement()) {
+                        auto& tf = n->GetWorldTransform();
                         GenerateSphere(tf.pos, a_radius * tf.scale, MOVING_NODES_COL);
                     }
             }
@@ -70,23 +70,23 @@ namespace CBP
             if (e.second.IsSuspended())
                 continue;
 
-            for (const auto& n : e.second)
+            for (const auto n : e.second)
             {
-                if (!n.second.HasMovement())
+                if (!n->HasMovement())
                     continue;
 
-                auto& conf = n.second.GetConfig();
+                auto& conf = n->GetConfig();
 
                 drawBox(
                     NiPoint3(conf.phys.maxOffsetN[0], conf.phys.maxOffsetN[1], conf.phys.maxOffsetN[2]),
                     NiPoint3(conf.phys.maxOffsetP[0], conf.phys.maxOffsetP[1], conf.phys.maxOffsetP[2]),
-                    n.second.GetParentWorldTransform(),
+                    n->GetParentWorldTransform(),
                     CONSTRAINT_BOX_COL
                 );
 
-                auto& tf = n.second.GetParentWorldTransform();
+                auto& tf = n->GetParentWorldTransform();
 
-                GenerateSphere(tf * n.second.GetVirtualPos(), 0.8f * tf.scale, VIRTUAL_POS_COL);
+                GenerateSphere(tf * n->GetVirtualPos(), 0.8f * tf.scale, VIRTUAL_POS_COL);
             }
         }
     }

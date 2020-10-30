@@ -272,10 +272,10 @@ namespace CBP
 
     CollisionShapeMesh::CollisionShapeMesh(
         btCollisionObject* a_collider,
-        const std::shared_ptr<btTriangleIndexVertexArray>& a_data,
+        btTriangleIndexVertexArray* a_data,
         const btVector3& a_extent)
         :
-        CollisionShapeTemplExtent<btGImpactMeshShape>(a_collider, a_data.get()),
+        CollisionShapeTemplExtent<btGImpactMeshShape>(a_collider, a_data),
         m_triVertexArray(a_data)
     {
         m_extent = m_currentExtent = a_extent;
@@ -285,7 +285,7 @@ namespace CBP
 
     void CollisionShapeMesh::DoRecreateShape(const btVector3& a_extent)
     {
-        RecreateShape(m_triVertexArray.get());
+        RecreateShape(m_triVertexArray);
     }
 
     void CollisionShapeMesh::SetShapeProperties(const btVector3& a_extent)
@@ -311,7 +311,7 @@ namespace CBP
 
     void CollisionShapeConvexHull::DoRecreateShape(const btVector3& a_extent)
     {
-        RecreateShape(reinterpret_cast<const btScalar*>(m_convexHullPoints.get()), m_convexHullNumVertices);
+        RecreateShape(reinterpret_cast<const btScalar*>(m_convexHullPoints.get()), m_convexHullNumVertices, sizeof(MeshPoint));
     }
 
     void CollisionShapeConvexHull::SetShapeProperties(const btVector3& a_extent)
@@ -332,7 +332,8 @@ namespace CBP
         m_rotation(false),
         m_nodeScale(1.0f),
         m_parent(a_parent),
-        m_shape(ColliderShapeType::Sphere)
+        m_shape(ColliderShapeType::Sphere),
+        m_motionScale(1.0f)
     {
     }
 
@@ -363,33 +364,33 @@ namespace CBP
 
         m_nodeScale = m_parent.m_obj->m_localTransform.scale;
 
-        auto collider = std::make_unique<btCollisionObject>();
+        auto collider = new btCollisionObject();
 
         switch (a_shape)
         {
         case ColliderShapeType::Sphere:
-            m_colshape = std::make_unique<CollisionShapeSphere>(
-                collider.get(), m_parent.m_colRad);
+            m_colshape = new CollisionShapeSphere(
+                collider, m_parent.m_colRad);
             break;
         case ColliderShapeType::Capsule:
-            m_colshape = std::make_unique<CollisionShapeCapsule>(
-                collider.get(), m_parent.m_colRad, m_parent.m_colHeight);
+            m_colshape = new CollisionShapeCapsule(
+                collider, m_parent.m_colRad, m_parent.m_colHeight);
             break;
         case ColliderShapeType::Box:
-            m_colshape = std::make_unique< CollisionShapeBox>(
-                collider.get(), m_parent.m_extent);
+            m_colshape = new CollisionShapeBox(
+                collider, m_parent.m_extent);
             break;
         case ColliderShapeType::Cone:
-            m_colshape = std::make_unique<CollisionShapeCone>(
-                collider.get(), m_parent.m_colRad, m_parent.m_colHeight);
+            m_colshape = new CollisionShapeCone(
+                collider, m_parent.m_colRad, m_parent.m_colHeight);
             break;
         case ColliderShapeType::Tetrahedron:
-            m_colshape = std::make_unique<CollisionShapeTetrahedron>(
-                collider.get(), m_parent.m_extent);
+            m_colshape = new CollisionShapeTetrahedron(
+                collider, m_parent.m_extent);
             break;
         case ColliderShapeType::Cylinder:
-            m_colshape = std::make_unique<CollisionShapeCylinder>(
-                collider.get(), m_parent.m_colRad, m_parent.m_colHeight);
+            m_colshape = new CollisionShapeCylinder(
+                collider, m_parent.m_colRad, m_parent.m_colHeight);
             break;
         case ColliderShapeType::Mesh:
         case ColliderShapeType::ConvexHull:
@@ -397,12 +398,18 @@ namespace CBP
             auto& pm = ProfileManagerCollider::GetSingleton();
 
             if (m_parent.m_conf.ex.colMesh.empty())
+            {
+                delete collider;
                 return false;
+            }
 
             auto it = pm.Find(m_parent.m_conf.ex.colMesh);
-            if (it == pm.End()) {
+            if (it == pm.End()) 
+            {
                 Warning("%s: couldn'transform find convex mesh",
                     m_parent.m_conf.ex.colMesh.c_str());
+
+                delete collider;
                 return false;
             }
 
@@ -412,13 +419,13 @@ namespace CBP
 
             if (a_shape == ColliderShapeType::Mesh)
             {
-                m_colshape = std::make_unique<CollisionShapeMesh>(
-                    collider.get(), data.m_triVertexArray, m_parent.m_extent);
+                m_colshape = new CollisionShapeMesh(
+                    collider, data.m_triVertexArray, m_parent.m_extent);
             }
             else
             {
-                m_colshape = std::make_unique<CollisionShapeConvexHull>(
-                    collider.get(), data.m_hullPoints, data.numIndices, m_parent.m_extent);
+                m_colshape = new CollisionShapeConvexHull(
+                    collider, data.m_hullPoints, data.numIndices, m_parent.m_extent);
             }
         }
         break;
@@ -431,7 +438,7 @@ namespace CBP
         collider->setUserPointer(std::addressof(m_parent));
         collider->setCollisionShape(m_colshape->GetBTShape());
 
-        m_collider = std::move(collider);
+        m_collider = collider;
 
         m_created = true;
         m_active = true;
@@ -466,8 +473,8 @@ namespace CBP
 
         Deactivate();
 
-        m_collider.reset();
-        m_colshape.reset();
+        delete m_collider;
+        delete m_colshape;
 
         m_meshShape.clear();
 
@@ -481,7 +488,7 @@ namespace CBP
         if (!m_colliderActivated)
         {
             auto world = ICollision::GetWorld();
-            world->addCollisionObject(m_collider.get());
+            world->addCollisionObject(m_collider);
 
             m_colliderActivated = true;
         }
@@ -492,7 +499,7 @@ namespace CBP
         if (m_colliderActivated)
         {
             auto world = ICollision::GetWorld();
-            world->removeCollisionObject(m_collider.get());
+            world->removeCollisionObject(m_collider);
 
             m_colliderActivated = false;
         }
@@ -623,6 +630,9 @@ namespace CBP
                     m_colOffsetY,
                     m_colOffsetZ
                 );
+
+                m_collider.SetMotionScale(
+                    std::clamp(m_conf.phys.colMotionScale, 0.0f, 4.0f));
 
                 switch (m_conf.ex.colShape)
                 {

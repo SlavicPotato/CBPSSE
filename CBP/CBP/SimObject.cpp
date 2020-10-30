@@ -37,18 +37,17 @@ namespace CBP
             if (!collisions && !movement)
                 continue;
 
-            auto& e = a_out.emplace_back();
-
             auto it = a_config.find(b.second);
-            if (it != a_config.end())
-                e.physConf = it->second;
 
-            e.nodeName = b.first;
-            e.bone = object;
-            e.confGroup = b.second;
-            e.collisions = a_collisions && collisions;
-            e.movement = movement;
-            e.nodeConf = nodeConf;
+            a_out.emplace_back(
+                b.first,
+                object,
+                b.second,
+                a_collisions && collisions,
+                movement,
+                it != a_config.end() ? it->second : IConfig::GetDefaultPhysics(),
+                nodeConf
+            );
         }
 
         return a_out.size();
@@ -72,12 +71,14 @@ namespace CBP
         m_actorName = CALL_MEMBER_FN(a_actor, GetReferenceName)();
 #endif
 
+        m_thingList.reserve(a_desc.size());
+
         for (auto& e : a_desc)
         {
-            m_things.try_emplace(
+            auto& r = m_things.try_emplace(
                 e.nodeName,
                 a_actor,
-                e.bone,
+                e.node,
                 e.confGroup,
                 e.physConf,
                 e.nodeConf,
@@ -87,10 +88,35 @@ namespace CBP
                 e.movement
             );
 
-            m_configGroups.emplace(e.confGroup);
+            auto it = m_thingList.begin();
+
+            while (it != m_thingList.end())
+            {
+                auto p = (*it)->GetNode()->m_parent;
+
+                if (e.node->IsEqual(p))
+                    break;
+
+                ++it;
+            }
+
+            m_thingList.emplace(it, std::addressof(r.first->second));
         }
 
-        //m_npc = a_actor;
+
+        /*if (a_actor->formID == 0x14)
+        {
+            _DMESSAGE(">>");
+
+            for (const auto& e : m_thingList)
+            {
+                _DMESSAGE("\t: %s", e->GetNode()->m_name);
+            }
+
+            _DMESSAGE("<<");
+
+        }*/
+
 
         BSFixedString n("NPC Head [Head]");
         m_objHead = a_actor->loadedState->node->GetObjectByName(&n.data);
@@ -98,11 +124,11 @@ namespace CBP
 
     void SimObject::Reset()
     {
-        for (auto& p : m_things)
-            p.second.Reset();
+        for (auto p : m_thingList)
+            p->Reset();
     }
 
-    bool SimObject::ValidateNodes(Actor *a_actor)
+    bool SimObject::ValidateNodes(Actor* a_actor)
     {
         BSFixedString n("NPC Head [Head]");
         auto head = a_actor->loadedState->node->GetObjectByName(&n.data);
@@ -133,21 +159,19 @@ namespace CBP
 
         for (auto& p : m_things)
         {
-            if (!IConfig::IsValidGroup(p.second.GetConfigGroupName()))
+            auto& confGroup = p.second.GetConfigGroupName();
+
+            if (!IConfig::IsValidGroup(confGroup))
                 continue;
 
-            configNode_t nodeConf;
-
             auto itn = nodeConfig.find(p.first);
-            if (itn != nodeConfig.end())
-                nodeConf = itn->second;
+            auto& nodeConf = itn != nodeConfig.end() ? itn->second : configNode_t();
 
             bool collisions, movement;
             nodeConf.Get(m_sex, collisions, movement);
 
-            auto it2 = a_config.find(p.second.GetConfigGroupName());
-
-            auto& physConf = it2 != a_config.end() ? it2->second : IConfig::GetDefaultPhysics();
+            auto itc = a_config.find(confGroup);
+            auto& physConf = itc != a_config.end() ? itc->second : IConfig::GetDefaultPhysics();
 
             p.second.UpdateConfig(
                 a_actor,
@@ -164,9 +188,9 @@ namespace CBP
         const std::string& a_component,
         const NiPoint3& a_force)
     {
-        for (auto& p : m_things)
-            if (_stricmp(p.second.GetConfigGroupName().c_str(), a_component.c_str()) == 0)
-                p.second.ApplyForce(a_steps, a_force);
+        for (auto p : m_thingList)
+            if (_stricmp(p->GetConfigGroupName().c_str(), a_component.c_str()) == 0)
+                p->ApplyForce(a_steps, a_force);
     }
 
 #ifdef _CBP_ENABLE_DEBUG
@@ -188,8 +212,8 @@ namespace CBP
     {
         m_suspended = a_switch;
 
-        for (auto& e : m_things)
-            e.second.GetCollider().SetShouldProcess(!a_switch);
+        for (auto e : m_thingList)
+            e->GetCollider().SetShouldProcess(!a_switch);
 
         if (!a_switch)
             Reset();

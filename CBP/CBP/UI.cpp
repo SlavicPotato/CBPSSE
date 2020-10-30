@@ -196,14 +196,16 @@ namespace CBP
 
         Propagate(a_data, nullptr, a_pair, [&](configComponent_t& a_v) {
             a_v.Set(a_desc.second, *a_val); });
-
+        
         if (a_desc.second.counterpart.size() &&
             globalConfig.ui.profile.syncWeightSliders)
         {
-            a_pair.second.Set(a_desc.second.counterpart, *a_val);
+            float mval(a_desc.second.GetCounterpartValue(a_val));
+
+            a_pair.second.Set(a_desc.second.counterpart, mval);
 
             Propagate(a_data, nullptr, a_pair, [&](configComponent_t& a_v) {
-                a_v.Set(a_desc.second.counterpart, *a_val); });
+                a_v.Set(a_desc.second.counterpart, mval); });
         }
     }
 
@@ -726,9 +728,7 @@ namespace CBP
         auto& raceConf = IConfig::GetOrCreateRacePhysics(a_formid);
         auto& entry = raceConf[a_pair.first];
 
-        auto addr = reinterpret_cast<uintptr_t>(std::addressof(entry)) + a_desc.second.offset;
-
-        *reinterpret_cast<float*>(addr) = *a_val;
+        entry.Set(a_desc.second, a_val);
 
         Propagate(a_data, std::addressof(raceConf), a_pair, [&](configComponent_t& a_v) {
             a_v.Set(a_desc.second, *a_val); });
@@ -736,11 +736,13 @@ namespace CBP
         if (a_desc.second.counterpart.size() &&
             globalConfig.ui.race.syncWeightSliders)
         {
-            a_pair.second.Set(a_desc.second.counterpart, *a_val);
-            entry.Set(a_desc.second.counterpart, *a_val);
+            float mval(a_desc.second.GetCounterpartValue(a_val));
+
+            a_pair.second.Set(a_desc.second.counterpart, mval);
+            entry.Set(a_desc.second.counterpart, mval);
 
             Propagate(a_data, std::addressof(raceConf), a_pair, [&](configComponent_t& a_v) {
-                a_v.Set(a_desc.second.counterpart, *a_val); });
+                a_v.Set(a_desc.second.counterpart, mval); });
         }
 
         MarkChanged();
@@ -2266,9 +2268,7 @@ namespace CBP
         auto& actorConf = IConfig::GetOrCreateActorPhysics(a_handle);
         auto& entry = actorConf[a_pair.first];
 
-        auto addr = reinterpret_cast<uintptr_t>(std::addressof(entry)) + a_desc.second.offset;
-
-        *reinterpret_cast<float*>(addr) = *a_val;
+        entry.Set(a_desc.second, a_val);
 
         Propagate(a_data, std::addressof(actorConf), a_pair, [&](configComponent_t& a_v) {
             a_v.Set(a_desc.second, *a_val); });
@@ -2276,11 +2276,13 @@ namespace CBP
         if (a_desc.second.counterpart.size() &&
             globalConfig.ui.actor.syncWeightSliders)
         {
-            a_pair.second.Set(a_desc.second.counterpart, *a_val);
-            entry.Set(a_desc.second.counterpart, *a_val);
+            float mval(a_desc.second.GetCounterpartValue(a_val));
+
+            a_pair.second.Set(a_desc.second.counterpart, mval);
+            entry.Set(a_desc.second.counterpart, mval);
 
             Propagate(a_data, std::addressof(actorConf), a_pair, [&](configComponent_t& a_v) {
-                a_v.Set(a_desc.second.counterpart, *a_val); });
+                a_v.Set(a_desc.second.counterpart, mval); });
         }
 
         DCBP::DispatchActorTask(
@@ -2439,9 +2441,7 @@ namespace CBP
         auto& conf = IConfig::GetGlobalPhysics();
         auto& entry = conf[a_pair.first];
 
-        auto addr = reinterpret_cast<uintptr_t>(std::addressof(entry)) + a_desc.second.offset;
-
-        *reinterpret_cast<float*>(addr) = *a_val;
+        entry.Set(a_desc.second, a_val);
 
         Propagate(a_data, std::addressof(conf), a_pair, [&](configComponent_t& a_v) {
             a_v.Set(a_desc.second, *a_val); });
@@ -2449,11 +2449,13 @@ namespace CBP
         if (a_desc.second.counterpart.size() &&
             globalConfig.ui.actor.syncWeightSliders)
         {
-            a_pair.second.Set(a_desc.second.counterpart, *a_val);
-            entry.Set(a_desc.second.counterpart, *a_val);
+            float mval(a_desc.second.GetCounterpartValue(a_val));
+
+            a_pair.second.Set(a_desc.second.counterpart, mval);
+            entry.Set(a_desc.second.counterpart, mval);
 
             Propagate(a_data, std::addressof(conf), a_pair, [&](configComponent_t& a_v) {
-                a_v.Set(a_desc.second.counterpart, *a_val); });
+                a_v.Set(a_desc.second.counterpart, mval); });
         }
 
         DCBP::UpdateConfigOnAllActors();

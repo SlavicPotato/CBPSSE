@@ -342,68 +342,87 @@ namespace CBP
             "",
             0.0f, 5.0f,
             "Penetration bias multiplier used in collision response. Higher values 'eject' the object with greater velocity when overlapping with another.",
-            "Pen. bias factor",
+            "Pen. bias factor"
+        }},   
+        {"cm", {
+            offsetof(configComponent_t, phys.colMotionScale),
+            "",
+            0.0f, 1.0f,
+            "",
+            "Motion scale",
             DescUIMarker::EndGroup,
             DescUIGroupType::Collisions
-        }},
-        {"mox", {
-            offsetof(configComponent_t, phys.maxOffsetP[0]),
-            "",
-            0.0f, 128.0f,
-            "Maximum amount the bone is allowed to move from target (+X, +Y, +Z)",
-            "Max. offset +",
-            DescUIMarker::Float3 | DescUIMarker::BeginGroup | DescUIMarker::Collapsed,
+        }},        
+        {"mox-", {
+            offsetof(configComponent_t, phys.maxOffsetN[0]),
+            "mox",
+            -128.0f, 0.0f,
+            "Maximum amount the bone is allowed to move from target (-X, -Y, -Z)",
+            "Constraint box min",
+            DescUIMarker::Float3 | DescUIMarker::BeginGroup | DescUIMarker::Collapsed | DescUIMarker::MirrorNegate,
             DescUIGroupType::PhysicsExtra,
             "Movement constraints"
         }},
-        {"moy", {
-            offsetof(configComponent_t, phys.maxOffsetP[1]),
-            "",
-            0.0f, 128.0f
-        }},
-        {"moz", {
-            offsetof(configComponent_t, phys.maxOffsetP[2]),
-            "",
-            0.0f, 128.0f
-        }},
-        { "mox-", {
-            offsetof(configComponent_t, phys.maxOffsetN[0]),
-            "",
-            -128.0f, 0.0f,
-            "Maximum amount the bone is allowed to move from target (-X, -Y, -Z)",
-            "Max. offset -",
-            DescUIMarker::Float3
-        }},
         {"moy-", {
             offsetof(configComponent_t, phys.maxOffsetN[1]),
+            "moy",
+            -128.0f, 0.0f,
             "",
-            -128.0f, 0.0f
+            "",
+            DescUIMarker::MirrorNegate
         }},
         { "moz-", {
             offsetof(configComponent_t, phys.maxOffsetN[2]),
+            "moz",
+            -128.0f, 0.0f,
             "",
-            -128.0f, 0.0f
+            "",
+            DescUIMarker::MirrorNegate
         }},
+        {"mox", {
+            offsetof(configComponent_t, phys.maxOffsetP[0]),
+            "mox-",
+            0.0f, 128.0f,
+            "Maximum amount the bone is allowed to move from target (+X, +Y, +Z)",
+            "Constraint box max",
+            DescUIMarker::Float3 | DescUIMarker::MirrorNegate
+        }},
+        {"moy", {
+            offsetof(configComponent_t, phys.maxOffsetP[1]),
+            "moy-",
+            0.0f, 128.0f,
+            "",
+            "",
+            DescUIMarker::MirrorNegate
+        }},
+        {"moz", {
+            offsetof(configComponent_t, phys.maxOffsetP[2]),
+            "moz-",
+            0.0f, 128.0f,
+            "",
+            "",
+            DescUIMarker::MirrorNegate
+        } },
         {"moc", {
             offsetof(configComponent_t, phys.maxOffsetVelResponseScale),
             "",
             0.0f, 1.0f,
-            "Max offset - velocity response scale",
-            "MO constraint"
+            "Velocity response scale",
+            "Vel. response scale"
         }},
         {"mod", {
             offsetof(configComponent_t, phys.maxOffsetMaxBiasMag),
             "",
             0.5f, 50.0f,
-            "Max offset - penetration bias depth limit",
-            "MO bias limit"
+            "Penetration bias depth limit",
+            "Bias limit"
         }},
         {"moe", {
             offsetof(configComponent_t, phys.maxOffsetRestitutionCoefficient),
             "",
             0.0f, 1.0f,
-            "Max offset - restitution coefficient",
-            "MO restitution coef.",
+            "Restitution coefficient",
+            "Restitution coef.",
             DescUIMarker::EndGroup
         }}
         }

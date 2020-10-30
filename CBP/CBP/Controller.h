@@ -59,7 +59,6 @@ namespace CBP
         __forceinline void UpdatePhase1();
         __forceinline void UpdateActorsPhase2(float a_timeStep);
 
-       // void ComputeDebugRendererPrimitives();
         __forceinline uint32_t UpdatePhysics(Game::BSMain* a_main, float a_interval);
 
 #ifdef _CBP_ENABLE_DEBUG

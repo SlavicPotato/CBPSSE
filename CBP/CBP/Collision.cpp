@@ -95,7 +95,7 @@ namespace CBP
                 }
             }
 
-            tmp.m_triVertexArray = std::make_shared<btTriangleIndexVertexArray>(
+            tmp.m_triVertexArray = new btTriangleIndexVertexArray(
                 mesh->mNumFaces, tmp.m_indices.get(), sizeof(int) * 3,
                 numVertices, (btScalar*)tmp.m_vertices.get(), sizeof(MeshPoint));
 
