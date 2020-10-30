@@ -1781,7 +1781,7 @@ namespace CBP
                 ImGui::Spacing();
 
                 Checkbox("Lock game controls while UI active", &globalConfig.ui.lockControls);
-
+                
                 ImGui::Spacing();
 
                 ImGui::TreePop();
@@ -1807,6 +1807,10 @@ namespace CBP
 
                 SliderFloat("Max. substeps", &globalConfig.phys.maxSubSteps, 1.0f, 20.0f, "%.0f");
                 HelpMarker(MiscHelpText::maxSubSteps);
+
+                ImGui::Spacing();
+
+                SliderFloat("Max. diff", &globalConfig.phys.maxDiff, 200.0f, 2000.0f, "%.0f");
 
                 ImGui::Spacing();
 

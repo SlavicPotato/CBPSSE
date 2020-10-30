@@ -66,6 +66,7 @@ namespace CBP
         {
             float timeTick = 1.0f / 60.0f;
             float maxSubSteps = 10.0f;
+            float maxDiff = 355.0f;
             bool collisions = true;
         } phys;
 
@@ -365,8 +366,8 @@ namespace CBP
             float maxVelocity = 4000.0f;
             float colSphereRadMin = 4.0f;
             float colSphereRadMax = 4.0f;
-            float offsetMin[3]{ 0.0f, 0.0f, 0.0f };
-            float offsetMax[3]{ 0.0f, 0.0f, 0.0f };
+            float colOffsetMin[3]{ 0.0f, 0.0f, 0.0f };
+            float colOffsetMax[3]{ 0.0f, 0.0f, 0.0f };
             float colHeightMin = 0.001f;
             float colHeightMax = 0.001f;
             float colExtentMin[3]{ 4.0f, 4.0f, 4.0f };
@@ -375,7 +376,7 @@ namespace CBP
             float colRestitutionCoefficient = 0.25f;
             float colPenBiasFactor = 1.0f;
             float colPenMass = 1.0f;
-            float colMotionScale = 1.0f;
+            float colPositionScale = 1.0f;
         } phys;
 
         struct
@@ -407,8 +408,8 @@ namespace CBP
             ar& phys.mass;
             ar& phys.colSphereRadMin;
             ar& phys.colSphereRadMax;
-            ar& phys.offsetMin;
-            ar& phys.offsetMax;
+            ar& phys.colOffsetMin;
+            ar& phys.colOffsetMax;
             ar& phys.colHeightMin;
             ar& phys.colHeightMax;
             ar& phys.colExtentMin;
@@ -427,7 +428,7 @@ namespace CBP
             ar& phys.maxOffsetN;
             ar& phys.maxOffsetRestitutionCoefficient;
 
-            ar& phys.colMotionScale;
+            ar& phys.colPositionScale;
         }
 
         template<class Archive>
@@ -447,8 +448,8 @@ namespace CBP
             ar& phys.mass;
             ar& phys.colSphereRadMin;
             ar& phys.colSphereRadMax;
-            ar& phys.offsetMin;
-            ar& phys.offsetMax;
+            ar& phys.colOffsetMin;
+            ar& phys.colOffsetMax;
             ar& phys.colHeightMin;
             ar& phys.colHeightMax;
             ar& phys.colExtentMin;
@@ -479,7 +480,7 @@ namespace CBP
 
                             if (version >= DataVersion6)
                             {
-                                ar& phys.colMotionScale;
+                                ar& phys.colPositionScale;
                             }
                         }
                     }

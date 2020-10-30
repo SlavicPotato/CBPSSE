@@ -82,15 +82,16 @@ namespace CBP
     template <class T>
     void CollisionShapeTemplRH<T>::UpdateShape()
     {
-        auto rad = m_radius * m_nodeScale;
+        auto rad = std::min(m_radius * m_nodeScale, 1000.0f);
         if (rad <= 0.0f)
             return;
 
         auto height = std::clamp(m_height * m_nodeScale, 0.001f, 1000.0f);
+
         if (rad == m_currentRadius && height == m_currentHeight)
             return;
 
-        DoRecreateShape(std::min(rad, 1000.0f), height);
+        DoRecreateShape(rad, height);
         PostUpdateShape();
 
         m_currentRadius = rad;
@@ -159,11 +160,11 @@ namespace CBP
 
     void CollisionShapeSphere::UpdateShape()
     {
-        auto rad = m_radius * m_nodeScale;
+        auto rad = std::min(m_radius * m_nodeScale, 1000.0f);
         if (rad <= 0.0f || rad == m_currentRadius)
             return;
 
-        RecreateShape(std::min(rad, 1000.0f));
+        RecreateShape(rad);
         PostUpdateShape();
 
         m_currentRadius = rad;
@@ -320,8 +321,6 @@ namespace CBP
         m_shape->recalcLocalAabb();
     }
 
-
-
     Collider::Collider(
         SimComponent& a_parent)
         :
@@ -333,7 +332,8 @@ namespace CBP
         m_nodeScale(1.0f),
         m_parent(a_parent),
         m_shape(ColliderShapeType::Sphere),
-        m_motionScale(1.0f)
+        m_positionScale(1.0f),
+        m_doPositionScaling(false)
     {
     }
 
@@ -395,16 +395,16 @@ namespace CBP
         case ColliderShapeType::Mesh:
         case ColliderShapeType::ConvexHull:
         {
-            auto& pm = ProfileManagerCollider::GetSingleton();
-
             if (m_parent.m_conf.ex.colMesh.empty())
             {
                 delete collider;
                 return false;
             }
 
+            const auto& pm = ProfileManagerCollider::GetSingleton();
+
             auto it = pm.Find(m_parent.m_conf.ex.colMesh);
-            if (it == pm.End()) 
+            if (it == pm.End())
             {
                 Warning("%s: couldn'transform find convex mesh",
                     m_parent.m_conf.ex.colMesh.c_str());
@@ -572,15 +572,11 @@ namespace CBP
 
         m_colRad = std::clamp(mmw(weight, a_config.phys.colSphereRadMin, a_config.phys.colSphereRadMax), 0.001f, 1000.0f);
         m_colHeight = std::clamp(mmw(weight, a_config.phys.colHeightMin, a_config.phys.colHeightMax), 0.001f, 1000.0f);
-        m_colOffsetX = mmw(weight,
-            a_config.phys.offsetMin[0] + a_nodeConf.colOffsetMin[0],
-            a_config.phys.offsetMax[0] + a_nodeConf.colOffsetMax[0]);
-        m_colOffsetY = mmw(weight,
-            a_config.phys.offsetMin[1] + a_nodeConf.colOffsetMin[1],
-            a_config.phys.offsetMax[1] + a_nodeConf.colOffsetMax[1]);
-        m_colOffsetZ = mmw(weight,
-            a_config.phys.offsetMin[2] + a_nodeConf.colOffsetMin[2],
-            a_config.phys.offsetMax[2] + a_nodeConf.colOffsetMax[2]);
+        m_colOffset = {
+            mmw(weight, a_config.phys.colOffsetMin[0] + a_nodeConf.colOffsetMin[0], a_config.phys.colOffsetMax[0] + a_nodeConf.colOffsetMax[0]),
+            mmw(weight, a_config.phys.colOffsetMin[1] + a_nodeConf.colOffsetMin[1], a_config.phys.colOffsetMax[1] + a_nodeConf.colOffsetMax[1]),
+            mmw(weight, a_config.phys.colOffsetMin[2] + a_nodeConf.colOffsetMin[2], a_config.phys.colOffsetMax[2] + a_nodeConf.colOffsetMax[2])
+        };
 
         m_extent = { std::clamp(mmw(weight, a_config.phys.colExtentMin[0], a_config.phys.colExtentMax[0]), 0.0f, 1000.0f),
                      std::clamp(mmw(weight, a_config.phys.colExtentMin[1], a_config.phys.colExtentMax[1]), 0.0f, 1000.0f),
@@ -613,9 +609,11 @@ namespace CBP
             {
                 m_colRad = std::clamp(m_conf.phys.colSphereRadMax, 0.001f, 1000.0f);
                 m_colHeight = std::clamp(m_conf.phys.colHeightMax, 0.001f, 1000.0f);
-                m_colOffsetX = m_conf.phys.offsetMax[0] + a_nodeConf.colOffsetMax[0];
-                m_colOffsetY = m_conf.phys.offsetMax[1] + a_nodeConf.colOffsetMax[1];
-                m_colOffsetZ = m_conf.phys.offsetMax[2] + a_nodeConf.colOffsetMax[2];
+                m_colOffset = {
+                    m_conf.phys.colOffsetMax[0] + a_nodeConf.colOffsetMax[0],
+                    m_conf.phys.colOffsetMax[1] + a_nodeConf.colOffsetMax[1],
+                    m_conf.phys.colOffsetMax[2] + a_nodeConf.colOffsetMax[2]
+                };
                 m_extent = {
                     std::clamp(m_conf.phys.colExtentMax[0], 0.0f, 1000.0f),
                     std::clamp(m_conf.phys.colExtentMax[1], 0.0f, 1000.0f),
@@ -626,13 +624,12 @@ namespace CBP
             if (m_collider.Create(m_conf.ex.colShape))
             {
                 m_collider.SetOffset(
-                    m_colOffsetX,
-                    m_colOffsetY,
-                    m_colOffsetZ
+                    m_colOffset,
+                    m_initialTransform.pos
                 );
 
-                m_collider.SetMotionScale(
-                    std::clamp(m_conf.phys.colMotionScale, 0.0f, 4.0f));
+                m_collider.SetPositionScale(
+                    std::clamp(m_conf.phys.colPositionScale, 0.0f, 4.0f));
 
                 switch (m_conf.ex.colShape)
                 {
@@ -771,6 +768,6 @@ namespace CBP
 
         m_debugInfo.worldTransformParent = m_objParent->m_worldTransform;
         m_debugInfo.localTransformParent = m_objParent->m_localTransform;
-    }
+}
 #endif
 }

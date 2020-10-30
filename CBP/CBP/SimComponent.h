@@ -35,12 +35,14 @@ namespace CBP
         int numTriangles;
         int numIndices;
 
-        btTriangleIndexVertexArray *m_triVertexArray;
+        btTriangleIndexVertexArray* m_triVertexArray;
     };
 
-    class CollisionShape
+    class __declspec(align(16)) CollisionShape
     {
     public:
+        BT_DECLARE_ALIGNED_ALLOCATOR();
+
         virtual void UpdateShape() = 0;
 
         virtual void SetRadius(float a_radius);
@@ -60,7 +62,7 @@ namespace CBP
     };
 
     template <class T>
-    class CollisionShapeBase :
+    class __declspec(align(16)) CollisionShapeBase :
         public CollisionShape
     {
 
@@ -89,7 +91,7 @@ namespace CBP
     };
 
     template <class T>
-    class CollisionShapeTemplRH :
+    class __declspec(align(16)) CollisionShapeTemplRH :
         public CollisionShapeBase<T>
     {
     protected:
@@ -133,7 +135,7 @@ namespace CBP
         btVector3 m_currentExtent;
     };
 
-    class CollisionShapeSphere :
+    class __declspec(align(16)) CollisionShapeSphere :
         public CollisionShapeBase<btSphereShape>
     {
     public:
@@ -149,7 +151,7 @@ namespace CBP
     };
 
 
-    class CollisionShapeCapsule :
+    class __declspec(align(16)) CollisionShapeCapsule :
         public CollisionShapeTemplRH<btCapsuleShape>
     {
     public:
@@ -158,7 +160,7 @@ namespace CBP
         virtual void DoRecreateShape(float a_radius, float a_height);
     };
 
-    class CollisionShapeCone :
+    class __declspec(align(16)) CollisionShapeCone :
         public CollisionShapeTemplRH<btConeShape>
     {
     public:
@@ -167,7 +169,7 @@ namespace CBP
         virtual void DoRecreateShape(float a_radius, float a_height);
     };
 
-    class CollisionShapeBox :
+    class __declspec(align(16)) CollisionShapeBox :
         public CollisionShapeTemplExtent<btBoxShape>
     {
     public:
@@ -176,7 +178,7 @@ namespace CBP
         virtual void DoRecreateShape(const btVector3& a_extent);
     };
 
-    class CollisionShapeCylinder :
+    class __declspec(align(16)) CollisionShapeCylinder :
         public CollisionShapeTemplRH<btCylinderShape>
     {
     public:
@@ -185,7 +187,7 @@ namespace CBP
         virtual void DoRecreateShape(float a_radius, float a_height);
     };
 
-    class CollisionShapeTetrahedron :
+    class __declspec(align(16)) CollisionShapeTetrahedron :
         public CollisionShapeTemplExtent<btTetrahedronShapeEx>
     {
     public:
@@ -198,7 +200,7 @@ namespace CBP
         static const btVector3 m_vertices[4];
     };
 
-    class CollisionShapeMesh :
+    class __declspec(align(16)) CollisionShapeMesh :
         public CollisionShapeTemplExtent<btGImpactMeshShape>
     {
     public:
@@ -212,10 +214,10 @@ namespace CBP
 
     private:
 
-        btTriangleIndexVertexArray *m_triVertexArray;
+        btTriangleIndexVertexArray* m_triVertexArray;
     };
 
-    class CollisionShapeConvexHull :
+    class __declspec(align(16)) CollisionShapeConvexHull :
         public CollisionShapeTemplExtent<btConvexHullShape>
     {
     public:
@@ -277,14 +279,9 @@ namespace CBP
                 m_colshape->SetExtent(a_extent);
         }
 
-        inline void SetOffset(const NiPoint3& a_offset) {
+        inline void SetOffset(const NiPoint3& a_offset, const NiPoint3& a_initial) {
             m_bodyOffset = a_offset;
-        }
-
-        inline void SetOffset(float a_x, float a_y, float a_z) {
-            m_bodyOffset.x = a_x;
-            m_bodyOffset.y = a_y;
-            m_bodyOffset.z = a_z;
+            m_bodyOffsetPlusInitial = a_offset + a_initial;
         }
 
         [[nodiscard]] inline bool IsActive() const {
@@ -295,8 +292,9 @@ namespace CBP
             return m_bodyOffset;
         }
 
-        inline void SetMotionScale(float a_scale) {
-            m_motionScale = a_scale;
+        inline void SetPositionScale(float a_scale) {
+            m_positionScale = a_scale;
+            m_doPositionScaling = a_scale != 1.0f;
         }
 
         void SetShouldProcess(bool a_switch);
@@ -311,6 +309,7 @@ namespace CBP
 
         btMatrix3x3 m_colRot;
         NiPoint3 m_bodyOffset;
+        NiPoint3 m_bodyOffsetPlusInitial;
 
         ColliderShapeType m_shape;
         std::string m_meshShape;
@@ -323,7 +322,8 @@ namespace CBP
         bool m_process;
         bool m_rotation;
 
-        float m_motionScale;
+        float m_positionScale;
+        bool m_doPositionScaling;
 
         PerfTimer pt;
 
@@ -373,9 +373,7 @@ namespace CBP
         float m_colRad = 1.0f;
         float m_colHeight = 0.001f;
         float m_colCapsuleHeight = 0.001f;
-        float m_colOffsetX = 0.0f;
-        float m_colOffsetY = 0.0f;
-        float m_colOffsetZ = 0.0f;
+        NiPoint3 m_colOffset;
         float m_nodeScale = 1.0f;
         float m_massInv = 1.0f;
 
@@ -596,15 +594,17 @@ namespace CBP
 
         auto& transform = m_collider->getWorldTransform();
 
-        if (!m_parent.m_movement || m_motionScale == 1.0f)
+        if (!m_parent.m_movement || !m_doPositionScaling)
         {
             auto pos = m_parent.m_obj->m_worldTransform * m_bodyOffset;
             transform.setOrigin({ pos.x, pos.y, pos.z });
         }
         else {
-            auto tf = m_parent.m_obj->m_localTransform;
-            tf.pos = m_parent.m_initialTransform.pos + ((tf.pos - m_parent.m_initialTransform.pos) * m_motionScale);
-            auto pos = (m_parent.m_objParent->m_worldTransform * tf) * m_bodyOffset;
+            auto lpos(m_parent.m_obj->m_localTransform.pos);
+            lpos -= m_parent.m_initialTransform.pos;
+            lpos *= m_positionScale;
+            lpos += m_bodyOffsetPlusInitial;
+            auto pos(m_parent.m_objParent->m_worldTransform * lpos);
             transform.setOrigin({ pos.x, pos.y, pos.z });
         }
 
@@ -732,14 +732,18 @@ namespace CBP
             float ay(std::fabs(diff.y));
             float az(std::fabs(diff.z));
 
-            if (ax > 256.0f || ay > 256.0f || az > 256.0f) {
+            float maxDiff(IConfig::GetGlobal().phys.maxDiff);
+
+            if (ax > maxDiff || ay > maxDiff || az > maxDiff) {
                 Reset();
                 return;
             }
 
-            // Compute the "Spring" Force
-            NiPoint3 diff2(diff.x * ax, diff.y * ay, diff.z * az);
-            NiPoint3 force((diff * m_conf.phys.stiffness) + (diff2 * m_conf.phys.stiffness2));
+            NiPoint3 force(diff * m_conf.phys.stiffness);
+
+            force.x += diff.x * ax * m_conf.phys.stiffness2;
+            force.y += diff.y * ay * m_conf.phys.stiffness2;
+            force.z += diff.z * az * m_conf.phys.stiffness2;
 
             force.z -= m_conf.phys.gravityBias * m_conf.phys.mass;
 

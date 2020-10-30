@@ -47,7 +47,7 @@ namespace CBP
             "Linear stiffness",
             DescUIMarker::BeginGroup,
             DescUIGroupType::Physics,
-            "Physics"
+            "Motion"
         }},
         {"sq", {
             offsetof(configComponent_t, phys.stiffness2),
@@ -208,7 +208,7 @@ namespace CBP
             DescUIMarker::ColliderCapsule | DescUIMarker::ColliderCone | DescUIMarker::ColliderCylinder
         }},
         {"cox-", {
-            offsetof(configComponent_t, phys.offsetMin[0]),
+            offsetof(configComponent_t, phys.colOffsetMin[0]),
             "cox+",
             -50.0f, 50.0f,
             "Collider object offset (X, Y, Z, weight 0)",
@@ -216,21 +216,21 @@ namespace CBP
             DescUIMarker::Float3
         }},
         {"coy-", {
-            offsetof(configComponent_t, phys.offsetMin[1]),
+            offsetof(configComponent_t, phys.colOffsetMin[1]),
             "coy+",
             -50.0f, 50.0f,
             "",
             ""
         }},
         {"coz-", {
-            offsetof(configComponent_t, phys.offsetMin[2]),
+            offsetof(configComponent_t, phys.colOffsetMin[2]),
             "coz+",
             -50.0f, 50.0f,
             "",
             ""
         }},
         {"cox+", {
-            offsetof(configComponent_t, phys.offsetMax[0]),
+            offsetof(configComponent_t, phys.colOffsetMax[0]),
             "cox-",
             -50.0f, 50.0f,
             "Collider body offset (X, Y, Z, weight 100)",
@@ -238,14 +238,14 @@ namespace CBP
             DescUIMarker::Float3
         }},
         {"coy+", {
-            offsetof(configComponent_t, phys.offsetMax[1]),
+            offsetof(configComponent_t, phys.colOffsetMax[1]),
             "coy-",
             -50.0f, 50.0f,
             "",
             ""
         }},
         {"coz+", {
-            offsetof(configComponent_t, phys.offsetMax[2]),
+            offsetof(configComponent_t, phys.colOffsetMax[2]),
             "coz-",
             -50.0f, 50.0f,
             "",
@@ -345,11 +345,11 @@ namespace CBP
             "Pen. bias factor"
         }},   
         {"cm", {
-            offsetof(configComponent_t, phys.colMotionScale),
+            offsetof(configComponent_t, phys.colPositionScale),
             "",
             0.0f, 1.0f,
-            "",
-            "Motion scale",
+            "Collider object position scaling.",
+            "Position scaling",
             DescUIMarker::EndGroup,
             DescUIGroupType::Collisions
         }},        
@@ -361,7 +361,7 @@ namespace CBP
             "Constraint box min",
             DescUIMarker::Float3 | DescUIMarker::BeginGroup | DescUIMarker::Collapsed | DescUIMarker::MirrorNegate,
             DescUIGroupType::PhysicsExtra,
-            "Movement constraints"
+            "Motion constraints"
         }},
         {"moy-", {
             offsetof(configComponent_t, phys.maxOffsetN[1]),

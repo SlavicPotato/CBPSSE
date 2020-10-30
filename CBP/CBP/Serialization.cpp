@@ -366,6 +366,7 @@ namespace CBP
 
                 globalConfig.phys.timeTick = std::clamp(phys.get("timeTick", 1.0f / 60.0f).asFloat(), 1.0f / 300.0f, 1.0f);
                 globalConfig.phys.maxSubSteps = std::max(phys.get("maxSubSteps", 5.0f).asFloat(), 1.0f);
+                globalConfig.phys.maxDiff = std::clamp(phys.get("maxDiff", 355.0f).asFloat(), 200.0f, 2000.0f);
                 globalConfig.phys.collisions = phys.get("collisions", true).asBool();
             }
 
@@ -549,6 +550,7 @@ namespace CBP
 
             phys["timeTick"] = globalConfig.phys.timeTick;
             phys["maxSubSteps"] = globalConfig.phys.maxSubSteps;
+            phys["maxDiff"] = globalConfig.phys.maxDiff;
             phys["collisions"] = globalConfig.phys.collisions;
 
             auto& ui = root["ui"];
