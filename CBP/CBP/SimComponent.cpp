@@ -518,9 +518,76 @@ namespace CBP
             Deactivate();
     }
 
+    void Collider::Update()
+    {
+        if (!m_created)
+            return;
+
+        auto nodeScale = m_parent.m_obj->m_worldTransform.scale;
+
+        if (!m_active)
+        {
+            if (nodeScale > 0.0f)
+            {
+                m_active = true;
+                if (m_process)
+                    Activate();
+            }
+            else
+                return;
+        }
+        else
+        {
+            if (nodeScale <= 0.0f)
+            {
+                m_active = false;
+                Deactivate();
+                return;
+            }
+        }
+
+        m_parent.SIMDFillObj();
+
+        auto& transform = m_collider->getWorldTransform();
+
+        if (m_parent.m_movement)
+        {
+            if (!m_doPositionScaling)
+            {
+                auto pos = (((m_parent.m_itrMatParent * m_parent.m_itrInitialMat) * m_bodyOffset) *= nodeScale) += m_parent.m_itrPosObj;
+                transform.setOrigin(pos);
+            }
+            else
+            {
+                auto l = m_bodyOffsetPlusInitial + (m_parent.m_ld * m_positionScale);
+                auto pos = (((m_parent.m_itrMatParent * m_parent.m_itrInitialMat) * l) *= nodeScale) += m_parent.m_itrPosParent;
+                transform.setOrigin(pos);
+            }
+        }
+        else
+        {
+            auto pos = ((m_parent.m_itrMatObj * m_bodyOffset) *= nodeScale) += m_parent.m_itrPosObj;
+            transform.setOrigin(pos);
+        }
+
+        if (m_rotation)
+        {
+            auto& b = transform.getBasis();
+            b = m_parent.m_itrMatObj;
+            b *= m_colRot;
+        }
+
+        if (nodeScale != m_nodeScale)
+        {
+            m_nodeScale = nodeScale;
+            m_colshape->SetNodeScale(nodeScale);
+        }
+    }
+
     SimComponent::SimComponent(
         Actor* a_actor,
         NiAVObject* a_obj,
+        const std::string& a_nodeName,
         const std::string& a_configGroupName,
         const configComponent_t& a_config,
         const configNode_t& a_nodeConf,
@@ -529,8 +596,9 @@ namespace CBP
         bool a_collisions,
         bool a_movement)
         :
+        m_nodeName(a_nodeName),
         m_configGroupName(a_configGroupName),
-        m_oldWorldPos(a_obj->m_worldTransform.pos),
+        m_oldWorldPos(a_obj->m_worldTransform.pos.x, a_obj->m_worldTransform.pos.y, a_obj->m_worldTransform.pos.z),
         m_initialTransform(a_obj->m_localTransform),
         m_hasScaleOverride(false),
         m_collider(*this),
@@ -542,11 +610,28 @@ namespace CBP
         m_updateCtx({ 0.0f, 0 }),
         m_formid(a_actor->formID),
         m_conf(a_config),
-        m_movement(a_movement)
+        m_movement(a_movement),
+        m_velocity(0.0f, 0.0f, 0.0f),
+        m_colRad(1.0f),
+        m_colHeight(0.001f),
+        m_nodeScale(1.0f)
     {
 #ifdef _CBP_ENABLE_DEBUG
         m_debugInfo.parentNodeName = a_obj->m_parent->m_name;
 #endif
+        auto& m = m_initialTransform.rot;
+
+        m_itrInitialMat.setValue(
+            m.arr[0], m.arr[1], m.arr[2],
+            m.arr[3], m.arr[4], m.arr[5],
+            m.arr[6], m.arr[7], m.arr[8]
+        );
+
+        m_itrInitialPos = {
+            m_initialTransform.pos.x,
+            m_initialTransform.pos.y,
+            m_initialTransform.pos.z };
+
         UpdateConfig(a_actor, nullptr, a_nodeConf, a_collisions, a_movement);
     }
 
@@ -570,17 +655,19 @@ namespace CBP
 
         float weight = std::clamp(npc->weight, 0.0f, 100.0f);
 
-        m_colRad = std::clamp(mmw(weight, a_config.phys.colSphereRadMin, a_config.phys.colSphereRadMax), 0.001f, 1000.0f);
-        m_colHeight = std::clamp(mmw(weight, a_config.phys.colHeightMin, a_config.phys.colHeightMax), 0.001f, 1000.0f);
+        m_colRad = std::clamp(mmw(weight, a_config.phys.data.colSphereRadMin, a_config.phys.data.colSphereRadMax), 0.001f, 1000.0f);
+        m_colHeight = std::clamp(mmw(weight, a_config.phys.data.colHeightMin, a_config.phys.data.colHeightMax), 0.001f, 1000.0f);
         m_colOffset = {
-            mmw(weight, a_config.phys.colOffsetMin[0] + a_nodeConf.colOffsetMin[0], a_config.phys.colOffsetMax[0] + a_nodeConf.colOffsetMax[0]),
-            mmw(weight, a_config.phys.colOffsetMin[1] + a_nodeConf.colOffsetMin[1], a_config.phys.colOffsetMax[1] + a_nodeConf.colOffsetMax[1]),
-            mmw(weight, a_config.phys.colOffsetMin[2] + a_nodeConf.colOffsetMin[2], a_config.phys.colOffsetMax[2] + a_nodeConf.colOffsetMax[2])
+            mmw(weight, a_config.phys.data.colOffsetMin[0] + a_nodeConf.colOffsetMin[0], a_config.phys.data.colOffsetMax[0] + a_nodeConf.colOffsetMax[0]),
+            mmw(weight, a_config.phys.data.colOffsetMin[1] + a_nodeConf.colOffsetMin[1], a_config.phys.data.colOffsetMax[1] + a_nodeConf.colOffsetMax[1]),
+            mmw(weight, a_config.phys.data.colOffsetMin[2] + a_nodeConf.colOffsetMin[2], a_config.phys.data.colOffsetMax[2] + a_nodeConf.colOffsetMax[2])
         };
 
-        m_extent = { std::clamp(mmw(weight, a_config.phys.colExtentMin[0], a_config.phys.colExtentMax[0]), 0.0f, 1000.0f),
-                     std::clamp(mmw(weight, a_config.phys.colExtentMin[1], a_config.phys.colExtentMax[1]), 0.0f, 1000.0f),
-                     std::clamp(mmw(weight, a_config.phys.colExtentMin[2], a_config.phys.colExtentMax[2]), 0.0f, 1000.0f) };
+        m_extent = {
+            std::clamp(mmw(weight, a_config.phys.data.colExtentMin[0], a_config.phys.data.colExtentMax[0]), 0.0f, 1000.0f),
+            std::clamp(mmw(weight, a_config.phys.data.colExtentMin[1], a_config.phys.data.colExtentMax[1]), 0.0f, 1000.0f),
+            std::clamp(mmw(weight, a_config.phys.data.colExtentMin[2], a_config.phys.data.colExtentMax[2]), 0.0f, 1000.0f)
+        };
 
         return true;
     }
@@ -607,17 +694,17 @@ namespace CBP
         {
             if (!ColUpdateWeightData(a_actor, m_conf, a_nodeConf))
             {
-                m_colRad = std::clamp(m_conf.phys.colSphereRadMax, 0.001f, 1000.0f);
-                m_colHeight = std::clamp(m_conf.phys.colHeightMax, 0.001f, 1000.0f);
+                m_colRad = std::clamp(m_conf.phys.data.colSphereRadMax, 0.001f, 1000.0f);
+                m_colHeight = std::clamp(m_conf.phys.data.colHeightMax, 0.001f, 1000.0f);
                 m_colOffset = {
-                    m_conf.phys.colOffsetMax[0] + a_nodeConf.colOffsetMax[0],
-                    m_conf.phys.colOffsetMax[1] + a_nodeConf.colOffsetMax[1],
-                    m_conf.phys.colOffsetMax[2] + a_nodeConf.colOffsetMax[2]
+                    m_conf.phys.data.colOffsetMax[0] + a_nodeConf.colOffsetMax[0],
+                    m_conf.phys.data.colOffsetMax[1] + a_nodeConf.colOffsetMax[1],
+                    m_conf.phys.data.colOffsetMax[2] + a_nodeConf.colOffsetMax[2]
                 };
                 m_extent = {
-                    std::clamp(m_conf.phys.colExtentMax[0], 0.0f, 1000.0f),
-                    std::clamp(m_conf.phys.colExtentMax[1], 0.0f, 1000.0f),
-                    std::clamp(m_conf.phys.colExtentMax[2], 0.0f, 1000.0f)
+                    std::clamp(m_conf.phys.data.colExtentMax[0], 0.0f, 1000.0f),
+                    std::clamp(m_conf.phys.data.colExtentMax[1], 0.0f, 1000.0f),
+                    std::clamp(m_conf.phys.data.colExtentMax[2], 0.0f, 1000.0f)
                 };
             }
 
@@ -625,11 +712,11 @@ namespace CBP
             {
                 m_collider.SetOffset(
                     m_colOffset,
-                    m_initialTransform.pos
+                    m_itrInitialPos
                 );
 
                 m_collider.SetPositionScale(
-                    std::clamp(m_conf.phys.colPositionScale, 0.0f, 4.0f));
+                    std::clamp(m_conf.phys.data.colPositionScale, 0.0f, 4.0f));
 
                 switch (m_conf.ex.colShape)
                 {
@@ -638,9 +725,9 @@ namespace CBP
                 case ColliderShapeType::Cylinder:
                     m_collider.SetHeight(m_colHeight);
                     m_collider.SetColliderRotation(
-                        m_conf.phys.colRot[0],
-                        m_conf.phys.colRot[1],
-                        m_conf.phys.colRot[2]
+                        m_conf.phys.data.colRot[0],
+                        m_conf.phys.data.colRot[1],
+                        m_conf.phys.data.colRot[2]
                     );
                 case ColliderShapeType::Sphere:
                     m_collider.SetRadius(m_colRad);
@@ -651,9 +738,9 @@ namespace CBP
                 case ColliderShapeType::ConvexHull:
                     m_collider.SetExtent(m_extent);
                     m_collider.SetColliderRotation(
-                        m_conf.phys.colRot[0],
-                        m_conf.phys.colRot[1],
-                        m_conf.phys.colRot[2]
+                        m_conf.phys.data.colRot[0],
+                        m_conf.phys.data.colRot[1],
+                        m_conf.phys.data.colRot[2]
                     );
                     break;
                 }
@@ -663,42 +750,44 @@ namespace CBP
             m_collider.Destroy();
         }
 
-        m_npCogOffset = NiPoint3(m_conf.phys.cogOffset[0], m_conf.phys.cogOffset[1], m_conf.phys.cogOffset[2]);
-        m_npGravityCorrection = NiPoint3(0.0f, 0.0f, m_conf.phys.gravityCorrection);
+        m_cogOffset = { m_conf.phys.data.cogOffset[0], m_conf.phys.data.cogOffset[1], m_conf.phys.data.cogOffset[2] };
+        m_gravityCorrection = { 0.0f, 0.0f, m_conf.phys.data.gravityCorrection };
 
-        if (m_conf.phys.resistance > 0.0f) {
+        if (m_conf.phys.data.resistance > 0.0f) {
             m_resistanceOn = true;
-            m_conf.phys.resistance = std::clamp(m_conf.phys.resistance, 0.0f, 250.0f);
+            m_conf.phys.data.resistance = std::clamp(m_conf.phys.data.resistance, 0.0f, 250.0f);
         }
         else
             m_resistanceOn = false;
 
         bool rot =
-            m_conf.phys.rotational[0] != 0.0f ||
-            m_conf.phys.rotational[1] != 0.0f ||
-            m_conf.phys.rotational[2] != 0.0f;
+            m_conf.phys.data.rotational[0] != 0.0f ||
+            m_conf.phys.data.rotational[1] != 0.0f ||
+            m_conf.phys.data.rotational[2] != 0.0f;
 
         if (rot != m_rotScaleOn) {
             m_rotScaleOn = rot;
             m_obj->m_localTransform.rot = m_initialTransform.rot;
         }
 
-        m_conf.phys.mass = std::clamp(m_conf.phys.mass, 1.0f, 10000.0f);
-        m_conf.phys.colPenMass = std::clamp(m_conf.phys.colPenMass, 1.0f, 100.0f);
-        m_conf.phys.maxOffsetVelResponseScale = std::clamp(m_conf.phys.maxOffsetVelResponseScale, 0.0f, 1.0f);
-        m_conf.phys.maxVelocity = std::clamp(m_conf.phys.maxVelocity, 0.0f, 10000.0f);
-        m_conf.phys.maxOffsetRestitutionCoefficient = std::clamp(m_conf.phys.maxOffsetRestitutionCoefficient, 0.0f, 4.0f);
-        m_conf.phys.maxOffsetMaxBiasMag = std::max(m_conf.phys.maxOffsetMaxBiasMag, 0.0f);
+        m_conf.phys.data.mass = std::clamp(m_conf.phys.data.mass, 1.0f, 10000.0f);
+        m_conf.phys.data.colPenMass = std::clamp(m_conf.phys.data.colPenMass, 1.0f, 100.0f);
+        m_conf.phys.data.maxOffsetVelResponseScale = std::clamp(m_conf.phys.data.maxOffsetVelResponseScale, 0.0f, 1.0f);
+        m_conf.phys.data.maxVelocity = std::clamp(m_conf.phys.data.maxVelocity, 10.0f, 10000.0f);
+        m_conf.phys.data.maxOffsetRestitutionCoefficient = std::clamp(m_conf.phys.data.maxOffsetRestitutionCoefficient, 0.0f, 4.0f);
+        m_conf.phys.data.maxOffsetMaxBiasMag = std::max(m_conf.phys.data.maxOffsetMaxBiasMag, 0.0f);
 
-        m_conf.phys.maxOffsetP[0] = std::max(m_conf.phys.maxOffsetP[0], 0.0f);
-        m_conf.phys.maxOffsetP[1] = std::max(m_conf.phys.maxOffsetP[1], 0.0f);
-        m_conf.phys.maxOffsetP[2] = std::max(m_conf.phys.maxOffsetP[2], 0.0f);
+        m_conf.phys.data.maxOffsetP[0] = std::max(m_conf.phys.data.maxOffsetP[0], 0.0f);
+        m_conf.phys.data.maxOffsetP[1] = std::max(m_conf.phys.data.maxOffsetP[1], 0.0f);
+        m_conf.phys.data.maxOffsetP[2] = std::max(m_conf.phys.data.maxOffsetP[2], 0.0f);
 
-        m_conf.phys.maxOffsetN[0] = std::min(m_conf.phys.maxOffsetN[0], 0.0f);
-        m_conf.phys.maxOffsetN[1] = std::min(m_conf.phys.maxOffsetN[1], 0.0f);
-        m_conf.phys.maxOffsetN[2] = std::min(m_conf.phys.maxOffsetN[2], 0.0f);
+        m_conf.phys.data.maxOffsetN[0] = std::min(m_conf.phys.data.maxOffsetN[0], 0.0f);
+        m_conf.phys.data.maxOffsetN[1] = std::min(m_conf.phys.data.maxOffsetN[1], 0.0f);
+        m_conf.phys.data.maxOffsetN[2] = std::min(m_conf.phys.data.maxOffsetN[2], 0.0f);
 
-        m_massInv = m_movement ? 1.0f / m_conf.phys.mass : 0.0f;
+        m_massInv = m_movement ? 1.0f / m_conf.phys.data.mass : 0.0f;
+
+        m_linearScale = { m_conf.phys.data.linear[0], m_conf.phys.data.linear[1], m_conf.phys.data.linear[2] };
 
         if (a_nodeConf.overrideScale)
         {
@@ -723,6 +812,8 @@ namespace CBP
 
         m_obj->UpdateWorldData(&m_updateCtx);
 
+        SIMDFillParent();
+
         m_collider.Update();
     }
 
@@ -736,13 +827,204 @@ namespace CBP
             m_obj->UpdateWorldData(&m_updateCtx);
         }
 
-        m_oldWorldPos = m_obj->m_worldTransform.pos;
-        m_virtld = NiPoint3();
-        m_velocity = NiPoint3();
+        m_oldWorldPos = {
+            m_obj->m_worldTransform.pos.x,
+            m_obj->m_worldTransform.pos.y,
+            m_obj->m_worldTransform.pos.z };
+
+        m_virtld = btVector3();
+        m_velocity = btVector3();
+
+        SIMDFillParent();
 
         m_collider.Update();
 
         m_applyForceQueue.swap(decltype(m_applyForceQueue)());
+    }
+
+    void SimComponent::ConstrainMotion(
+        const btMatrix3x3& a_invRot,
+        const btVector3& a_target,
+        float a_timeStep
+    )
+    {
+        btVector3 diff;
+        btVector3 depth;
+        bool constrain(false);
+
+        float x(m_virtld.x());
+
+        if (x > m_conf.phys.data.maxOffsetP[0])
+        {
+            diff.setX(x);
+            depth.setX(x - m_conf.phys.data.maxOffsetP[0]);
+            constrain = true;
+        }
+        else if (x < m_conf.phys.data.maxOffsetN[0])
+        {
+            diff.setX(x);
+            depth.setX(x - m_conf.phys.data.maxOffsetN[0]);
+            constrain = true;
+        }
+        else {
+            diff.setX(0.0f);
+            depth.setX(0.0f);
+        }
+
+        float y(m_virtld.y());
+
+        if (y > m_conf.phys.data.maxOffsetP[1])
+        {
+            diff.setY(y);
+            depth.setY(y - m_conf.phys.data.maxOffsetP[1]);
+            constrain = true;
+        }
+        else if (y < m_conf.phys.data.maxOffsetN[1])
+        {
+            diff.setY(y);
+            depth.setY(y - m_conf.phys.data.maxOffsetN[1]);
+            constrain = true;
+        }
+        else {
+            diff.setY(0.0f);
+            depth.setY(0.0f);
+        }
+
+        float z(m_virtld.z());
+
+        if (z > m_conf.phys.data.maxOffsetP[2])
+        {
+            diff.setZ(z);
+            depth.setZ(z - m_conf.phys.data.maxOffsetP[2]);
+            constrain = true;
+        }
+        else if (z < m_conf.phys.data.maxOffsetN[2])
+        {
+            diff.setZ(z);
+            depth.setZ(z - m_conf.phys.data.maxOffsetN[2]);
+            constrain = true;
+        }
+        else {
+            diff.setZ(0.0f);
+            depth.setZ(0.0f);
+        }
+
+        if (!constrain)
+            return;
+
+        auto n = m_itrMatParent * diff;
+        n.safeNormalize();
+
+        float mag = depth.length();
+
+        float bias = mag > 0.1f ?
+            (a_timeStep * 2880.0f) * std::clamp(mag - 0.1f, 0.0f, m_conf.phys.data.maxOffsetMaxBiasMag) : 0.0f;
+
+        float vdotn = m_velocity.dot(n);
+        float impulse = vdotn + bias;
+
+        if (impulse <= 0.0f)
+            return;
+
+        float J = (1.0f + m_conf.phys.data.maxOffsetRestitutionCoefficient) * impulse;
+
+        m_velocity -= n * (J * m_conf.phys.data.maxOffsetVelResponseScale);
+
+        m_virtld = a_invRot * ((m_oldWorldPos + m_velocity * a_timeStep) -= a_target);
+    }
+
+    void SimComponent::SIMDFillObj()
+    {
+        m_itrMatObj[0].set128(_mm_and_ps(_mm_loadu_ps(m_obj->m_worldTransform.rot.data[0]), btvFFF0fMask));
+        m_itrMatObj[1].set128(_mm_and_ps(_mm_loadu_ps(m_obj->m_worldTransform.rot.data[1]), btvFFF0fMask));
+        m_itrMatObj[2].set128(_mm_and_ps(_mm_loadu_ps(m_obj->m_worldTransform.rot.data[2]), btvFFF0fMask));
+        m_itrPosObj.set128(_mm_and_ps(_mm_loadu_ps((const float*)&m_obj->m_worldTransform.pos), btvFFF0fMask));
+    }
+
+    void SimComponent::SIMDFillParent()
+    {
+        m_itrMatParent[0].set128(_mm_and_ps(_mm_loadu_ps(m_objParent->m_worldTransform.rot.data[0]), btvFFF0fMask));
+        m_itrMatParent[1].set128(_mm_and_ps(_mm_loadu_ps(m_objParent->m_worldTransform.rot.data[1]), btvFFF0fMask));
+        m_itrMatParent[2].set128(_mm_and_ps(_mm_loadu_ps(m_objParent->m_worldTransform.rot.data[2]), btvFFF0fMask));
+        m_itrPosParent.set128(_mm_and_ps(_mm_loadu_ps((const float*)&m_objParent->m_worldTransform.pos), btvFFF0fMask));
+    }
+
+    void SimComponent::UpdateMotion(float a_timeStep)
+    {
+        SIMDFillParent();
+
+        if (m_movement)
+        {
+            //m_objParent->UpdateWorldData(&m_updateCtx);
+
+            auto target(((m_itrMatParent * m_cogOffset) *= m_objParent->m_worldTransform.scale) += m_itrPosParent);
+
+            auto diff(target - m_oldWorldPos);
+            auto adiff(diff.absolute());
+
+            float maxDiff(IConfig::GetGlobal().phys.maxDiff);
+
+            if (adiff.x() > maxDiff || adiff.y() > maxDiff || adiff.z() > maxDiff) {
+                Reset();
+                return;
+            }
+
+            auto force(diff);
+            force *= m_conf.phys.data.stiffness;
+            force += ((diff *= adiff) *= m_conf.phys.data.stiffness2);
+
+            force.setZ(force.z() - m_conf.phys.data.gravityBias * m_conf.phys.data.mass);
+
+            if (!m_applyForceQueue.empty())
+            {
+                auto& current = m_applyForceQueue.front();
+
+                auto vDir = m_itrMatParent * current.m_norm;
+
+                force += (vDir * current.m_mag) / a_timeStep;
+
+                if (!current.m_steps--)
+                    m_applyForceQueue.pop();
+            }
+
+            float res(m_resistanceOn ?
+                (1.0f - 1.0f / (m_velocity.length() * 0.0075f + 1.0f)) * m_conf.phys.data.resistance + 1.0f : 1.0f);
+
+            m_velocity = (
+                (m_velocity + (force / m_conf.phys.data.mass * a_timeStep)) -
+                (m_velocity * ((m_conf.phys.data.damping * res) * a_timeStep)));
+
+            ClampVelocity();
+
+            auto invRot = m_itrMatParent.transpose();
+            m_virtld = invRot * ((m_oldWorldPos + m_velocity * a_timeStep) -= target);
+
+            ConstrainMotion(invRot, target, a_timeStep);
+
+            m_oldWorldPos = (m_itrMatParent * m_virtld) += target;
+
+            m_ld = m_virtld * m_linearScale;
+            m_ld += (invRot * m_gravityCorrection) *= m_obj->m_localTransform.scale;
+
+            m_obj->m_localTransform.pos.x = m_initialTransform.pos.x + m_ld.x();
+            m_obj->m_localTransform.pos.y = m_initialTransform.pos.y + m_ld.y();
+            m_obj->m_localTransform.pos.z = m_initialTransform.pos.z + m_ld.z();
+
+            /*if (m_formid == 0x14 && std::string(m_obj->m_name) == "NPC L Breast")
+                gLog.Debug(">> %f %f %f", dir.x, dir.y, dir.z);*/
+
+            if (m_rotScaleOn)
+            {
+                m_obj->m_localTransform.rot.SetEulerAngles(
+                    m_virtld.x() * m_conf.phys.data.rotational[0],
+                    m_virtld.y() * m_conf.phys.data.rotational[1],
+                    (m_virtld.z() + m_conf.phys.data.rotGravityCorrection) * m_conf.phys.data.rotational[2]);
+            }
+
+            m_obj->UpdateWorldData(&m_updateCtx);
+        }
+
+        m_collider.Update();
     }
 
     bool SimComponent::ValidateNodes(NiAVObject* a_obj)
@@ -755,9 +1037,12 @@ namespace CBP
         if (!a_steps || !m_movement)
             return;
 
+        auto mag = a_force.Length();
+        if (mag < _EPSILON)
+            return;
+
         m_applyForceQueue.emplace(
-            Force{ a_steps, a_force, a_force.Length() }
-        );
+            a_steps, btVector3(a_force.x / mag, a_force.y / mag, a_force.z / mag), mag);
     }
 
 #ifdef _CBP_ENABLE_DEBUG
@@ -768,6 +1053,6 @@ namespace CBP
 
         m_debugInfo.worldTransformParent = m_objParent->m_worldTransform;
         m_debugInfo.localTransformParent = m_objParent->m_localTransform;
-}
+    }
 #endif
 }

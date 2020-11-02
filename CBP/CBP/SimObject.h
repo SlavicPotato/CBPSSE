@@ -24,9 +24,9 @@ namespace CBP
 
         }
 
-        const std::string &nodeName;
+        const std::string& nodeName;
         NiAVObject* node;
-        const std::string &confGroup;
+        const std::string& confGroup;
         bool collisions;
         bool movement;
         const configComponent_t& physConf;
@@ -37,10 +37,11 @@ namespace CBP
 
     class SimObject
     {
-        typedef stl::imap<std::string, SimComponent> thingMap_t;
+        //typedef stl::imap<std::string, SimComponent> thingMap_t;
+        typedef btAlignedObjectArray<SimComponent*> thingList_t;
 
-        using iterator = typename thingMap_t::iterator;
-        using const_iterator = typename std::vector<SimComponent*>::const_iterator;
+        /*using iterator = typename thingMap_t::iterator;
+        using const_iterator = typename std::vector<SimComponent*>::const_iterator;*/
     public:
         SimObject(
             Game::ObjectHandle a_handle,
@@ -49,11 +50,13 @@ namespace CBP
             uint64_t a_Id,
             const nodeDescList_t& a_desc);
 
+        virtual ~SimObject() noexcept;
+
         SimObject() = delete;
         SimObject(const SimObject& a_rhs) = delete;
         SimObject(SimObject&& a_rhs) = delete;
 
-        __forceinline void UpdateMovement(float a_timeStep);
+        __forceinline void UpdateMotion(float a_timeStep);
         __forceinline void UpdateVelocity();
         void UpdateConfig(Actor* a_actor, bool a_collisions, const configComponents_t& a_config);
         void Reset();
@@ -67,9 +70,9 @@ namespace CBP
 
         void UpdateGroupInfo();
 
-        [[nodiscard]] inline bool HasNode(const std::string& a_node) const {
+        /*[[nodiscard]] inline bool HasNode(const std::string& a_node) const {
             return m_things.find(a_node) != m_things.end();
-        }
+        }*/
 
         /*[[nodiscard]] inline bool HasConfigGroup(const std::string& a_cg) const {
             return m_configGroups.find(a_cg) != m_configGroups.end();
@@ -85,13 +88,13 @@ namespace CBP
             nodeDescList_t& a_out)
             ->nodeDescList_t::size_type;
 
-        [[nodiscard]] inline const_iterator begin() const noexcept {
+        /*[[nodiscard]] inline const_iterator begin() const noexcept {
             return m_thingList.begin();
         }
 
         [[nodiscard]] inline const_iterator end() const noexcept {
             return m_thingList.end();
-        }
+        }*/
 
 #ifdef _CBP_ENABLE_DEBUG
         [[nodiscard]] inline const std::string& GetActorName() const noexcept {
@@ -112,14 +115,18 @@ namespace CBP
             return m_suspended;
         }
 
+        [[nodiscard]] inline const auto& GetNodeList() const {
+            return m_objList;
+        }
+
         /*[[nodiscard]] __forceinline auto& GetActor() const {
             return m_actor;
         }*/
 
     private:
 
-        thingMap_t m_things;
-        std::vector<SimComponent*> m_thingList;
+        //thingList_t m_things;
+        thingList_t m_objList;
 
         Game::ObjectHandle m_handle;
 
@@ -135,13 +142,14 @@ namespace CBP
 #endif
     };
 
-    void SimObject::UpdateMovement(float a_timeStep)
+    void SimObject::UpdateMotion(float a_timeStep)
     {
         if (m_suspended)
             return;
 
-        for (auto p : m_thingList)
-            p->UpdateMovement(a_timeStep);
+        int count = m_objList.size();
+        for (int i = 0; i < count; i++)
+            m_objList[i]->UpdateMotion(a_timeStep);
     }
 
     void SimObject::UpdateVelocity()
@@ -149,8 +157,9 @@ namespace CBP
         if (m_suspended)
             return;
 
-        for (auto p : m_thingList)
-            p->UpdateVelocity();
+        int count = m_objList.size();
+        for (int i = 0; i < count; i++)
+            m_objList[i]->UpdateVelocity();
     }
 
 }

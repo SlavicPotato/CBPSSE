@@ -30,7 +30,8 @@ namespace CBP
         showNodes,
         dataFilterPhys,
         dataFilterNode,
-        frameTimer
+        frameTimer,
+        timePerFrame
     };
 
     typedef std::pair<const std::string, configComponents_t> actorEntryPhysConf_t;

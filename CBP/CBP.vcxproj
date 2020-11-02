@@ -633,6 +633,7 @@
       <DebugInformationFormat>None</DebugInformationFormat>
       <ObjectFileName>$(IntDir)%(RelativeDir)\</ObjectFileName>
       <AdditionalOptions>/Ob3 %(AdditionalOptions)</AdditionalOptions>
+      <FloatingPointModel>Fast</FloatingPointModel>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -890,7 +891,7 @@
   <ItemGroup>
     <ClInclude Include="CBP\Armor.h" />
     <ClInclude Include="CBP\Collision.h" />
-    <ClInclude Include="CBP\config.h" />
+    <ClInclude Include="CBP\Config.h" />
     <ClInclude Include="CBP\Controller.h" />
     <ClInclude Include="CBP\Data.h" />
     <ClInclude Include="CBP\GameEventHandlers.h" />
@@ -931,6 +932,7 @@
     <ClCompile Include="CBP\Collision.cpp" />
     <ClCompile Include="CBP\config.cpp" />
     <ClCompile Include="CBP\ConfigData.cpp" />
+    <ClCompile Include="CBP\ConfigDataISeg.cpp" />
     <ClCompile Include="CBP\Controller.cpp" />
     <ClCompile Include="CBP\Data.cpp" />
     <ClCompile Include="CBP\GameEventHandlers.cpp" />

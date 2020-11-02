@@ -30,24 +30,42 @@ namespace CBP
         bool a_centerOfMass,
         Game::ObjectHandle a_markedHandle)
     {
+
         for (const auto& e : a_actorList)
         {
             if (e.second.IsSuspended())
                 continue;
 
-            if (a_centerOfMass) {
-                for (const auto n : e.second)
+            if (a_centerOfMass)
+            {
+                auto& nl = e.second.GetNodeList();
+
+                int count = nl.size();
+                for (int i = 0; i < count; i++)
+                {
+                    auto& n = nl[i];
+
                     if (n->HasMovement()) {
                         auto& tf = n->GetParentWorldTransform();
-                        GenerateSphere(tf * n->GetCenterOfMass(), a_radius * tf.scale, MOVING_NODES_COL);
+                        auto& p = n->GetCenterOfMass();
+                        GenerateSphere(tf * NiPoint3(p.x(), p.y(), p.z()), a_radius * tf.scale, MOVING_NODES_COL);
                     }
+                }
             }
             else {
-                for (const auto n : e.second)
+
+                auto& nl = e.second.GetNodeList();
+
+                int count = nl.size();
+                for (int i = 0; i < count; i++)
+                {
+                    auto& n = nl[i];
+
                     if (n->HasMovement()) {
                         auto& tf = n->GetWorldTransform();
                         GenerateSphere(tf.pos, a_radius * tf.scale, MOVING_NODES_COL);
                     }
+                }
             }
 
             if (e.first == a_markedHandle)
@@ -70,23 +88,29 @@ namespace CBP
             if (e.second.IsSuspended())
                 continue;
 
-            for (const auto n : e.second)
+            auto& nl = e.second.GetNodeList();
+
+            int count = nl.size();
+            for (int i = 0; i < count; i++)
             {
+                auto& n = nl[i];
+
                 if (!n->HasMovement())
                     continue;
 
                 auto& conf = n->GetConfig();
 
                 drawBox(
-                    NiPoint3(conf.phys.maxOffsetN[0], conf.phys.maxOffsetN[1], conf.phys.maxOffsetN[2]),
-                    NiPoint3(conf.phys.maxOffsetP[0], conf.phys.maxOffsetP[1], conf.phys.maxOffsetP[2]),
+                    NiPoint3(conf.phys.data.maxOffsetN[0], conf.phys.data.maxOffsetN[1], conf.phys.data.maxOffsetN[2]),
+                    NiPoint3(conf.phys.data.maxOffsetP[0], conf.phys.data.maxOffsetP[1], conf.phys.data.maxOffsetP[2]),
                     n->GetParentWorldTransform(),
                     CONSTRAINT_BOX_COL
                 );
 
                 auto& tf = n->GetParentWorldTransform();
+                auto& p = n->GetVirtualPos();
 
-                GenerateSphere(tf * n->GetVirtualPos(), 0.8f * tf.scale, VIRTUAL_POS_COL);
+                GenerateSphere(tf * NiPoint3(p.x(), p.y(), p.z()), 0.8f * tf.scale, VIRTUAL_POS_COL);
             }
         }
     }

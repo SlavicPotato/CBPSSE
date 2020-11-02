@@ -66,7 +66,7 @@ namespace CBP
     void ControllerTask::UpdateActorsPhase2(float a_timeStep)
     {
         for (auto& e : m_actors)
-            e.second.UpdateMovement(a_timeStep);
+            e.second.UpdateMotion(a_timeStep);
     }
 
     uint32_t ControllerTask::UpdatePhase2(float a_timeStep, float a_timeTick, float a_maxTime)

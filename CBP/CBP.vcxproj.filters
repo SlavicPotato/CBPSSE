@@ -108,9 +108,6 @@
     <ClInclude Include="CBP\Collision.h">
       <Filter>Header Files\CBP</Filter>
     </ClInclude>
-    <ClInclude Include="CBP\config.h">
-      <Filter>Header Files\CBP</Filter>
-    </ClInclude>
     <ClInclude Include="CBP\Data.h">
       <Filter>Header Files\CBP</Filter>
     </ClInclude>
@@ -172,6 +169,9 @@
       <Filter>Header Files\Common</Filter>
     </ClInclude>
     <ClInclude Include="CBP\Controller.h">
+      <Filter>Header Files\CBP</Filter>
+    </ClInclude>
+    <ClInclude Include="CBP\Config.h">
       <Filter>Header Files\CBP</Filter>
     </ClInclude>
   </ItemGroup>
@@ -276,6 +276,9 @@
       <Filter>Source Files\Drivers</Filter>
     </ClCompile>
     <ClCompile Include="CBP\Controller.cpp">
+      <Filter>Source Files\CBP</Filter>
+    </ClCompile>
+    <ClCompile Include="CBP\ConfigDataISeg.cpp">
       <Filter>Source Files\CBP</Filter>
     </ClCompile>
   </ItemGroup>

@@ -3,7 +3,7 @@
 namespace CBP
 {
     const std::unordered_map<MiscHelpText, const char*> UIBase::m_helpText({
-        {MiscHelpText::timeTick, "Target update rate"},
+        {MiscHelpText::timeTick, "Target update rate. Setting this below 60 is not recommended."},
         {MiscHelpText::maxSubSteps, ""},
         {MiscHelpText::timeScale, "Simulation rate, speeds up or slows down time"},
         {MiscHelpText::colMaxPenetrationDepth, "Maximum penetration depth during collisions"},
@@ -26,7 +26,8 @@ namespace CBP
         {MiscHelpText::showNodes, ""},
         {MiscHelpText::dataFilterPhys, "Filter by configuration group name. Press enter to apply."},
         {MiscHelpText::dataFilterNode, "Filter by node name. Press enter to apply."},
-        {MiscHelpText::frameTimer, "Skyrim's frame timer, affected by time modifier."}
+        {MiscHelpText::frameTimer, "Skyrim's frame timer, affected by time modifier."},
+        {MiscHelpText::timePerFrame, "Amount of time the physics simulation consumes per frame (in microseconds)."}
         });
 
     const keyDesc_t UIBase::m_comboKeyDesc({

@@ -1781,7 +1781,7 @@ namespace CBP
                 ImGui::Spacing();
 
                 Checkbox("Lock game controls while UI active", &globalConfig.ui.lockControls);
-                
+
                 ImGui::Spacing();
 
                 ImGui::TreePop();
@@ -3593,6 +3593,7 @@ namespace CBP
                 ImGui::Columns(2, nullptr, false);
 
                 ImGui::Text("Time/frame:");
+                HelpMarker(MiscHelpText::timePerFrame);
                 ImGui::Text("Step rate:");
                 ImGui::Text("Sim. rate:");
                 HelpMarker(MiscHelpText::simRate);
@@ -3608,7 +3609,7 @@ namespace CBP
                 if (tWarn)
                     ImGui::PushStyleColor(ImGuiCol_Text, s_colorWarning);
 
-                ImGui::Text("%lld us", stats.avgTime);
+                ImGui::Text("%lld \xC2\xB5s", stats.avgTime);
 
                 if (tWarn)
                     ImGui::PopStyleColor();
@@ -3618,7 +3619,7 @@ namespace CBP
                     ? stats.avgStepRate / stats.avgStepsPerUpdate : 0);
                 ImGui::Text("%.4f", stats.avgFrameTime);
                 ImGui::Text("%u", stats.avgActorCount);
-                ImGui::Text("%lld us", DUI::GetPerf());
+                ImGui::Text("%lld \xC2\xB5s", DUI::GetPerf());
 
                 ImGui::Columns(1);
 

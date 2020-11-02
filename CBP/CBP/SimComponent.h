@@ -279,7 +279,7 @@ namespace CBP
                 m_colshape->SetExtent(a_extent);
         }
 
-        inline void SetOffset(const NiPoint3& a_offset, const NiPoint3& a_initial) {
+        inline void SetOffset(const btVector3& a_offset, const btVector3& a_initial) {
             m_bodyOffset = a_offset;
             m_bodyOffsetPlusInitial = a_offset + a_initial;
         }
@@ -308,8 +308,8 @@ namespace CBP
         CollisionShape* m_colshape;
 
         btMatrix3x3 m_colRot;
-        NiPoint3 m_bodyOffset;
-        NiPoint3 m_bodyOffsetPlusInitial;
+        btVector3 m_bodyOffset;
+        btVector3 m_bodyOffsetPlusInitial;
 
         ColliderShapeType m_shape;
         std::string m_meshShape;
@@ -334,9 +334,20 @@ namespace CBP
     {
         struct Force
         {
-            uint32_t steps;
-            NiPoint3 force;
-            float mag;
+            Force(
+                uint32_t a_steps,
+                const btVector3& a_norm,
+                float a_mag)
+                :
+                m_steps(a_steps),
+                m_norm(a_norm),
+                m_mag(a_mag)
+            {
+            }
+
+            uint32_t m_steps;
+            btVector3 m_norm;
+            float m_mag;
         };
 
         friend class Collider;
@@ -348,20 +359,26 @@ namespace CBP
             const configComponent_t& a_config,
             const configNode_t& a_nodeConf);
 
-        NiPoint3 m_npCogOffset;
-        NiPoint3 m_npGravityCorrection;
+        btVector3 m_cogOffset;
+        btVector3 m_gravityCorrection;
 
-        NiPoint3 m_oldWorldPos;
-        NiPoint3 m_virtld;
-        NiPoint3 m_velocity;
+        btVector3 m_oldWorldPos;
+        btVector3 m_virtld;
+        btVector3 m_ld;
+        btVector3 m_velocity;
 
         NiTransform m_initialTransform;
+        
         bool m_hasScaleOverride;
 
-        Collider m_collider;
+        btMatrix3x3 m_itrInitialMat;
+        btMatrix3x3 m_itrMatObj;
+        btMatrix3x3 m_itrMatParent;
+        btVector3 m_itrInitialPos;
+        btVector3 m_itrPosObj;
+        btVector3 m_itrPosParent;
 
-        std::queue<Force> m_applyForceQueue;
-
+        std::string m_nodeName;
         std::string m_configGroupName;
 
         configComponent_t m_conf;
@@ -369,13 +386,13 @@ namespace CBP
         bool m_collisions;
         bool m_movement;
 
+        float m_colRad;
+        float m_colHeight;
+        float m_nodeScale;
+        float m_massInv;
         btVector3 m_extent;
-        float m_colRad = 1.0f;
-        float m_colHeight = 0.001f;
-        float m_colCapsuleHeight = 0.001f;
-        NiPoint3 m_colOffset;
-        float m_nodeScale = 1.0f;
-        float m_massInv = 1.0f;
+        btVector3 m_colOffset;
+        btVector3 m_linearScale;
 
         uint64_t m_groupId;
         uint64_t m_parentId;
@@ -388,34 +405,42 @@ namespace CBP
 
         NiAVObject::ControllerUpdateContext m_updateCtx;
 
+        std::queue<Force> m_applyForceQueue;
+
 #ifdef _CBP_ENABLE_DEBUG
         SimDebugInfo m_debugInfo;
 #endif
 
         Game::FormID m_formid;
 
+        Collider m_collider;
+
         __forceinline void ClampVelocity()
         {
-            float len = m_velocity.Length();
-            if (len <= m_conf.phys.maxVelocity)
+            float len = m_velocity.length();
+            if (len < m_conf.phys.data.maxVelocity)
                 return;
 
-            m_velocity.x /= len;
-            m_velocity.y /= len;
-            m_velocity.z /= len;
-            m_velocity *= m_conf.phys.maxVelocity;
+            m_velocity /= len;
+            m_velocity *= m_conf.phys.data.maxVelocity;
         }
 
         __forceinline void ConstrainMotion(
-            const NiMatrix33& a_invRot,
-            const NiPoint3& a_target,
+            const btMatrix3x3& a_invRot,
+            const btVector3& a_target,
             float a_timeStep
         );
 
+        __forceinline void SIMDFillObj();
+        __forceinline void SIMDFillParent();
+
     public:
+        BT_DECLARE_ALIGNED_ALLOCATOR();
+
         SimComponent(
             Actor* a_actor,
             NiAVObject* a_obj,
+            const std::string& a_nodeName,
             const std::string& a_configBoneName,
             const configComponent_t& config,
             const configNode_t& a_nodeConf,
@@ -438,7 +463,7 @@ namespace CBP
             bool a_collisions,
             bool a_movement) noexcept;
 
-        __forceinline void UpdateMovement(float timeStep);
+        void UpdateMotion(float timeStep);
         __forceinline void UpdateVelocity();
         void Reset();
         bool ValidateNodes(NiAVObject* a_obj);
@@ -449,26 +474,7 @@ namespace CBP
         void UpdateDebugInfo();
 #endif
 
-        __forceinline void SetVelocity(const btVector3& a_vel) {
-            m_velocity.x = a_vel.x();
-            m_velocity.y = a_vel.y();
-            m_velocity.z = a_vel.z();
-            ClampVelocity();
-        }
-
-        __forceinline void SetVelocity(const NiPoint3& a_vel)
-        {
-            m_velocity = a_vel;
-            ClampVelocity();
-        }
-
-        __forceinline void SetVelocity(NiPoint3&& a_vel)
-        {
-            m_velocity = std::move(a_vel);
-            ClampVelocity();
-        }
-
-        __forceinline void AddVelocity(const NiPoint3& a_vel) {
+        __forceinline void AddVelocity(const btVector3& a_vel) {
             m_velocity += a_vel;
         }
 
@@ -482,6 +488,10 @@ namespace CBP
 
         [[nodiscard]] inline const auto& GetConfigGroupName() const {
             return m_configGroupName;
+        }
+        
+        [[nodiscard]] inline const auto& GetNodeName() const {
+            return m_nodeName;
         }
 
         [[nodiscard]] inline bool IsSameGroup(const SimComponent& a_rhs) const {
@@ -519,7 +529,7 @@ namespace CBP
         }
 
         [[nodiscard]] inline const auto& GetCenterOfMass() const {
-            return m_npCogOffset;
+            return m_cogOffset;
         }
 
         [[nodiscard]] inline float GetNodeScale() const {
@@ -564,249 +574,19 @@ namespace CBP
         }
     }
 
-    void Collider::Update()
-    {
-        if (!m_created)
-            return;
-
-        auto nodeScale = m_parent.m_obj->m_worldTransform.scale;
-
-        if (!m_active)
-        {
-            if (nodeScale > 0.0f)
-            {
-                m_active = true;
-                if (m_process)
-                    Activate();
-            }
-            else
-                return;
-        }
-        else
-        {
-            if (nodeScale <= 0.0f)
-            {
-                m_active = false;
-                Deactivate();
-                return;
-            }
-        }
-
-        auto& transform = m_collider->getWorldTransform();
-
-        if (!m_parent.m_movement || !m_doPositionScaling)
-        {
-            auto pos = m_parent.m_obj->m_worldTransform * m_bodyOffset;
-            transform.setOrigin({ pos.x, pos.y, pos.z });
-        }
-        else {
-            auto lpos(m_parent.m_obj->m_localTransform.pos);
-            lpos -= m_parent.m_initialTransform.pos;
-            lpos *= m_positionScale;
-            lpos += m_bodyOffsetPlusInitial;
-            auto pos(m_parent.m_objParent->m_worldTransform * lpos);
-            transform.setOrigin({ pos.x, pos.y, pos.z });
-        }
-
-        if (m_rotation)
-        {
-            auto& m = m_parent.m_obj->m_worldTransform.rot;
-            auto& b = transform.getBasis();
-
-#if defined(BT_USE_SIMD_VECTOR3) && defined(BT_USE_SSE_IN_API) && defined(BT_USE_SSE)
-
-            // kinda fucky but much faster
-
-            static_assert(sizeof(b) == sizeof(btVector3) * 3);
-
-            auto el = reinterpret_cast<btVector3*>(&b);
-
-            el[0].mVec128 = _mm_and_ps(_mm_loadu_ps(m.data[0]), btvFFF0fMask);
-            el[1].mVec128 = _mm_and_ps(_mm_loadu_ps(m.data[1]), btvFFF0fMask);
-            el[2].mVec128 = _mm_and_ps(_mm_loadu_ps(m.data[2]), btvFFF0fMask); // should be safe since there's stuff after matrix
-
-#else
-            b.setValue(
-                m.arr[0], m.arr[1], m.arr[2],
-                m.arr[3], m.arr[4], m.arr[5],
-                m.arr[6], m.arr[7], m.arr[8]);
-#endif
-
-            b *= m_colRot;
-        }
-
-        if (nodeScale != m_nodeScale)
-        {
-            m_nodeScale = nodeScale;
-            m_colshape->SetNodeScale(nodeScale);
-        }
-    }
-
-    void SimComponent::ConstrainMotion(
-        const NiMatrix33& a_invRot,
-        const NiPoint3& a_target,
-        float a_timeStep
-    )
-    {
-        NiPoint3 diff;
-        NiPoint3 depth;
-        bool constrain(false);
-
-        float x(m_virtld.x);
-
-        if (x > m_conf.phys.maxOffsetP[0])
-        {
-            diff.x = x;
-            depth.x = x - m_conf.phys.maxOffsetP[0];
-            constrain = true;
-        }
-        else if (x < m_conf.phys.maxOffsetN[0])
-        {
-            diff.x = x;
-            depth.x = x - m_conf.phys.maxOffsetN[0];
-            constrain = true;
-        }
-
-        float y(m_virtld.y);
-
-        if (y > m_conf.phys.maxOffsetP[1])
-        {
-            diff.y = y;
-            depth.y = y - m_conf.phys.maxOffsetP[1];
-            constrain = true;
-        }
-        else if (y < m_conf.phys.maxOffsetN[1])
-        {
-            diff.y = y;
-            depth.y = y - m_conf.phys.maxOffsetN[1];
-            constrain = true;
-        }
-
-        float z(m_virtld.z);
-
-        if (z > m_conf.phys.maxOffsetP[2])
-        {
-            diff.z = z;
-            depth.z = z - m_conf.phys.maxOffsetP[2];
-            constrain = true;
-        }
-        else if (z < m_conf.phys.maxOffsetN[2])
-        {
-            diff.z = z;
-            depth.z = z - m_conf.phys.maxOffsetN[2];
-            constrain = true;
-        }
-
-        if (!constrain)
-            return;
-
-        auto n = m_objParent->m_worldTransform.rot * diff;
-        n.Normalize();
-
-        auto mag = depth.Length();
-
-        float bias = mag > 0.1f ?
-            (a_timeStep * 2880.0f) * std::clamp(mag - 0.1f, 0.0f, m_conf.phys.maxOffsetMaxBiasMag) : 0.0f;
-
-        float vdotn = m_velocity.Dot(n);
-        float impulse = std::max(vdotn + bias, 0.0f);
-        float J = (1.0f + m_conf.phys.maxOffsetRestitutionCoefficient) * impulse;
-
-        m_velocity -= n * (J * m_conf.phys.maxOffsetVelResponseScale);
-
-        m_virtld = a_invRot * ((m_oldWorldPos + m_velocity * a_timeStep) - a_target);
-    }
-
-    void SimComponent::UpdateMovement(float a_timeStep)
-    {
-        if (m_movement)
-        {
-            //m_objParent->UpdateWorldData(&m_updateCtx);
-
-            //Offset to move Center of Mass make rotational motion more significant  
-            NiPoint3 target(m_objParent->m_worldTransform * m_npCogOffset);
-
-            NiPoint3 diff(target - m_oldWorldPos);
-
-            float ax(std::fabs(diff.x));
-            float ay(std::fabs(diff.y));
-            float az(std::fabs(diff.z));
-
-            float maxDiff(IConfig::GetGlobal().phys.maxDiff);
-
-            if (ax > maxDiff || ay > maxDiff || az > maxDiff) {
-                Reset();
-                return;
-            }
-
-            NiPoint3 force(diff * m_conf.phys.stiffness);
-
-            force.x += diff.x * ax * m_conf.phys.stiffness2;
-            force.y += diff.y * ay * m_conf.phys.stiffness2;
-            force.z += diff.z * az * m_conf.phys.stiffness2;
-
-            force.z -= m_conf.phys.gravityBias * m_conf.phys.mass;
-
-            if (!m_applyForceQueue.empty())
-            {
-                auto& current = m_applyForceQueue.front();
-
-                auto vDir = m_objParent->m_worldTransform.rot * current.force;
-                vDir.Normalize();
-
-                force += (vDir * current.mag) / a_timeStep;
-
-                if (!current.steps--)
-                    m_applyForceQueue.pop();
-            }
-
-            float res = m_resistanceOn ?
-                (1.0f - 1.0f / (m_velocity.Length() * 0.0075f + 1.0f)) * m_conf.phys.resistance + 1.0f : 1.0f;
-
-            SetVelocity((m_velocity + (force / m_conf.phys.mass * a_timeStep)) -
-                (m_velocity * ((m_conf.phys.damping * res) * a_timeStep)));
-
-            auto invRot = m_objParent->m_worldTransform.rot.Transpose();
-            m_virtld = invRot * ((m_oldWorldPos + m_velocity * a_timeStep) - target);
-
-            ConstrainMotion(invRot, target, a_timeStep);
-
-            m_oldWorldPos = m_objParent->m_worldTransform.rot * m_virtld + target;
-
-            float ldx(m_virtld.x);
-            float ldy(m_virtld.y);
-            float ldz(m_virtld.z);
-
-            m_obj->m_localTransform.pos.x = m_initialTransform.pos.x + ldx * m_conf.phys.linear[0];
-            m_obj->m_localTransform.pos.y = m_initialTransform.pos.y + ldy * m_conf.phys.linear[1];
-            m_obj->m_localTransform.pos.z = m_initialTransform.pos.z + ldz * m_conf.phys.linear[2];
-
-            /*if (m_formid == 0x14 && std::string(m_obj->m_name) == "NPC L Breast")
-                gLog.Debug(">> %f %f %f", dir.x, dir.y, dir.z);*/
-
-            m_obj->m_localTransform.pos += (invRot * m_npGravityCorrection) * m_obj->m_localTransform.scale;
-
-            if (m_rotScaleOn)
-            {
-                m_obj->m_localTransform.rot.SetEulerAngles(
-                    ldx * m_conf.phys.rotational[0],
-                    ldy * m_conf.phys.rotational[1],
-                    (ldz + m_conf.phys.rotGravityCorrection) * m_conf.phys.rotational[2]);
-            }
-
-            m_obj->UpdateWorldData(&m_updateCtx);
-        }
-
-        m_collider.Update();
-    }
 
     void SimComponent::UpdateVelocity()
     {
         if (m_movement)
             return;
 
-        m_velocity = m_obj->m_worldTransform.pos - m_oldWorldPos;
-        m_oldWorldPos = m_obj->m_worldTransform.pos;
+        btVector3 pos(
+            m_obj->m_worldTransform.pos.x,
+            m_obj->m_worldTransform.pos.y,
+            m_obj->m_worldTransform.pos.z);
+
+        m_velocity = pos - m_oldWorldPos;
+        m_oldWorldPos = pos;
     }
 
 }

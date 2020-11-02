@@ -99,10 +99,10 @@ namespace CBP
                 mesh->mNumFaces, tmp.m_indices.get(), sizeof(int) * 3,
                 numVertices, (btScalar*)tmp.m_vertices.get(), sizeof(MeshPoint));
 
+            m_data = std::move(tmp);
+
             Debug("%s: vertices: %u, indices: %u, faces: %u",
                 m_name.c_str(), numVertices, numIndices, numFaces);
-
-            m_data = std::move(tmp);
 
             m_data.numVertices = numVertices;
             m_data.numTriangles = numFaces;
@@ -137,15 +137,15 @@ namespace CBP
         return !sc1->IsSameGroup(*sc2);
     }
 
-    void ICollision::Initialize(bool a_useEPA, int maxPersistentManifoldPoolSize, int maxCollisionAlgorithmPoolSize)
+    void ICollision::Initialize(bool a_useEPA, int a_maxPersistentManifoldPoolSize, int a_maxCollisionAlgorithmPoolSize)
     {
         auto& ptrs = m_Instance.m_ptrs;
 
         auto conf = btDefaultCollisionConstructionInfo();
 
         conf.m_useEpaPenetrationAlgorithm = a_useEPA;
-        conf.m_defaultMaxPersistentManifoldPoolSize = maxPersistentManifoldPoolSize;
-        conf.m_defaultMaxCollisionAlgorithmPoolSize = maxCollisionAlgorithmPoolSize;
+        conf.m_defaultMaxPersistentManifoldPoolSize = a_maxPersistentManifoldPoolSize;
+        conf.m_defaultMaxCollisionAlgorithmPoolSize = a_maxCollisionAlgorithmPoolSize;
 
         ptrs.bt_collision_configuration = new btDefaultCollisionConfiguration(conf);
         ptrs.bt_dispatcher = new btCollisionDispatcher(ptrs.bt_collision_configuration);

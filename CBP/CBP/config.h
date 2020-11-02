@@ -214,6 +214,123 @@ namespace CBP
     typedef iKVStorage<std::string, const componentValueDesc_t> componentValueDescMap_t;
     typedef KVStorage<ColliderShapeType, const colliderDesc_t> colliderDescMap_t;
 
+    struct __declspec(align(16)) physicsData_t
+    {
+        union
+        {
+            struct __declspec(align(16))
+            {
+                float stiffness;
+                float stiffness2;
+                float damping;
+                float maxOffsetVelResponseScale;
+                float maxOffsetMaxBiasMag;
+                float maxOffsetRestitutionCoefficient;
+                float gravityBias;
+                float gravityCorrection;
+                float rotGravityCorrection;
+                float resistance;
+                float mass;
+                float maxVelocity;
+                float colSphereRadMin;
+                float colSphereRadMax;
+                float colHeightMin;
+                float colHeightMax;
+                float colRestitutionCoefficient;
+                float colPenBiasFactor;
+                float colPenMass;
+                float colPositionScale;
+
+                float maxOffsetN[4];
+                float maxOffsetP[4];
+                float cogOffset[4];
+                float linear[4];
+                float rotational[4];
+                float colOffsetMin[4];
+                float colOffsetMax[4];
+                float colExtentMin[4];
+                float colExtentMax[4];
+                float colRot[4];
+            } data;
+
+#if 0 //defined(__AVX__) || defined(__AVX2__)
+            struct __declspec(align(32))
+            {
+                __m256 d0;
+                __m256 d1;
+                __m256 d2;
+                __m256 d3;
+                __m256 d4;
+                __m256 d5;
+                __m256 d6;
+                __m256 d7;
+            } mm256;
+
+            static_assert(sizeof(data) == sizeof(mm256));
+#else
+            struct __declspec(align(16))
+            {
+                __m128 d0;
+                __m128 d1;
+                __m128 d2;
+                __m128 d3;
+                __m128 d4;
+                __m128 d5;
+                __m128 d6;
+                __m128 d7;
+                __m128 d8;
+                __m128 d9;
+                __m128 d10;
+                __m128 d11;
+                __m128 d12;
+                __m128 d13;
+                __m128 d14;
+            } mm128;
+
+            static_assert(sizeof(data) == sizeof(mm128));
+#endif
+        };
+
+        __forceinline void __copy(const physicsData_t& a_rhs)
+        {
+#if 0 //defined(__AVX__) || defined(__AVX2__)
+            mm256.d0 = a_rhs.mm256.d0;
+            mm256.d1 = a_rhs.mm256.d1;
+            mm256.d2 = a_rhs.mm256.d2;
+            mm256.d3 = a_rhs.mm256.d3;
+            mm256.d4 = a_rhs.mm256.d4;
+            mm256.d5 = a_rhs.mm256.d5;
+            mm256.d6 = a_rhs.mm256.d6;
+            mm256.d7 = a_rhs.mm256.d7;
+#else
+            mm128.d0 = a_rhs.mm128.d0;
+            mm128.d1 = a_rhs.mm128.d1;
+            mm128.d2 = a_rhs.mm128.d2;
+            mm128.d3 = a_rhs.mm128.d3;
+            mm128.d4 = a_rhs.mm128.d4;
+            mm128.d5 = a_rhs.mm128.d5;
+            mm128.d6 = a_rhs.mm128.d6;
+            mm128.d7 = a_rhs.mm128.d7;
+            mm128.d8 = a_rhs.mm128.d8;
+            mm128.d9 = a_rhs.mm128.d9;
+            mm128.d10 = a_rhs.mm128.d10;
+            mm128.d11 = a_rhs.mm128.d11;
+            mm128.d12 = a_rhs.mm128.d12;
+            mm128.d13 = a_rhs.mm128.d13;
+            mm128.d14 = a_rhs.mm128.d14;
+#endif
+        }
+
+    };
+
+    struct defaultPhysicsDataHolder_t
+    {
+        defaultPhysicsDataHolder_t();
+
+        physicsData_t m_data;
+    };
+
+    extern const defaultPhysicsDataHolder_t g_defaultPhysicsData;
 
     __declspec(align(16)) struct configComponent_t
     {
@@ -284,8 +401,8 @@ namespace CBP
 
             *reinterpret_cast<float*>(addr) = a_value;
         }
-        
-        __forceinline void Set(const componentValueDesc_t& a_desc, const float *a_pvalue)
+
+        __forceinline void Set(const componentValueDesc_t& a_desc, const float* a_pvalue)
         {
             auto addr = reinterpret_cast<uintptr_t>(this) + a_desc.offset;
 
@@ -345,43 +462,54 @@ namespace CBP
             return reinterpret_cast<float*>(addr);
         }
 
-        struct
+        configComponent_t()
         {
-            float stiffness = 10.0f;
-            float stiffness2 = 10.0f;
-            float damping = 0.95f;
-            float maxOffsetN[3]{ -20.0f, -20.0f, -20.0f };
-            float maxOffsetP[3]{ 20.0f, 20.0f, 20.0f };
-            float maxOffsetVelResponseScale = 0.1f;
-            float maxOffsetMaxBiasMag = 5.0f;
-            float maxOffsetRestitutionCoefficient = 0.0f;
-            float cogOffset[3]{ 0.0f, 5.0f, 0.0f };
-            float gravityBias = 0.0f;
-            float gravityCorrection = 0.0f;
-            float rotGravityCorrection = 0.0f;
-            float linear[3]{ 0.275f, 0.1f, 0.275f };
-            float rotational[3]{ 0.0f, 0.0f, 0.0f };
-            float resistance = 0.0f;
-            float mass = 1.0f;
-            float maxVelocity = 4000.0f;
-            float colSphereRadMin = 4.0f;
-            float colSphereRadMax = 4.0f;
-            float colOffsetMin[3]{ 0.0f, 0.0f, 0.0f };
-            float colOffsetMax[3]{ 0.0f, 0.0f, 0.0f };
-            float colHeightMin = 0.001f;
-            float colHeightMax = 0.001f;
-            float colExtentMin[3]{ 4.0f, 4.0f, 4.0f };
-            float colExtentMax[3]{ 4.0f, 4.0f, 4.0f };
-            float colRot[3]{ 0.0f, 0.0f, 0.0f };
-            float colRestitutionCoefficient = 0.25f;
-            float colPenBiasFactor = 1.0f;
-            float colPenMass = 1.0f;
-            float colPositionScale = 1.0f;
-        } phys;
+            phys.__copy(g_defaultPhysicsData.m_data);
+
+            ex.colShape = ColliderShapeType::Sphere;
+        }
+
+        __forceinline configComponent_t(const configComponent_t& a_rhs)
+        {
+            phys.__copy(a_rhs.phys);
+
+            ex.colShape = a_rhs.ex.colShape;
+            ex.colMesh = a_rhs.ex.colMesh;
+        }
+        
+        __forceinline configComponent_t(configComponent_t&& a_rhs)
+        {
+            phys.__copy(a_rhs.phys);
+
+            ex.colShape = a_rhs.ex.colShape;
+            ex.colMesh = std::move(a_rhs.ex.colMesh);
+        }
+
+        __forceinline configComponent_t& operator=(const configComponent_t& a_rhs)
+        {
+            phys.__copy(a_rhs.phys);
+
+            ex.colShape = a_rhs.ex.colShape;
+            ex.colMesh = a_rhs.ex.colMesh;
+
+            return *this;
+        }
+        
+        __forceinline configComponent_t& operator=(configComponent_t&& a_rhs)
+        {
+            phys.__copy(a_rhs.phys);
+
+            ex.colShape = a_rhs.ex.colShape;
+            ex.colMesh = std::move(a_rhs.ex.colMesh);
+
+            return *this;
+        }
+        
+        physicsData_t phys;
 
         struct
         {
-            ColliderShapeType colShape = ColliderShapeType::Sphere;
+            ColliderShapeType colShape;
             std::string colMesh;
         } ex;
 
@@ -394,70 +522,70 @@ namespace CBP
         template<class Archive>
         void save(Archive& ar, const unsigned int version) const
         {
-            ar& phys.stiffness;
-            ar& phys.stiffness2;
-            ar& phys.damping;
-            ar& phys.maxOffsetP;
-            ar& phys.cogOffset;
-            ar& phys.gravityBias;
-            ar& phys.gravityCorrection;
-            ar& phys.rotGravityCorrection;
-            ar& phys.linear;
-            ar& phys.rotational;
-            ar& phys.resistance;
-            ar& phys.mass;
-            ar& phys.colSphereRadMin;
-            ar& phys.colSphereRadMax;
-            ar& phys.colOffsetMin;
-            ar& phys.colOffsetMax;
-            ar& phys.colHeightMin;
-            ar& phys.colHeightMax;
-            ar& phys.colExtentMin;
-            ar& phys.colExtentMax;
-            ar& phys.colRot;
-            ar& phys.colRestitutionCoefficient;
-            ar& phys.colPenBiasFactor;
-            ar& phys.colPenMass;
+            ar& phys.data.stiffness;
+            ar& phys.data.stiffness2;
+            ar& phys.data.damping;
+            ar& phys.data.maxOffsetP;
+            ar& phys.data.cogOffset;
+            ar& phys.data.gravityBias;
+            ar& phys.data.gravityCorrection;
+            ar& phys.data.rotGravityCorrection;
+            ar& phys.data.linear;
+            ar& phys.data.rotational;
+            ar& phys.data.resistance;
+            ar& phys.data.mass;
+            ar& phys.data.colSphereRadMin;
+            ar& phys.data.colSphereRadMax;
+            ar& phys.data.colOffsetMin;
+            ar& phys.data.colOffsetMax;
+            ar& phys.data.colHeightMin;
+            ar& phys.data.colHeightMax;
+            ar& phys.data.colExtentMin;
+            ar& phys.data.colExtentMax;
+            ar& phys.data.colRot;
+            ar& phys.data.colRestitutionCoefficient;
+            ar& phys.data.colPenBiasFactor;
+            ar& phys.data.colPenMass;
 
             ar& ex.colShape;
             ar& ex.colMesh;
 
-            ar& phys.maxOffsetVelResponseScale;
-            ar& phys.maxVelocity;
-            ar& phys.maxOffsetMaxBiasMag;
-            ar& phys.maxOffsetN;
-            ar& phys.maxOffsetRestitutionCoefficient;
+            ar& phys.data.maxOffsetVelResponseScale;
+            ar& phys.data.maxVelocity;
+            ar& phys.data.maxOffsetMaxBiasMag;
+            ar& phys.data.maxOffsetN;
+            ar& phys.data.maxOffsetRestitutionCoefficient;
 
-            ar& phys.colPositionScale;
+            ar& phys.data.colPositionScale;
         }
 
         template<class Archive>
         void load(Archive& ar, const unsigned int version)
         {
-            ar& phys.stiffness;
-            ar& phys.stiffness2;
-            ar& phys.damping;
-            ar& phys.maxOffsetP;
-            ar& phys.cogOffset;
-            ar& phys.gravityBias;
-            ar& phys.gravityCorrection;
-            ar& phys.rotGravityCorrection;
-            ar& phys.linear;
-            ar& phys.rotational;
-            ar& phys.resistance;
-            ar& phys.mass;
-            ar& phys.colSphereRadMin;
-            ar& phys.colSphereRadMax;
-            ar& phys.colOffsetMin;
-            ar& phys.colOffsetMax;
-            ar& phys.colHeightMin;
-            ar& phys.colHeightMax;
-            ar& phys.colExtentMin;
-            ar& phys.colExtentMax;
-            ar& phys.colRot;
-            ar& phys.colRestitutionCoefficient;
-            ar& phys.colPenBiasFactor;
-            ar& phys.colPenMass;
+            ar& phys.data.stiffness;
+            ar& phys.data.stiffness2;
+            ar& phys.data.damping;
+            ar& phys.data.maxOffsetP;
+            ar& phys.data.cogOffset;
+            ar& phys.data.gravityBias;
+            ar& phys.data.gravityCorrection;
+            ar& phys.data.rotGravityCorrection;
+            ar& phys.data.linear;
+            ar& phys.data.rotational;
+            ar& phys.data.resistance;
+            ar& phys.data.mass;
+            ar& phys.data.colSphereRadMin;
+            ar& phys.data.colSphereRadMax;
+            ar& phys.data.colOffsetMin;
+            ar& phys.data.colOffsetMax;
+            ar& phys.data.colHeightMin;
+            ar& phys.data.colHeightMax;
+            ar& phys.data.colExtentMin;
+            ar& phys.data.colExtentMax;
+            ar& phys.data.colRot;
+            ar& phys.data.colRestitutionCoefficient;
+            ar& phys.data.colPenBiasFactor;
+            ar& phys.data.colPenMass;
 
             ar& ex.colShape;
             if (version >= DataVersion2)
@@ -466,21 +594,21 @@ namespace CBP
 
                 if (version >= DataVersion3)
                 {
-                    ar& phys.maxOffsetVelResponseScale;
+                    ar& phys.data.maxOffsetVelResponseScale;
 
                     if (version >= DataVersion4)
                     {
-                        ar& phys.maxVelocity;
+                        ar& phys.data.maxVelocity;
 
                         if (version >= DataVersion5)
                         {
-                            ar& phys.maxOffsetMaxBiasMag;
-                            ar& phys.maxOffsetN;
-                            ar& phys.maxOffsetRestitutionCoefficient;
+                            ar& phys.data.maxOffsetMaxBiasMag;
+                            ar& phys.data.maxOffsetN;
+                            ar& phys.data.maxOffsetRestitutionCoefficient;
 
                             if (version >= DataVersion6)
                             {
-                                ar& phys.colPositionScale;
+                                ar& phys.data.colPositionScale;
                             }
                         }
                     }

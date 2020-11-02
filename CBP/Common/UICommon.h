@@ -436,6 +436,9 @@ namespace UICommon
 
     public:
 
+        UIPopupData(const UIPopupData& a_rhs) = default;
+        UIPopupData(UIPopupData&& a_rhs) = default;
+
         template <typename... Args>
         UIPopupData(Args&&... a_args) :
             m_data{ std::forward<Args>(a_args)... }

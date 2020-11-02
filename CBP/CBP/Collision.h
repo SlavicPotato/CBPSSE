@@ -26,11 +26,18 @@ namespace CBP
             aiProcess_JoinIdenticalVertices;
     public:
 
+        ColliderProfile()
+        {
+            m_data.m_triVertexArray = nullptr;
+        }
+
+        ColliderProfile(const ColliderProfile&) = default;
+        ColliderProfile(ColliderProfile&&) = default;
+
         template <typename... Args>
         ColliderProfile(Args&&... a_args) :
             ProfileBase<ColliderData>(std::forward<Args>(a_args)...)
         {
-            m_data.m_triVertexArray = nullptr;
         }
 
         virtual ~ColliderProfile() noexcept = default;
@@ -81,7 +88,7 @@ namespace CBP
             return m_Instance.m_ptrs.bt_collision_world;
         }
 
-        static void Initialize(bool a_useEPA = true, int maxPersistentManifoldPoolSize = 4096, int maxCollisionAlgorithmPoolSize = 4096);
+        static void Initialize(bool a_useEPA = true, int a_maxPersistentManifoldPoolSize = 4096, int a_maxCollisionAlgorithmPoolSize = 4096);
         __forceinline static void Update(float a_timeStep);
 
         static void CleanProxyFromPairs(btCollisionObject* a_collider);
@@ -147,8 +154,8 @@ namespace CBP
             float sma = sc1->GetMassInverse();
             float smb = sc2->GetMassInverse();
 
-            float pbf = std::max(conf1.phys.colPenBiasFactor, conf2.phys.colPenBiasFactor);
-            float spm = 1.0f / std::max(conf1.phys.colPenMass, conf2.phys.colPenMass);
+            float pbf = std::max(conf1.phys.data.colPenBiasFactor, conf2.phys.data.colPenBiasFactor);
+            float spm = 1.0f / std::max(conf1.phys.data.colPenMass, conf2.phys.data.colPenMass);
 
             for (int j = 0; j < numContacts; j++)
             {
@@ -163,27 +170,28 @@ namespace CBP
                 auto& v1 = sc1->GetVelocity();
                 auto& v2 = sc2->GetVelocity();
 
-                auto& _n = contactPoint.m_normalWorldOnB;
+                auto& n = contactPoint.m_normalWorldOnB;
 
-                NiPoint3 n(_n.x(), _n.y(), _n.z());
-                auto deltaV = v2 - v1;
+                auto deltaV(v2 - v1);
 
-                float deltaVDotN = deltaV.Dot(n);
+                float deltaVDotN = deltaV.dot(n);
 
                 float bias = depth > 0.01f ?
                     (a_timeStep * (2880.0f * pbf)) * std::max(depth - 0.01f, 0.0f) : 0.0f;
 
-                float impulse = std::max((deltaVDotN + bias) / (sma + smb), 0.0f);
+                float impulse = (deltaVDotN + bias) / (sma + smb);
+                if (impulse <= 0.0f)
+                    continue;
 
                 if (mova)
                 {
-                    float Jm = (1.0f + conf1.phys.colRestitutionCoefficient) * impulse;
+                    float Jm = (1.0f + conf1.phys.data.colRestitutionCoefficient) * impulse;
                     sc1->AddVelocity(n * (Jm * sma * spm));
                 }
 
                 if (movb)
                 {
-                    float Jm = (1.0f + conf2.phys.colRestitutionCoefficient) * impulse;
+                    float Jm = (1.0f + conf2.phys.data.colRestitutionCoefficient) * impulse;
                     sc2->AddVelocity(n * -(Jm * smb * spm));
                 }
             }
