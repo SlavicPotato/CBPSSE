@@ -192,7 +192,7 @@ namespace CBP
                 continue;
 
             auto itn = nodeConfig.find(p->GetNodeName());
-            auto& nodeConf = itn != nodeConfig.end() ? itn->second : configNode_t();
+            auto& nodeConf = itn != nodeConfig.end() ? itn->second : IConfig::GetDefaultNode();
 
             bool collisions, movement;
             nodeConf.Get(m_sex, collisions, movement);

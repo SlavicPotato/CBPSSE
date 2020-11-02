@@ -240,7 +240,7 @@ namespace CBP
     __declspec(align(16)) class Collider :
         ILog
     {
-        static constexpr float crdrmul = std::numbers::pi_v<float> / 180.0f;
+        static constexpr float crdrmul = float(MATH_PI) / 180.0f;
 
     public:
         Collider(SimComponent& a_parent);
@@ -356,7 +356,7 @@ namespace CBP
 
         bool ColUpdateWeightData(
             Actor* a_actor,
-            const configComponent_t& a_config,
+            const configComponent16_t& a_config,
             const configNode_t& a_nodeConf);
 
         btVector3 m_cogOffset;
@@ -381,7 +381,7 @@ namespace CBP
         std::string m_nodeName;
         std::string m_configGroupName;
 
-        configComponent_t m_conf;
+        configComponent16_t m_conf;
 
         bool m_collisions;
         bool m_movement;
@@ -418,11 +418,11 @@ namespace CBP
         __forceinline void ClampVelocity()
         {
             float len = m_velocity.length();
-            if (len < m_conf.phys.data.maxVelocity)
+            if (len < m_conf.fp.f32.maxVelocity)
                 return;
 
             m_velocity /= len;
-            m_velocity *= m_conf.phys.data.maxVelocity;
+            m_velocity *= m_conf.fp.f32.maxVelocity;
         }
 
         __forceinline void ConstrainMotion(
@@ -442,7 +442,7 @@ namespace CBP
             NiAVObject* a_obj,
             const std::string& a_nodeName,
             const std::string& a_configBoneName,
-            const configComponent_t& config,
+            const configComponent32_t& config,
             const configNode_t& a_nodeConf,
             uint64_t a_parentId,
             uint64_t a_groupId,
@@ -458,7 +458,7 @@ namespace CBP
 
         void UpdateConfig(
             Actor* a_actor,
-            const configComponent_t* a_physConf,
+            const configComponent32_t* a_physConf,
             const configNode_t& a_nodeConf,
             bool a_collisions,
             bool a_movement) noexcept;
@@ -504,7 +504,7 @@ namespace CBP
             m_groupId = a_groupId;
         };
 
-        [[nodiscard]] inline bool HasMovement() const {
+        [[nodiscard]] inline bool HasMotion() const {
             return m_movement;
         }
 

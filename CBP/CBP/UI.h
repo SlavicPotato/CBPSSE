@@ -182,9 +182,9 @@ namespace CBP
             configComponents_t& a_dl,
             configComponents_t* a_dg,
             const configComponentsValue_t& a_pair,
-            std::function<void(configComponent_t&)> a_func) const;
+            std::function<void(configComponent32_t&)> a_func) const;
 
-        [[nodiscard]] inline virtual std::string GetGCSID(
+        [[nodiscard]] virtual std::string GetGCSID(
             const std::string& a_name) const;
 
         [[nodiscard]] inline std::string GetCSID(
@@ -217,7 +217,7 @@ namespace CBP
             const configGroupMap_t::value_type& a_cgdata,
             const nodeConfigList_t& a_nodeConfig) const;
 
-        virtual bool HasMovement(
+        virtual bool HasMotion(
             const nodeConfigList_t& a_nodeConfig) const;
 
         virtual bool HasCollisions(
@@ -693,7 +693,7 @@ namespace CBP
             const configGroupMap_t::value_type& a_cgdata,
             const nodeConfigList_t& a_nodeConfig) const;
 
-        virtual bool HasMovement(
+        virtual bool HasMotion(
             const nodeConfigList_t& a_nodeConfig) const;
 
         virtual bool HasCollisions(
@@ -899,7 +899,7 @@ namespace CBP
                 const configGroupMap_t::value_type& a_cgdata,
                 const nodeConfigList_t& a_nodeConfig) const;
 
-            virtual bool HasMovement(
+            virtual bool HasMotion(
                 const nodeConfigList_t& a_nodeConfig) const;
 
             virtual bool HasCollisions(
@@ -967,7 +967,7 @@ namespace CBP
                 const configGroupMap_t::value_type& a_cgdata,
                 const nodeConfigList_t& a_nodeConfig) const;
 
-            virtual bool HasMovement(
+            virtual bool HasMotion(
                 const nodeConfigList_t& a_nodeConfig) const;
 
             virtual bool HasCollisions(

@@ -86,8 +86,8 @@ namespace Serialization
                         }
                         else
                         {
-                            auto ik = CBP::configComponent_t::oldKeyMap.find(valName);
-                            if (ik == CBP::configComponent_t::oldKeyMap.end()) {
+                            auto ik = CBP::configComponent32_t::oldKeyMap.find(valName);
+                            if (ik == CBP::configComponent32_t::oldKeyMap.end()) {
                                 //Warning("(%s) Unknown value: %s", configGroup.c_str(), valName.c_str());
                                 continue;
                             }
@@ -98,7 +98,7 @@ namespace Serialization
                 }
                 else
                 {
-                    for (auto& desc : CBP::configComponent_t::descMap)
+                    for (auto& desc : CBP::configComponent32_t::descMap)
                     {
                         auto& v = (*physData)[desc.first];
 
@@ -221,15 +221,15 @@ namespace Serialization
 
             if (version < 1)
             {
-                nc.femaleMovement = it->get("femaleMovement", false).asBool();
-                nc.femaleCollisions = it->get("femaleCollisions", false).asBool();
-                nc.maleMovement = it->get("maleMovement", false).asBool();
-                nc.maleCollisions = it->get("maleCollisions", false).asBool();
+                nc.bl.b.motion.female = it->get("femaleMovement", false).asBool();
+                nc.bl.b.collisions.female = it->get("femaleCollisions", false).asBool();
+                nc.bl.b.motion.male = it->get("maleMovement", false).asBool();
+                nc.bl.b.collisions.male = it->get("maleCollisions", false).asBool();
 
                 auto& offsetMin = (*it)["offsetMin"];
 
                 if (!offsetMin.empty()) {
-                    if (!ParseFloatArray(offsetMin, nc.colOffsetMin, ARRAYSIZE(nc.colOffsetMin))) {
+                    if (!ParseFloatArray(offsetMin, nc.fp.f32.colOffsetMin, ARRAYSIZE(nc.fp.f32.colOffsetMin))) {
                         Error("Couldn't parse offsetMin");
                         return false;
                     }
@@ -238,7 +238,7 @@ namespace Serialization
                 auto& offsetMax = (*it)["offsetMax"];
 
                 if (!offsetMax.empty()) {
-                    if (!ParseFloatArray(offsetMax, nc.colOffsetMax, ARRAYSIZE(nc.colOffsetMax))) {
+                    if (!ParseFloatArray(offsetMax, nc.fp.f32.colOffsetMax, ARRAYSIZE(nc.fp.f32.colOffsetMax))) {
                         Error("Couldn't parse offsetMax");
                         return false;
                     }
@@ -246,15 +246,15 @@ namespace Serialization
             }
             else
             {
-                nc.femaleMovement = it->get("fm", false).asBool();
-                nc.femaleCollisions = it->get("fc", false).asBool();
-                nc.maleMovement = it->get("mm", false).asBool();
-                nc.maleCollisions = it->get("mc", false).asBool();
+                nc.bl.b.motion.female = it->get("fm", false).asBool();
+                nc.bl.b.collisions.female = it->get("fc", false).asBool();
+                nc.bl.b.motion.male = it->get("mm", false).asBool();
+                nc.bl.b.collisions.male = it->get("mc", false).asBool();
 
                 auto& offsetMin = (*it)["o-"];
 
                 if (!offsetMin.empty()) {
-                    if (!ParseFloatArray(offsetMin, nc.colOffsetMin, ARRAYSIZE(nc.colOffsetMin))) {
+                    if (!ParseFloatArray(offsetMin, nc.fp.f32.colOffsetMin, ARRAYSIZE(nc.fp.f32.colOffsetMin))) {
                         Error("Couldn't parse offsetMin");
                         return false;
                     }
@@ -263,14 +263,14 @@ namespace Serialization
                 auto& offsetMax = (*it)["o+"];
 
                 if (!offsetMax.empty()) {
-                    if (!ParseFloatArray(offsetMax, nc.colOffsetMax, ARRAYSIZE(nc.colOffsetMax))) {
+                    if (!ParseFloatArray(offsetMax, nc.fp.f32.colOffsetMax, ARRAYSIZE(nc.fp.f32.colOffsetMax))) {
                         Error("Couldn't parse offsetMax");
                         return false;
                     }
                 }
 
-                nc.nodeScale = std::clamp(it->get("s", 1.0f).asFloat(), 0.0f, 20.0f);
-                nc.overrideScale = it->get("o", false).asBool();
+                nc.fp.f32.nodeScale = std::clamp(it->get("s", 1.0f).asFloat(), 0.0f, 20.0f);
+                nc.bl.b.overrideScale = it->get("o", false).asBool();
             }
         }
 
@@ -286,25 +286,25 @@ namespace Serialization
         {
             auto& n = data[e.first];
 
-            n["fm"] = e.second.femaleMovement;
-            n["fc"] = e.second.femaleCollisions;
-            n["mm"] = e.second.maleMovement;
-            n["mc"] = e.second.maleCollisions;
+            n["fm"] = e.second.bl.b.motion.female;
+            n["fc"] = e.second.bl.b.collisions.female;
+            n["mm"] = e.second.bl.b.motion.male;
+            n["mc"] = e.second.bl.b.collisions.male;
 
             auto& offmin = n["o-"];
 
-            offmin[0] = e.second.colOffsetMin[0];
-            offmin[1] = e.second.colOffsetMin[1];
-            offmin[2] = e.second.colOffsetMin[2];
+            offmin[0] = e.second.fp.f32.colOffsetMin[0];
+            offmin[1] = e.second.fp.f32.colOffsetMin[1];
+            offmin[2] = e.second.fp.f32.colOffsetMin[2];
 
             auto& offmax = n["o+"];
 
-            offmax[0] = e.second.colOffsetMax[0];
-            offmax[1] = e.second.colOffsetMax[1];
-            offmax[2] = e.second.colOffsetMax[2];
+            offmax[0] = e.second.fp.f32.colOffsetMax[0];
+            offmax[1] = e.second.fp.f32.colOffsetMax[1];
+            offmax[2] = e.second.fp.f32.colOffsetMax[2];
 
-            n["s"] = e.second.nodeScale;
-            n["o"] = e.second.overrideScale;
+            n["s"] = e.second.fp.f32.nodeScale;
+            n["o"] = e.second.bl.b.overrideScale;
         }
 
         a_out["nodes_version"] = Json::Value::UInt(1);

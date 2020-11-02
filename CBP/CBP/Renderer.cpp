@@ -45,7 +45,7 @@ namespace CBP
                 {
                     auto& n = nl[i];
 
-                    if (n->HasMovement()) {
+                    if (n->HasMotion()) {
                         auto& tf = n->GetParentWorldTransform();
                         auto& p = n->GetCenterOfMass();
                         GenerateSphere(tf * NiPoint3(p.x(), p.y(), p.z()), a_radius * tf.scale, MOVING_NODES_COL);
@@ -61,7 +61,7 @@ namespace CBP
                 {
                     auto& n = nl[i];
 
-                    if (n->HasMovement()) {
+                    if (n->HasMotion()) {
                         auto& tf = n->GetWorldTransform();
                         GenerateSphere(tf.pos, a_radius * tf.scale, MOVING_NODES_COL);
                     }
@@ -95,14 +95,14 @@ namespace CBP
             {
                 auto& n = nl[i];
 
-                if (!n->HasMovement())
+                if (!n->HasMotion())
                     continue;
 
                 auto& conf = n->GetConfig();
 
                 drawBox(
-                    NiPoint3(conf.phys.data.maxOffsetN[0], conf.phys.data.maxOffsetN[1], conf.phys.data.maxOffsetN[2]),
-                    NiPoint3(conf.phys.data.maxOffsetP[0], conf.phys.data.maxOffsetP[1], conf.phys.data.maxOffsetP[2]),
+                    NiPoint3(conf.fp.f32.maxOffsetN[0], conf.fp.f32.maxOffsetN[1], conf.fp.f32.maxOffsetN[2]),
+                    NiPoint3(conf.fp.f32.maxOffsetP[0], conf.fp.f32.maxOffsetP[1], conf.fp.f32.maxOffsetP[2]),
                     n->GetParentWorldTransform(),
                     CONSTRAINT_BOX_COL
                 );
@@ -180,6 +180,35 @@ namespace CBP
         a_out.color.y = a_col.y();
         a_out.color.z = a_col.z();
         a_out.color.w = 1.0f;
+
+        return true;
+    }
+    
+    bool Renderer::GetScreenPt(const btVector3& a_pos, const DirectX::XMFLOAT4& a_col, VertexType& a_out)
+    {
+        NiPoint3 tmp(a_pos.x(), a_pos.y(), a_pos.z());
+
+        if (!WorldPtToScreenPt3_Internal(
+            g_worldToCamMatrix,
+            g_viewPort,
+            &tmp,
+            &a_out.position.x,
+            &a_out.position.y,
+            &a_out.position.z,
+            1e-5f))
+        {
+            return false;
+        }
+
+        if (a_out.position.x < -0.05f || a_out.position.y < -0.05f || a_out.position.z < -0.05f ||
+            a_out.position.x > 1.05f || a_out.position.y > 1.05f || a_out.position.z > 1.05f)
+            return false;
+
+        a_out.position.x = (a_out.position.x * 2.0f) - 1.0f;
+        a_out.position.y = (a_out.position.y * 2.0f) - 1.0f;
+        a_out.position.z = (a_out.position.z * 2.0f) - 1.0f;
+
+        a_out.color = a_col;
 
         return true;
     }
@@ -285,7 +314,19 @@ namespace CBP
 
         m_lines.emplace_back(std::move(item));
     }
+    
+    void Renderer::drawLine(const btVector3& from, const btVector3& to, const DirectX::XMFLOAT4& color)
+    {
+        ItemLine item;
 
+        if (!GetScreenPt(from, color, item.pos1))
+            return;
+        if (!GetScreenPt(to, color, item.pos2))
+            return;
+
+        m_lines.emplace_back(std::move(item));
+    }
+    
     void Renderer::drawLine(const NiPoint3& from, const NiPoint3& to, const DirectX::XMFLOAT4& color)
     {
         ItemLine item;
@@ -331,7 +372,7 @@ namespace CBP
     void Renderer::drawContactPoint(const btVector3& PointOnB, const btVector3& normalOnB, btScalar distance, int lifeTime, const btVector3& color)
     {
         drawSphere(PointOnB, m_contactPointSphereRadius, color);
-        drawLine(PointOnB, PointOnB + normalOnB * m_contactNormalLength, color);
+        drawLine(PointOnB, PointOnB + normalOnB * m_contactNormalLength, CONTACT_NORMAL_COL);
     }
 
     void Renderer::draw3dText(const btVector3& location, const char* textString)

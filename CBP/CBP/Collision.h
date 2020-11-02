@@ -148,14 +148,14 @@ namespace CBP
             auto& conf1 = sc1->GetConfig();
             auto& conf2 = sc2->GetConfig();
 
-            bool mova = sc1->HasMovement();
-            bool movb = sc2->HasMovement();
+            bool mova = sc1->HasMotion();
+            bool movb = sc2->HasMotion();
 
             float sma = sc1->GetMassInverse();
             float smb = sc2->GetMassInverse();
 
-            float pbf = std::max(conf1.phys.data.colPenBiasFactor, conf2.phys.data.colPenBiasFactor);
-            float spm = 1.0f / std::max(conf1.phys.data.colPenMass, conf2.phys.data.colPenMass);
+            float pbf = std::max(conf1.fp.f32.colPenBiasFactor, conf2.fp.f32.colPenBiasFactor);
+            float spm = 1.0f / std::max(conf1.fp.f32.colPenMass, conf2.fp.f32.colPenMass);
 
             for (int j = 0; j < numContacts; j++)
             {
@@ -185,13 +185,13 @@ namespace CBP
 
                 if (mova)
                 {
-                    float Jm = (1.0f + conf1.phys.data.colRestitutionCoefficient) * impulse;
+                    float Jm = (1.0f + conf1.fp.f32.colRestitutionCoefficient) * impulse;
                     sc1->AddVelocity(n * (Jm * sma * spm));
                 }
 
                 if (movb)
                 {
-                    float Jm = (1.0f + conf2.phys.data.colRestitutionCoefficient) * impulse;
+                    float Jm = (1.0f + conf2.fp.f32.colRestitutionCoefficient) * impulse;
                     sc2->AddVelocity(n * -(Jm * smb * spm));
                 }
             }

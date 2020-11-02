@@ -589,7 +589,7 @@ namespace CBP
         NiAVObject* a_obj,
         const std::string& a_nodeName,
         const std::string& a_configGroupName,
-        const configComponent_t& a_config,
+        const configComponent32_t& a_config,
         const configNode_t& a_nodeConf,
         uint64_t a_parentId,
         uint64_t a_groupId,
@@ -643,7 +643,7 @@ namespace CBP
 
     bool SimComponent::ColUpdateWeightData(
         Actor* a_actor,
-        const configComponent_t& a_config,
+        const configComponent16_t& a_config,
         const configNode_t& a_nodeConf)
     {
         if (a_actor == nullptr)
@@ -655,18 +655,18 @@ namespace CBP
 
         float weight = std::clamp(npc->weight, 0.0f, 100.0f);
 
-        m_colRad = std::clamp(mmw(weight, a_config.phys.data.colSphereRadMin, a_config.phys.data.colSphereRadMax), 0.001f, 1000.0f);
-        m_colHeight = std::clamp(mmw(weight, a_config.phys.data.colHeightMin, a_config.phys.data.colHeightMax), 0.001f, 1000.0f);
+        m_colRad = std::clamp(mmw(weight, a_config.fp.f32.colSphereRadMin, a_config.fp.f32.colSphereRadMax), 0.001f, 1000.0f);
+        m_colHeight = std::clamp(mmw(weight, a_config.fp.f32.colHeightMin, a_config.fp.f32.colHeightMax), 0.001f, 1000.0f);
         m_colOffset = {
-            mmw(weight, a_config.phys.data.colOffsetMin[0] + a_nodeConf.colOffsetMin[0], a_config.phys.data.colOffsetMax[0] + a_nodeConf.colOffsetMax[0]),
-            mmw(weight, a_config.phys.data.colOffsetMin[1] + a_nodeConf.colOffsetMin[1], a_config.phys.data.colOffsetMax[1] + a_nodeConf.colOffsetMax[1]),
-            mmw(weight, a_config.phys.data.colOffsetMin[2] + a_nodeConf.colOffsetMin[2], a_config.phys.data.colOffsetMax[2] + a_nodeConf.colOffsetMax[2])
+            mmw(weight, a_config.fp.f32.colOffsetMin[0] + a_nodeConf.fp.f32.colOffsetMin[0], a_config.fp.f32.colOffsetMax[0] + a_nodeConf.fp.f32.colOffsetMax[0]),
+            mmw(weight, a_config.fp.f32.colOffsetMin[1] + a_nodeConf.fp.f32.colOffsetMin[1], a_config.fp.f32.colOffsetMax[1] + a_nodeConf.fp.f32.colOffsetMax[1]),
+            mmw(weight, a_config.fp.f32.colOffsetMin[2] + a_nodeConf.fp.f32.colOffsetMin[2], a_config.fp.f32.colOffsetMax[2] + a_nodeConf.fp.f32.colOffsetMax[2])
         };
 
         m_extent = {
-            std::clamp(mmw(weight, a_config.phys.data.colExtentMin[0], a_config.phys.data.colExtentMax[0]), 0.0f, 1000.0f),
-            std::clamp(mmw(weight, a_config.phys.data.colExtentMin[1], a_config.phys.data.colExtentMax[1]), 0.0f, 1000.0f),
-            std::clamp(mmw(weight, a_config.phys.data.colExtentMin[2], a_config.phys.data.colExtentMax[2]), 0.0f, 1000.0f)
+            std::clamp(mmw(weight, a_config.fp.f32.colExtentMin[0], a_config.fp.f32.colExtentMax[0]), 0.0f, 1000.0f),
+            std::clamp(mmw(weight, a_config.fp.f32.colExtentMin[1], a_config.fp.f32.colExtentMax[1]), 0.0f, 1000.0f),
+            std::clamp(mmw(weight, a_config.fp.f32.colExtentMin[2], a_config.fp.f32.colExtentMax[2]), 0.0f, 1000.0f)
         };
 
         return true;
@@ -674,7 +674,7 @@ namespace CBP
 
     void SimComponent::UpdateConfig(
         Actor* a_actor,
-        const configComponent_t* a_physConf,
+        const configComponent32_t* a_physConf,
         const configNode_t& a_nodeConf,
         bool a_collisions,
         bool a_movement) noexcept
@@ -694,17 +694,17 @@ namespace CBP
         {
             if (!ColUpdateWeightData(a_actor, m_conf, a_nodeConf))
             {
-                m_colRad = std::clamp(m_conf.phys.data.colSphereRadMax, 0.001f, 1000.0f);
-                m_colHeight = std::clamp(m_conf.phys.data.colHeightMax, 0.001f, 1000.0f);
+                m_colRad = std::clamp(m_conf.fp.f32.colSphereRadMax, 0.001f, 1000.0f);
+                m_colHeight = std::clamp(m_conf.fp.f32.colHeightMax, 0.001f, 1000.0f);
                 m_colOffset = {
-                    m_conf.phys.data.colOffsetMax[0] + a_nodeConf.colOffsetMax[0],
-                    m_conf.phys.data.colOffsetMax[1] + a_nodeConf.colOffsetMax[1],
-                    m_conf.phys.data.colOffsetMax[2] + a_nodeConf.colOffsetMax[2]
+                    m_conf.fp.f32.colOffsetMax[0] + a_nodeConf.fp.f32.colOffsetMax[0],
+                    m_conf.fp.f32.colOffsetMax[1] + a_nodeConf.fp.f32.colOffsetMax[1],
+                    m_conf.fp.f32.colOffsetMax[2] + a_nodeConf.fp.f32.colOffsetMax[2]
                 };
                 m_extent = {
-                    std::clamp(m_conf.phys.data.colExtentMax[0], 0.0f, 1000.0f),
-                    std::clamp(m_conf.phys.data.colExtentMax[1], 0.0f, 1000.0f),
-                    std::clamp(m_conf.phys.data.colExtentMax[2], 0.0f, 1000.0f)
+                    std::clamp(m_conf.fp.f32.colExtentMax[0], 0.0f, 1000.0f),
+                    std::clamp(m_conf.fp.f32.colExtentMax[1], 0.0f, 1000.0f),
+                    std::clamp(m_conf.fp.f32.colExtentMax[2], 0.0f, 1000.0f)
                 };
             }
 
@@ -716,7 +716,7 @@ namespace CBP
                 );
 
                 m_collider.SetPositionScale(
-                    std::clamp(m_conf.phys.data.colPositionScale, 0.0f, 4.0f));
+                    std::clamp(m_conf.fp.f32.colPositionScale, 0.0f, 4.0f));
 
                 switch (m_conf.ex.colShape)
                 {
@@ -725,9 +725,9 @@ namespace CBP
                 case ColliderShapeType::Cylinder:
                     m_collider.SetHeight(m_colHeight);
                     m_collider.SetColliderRotation(
-                        m_conf.phys.data.colRot[0],
-                        m_conf.phys.data.colRot[1],
-                        m_conf.phys.data.colRot[2]
+                        m_conf.fp.f32.colRot[0],
+                        m_conf.fp.f32.colRot[1],
+                        m_conf.fp.f32.colRot[2]
                     );
                 case ColliderShapeType::Sphere:
                     m_collider.SetRadius(m_colRad);
@@ -738,9 +738,9 @@ namespace CBP
                 case ColliderShapeType::ConvexHull:
                     m_collider.SetExtent(m_extent);
                     m_collider.SetColliderRotation(
-                        m_conf.phys.data.colRot[0],
-                        m_conf.phys.data.colRot[1],
-                        m_conf.phys.data.colRot[2]
+                        m_conf.fp.f32.colRot[0],
+                        m_conf.fp.f32.colRot[1],
+                        m_conf.fp.f32.colRot[2]
                     );
                     break;
                 }
@@ -750,46 +750,46 @@ namespace CBP
             m_collider.Destroy();
         }
 
-        m_cogOffset = { m_conf.phys.data.cogOffset[0], m_conf.phys.data.cogOffset[1], m_conf.phys.data.cogOffset[2] };
-        m_gravityCorrection = { 0.0f, 0.0f, m_conf.phys.data.gravityCorrection };
+        m_cogOffset = { m_conf.fp.f32.cogOffset[0], m_conf.fp.f32.cogOffset[1], m_conf.fp.f32.cogOffset[2] };
+        m_gravityCorrection = { 0.0f, 0.0f, m_conf.fp.f32.gravityCorrection };
 
-        if (m_conf.phys.data.resistance > 0.0f) {
+        if (m_conf.fp.f32.resistance > 0.0f) {
             m_resistanceOn = true;
-            m_conf.phys.data.resistance = std::clamp(m_conf.phys.data.resistance, 0.0f, 250.0f);
+            m_conf.fp.f32.resistance = std::clamp(m_conf.fp.f32.resistance, 0.0f, 250.0f);
         }
         else
             m_resistanceOn = false;
 
         bool rot =
-            m_conf.phys.data.rotational[0] != 0.0f ||
-            m_conf.phys.data.rotational[1] != 0.0f ||
-            m_conf.phys.data.rotational[2] != 0.0f;
+            m_conf.fp.f32.rotational[0] != 0.0f ||
+            m_conf.fp.f32.rotational[1] != 0.0f ||
+            m_conf.fp.f32.rotational[2] != 0.0f;
 
         if (rot != m_rotScaleOn) {
             m_rotScaleOn = rot;
             m_obj->m_localTransform.rot = m_initialTransform.rot;
         }
 
-        m_conf.phys.data.mass = std::clamp(m_conf.phys.data.mass, 1.0f, 10000.0f);
-        m_conf.phys.data.colPenMass = std::clamp(m_conf.phys.data.colPenMass, 1.0f, 100.0f);
-        m_conf.phys.data.maxOffsetVelResponseScale = std::clamp(m_conf.phys.data.maxOffsetVelResponseScale, 0.0f, 1.0f);
-        m_conf.phys.data.maxVelocity = std::clamp(m_conf.phys.data.maxVelocity, 10.0f, 10000.0f);
-        m_conf.phys.data.maxOffsetRestitutionCoefficient = std::clamp(m_conf.phys.data.maxOffsetRestitutionCoefficient, 0.0f, 4.0f);
-        m_conf.phys.data.maxOffsetMaxBiasMag = std::max(m_conf.phys.data.maxOffsetMaxBiasMag, 0.0f);
+        m_conf.fp.f32.mass = std::clamp(m_conf.fp.f32.mass, 1.0f, 10000.0f);
+        m_conf.fp.f32.colPenMass = std::clamp(m_conf.fp.f32.colPenMass, 1.0f, 100.0f);
+        m_conf.fp.f32.maxOffsetVelResponseScale = std::clamp(m_conf.fp.f32.maxOffsetVelResponseScale, 0.0f, 1.0f);
+        m_conf.fp.f32.maxVelocity = std::clamp(m_conf.fp.f32.maxVelocity, 10.0f, 10000.0f);
+        m_conf.fp.f32.maxOffsetRestitutionCoefficient = std::clamp(m_conf.fp.f32.maxOffsetRestitutionCoefficient, 0.0f, 4.0f);
+        m_conf.fp.f32.maxOffsetMaxBiasMag = std::max(m_conf.fp.f32.maxOffsetMaxBiasMag, 0.0f);
 
-        m_conf.phys.data.maxOffsetP[0] = std::max(m_conf.phys.data.maxOffsetP[0], 0.0f);
-        m_conf.phys.data.maxOffsetP[1] = std::max(m_conf.phys.data.maxOffsetP[1], 0.0f);
-        m_conf.phys.data.maxOffsetP[2] = std::max(m_conf.phys.data.maxOffsetP[2], 0.0f);
+        m_conf.fp.f32.maxOffsetP[0] = std::max(m_conf.fp.f32.maxOffsetP[0], 0.0f);
+        m_conf.fp.f32.maxOffsetP[1] = std::max(m_conf.fp.f32.maxOffsetP[1], 0.0f);
+        m_conf.fp.f32.maxOffsetP[2] = std::max(m_conf.fp.f32.maxOffsetP[2], 0.0f);
 
-        m_conf.phys.data.maxOffsetN[0] = std::min(m_conf.phys.data.maxOffsetN[0], 0.0f);
-        m_conf.phys.data.maxOffsetN[1] = std::min(m_conf.phys.data.maxOffsetN[1], 0.0f);
-        m_conf.phys.data.maxOffsetN[2] = std::min(m_conf.phys.data.maxOffsetN[2], 0.0f);
+        m_conf.fp.f32.maxOffsetN[0] = std::min(m_conf.fp.f32.maxOffsetN[0], 0.0f);
+        m_conf.fp.f32.maxOffsetN[1] = std::min(m_conf.fp.f32.maxOffsetN[1], 0.0f);
+        m_conf.fp.f32.maxOffsetN[2] = std::min(m_conf.fp.f32.maxOffsetN[2], 0.0f);
 
-        m_massInv = m_movement ? 1.0f / m_conf.phys.data.mass : 0.0f;
+        m_massInv = m_movement ? 1.0f / m_conf.fp.f32.mass : 0.0f;
 
-        m_linearScale = { m_conf.phys.data.linear[0], m_conf.phys.data.linear[1], m_conf.phys.data.linear[2] };
+        m_linearScale = { m_conf.fp.f32.linear[0], m_conf.fp.f32.linear[1], m_conf.fp.f32.linear[2] };
 
-        if (a_nodeConf.overrideScale)
+        if (a_nodeConf.bl.b.overrideScale)
         {
             if (!m_hasScaleOverride)
             {
@@ -797,7 +797,7 @@ namespace CBP
                 m_hasScaleOverride = true;
             }
 
-            m_nodeScale = std::clamp(a_nodeConf.nodeScale, 0.0f, 20.0f);
+            m_nodeScale = std::clamp(a_nodeConf.fp.f32.nodeScale, 0.0f, 20.0f);
 
             m_obj->m_localTransform.scale = m_nodeScale;
         }
@@ -854,16 +854,16 @@ namespace CBP
 
         float x(m_virtld.x());
 
-        if (x > m_conf.phys.data.maxOffsetP[0])
+        if (x > m_conf.fp.f32.maxOffsetP[0])
         {
             diff.setX(x);
-            depth.setX(x - m_conf.phys.data.maxOffsetP[0]);
+            depth.setX(x - m_conf.fp.f32.maxOffsetP[0]);
             constrain = true;
         }
-        else if (x < m_conf.phys.data.maxOffsetN[0])
+        else if (x < m_conf.fp.f32.maxOffsetN[0])
         {
             diff.setX(x);
-            depth.setX(x - m_conf.phys.data.maxOffsetN[0]);
+            depth.setX(x - m_conf.fp.f32.maxOffsetN[0]);
             constrain = true;
         }
         else {
@@ -873,16 +873,16 @@ namespace CBP
 
         float y(m_virtld.y());
 
-        if (y > m_conf.phys.data.maxOffsetP[1])
+        if (y > m_conf.fp.f32.maxOffsetP[1])
         {
             diff.setY(y);
-            depth.setY(y - m_conf.phys.data.maxOffsetP[1]);
+            depth.setY(y - m_conf.fp.f32.maxOffsetP[1]);
             constrain = true;
         }
-        else if (y < m_conf.phys.data.maxOffsetN[1])
+        else if (y < m_conf.fp.f32.maxOffsetN[1])
         {
             diff.setY(y);
-            depth.setY(y - m_conf.phys.data.maxOffsetN[1]);
+            depth.setY(y - m_conf.fp.f32.maxOffsetN[1]);
             constrain = true;
         }
         else {
@@ -892,16 +892,16 @@ namespace CBP
 
         float z(m_virtld.z());
 
-        if (z > m_conf.phys.data.maxOffsetP[2])
+        if (z > m_conf.fp.f32.maxOffsetP[2])
         {
             diff.setZ(z);
-            depth.setZ(z - m_conf.phys.data.maxOffsetP[2]);
+            depth.setZ(z - m_conf.fp.f32.maxOffsetP[2]);
             constrain = true;
         }
-        else if (z < m_conf.phys.data.maxOffsetN[2])
+        else if (z < m_conf.fp.f32.maxOffsetN[2])
         {
             diff.setZ(z);
-            depth.setZ(z - m_conf.phys.data.maxOffsetN[2]);
+            depth.setZ(z - m_conf.fp.f32.maxOffsetN[2]);
             constrain = true;
         }
         else {
@@ -918,7 +918,7 @@ namespace CBP
         float mag = depth.length();
 
         float bias = mag > 0.1f ?
-            (a_timeStep * 2880.0f) * std::clamp(mag - 0.1f, 0.0f, m_conf.phys.data.maxOffsetMaxBiasMag) : 0.0f;
+            (a_timeStep * 2880.0f) * std::clamp(mag - 0.1f, 0.0f, m_conf.fp.f32.maxOffsetMaxBiasMag) : 0.0f;
 
         float vdotn = m_velocity.dot(n);
         float impulse = vdotn + bias;
@@ -926,9 +926,9 @@ namespace CBP
         if (impulse <= 0.0f)
             return;
 
-        float J = (1.0f + m_conf.phys.data.maxOffsetRestitutionCoefficient) * impulse;
+        float J = (1.0f + m_conf.fp.f32.maxOffsetRestitutionCoefficient) * impulse;
 
-        m_velocity -= n * (J * m_conf.phys.data.maxOffsetVelResponseScale);
+        m_velocity -= n * (J * m_conf.fp.f32.maxOffsetVelResponseScale);
 
         m_virtld = a_invRot * ((m_oldWorldPos + m_velocity * a_timeStep) -= a_target);
     }
@@ -970,10 +970,10 @@ namespace CBP
             }
 
             auto force(diff);
-            force *= m_conf.phys.data.stiffness;
-            force += ((diff *= adiff) *= m_conf.phys.data.stiffness2);
+            force *= m_conf.fp.f32.stiffness;
+            force += ((diff *= adiff) *= m_conf.fp.f32.stiffness2);
 
-            force.setZ(force.z() - m_conf.phys.data.gravityBias * m_conf.phys.data.mass);
+            force.setZ(force.z() - m_conf.fp.f32.gravityBias * m_conf.fp.f32.mass);
 
             if (!m_applyForceQueue.empty())
             {
@@ -988,11 +988,11 @@ namespace CBP
             }
 
             float res(m_resistanceOn ?
-                (1.0f - 1.0f / (m_velocity.length() * 0.0075f + 1.0f)) * m_conf.phys.data.resistance + 1.0f : 1.0f);
+                (1.0f - 1.0f / (m_velocity.length() * 0.0075f + 1.0f)) * m_conf.fp.f32.resistance + 1.0f : 1.0f);
 
             m_velocity = (
-                (m_velocity + (force / m_conf.phys.data.mass * a_timeStep)) -
-                (m_velocity * ((m_conf.phys.data.damping * res) * a_timeStep)));
+                (m_velocity + (force / m_conf.fp.f32.mass * a_timeStep)) -
+                (m_velocity * ((m_conf.fp.f32.damping * res) * a_timeStep)));
 
             ClampVelocity();
 
@@ -1016,9 +1016,9 @@ namespace CBP
             if (m_rotScaleOn)
             {
                 m_obj->m_localTransform.rot.SetEulerAngles(
-                    m_virtld.x() * m_conf.phys.data.rotational[0],
-                    m_virtld.y() * m_conf.phys.data.rotational[1],
-                    (m_virtld.z() + m_conf.phys.data.rotGravityCorrection) * m_conf.phys.data.rotational[2]);
+                    m_virtld.x() * m_conf.fp.f32.rotational[0],
+                    m_virtld.y() * m_conf.fp.f32.rotational[1],
+                    (m_virtld.z() + m_conf.fp.f32.rotGravityCorrection) * m_conf.fp.f32.rotational[2]);
             }
 
             m_obj->UpdateWorldData(&m_updateCtx);

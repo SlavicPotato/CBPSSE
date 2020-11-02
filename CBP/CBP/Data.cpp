@@ -311,7 +311,7 @@ namespace CBP
                     std::string valName(it2.key().asString());
                     //transform(valName.begin(), valName.end(), valName.begin(), ::tolower);
 
-                    if (!configComponent_t::descMap.contains(valName)) {
+                    if (!configComponent32_t::descMap.contains(valName)) {
                         gLog.Warning("%s: Unknown value name: %s", __FUNCTION__, valName.c_str());
                         continue;
                     }

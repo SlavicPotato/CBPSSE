@@ -10,7 +10,7 @@ namespace CBP
             const std::string& a_confGroup,
             bool a_collisions,
             bool a_movement,
-            const configComponent_t& a_physConf,
+            const configComponent32_t& a_physConf,
             const configNode_t& a_nodeConf)
             :
             nodeName(a_nodeName),
@@ -29,7 +29,7 @@ namespace CBP
         const std::string& confGroup;
         bool collisions;
         bool movement;
-        const configComponent_t& physConf;
+        const configComponent32_t& physConf;
         const configNode_t& nodeConf;
     };
 

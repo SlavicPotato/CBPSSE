@@ -25,7 +25,8 @@ namespace CBP
     configNodes_t IConfig::templateBaseNodeHolder;
     configComponents_t IConfig::templateBasePhysicsHolder;
 
-    configComponent_t IConfig::defaultPhysicsConfig;
+    configComponent32_t IConfig::defaultPhysicsConfig;
+    configNode_t IConfig::defaultNodeConfig;
 
     IConfig::IConfigLog IConfig::log;
 

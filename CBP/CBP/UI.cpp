@@ -194,7 +194,7 @@ namespace CBP
         if (globalConfig.ui.profile.clampValues)
             *a_val = std::clamp(*a_val, a_desc.second.min, a_desc.second.max);
 
-        Propagate(a_data, nullptr, a_pair, [&](configComponent_t& a_v) {
+        Propagate(a_data, nullptr, a_pair, [&](configComponent32_t& a_v) {
             a_v.Set(a_desc.second, *a_val); });
         
         if (a_desc.second.counterpart.size() &&
@@ -204,7 +204,7 @@ namespace CBP
 
             a_pair.second.Set(a_desc.second.counterpart, mval);
 
-            Propagate(a_data, nullptr, a_pair, [&](configComponent_t& a_v) {
+            Propagate(a_data, nullptr, a_pair, [&](configComponent32_t& a_v) {
                 a_v.Set(a_desc.second.counterpart, mval); });
         }
     }
@@ -222,7 +222,7 @@ namespace CBP
         PhysicsProfile::base_type& a_data,
         PhysicsProfile::base_type::value_type& a_pair)
     {
-        Propagate(a_data, nullptr, a_pair, [&](configComponent_t& a_v) {
+        Propagate(a_data, nullptr, a_pair, [&](configComponent32_t& a_v) {
             a_v = a_pair.second; });
     }
 
@@ -730,7 +730,7 @@ namespace CBP
 
         entry.Set(a_desc.second, a_val);
 
-        Propagate(a_data, std::addressof(raceConf), a_pair, [&](configComponent_t& a_v) {
+        Propagate(a_data, std::addressof(raceConf), a_pair, [&](configComponent32_t& a_v) {
             a_v.Set(a_desc.second, *a_val); });
 
         if (a_desc.second.counterpart.size() &&
@@ -741,7 +741,7 @@ namespace CBP
             a_pair.second.Set(a_desc.second.counterpart, mval);
             entry.Set(a_desc.second.counterpart, mval);
 
-            Propagate(a_data, std::addressof(raceConf), a_pair, [&](configComponent_t& a_v) {
+            Propagate(a_data, std::addressof(raceConf), a_pair, [&](configComponent32_t& a_v) {
                 a_v.Set(a_desc.second.counterpart, mval); });
         }
 
@@ -773,7 +773,7 @@ namespace CBP
         auto& raceConf = IConfig::GetOrCreateRacePhysics(a_formid);
         raceConf[a_pair.first] = a_pair.second;
 
-        Propagate(a_data, std::addressof(raceConf), a_pair, [&](configComponent_t& a_v) {
+        Propagate(a_data, std::addressof(raceConf), a_pair, [&](configComponent32_t& a_v) {
             a_v = a_pair.second; });
 
         MarkChanged();
@@ -826,11 +826,11 @@ namespace CBP
         return false;
     }
 
-    bool UIRaceEditorPhysics::HasMovement(
+    bool UIRaceEditorPhysics::HasMotion(
         const nodeConfigList_t& a_nodeConfig) const
     {
         for (const auto& e : a_nodeConfig)
-            if (e.second && e.second->HasMovement())
+            if (e.second && e.second->HasMotion())
                 return true;
 
         return false;
@@ -2274,7 +2274,7 @@ namespace CBP
 
         entry.Set(a_desc.second, a_val);
 
-        Propagate(a_data, std::addressof(actorConf), a_pair, [&](configComponent_t& a_v) {
+        Propagate(a_data, std::addressof(actorConf), a_pair, [&](configComponent32_t& a_v) {
             a_v.Set(a_desc.second, *a_val); });
 
         if (a_desc.second.counterpart.size() &&
@@ -2285,7 +2285,7 @@ namespace CBP
             a_pair.second.Set(a_desc.second.counterpart, mval);
             entry.Set(a_desc.second.counterpart, mval);
 
-            Propagate(a_data, std::addressof(actorConf), a_pair, [&](configComponent_t& a_v) {
+            Propagate(a_data, std::addressof(actorConf), a_pair, [&](configComponent32_t& a_v) {
                 a_v.Set(a_desc.second.counterpart, mval); });
         }
 
@@ -2317,7 +2317,7 @@ namespace CBP
         auto& actorConf = IConfig::GetOrCreateActorPhysics(a_handle);
         actorConf[a_pair.first] = a_pair.second;
 
-        Propagate(a_data, std::addressof(actorConf), a_pair, [&](configComponent_t& a_v) {
+        Propagate(a_data, std::addressof(actorConf), a_pair, [&](configComponent32_t& a_v) {
             a_v = a_pair.second; });
 
         DCBP::DispatchActorTask(
@@ -2389,11 +2389,11 @@ namespace CBP
         return false;
     }
 
-    bool UIContext::UISimComponentActor::HasMovement(
+    bool UIContext::UISimComponentActor::HasMotion(
         const nodeConfigList_t& a_nodeConfig) const
     {
         for (const auto& e : a_nodeConfig)
-            if (e.second && e.second->HasMovement())
+            if (e.second && e.second->HasMotion())
                 return true;
 
         return false;
@@ -2447,7 +2447,7 @@ namespace CBP
 
         entry.Set(a_desc.second, a_val);
 
-        Propagate(a_data, std::addressof(conf), a_pair, [&](configComponent_t& a_v) {
+        Propagate(a_data, std::addressof(conf), a_pair, [&](configComponent32_t& a_v) {
             a_v.Set(a_desc.second, *a_val); });
 
         if (a_desc.second.counterpart.size() &&
@@ -2458,7 +2458,7 @@ namespace CBP
             a_pair.second.Set(a_desc.second.counterpart, mval);
             entry.Set(a_desc.second.counterpart, mval);
 
-            Propagate(a_data, std::addressof(conf), a_pair, [&](configComponent_t& a_v) {
+            Propagate(a_data, std::addressof(conf), a_pair, [&](configComponent32_t& a_v) {
                 a_v.Set(a_desc.second.counterpart, mval); });
         }
 
@@ -2488,7 +2488,7 @@ namespace CBP
         auto& conf = IConfig::GetGlobalPhysics();
         conf[a_pair.first] = a_pair.second;
 
-        Propagate(a_data, std::addressof(conf), a_pair, [&](configComponent_t& a_v) {
+        Propagate(a_data, std::addressof(conf), a_pair, [&](configComponent32_t& a_v) {
             a_v = a_pair.second; });
 
         DCBP::UpdateConfigOnAllActors();
@@ -2548,11 +2548,11 @@ namespace CBP
         return false;
     }
 
-    bool UIContext::UISimComponentGlobal::HasMovement(
+    bool UIContext::UISimComponentGlobal::HasMotion(
         const nodeConfigList_t& a_nodeConfig) const
     {
         for (const auto& e : a_nodeConfig)
-            if (e.second && e.second->HasMovement())
+            if (e.second && e.second->HasMotion())
                 return true;
 
         return false;
@@ -2694,7 +2694,7 @@ namespace CBP
         configComponents_t& a_dl,
         configComponents_t* a_dg,
         const configComponentsValue_t& a_pair,
-        std::function<void(configComponent_t&)> a_func) const
+        std::function<void(configComponent32_t&)> a_func) const
     {
         const auto& globalConfig = IConfig::GetGlobal();
 
@@ -3025,13 +3025,13 @@ namespace CBP
         configComponentsValue_t& a_pair,
         const componentValueDescMap_t::vec_value_type& a_entry)
     {
-        auto& desc = configComponent_t::colDescMap.at(a_pair.second.ex.colShape);
+        auto& desc = configComponent32_t::colDescMap.at(a_pair.second.ex.colShape);
 
         auto& pm = ProfileManagerCollider::GetSingleton();
 
         if (ImGui::BeginCombo("Collider shape", desc.name.c_str()))
         {
-            for (auto& e : configComponent_t::colDescMap)
+            for (auto& e : configComponent32_t::colDescMap)
             {
                 bool selected = a_pair.second.ex.colShape == e.first;
                 if (selected)
@@ -3178,7 +3178,7 @@ namespace CBP
         bool drawingFloat3 = false;
         const componentValueDesc_t* currentDesc;
 
-        for (const auto& e : configComponent_t::descMap)
+        for (const auto& e : configComponent32_t::descMap)
         {
             auto addr = reinterpret_cast<uintptr_t>(std::addressof(a_pair.second)) + e.second.offset;
             float* pValue = reinterpret_cast<float*>(addr);
@@ -3187,7 +3187,7 @@ namespace CBP
             {
                 if (e.second.groupType == DescUIGroupType::Physics ||
                     e.second.groupType == DescUIGroupType::PhysicsExtra)
-                    showCurrentGroup = HasMovement(a_nodeConfig);
+                    showCurrentGroup = HasMotion(a_nodeConfig);
                 else if (e.second.groupType == DescUIGroupType::Collisions)
                     showCurrentGroup = HasCollisions(a_nodeConfig);
                 else
@@ -3338,7 +3338,7 @@ namespace CBP
     }
 
     template <class T, UIEditorID ID>
-    bool UISimComponent<T, ID>::HasMovement(
+    bool UISimComponent<T, ID>::HasMotion(
         const nodeConfigList_t&) const
     {
         return true;
@@ -3376,8 +3376,8 @@ namespace CBP
 
         ImGui::Spacing();
 
-        changed |= ImGui::Checkbox("Movement", &a_conf.femaleMovement);
-        changed |= ImGui::Checkbox("Collisions", &a_conf.femaleCollisions);
+        changed |= ImGui::Checkbox("Movement", &a_conf.bl.b.motion.female);
+        changed |= ImGui::Checkbox("Collisions", &a_conf.bl.b.collisions.female);
 
         ImGui::PopID();
 
@@ -3388,8 +3388,8 @@ namespace CBP
         ImGui::PushID(2);
 
         ImGui::Spacing();
-        changed |= ImGui::Checkbox("Movement", &a_conf.maleMovement);
-        changed |= ImGui::Checkbox("Collisions", &a_conf.maleCollisions);
+        changed |= ImGui::Checkbox("Movement", &a_conf.bl.b.motion.male);
+        changed |= ImGui::Checkbox("Collisions", &a_conf.bl.b.collisions.male);
 
         ImGui::PopID();
 
@@ -3397,20 +3397,20 @@ namespace CBP
 
         bool changed2(false);
 
-        changed2 |= ImGui::SliderFloat3("Offset min", a_conf.colOffsetMin, -250.0f, 250.0f);
+        changed2 |= ImGui::SliderFloat3("Offset min", a_conf.fp.f32.colOffsetMin, -250.0f, 250.0f);
         HelpMarker(MiscHelpText::offsetMin);
 
-        changed2 |= ImGui::SliderFloat3("Offset max", a_conf.colOffsetMax, -250.0f, 250.0f);
+        changed2 |= ImGui::SliderFloat3("Offset max", a_conf.fp.f32.colOffsetMax, -250.0f, 250.0f);
         HelpMarker(MiscHelpText::offsetMax);
 
-        if (ImGui::SliderFloat("Scale", &a_conf.nodeScale, 0.0f, 20.0f))
+        if (ImGui::SliderFloat("Scale", &a_conf.fp.f32.nodeScale, 0.0f, 20.0f))
         {
-            a_conf.nodeScale = std::clamp(a_conf.nodeScale, 0.0f, 20.0f);
+            a_conf.fp.f32.nodeScale = std::clamp(a_conf.fp.f32.nodeScale, 0.0f, 20.0f);
             changed2 = true;
         }
 
         ImGui::SameLine();
-        changed2 |= ImGui::Checkbox("On", &a_conf.overrideScale);
+        changed2 |= ImGui::Checkbox("On", &a_conf.bl.b.overrideScale);
 
         if (changed || changed2)
             UpdateNodeData(a_handle, a_nodeName, a_conf, changed);

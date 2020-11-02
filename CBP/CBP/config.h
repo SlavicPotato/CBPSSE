@@ -214,125 +214,270 @@ namespace CBP
     typedef iKVStorage<std::string, const componentValueDesc_t> componentValueDescMap_t;
     typedef KVStorage<ColliderShapeType, const colliderDesc_t> colliderDescMap_t;
 
-    struct __declspec(align(16)) physicsData_t
+    struct physicsDataF32_t
     {
-        union
-        {
-            struct __declspec(align(16))
-            {
-                float stiffness;
-                float stiffness2;
-                float damping;
-                float maxOffsetVelResponseScale;
-                float maxOffsetMaxBiasMag;
-                float maxOffsetRestitutionCoefficient;
-                float gravityBias;
-                float gravityCorrection;
-                float rotGravityCorrection;
-                float resistance;
-                float mass;
-                float maxVelocity;
-                float colSphereRadMin;
-                float colSphereRadMax;
-                float colHeightMin;
-                float colHeightMax;
-                float colRestitutionCoefficient;
-                float colPenBiasFactor;
-                float colPenMass;
-                float colPositionScale;
+        float stiffness;
+        float stiffness2;
+        float damping;
+        float maxOffsetVelResponseScale;
+        float maxOffsetMaxBiasMag;
+        float maxOffsetRestitutionCoefficient;
+        float gravityBias;
+        float gravityCorrection;
+        float rotGravityCorrection;
+        float resistance;
+        float mass;
+        float maxVelocity;
+        float colSphereRadMin;
+        float colSphereRadMax;
+        float colHeightMin;
+        float colHeightMax;
+        float colRestitutionCoefficient;
+        float colPenBiasFactor;
+        float colPenMass;
+        float colPositionScale;
 
-                float maxOffsetN[4];
-                float maxOffsetP[4];
-                float cogOffset[4];
-                float linear[4];
-                float rotational[4];
-                float colOffsetMin[4];
-                float colOffsetMax[4];
-                float colExtentMin[4];
-                float colExtentMax[4];
-                float colRot[4];
-            } data;
+        float maxOffsetN[3];
+        float maxOffsetP[3];
+        float cogOffset[3];
+        float linear[3];
+        float rotational[3];
+        float colOffsetMin[3];
+        float colOffsetMax[3];
+        float colExtentMin[3];
+        float colExtentMax[3];
+        float colRot[3];
 
-#if 0 //defined(__AVX__) || defined(__AVX2__)
-            struct __declspec(align(32))
-            {
-                __m256 d0;
-                __m256 d1;
-                __m256 d2;
-                __m256 d3;
-                __m256 d4;
-                __m256 d5;
-                __m256 d6;
-                __m256 d7;
-            } mm256;
-
-            static_assert(sizeof(data) == sizeof(mm256));
-#else
-            struct __declspec(align(16))
-            {
-                __m128 d0;
-                __m128 d1;
-                __m128 d2;
-                __m128 d3;
-                __m128 d4;
-                __m128 d5;
-                __m128 d6;
-                __m128 d7;
-                __m128 d8;
-                __m128 d9;
-                __m128 d10;
-                __m128 d11;
-                __m128 d12;
-                __m128 d13;
-                __m128 d14;
-            } mm128;
-
-            static_assert(sizeof(data) == sizeof(mm128));
-#endif
-        };
-
-        __forceinline void __copy(const physicsData_t& a_rhs)
-        {
-#if 0 //defined(__AVX__) || defined(__AVX2__)
-            mm256.d0 = a_rhs.mm256.d0;
-            mm256.d1 = a_rhs.mm256.d1;
-            mm256.d2 = a_rhs.mm256.d2;
-            mm256.d3 = a_rhs.mm256.d3;
-            mm256.d4 = a_rhs.mm256.d4;
-            mm256.d5 = a_rhs.mm256.d5;
-            mm256.d6 = a_rhs.mm256.d6;
-            mm256.d7 = a_rhs.mm256.d7;
-#else
-            mm128.d0 = a_rhs.mm128.d0;
-            mm128.d1 = a_rhs.mm128.d1;
-            mm128.d2 = a_rhs.mm128.d2;
-            mm128.d3 = a_rhs.mm128.d3;
-            mm128.d4 = a_rhs.mm128.d4;
-            mm128.d5 = a_rhs.mm128.d5;
-            mm128.d6 = a_rhs.mm128.d6;
-            mm128.d7 = a_rhs.mm128.d7;
-            mm128.d8 = a_rhs.mm128.d8;
-            mm128.d9 = a_rhs.mm128.d9;
-            mm128.d10 = a_rhs.mm128.d10;
-            mm128.d11 = a_rhs.mm128.d11;
-            mm128.d12 = a_rhs.mm128.d12;
-            mm128.d13 = a_rhs.mm128.d13;
-            mm128.d14 = a_rhs.mm128.d14;
-#endif
-        }
-
+        float __pad[6];
     };
 
-    struct defaultPhysicsDataHolder_t
+    struct physicsDataMM256_t
+    {
+        __m256 d0;
+        __m256 d1;
+        __m256 d2;
+        __m256 d3;
+        __m256 d4;
+        __m256 d5;
+        __m256 d6;
+    };
+
+    struct physicsDataMM128_t
+    {
+        __m128 d0;
+        __m128 d1;
+        __m128 d2;
+        __m128 d3;
+        __m128 d4;
+        __m128 d5;
+        __m128 d6;
+        __m128 d7;
+        __m128 d8;
+        __m128 d9;
+        __m128 d10;
+        __m128 d11;
+        __m128 d12;
+        __m128 d13;
+    };
+
+    struct __declspec(align(32)) defaultPhysicsDataHolder_t
     {
         defaultPhysicsDataHolder_t();
 
-        physicsData_t m_data;
+        union
+        {
+            physicsDataF32_t f32;
+
+#if defined(__AVX__) || defined(__AVX2__)
+            physicsDataMM256_t mm256;
+
+            static_assert(sizeof(f32) == sizeof(mm256));
+#endif
+            physicsDataMM128_t mm128;
+
+            static_assert(sizeof(f32) == sizeof(mm128));
+        };
     };
 
     extern const defaultPhysicsDataHolder_t g_defaultPhysicsData;
 
-    __declspec(align(16)) struct configComponent_t
+    //typedef struct physicsDataMembers_t physicsDataMembers32_t;
+
+    struct __declspec(align(32)) physicsData32_t
+    {
+        union
+        {
+            physicsDataF32_t f32;
+
+#if defined(__AVX__) || defined(__AVX2__)
+            physicsDataMM256_t mm256;
+
+            static_assert(sizeof(f32) == sizeof(mm256));
+#endif
+
+            physicsDataMM128_t mm128;
+
+            static_assert(sizeof(f32) == sizeof(mm128));
+        };
+
+        __forceinline void __copy(const physicsDataMM128_t& a_rhs)
+        {
+
+            mm128.d0 = a_rhs.d0;
+            mm128.d1 = a_rhs.d1;
+            mm128.d2 = a_rhs.d2;
+            mm128.d3 = a_rhs.d3;
+            mm128.d4 = a_rhs.d4;
+            mm128.d5 = a_rhs.d5;
+            mm128.d6 = a_rhs.d6;
+            mm128.d7 = a_rhs.d7;
+            mm128.d8 = a_rhs.d8;
+            mm128.d9 = a_rhs.d9;
+            mm128.d10 = a_rhs.d10;
+            mm128.d11 = a_rhs.d11;
+            mm128.d12 = a_rhs.d12;
+            mm128.d13 = a_rhs.d13;
+        }
+
+#if defined(__AVX__) || defined(__AVX2__)
+        __forceinline void __copy(const physicsDataMM256_t& a_rhs)
+        {
+            mm256.d0 = a_rhs.d0;
+            mm256.d1 = a_rhs.d1;
+            mm256.d2 = a_rhs.d2;
+            mm256.d3 = a_rhs.d3;
+            mm256.d4 = a_rhs.d4;
+            mm256.d5 = a_rhs.d5;
+            mm256.d6 = a_rhs.d6;
+        }
+#endif
+
+        __forceinline void __copy(const physicsData32_t& a_rhs)
+        {
+#if defined(__AVX__) || defined(__AVX2__)
+            __copy(a_rhs.mm256);
+#else
+            __copy(a_rhs.mm128);
+#endif
+        }
+
+        __forceinline physicsData32_t()
+        {
+            __copy(g_defaultPhysicsData.mm256);
+        }
+
+        __forceinline physicsData32_t(const physicsData32_t& a_rhs)
+        {
+            __copy(a_rhs);
+        }
+
+        __forceinline physicsData32_t(physicsData32_t&& a_rhs)
+        {
+            __copy(a_rhs);
+        }
+
+        __forceinline physicsData32_t& operator=(const physicsData32_t& a_rhs)
+        {
+            __copy(a_rhs);
+            return *this;
+        }
+
+        __forceinline physicsData32_t& operator=(physicsData32_t&& a_rhs)
+        {
+            __copy(a_rhs);
+            return *this;
+        }
+    };
+
+    struct __declspec(align(16)) physicsData16_t
+    {
+        union
+        {
+            physicsDataF32_t f32;
+            physicsDataMM128_t mm128;
+
+            static_assert(sizeof(f32) == sizeof(mm128));
+        };
+
+        __forceinline void __copy(const physicsDataMM128_t& a_rhs)
+        {
+            mm128.d0 = a_rhs.d0;
+            mm128.d1 = a_rhs.d1;
+            mm128.d2 = a_rhs.d2;
+            mm128.d3 = a_rhs.d3;
+            mm128.d4 = a_rhs.d4;
+            mm128.d5 = a_rhs.d5;
+            mm128.d6 = a_rhs.d6;
+            mm128.d7 = a_rhs.d7;
+            mm128.d8 = a_rhs.d8;
+            mm128.d9 = a_rhs.d9;
+            mm128.d10 = a_rhs.d10;
+            mm128.d11 = a_rhs.d11;
+            mm128.d12 = a_rhs.d12;
+            mm128.d13 = a_rhs.d13;
+        }
+
+        __forceinline void __copy(const physicsData16_t& a_rhs)
+        {
+            __copy(a_rhs.mm128);
+        }
+
+        __forceinline void __copy(const physicsData32_t& a_rhs)
+        {
+            __copy(a_rhs.mm128);
+        }
+
+        __forceinline physicsData16_t()
+        {
+            __copy(g_defaultPhysicsData.mm128);
+        }
+
+        __forceinline physicsData16_t(const physicsData16_t& a_rhs)
+        {
+            __copy(a_rhs);
+        }
+
+        __forceinline physicsData16_t(physicsData16_t&& a_rhs)
+        {
+            __copy(a_rhs);
+        }
+
+        __forceinline physicsData16_t& operator=(const physicsData16_t& a_rhs)
+        {
+            __copy(a_rhs);
+            return *this;
+        }
+
+        __forceinline physicsData16_t& operator=(physicsData16_t&& a_rhs)
+        {
+            __copy(a_rhs);
+            return *this;
+        }
+
+        __forceinline physicsData16_t(const physicsData32_t& a_rhs)
+        {
+            __copy(a_rhs);
+        }
+
+        __forceinline physicsData16_t(physicsData32_t&& a_rhs)
+        {
+            __copy(a_rhs);
+        }
+
+        __forceinline physicsData16_t& operator=(const physicsData32_t& a_rhs)
+        {
+            __copy(a_rhs);
+            return *this;
+        }
+
+        __forceinline physicsData16_t& operator=(physicsData32_t&& a_rhs)
+        {
+            __copy(a_rhs);
+            return *this;
+        }
+    };
+
+    struct __declspec(align(32)) configComponent32_t
     {
         friend class boost::serialization::access;
 
@@ -347,11 +492,6 @@ namespace CBP
             DataVersion5 = 5,
             DataVersion6 = 6
         };
-
-        /*__forceinline configComponent_t& operator=(const configComponent_t& a_rhs)
-        {
-            return *this;
-        }*/
 
         [[nodiscard]] __forceinline bool Get(const std::string& a_key, float& a_out) const
         {
@@ -462,50 +602,12 @@ namespace CBP
             return reinterpret_cast<float*>(addr);
         }
 
-        configComponent_t()
+        configComponent32_t()
         {
-            phys.__copy(g_defaultPhysicsData.m_data);
-
             ex.colShape = ColliderShapeType::Sphere;
         }
 
-        __forceinline configComponent_t(const configComponent_t& a_rhs)
-        {
-            phys.__copy(a_rhs.phys);
-
-            ex.colShape = a_rhs.ex.colShape;
-            ex.colMesh = a_rhs.ex.colMesh;
-        }
-        
-        __forceinline configComponent_t(configComponent_t&& a_rhs)
-        {
-            phys.__copy(a_rhs.phys);
-
-            ex.colShape = a_rhs.ex.colShape;
-            ex.colMesh = std::move(a_rhs.ex.colMesh);
-        }
-
-        __forceinline configComponent_t& operator=(const configComponent_t& a_rhs)
-        {
-            phys.__copy(a_rhs.phys);
-
-            ex.colShape = a_rhs.ex.colShape;
-            ex.colMesh = a_rhs.ex.colMesh;
-
-            return *this;
-        }
-        
-        __forceinline configComponent_t& operator=(configComponent_t&& a_rhs)
-        {
-            phys.__copy(a_rhs.phys);
-
-            ex.colShape = a_rhs.ex.colShape;
-            ex.colMesh = std::move(a_rhs.ex.colMesh);
-
-            return *this;
-        }
-        
-        physicsData_t phys;
+        physicsData32_t fp;
 
         struct
         {
@@ -522,70 +624,70 @@ namespace CBP
         template<class Archive>
         void save(Archive& ar, const unsigned int version) const
         {
-            ar& phys.data.stiffness;
-            ar& phys.data.stiffness2;
-            ar& phys.data.damping;
-            ar& phys.data.maxOffsetP;
-            ar& phys.data.cogOffset;
-            ar& phys.data.gravityBias;
-            ar& phys.data.gravityCorrection;
-            ar& phys.data.rotGravityCorrection;
-            ar& phys.data.linear;
-            ar& phys.data.rotational;
-            ar& phys.data.resistance;
-            ar& phys.data.mass;
-            ar& phys.data.colSphereRadMin;
-            ar& phys.data.colSphereRadMax;
-            ar& phys.data.colOffsetMin;
-            ar& phys.data.colOffsetMax;
-            ar& phys.data.colHeightMin;
-            ar& phys.data.colHeightMax;
-            ar& phys.data.colExtentMin;
-            ar& phys.data.colExtentMax;
-            ar& phys.data.colRot;
-            ar& phys.data.colRestitutionCoefficient;
-            ar& phys.data.colPenBiasFactor;
-            ar& phys.data.colPenMass;
+            ar& fp.f32.stiffness;
+            ar& fp.f32.stiffness2;
+            ar& fp.f32.damping;
+            ar& fp.f32.maxOffsetP;
+            ar& fp.f32.cogOffset;
+            ar& fp.f32.gravityBias;
+            ar& fp.f32.gravityCorrection;
+            ar& fp.f32.rotGravityCorrection;
+            ar& fp.f32.linear;
+            ar& fp.f32.rotational;
+            ar& fp.f32.resistance;
+            ar& fp.f32.mass;
+            ar& fp.f32.colSphereRadMin;
+            ar& fp.f32.colSphereRadMax;
+            ar& fp.f32.colOffsetMin;
+            ar& fp.f32.colOffsetMax;
+            ar& fp.f32.colHeightMin;
+            ar& fp.f32.colHeightMax;
+            ar& fp.f32.colExtentMin;
+            ar& fp.f32.colExtentMax;
+            ar& fp.f32.colRot;
+            ar& fp.f32.colRestitutionCoefficient;
+            ar& fp.f32.colPenBiasFactor;
+            ar& fp.f32.colPenMass;
 
             ar& ex.colShape;
             ar& ex.colMesh;
 
-            ar& phys.data.maxOffsetVelResponseScale;
-            ar& phys.data.maxVelocity;
-            ar& phys.data.maxOffsetMaxBiasMag;
-            ar& phys.data.maxOffsetN;
-            ar& phys.data.maxOffsetRestitutionCoefficient;
+            ar& fp.f32.maxOffsetVelResponseScale;
+            ar& fp.f32.maxVelocity;
+            ar& fp.f32.maxOffsetMaxBiasMag;
+            ar& fp.f32.maxOffsetN;
+            ar& fp.f32.maxOffsetRestitutionCoefficient;
 
-            ar& phys.data.colPositionScale;
+            ar& fp.f32.colPositionScale;
         }
 
         template<class Archive>
         void load(Archive& ar, const unsigned int version)
         {
-            ar& phys.data.stiffness;
-            ar& phys.data.stiffness2;
-            ar& phys.data.damping;
-            ar& phys.data.maxOffsetP;
-            ar& phys.data.cogOffset;
-            ar& phys.data.gravityBias;
-            ar& phys.data.gravityCorrection;
-            ar& phys.data.rotGravityCorrection;
-            ar& phys.data.linear;
-            ar& phys.data.rotational;
-            ar& phys.data.resistance;
-            ar& phys.data.mass;
-            ar& phys.data.colSphereRadMin;
-            ar& phys.data.colSphereRadMax;
-            ar& phys.data.colOffsetMin;
-            ar& phys.data.colOffsetMax;
-            ar& phys.data.colHeightMin;
-            ar& phys.data.colHeightMax;
-            ar& phys.data.colExtentMin;
-            ar& phys.data.colExtentMax;
-            ar& phys.data.colRot;
-            ar& phys.data.colRestitutionCoefficient;
-            ar& phys.data.colPenBiasFactor;
-            ar& phys.data.colPenMass;
+            ar& fp.f32.stiffness;
+            ar& fp.f32.stiffness2;
+            ar& fp.f32.damping;
+            ar& fp.f32.maxOffsetP;
+            ar& fp.f32.cogOffset;
+            ar& fp.f32.gravityBias;
+            ar& fp.f32.gravityCorrection;
+            ar& fp.f32.rotGravityCorrection;
+            ar& fp.f32.linear;
+            ar& fp.f32.rotational;
+            ar& fp.f32.resistance;
+            ar& fp.f32.mass;
+            ar& fp.f32.colSphereRadMin;
+            ar& fp.f32.colSphereRadMax;
+            ar& fp.f32.colOffsetMin;
+            ar& fp.f32.colOffsetMax;
+            ar& fp.f32.colHeightMin;
+            ar& fp.f32.colHeightMax;
+            ar& fp.f32.colExtentMin;
+            ar& fp.f32.colExtentMax;
+            ar& fp.f32.colRot;
+            ar& fp.f32.colRestitutionCoefficient;
+            ar& fp.f32.colPenBiasFactor;
+            ar& fp.f32.colPenMass;
 
             ar& ex.colShape;
             if (version >= DataVersion2)
@@ -594,21 +696,21 @@ namespace CBP
 
                 if (version >= DataVersion3)
                 {
-                    ar& phys.data.maxOffsetVelResponseScale;
+                    ar& fp.f32.maxOffsetVelResponseScale;
 
                     if (version >= DataVersion4)
                     {
-                        ar& phys.data.maxVelocity;
+                        ar& fp.f32.maxVelocity;
 
                         if (version >= DataVersion5)
                         {
-                            ar& phys.data.maxOffsetMaxBiasMag;
-                            ar& phys.data.maxOffsetN;
-                            ar& phys.data.maxOffsetRestitutionCoefficient;
+                            ar& fp.f32.maxOffsetMaxBiasMag;
+                            ar& fp.f32.maxOffsetN;
+                            ar& fp.f32.maxOffsetRestitutionCoefficient;
 
                             if (version >= DataVersion6)
                             {
-                                ar& phys.data.colPositionScale;
+                                ar& fp.f32.colPositionScale;
                             }
                         }
                     }
@@ -619,9 +721,60 @@ namespace CBP
         BOOST_SERIALIZATION_SPLIT_MEMBER()
     };
 
-    //static_assert(sizeof(configComponent_t) == 0x5C);
+    struct __declspec(align(16)) configComponent16_t
+    {
+        __forceinline configComponent16_t()
+        {
+            ex.colShape = ColliderShapeType::Sphere;
+        }
 
-    typedef stl::iunordered_map<std::string, configComponent_t> configComponents_t;
+        __forceinline configComponent16_t(const configComponent32_t& a_rhs)
+        {
+            fp.__copy(a_rhs.fp);
+
+            ex.colShape = a_rhs.ex.colShape;
+            ex.colMesh = a_rhs.ex.colMesh;
+        }
+
+        __forceinline configComponent16_t(configComponent32_t&& a_rhs)
+        {
+            fp.__copy(a_rhs.fp);
+
+            ex.colShape = a_rhs.ex.colShape;
+            ex.colMesh = std::move(a_rhs.ex.colMesh);
+        }
+
+        __forceinline configComponent16_t& operator=(const configComponent32_t& a_rhs)
+        {
+            fp.__copy(a_rhs.fp);
+
+            ex.colShape = a_rhs.ex.colShape;
+            ex.colMesh = a_rhs.ex.colMesh;
+
+            return *this;
+        }
+
+        __forceinline configComponent16_t& operator=(configComponent32_t&& a_rhs)
+        {
+            fp.__copy(a_rhs.fp);
+
+            ex.colShape = a_rhs.ex.colShape;
+            ex.colMesh = std::move(a_rhs.ex.colMesh);
+
+            return *this;
+        }
+
+        physicsData16_t fp;
+
+        struct
+        {
+            ColliderShapeType colShape;
+            std::string colMesh;
+        } ex;
+    };
+
+
+    typedef stl::iunordered_map<std::string, configComponent32_t> configComponents_t;
     typedef configComponents_t::value_type configComponentsValue_t;
     typedef std::unordered_map<Game::ObjectHandle, configComponents_t> actorConfigComponentsHolder_t;
     typedef std::unordered_map<Game::FormID, configComponents_t> raceConfigComponentsHolder_t;
@@ -636,7 +789,164 @@ namespace CBP
 
     typedef std::unordered_map<Game::ObjectHandle, configComponents_t> mergedConfCache_t;
 
-    __declspec(align(16)) struct configNode_t
+    struct __declspec(align(32)) nodeDataF32_t
+    {
+        float colOffsetMin[3];
+        float colOffsetMax[3];
+        float nodeScale;
+    };
+
+    struct nodeDataMM256_t
+    {
+        __m256 d0;
+    };
+
+    struct nodeDataMM128_t
+    {
+        __m128 d0;
+        __m128 d1;
+    };
+
+    struct __declspec(align(32)) defaultNodeDataHolder_t
+    {
+        defaultNodeDataHolder_t();
+
+        union
+        {
+            nodeDataF32_t f32;
+
+#if defined(__AVX__) || defined(__AVX2__)
+            nodeDataMM256_t mm256;
+
+            static_assert(sizeof(f32) == sizeof(mm256));
+#endif
+            nodeDataMM128_t mm128;
+
+            static_assert(sizeof(f32) == sizeof(mm128));
+        };
+    };
+
+    extern const defaultNodeDataHolder_t g_defaultNodeData;
+
+    struct __declspec(align(32)) nodeData32_t
+    {
+        union
+        {
+            nodeDataF32_t f32;
+
+#if defined(__AVX__) || defined(__AVX2__)
+            nodeDataMM256_t mm256;
+
+            static_assert(sizeof(f32) == sizeof(mm256));
+#endif
+            nodeDataMM128_t mm128;
+
+            static_assert(sizeof(f32) == sizeof(mm128));
+        };
+
+        __forceinline void __copy(const nodeDataMM128_t& a_rhs)
+        {
+            mm128.d0 = a_rhs.d0;
+            mm128.d1 = a_rhs.d1;
+        }
+
+#if defined(__AVX__) || defined(__AVX2__)
+        __forceinline void __copy(const nodeDataMM256_t& a_rhs)
+        {
+            mm256.d0 = a_rhs.d0;
+        }
+
+#endif
+        __forceinline void __copy(const nodeData32_t& a_rhs)
+        {
+#if defined(__AVX__) || defined(__AVX2__)
+            __copy(a_rhs.mm256);
+#else
+            __copy(a_rhs.mm128);
+#endif
+        }
+
+        __forceinline nodeData32_t()
+        {
+            __copy(g_defaultNodeData.mm256);
+        }
+
+        __forceinline nodeData32_t(const nodeData32_t& a_rhs)
+        {
+            __copy(a_rhs);
+        }
+
+        __forceinline nodeData32_t(nodeData32_t&& a_rhs)
+        {
+            __copy(a_rhs);
+        }
+
+        __forceinline nodeData32_t& operator=(const nodeData32_t& a_rhs)
+        {
+            __copy(a_rhs);
+            return *this;
+        }
+
+        __forceinline nodeData32_t& operator=(nodeData32_t&& a_rhs)
+        {
+            __copy(a_rhs);
+            return *this;
+        }
+    };
+
+    struct nodeBools_t
+    {
+        __forceinline nodeBools_t()
+        {
+            u64.d0 = 0ULL;
+        }
+
+        union
+        {
+            struct __declspec(align(8))
+            {
+                struct
+                {
+                    bool female;
+                    bool male;
+                } collisions;
+                struct
+                {
+                    bool female;
+                    bool male;
+                } motion;
+                bool overrideScale;
+            } b;
+
+            struct
+            {
+                uint16_t d0; // collisions
+                uint16_t d1; // motion
+                uint16_t d2;
+                uint16_t d3;
+            } u16;
+
+            struct
+            {
+                uint32_t d0; // all
+                uint32_t d1;
+            } u32;
+
+            struct
+            {
+                uint64_t d0;
+            } u64;
+
+            static_assert(sizeof(b) == sizeof(u16));
+            static_assert(sizeof(b) == sizeof(u32));
+            static_assert(sizeof(b) == sizeof(u64));
+        };
+    };
+
+    static_assert(offsetof(nodeBools_t, b.overrideScale) == offsetof(nodeBools_t, u32.d1));
+    static_assert(offsetof(nodeBools_t, b.motion.female) == offsetof(nodeBools_t, u16.d1));
+
+    struct __declspec(align(32)) configNode_t
     {
         friend class boost::serialization::access;
 
@@ -646,39 +956,34 @@ namespace CBP
             DataVersion1 = 1
         };
 
-        bool femaleMovement = false;
-        bool femaleCollisions = false;
-        bool maleMovement = false;
-        bool maleCollisions = false;
+        nodeData32_t fp;
+        nodeBools_t bl;
 
-        float colOffsetMin[3]{ 0.0f, 0.0f, 0.0f };
-        float colOffsetMax[3]{ 0.0f, 0.0f, 0.0f };
-
-        bool overrideScale = false;
-        float nodeScale = 1.0f;
-
-        inline void Get(char a_sex, bool& a_collisionsOut, bool& a_movementOut) const noexcept
+        __forceinline void Get(
+            char a_sex,
+            bool& a_collisionsOut,
+            bool& a_movementOut) const noexcept
         {
             if (a_sex == 0) {
-                a_collisionsOut = maleCollisions;
-                a_movementOut = maleMovement;
+                a_collisionsOut = bl.b.collisions.male;
+                a_movementOut = bl.b.motion.male;
             }
             else {
-                a_collisionsOut = femaleCollisions;
-                a_movementOut = femaleMovement;
+                a_collisionsOut = bl.b.collisions.female;
+                a_movementOut = bl.b.motion.female;
             }
         }
 
         [[nodiscard]] inline bool Enabled() const noexcept {
-            return femaleMovement || femaleCollisions || maleMovement || maleCollisions;
+            return bl.u32.d0 != 0ULL;
         }
 
-        [[nodiscard]] inline bool HasMovement() const noexcept {
-            return femaleMovement || maleMovement;
+        [[nodiscard]] inline bool HasMotion() const noexcept {
+            return bl.u16.d1 != 0;
         }
 
         [[nodiscard]] inline bool HasCollisions() const noexcept {
-            return femaleCollisions || maleCollisions;
+            return bl.u16.d0 != 0;
         }
 
     private:
@@ -686,27 +991,27 @@ namespace CBP
         template<class Archive>
         void save(Archive& ar, const unsigned int version) const
         {
-            ar& femaleMovement;
-            ar& femaleCollisions;
-            ar& maleMovement;
-            ar& maleCollisions;
-            ar& colOffsetMin;
-            ar& colOffsetMax;
-            ar& overrideScale;
-            ar& nodeScale;
+            ar& bl.b.motion.female;
+            ar& bl.b.collisions.female;
+            ar& bl.b.motion.male;
+            ar& bl.b.collisions.male;
+            ar& fp.f32.colOffsetMin;
+            ar& fp.f32.colOffsetMax;
+            ar& bl.b.overrideScale;
+            ar& fp.f32.nodeScale;
         }
 
         template<class Archive>
         void load(Archive& ar, const unsigned int version)
         {
-            ar& femaleMovement;
-            ar& femaleCollisions;
-            ar& maleMovement;
-            ar& maleCollisions;
-            ar& colOffsetMin;
-            ar& colOffsetMax;
-            ar& overrideScale;
-            ar& nodeScale;
+            ar& bl.b.motion.female;
+            ar& bl.b.collisions.female;
+            ar& bl.b.motion.male;
+            ar& bl.b.collisions.male;
+            ar& fp.f32.colOffsetMin;
+            ar& fp.f32.colOffsetMax;
+            ar& bl.b.overrideScale;
+            ar& fp.f32.nodeScale;
         }
 
         BOOST_SERIALIZATION_SPLIT_MEMBER()
@@ -837,11 +1142,11 @@ namespace CBP
         }
 
         [[nodiscard]] inline static bool IsValidNode(const std::string& a_key) noexcept {
-            return nodeMap.contains(a_key);
+            return nodeMap.find(a_key) != nodeMap.end();
         }
 
         [[nodiscard]] inline static bool IsValidGroup(const std::string& a_key) {
-            return validConfGroups.contains(a_key);
+            return validConfGroups.find(a_key) != validConfGroups.end();
         }
 
         [[nodiscard]] inline static const auto& GetConfigGroups() {
@@ -956,7 +1261,7 @@ namespace CBP
         }
 
         [[nodiscard]] inline static bool HasArmorOverride(Game::ObjectHandle a_handle) {
-            return armorOverrides.contains(a_handle);
+            return armorOverrides.find(a_handle) != armorOverrides.end();
         }
 
         [[nodiscard]] static const armorCacheEntry_t::mapped_type* GetArmorOverrideSection(Game::ObjectHandle a_handle, const std::string& a_sk);
@@ -1036,6 +1341,10 @@ namespace CBP
             return defaultPhysicsConfig;
         }
 
+        static const auto& GetDefaultNode() {
+            return defaultNodeConfig;
+        }
+
     private:
 
         [[nodiscard]] static bool LoadNodeMap(nodeMap_t& a_out);
@@ -1068,11 +1377,12 @@ namespace CBP
         static configNodes_t templateBaseNodeHolder;
         static configComponents_t templateBasePhysicsHolder;
 
-        static configComponent_t defaultPhysicsConfig;
+        static configComponent32_t defaultPhysicsConfig;
+        static configNode_t defaultNodeConfig;
 
         static IConfigLog log;
     };
 }
 
-BOOST_CLASS_VERSION(CBP::configComponent_t, CBP::configComponent_t::Serialization::DataVersion6)
+BOOST_CLASS_VERSION(CBP::configComponent32_t, CBP::configComponent32_t::Serialization::DataVersion6)
 BOOST_CLASS_VERSION(CBP::configNode_t, CBP::configNode_t::Serialization::DataVersion1)

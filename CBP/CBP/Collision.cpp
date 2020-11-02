@@ -131,7 +131,7 @@ namespace CBP
         auto sc1 = static_cast<const SimComponent*>(o1->getUserPointer());
         auto sc2 = static_cast<const SimComponent*>(o2->getUserPointer());
 
-        if (!sc1->HasMovement() && !sc2->HasMovement())
+        if (!sc1->HasMotion() && !sc2->HasMotion())
             return false;
 
         return !sc1->IsSameGroup(*sc2);
