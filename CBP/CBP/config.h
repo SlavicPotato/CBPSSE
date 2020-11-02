@@ -732,25 +732,23 @@ namespace CBP
             ex.colShape = ColliderShapeType::Sphere;
         }
 
-        __forceinline configComponent16_t(const configComponent32_t& a_rhs)
+        __forceinline configComponent16_t(const configComponent32_t& a_rhs) :
+            fp(a_rhs.fp)
         {
-            fp.__copy(a_rhs.fp);
-
             ex.colShape = a_rhs.ex.colShape;
             ex.colMesh = a_rhs.ex.colMesh;
         }
 
-        __forceinline configComponent16_t(configComponent32_t&& a_rhs)
+        __forceinline configComponent16_t(configComponent32_t&& a_rhs) :
+            fp(a_rhs.fp)
         {
-            fp.__copy(a_rhs.fp);
-
             ex.colShape = a_rhs.ex.colShape;
             ex.colMesh = std::move(a_rhs.ex.colMesh);
         }
 
         __forceinline configComponent16_t& operator=(const configComponent32_t& a_rhs)
         {
-            fp.__copy(a_rhs.fp);
+            fp = a_rhs.fp;
 
             ex.colShape = a_rhs.ex.colShape;
             ex.colMesh = a_rhs.ex.colMesh;
@@ -760,7 +758,7 @@ namespace CBP
 
         __forceinline configComponent16_t& operator=(configComponent32_t&& a_rhs)
         {
-            fp.__copy(a_rhs.fp);
+            fp = a_rhs.fp;
 
             ex.colShape = a_rhs.ex.colShape;
             ex.colMesh = std::move(a_rhs.ex.colMesh);
