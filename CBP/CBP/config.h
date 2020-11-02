@@ -363,7 +363,11 @@ namespace CBP
 
         __forceinline physicsData32_t()
         {
+#if defined(__AVX__) || defined(__AVX2__)
             __copy(g_defaultPhysicsData.mm256);
+#else
+            __copy(g_defaultPhysicsData.mm128);
+#endif
         }
 
         __forceinline physicsData32_t(const physicsData32_t& a_rhs)
@@ -868,7 +872,11 @@ namespace CBP
 
         __forceinline nodeData32_t()
         {
+#if defined(__AVX__) || defined(__AVX2__)
             __copy(g_defaultNodeData.mm256);
+#else
+            __copy(g_defaultNodeData.mm128);
+#endif
         }
 
         __forceinline nodeData32_t(const nodeData32_t& a_rhs)
