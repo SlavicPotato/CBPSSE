@@ -1,2 +1,2 @@
-#define GIT_CUR_COMMIT e817b1d
+#define GIT_CUR_COMMIT 5b1948e
 #define GIT_BRANCH master
