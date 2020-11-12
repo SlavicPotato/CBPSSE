@@ -95,6 +95,20 @@ namespace CBP
 
     public:
 
+        class UpdateNodeRefDataTask :
+            public TaskDelegate
+        {
+        public:
+            UpdateNodeRefDataTask(Game::ObjectHandle a_handle);
+
+            virtual void Run() override;
+            virtual void Dispose() override {
+                delete this;
+            };
+        private:
+            Game::ObjectHandle m_handle;
+        };
+
         static bool LoadPaths();
         static void Initialize();
 

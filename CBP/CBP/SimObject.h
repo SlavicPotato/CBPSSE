@@ -33,7 +33,7 @@ namespace CBP
         const configNode_t& nodeConf;
     };
 
-    typedef std::vector<nodeDesc_t> nodeDescList_t;
+    typedef stl::vector<nodeDesc_t> nodeDescList_t;
 
     class SimObject
     {
@@ -41,7 +41,7 @@ namespace CBP
         typedef btAlignedObjectArray<SimComponent*> thingList_t;
 
         /*using iterator = typename thingMap_t::iterator;
-        using const_iterator = typename std::vector<SimComponent*>::const_iterator;*/
+        using const_iterator = typename stl::vector<SimComponent*>::const_iterator;*/
     public:
         SimObject(
             Game::ObjectHandle a_handle,

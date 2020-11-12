@@ -32,6 +32,22 @@ namespace Game
         return mm && mm->InPausedMenu();
     }
 
+    __forceinline void NodeTraverse(NiAVObject* parent, std::function<void(NiAVObject*)> a_func)
+    {
+        a_func(parent);
+
+        auto node = parent->GetAsNiNode();
+        if (!node)
+            return;
+
+        for (UInt16 i = 0; i < node->m_children.m_emptyRunStart; i++)
+        {
+            auto object = node->m_children.m_data[i];
+            if (object)
+                NodeTraverse(object, a_func);
+        }
+    }
+
     TESObjectREFR* GetReference(Game::FormID a_formid);
 
     // https://github.com/Ryan-rsm-McKenzie/CommonLibSSE/blob/master/include/RE/AI/ProcessLists.h

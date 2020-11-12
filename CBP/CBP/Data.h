@@ -3,8 +3,9 @@
 namespace CBP
 {
     class SimObject;
+    struct nodeRefEntry_t;
 
-    typedef std::map<Game::ObjectHandle, SimObject> simActorList_t;
+    typedef stl::map<Game::ObjectHandle, SimObject> simActorList_t;
 
     struct raceCacheEntry_t
     {
@@ -39,6 +40,13 @@ namespace CBP
         float weight;
     };
 
+    typedef stl::vector<nodeRefEntry_t> nodeReferenceMap_t;
+
+    struct nodeRefEntry_t
+    {
+        std::string m_name;
+        nodeReferenceMap_t m_children;
+    };
 
     typedef std::pair<uint32_t, float> armorCacheValue_t;
     typedef stl::iunordered_map<std::string, stl::iunordered_map<std::string, armorCacheValue_t>> armorCacheEntry_t;
@@ -46,25 +54,17 @@ namespace CBP
 
     class IData
     {
-        typedef std::unordered_map<Game::FormID, raceCacheEntry_t> raceList_t;
-        typedef std::unordered_map<Game::ObjectHandle, Game::FormID> handleFormIdMap_t;
-        typedef std::unordered_map<Game::ObjectHandle, actorRefData_t> actorRefMap_t;
-        typedef std::unordered_map<Game::ObjectHandle, actorCacheEntry_t> actorCache_t;
+        typedef stl::unordered_map<Game::FormID, raceCacheEntry_t> raceList_t;
+        typedef stl::unordered_map<Game::ObjectHandle, Game::FormID> handleFormIdMap_t;
+        typedef stl::unordered_map<Game::ObjectHandle, actorRefData_t> actorRefMap_t;
+        typedef stl::unordered_map<Game::ObjectHandle, actorCacheEntry_t> actorCache_t;
 
 
     public:
+
         [[nodiscard]] static bool PopulateRaceList();
-        //[[nodiscard]] static bool PopulateModList();
         static void UpdateActorMaps(Game::ObjectHandle a_handle, const Actor* a_actor);
         static void UpdateActorMaps(Game::ObjectHandle a_handle);
-
-        /* static inline void UpdateHandleNpcMap(Game::ObjectHandle a_handle, Game::FormID a_formid) {
-             actorNpcMap.insert_or_assign(a_handle, a_formid);
-         }*/
-
-         /*static inline void RemoveHandleNpcMap(Game::ObjectHandle a_handle) {
-             actorNpcMap.erase(a_handle);
-         }*/
 
         static inline const actorRefData_t* GetActorRefInfo(Game::ObjectHandle a_handle) {
             auto it = actorNpcMap.find(a_handle);
@@ -114,6 +114,12 @@ namespace CBP
             return lastException;
         }
 
+        static void UpdateNodeReferenceData(Actor * a_actor);
+
+        [[nodiscard]] static const auto& GetNodeReferenceData() {
+            return nodeRefData;
+        }
+
     private:
 
         static void FillActorCacheEntry(Game::ObjectHandle a_handle, actorCacheEntry_t& a_out);
@@ -126,10 +132,13 @@ namespace CBP
         static SelectedItem<Game::ObjectHandle> crosshairRef;
         static armorCache_t armorCache;
 
+        static nodeReferenceMap_t nodeRefData;
+
         static uint64_t actorCacheUpdateId;
 
-        static std::unordered_set<Game::FormID> ignoredRaces;
+        static stl::unordered_set<Game::FormID> ignoredRaces;
 
         static except::descriptor lastException;
     };
+
 }

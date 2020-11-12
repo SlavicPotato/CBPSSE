@@ -6,7 +6,7 @@ namespace CBP
     {
         bool Accept(InventoryEntryData* a_entryData);
 
-        std::unordered_set<TESObjectARMO*> results;
+        stl::unordered_set<TESObjectARMO*> results;
     };
 
     typedef stl::iunordered_set<std::string> armorOverrideResults_t;

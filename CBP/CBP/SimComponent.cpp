@@ -598,7 +598,10 @@ namespace CBP
         :
         m_nodeName(a_nodeName),
         m_configGroupName(a_configGroupName),
-        m_oldWorldPos(a_obj->m_worldTransform.pos.x, a_obj->m_worldTransform.pos.y, a_obj->m_worldTransform.pos.z),
+        m_oldWorldPos(
+            a_obj->m_worldTransform.pos.x,
+            a_obj->m_worldTransform.pos.y,
+            a_obj->m_worldTransform.pos.z),
         m_initialTransform(a_obj->m_localTransform),
         m_hasScaleOverride(false),
         m_collider(*this),
@@ -612,25 +615,28 @@ namespace CBP
         m_conf(a_config),
         m_movement(a_movement),
         m_velocity(0.0f, 0.0f, 0.0f),
+        m_virtld(0.0f, 0.0f, 0.0f),
         m_colRad(1.0f),
         m_colHeight(0.001f),
-        m_nodeScale(1.0f)
+        m_nodeScale(1.0f),
+        m_itrInitialPos(
+            a_obj->m_localTransform.pos.x,
+            a_obj->m_localTransform.pos.y,
+            a_obj->m_localTransform.pos.z),
+        m_itrInitialMat(
+            a_obj->m_localTransform.rot.arr[0],
+            a_obj->m_localTransform.rot.arr[1],
+            a_obj->m_localTransform.rot.arr[2],
+            a_obj->m_localTransform.rot.arr[3],
+            a_obj->m_localTransform.rot.arr[4],
+            a_obj->m_localTransform.rot.arr[5],
+            a_obj->m_localTransform.rot.arr[6],
+            a_obj->m_localTransform.rot.arr[7],
+            a_obj->m_localTransform.rot.arr[8])
     {
 #ifdef _CBP_ENABLE_DEBUG
         m_debugInfo.parentNodeName = a_obj->m_parent->m_name;
 #endif
-        auto& m = m_initialTransform.rot;
-
-        m_itrInitialMat.setValue(
-            m.arr[0], m.arr[1], m.arr[2],
-            m.arr[3], m.arr[4], m.arr[5],
-            m.arr[6], m.arr[7], m.arr[8]
-        );
-
-        m_itrInitialPos = {
-            m_initialTransform.pos.x,
-            m_initialTransform.pos.y,
-            m_initialTransform.pos.z };
 
         UpdateConfig(a_actor, nullptr, a_nodeConf, a_collisions, a_movement);
     }
@@ -716,7 +722,7 @@ namespace CBP
                 );
 
                 m_collider.SetPositionScale(
-                    std::clamp(m_conf.fp.f32.colPositionScale, 0.0f, 4.0f));
+                    std::clamp(m_conf.fp.f32.colPositionScale, 0.0f, 15.0f));
 
                 switch (m_conf.ex.colShape)
                 {
@@ -755,7 +761,7 @@ namespace CBP
 
         if (m_conf.fp.f32.resistance > 0.0f) {
             m_resistanceOn = true;
-            m_conf.fp.f32.resistance = std::clamp(m_conf.fp.f32.resistance, 0.0f, 250.0f);
+            m_conf.fp.f32.resistance = std::min(m_conf.fp.f32.resistance, 250.0f);
         }
         else
             m_resistanceOn = false;
@@ -773,7 +779,8 @@ namespace CBP
         m_conf.fp.f32.mass = std::clamp(m_conf.fp.f32.mass, 1.0f, 10000.0f);
         m_conf.fp.f32.colPenMass = std::clamp(m_conf.fp.f32.colPenMass, 1.0f, 100.0f);
         m_conf.fp.f32.maxOffsetVelResponseScale = std::clamp(m_conf.fp.f32.maxOffsetVelResponseScale, 0.0f, 1.0f);
-        m_conf.fp.f32.maxVelocity = std::clamp(m_conf.fp.f32.maxVelocity, 10.0f, 10000.0f);
+        m_conf.fp.f32.maxVelocity = std::clamp(m_conf.fp.f32.maxVelocity, 4.0f, 10000.0f);
+        m_maxVelocity2 = m_conf.fp.f32.maxVelocity * m_conf.fp.f32.maxVelocity; //  ASSERT(m_maxVelocity2 > _EPSILON);       
         m_conf.fp.f32.maxOffsetRestitutionCoefficient = std::clamp(m_conf.fp.f32.maxOffsetRestitutionCoefficient, 0.0f, 4.0f);
         m_conf.fp.f32.maxOffsetMaxBiasMag = std::max(m_conf.fp.f32.maxOffsetMaxBiasMag, 0.0f);
 
@@ -981,7 +988,7 @@ namespace CBP
 
                 auto vDir = m_itrMatParent * current.m_norm;
 
-                force += (vDir * current.m_mag) / a_timeStep;
+                force += (vDir *= current.m_mag) /= a_timeStep;
 
                 if (!current.m_steps--)
                     m_applyForceQueue.pop();
@@ -996,7 +1003,7 @@ namespace CBP
 
             ClampVelocity();
 
-            auto invRot = m_itrMatParent.transpose();
+            auto invRot(m_itrMatParent.transpose());
             m_virtld = invRot * ((m_oldWorldPos + m_velocity * a_timeStep) -= target);
 
             ConstrainMotion(invRot, target, a_timeStep);
@@ -1040,7 +1047,7 @@ namespace CBP
         auto mag = a_force.Length();
         if (mag < _EPSILON)
             return;
-
+        
         m_applyForceQueue.emplace(
             a_steps, btVector3(a_force.x / mag, a_force.y / mag, a_force.z / mag), mag);
     }

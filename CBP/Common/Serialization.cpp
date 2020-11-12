@@ -2,23 +2,18 @@
 
 namespace Serialization
 {
-    bool ReadJsonData(const fs::path& a_path, Json::Value& a_root)
+    void ReadJsonData(const fs::path& a_path, Json::Value& a_root)
     {
-        if (!fs::exists(a_path) || !fs::is_regular_file(a_path))
-            return false;
-
         std::ifstream ifs;
 
         ifs.open(a_path, std::ifstream::in | std::ifstream::binary);
         if (!ifs.is_open())
-            throw std::exception("Could not open file for reading");
+            throw std::system_error(errno, std::system_category(), a_path.string());
 
         ifs >> a_root;
-
-        return true;
     }
 
-    static __forceinline void SafeCleanup(const fs::path& a_path) noexcept
+    __forceinline static void SafeCleanup(const fs::path& a_path) noexcept
     {
         try
         {

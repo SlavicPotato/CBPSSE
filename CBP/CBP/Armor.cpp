@@ -38,22 +38,6 @@ namespace CBP
         return true;
     }
 
-    static void Traverse(NiAVObject* parent, std::function<bool(NiAVObject*)> a_func)
-    {
-        a_func(parent);
-
-        auto node = parent->GetAsNiNode();
-        if (!node)
-            return;
-
-        for (UInt16 i = 0; i < node->m_children.m_emptyRunStart; i++)
-        {
-            auto object = node->m_children.m_data[i];
-            if (object)
-                Traverse(object, a_func);
-        }
-    }
-
     bool IArmor::FindOverridesA(Actor* a_actor, armorOverrideResults_t& a_out)
     {
         NiNode* root[2];
@@ -70,7 +54,7 @@ namespace CBP
             if (!root[i])
                 continue;
 
-            Traverse(root[i], [&](NiAVObject* object)
+            Game::NodeTraverse(root[i], [&](NiAVObject* object)
                 {
                     auto data = object->GetExtraData(name);
                     if (data) {
@@ -79,8 +63,6 @@ namespace CBP
                         if (extraData && extraData->m_pString) 
                             a_out.emplace(extraData->m_pString);
                     }
-
-                    return false;
                 });
         }
 
@@ -162,7 +144,7 @@ namespace CBP
                 if (!childNode || BSFixedString(childNode->m_name) != aaName)
                     continue;
 
-                Traverse(childNode, [&](NiAVObject* object)
+                Game::NodeTraverse(childNode, [&](NiAVObject* object)
                     {
                         auto data = object->GetExtraData(pcName);
                         if (data) {
@@ -171,8 +153,6 @@ namespace CBP
                             if (extraData && extraData->m_pString) 
                                 a_out.emplace(extraData->m_pString);
                         }
-
-                        return false;
                     });
             }
         }

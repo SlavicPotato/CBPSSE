@@ -73,7 +73,7 @@ namespace CBP
         m_actorName = CALL_MEMBER_FN(a_actor, GetReferenceName)();
 #endif
 
-        std::vector<SimComponent*> tmp;
+        stl::vector<SimComponent*> tmp;
 
         auto numObjects(a_desc.size());
 

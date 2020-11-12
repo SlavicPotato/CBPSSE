@@ -12,10 +12,18 @@ namespace Serialization
     template<>
     void Parser<CBP::configNodes_t>::Create(const CBP::configNodes_t& a_data, Json::Value& a_out) const;
 
+
+    template<>
+    bool Parser<CBP::nodeMap_t>::Parse(const Json::Value& a_in, CBP::nodeMap_t& a_out) const;
+    template<>
+    void Parser<CBP::configGroupMap_t>::Create(const CBP::configGroupMap_t& a_data, Json::Value& a_out) const;
+
     template<>
     void Parser<CBP::configComponents_t>::GetDefault(CBP::configComponents_t& a_out) const;
     template<>
     void Parser<CBP::configNodes_t>::GetDefault(CBP::configNodes_t& a_out) const;
+    template<>
+    void Parser<CBP::nodeMap_t>::GetDefault(CBP::nodeMap_t& a_out) const;
 }
 
 namespace CBP

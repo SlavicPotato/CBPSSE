@@ -196,7 +196,7 @@ namespace CBP
 
         Propagate(a_data, nullptr, a_pair, [&](configComponent32_t& a_v) {
             a_v.Set(a_desc.second, *a_val); });
-        
+
         if (a_desc.second.counterpart.size() &&
             globalConfig.ui.profile.syncWeightSliders)
         {
@@ -1331,10 +1331,11 @@ namespace CBP
         m_activeLoadInstance(0),
         m_scActor(*this),
         m_scGlobal(*this),
+        m_nodeMap(*this),
         m_tsNoActors(PerfCounter::Query()),
         m_pePhysics("Physics profile editor"),
         m_peNodes("Node profile editor"),
-        m_state({ {false, false, false, false, false, false, false, false, false, false, false} }),
+        m_state({ {false, false, false, false, false, false, false, false, false, false, false, false} }),
         UIActorList<actorListPhysConf_t>(true)
     {
     }
@@ -1352,6 +1353,15 @@ namespace CBP
         m_racePhysicsEditor.Reset();
         m_actorNodeEditor.Reset();
         m_raceNodeEditor.Reset();
+        m_nodeMap.Reset();
+    }
+
+    void UIContext::QueueListUpdateAll()
+    {
+        QueueListUpdate();
+        m_racePhysicsEditor.QueueListUpdate();
+        m_actorNodeEditor.QueueListUpdate();
+        m_raceNodeEditor.QueueListUpdate();
     }
 
     void UIContext::DrawMenuBar(bool* a_active, const listValue_t* a_entry)
@@ -1409,6 +1419,7 @@ namespace CBP
             {
                 ImGui::MenuItem("Actor nodes", nullptr, &ws.nodeConf);
                 ImGui::MenuItem("Node collision groups", nullptr, &ws.collisionGroups);
+                ImGui::MenuItem("Node map", nullptr, &ws.nodeMap);
 
                 ImGui::Separator();
 
@@ -1472,12 +1483,10 @@ namespace CBP
                             {
                                 auto num = IConfig::PruneAll();
                                 Debug("%zu pruned", num);
+
                                 if (num > 0)
                                 {
-                                    QueueListUpdate();
-                                    m_racePhysicsEditor.QueueListUpdate();
-                                    m_actorNodeEditor.QueueListUpdate();
-                                    m_raceNodeEditor.QueueListUpdate();
+                                    QueueListUpdateAll();
                                     DCBP::ResetActors();
                                 }
                             }
@@ -1500,13 +1509,16 @@ namespace CBP
                                     a_entry->second.first.c_str()
                                 ).call([&](auto&, auto& a_d)
                                     {
-                                        auto num = IConfig::PruneActorPhysics(a_d.get<Game::ObjectHandle>(0));
+                                        auto handle = a_d.get<Game::ObjectHandle>(0);
+
+                                        auto num = IConfig::PruneActorPhysics(handle);
                                         Debug("%zu pruned", num);
+
                                         if (num > 0)
                                         {
                                             QueueListUpdate();
                                             DCBP::DispatchActorTask(
-                                                a_entry->first, ControllerInstruction::Action::UpdateConfig);
+                                                handle, ControllerInstruction::Action::UpdateConfig);
                                         }
                                     }
                                 );
@@ -1689,6 +1701,9 @@ namespace CBP
 
         if (m_state.windows.log)
             m_log.Draw(&m_state.windows.log);
+
+        if (m_state.windows.nodeMap)
+            m_nodeMap.Draw(&m_state.windows.nodeMap);
 
 #ifdef _CBP_ENABLE_DEBUG
         if (m_state.windows.debug)
@@ -4178,4 +4193,376 @@ namespace CBP
 
         ImGui::PopID();
     }
+
+
+    UINodeMap::UINodeMap(UIContext& a_parent) :
+        m_update(true),
+        m_filter(false, "Node filter"),
+        m_parent(a_parent)
+    {
+    }
+
+    void UINodeMap::Draw(bool* a_active)
+    {
+        if (m_refActor && m_update)
+        {
+            m_update = false;
+            DTasks::AddTask<DCBP::UpdateNodeRefDataTask>(*m_refActor);
+        }
+
+        const auto& globalConfig = IConfig::GetGlobal();
+
+        SetWindowDimensions(150.0f, 800.0f, 400.0f);
+
+        ImGui::PushID(static_cast<const void*>(this));
+
+        if (ImGui::Begin("Node Map##CBP", a_active))
+        {
+            ImGui::SetWindowFontScale(globalConfig.ui.fontScale);
+
+            auto& data = IData::GetNodeReferenceData();
+
+            const auto wcm = ImGui::GetWindowContentRegionMax();
+            const float width = wcm.x - 8.0f;
+            const auto w(ImVec2(width, 0.0f));
+
+            if (CollapsingHeader(GetCSID("NodeTree"), "Reference node tree"))
+            {
+                DrawActorList();
+
+                if (!data.empty())
+                {
+                    ImGui::SameLine();
+                    m_filter.DrawButton();
+                    m_filter.Draw();
+                    ImGui::Separator();
+
+                    const auto d(ImVec2(width, wcm.y / 2.0f));
+
+                    ImGui::SetNextWindowSizeConstraints(d, d);
+
+                    if (ImGui::BeginChild("nm_area", w, false, ImGuiWindowFlags_HorizontalScrollbar))
+                    {
+                        DrawNodeTree(data[0]);
+                    }
+
+                    ImGui::EndChild();
+                }
+
+                ImGui::Spacing();
+            }
+
+            if (CollapsingHeader(GetCSID("ConfigGroups"), "Config groups"))
+            {
+                if (ImGui::BeginChild("cg_area", w, false, ImGuiWindowFlags_HorizontalScrollbar))
+                {
+                    DrawConfigGroupMap();
+                }
+
+                ImGui::EndChild();
+            }
+        }
+
+        ImGui::End();
+
+        ImGui::PopID();
+    }
+
+    void UINodeMap::SelectFirstValidActor(const char*& a_curSelName)
+    {
+        const auto& actorCache = IData::GetActorCache();
+
+        for (const auto& e : actorCache)
+        {
+            if (e.second.active) 
+            {
+                m_refActor = e.first;
+                a_curSelName = e.second.name.c_str();
+                m_update = true;
+                break;
+            }
+        }
+    }
+
+    void UINodeMap::ValidateCurrentActor(const char* &a_curSelName)
+    {
+        const auto& actorCache = IData::GetActorCache();
+
+        auto it = actorCache.find(*m_refActor);
+        if (it == actorCache.end() || !it->second.active) 
+        {
+            m_refActor.Clear();
+
+            if (!actorCache.empty()) 
+                SelectFirstValidActor(a_curSelName);
+        }
+        else
+            a_curSelName = it->second.name.c_str();
+    }
+
+    void UINodeMap::DrawActorList()
+    {
+        const char* curSelName(nullptr);
+
+        if (m_refActor)        
+            ValidateCurrentActor(curSelName);
+        else
+            SelectFirstValidActor(curSelName);
+        
+        if (ImGui::BeginCombo("Reference actor", curSelName, ImGuiComboFlags_HeightLarge))
+        {
+            const auto& actorCache = IData::GetActorCache();
+
+            for (const auto& e : actorCache)
+            {
+                if (!e.second.active)
+                    continue;
+
+                ImGui::PushID(static_cast<const void*>(std::addressof(e.second)));
+
+                bool selected = m_refActor == e.first;
+
+                if (selected)
+                    if (ImGui::IsWindowAppearing()) ImGui::SetScrollHereY();
+
+                if (ImGui::Selectable(e.second.name.c_str(), selected)) {
+                    m_refActor = e.first;
+                    m_update = true;
+                }
+
+                ImGui::PopID();
+            }
+            ImGui::EndCombo();
+        }
+    }
+
+    void UINodeMap::Reset()
+    {
+        //m_update = true;
+    }
+
+    void UINodeMap::DrawNodeTree(const nodeRefEntry_t& a_entry)
+    {
+        ImGui::PushID(std::addressof(a_entry));
+
+        if (m_filter.Test(a_entry.m_name))
+        {
+            ImGui::PushID(1);
+
+            if (ImGui::Button("+"))
+                ImGui::OpenPopup("tree_ctx");
+
+            DrawTreeContextMenu(a_entry);
+
+            ImGui::PopID();
+
+            int flags = ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_DefaultOpen;
+
+            if (a_entry.m_children.empty())
+                flags |= ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_Bullet;
+
+            ImGui::SameLine();
+            if (ImGui::TreeNodeEx(a_entry.m_name.c_str(), flags))
+            {
+                for (const auto& e : a_entry.m_children)
+                    DrawNodeTree(e);
+
+                ImGui::TreePop();
+            }
+        }
+        else
+        {
+            for (const auto& e : a_entry.m_children)
+                DrawNodeTree(e);
+        }
+
+        ImGui::PopID();
+    }
+
+    void UINodeMap::DrawConfigGroupMap()
+    {
+        auto& data = IConfig::GetConfigGroupMap();
+
+        for (const auto& e : data)
+        {
+            ImGui::PushID(std::addressof(e));
+
+            ImGui::PushID(1);
+
+            if (ImGui::Button("+"))
+                ImGui::OpenPopup("node_ctx");
+
+            if (ImGui::BeginPopup("node_ctx"))
+            {
+                if (ImGui::MenuItem("Add node"))
+                {
+                    auto& popup = m_parent.GetPopupQueue();
+
+                    popup.push(
+                        UIPopupType::Input,
+                        UIPopupData(e.first),
+                        "Add node",
+                        "Enter node name:"
+                    ).call([&](auto& a_p, auto& a_d)
+                        {
+                            auto& in = a_p.GetInput();
+
+                            if (!strlen(in))
+                                return;
+
+                            auto& cgroup = a_d.get<const std::string&>(0);
+
+                            AddNode(in, cgroup);
+                        }
+                    );
+                }
+
+                ImGui::EndPopup();
+            }
+
+            ImGui::PopID();
+
+            ImGui::SameLine();
+
+            if (ImGui::CollapsingHeader(e.first.c_str(),
+                ImGuiTreeNodeFlags_DefaultOpen))
+            {
+                for (const auto& f : e.second)
+                {
+                    ImGui::PushID(std::addressof(f));
+
+                    ImGui::PushID(1);
+
+                    if (ImGui::Button("+"))
+                        ImGui::OpenPopup("node_ctx");
+
+                    if (ImGui::BeginPopup("node_ctx"))
+                    {
+                        if (ImGui::MenuItem("Remove"))
+                        {
+                            auto& popup = m_parent.GetPopupQueue();
+
+                            popup.push(
+                                UIPopupType::Confirm,
+                                UIPopupData(f),
+                                "Add node",
+                                "Remove node '%s'?",
+                                f.c_str()
+                            ).call([&](auto&, auto& a_d)
+                                {
+                                    if (IConfig::RemoveNode(a_d.get<const std::string&>(0)))
+                                    {
+                                        m_parent.QueueListUpdateAll();
+                                        DCBP::ResetActors();
+                                    }
+                                }
+                            );
+                        }
+
+                        ImGui::EndPopup();
+                    }
+
+                    ImGui::PopID();
+
+                    ImGui::SameLine();
+
+                    if (ImGui::TreeNodeEx(f.c_str(),
+                        ImGuiTreeNodeFlags_SpanAvailWidth |
+                        ImGuiTreeNodeFlags_Leaf |
+                        ImGuiTreeNodeFlags_Bullet))
+                    {
+
+                        ImGui::TreePop();
+                    }
+
+                    ImGui::PopID();
+                }
+            }
+
+            ImGui::PopID();
+        }
+    }
+
+    void UINodeMap::DrawTreeContextMenu(const nodeRefEntry_t& a_entry)
+    {
+        if (ImGui::BeginPopup("tree_ctx"))
+        {
+            const auto& globalConfig = IConfig::GetGlobal();
+
+            ImGui::SetWindowFontScale(globalConfig.ui.fontScale);
+
+            if (ImGui::BeginMenu("Add to config group"))
+            {
+                auto& data = IConfig::GetConfigGroupMap();
+
+                if (ImGui::MenuItem("New"))
+                {
+                    AddNodeNewGroup(a_entry.m_name);
+                }
+
+                ImGui::Separator();
+
+                const std::string* add_cg(nullptr);
+
+                for (const auto& e : data)
+                {
+                    if (ImGui::MenuItem(e.first.c_str()))
+                        add_cg = std::addressof(e.first);
+                }
+
+                if (add_cg != nullptr)
+                    AddNode(a_entry.m_name, *add_cg);
+
+                ImGui::EndMenu();
+            }
+
+            ImGui::EndPopup();
+        }
+    }
+
+    void UINodeMap::AddNode(const std::string& a_node, const std::string& a_confGroup)
+    {
+        if (IConfig::AddNode(a_node, a_confGroup))
+        {
+            m_parent.QueueListUpdateAll();
+            DCBP::ResetActors();
+        }
+        else
+        {
+            auto& popup = m_parent.GetPopupQueue();
+
+            popup.push(
+                UIPopupType::Message,
+                "Add failed",
+                "Adding node '%s' to config group '%s' failed. Check log for more info.",
+                a_node.c_str(),
+                a_confGroup.c_str()
+            );
+        }
+    }
+
+    void UINodeMap::AddNodeNewGroup(const std::string& a_node)
+    {
+        auto& popup = m_parent.GetPopupQueue();
+
+        popup.push(
+            UIPopupType::Input,
+            UIPopupData(a_node),
+            "Add node",
+            "Enter the config group name to add node '%s' to:",
+            a_node.c_str()
+        ).call([&](auto& a_p, auto& a_d)
+            {
+                auto& in = a_p.GetInput();
+
+                if (!strlen(in))
+                    return;
+
+                auto& node = a_d.get<const std::string&>(0);
+
+                AddNode(node, in);
+            }
+        );
+    }
+
 }

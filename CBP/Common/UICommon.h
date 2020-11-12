@@ -30,7 +30,7 @@ namespace UICommon
         }
 
         float m_posOffset = 0.0f;
-        std::unordered_map<std::string, float> m_ctlPositions;
+        stl::unordered_map<std::string, float> m_ctlPositions;
 
     };
 
@@ -367,7 +367,7 @@ namespace UICommon
         }
 
     private:
-        std::queue<action_type> m_queue;
+        std::queue<action_type, std::deque<action_type, mem::aligned_allocator<action_type, 32>>> m_queue;
     };
 
     template <class T>
@@ -432,7 +432,7 @@ namespace UICommon
 
     class UIPopupData
     {
-        using storage_type = typename std::vector<boost::any>;
+        using storage_type = typename stl::vector<boost::any>;
 
     public:
 

@@ -26,7 +26,7 @@ namespace CBP
         {
             TRecTargetType type;
             TRecTargetGender gender = TRecTargetGender::Any;
-            std::vector<Game::FormID> formids;
+            stl::vector<Game::FormID> formids;
         };
 
     public:
@@ -50,7 +50,7 @@ namespace CBP
 
     private:
 
-        std::unordered_map<TRecType, entry_t> m_data;
+        stl::unordered_map<TRecType, entry_t> m_data;
 
         std::string m_pluginName;
         fs::path m_path;
@@ -59,8 +59,8 @@ namespace CBP
 
     class ITemplate
     {
-        typedef std::unordered_map<Game::FormID, PhysicsProfile&> templateDataHolderPhysics_t;
-        typedef std::unordered_map<Game::FormID, NodeProfile&> templateDataHolderNode_t;
+        typedef stl::unordered_map<Game::FormID, PhysicsProfile&> templateDataHolderPhysics_t;
+        typedef stl::unordered_map<Game::FormID, NodeProfile&> templateDataHolderNode_t;
 
 
         template <class T>
@@ -74,8 +74,8 @@ namespace CBP
                 std::reference_wrapper<T> profile;
             };
 
-            typedef std::unordered_map<UInt32, profileData_t> templateModMap_t;
-            typedef std::unordered_map<UInt32, std::pair<std::unordered_map<Game::FormID, profileData_t>, std::unordered_map<Game::FormID, profileData_t>>> templateFormMap_t;
+            typedef stl::unordered_map<UInt32, profileData_t> templateModMap_t;
+            typedef stl::unordered_map<UInt32, std::pair<stl::unordered_map<Game::FormID, profileData_t>, stl::unordered_map<Game::FormID, profileData_t>>> templateFormMap_t;
 
             friend class ITemplate;
 
@@ -142,7 +142,7 @@ namespace CBP
         }
 
     private:
-        static bool GatherPluginData(std::vector<TRecPlugin>& a_out);
+        static bool GatherPluginData(stl::vector<TRecPlugin>& a_out);
 
         template <typename T>
         __forceinline static const T* GetProfileImpl(

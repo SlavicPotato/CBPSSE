@@ -43,7 +43,7 @@ namespace CBP
                 int count = nl.size();
                 for (int i = 0; i < count; i++)
                 {
-                    auto& n = nl[i];
+                    auto n = nl[i];
 
                     if (n->HasMotion()) {
                         auto& tf = n->GetParentWorldTransform();
@@ -81,7 +81,8 @@ namespace CBP
     }
 
     void Renderer::GenerateMovementConstraints(
-        const simActorList_t& a_actorList)
+        const simActorList_t& a_actorList,
+        float a_radius)
     {
         for (const auto& e : a_actorList)
         {
@@ -93,7 +94,7 @@ namespace CBP
             int count = nl.size();
             for (int i = 0; i < count; i++)
             {
-                auto& n = nl[i];
+                auto n = nl[i];
 
                 if (!n->HasMotion())
                     continue;
@@ -110,7 +111,7 @@ namespace CBP
                 auto& tf = n->GetParentWorldTransform();
                 auto& p = n->GetVirtualPos();
 
-                GenerateSphere(tf * NiPoint3(p.x(), p.y(), p.z()), 0.8f * tf.scale, VIRTUAL_POS_COL);
+                GenerateSphere(tf * NiPoint3(p.x(), p.y(), p.z()), a_radius * tf.scale, VIRTUAL_POS_COL);
             }
         }
     }

@@ -28,7 +28,7 @@ namespace CBP
                 throw std::exception("Bad path");
 
             Assimp::Importer importer;
-
+            
             importer.SetPropertyInteger(AI_CONFIG_PP_RVC_FLAGS, IMPORT_RVC_FLAGS);
 
             auto scene = importer.ReadFile(m_pathStr, IMPORT_FLAGS);

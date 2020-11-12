@@ -2,6 +2,9 @@
 
 namespace CBP
 {
+
+    class UIContext;
+
     typedef KVStorage<UInt32, const char*> keyDesc_t;
 
     enum class MiscHelpText : int
@@ -35,12 +38,12 @@ namespace CBP
     };
 
     typedef std::pair<const std::string, configComponents_t> actorEntryPhysConf_t;
-    typedef std::map<Game::ObjectHandle, actorEntryPhysConf_t> actorListPhysConf_t;
+    typedef stl::map<Game::ObjectHandle, actorEntryPhysConf_t> actorListPhysConf_t;
 
     typedef std::pair<const std::string, configNodes_t> actorEntryNodeConf_t;
-    typedef std::map<Game::ObjectHandle, actorEntryNodeConf_t> actorListNodeConf_t;
+    typedef stl::map<Game::ObjectHandle, actorEntryNodeConf_t> actorListNodeConf_t;
 
-    typedef std::vector<std::pair<const std::string, const configNode_t*>> nodeConfigList_t;
+    typedef stl::vector<std::pair<const std::string, const configNode_t*>> nodeConfigList_t;
 
     class UIBase :
         virtual protected UICommon::UIWindow,
@@ -67,7 +70,7 @@ namespace CBP
         virtual void OnCollapsibleStatesUpdate() const;
         virtual void OnControlValueChange() const;
 
-        static const std::unordered_map<MiscHelpText, const char*> m_helpText;
+        static const stl::unordered_map<MiscHelpText, const char*> m_helpText;
     };
 
     template <typename T>
@@ -574,10 +577,10 @@ namespace CBP
     };
 
     typedef std::pair<const std::string, configComponents_t> raceEntryPhysConf_t;
-    typedef std::map<Game::FormID, raceEntryPhysConf_t> raceListPhysConf_t;
+    typedef stl::map<Game::FormID, raceEntryPhysConf_t> raceListPhysConf_t;
 
     typedef std::pair<const std::string, configNodes_t> raceEntryNodeConf_t;
-    typedef std::map<Game::FormID, raceEntryNodeConf_t> raceListNodeConf_t;
+    typedef stl::map<Game::FormID, raceEntryNodeConf_t> raceListNodeConf_t;
 
     template <class T, class N>
     class UIRaceEditorBase :
@@ -724,7 +727,7 @@ namespace CBP
         }
 
     private:
-        std::vector<float> m_values;
+        stl::vector<float> m_values;
 
         float m_plotScaleMin;
         float m_plotScaleMax;
@@ -802,7 +805,7 @@ namespace CBP
 
     private:
         SelectedItem<SelectedFile> m_selected;
-        std::vector<fs::path> m_files;
+        stl::vector<fs::path> m_files;
 
         except::descriptor m_lastExcept;
     };
@@ -853,6 +856,42 @@ namespace CBP
     private:
         bool m_doScrollBottom;
         int8_t m_initialScroll;
+    };
+
+    class UINodeMap :
+        UIBase,
+        ILog
+    {
+    public:
+        UINodeMap(UIContext &a_parent);
+
+        void Draw(bool* a_active);
+        void Reset();
+
+    private:
+
+        void SelectFirstValidActor(const char*& a_curSelName);
+        void ValidateCurrentActor(const char*& a_curSelName);
+        void DrawActorList();
+        void DrawNodeTree(const nodeRefEntry_t& a_entry);
+        void DrawConfigGroupMap();
+        void DrawTreeContextMenu(const nodeRefEntry_t& a_entry);
+
+        void AddNode(const std::string& a_node, const std::string& a_confGroup);
+        void AddNodeNewGroup(const std::string& a_node);
+
+        [[nodiscard]] inline std::string GetCSID(
+            const std::string& a_name) const
+        {
+            std::ostringstream ss;
+            ss << "UINM#" << a_name;
+            return ss.str();
+        }
+
+        bool m_update;
+        UICommon::UIGenericFilter m_filter;
+        SelectedItem<Game::ObjectHandle> m_refActor;
+        UIContext& m_parent;
     };
 
     class UIContext :
@@ -1003,12 +1042,18 @@ namespace CBP
         void Reset(uint32_t a_loadInstance);
         void Draw(bool* a_active);
 
+        void QueueListUpdateAll();
+
         [[nodiscard]] inline uint32_t GetLoadInstance() const noexcept {
             return m_activeLoadInstance;
         }
 
         inline void LogNotify() {
             m_log.SetScrollBottom();
+        }
+
+        inline auto& GetPopupQueue() {
+            return m_popup;
         }
 
     private:
@@ -1048,6 +1093,7 @@ namespace CBP
                 bool debug;
                 bool log;
                 bool importDialog;
+                bool nodeMap;
             } windows;
 
             struct {
@@ -1071,6 +1117,7 @@ namespace CBP
         UIDialogImport m_importDialog;
         UIDialogExport m_exportDialog;
         UILog m_log;
+        UINodeMap m_nodeMap;
 
 #ifdef _CBP_ENABLE_DEBUG
         UIDebugInfo m_debug;

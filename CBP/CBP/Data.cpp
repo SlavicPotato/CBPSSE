@@ -8,10 +8,11 @@ namespace CBP
     SelectedItem<Game::ObjectHandle> IData::crosshairRef = 0;
     uint64_t IData::actorCacheUpdateId = 1;
     armorCache_t IData::armorCache;
+    nodeReferenceMap_t IData::nodeRefData;
 
     except::descriptor IData::lastException;
 
-    std::unordered_set<Game::FormID> IData::ignoredRaces = {
+    stl::unordered_set<Game::FormID> IData::ignoredRaces = {
         0x0002C65C,
         0x00108272,
         0x0002C659,
@@ -334,4 +335,42 @@ namespace CBP
             return false;
         }
     }
+
+    static void FillNodeRefData(NiAVObject* parent, nodeRefEntry_t &a_entry)
+    {
+        a_entry.m_name = parent->m_name;
+
+        auto node = parent->GetAsNiNode();
+        if (!node)
+            return;
+
+        for (UInt16 i = 0; i < node->m_children.m_emptyRunStart; i++)
+        {
+            auto object = node->m_children.m_data[i];
+            if (object)
+            {
+                auto& entry = a_entry.m_children.emplace_back();
+                FillNodeRefData(object, entry);
+            }
+        }
+    }
+
+    void IData::UpdateNodeReferenceData(Actor* a_actor)
+    {
+        if (!a_actor->loadedState || !a_actor->loadedState->node)
+            return;
+
+        BSFixedString bone("NPC Root [Root]");
+
+        auto root = a_actor->loadedState->node->GetObjectByName(&bone.data);
+        if (!root)
+            return;
+
+        nodeRefData.clear();
+
+        auto &entry = nodeRefData.emplace_back(root->m_name);
+
+        FillNodeRefData(root, entry);
+    }
+
 }

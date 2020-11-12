@@ -42,13 +42,19 @@ namespace CBP
 
         try
         {
-            if (globalConf.debugRenderer.enableMovementConstraints)
-                renderer->GenerateMovementConstraints(GetSimActorList());
+            auto& actorList = GetSimActorList();
+
+            if (globalConf.debugRenderer.enableMovementConstraints) 
+            {
+                renderer->GenerateMovementConstraints(
+                    actorList,
+                    globalConf.debugRenderer.movingNodesRadius);
+            }
 
             if (globalConf.debugRenderer.enableMovingNodes)
             {
                 renderer->GenerateMovingNodes(
-                    GetSimActorList(),
+                    actorList,
                     globalConf.debugRenderer.movingNodesRadius,
                     globalConf.debugRenderer.movingNodesCenterOfMass,
                     m_markedActor);

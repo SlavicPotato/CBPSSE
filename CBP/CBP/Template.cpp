@@ -157,7 +157,7 @@ namespace CBP
         }
     }
 
-    bool ITemplate::GatherPluginData(std::vector<TRecPlugin>& a_out)
+    bool ITemplate::GatherPluginData(stl::vector<TRecPlugin>& a_out)
     {
         try
         {
@@ -283,7 +283,7 @@ namespace CBP
         if (!m_dataNode.Load(driverConf.paths.templateProfilesNode))
             return false;
 
-        std::vector<TRecPlugin> data;
+        stl::vector<TRecPlugin> data;
 
         if (!GatherPluginData(data))
             return false;

@@ -328,6 +328,7 @@
     <VcpkgConfiguration>Release</VcpkgConfiguration>
     <VcpkgUseStatic>false</VcpkgUseStatic>
     <VcpkgTriplet>x64-windows-rel-static</VcpkgTriplet>
+    <VcpkgEnabled>true</VcpkgEnabled>
   </PropertyGroup>
   <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" />
   <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='PreRelease|x64'" />
@@ -449,7 +450,7 @@
       <IntelJCCErratum>true</IntelJCCErratum>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <ObjectFileName>$(IntDir)%(RelativeDir)\</ObjectFileName>
-      <AdditionalOptions>/Ob3 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/Ob3 /permissive %(AdditionalOptions)</AdditionalOptions>
       <FloatingPointModel>Fast</FloatingPointModel>
     </ClCompile>
     <Link>
@@ -706,7 +707,7 @@
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <DebugInformationFormat>None</DebugInformationFormat>
       <ObjectFileName>$(IntDir)%(RelativeDir)\</ObjectFileName>
-      <AdditionalOptions>/Ob3 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/Ob3 /permissive %(AdditionalOptions)</AdditionalOptions>
       <FloatingPointModel>Fast</FloatingPointModel>
     </ClCompile>
     <Link>
@@ -744,7 +745,7 @@
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <DebugInformationFormat>None</DebugInformationFormat>
       <ObjectFileName>$(IntDir)%(RelativeDir)\</ObjectFileName>
-      <AdditionalOptions>/Ob3 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/Ob3 /permissive %(AdditionalOptions)</AdditionalOptions>
       <FloatingPointModel>Fast</FloatingPointModel>
     </ClCompile>
     <Link>
@@ -909,8 +910,10 @@
     <ClInclude Include="CBP\UI.h" />
     <ClInclude Include="Common\Data.h" />
     <ClInclude Include="Common\Hash.h" />
+    <ClInclude Include="Common\Mem.h" />
     <ClInclude Include="Common\ProfileManager.h" />
     <ClInclude Include="Common\Serialization.h" />
+    <ClInclude Include="Common\STL.h" />
     <ClInclude Include="Common\UICommon.h" />
     <ClInclude Include="Common\UIData.h" />
     <ClInclude Include="config.h" />
@@ -933,7 +936,7 @@
   <ItemGroup>
     <ClCompile Include="CBP\Armor.cpp" />
     <ClCompile Include="CBP\Collision.cpp" />
-    <ClCompile Include="CBP\config.cpp" />
+    <ClCompile Include="CBP\Config.cpp" />
     <ClCompile Include="CBP\ConfigData.cpp" />
     <ClCompile Include="CBP\ConfigDataISeg.cpp" />
     <ClCompile Include="CBP\Controller.cpp" />

@@ -45,44 +45,13 @@ namespace CBP
         {
             auto& driverConf = DCBP::GetDriverConfig();
 
-            std::ifstream ifs(driverConf.paths.nodes, std::ifstream::in | std::ifstream::binary);
-            if (!ifs.is_open())
-                throw std::system_error(errno, std::system_category(), driverConf.paths.nodes.string());
-
             Json::Value root;
-            ifs >> root;
 
-            if (root.empty())
-                throw std::exception("Empty node map");
+            Serialization::ReadJsonData(driverConf.paths.nodes, root);
 
-            if (!root.isObject())
-                throw std::exception("Unexpected data");
+            Serialization::Parser<nodeMap_t> parser;
 
-            for (auto it = root.begin(); it != root.end(); ++it)
-            {
-                if (!it->isArray())
-                    throw std::exception("Expected array");
-
-                std::string configGroup(it.key().asString());
-                if (configGroup.empty())
-                    throw std::exception("Zero length config group string");
-
-                //transform(configGroup.begin(), configGroup.end(), configGroup.begin(), ::tolower);
-
-                for (auto& v : *it)
-                {
-                    if (!v.isString())
-                        throw std::exception("Expected string");
-
-                    std::string k(v.asString());
-                    if (k.empty())
-                        throw std::exception("Zero length node name string");
-
-                    a_out.insert_or_assign(k, configGroup);
-                }
-            }
-
-            return true;
+            return parser.Parse(root, a_out);
         }
         catch (const std::system_error& e)
         {
@@ -96,61 +65,28 @@ namespace CBP
         return false;
     }
 
-    bool IConfig::CompatLoadOld(configComponents_t& a_out)
+    bool IConfig::SaveNodeMap(const configGroupMap_t& a_in)
     {
         try
         {
-            fs::path path(PLUGIN_CBP_CONFIG);
-            if (!fs::is_regular_file(path))
-                return false;
+            auto& driverConf = DCBP::GetDriverConfig();
 
-            std::ifstream ifs(path, std::ifstream::in);
+            Json::Value root;
 
-            if (!ifs.is_open())
-                throw std::system_error(errno, std::system_category());
+            Serialization::Parser<configGroupMap_t> parser;
 
-            std::string line;
-            while (std::getline(ifs, line))
-            {
-                if (line.size() < 2 || line[0] == '#')
-                    continue;
+            parser.Create(a_in, root);
 
-                char* str = line.data();
-
-                char* next_tok = nullptr;
-
-                char* tok0 = strtok_s(str, ".", &next_tok);
-                char* tok1 = strtok_s(nullptr, " ", &next_tok);
-                char* tok2 = strtok_s(nullptr, " ", &next_tok);
-
-                if (tok0 && tok1 && tok2)
-                {
-                    std::string sect(tok0);
-                    std::string key(tok1);
-
-                    //transform(sect.begin(), sect.end(), sect.begin(), ::tolower);
-
-                    auto it = a_out.find(sect);
-                    if (it == a_out.end())
-                        continue;
-
-                    //transform(key.begin(), key.end(), key.begin(), ::tolower);
-
-                    static const std::string rot("rotational");
-
-                    if (key == rot)
-                        it->second.Set("rotationalz", static_cast<float>(std::atof(tok2)));
-                    else
-                        it->second.Set(key, static_cast<float>(std::atof(tok2)));
-                }
-            }
+            Serialization::WriteJsonData(driverConf.paths.nodes, root);
 
             return true;
         }
-        catch (const std::system_error& e) {
+        catch (const std::system_error& e)
+        {
             log.Error("%s: %s", __FUNCTION__, e.what());
         }
-        catch (const std::exception& e) {
+        catch (const std::exception& e)
+        {
             log.Error("%s: %s", __FUNCTION__, e.what());
         }
 
@@ -180,6 +116,59 @@ namespace CBP
             templateBasePhysicsHolder.try_emplace(v);
             physicsGlobalConfig.try_emplace(v);
         }
+    }
+
+    bool IConfig::AddNode(
+        const std::string& a_node,
+        const std::string& a_confGroup,
+        bool a_save)
+    {
+        if (nodeMap.contains(a_node))
+            return false;
+
+        nodeMap.try_emplace(a_node, a_confGroup);
+        validConfGroups.emplace(a_confGroup);
+        templateBaseNodeHolder.try_emplace(a_node);
+        templateBasePhysicsHolder.try_emplace(a_confGroup);
+        physicsGlobalConfig.try_emplace(a_confGroup);
+        configGroupMap[a_confGroup].emplace_back(a_node);
+
+        if (a_save)
+            return SaveNodeMap(configGroupMap);
+
+        return true;
+    }
+
+    bool IConfig::RemoveNode(const std::string& a_node, bool a_save)
+    {
+        auto itm = nodeMap.find(a_node);
+        if (itm == nodeMap.end())
+            return false;
+
+        auto& confGroup = itm->second;
+
+        auto itc = configGroupMap.find(confGroup);
+        if (itc == configGroupMap.end())
+            return false;
+
+        auto it = std::find(itc->second.begin(), itc->second.end(), a_node);
+        if (it != itc->second.end())
+            itc->second.erase(it);
+
+        if (itc->second.empty())
+        {
+            validConfGroups.erase(confGroup);
+            templateBasePhysicsHolder.erase(confGroup);
+            configGroupMap.erase(itc);
+        }
+
+        templateBaseNodeHolder.erase(a_node);
+        nodeMap.erase(itm);
+
+        if (a_save)
+            return SaveNodeMap(configGroupMap);
+
+        return true;
     }
 
     ConfigClass IConfig::GetActorPhysicsClass(Game::ObjectHandle a_handle)

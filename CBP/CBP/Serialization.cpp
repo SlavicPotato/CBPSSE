@@ -310,6 +310,73 @@ namespace Serialization
         a_out["nodes_version"] = Json::Value::UInt(1);
     }
 
+
+    template<>
+    bool Parser<CBP::nodeMap_t>::Parse(const Json::Value& a_in, CBP::nodeMap_t& a_out) const
+    {
+        if (a_in.empty())
+        {
+            Error("Empty node map");
+            return false;
+        }
+
+        if (!a_in.isObject())
+        {
+            Error("Unexpected data");
+            return false;
+        }
+
+        for (auto it = a_in.begin(); it != a_in.end(); ++it)
+        {
+            if (!it->isArray())
+            {
+                Error("Expected array");
+                return false;
+            }
+
+            std::string configGroup(it.key().asString());
+            if (configGroup.empty())
+            {
+                Error("Zero length config group string");
+                return false;
+            }
+
+            for (auto& v : *it)
+            {
+                if (!v.isString())
+                {
+                    Error("Expected string");
+                    return false;
+                }
+
+                std::string k(v.asString());
+                if (k.empty())
+                {
+                    Error("Zero length node name string");
+                    return false;
+                }
+
+                a_out.insert_or_assign(k, configGroup);
+            }
+        }
+
+        return true;
+    }
+
+    template<>
+    void Parser<CBP::configGroupMap_t>::Create(const CBP::configGroupMap_t& a_data, Json::Value& a_out) const
+    {
+        for (const auto& e : a_data)
+        {
+            auto& l = a_out[e.first];
+
+            for (const auto& f : e.second)
+            {
+                l.append(f);
+            }
+        }
+    }
+
     template<>
     void Parser<CBP::configComponents_t>::GetDefault(CBP::configComponents_t& a_out) const
     {
@@ -336,8 +403,7 @@ namespace CBP
             auto& driverConf = DCBP::GetDriverConfig();
 
             Json::Value root;
-            if (!ReadJsonData(driverConf.paths.settings, root))
-                return;
+            ReadJsonData(driverConf.paths.settings, root);
 
             if (root.empty())
                 return;
@@ -655,8 +721,7 @@ namespace CBP
             auto& driverConf = DCBP::GetDriverConfig();
 
             Json::Value root;
-            if (!ReadJsonData(driverConf.paths.collisionGroups, root))
-                return;
+            ReadJsonData(driverConf.paths.collisionGroups, root);
 
             if (root.isMember("groups")) {
                 auto& groups = root["groups"];
@@ -813,8 +878,7 @@ namespace CBP
 
             auto& driverConf = DCBP::GetDriverConfig();
 
-            if (!ReadJsonData(driverConf.paths.defaultProfile, root))
-                throw std::exception("Couldn't load the default profile");
+            ReadJsonData(driverConf.paths.defaultProfile, root);
 
             return _LoadGlobalProfile(root) != 0;
         }
@@ -1003,8 +1067,7 @@ namespace CBP
 
     void ISerialization::ReadImportData(const fs::path& a_path, Json::Value& a_out) const
     {
-        if (!ReadJsonData(a_path, a_out))
-            throw std::exception("Couldn't read data");
+        ReadJsonData(a_path, a_out);
 
         if (a_out.empty())
             throw std::exception("Empty root object");

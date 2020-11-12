@@ -75,7 +75,7 @@ namespace Serialization
         return true;
     }
 
-    [[nodiscard]] bool ReadJsonData(const fs::path& a_path, Json::Value& a_out);
+    [[nodiscard]] void ReadJsonData(const fs::path& a_path, Json::Value& a_out);
     void WriteJsonData(const fs::path& a_path, const Json::Value& a_root);
 
 }

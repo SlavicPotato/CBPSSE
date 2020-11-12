@@ -26,11 +26,6 @@ namespace CBP
             aiProcess_JoinIdenticalVertices;
     public:
 
-        ColliderProfile()
-        {
-            m_data.m_triVertexArray = nullptr;
-        }
-
         ColliderProfile(const ColliderProfile&) = default;
         ColliderProfile(ColliderProfile&&) = default;
 

@@ -99,6 +99,10 @@ class Profile :
     Serialization::Parser<T>
 {
 public:
+
+    Profile(const Profile&) = default;
+    Profile(Profile&&) = default;
+
     template <typename... Args>
     Profile(Args&&... a_args) :
         ProfileBase<T>(std::forward<Args>(a_args)...)

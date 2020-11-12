@@ -30,7 +30,7 @@ namespace CBP
 
         void Draw();
         void GenerateMovingNodes(const simActorList_t& a_actorList, float a_radius, bool a_centerOfMass, Game::ObjectHandle a_markedHandle);
-        void GenerateMovementConstraints(const simActorList_t& a_actorList);
+        void GenerateMovementConstraints(const simActorList_t& a_actorList, float a_radius);
 
         void Clear();
 
@@ -63,8 +63,8 @@ namespace CBP
         ID3D11Device* m_pDevice;
         ID3D11DeviceContext* m_pImmediateContext;
 
-        std::vector<ItemLine> m_lines;
-        std::vector<ItemTri> m_tris;
+        stl::vector<ItemLine> m_lines;
+        stl::vector<ItemTri> m_tris;
 
         btScalar m_contactPointSphereRadius;
         btScalar m_contactNormalLength;

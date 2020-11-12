@@ -66,7 +66,7 @@ namespace CBP
         {
             float timeTick = 1.0f / 60.0f;
             float maxSubSteps = 10.0f;
-            float maxDiff = 355.0f;
+            float maxDiff = 360.0f;
             bool collisions = true;
         } phys;
 
@@ -96,7 +96,7 @@ namespace CBP
             UInt32 showKeyDR = DIK_PGDN;
 
             configForceMap_t forceActor;
-            std::unordered_map<UIEditorID, configMirrorMap_t> mirror;
+            stl::unordered_map<UIEditorID, configMirrorMap_t> mirror;
             UIData::UICollapsibleStates colStates;
             std::string forceActorSelected;
 
@@ -251,8 +251,16 @@ namespace CBP
         float __pad[6];
     };
 
+    /* MSVC will generate extra instructions when copying these structs to avoid (v)movups displacements
+       larger than 7 bits (to reduce size?), work around by assigning __m256/__m128's individually.
+     */
+
+#if defined(__AVX__) || defined(__AVX2__)
     struct physicsDataMM256_t
     {
+
+    public:
+
         __m256 d0;
         __m256 d1;
         __m256 d2;
@@ -260,10 +268,49 @@ namespace CBP
         __m256 d4;
         __m256 d5;
         __m256 d6;
+
+        __forceinline physicsDataMM256_t(const physicsDataMM256_t& a_rhs)
+        {
+            __copy(a_rhs);
+        }
+
+        __forceinline physicsDataMM256_t(physicsDataMM256_t&& a_rhs) noexcept
+        {
+            __copy(a_rhs);
+        }
+
+        __forceinline physicsDataMM256_t& operator=(const physicsDataMM256_t& a_rhs)
+        {
+            __copy(a_rhs);
+            return *this;
+        }
+
+        __forceinline physicsDataMM256_t& operator=(physicsDataMM256_t&& a_rhs) noexcept
+        {
+            __copy(a_rhs);
+            return *this;
+        }
+
+    private:
+
+        __forceinline void __copy(const physicsDataMM256_t& a_rhs)
+        {
+            d0 = a_rhs.d0;
+            d1 = a_rhs.d1;
+            d2 = a_rhs.d2;
+            d3 = a_rhs.d3;
+            d4 = a_rhs.d4;
+            d5 = a_rhs.d5;
+            d6 = a_rhs.d6;
+        }
     };
+#endif
 
     struct physicsDataMM128_t
     {
+
+    public:
+
         __m128 d0;
         __m128 d1;
         __m128 d2;
@@ -278,6 +325,49 @@ namespace CBP
         __m128 d11;
         __m128 d12;
         __m128 d13;
+
+        __forceinline physicsDataMM128_t(const physicsDataMM128_t& a_rhs)
+        {
+            __copy(a_rhs);
+        }
+
+        __forceinline physicsDataMM128_t(physicsDataMM128_t&& a_rhs) noexcept
+        {
+            __copy(a_rhs);
+        }
+
+        __forceinline physicsDataMM128_t& operator=(const physicsDataMM128_t& a_rhs)
+        {
+            __copy(a_rhs);
+            return *this;
+        }
+
+        __forceinline physicsDataMM128_t& operator=(physicsDataMM128_t&& a_rhs) noexcept
+        {
+            __copy(a_rhs);
+            return *this;
+        }
+
+    private:
+
+        __forceinline void __copy(const physicsDataMM128_t& a_rhs)
+        {
+            d0 = a_rhs.d0;
+            d1 = a_rhs.d1;
+            d2 = a_rhs.d2;
+            d3 = a_rhs.d3;
+            d4 = a_rhs.d4;
+            d5 = a_rhs.d5;
+            d6 = a_rhs.d6;
+            d7 = a_rhs.d7;
+            d8 = a_rhs.d8;
+            d9 = a_rhs.d9;
+            d10 = a_rhs.d10;
+            d11 = a_rhs.d11;
+            d12 = a_rhs.d12;
+            d13 = a_rhs.d13;
+        }
+
     };
 
     struct __declspec(align(32)) defaultPhysicsDataHolder_t
@@ -301,10 +391,11 @@ namespace CBP
 
     extern const defaultPhysicsDataHolder_t g_defaultPhysicsData;
 
-    //typedef struct physicsDataMembers_t physicsDataMembers32_t;
-
     struct __declspec(align(32)) physicsData32_t
     {
+
+    public:
+
         union
         {
             physicsDataF32_t f32;
@@ -320,53 +411,12 @@ namespace CBP
             static_assert(sizeof(f32) == sizeof(mm128));
         };
 
-        __forceinline void __copy(const physicsDataMM128_t& a_rhs)
-        {
-
-            mm128.d0 = a_rhs.d0;
-            mm128.d1 = a_rhs.d1;
-            mm128.d2 = a_rhs.d2;
-            mm128.d3 = a_rhs.d3;
-            mm128.d4 = a_rhs.d4;
-            mm128.d5 = a_rhs.d5;
-            mm128.d6 = a_rhs.d6;
-            mm128.d7 = a_rhs.d7;
-            mm128.d8 = a_rhs.d8;
-            mm128.d9 = a_rhs.d9;
-            mm128.d10 = a_rhs.d10;
-            mm128.d11 = a_rhs.d11;
-            mm128.d12 = a_rhs.d12;
-            mm128.d13 = a_rhs.d13;
-        }
-
-#if defined(__AVX__) || defined(__AVX2__)
-        __forceinline void __copy(const physicsDataMM256_t& a_rhs)
-        {
-            mm256.d0 = a_rhs.d0;
-            mm256.d1 = a_rhs.d1;
-            mm256.d2 = a_rhs.d2;
-            mm256.d3 = a_rhs.d3;
-            mm256.d4 = a_rhs.d4;
-            mm256.d5 = a_rhs.d5;
-            mm256.d6 = a_rhs.d6;
-        }
-#endif
-
-        __forceinline void __copy(const physicsData32_t& a_rhs)
-        {
-#if defined(__AVX__) || defined(__AVX2__)
-            __copy(a_rhs.mm256);
-#else
-            __copy(a_rhs.mm128);
-#endif
-        }
-
         __forceinline physicsData32_t()
         {
 #if defined(__AVX__) || defined(__AVX2__)
-            __copy(g_defaultPhysicsData.mm256);
+            mm256 = g_defaultPhysicsData.mm256;
 #else
-            __copy(g_defaultPhysicsData.mm128);
+            mm128 = g_defaultPhysicsData.mm128;
 #endif
         }
 
@@ -375,7 +425,7 @@ namespace CBP
             __copy(a_rhs);
         }
 
-        __forceinline physicsData32_t(physicsData32_t&& a_rhs)
+        __forceinline physicsData32_t(physicsData32_t&& a_rhs) noexcept
         {
             __copy(a_rhs);
         }
@@ -391,94 +441,18 @@ namespace CBP
             __copy(a_rhs);
             return *this;
         }
-    };
 
-    struct __declspec(align(16)) physicsData16_t
-    {
-        union
-        {
-            physicsDataF32_t f32;
-            physicsDataMM128_t mm128;
-
-            static_assert(sizeof(f32) == sizeof(mm128));
-        };
-
-        __forceinline void __copy(const physicsDataMM128_t& a_rhs)
-        {
-            mm128.d0 = a_rhs.d0;
-            mm128.d1 = a_rhs.d1;
-            mm128.d2 = a_rhs.d2;
-            mm128.d3 = a_rhs.d3;
-            mm128.d4 = a_rhs.d4;
-            mm128.d5 = a_rhs.d5;
-            mm128.d6 = a_rhs.d6;
-            mm128.d7 = a_rhs.d7;
-            mm128.d8 = a_rhs.d8;
-            mm128.d9 = a_rhs.d9;
-            mm128.d10 = a_rhs.d10;
-            mm128.d11 = a_rhs.d11;
-            mm128.d12 = a_rhs.d12;
-            mm128.d13 = a_rhs.d13;
-        }
-
-        __forceinline void __copy(const physicsData16_t& a_rhs)
-        {
-            __copy(a_rhs.mm128);
-        }
+    private:
 
         __forceinline void __copy(const physicsData32_t& a_rhs)
         {
-            __copy(a_rhs.mm128);
+#if defined(__AVX__) || defined(__AVX2__)
+            mm256 = a_rhs.mm256;
+#else
+            mm128 = a_rhs.mm128;
+#endif
         }
 
-        __forceinline physicsData16_t()
-        {
-            __copy(g_defaultPhysicsData.mm128);
-        }
-
-        __forceinline physicsData16_t(const physicsData16_t& a_rhs)
-        {
-            __copy(a_rhs);
-        }
-
-        __forceinline physicsData16_t(physicsData16_t&& a_rhs)
-        {
-            __copy(a_rhs);
-        }
-
-        __forceinline physicsData16_t& operator=(const physicsData16_t& a_rhs)
-        {
-            __copy(a_rhs);
-            return *this;
-        }
-
-        __forceinline physicsData16_t& operator=(physicsData16_t&& a_rhs)
-        {
-            __copy(a_rhs);
-            return *this;
-        }
-
-        __forceinline physicsData16_t(const physicsData32_t& a_rhs)
-        {
-            __copy(a_rhs);
-        }
-
-        __forceinline physicsData16_t(physicsData32_t&& a_rhs)
-        {
-            __copy(a_rhs);
-        }
-
-        __forceinline physicsData16_t& operator=(const physicsData32_t& a_rhs)
-        {
-            __copy(a_rhs);
-            return *this;
-        }
-
-        __forceinline physicsData16_t& operator=(physicsData32_t&& a_rhs)
-        {
-            __copy(a_rhs);
-            return *this;
-        }
     };
 
     struct __declspec(align(32)) configComponent32_t
@@ -606,9 +580,9 @@ namespace CBP
             return reinterpret_cast<float*>(addr);
         }
 
-        configComponent32_t()
+        configComponent32_t() :
+            ex {.colShape = ColliderShapeType::Sphere }
         {
-            ex.colShape = ColliderShapeType::Sphere;
         }
 
         physicsData32_t fp;
@@ -725,6 +699,44 @@ namespace CBP
         BOOST_SERIALIZATION_SPLIT_MEMBER()
     };
 
+    struct __declspec(align(16)) physicsData16_t
+    {
+        union
+        {
+            physicsDataF32_t f32;
+            physicsDataMM128_t mm128;
+
+            static_assert(sizeof(f32) == sizeof(mm128));
+        };
+
+        __forceinline physicsData16_t()
+        {
+            mm128 = g_defaultPhysicsData.mm128;
+        }
+
+        __forceinline physicsData16_t(const physicsData32_t& a_rhs)
+        {
+            mm128 = a_rhs.mm128;
+        }
+
+        __forceinline physicsData16_t(physicsData32_t&& a_rhs)
+        {
+            mm128 = a_rhs.mm128;
+        }
+
+        __forceinline physicsData16_t& operator=(const physicsData32_t& a_rhs)
+        {
+            mm128 = a_rhs.mm128;
+            return *this;
+        }
+
+        __forceinline physicsData16_t& operator=(physicsData32_t&& a_rhs)
+        {
+            mm128 = a_rhs.mm128;
+            return *this;
+        }
+    };
+
     struct __declspec(align(16)) configComponent16_t
     {
         __forceinline configComponent16_t()
@@ -778,18 +790,18 @@ namespace CBP
 
     typedef stl::iunordered_map<std::string, configComponent32_t> configComponents_t;
     typedef configComponents_t::value_type configComponentsValue_t;
-    typedef std::unordered_map<Game::ObjectHandle, configComponents_t> actorConfigComponentsHolder_t;
-    typedef std::unordered_map<Game::FormID, configComponents_t> raceConfigComponentsHolder_t;
+    typedef stl::unordered_map<Game::ObjectHandle, configComponents_t> actorConfigComponentsHolder_t;
+    typedef stl::unordered_map<Game::FormID, configComponents_t> raceConfigComponentsHolder_t;
     typedef stl::imap<std::string, std::string> nodeMap_t;
-    typedef stl::imap<std::string, std::vector<std::string>> configGroupMap_t;
+    typedef stl::imap<std::string, stl::vector<std::string>> configGroupMap_t;
 
-    typedef std::set<uint64_t> collisionGroups_t;
+    typedef stl::set<uint64_t> collisionGroups_t;
     typedef stl::imap<std::string, uint64_t> nodeCollisionGroupMap_t;
 
     typedef std::pair<stl::iset<std::string>, armorCacheEntry_t> armorOverrideDescriptor_t;
-    typedef std::unordered_map<Game::ObjectHandle, armorOverrideDescriptor_t> armorOverrides_t;
+    typedef stl::unordered_map<Game::ObjectHandle, armorOverrideDescriptor_t> armorOverrides_t;
 
-    typedef std::unordered_map<Game::ObjectHandle, configComponents_t> mergedConfCache_t;
+    typedef stl::unordered_map<Game::ObjectHandle, configComponents_t> mergedConfCache_t;
 
     struct __declspec(align(32)) nodeDataF32_t
     {
@@ -800,13 +812,79 @@ namespace CBP
 
     struct nodeDataMM256_t
     {
+
+    public:
+
         __m256 d0;
+
+        __forceinline nodeDataMM256_t(const nodeDataMM256_t& a_rhs)
+        {
+            __copy(a_rhs);
+        }
+
+        __forceinline nodeDataMM256_t(nodeDataMM256_t&& a_rhs)
+        {
+            __copy(a_rhs);
+        }
+
+        __forceinline nodeDataMM256_t& operator=(const nodeDataMM256_t& a_rhs)
+        {
+            __copy(a_rhs);
+            return *this;
+        }
+
+        __forceinline nodeDataMM256_t& operator=(nodeDataMM256_t&& a_rhs)
+        {
+            __copy(a_rhs);
+            return *this;
+        }
+
+    private:
+
+        __forceinline void __copy(const nodeDataMM256_t& a_rhs)
+        {
+            d0 = a_rhs.d0;
+        }
+
     };
 
     struct nodeDataMM128_t
     {
+
+    public:
+
         __m128 d0;
         __m128 d1;
+
+        __forceinline nodeDataMM128_t(const nodeDataMM128_t& a_rhs)
+        {
+            __copy(a_rhs);
+        }
+
+        __forceinline nodeDataMM128_t(nodeDataMM128_t&& a_rhs) noexcept
+        {
+            __copy(a_rhs);
+        }
+
+        __forceinline nodeDataMM128_t& operator=(const nodeDataMM128_t& a_rhs)
+        {
+            __copy(a_rhs);
+            return *this;
+        }
+
+        __forceinline nodeDataMM128_t& operator=(nodeDataMM128_t&& a_rhs) noexcept
+        {
+            __copy(a_rhs);
+            return *this;
+        }
+
+    private:
+
+        __forceinline void __copy(const nodeDataMM128_t& a_rhs)
+        {
+            d0 = a_rhs.d0;
+            d1 = a_rhs.d1;
+        }
     };
 
     struct __declspec(align(32)) defaultNodeDataHolder_t
@@ -832,6 +910,9 @@ namespace CBP
 
     struct __declspec(align(32)) nodeData32_t
     {
+
+    public:
+
         union
         {
             nodeDataF32_t f32;
@@ -846,34 +927,12 @@ namespace CBP
             static_assert(sizeof(f32) == sizeof(mm128));
         };
 
-        __forceinline void __copy(const nodeDataMM128_t& a_rhs)
-        {
-            mm128.d0 = a_rhs.d0;
-            mm128.d1 = a_rhs.d1;
-        }
-
-#if defined(__AVX__) || defined(__AVX2__)
-        __forceinline void __copy(const nodeDataMM256_t& a_rhs)
-        {
-            mm256.d0 = a_rhs.d0;
-        }
-
-#endif
-        __forceinline void __copy(const nodeData32_t& a_rhs)
-        {
-#if defined(__AVX__) || defined(__AVX2__)
-            __copy(a_rhs.mm256);
-#else
-            __copy(a_rhs.mm128);
-#endif
-        }
-
         __forceinline nodeData32_t()
         {
 #if defined(__AVX__) || defined(__AVX2__)
-            __copy(g_defaultNodeData.mm256);
+            mm256 = g_defaultNodeData.mm256;
 #else
-            __copy(g_defaultNodeData.mm128);
+            mm128 = g_defaultNodeData.mm128;
 #endif
         }
 
@@ -882,7 +941,7 @@ namespace CBP
             __copy(a_rhs);
         }
 
-        __forceinline nodeData32_t(nodeData32_t&& a_rhs)
+        __forceinline nodeData32_t(nodeData32_t&& a_rhs) noexcept
         {
             __copy(a_rhs);
         }
@@ -898,6 +957,18 @@ namespace CBP
             __copy(a_rhs);
             return *this;
         }
+
+    private:
+
+        __forceinline void __copy(const nodeData32_t& a_rhs)
+        {
+#if defined(__AVX__) || defined(__AVX2__)
+            mm256 = a_rhs.mm256;
+#else
+            mm128 = a_rhs.mm128;
+#endif
+        }
+
     };
 
     struct nodeBools_t
@@ -980,15 +1051,15 @@ namespace CBP
             }
         }
 
-        [[nodiscard]] inline bool Enabled() const noexcept {
+        [[nodiscard]] __forceinline bool Enabled() const noexcept {
             return bl.u32.d0 != 0ULL;
         }
 
-        [[nodiscard]] inline bool HasMotion() const noexcept {
+        [[nodiscard]] __forceinline bool HasMotion() const noexcept {
             return bl.u16.d1 != 0;
         }
 
-        [[nodiscard]] inline bool HasCollisions() const noexcept {
+        [[nodiscard]] __forceinline bool HasCollisions() const noexcept {
             return bl.u16.d0 != 0;
         }
 
@@ -1025,8 +1096,8 @@ namespace CBP
 
     typedef stl::iunordered_map<std::string, configNode_t> configNodes_t;
     typedef configNodes_t::value_type configNodesValue_t;
-    typedef std::unordered_map<Game::ObjectHandle, configNodes_t> actorConfigNodesHolder_t;
-    typedef std::unordered_map<Game::FormID, configNodes_t> raceConfigNodesHolder_t;
+    typedef stl::unordered_map<Game::ObjectHandle, configNodes_t> actorConfigNodesHolder_t;
+    typedef stl::unordered_map<Game::FormID, configNodes_t> raceConfigNodesHolder_t;
 
     enum class ConfigClass
     {
@@ -1351,10 +1422,13 @@ namespace CBP
             return defaultNodeConfig;
         }
 
+        static bool AddNode(const std::string& a_node, const std::string& a_confGroup, bool a_save = true);
+        static bool RemoveNode(const std::string& a_node, bool a_save = true);
+
     private:
 
         [[nodiscard]] static bool LoadNodeMap(nodeMap_t& a_out);
-        [[nodiscard]] static bool CompatLoadOld(configComponents_t& a_out);
+        [[nodiscard]] static bool SaveNodeMap(const configGroupMap_t& a_in);
 
         template <typename T>
         __forceinline static void CopyImpl(const T& a_lhs, T& a_rhs);

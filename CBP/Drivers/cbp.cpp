@@ -1111,4 +1111,20 @@ namespace CBP
         IData::UpdateActorCache(GetSimActorList());
         Unlock();
     }
+
+    DCBP::UpdateNodeRefDataTask::UpdateNodeRefDataTask(Game::ObjectHandle a_handle) :
+        m_handle(a_handle)
+    {
+    }
+
+    void DCBP::UpdateNodeRefDataTask::Run()
+    {
+        auto actor = Game::ResolveObject<Actor>(m_handle, Actor::kTypeID);
+        if (!actor)
+            return;
+
+        IScopedCriticalSection(std::addressof(m_Instance.m_lock));
+
+        CBP::IData::UpdateNodeReferenceData(actor);
+    }
 }

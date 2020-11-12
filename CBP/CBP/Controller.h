@@ -34,7 +34,7 @@ namespace CBP
         public TaskQueueBase<ControllerInstruction>,
         ILog
     {
-        typedef std::unordered_set<Game::ObjectHandle> handleSet_t;
+        typedef stl::unordered_set<Game::ObjectHandle> handleSet_t;
 
         class UpdateWeightTask :
             public TaskDelegate

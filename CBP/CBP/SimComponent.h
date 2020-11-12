@@ -27,6 +27,11 @@ namespace CBP
 
     struct ColliderData
     {
+        ColliderData() :
+            m_triVertexArray(nullptr)
+        {
+        }
+
         std::shared_ptr<MeshPoint[]> m_vertices;
         std::shared_ptr<MeshPoint[]> m_hullPoints;
         std::shared_ptr<int[]> m_indices;
@@ -262,7 +267,7 @@ namespace CBP
                 a_z * crdrmul
             );
         }
-
+        
         inline void SetRadius(float a_val) {
             if (m_created)
                 m_colshape->SetRadius(a_val);
@@ -304,12 +309,12 @@ namespace CBP
         void Activate();
         void Deactivate();
 
-        btCollisionObject* m_collider;
-        CollisionShape* m_colshape;
-
         btMatrix3x3 m_colRot;
         btVector3 m_bodyOffset;
         btVector3 m_bodyOffsetPlusInitial;
+
+        btCollisionObject* m_collider;
+        CollisionShape* m_colshape;
 
         ColliderShapeType m_shape;
         std::string m_meshShape;
@@ -332,7 +337,7 @@ namespace CBP
 
     __declspec(align(16)) class SimComponent
     {
-        struct Force
+        __declspec(align(16)) struct Force
         {
             Force(
                 uint32_t a_steps,
@@ -345,8 +350,8 @@ namespace CBP
             {
             }
 
-            uint32_t m_steps;
             btVector3 m_norm;
+            uint32_t m_steps;
             float m_mag;
         };
 
@@ -354,10 +359,12 @@ namespace CBP
 
     private:
 
-        bool ColUpdateWeightData(
-            Actor* a_actor,
-            const configComponent16_t& a_config,
-            const configNode_t& a_nodeConf);
+        btMatrix3x3 m_itrInitialMat;
+        btMatrix3x3 m_itrMatObj;
+        btMatrix3x3 m_itrMatParent;
+        btVector3 m_itrInitialPos;
+        btVector3 m_itrPosObj;
+        btVector3 m_itrPosParent;
 
         btVector3 m_cogOffset;
         btVector3 m_gravityCorrection;
@@ -367,16 +374,11 @@ namespace CBP
         btVector3 m_ld;
         btVector3 m_velocity;
 
-        NiTransform m_initialTransform;
-        
-        bool m_hasScaleOverride;
+        btVector3 m_extent;
+        btVector3 m_colOffset;
+        btVector3 m_linearScale;
 
-        btMatrix3x3 m_itrInitialMat;
-        btMatrix3x3 m_itrMatObj;
-        btMatrix3x3 m_itrMatParent;
-        btVector3 m_itrInitialPos;
-        btVector3 m_itrPosObj;
-        btVector3 m_itrPosParent;
+        NiTransform m_initialTransform;
 
         std::string m_nodeName;
         std::string m_configGroupName;
@@ -390,22 +392,20 @@ namespace CBP
         float m_colHeight;
         float m_nodeScale;
         float m_massInv;
-        btVector3 m_extent;
-        btVector3 m_colOffset;
-        btVector3 m_linearScale;
-
+        float m_maxVelocity2;
         uint64_t m_groupId;
         uint64_t m_parentId;
 
         bool m_resistanceOn;
         bool m_rotScaleOn;
+        bool m_hasScaleOverride;
 
         NiPointer<NiAVObject> m_obj;
         NiPointer<NiAVObject> m_objParent;
 
         NiAVObject::ControllerUpdateContext m_updateCtx;
 
-        std::queue<Force> m_applyForceQueue;
+        std::queue<Force, std::deque<Force, mem::aligned_allocator<Force, 16>>> m_applyForceQueue;
 
 #ifdef _CBP_ENABLE_DEBUG
         SimDebugInfo m_debugInfo;
@@ -415,13 +415,18 @@ namespace CBP
 
         Collider m_collider;
 
+        bool ColUpdateWeightData(
+            Actor* a_actor,
+            const configComponent16_t& a_config,
+            const configNode_t& a_nodeConf);
+
         __forceinline void ClampVelocity()
         {
-            float len = m_velocity.length();
-            if (len < m_conf.fp.f32.maxVelocity)
+            float len2 = m_velocity.length2();
+            if (len2 < m_maxVelocity2)
                 return;
 
-            m_velocity /= len;
+            m_velocity /= std::sqrtf(len2);
             m_velocity *= m_conf.fp.f32.maxVelocity;
         }
 
