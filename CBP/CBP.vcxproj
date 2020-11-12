@@ -1015,7 +1015,6 @@
     <ClInclude Include="Drivers\render.h" />
     <ClInclude Include="Drivers\tasks.h" />
     <ClInclude Include="game.h" />
-    <ClInclude Include="gitparams.h" />
     <ClInclude Include="ImGui\imgui_impl_dx11.h" />
     <ClInclude Include="ImGui\imgui_impl_win32.h" />
     <ClInclude Include="paths.h" />
@@ -1080,6 +1079,7 @@
     <ClCompile Include="skse.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\.gitignore" />
     <None Include="..\config\CBP\Default.json" />
     <None Include="..\config\CBP\Nodes.json" />
     <None Include="..\config\CBP\Profiles\Node\Blank.json" />

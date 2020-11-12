@@ -180,9 +180,6 @@
     <ClInclude Include="Common\Mem.h">
       <Filter>Header Files\Common</Filter>
     </ClInclude>
-    <ClInclude Include="gitparams.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="resource.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -328,6 +325,7 @@
     <None Include="..\installer\mktemplate.py">
       <Filter>Installer</Filter>
     </None>
+    <None Include="..\.gitignore" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Resource.rc">
