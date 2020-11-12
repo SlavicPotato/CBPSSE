@@ -6,7 +6,7 @@ class KVStorageBase
 {
 protected:
     using keyMap_t = M;
-    using keyVec_t = typename std::vector<std::pair<const K, const V>>;
+    using keyVec_t = typename stl::vector<std::pair<const K, const V>>;
 
     using iterator = typename keyVec_t::iterator;
     using const_iterator = typename keyVec_t::const_iterator;
@@ -77,11 +77,11 @@ private:
     const keyVec_t m_vec;
 };
 
-template <class K, class V, typename mapType = std::unordered_map<K, const V&>>
+template <class K, class V, typename mapType = stl::unordered_map<K, const V&>>
 class KVStorage :
     public KVStorageBase<K, V, mapType>
 {
-    using keyVec_t = typename std::vector<std::pair<const K, const V>>;
+    using keyVec_t = typename stl::vector<std::pair<const K, const V>>;
 public:
 
     KVStorage(const keyVec_t& a_in) :

@@ -41,7 +41,7 @@ namespace CBP
 
         void DispatchKeyEvent(KeyEvent ev, UInt32 key);
 
-        std::vector<KeyEventHandler*> callbacks;
+        stl::vector<KeyEventHandler*> callbacks;
 
         KeyPressHandler m_inputEventHandler;
 

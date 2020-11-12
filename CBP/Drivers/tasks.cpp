@@ -2,7 +2,7 @@
 
 namespace CBP
 {
-    std::vector<TaskDelegateFixed*> DTasks::s_tasks_fixed;
+    stl::vector<TaskDelegateFixed*> DTasks::s_tasks_fixed;
     TaskQueue DTasks::s_tasks;
 
     typedef void (*mainInitHook_t)(void);

@@ -27,7 +27,7 @@ namespace CBP
 
         __forceinline static void RunTasks();
 
-        static std::vector<TaskDelegateFixed*> s_tasks_fixed;
+        static stl::vector<TaskDelegateFixed*> s_tasks_fixed;
         static TaskQueue s_tasks;
     };
 }

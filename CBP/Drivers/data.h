@@ -82,7 +82,7 @@ namespace CBP
 
         bool m_populated;
 
-        std::map<UInt32, modData_t> modList;
+        stl::map<UInt32, modData_t> modList;
     };
 
     class DData :

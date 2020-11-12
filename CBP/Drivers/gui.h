@@ -171,7 +171,7 @@ namespace CBP
             long long current = 0;
         } m_uiRenderPerf;
 
-        std::map<uint32_t, uiDrawCallback_t> m_drawCallbacks;
+        stl::map<uint32_t, uiDrawCallback_t> m_drawCallbacks;
 
         KeyPressHandler m_inputEventHandler;
 

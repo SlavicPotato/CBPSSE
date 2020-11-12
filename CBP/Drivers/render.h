@@ -29,7 +29,7 @@ namespace CBP
         static void Present_Pre(uint32_t);
         static void CreateD3D11_Hook();
 
-        std::vector<presentCallback_t> m_presentCallbacks;
+        stl::vector<presentCallback_t> m_presentCallbacks;
 
         static DRender m_Instance;
     };
