@@ -180,6 +180,15 @@
     <ClInclude Include="Common\Mem.h">
       <Filter>Header Files\Common</Filter>
     </ClInclude>
+    <ClInclude Include="gitparams.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="paths.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp">
@@ -319,5 +328,10 @@
     <None Include="..\installer\mktemplate.py">
       <Filter>Installer</Filter>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Resource.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
   </ItemGroup>
 </Project>

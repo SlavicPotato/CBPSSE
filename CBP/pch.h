@@ -100,11 +100,12 @@ namespace fs = std::filesystem;
 
 //#define _CBP_ENABLE_DEBUG
 
+#include "plugin.h"
+#include "paths.h"
 #include "Common/Mem.h"
 #include "Common/STL.h"
 #include "Common/Hash.h"
 #include "Common/Data.h"
-#include "plugin.h"
 #include "game.h"
 #include "skse.h"
 #include "config.h"
