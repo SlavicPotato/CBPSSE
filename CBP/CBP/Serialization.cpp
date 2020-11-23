@@ -463,6 +463,7 @@ namespace CBP
                 globalConfig.ui.showKeyDR = static_cast<UInt32>(ui.get("showKeyDR", DIK_PGDN).asUInt());
                 globalConfig.ui.actorPhysics.lastActor = static_cast<Game::ObjectHandle>(ui.get("lastActor", 0ULL).asUInt64());
                 globalConfig.ui.actorNode.lastActor = static_cast<Game::ObjectHandle>(ui.get("nodeLastActor", 0ULL).asUInt64());
+                globalConfig.ui.actorNodeMap.lastActor = static_cast<Game::ObjectHandle>(ui.get("nodeMapLastActor", 0ULL).asUInt64());
                 globalConfig.ui.fontScale = ui.get("fontScale", 1.0f).asFloat();
                 globalConfig.ui.backlogLimit = ui.get("backlogLimit", 2000).asInt();
 
@@ -644,6 +645,7 @@ namespace CBP
             ui["showKeyDR"] = static_cast<uint32_t>(globalConfig.ui.showKeyDR);
             ui["lastActor"] = static_cast<uint64_t>(globalConfig.ui.actorPhysics.lastActor);
             ui["nodeLastActor"] = static_cast<uint64_t>(globalConfig.ui.actorNode.lastActor);
+            ui["nodeMapLastActor"] = static_cast<uint64_t>(globalConfig.ui.actorNodeMap.lastActor);
             ui["fontScale"] = globalConfig.ui.fontScale;
             ui["backlogLimit"] = globalConfig.ui.backlogLimit;
 

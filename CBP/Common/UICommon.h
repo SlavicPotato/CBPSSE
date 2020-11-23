@@ -276,11 +276,15 @@ namespace UICommon
     template <typename T>
     void UIFilterBase<T>::DrawButton()
     {
+        ImGui::PushID(static_cast<const void*>(std::addressof(m_searchOpen)));
+
         if (ImGui::Button(m_searchOpen ? "<" : ">")) {
             m_searchOpen = !m_searchOpen;
             if (m_searchOpen)
                 m_nextSetFocus = true;
         }
+
+        ImGui::PopID();
     }
 
     template <typename T>
@@ -289,7 +293,7 @@ namespace UICommon
         if (!m_searchOpen)
             return;
 
-        ImGui::PushID(static_cast<const void*>(this));
+        ImGui::PushID(static_cast<const void*>(std::addressof(m_filter)));
 
         ProcessInput();
 

@@ -2,19 +2,19 @@
 
 namespace CBP
 {
-    struct GatherEquippedArmor
+    struct EquippedArmorCollector
     {
         bool Accept(InventoryEntryData* a_entryData);
 
-        stl::unordered_set<TESObjectARMO*> results;
+        stl::set<TESObjectARMO*> m_results;
     };
 
-    typedef stl::iunordered_set<std::string> armorOverrideResults_t;
+    typedef stl::iset<std::string> armorOverrideResults_t;
 
     class IArmor
     {
     public:
-        static bool GetEquippedArmor(Actor* a_actor, GatherEquippedArmor& a_out);
+        static bool GetEquippedArmor(Actor* a_actor, EquippedArmorCollector& a_out);
 
         static bool FindOverrides(Actor* a_actor, armorOverrideResults_t& a_out);
         static bool FindOverrides(Actor* a_actor, TESObjectARMO* a_armor, armorOverrideResults_t& a_out);

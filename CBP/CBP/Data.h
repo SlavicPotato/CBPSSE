@@ -63,7 +63,7 @@ namespace CBP
     public:
 
         [[nodiscard]] static bool PopulateRaceList();
-        static void UpdateActorMaps(Game::ObjectHandle a_handle, const Actor* a_actor);
+        static void UpdateActorMaps(Game::ObjectHandle a_handle, Actor* a_actor);
         static void UpdateActorMaps(Game::ObjectHandle a_handle);
 
         static inline const actorRefData_t* GetActorRefInfo(Game::ObjectHandle a_handle) {
@@ -114,7 +114,7 @@ namespace CBP
             return lastException;
         }
 
-        static void UpdateNodeReferenceData(Actor * a_actor);
+        static void UpdateNodeReferenceData(const Actor * a_actor);
 
         [[nodiscard]] static const auto& GetNodeReferenceData() {
             return nodeRefData;

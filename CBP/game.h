@@ -48,6 +48,28 @@ namespace Game
         }
     }
 
+    __forceinline float GetNPCWeight(TESNPC* a_npc)
+    {
+        if (a_npc->nextTemplate)
+        {
+            auto templ = a_npc->GetRootTemplate();
+            if (templ)
+                return templ->weight;
+        }
+
+        return a_npc->weight;
+    }
+
+    __forceinline float GetActorWeight(Actor* a_actor)
+    {
+        auto npc = DYNAMIC_CAST(a_actor->baseForm, TESForm, TESNPC);
+
+        if (npc)
+            return GetNPCWeight(npc);
+
+        return CALL_MEMBER_FN(a_actor, GetWeight)();
+    }
+
     TESObjectREFR* GetReference(Game::FormID a_formid);
 
     // https://github.com/Ryan-rsm-McKenzie/CommonLibSSE/blob/master/include/RE/AI/ProcessLists.h

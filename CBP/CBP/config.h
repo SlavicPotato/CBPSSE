@@ -77,6 +77,7 @@ namespace CBP
 
             configGlobalActor_t actorPhysics;
             configGlobalActor_t actorNode;
+            configGlobalActor_t actorNodeMap;
 
             configGlobalSimComponent_t actor;
             configGlobalSimComponent_t race;
@@ -993,6 +994,7 @@ namespace CBP
                     bool male;
                 } motion;
                 bool overrideScale;
+                bool offsetParent;
             } b;
 
             struct
@@ -1030,7 +1032,9 @@ namespace CBP
     public:
         enum Serialization : unsigned int
         {
-            DataVersion1 = 1
+            DataVersion1 = 1,
+            DataVersion2 = 2
+
         };
 
         nodeData32_t fp;
@@ -1076,6 +1080,7 @@ namespace CBP
             ar& fp.f32.colOffsetMax;
             ar& bl.b.overrideScale;
             ar& fp.f32.nodeScale;
+            ar& bl.b.offsetParent;
         }
 
         template<class Archive>
@@ -1089,6 +1094,9 @@ namespace CBP
             ar& fp.f32.colOffsetMax;
             ar& bl.b.overrideScale;
             ar& fp.f32.nodeScale;
+
+            if (version >= DataVersion2)
+                ar& bl.b.offsetParent;
         }
 
         BOOST_SERIALIZATION_SPLIT_MEMBER()
@@ -1465,4 +1473,4 @@ namespace CBP
 }
 
 BOOST_CLASS_VERSION(CBP::configComponent32_t, CBP::configComponent32_t::Serialization::DataVersion6)
-BOOST_CLASS_VERSION(CBP::configNode_t, CBP::configNode_t::Serialization::DataVersion1)
+BOOST_CLASS_VERSION(CBP::configNode_t, CBP::configNode_t::Serialization::DataVersion2)

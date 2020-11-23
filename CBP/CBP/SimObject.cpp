@@ -80,7 +80,7 @@ namespace CBP
         tmp.reserve(numObjects);
         m_objList.reserve(static_cast<int>(numObjects));
 
-        for (auto &e : a_desc)
+        for (auto& e : a_desc)
         {
             auto obj = new SimComponent(
                 a_actor,
@@ -228,9 +228,10 @@ namespace CBP
 #ifdef _CBP_ENABLE_DEBUG
     void SimObject::UpdateDebugInfo()
     {
-        for (auto& p : m_things)
-            p.second.UpdateDebugInfo();
-}
+        int count = m_objList.size();
+        for (int i = 0; i < count; i++)
+            m_objList[i]->UpdateDebugInfo();
+    }
 #endif
 
     void SimObject::UpdateGroupInfo()

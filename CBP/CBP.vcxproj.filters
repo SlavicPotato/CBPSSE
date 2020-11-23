@@ -186,6 +186,9 @@
     <ClInclude Include="paths.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="gitparams.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp">

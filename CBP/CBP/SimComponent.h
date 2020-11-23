@@ -304,6 +304,10 @@ namespace CBP
 
         void SetShouldProcess(bool a_switch);
 
+        inline void SetOffsetParent(bool a_switch) {
+            m_offsetParent = a_switch;
+        }
+
     private:
 
         void Activate();
@@ -329,6 +333,7 @@ namespace CBP
 
         float m_positionScale;
         bool m_doPositionScaling;
+        bool m_offsetParent;
 
         PerfTimer pt;
 
@@ -379,6 +384,7 @@ namespace CBP
         btVector3 m_linearScale;
 
         NiTransform m_initialTransform;
+        NiMatrix33 m_tempLocalRot;
 
         std::string m_nodeName;
         std::string m_configGroupName;

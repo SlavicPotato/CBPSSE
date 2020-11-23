@@ -20,29 +20,26 @@ namespace CBP
         0x0002C65A
     };
 
-    void IData::UpdateActorMaps(Game::ObjectHandle a_handle, const Actor* a_actor)
+    void IData::UpdateActorMaps(Game::ObjectHandle a_handle, Actor* a_actor)
     {
-        actorRefData_t tmp;
-
         auto npc = DYNAMIC_CAST(a_actor->baseForm, TESForm, TESNPC);
         if (npc == nullptr)
             return;
 
+        auto &e = actorNpcMap.try_emplace(a_handle);
+
         if (a_actor->race != nullptr)
         {
-            tmp.race.first = true;
-            tmp.race.second = a_actor->race->formID;
+            e.first->second.race.first = true;
+            e.first->second.race.second = a_actor->race->formID;
         }
         else
-            tmp.race.first = false;
+            e.first->second.race.first = false;
 
-        tmp.npc = npc->formID;
-        tmp.sex = CALL_MEMBER_FN(npc, GetSex)();
-        tmp.baseflags = npc->flags;
-        tmp.weight = npc->weight;
-
-        actorNpcMap.insert_or_assign(
-            a_handle, std::move(tmp));
+        e.first->second.npc = npc->formID;
+        e.first->second.sex = CALL_MEMBER_FN(npc, GetSex)();
+        e.first->second.baseflags = npc->flags;
+        e.first->second.weight = Game::GetNPCWeight(npc);
     }
 
     void IData::UpdateActorMaps(Game::ObjectHandle a_handle)
@@ -60,6 +57,8 @@ namespace CBP
 
         ss << "[" << std::uppercase << std::setfill('0') <<
             std::setw(8) << std::hex << (a_handle & 0xFFFFFFFF) << "]";
+
+        a_out.name = ss.str();
 
         auto it = actorNpcMap.find(a_handle);
         if (it != actorNpcMap.end())
@@ -79,8 +78,6 @@ namespace CBP
             a_out.baseflags = 0;
             a_out.weight = 0.0f;
         }
-
-        a_out.name = ss.str();
     }
 
     void IData::FillActorCacheEntry(Actor* a_actor, actorCacheEntry_t& a_out)
@@ -90,6 +87,8 @@ namespace CBP
         ss << "[" << std::uppercase << std::setfill('0') <<
             std::setw(8) << std::hex << a_actor->formID << "] " <<
             CALL_MEMBER_FN(a_actor, GetReferenceName)();
+
+        a_out.name = ss.str();
 
         if (a_actor->race != nullptr)
             a_out.race = a_actor->race->formID;
@@ -102,7 +101,7 @@ namespace CBP
             a_out.base = npc->formID;
             a_out.female = CALL_MEMBER_FN(npc, GetSex)() == 1;
             a_out.baseflags = npc->flags;
-            a_out.weight = npc->weight;
+            a_out.weight = Game::GetNPCWeight(npc);
         }
         else {
             a_out.base = Game::FormID(0);
@@ -111,7 +110,6 @@ namespace CBP
             a_out.weight = 0.0f;
         }
 
-        a_out.name = ss.str();
     }
 
     void IData::AddExtraActorEntry(
@@ -120,17 +118,16 @@ namespace CBP
         if (actorCache.find(a_handle) != actorCache.end())
             return;
 
-        actorCacheEntry_t tmp;
-        tmp.active = false;
+        auto& e = actorCache.try_emplace(a_handle);
+
+        e.first->second.active = false;
 
         auto actor = Game::ResolveObject<Actor>(a_handle, Actor::kTypeID);
 
         if (actor)
-            FillActorCacheEntry(actor, tmp);
+            FillActorCacheEntry(actor, e.first->second);
         else
-            FillActorCacheEntry(a_handle, tmp);
-
-        actorCache.emplace(a_handle, std::move(tmp));
+            FillActorCacheEntry(a_handle, e.first->second);
     }
 
     void IData::UpdateActorCache(const simActorList_t& a_list)
@@ -138,18 +135,17 @@ namespace CBP
         actorCache.clear();
         crosshairRef.Clear();
 
-        for (const auto& e : a_list)
+        for (auto& e : a_list)
         {
             auto actor = Game::ResolveObject<Actor>(e.first, Actor::kTypeID);
             if (actor == nullptr)
                 continue;
 
-            actorCacheEntry_t tmp;
-            tmp.active = true;
+            auto& f = actorCache.try_emplace(e.first);
 
-            FillActorCacheEntry(actor, tmp);
+            f.first->second.active = true;
 
-            actorCache.emplace(e.first, std::move(tmp));
+            FillActorCacheEntry(actor, f.first->second);
         }
 
         for (const auto& e : IConfig::GetActorPhysicsHolder())
@@ -159,15 +155,20 @@ namespace CBP
             AddExtraActorEntry(e.first);
 
         auto refHolder = CrosshairRefHandleHolder::GetSingleton();
-        if (refHolder) {
+        if (refHolder) 
+        {
             auto handle = refHolder->CrosshairRefHandle();
 
             NiPointer<TESObjectREFR> ref;
             LookupREFRByHandle(handle, ref);
-            if (ref != nullptr) {
-                if (ref->formType == Actor::kTypeID) {
+
+            if (ref != nullptr) 
+            {
+                if (ref->formType == Actor::kTypeID)
+                {
                     Game::ObjectHandle handle;
-                    if (Game::GetHandle(ref, ref->formType, handle)) {
+                    if (Game::GetHandle(ref, ref->formType, handle)) 
+                    {
                         auto it = actorCache.find(handle);
                         if (it != actorCache.end()) {
                             crosshairRef = it->first;
@@ -277,7 +278,6 @@ namespace CBP
                     throw std::exception("Unexpected data");
 
                 std::string configGroup(it1.key().asString());
-                //transform(configGroup.begin(), configGroup.end(), configGroup.begin(), ::tolower);
 
                 if (!IConfig::IsValidGroup(configGroup))
                     continue;
@@ -310,7 +310,6 @@ namespace CBP
                         throw std::exception("Value type out of range");
 
                     std::string valName(it2.key().asString());
-                    //transform(valName.begin(), valName.end(), valName.begin(), ::tolower);
 
                     if (!configComponent32_t::descMap.contains(valName)) {
                         gLog.Warning("%s: Unknown value name: %s", __FUNCTION__, valName.c_str());
@@ -336,7 +335,7 @@ namespace CBP
         }
     }
 
-    static void FillNodeRefData(NiAVObject* parent, nodeRefEntry_t &a_entry)
+    static void FillNodeRefData(NiAVObject* parent, nodeRefEntry_t& a_entry)
     {
         a_entry.m_name = parent->m_name;
 
@@ -355,20 +354,29 @@ namespace CBP
         }
     }
 
-    void IData::UpdateNodeReferenceData(Actor* a_actor)
+    void IData::UpdateNodeReferenceData(const Actor* a_actor)
     {
-        if (!a_actor->loadedState || !a_actor->loadedState->node)
+        /*if (!a_actor->loadedState || !a_actor->loadedState->node)
             return;
 
         BSFixedString bone("NPC Root [Root]");
 
         auto root = a_actor->loadedState->node->GetObjectByName(&bone.data);
         if (!root)
+            return;*/
+
+            /*auto root = a_actor->GetNiRootNode(false);
+            if (!root)
+                return;*/
+
+        if (!a_actor->loadedState || !a_actor->loadedState->node)
             return;
+
+        auto root = a_actor->loadedState->node;
 
         nodeRefData.clear();
 
-        auto &entry = nodeRefData.emplace_back(root->m_name);
+        auto& entry = nodeRefData.emplace_back(root->m_name);
 
         FillNodeRefData(root, entry);
     }

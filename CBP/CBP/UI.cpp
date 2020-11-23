@@ -511,9 +511,7 @@ namespace CBP
 
     void UIRaceEditorNode::Draw(bool* a_active)
     {
-        ListTick();
-
-        auto& globalConfig = IConfig::GetGlobal();;
+        auto& globalConfig = IConfig::GetGlobal();
 
         SetWindowDimensions(800.0f);
 
@@ -521,6 +519,8 @@ namespace CBP
 
         if (ImGui::Begin("Race nodes##CBP", a_active))
         {
+            ListTick();
+
             ImGui::SetWindowFontScale(globalConfig.ui.fontScale);
 
             auto entry = ListGetSelected();
@@ -585,8 +585,6 @@ namespace CBP
 
     void UIRaceEditorPhysics::Draw(bool* a_active)
     {
-        ListTick();
-
         auto& globalConfig = IConfig::GetGlobal();;
 
         SetWindowDimensions(800.0f);
@@ -595,6 +593,8 @@ namespace CBP
 
         if (ImGui::Begin("Race physics##CBP", a_active))
         {
+            ListTick();
+
             ImGui::SetWindowFontScale(globalConfig.ui.fontScale);
 
             auto entry = ListGetSelected();
@@ -958,11 +958,12 @@ namespace CBP
     }
 
     template <class T, class P>
-    UIListBase<T, P>::UIListBase() noexcept :
+    UIListBase<T, P>::UIListBase(float a_itemWidthScalar) noexcept :
         m_listCurrent(P(0)),
         m_listFirstUpdate(false),
         m_listNextUpdateCurrent(false),
-        m_listNextUpdate(true)
+        m_listNextUpdate(true),
+        m_itemWidthScalar(a_itemWidthScalar)
     {
         m_listBuf1[0] = 0x0;
     }
@@ -972,9 +973,11 @@ namespace CBP
         listValue_t*& a_entry,
         const char*& a_curSelName)
     {
+        ImGui::PushID("__base_list");
+
         ListFilterSelected(a_entry, a_curSelName);
 
-        ImGui::PushItemWidth(ImGui::GetFontSize() * -10.5f);
+        ImGui::PushItemWidth(ImGui::GetFontSize() * m_itemWidthScalar);
 
         if (ImGui::BeginCombo(m_listBuf1, a_curSelName, ImGuiComboFlags_HeightLarge))
         {
@@ -1010,6 +1013,8 @@ namespace CBP
         m_listFilter.Draw();
 
         ImGui::PopItemWidth();
+
+        ImGui::PopID();
     }
 
     template <class T, class P>
@@ -1047,7 +1052,7 @@ namespace CBP
     {
         auto it = m_listData.find(m_listCurrent);
         if (it != m_listData.end())
-            IConfig::Copy(GetData(m_listCurrent), it->second.second);
+            it->second.second = GetData(m_listCurrent);
     }
 
     template <class T, class P>
@@ -1073,10 +1078,15 @@ namespace CBP
     }
 
     template <typename T>
-    UIActorList<T>::UIActorList(bool a_mark) :
-        UIListBase<T, Game::ObjectHandle>(),
+    UIActorList<T>::UIActorList(
+        bool a_mark,
+        bool a_addGlobal,
+        float a_itemWidthScalar)
+        :
+        UIListBase<T, Game::ObjectHandle>(a_itemWidthScalar),
         m_lastCacheUpdateId(0),
-        m_markActor(a_mark)
+        m_markActor(a_mark),
+        m_addGlobal(a_addGlobal)
     {
     }
 
@@ -1101,15 +1111,23 @@ namespace CBP
             m_listData.try_emplace(e.first, e.second.name, GetData(e.first));
         }
 
-        m_listData.try_emplace(0, "Global", GetData(Game::ObjectHandle(0)));
+        T::size_type minEntries;
 
-        if (m_listData.size() == 1) {
+        if (m_addGlobal) {
+            m_listData.try_emplace(0, "Global", GetData(Game::ObjectHandle(0)));
+            minEntries = 1;
+        }
+        else {
+            minEntries = 0;
+        }
+
+        if (m_listData.size() == minEntries) {
             _snprintf_s(m_listBuf1, _TRUNCATE, "No actors");
             ListSetCurrentItem(Game::ObjectHandle(0));
             return;
         }
 
-        _snprintf_s(m_listBuf1, _TRUNCATE, "%zu actors", m_listData.size() - 1);
+        _snprintf_s(m_listBuf1, _TRUNCATE, "%zu actors", m_listData.size() - minEntries);
 
         if (globalConfig.ui.selectCrosshairActor && !isFirstUpdate) {
             auto crosshairRef = IData::GetCrosshairRef();
@@ -1163,7 +1181,9 @@ namespace CBP
 
         m_listCurrent = a_handle;
 
-        IConfig::Copy(GetData(a_handle), m_listData.at(a_handle).second);
+        auto it = m_listData.find(a_handle);
+        if (it != m_listData.end())
+            it->second.second = GetData(a_handle);
 
         if (a_handle != actorConf.lastActor)
             SetGlobal(actorConf.lastActor, a_handle);
@@ -1185,11 +1205,13 @@ namespace CBP
         listValue_t*& a_entry,
         const char*& a_curSelName)
     {
+        ImGui::PushID("__actor_list");
+
         a_curSelName = a_entry->second.first.c_str();
 
         ListFilterSelected(a_entry, a_curSelName);
 
-        ImGui::PushItemWidth(ImGui::GetFontSize() * -10.5f);
+        ImGui::PushItemWidth(ImGui::GetFontSize() * m_itemWidthScalar);
 
         if (ImGui::BeginCombo(m_listBuf1, a_curSelName, ImGuiComboFlags_HeightLarge))
         {
@@ -1254,6 +1276,8 @@ namespace CBP
         m_listFilter.Draw();
 
         ImGui::PopItemWidth();
+
+        ImGui::PopID();
     }
 
     template <class T>
@@ -1362,6 +1386,7 @@ namespace CBP
         m_racePhysicsEditor.QueueListUpdate();
         m_actorNodeEditor.QueueListUpdate();
         m_raceNodeEditor.QueueListUpdate();
+        m_nodeMap.QueueListUpdate();
     }
 
     void UIContext::DrawMenuBar(bool* a_active, const listValue_t* a_entry)
@@ -1560,19 +1585,7 @@ namespace CBP
     {
         auto& globalConfig = IConfig::GetGlobal();
 
-        ActorListTick();
-
-        if (m_listData.size() == 1) {
-            auto t = PerfCounter::Query();
-            if (PerfCounter::delta_us(m_tsNoActors, t) >= 2500000LL) {
-                DCBP::QueueActorCacheUpdate();
-                m_tsNoActors = t;
-            }
-        }
-
         SetWindowDimensions();
-
-        auto entry = ListGetSelected();
 
         m_state.menu.openImportDialog = false;
         m_state.menu.openExportDialog = false;
@@ -1581,6 +1594,18 @@ namespace CBP
 
         if (ImGui::Begin("CBP Config Editor##CBP", a_active, ImGuiWindowFlags_MenuBar))
         {
+            ActorListTick();
+
+            /*if (m_listData.size() == 1) {
+                auto t = PerfCounter::Query();
+                if (PerfCounter::delta_us(m_tsNoActors, t) >= 2500000LL) {
+                    DCBP::QueueActorCacheUpdate();
+                    m_tsNoActors = t;
+                }
+            }*/
+
+            auto entry = ListGetSelected();
+
             ImGui::SetWindowFontScale(globalConfig.ui.fontScale);
 
             ImGui::PushItemWidth(ImGui::GetFontSize() * -15.5f);
@@ -2092,8 +2117,6 @@ namespace CBP
 
     void UIActorEditorNode::Draw(bool* a_active)
     {
-        ActorListTick();
-
         auto& globalConfig = IConfig::GetGlobal();;
 
         SetWindowDimensions(450.0f);
@@ -2102,6 +2125,8 @@ namespace CBP
 
         if (ImGui::Begin("Actor nodes##CBP", a_active))
         {
+            ActorListTick();
+
             ImGui::SetWindowFontScale(globalConfig.ui.fontScale);
 
             ImGui::PushItemWidth(ImGui::GetFontSize() * -12.0f);
@@ -3427,6 +3452,8 @@ namespace CBP
         ImGui::SameLine();
         changed2 |= ImGui::Checkbox("On", &a_conf.bl.b.overrideScale);
 
+        changed2 |= ImGui::Checkbox("Use parent matrix for offset", &a_conf.bl.b.offsetParent);
+
         if (changed || changed2)
             UpdateNodeData(a_handle, a_nodeName, a_conf, changed);
     }
@@ -3745,7 +3772,7 @@ namespace CBP
     void UIDebugInfo::Draw(bool* a_active)
     {
         auto& io = ImGui::GetIO();
-        const auto& globalConfig = IConfig::GetGlobalConfig();;
+        const auto& globalConfig = IConfig::GetGlobal();
 
         SetWindowDimensions(0.0f, 800.0f, 600.0f, true);
 
@@ -3777,16 +3804,21 @@ namespace CBP
                     ImGui::Columns(1);
                     ImGui::Separator();
 
-                    for (const auto& c : obj.second)
+                    auto& nl = obj.second.GetNodeList();
+
+                    int count = nl.size();
+                    for (int i = 0; i < count; i++)
                     {
+                        auto c = nl[i];
+
                         ImGui::Columns(3);
 
-                        auto& info = c.second.GetDebugInfo();
+                        auto& info = c->GetDebugInfo();
 
                         if (!m_sized)
                             ImGui::SetColumnWidth(0, ImGui::GetFontSize() * 17.0f);
 
-                        std::string nodeDesc(("Node:   " + c.first + "\n") + "Parent: " + info.parentNodeName);
+                        std::string nodeDesc(("Node:   " + c->GetNodeName() + "\n") + "Parent: " + info.parentNodeName);
                         ImGui::Text(nodeDesc.c_str());
 
                         ImGui::NextColumn();
@@ -4198,18 +4230,13 @@ namespace CBP
     UINodeMap::UINodeMap(UIContext& a_parent) :
         m_update(true),
         m_filter(false, "Node filter"),
-        m_parent(a_parent)
+        m_parent(a_parent),
+        UIActorList<actorListCache_t>(false, false, -15.0f)
     {
     }
 
     void UINodeMap::Draw(bool* a_active)
     {
-        if (m_refActor && m_update)
-        {
-            m_update = false;
-            DTasks::AddTask<DCBP::UpdateNodeRefDataTask>(*m_refActor);
-        }
-
         const auto& globalConfig = IConfig::GetGlobal();
 
         SetWindowDimensions(150.0f, 800.0f, 400.0f);
@@ -4218,6 +4245,16 @@ namespace CBP
 
         if (ImGui::Begin("Node Map##CBP", a_active))
         {
+            ActorListTick();
+
+            auto entry = ListGetSelected();
+
+            if (entry && m_update)
+            {
+                m_update = false;
+                DTasks::AddTask<DCBP::UpdateNodeRefDataTask>(entry->first);
+            }
+
             ImGui::SetWindowFontScale(globalConfig.ui.fontScale);
 
             auto& data = IData::GetNodeReferenceData();
@@ -4226,30 +4263,42 @@ namespace CBP
             const float width = wcm.x - 8.0f;
             const auto w(ImVec2(width, 0.0f));
 
-            if (CollapsingHeader(GetCSID("NodeTree"), "Reference node tree"))
+            if (entry)
             {
-                DrawActorList();
-
-                if (!data.empty())
+                if (CollapsingHeader(GetCSID("NodeTree"), "Reference node tree"))
                 {
-                    ImGui::SameLine();
-                    m_filter.DrawButton();
-                    m_filter.Draw();
-                    ImGui::Separator();
+                    const char* curSelName;
 
-                    const auto d(ImVec2(width, wcm.y / 2.0f));
+                    ListDraw(entry, curSelName);
 
-                    ImGui::SetNextWindowSizeConstraints(d, d);
-
-                    if (ImGui::BeginChild("nm_area", w, false, ImGuiWindowFlags_HorizontalScrollbar))
+                    if (!data.empty())
                     {
-                        DrawNodeTree(data[0]);
+                        ImGui::SameLine();
+
+                        m_filter.DrawButton();
+
+                        ImGui::PushItemWidth(ImGui::GetFontSize() * -15.0f);
+
+                        m_filter.Draw();
+
+                        ImGui::PopItemWidth();
+
+                        ImGui::Separator();
+
+                        const auto d(ImVec2(width, wcm.y / 2.0f));
+
+                        ImGui::SetNextWindowSizeConstraints(d, d);
+
+                        if (ImGui::BeginChild("nm_area", w, false, ImGuiWindowFlags_HorizontalScrollbar))
+                        {
+                            DrawNodeTree(data[0]);
+                        }
+
+                        ImGui::EndChild();
                     }
 
-                    ImGui::EndChild();
+                    ImGui::Spacing();
                 }
-
-                ImGui::Spacing();
             }
 
             if (CollapsingHeader(GetCSID("ConfigGroups"), "Config groups"))
@@ -4261,6 +4310,7 @@ namespace CBP
 
                 ImGui::EndChild();
             }
+
         }
 
         ImGui::End();
@@ -4268,77 +4318,9 @@ namespace CBP
         ImGui::PopID();
     }
 
-    void UINodeMap::SelectFirstValidActor(const char*& a_curSelName)
-    {
-        const auto& actorCache = IData::GetActorCache();
-
-        for (const auto& e : actorCache)
-        {
-            if (e.second.active) 
-            {
-                m_refActor = e.first;
-                a_curSelName = e.second.name.c_str();
-                m_update = true;
-                break;
-            }
-        }
-    }
-
-    void UINodeMap::ValidateCurrentActor(const char* &a_curSelName)
-    {
-        const auto& actorCache = IData::GetActorCache();
-
-        auto it = actorCache.find(*m_refActor);
-        if (it == actorCache.end() || !it->second.active) 
-        {
-            m_refActor.Clear();
-
-            if (!actorCache.empty()) 
-                SelectFirstValidActor(a_curSelName);
-        }
-        else
-            a_curSelName = it->second.name.c_str();
-    }
-
-    void UINodeMap::DrawActorList()
-    {
-        const char* curSelName(nullptr);
-
-        if (m_refActor)        
-            ValidateCurrentActor(curSelName);
-        else
-            SelectFirstValidActor(curSelName);
-        
-        if (ImGui::BeginCombo("Reference actor", curSelName, ImGuiComboFlags_HeightLarge))
-        {
-            const auto& actorCache = IData::GetActorCache();
-
-            for (const auto& e : actorCache)
-            {
-                if (!e.second.active)
-                    continue;
-
-                ImGui::PushID(static_cast<const void*>(std::addressof(e.second)));
-
-                bool selected = m_refActor == e.first;
-
-                if (selected)
-                    if (ImGui::IsWindowAppearing()) ImGui::SetScrollHereY();
-
-                if (ImGui::Selectable(e.second.name.c_str(), selected)) {
-                    m_refActor = e.first;
-                    m_update = true;
-                }
-
-                ImGui::PopID();
-            }
-            ImGui::EndCombo();
-        }
-    }
-
     void UINodeMap::Reset()
     {
-        //m_update = true;
+        ListReset();
     }
 
     void UINodeMap::DrawNodeTree(const nodeRefEntry_t& a_entry)
@@ -4347,7 +4329,7 @@ namespace CBP
 
         if (m_filter.Test(a_entry.m_name))
         {
-            ImGui::PushID(1);
+            ImGui::PushID("__cgmb");
 
             if (ImGui::Button("+"))
                 ImGui::OpenPopup("tree_ctx");
@@ -4387,7 +4369,7 @@ namespace CBP
         {
             ImGui::PushID(std::addressof(e));
 
-            ImGui::PushID(1);
+            ImGui::PushID("__cgmb");
 
             if (ImGui::Button("+"))
                 ImGui::OpenPopup("node_ctx");
@@ -4431,7 +4413,7 @@ namespace CBP
                 {
                     ImGui::PushID(std::addressof(f));
 
-                    ImGui::PushID(1);
+                    ImGui::PushID("__cgmb");
 
                     if (ImGui::Button("+"))
                         ImGui::OpenPopup("node_ctx");
@@ -4524,7 +4506,6 @@ namespace CBP
     {
         if (IConfig::AddNode(a_node, a_confGroup))
         {
-            m_parent.QueueListUpdateAll();
             DCBP::ResetActors();
         }
         else
@@ -4563,6 +4544,106 @@ namespace CBP
                 AddNode(node, in);
             }
         );
+    }
+
+    ConfigClass UINodeMap::GetActorClass(Game::ObjectHandle a_handle) const
+    {
+        return ConfigClass::kConfigGlobal;
+    }
+
+    configGlobalActor_t& UINodeMap::GetActorConfig() const
+    {
+        return IConfig::GetGlobal().ui.actorNodeMap;
+    }
+
+    bool UINodeMap::HasArmorOverride(Game::ObjectHandle a_handle) const
+    {
+        return false;
+    }
+
+    auto UINodeMap::GetData(Game::ObjectHandle a_handle) ->
+        const entryValue_t&
+    {
+        if (a_handle == Game::ObjectHandle(0))
+            return m_dummyEntry;
+
+        const auto& actorCache = IData::GetActorCache();
+
+        auto it = actorCache.find(a_handle);
+        if (it != actorCache.end())
+            return it->second;
+
+        return m_dummyEntry;
+    }
+
+    auto UINodeMap::GetData(const listValue_t* a_data) ->
+        const entryValue_t&
+    {
+        return a_data == nullptr ? m_dummyEntry : a_data->second.second;
+    }
+
+    void UINodeMap::ListSetCurrentItem(Game::ObjectHandle a_handle)
+    {
+        UIActorList<actorListCache_t>::ListSetCurrentItem(a_handle);
+        m_update = true;
+    }
+
+    void UINodeMap::ListUpdate()
+    {
+        m_listData.clear();
+
+        const auto& actorCache = IData::GetActorCache();
+
+        for (auto& e : actorCache)
+        {
+            if (!e.second.active)
+                continue;
+
+            m_listData.try_emplace(e.first, e.second.name, e.second);
+        }
+
+        auto listSize(m_listData.size());
+
+        if (!listSize) {
+            _snprintf_s(m_listBuf1, _TRUNCATE, "No actors");
+            ListSetCurrentItem(Game::ObjectHandle(0));
+            return;
+        }
+
+        _snprintf_s(m_listBuf1, _TRUNCATE, "%zu actors", listSize);
+
+        if (m_listCurrent != Game::ObjectHandle(0)) {
+            if (m_listData.find(m_listCurrent) == m_listData.end())
+                ListSetCurrentItem(Game::ObjectHandle(0));
+        }
+        else {
+            const auto& actorConf = GetActorConfig();
+            if (actorConf.lastActor &&
+                m_listData.find(actorConf.lastActor) != m_listData.end())
+            {
+                m_listCurrent = actorConf.lastActor;
+            }
+        }
+    }
+
+    auto UINodeMap::ListGetSelected() ->
+        listValue_t*
+    {
+        if (m_listCurrent != Game::ObjectHandle(0))
+            return std::addressof(*m_listData.find(m_listCurrent));
+
+        auto it = m_listData.begin();
+        if (it != m_listData.end()) {
+            ListSetCurrentItem(it->first);
+            return std::addressof(*it);
+        }
+
+        return nullptr;
+    }
+
+    void UINodeMap::ListResetAllValues(Game::ObjectHandle a_handle)
+    {
+
     }
 
 }

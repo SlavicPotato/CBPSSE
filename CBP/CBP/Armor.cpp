@@ -2,22 +2,22 @@
 
 namespace CBP
 {
-    bool GatherEquippedArmor::Accept(InventoryEntryData* a_entryData)
+    bool EquippedArmorCollector::Accept(InventoryEntryData* a_entryData)
     {
         if (!a_entryData || !a_entryData->type || a_entryData->type->formType != TESObjectARMO::kTypeID)
             return true;
 
-        ExtendDataList* extendDataList = a_entryData->extendDataList;
+        auto extendDataList = a_entryData->extendDataList;
         if (!extendDataList)
             return true;
 
-        BGSBipedObjectForm* bipedObject = DYNAMIC_CAST(a_entryData->type, TESForm, BGSBipedObjectForm);
+        auto bipedObject = DYNAMIC_CAST(a_entryData->type, TESForm, BGSBipedObjectForm);
         if (!bipedObject || bipedObject->data.parts == 0)
             return true;
 
-        for (ExtendDataList::Iterator it = extendDataList->Begin(); !it.End(); ++it)
+        for (auto it = extendDataList->Begin(); !it.End(); ++it)
         {
-            BaseExtraList* extraDataList = it.Get();
+            auto extraDataList = it.Get();
 
             if (!extraDataList)
                 continue;
@@ -29,8 +29,10 @@ namespace CBP
             }
 
             auto armor = DYNAMIC_CAST(a_entryData->type, TESForm, TESObjectARMO);
-            if (armor)
-                results.emplace(armor);            
+            if (!armor)
+                continue;
+
+            m_results.emplace(armor);
 
             break;
         }
@@ -60,7 +62,7 @@ namespace CBP
                     if (data) {
                         auto extraData = ni_cast(data, NiStringExtraData);
 
-                        if (extraData && extraData->m_pString) 
+                        if (extraData && extraData->m_pString)
                             a_out.emplace(extraData->m_pString);
                     }
                 });
@@ -69,7 +71,7 @@ namespace CBP
         return !a_out.empty();
     }
 
-    bool IArmor::GetEquippedArmor(Actor* a_actor, GatherEquippedArmor& a_out)
+    bool IArmor::GetEquippedArmor(Actor* a_actor, EquippedArmorCollector& a_out)
     {
         auto containerChanges = static_cast<ExtraContainerChanges*>(a_actor->extraData.GetByType(kExtraData_ContainerChanges));
         if (containerChanges &&
@@ -85,11 +87,11 @@ namespace CBP
 
     bool IArmor::FindOverrides(Actor* a_actor, armorOverrideResults_t& a_out)
     {
-        GatherEquippedArmor pieces;
+        EquippedArmorCollector pieces;
         if (!GetEquippedArmor(a_actor, pieces))
             return false;
 
-        for (auto &armor : pieces.results)
+        for (auto& armor : pieces.m_results)
             FindOverrides(a_actor, armor, a_out);
 
         return !a_out.empty();
@@ -150,7 +152,7 @@ namespace CBP
                         if (data) {
                             auto extraData = ni_cast(data, NiStringExtraData);
 
-                            if (extraData && extraData->m_pString) 
+                            if (extraData && extraData->m_pString)
                                 a_out.emplace(extraData->m_pString);
                         }
                     });

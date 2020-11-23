@@ -43,6 +43,9 @@ namespace CBP
     typedef std::pair<const std::string, configNodes_t> actorEntryNodeConf_t;
     typedef stl::map<Game::ObjectHandle, actorEntryNodeConf_t> actorListNodeConf_t;
 
+    typedef std::pair<const std::string, actorCacheEntry_t> actorEntryCache_t;
+    typedef stl::map<Game::ObjectHandle, actorEntryCache_t> actorListCache_t;
+
     typedef stl::vector<std::pair<const std::string, const configNode_t*>> nodeConfigList_t;
 
     class UIBase :
@@ -235,7 +238,7 @@ namespace CBP
             const configGroupMap_t::value_type& cg_data,
             nodeConfigList_t& a_out) const = 0;
 
-        virtual const configNodes_t &GetNodeData(
+        virtual const configNodes_t& GetNodeData(
             T a_handle) const = 0;
 
         void DrawComponentTab(
@@ -459,7 +462,7 @@ namespace CBP
         void ListUpdateCurrent();
         void ListDrawInfo(listValue_t* a_entry);
 
-        UIListBase() noexcept;
+        UIListBase(float a_itemWidthScalar = -10.5f) noexcept;
         virtual ~UIListBase() noexcept = default;
 
         virtual void ListDraw(listValue_t*& a_entry, const char*& a_curSelName);
@@ -481,6 +484,7 @@ namespace CBP
 
         char m_listBuf1[128];
         UICommon::UIGenericFilter m_listFilter;
+        float m_itemWidthScalar;
     };
 
     template <class T>
@@ -494,7 +498,7 @@ namespace CBP
         using listValue_t = typename UIListBase<T, Game::ObjectHandle>::listValue_t;
         using entryValue_t = typename UIListBase<T, Game::ObjectHandle>::entryValue_t;
 
-        UIActorList(bool a_mark);
+        UIActorList(bool a_mark, bool a_addGlobal = true, float a_itemWidthScalar = -10.5f);
         virtual ~UIActorList() noexcept = default;
 
         virtual listValue_t* ListGetSelected();
@@ -502,8 +506,8 @@ namespace CBP
         virtual void ListSetCurrentItem(Game::ObjectHandle a_handle);
 
         virtual ConfigClass GetActorClass(Game::ObjectHandle a_handle) const = 0;
-        [[nodiscard]] virtual configGlobalActor_t& GetActorConfig() const = 0;
-        [[nodiscard]] virtual bool HasArmorOverride(Game::ObjectHandle a_handle) const = 0;
+        virtual configGlobalActor_t& GetActorConfig() const = 0;
+        virtual bool HasArmorOverride(Game::ObjectHandle a_handle) const = 0;
     private:
         virtual void ListUpdate();
         virtual void ListFilterSelected(listValue_t*& a_entry, const char*& a_curSelName);
@@ -512,6 +516,7 @@ namespace CBP
         uint64_t m_lastCacheUpdateId;
 
         bool m_markActor;
+        bool m_addGlobal;
     };
 
     template <class T>
@@ -859,26 +864,39 @@ namespace CBP
     };
 
     class UINodeMap :
-        UIBase,
-        ILog
+        ILog,
+        public UIActorList<actorListCache_t>
     {
     public:
-        UINodeMap(UIContext &a_parent);
+        UINodeMap(UIContext& a_parent);
 
         void Draw(bool* a_active);
         void Reset();
 
     private:
 
-        void SelectFirstValidActor(const char*& a_curSelName);
-        void ValidateCurrentActor(const char*& a_curSelName);
-        void DrawActorList();
+        //void SelectFirstValidActor(const char*& a_curSelName);
+        //void ValidateCurrentActor(const char*& a_curSelName);
+        //void DrawActorList();
         void DrawNodeTree(const nodeRefEntry_t& a_entry);
         void DrawConfigGroupMap();
         void DrawTreeContextMenu(const nodeRefEntry_t& a_entry);
 
         void AddNode(const std::string& a_node, const std::string& a_confGroup);
         void AddNodeNewGroup(const std::string& a_node);
+
+        virtual ConfigClass GetActorClass(Game::ObjectHandle a_handle) const;
+        virtual configGlobalActor_t& GetActorConfig() const;
+        virtual bool HasArmorOverride(Game::ObjectHandle a_handle) const;
+
+        [[nodiscard]] virtual const entryValue_t& GetData(Game::ObjectHandle a_handle);
+        [[nodiscard]] virtual const entryValue_t& GetData(const listValue_t* a_data);
+
+        virtual void ListResetAllValues(Game::ObjectHandle a_handle);
+
+        virtual void ListUpdate();
+        virtual listValue_t* ListGetSelected();
+        virtual void ListSetCurrentItem(Game::ObjectHandle a_handle);
 
         [[nodiscard]] inline std::string GetCSID(
             const std::string& a_name) const
@@ -890,8 +908,10 @@ namespace CBP
 
         bool m_update;
         UICommon::UIGenericFilter m_filter;
-        SelectedItem<Game::ObjectHandle> m_refActor;
+        //SelectedItem<Game::ObjectHandle> m_refActor;
         UIContext& m_parent;
+
+        entryValue_t m_dummyEntry;
     };
 
     class UIContext :

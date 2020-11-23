@@ -333,7 +333,8 @@ namespace CBP
         m_parent(a_parent),
         m_shape(ColliderShapeType::Sphere),
         m_positionScale(1.0f),
-        m_doPositionScaling(false)
+        m_doPositionScaling(false),
+        m_offsetParent(false)
     {
     }
 
@@ -550,31 +551,60 @@ namespace CBP
 
         auto& transform = m_collider->getWorldTransform();
 
-        if (m_parent.m_movement)
+        if (m_parent.m_movement && m_doPositionScaling)
         {
-            if (!m_doPositionScaling)
+            //float parentNodeScale = m_parent.m_obj->m_worldTransform.scale;
+
+            if (m_offsetParent)
             {
-                auto pos = (((m_parent.m_itrMatParent * m_parent.m_itrInitialMat) * m_bodyOffset) *= nodeScale) += m_parent.m_itrPosObj;
-                transform.setOrigin(pos);
+                auto l = m_bodyOffsetPlusInitial + (m_parent.m_ld * m_positionScale);
+                transform.setOrigin(
+                    ((l.dot3(
+                        m_parent.m_itrMatParent.getRow(0),
+                        m_parent.m_itrMatParent.getRow(1),
+                        m_parent.m_itrMatParent.getRow(2)) *= nodeScale) += m_parent.m_itrPosParent)
+                );
             }
             else
             {
-                auto l = m_bodyOffsetPlusInitial + (m_parent.m_ld * m_positionScale);
-                auto pos = (((m_parent.m_itrMatParent * m_parent.m_itrInitialMat) * l) *= nodeScale) += m_parent.m_itrPosParent;
-                transform.setOrigin(pos);
+                auto l = m_parent.m_itrInitialPos + (m_parent.m_ld * m_positionScale);
+                transform.setOrigin(
+                    ((l.dot3(
+                        m_parent.m_itrMatParent.getRow(0),
+                        m_parent.m_itrMatParent.getRow(1),
+                        m_parent.m_itrMatParent.getRow(2)) +
+                        m_bodyOffset.dot3(
+                            m_parent.m_itrMatObj.getRow(0),
+                            m_parent.m_itrMatObj.getRow(1),
+                            m_parent.m_itrMatObj.getRow(2))) *= nodeScale) += m_parent.m_itrPosParent
+                );
             }
         }
         else
         {
-            auto pos = ((m_parent.m_itrMatObj * m_bodyOffset) *= nodeScale) += m_parent.m_itrPosObj;
-            transform.setOrigin(pos);
+            if (m_offsetParent)
+            {
+                transform.setOrigin(
+                    (m_bodyOffset.dot3(
+                        m_parent.m_itrMatParent.getRow(0),
+                        m_parent.m_itrMatParent.getRow(1),
+                        m_parent.m_itrMatParent.getRow(2)) *= nodeScale) += m_parent.m_itrPosObj
+                );
+            }
+            else
+            {
+                transform.setOrigin(
+                    (m_bodyOffset.dot3(
+                        m_parent.m_itrMatObj.getRow(0),
+                        m_parent.m_itrMatObj.getRow(1),
+                        m_parent.m_itrMatObj.getRow(2)) *= nodeScale) += m_parent.m_itrPosObj
+                );
+            }
         }
 
         if (m_rotation)
         {
-            auto& b = transform.getBasis();
-            b = m_parent.m_itrMatObj;
-            b *= m_colRot;
+            (transform.getBasis() = m_parent.m_itrMatObj) *= m_colRot;
         }
 
         if (nodeScale != m_nodeScale)
@@ -655,11 +685,7 @@ namespace CBP
         if (a_actor == nullptr)
             return false;
 
-        auto npc = DYNAMIC_CAST(a_actor->baseForm, TESForm, TESNPC);
-        if (npc == nullptr)
-            return false;
-
-        float weight = std::clamp(npc->weight, 0.0f, 100.0f);
+        float weight = std::clamp(Game::GetActorWeight(a_actor), 0.0f, 100.0f);
 
         m_colRad = std::clamp(mmw(weight, a_config.fp.f32.colSphereRadMin, a_config.fp.f32.colSphereRadMax), 0.001f, 1000.0f);
         m_colHeight = std::clamp(mmw(weight, a_config.fp.f32.colHeightMin, a_config.fp.f32.colHeightMax), 0.001f, 1000.0f);
@@ -723,6 +749,8 @@ namespace CBP
 
                 m_collider.SetPositionScale(
                     std::clamp(m_conf.fp.f32.colPositionScale, 0.0f, 15.0f));
+
+                m_collider.SetOffsetParent(a_nodeConf.bl.b.offsetParent);
 
                 switch (m_conf.ex.colShape)
                 {
@@ -958,11 +986,12 @@ namespace CBP
 
     void SimComponent::UpdateMotion(float a_timeStep)
     {
+        //m_objParent->UpdateWorldData(&m_updateCtx);
+
         SIMDFillParent();
 
         if (m_movement)
         {
-            //m_objParent->UpdateWorldData(&m_updateCtx);
 
             auto target(((m_itrMatParent * m_cogOffset) *= m_objParent->m_worldTransform.scale) += m_itrPosParent);
 
@@ -1022,10 +1051,12 @@ namespace CBP
 
             if (m_rotScaleOn)
             {
-                m_obj->m_localTransform.rot.SetEulerAngles(
+                m_tempLocalRot.SetEulerAngles(
                     m_virtld.x() * m_conf.fp.f32.rotational[0],
                     m_virtld.y() * m_conf.fp.f32.rotational[1],
                     (m_virtld.z() + m_conf.fp.f32.rotGravityCorrection) * m_conf.fp.f32.rotational[2]);
+
+                m_obj->m_localTransform.rot = m_initialTransform.rot * m_tempLocalRot;
             }
 
             m_obj->UpdateWorldData(&m_updateCtx);
@@ -1047,7 +1078,7 @@ namespace CBP
         auto mag = a_force.Length();
         if (mag < _EPSILON)
             return;
-        
+
         m_applyForceQueue.emplace(
             a_steps, btVector3(a_force.x / mag, a_force.y / mag, a_force.z / mag), mag);
     }

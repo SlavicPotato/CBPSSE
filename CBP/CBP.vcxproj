@@ -1015,6 +1015,7 @@
     <ClInclude Include="Drivers\render.h" />
     <ClInclude Include="Drivers\tasks.h" />
     <ClInclude Include="game.h" />
+    <ClInclude Include="gitparams.h" />
     <ClInclude Include="ImGui\imgui_impl_dx11.h" />
     <ClInclude Include="ImGui\imgui_impl_win32.h" />
     <ClInclude Include="paths.h" />

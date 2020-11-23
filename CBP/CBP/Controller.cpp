@@ -44,7 +44,7 @@ namespace CBP
         {
             auto& actorList = GetSimActorList();
 
-            if (globalConf.debugRenderer.enableMovementConstraints) 
+            if (globalConf.debugRenderer.enableMovementConstraints)
             {
                 renderer->GenerateMovementConstraints(
                     actorList,
