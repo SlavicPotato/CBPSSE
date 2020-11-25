@@ -473,14 +473,14 @@ namespace CBP
 
     void DCBP::OnExit(Event, void* data)
     {
+        m_Instance.Debug("Shutting down");
+
         IScopedCriticalSection _(GetLock());
 
-        m_Instance.m_updateTask.ClearActors();
-        SavePending();
-
+        m_Instance.m_updateTask.ClearActors(true);
         m_Instance.m_renderer.reset();
 
-        m_Instance.Debug("Shutting down");
+        SavePending();
     }
 
     void DCBP::MessageHandler(Event, void* args)
@@ -523,14 +523,6 @@ namespace CBP
             UpdateDebugRendererSettings();
             UpdateProfilerSettings();
 
-            if (GetDriverConfig().ui_enabled)
-                GetUIContext().Initialize();
-
-            const auto& globalConf = CBP::IConfig::GetGlobal();
-
-            GetUpdateTask().UpdateTimeTick(globalConf.phys.timeTick);
-            UpdateKeys();
-
             if (DData::HasModList())
             {
                 if (!ITemplate::LoadProfiles())
@@ -540,6 +532,15 @@ namespace CBP
             else
                 m_Instance.Error("%s: failed to populate mod list, templates will be unavailable");
 
+            const auto& globalConf = CBP::IConfig::GetGlobal();
+
+            GetUpdateTask().UpdateTimeTick(globalConf.phys.timeTick);
+            UpdateKeys();
+
+            if (GetDriverConfig().ui_enabled)
+            {
+                GetUIContext().Initialize();
+            }
 
             IEvents::GetBackLog().SetLimit(globalConf.ui.backlogLimit);
 

@@ -22,11 +22,11 @@ namespace CBP
         void SetInterval(long long a_interval);
         void Reset();
 
-        inline const auto& Current() const {
+        SKMP_FORCEINLINE const auto& Current() const {
             return m_current;
         }
 
-        inline uint32_t GetUID() const {
+        SKMP_FORCEINLINE uint32_t GetUID() const {
             return m_uid;
         }
 

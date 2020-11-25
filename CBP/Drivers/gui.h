@@ -15,15 +15,15 @@ namespace CBP
     public:
         virtual bool Run() = 0;
 
-        inline void SetLock(bool a_switch) {
+        SKMP_FORCEINLINE void SetLock(bool a_switch) {
             m_options.lock = a_switch;
         }
 
-        inline void SetFreeze(bool a_switch) {
+        SKMP_FORCEINLINE void SetFreeze(bool a_switch) {
             m_options.freeze = a_switch;
         }
 
-        inline bool GetFreeze() {
+        SKMP_FORCEINLINE bool GetFreeze() {
             return m_options.freeze;
         }
 
@@ -86,47 +86,47 @@ namespace CBP
     public:
         static bool Initialize();
 
-        inline static void IncActive() {
+        SKMP_FORCEINLINE static void IncActive() {
             m_Instance.state.active++;
         }
 
-        inline static void DecActive() {
+        SKMP_FORCEINLINE static void DecActive() {
             m_Instance.state.active--;
         }
 
-        inline static bool HasCallbacks() {
+        SKMP_FORCEINLINE static bool HasCallbacks() {
             return m_Instance.m_drawCallbacks.size() != 0;
         }
 
         static void AddCallback(uint32_t id, const uiDrawCallback_t f);
         static void RemoveCallback(uint32_t id);
 
-        inline static bool HasCallback(uint32_t id) {
+        SKMP_FORCEINLINE static bool HasCallback(uint32_t id) {
             return m_Instance.m_drawCallbacks.find(id) !=
                 m_Instance.m_drawCallbacks.end();
         }
 
-        inline static const UIRect& GetBufferSize() {
+        SKMP_FORCEINLINE static const UIRect& GetBufferSize() {
             return m_Instance.info.bufferSize;
         }
 
         void ResetImGuiIO();
         void Suspend();
 
-        inline static void QueueResetIO()
+        SKMP_FORCEINLINE static void QueueResetIO()
         {
             m_Instance.m_nextResetIO = true;
         }
 
-        inline static void SetImGuiIni(const std::string& a_path) {
+        SKMP_FORCEINLINE static void SetImGuiIni(const std::string& a_path) {
             m_Instance.conf.imgui_ini = a_path;
         }
         
-        inline static void SetImGuiIni(std::string&& a_path) {
+        SKMP_FORCEINLINE static void SetImGuiIni(std::string&& a_path) {
             m_Instance.conf.imgui_ini = std::move(a_path);
         }
 
-        inline static auto GetPerf() {
+        SKMP_FORCEINLINE static auto GetPerf() {
             return m_Instance.m_uiRenderPerf.current;
         }
 
@@ -147,7 +147,7 @@ namespace CBP
         static void OnD3D11PostCreate_DUI(Event, void* data);
         static void OnExit_DUI(Event, void* data);
 
-        inline static auto& GetKeyPressQueue() {
+        SKMP_FORCEINLINE static auto& GetKeyPressQueue() {
             return m_Instance.m_keyEvents;
         }
 

@@ -47,7 +47,7 @@ namespace CBP
 
         void TriggerEventImpl(Event m_code, void* args);
 
-        inline static auto& GetBackLog() {
+        SKMP_FORCEINLINE static auto& GetBackLog() {
             return m_Instance.m_backLog;
         }
 

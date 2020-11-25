@@ -94,11 +94,11 @@ namespace CBP
 
         bool GetImportInfo(const fs::path& a_path, importInfo_t& a_out) const;
 
-        inline void MarkForSave(Group a_grp) {
+        SKMP_FORCEINLINE void MarkForSave(Group a_grp) {
             m_pendingSave[a_grp] = true;
         }
 
-        [[nodiscard]] inline const auto& GetLastException() const {
+        [[nodiscard]] SKMP_FORCEINLINE const auto& GetLastException() const {
             return m_lastException;
         }
 

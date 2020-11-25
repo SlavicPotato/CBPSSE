@@ -8,7 +8,7 @@ namespace CBP
 {
     using namespace UICommon;
 
-    __forceinline static void UpdateRaceNodeData(
+    SKMP_FORCEINLINE static void UpdateRaceNodeData(
         Game::FormID a_formid,
         const std::string& a_node,
         const configNode_t& a_data,
@@ -26,7 +26,7 @@ namespace CBP
             DCBP::UpdateConfigOnAllActors();
     }
 
-    __forceinline static const char* TranslateConfigClass(ConfigClass a_class)
+    SKMP_FORCEINLINE static const char* TranslateConfigClass(ConfigClass a_class)
     {
         switch (a_class)
         {
@@ -868,20 +868,26 @@ namespace CBP
     template<typename T>
     void UIApplyForce<T>::DrawForceSelector(T* a_data, configForceMap_t& a_forceData)
     {
-        auto& globalConfig = IConfig::GetGlobal();;
+        auto& globalConfig = IConfig::GetGlobal();
 
         ImGui::PushID(static_cast<const void*>(std::addressof(m_forceState)));
 
         if (Tree(m_chKey, "Force", false))
         {
-            auto& data = IConfig::GetConfigGroupMap();
+            const auto& data = IConfig::GetConfigGroupMap();
 
             const char* curSelName(nullptr);
 
-            if (m_forceState.selected) {
-                curSelName = (*m_forceState.selected).c_str();
+            if (m_forceState.selected) 
+            {
+                if (!data.contains(*m_forceState.selected))
+                    m_forceState.selected.Clear();
+                else
+                    curSelName = m_forceState.selected->c_str();
             }
-            else {
+
+            if (!m_forceState.selected)
+            {
                 if (!globalConfig.ui.forceActorSelected.empty())
                 {
                     auto it = data.find(globalConfig.ui.forceActorSelected);
@@ -890,14 +896,14 @@ namespace CBP
                         curSelName = it->first.c_str();
                     }
                 }
+            }
 
-                if (!m_forceState.selected)
-                {
-                    auto it = data.begin();
-                    if (it != data.end()) {
-                        m_forceState.selected = it->first;
-                        curSelName = it->first.c_str();
-                    }
+            if (!m_forceState.selected)
+            {
+                auto it = data.begin();
+                if (it != data.end()) {
+                    m_forceState.selected = it->first;
+                    curSelName = it->first.c_str();
                 }
             }
 
@@ -913,9 +919,11 @@ namespace CBP
                     if (selected)
                         if (ImGui::IsWindowAppearing()) ImGui::SetScrollHereY();
 
-                    if (ImGui::Selectable(e.first.c_str(), selected)) {
+                    if (ImGui::Selectable(e.first.c_str(), selected)) 
+                    {
                         m_forceState.selected = (
                             globalConfig.ui.forceActorSelected = e.first);
+
                         DCBP::MarkGlobalsForSave();
                     }
 
@@ -1888,7 +1896,7 @@ namespace CBP
 
                     Checkbox("Draw moving nodes", &globalConfig.debugRenderer.enableMovingNodes);
                     Checkbox("Draw movement constraints", &globalConfig.debugRenderer.enableMovementConstraints);
-                    Checkbox("Show moving nodes center of mass", &globalConfig.debugRenderer.movingNodesCenterOfMass);
+                    Checkbox("Show moving nodes center of gravity", &globalConfig.debugRenderer.movingNodesCenterOfGravity);
 
                     SliderFloat("Moving nodes sphere radius", &globalConfig.debugRenderer.movingNodesRadius, 0.1f, 10.0f, "%.2f");
 
@@ -3925,7 +3933,7 @@ namespace CBP
                 m_files.emplace_back(entry.path());
             }
 
-            if (m_files.size()) {
+            if (!m_files.empty()) {
                 m_selected = *m_files.begin();
                 m_selected->UpdateInfo();
             }
@@ -4285,7 +4293,7 @@ namespace CBP
 
                         ImGui::Separator();
 
-                        const auto d(ImVec2(width, wcm.y / 2.0f));
+                        const ImVec2 d(width, wcm.y / 2.0f);
 
                         ImGui::SetNextWindowSizeConstraints(d, d);
 
@@ -4432,11 +4440,7 @@ namespace CBP
                                 f.c_str()
                             ).call([&](auto&, auto& a_d)
                                 {
-                                    if (IConfig::RemoveNode(a_d.get<const std::string&>(0)))
-                                    {
-                                        m_parent.QueueListUpdateAll();
-                                        DCBP::ResetActors();
-                                    }
+                                    RemoveNode(a_d.get<const std::string&>(0));
                                 }
                             );
                         }
@@ -4515,9 +4519,10 @@ namespace CBP
             popup.push(
                 UIPopupType::Message,
                 "Add failed",
-                "Adding node '%s' to config group '%s' failed. Check log for more info.",
+                "Adding node '%s' to config group '%s' failed.\n\n%s",
                 a_node.c_str(),
-                a_confGroup.c_str()
+                a_confGroup.c_str(),
+                IConfig::GetLastException().what()
             );
         }
     }
@@ -4544,6 +4549,27 @@ namespace CBP
                 AddNode(node, in);
             }
         );
+    }
+
+    void UINodeMap::RemoveNode(const std::string& a_node)
+    {
+        if (IConfig::RemoveNode(a_node))
+        {
+            m_parent.QueueListUpdateAll();
+            DCBP::ResetActors();
+        }
+        else
+        {
+            auto& popup = m_parent.GetPopupQueue();
+
+            popup.push(
+                UIPopupType::Message,
+                "Remove failed",
+                "Removing node '%s' failed.\n\n%s",
+                a_node.c_str(),
+                IConfig::GetLastException().what()
+            );
+        }
     }
 
     ConfigClass UINodeMap::GetActorClass(Game::ObjectHandle a_handle) const
@@ -4643,7 +4669,6 @@ namespace CBP
 
     void UINodeMap::ListResetAllValues(Game::ObjectHandle a_handle)
     {
-
     }
 
 }

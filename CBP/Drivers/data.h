@@ -27,7 +27,7 @@ namespace CBP
             partialIndex = !isLight ? a_modIndex : (UInt32(0xFE000) | a_lightIndex);
         }
 
-        inline bool IsFormInMod(UInt32 a_formID) const
+        SKMP_FORCEINLINE bool IsFormInMod(UInt32 a_formID) const
         {
             UInt32 modID = (a_formID & 0xFF000000) >> 24;
 
@@ -40,23 +40,23 @@ namespace CBP
             return false;
         }
 
-        inline UInt32 GetPartialIndex() const
+        SKMP_FORCEINLINE UInt32 GetPartialIndex() const
         {
             return partialIndex;
         }
 
-        inline bool IsLight() const {
+        SKMP_FORCEINLINE bool IsLight() const {
             return isLight;
         }
 
-        inline UInt32 GetFormID(UInt32 a_formIDLower) const
+        SKMP_FORCEINLINE UInt32 GetFormID(UInt32 a_formIDLower) const
         {
             return !isLight ?
                 modIndex << 24 | (a_formIDLower & 0xFFFFFF) :
                 0xFE000000 | (lightIndex << 12) | (a_formIDLower & 0xFFF);
         }
 
-        inline UInt32 GetFormIDLower(UInt32 a_formID) const
+        SKMP_FORCEINLINE UInt32 GetFormIDLower(UInt32 a_formID) const
         {
             return isLight ? (a_formID & 0xFFF) : (a_formID & 0xFFFFFF);
         }
@@ -70,11 +70,11 @@ namespace CBP
 
         bool Populate();
 
-        [[nodiscard]] inline bool IsPopulated() {
+        [[nodiscard]] SKMP_FORCEINLINE bool IsPopulated() {
             return m_populated;
         }
 
-        [[nodiscard]] inline const auto& Get() {
+        [[nodiscard]] SKMP_FORCEINLINE const auto& Get() {
             return modList;
         }
 
@@ -94,11 +94,11 @@ namespace CBP
 
         static void MessageHandler(Event, void* args);
 
-        inline static bool HasModList() {
+        SKMP_FORCEINLINE static bool HasModList() {
             return m_Instance.m_modList.IsPopulated();
         }
 
-        inline static auto& GetModList() {
+        SKMP_FORCEINLINE static auto& GetModList() {
             return m_Instance.m_modList.Get();
         }
 

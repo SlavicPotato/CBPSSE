@@ -55,7 +55,7 @@ namespace CBP
         {
         }
 
-        inline static ProfileManagerCollider& GetSingleton() {
+        SKMP_FORCEINLINE static ProfileManagerCollider& GetSingleton() {
             return m_Instance;
         }
 
@@ -75,16 +75,16 @@ namespace CBP
 
     public:
 
-        [[nodiscard]] inline static auto& GetSingleton() {
+        [[nodiscard]] SKMP_FORCEINLINE static auto& GetSingleton() {
             return m_Instance;
         }
 
-        [[nodiscard]] inline static auto GetWorld() {
+        [[nodiscard]] SKMP_FORCEINLINE static auto GetWorld() {
             return m_Instance.m_ptrs.bt_collision_world;
         }
 
         static void Initialize(bool a_useEPA = true, int a_maxPersistentManifoldPoolSize = 4096, int a_maxCollisionAlgorithmPoolSize = 4096);
-        __forceinline static void Update(float a_timeStep);
+        SKMP_FORCEINLINE static void Update(float a_timeStep);
 
         static void CleanProxyFromPairs(btCollisionObject* a_collider);
 
@@ -104,11 +104,11 @@ namespace CBP
             btCollisionWorld* bt_collision_world;
         } m_ptrs;
 
-        __forceinline static const btCollisionDispatcher* GetDispatcher() {
+        SKMP_FORCEINLINE static const btCollisionDispatcher* GetDispatcher() {
             return m_Instance.m_ptrs.bt_dispatcher;
         }
 
-        __forceinline static void PerformCollisionDetection() {
+        SKMP_FORCEINLINE static void PerformCollisionDetection() {
             m_Instance.m_ptrs.bt_collision_world->performDiscreteCollisionDetection();
         }
 

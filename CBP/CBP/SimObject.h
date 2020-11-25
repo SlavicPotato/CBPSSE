@@ -56,8 +56,8 @@ namespace CBP
         SimObject(const SimObject& a_rhs) = delete;
         SimObject(SimObject&& a_rhs) = delete;
 
-        __forceinline void UpdateMotion(float a_timeStep);
-        __forceinline void UpdateVelocity();
+        SKMP_FORCEINLINE void UpdateMotion(float a_timeStep);
+        SKMP_FORCEINLINE void UpdateVelocity();
         void UpdateConfig(Actor* a_actor, bool a_collisions, const configComponents_t& a_config);
         void Reset();
         bool ValidateNodes(Actor* a_actor);
@@ -70,11 +70,11 @@ namespace CBP
 
         void UpdateGroupInfo();
 
-        /*[[nodiscard]] inline bool HasNode(const std::string& a_node) const {
+        /*[[nodiscard]] SKMP_FORCEINLINE bool HasNode(const std::string& a_node) const {
             return m_things.find(a_node) != m_things.end();
         }*/
 
-        /*[[nodiscard]] inline bool HasConfigGroup(const std::string& a_cg) const {
+        /*[[nodiscard]] SKMP_FORCEINLINE bool HasConfigGroup(const std::string& a_cg) const {
             return m_configGroups.find(a_cg) != m_configGroups.end();
         }*/
 
@@ -88,21 +88,21 @@ namespace CBP
             nodeDescList_t& a_out)
             ->nodeDescList_t::size_type;
 
-        /*[[nodiscard]] inline const_iterator begin() const noexcept {
+        /*[[nodiscard]] SKMP_FORCEINLINE const_iterator begin() const noexcept {
             return m_thingList.begin();
         }
 
-        [[nodiscard]] inline const_iterator end() const noexcept {
+        [[nodiscard]] SKMP_FORCEINLINE const_iterator end() const noexcept {
             return m_thingList.end();
         }*/
 
 #ifdef _CBP_ENABLE_DEBUG
-        [[nodiscard]] inline const std::string& GetActorName() const noexcept {
+        [[nodiscard]] SKMP_FORCEINLINE const std::string& GetActorName() const noexcept {
             return m_actorName;
         }
 #endif
 
-        [[nodiscard]] inline const NiTransform* GetHeadTransform() const {
+        [[nodiscard]] SKMP_FORCEINLINE const NiTransform* GetHeadTransform() const {
             if (m_objHead)
                 return std::addressof(m_objHead->m_worldTransform);
             else
@@ -111,15 +111,15 @@ namespace CBP
 
         void SetSuspended(bool a_switch);
 
-        [[nodiscard]] inline bool IsSuspended() const {
+        [[nodiscard]] SKMP_FORCEINLINE bool IsSuspended() const {
             return m_suspended;
         }
 
-        [[nodiscard]] inline const auto& GetNodeList() const {
+        [[nodiscard]] SKMP_FORCEINLINE const auto& GetNodeList() const {
             return m_objList;
         }
 
-        /*[[nodiscard]] __forceinline auto& GetActor() const {
+        /*[[nodiscard]] SKMP_FORCEINLINE auto& GetActor() const {
             return m_actor;
         }*/
 

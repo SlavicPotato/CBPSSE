@@ -13,7 +13,7 @@ namespace Serialization
         ifs >> a_root;
     }
 
-    __forceinline static void SafeCleanup(const fs::path& a_path) noexcept
+    SKMP_FORCEINLINE static void SafeCleanup(const fs::path& a_path) noexcept
     {
         try
         {

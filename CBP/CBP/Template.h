@@ -36,15 +36,15 @@ namespace CBP
 
         bool Load();
 
-        [[nodiscard]] inline const auto& GetPluginName() const {
+        [[nodiscard]] SKMP_FORCEINLINE const auto& GetPluginName() const {
             return m_pluginName;
         }
 
-        [[nodiscard]] inline const auto& GetLastException() const {
+        [[nodiscard]] SKMP_FORCEINLINE const auto& GetLastException() const {
             return m_lastExcept;
         }
 
-        [[nodiscard]] inline const auto& GetData() const {
+        [[nodiscard]] SKMP_FORCEINLINE const auto& GetData() const {
             return m_data;
         }
 
@@ -85,31 +85,31 @@ namespace CBP
             {
             }
 
-            [[nodiscard]] inline bool Load(const fs::path& a_path)
+            [[nodiscard]] SKMP_FORCEINLINE bool Load(const fs::path& a_path)
             {
                 return m_profileManager.Load(a_path);
             }
 
-            [[nodiscard]] inline const auto& GetProfileManager() const {
+            [[nodiscard]] SKMP_FORCEINLINE const auto& GetProfileManager() const {
                 return m_profileManager;
             }
 
 
-            [[nodiscard]] inline const auto& GetFormMap() const {
+            [[nodiscard]] SKMP_FORCEINLINE const auto& GetFormMap() const {
                 return m_form;
             }
 
-            [[nodiscard]] inline const auto& GetModMap() const {
+            [[nodiscard]] SKMP_FORCEINLINE const auto& GetModMap() const {
                 return m_mod;
             }
 
         private:
 
-            [[nodiscard]] inline auto& GetFormMap() {
+            [[nodiscard]] SKMP_FORCEINLINE auto& GetFormMap() {
                 return m_form;
             }
 
-            [[nodiscard]] inline auto& GetModMap() {
+            [[nodiscard]] SKMP_FORCEINLINE auto& GetModMap() {
                 return m_mod;
             }
 
@@ -124,20 +124,20 @@ namespace CBP
         static bool LoadProfiles();
 
         template <typename T, std::enable_if_t<std::is_same<T, PhysicsProfile>::value, int> = 0>
-        [[nodiscard]] __forceinline static const T* GetProfile(
+        [[nodiscard]] SKMP_FORCEINLINE static const T* GetProfile(
             const actorRefData_t* a_param)
         {
             return GetProfileImpl(m_dataPhysics, a_param);
         }
 
         template <typename T, std::enable_if_t<std::is_same<T, NodeProfile>::value, int> = 0>
-        [[nodiscard]] __forceinline static const T* GetProfile(
+        [[nodiscard]] SKMP_FORCEINLINE static const T* GetProfile(
             const actorRefData_t* a_param)
         {
             return GetProfileImpl(m_dataNode, a_param);
         }
 
-        [[nodiscard]] inline static const auto& GetLastException() {
+        [[nodiscard]] SKMP_FORCEINLINE static const auto& GetLastException() {
             return m_lastExcept;
         }
 
@@ -145,7 +145,7 @@ namespace CBP
         static bool GatherPluginData(stl::vector<TRecPlugin>& a_out);
 
         template <typename T>
-        __forceinline static const T* GetProfileImpl(
+        SKMP_FORCEINLINE static const T* GetProfileImpl(
             const DataHolder<T>& a_data,
             const actorRefData_t* a_param)
         {
@@ -187,7 +187,7 @@ namespace CBP
         }
 
         /*template <typename T>
-        __forceinline static const T* GetProfileRaceImpl(
+        SKMP_FORCEINLINE static const T* GetProfileRaceImpl(
             const DataHolder<T>& a_data,
             Game::FormID a_formid)
         {

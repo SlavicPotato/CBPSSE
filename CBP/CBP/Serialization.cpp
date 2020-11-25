@@ -526,6 +526,7 @@ namespace CBP
                                 continue;
 
                             UIEditorID ki;
+
                             try {
                                 ki = static_cast<UIEditorID>(std::stoi(it1.key().asString()));
                             }
@@ -578,7 +579,7 @@ namespace CBP
                     globalConfig.debugRenderer.enableMovingNodes = debugRenderer.get("enableMovingNodes", false).asBool();
                     globalConfig.debugRenderer.enableMovementConstraints = debugRenderer.get("enableMovementConstraints", false).asBool();
                     globalConfig.debugRenderer.movingNodesRadius = debugRenderer.get("movingNodesRadius", 0.75f).asFloat();
-                    globalConfig.debugRenderer.movingNodesCenterOfMass = debugRenderer.get("movingNodesCenterOfMass", false).asBool();
+                    globalConfig.debugRenderer.movingNodesCenterOfGravity = debugRenderer.get("movingNodesCenterOfMass", false).asBool();
                     globalConfig.debugRenderer.drawAABB = debugRenderer.get("drawAABB", false).asBool();
                     //globalConfig.debugRenderer.drawBroadphaseAABB = debugRenderer.get("drawBroadphaseAABB", false).asBool();
                 }
@@ -694,7 +695,7 @@ namespace CBP
             debugRenderer["contactNormalLength"] = globalConfig.debugRenderer.contactNormalLength;
             debugRenderer["enableMovingNodes"] = globalConfig.debugRenderer.enableMovingNodes;
             debugRenderer["enableMovementConstraints"] = globalConfig.debugRenderer.enableMovementConstraints;
-            debugRenderer["movingNodesCenterOfMass"] = globalConfig.debugRenderer.movingNodesCenterOfMass;
+            debugRenderer["movingNodesCenterOfMass"] = globalConfig.debugRenderer.movingNodesCenterOfGravity;
             debugRenderer["movingNodesRadius"] = globalConfig.debugRenderer.movingNodesRadius;
             debugRenderer["drawAABB"] = globalConfig.debugRenderer.drawAABB;
             //debugRenderer["drawBroadphaseAABB"] = globalConfig.debugRenderer.drawBroadphaseAABB;
@@ -821,20 +822,17 @@ namespace CBP
         if (!a_root.isObject())
             throw std::exception("Expected an object");
 
-        size_t c = 0;
-
         try
         {
             configComponents_t componentData;
 
             if (m_componentParser.Parse(a_root, componentData))
                 IConfig::SetGlobalPhysics(std::move(componentData));
-
-            c++;
         }
         catch (const std::exception& e)
         {
             Error("%s (Components): %s", __FUNCTION__, e.what());
+            return 0;
         }
 
         try
@@ -843,15 +841,14 @@ namespace CBP
 
             if (m_nodeParser.Parse(a_root, nodeData))
                 IConfig::SetGlobalNode(std::move(nodeData));
-
-            c++;
         }
         catch (const std::exception& e)
         {
             Error("%s (Nodes): %s", __FUNCTION__, e.what());
+            return 0;
         }
 
-        return c;
+        return 1;
     }
 
     size_t ISerialization::LoadGlobalProfile(SKSESerializationInterface* intfc, std::stringstream& a_data)

@@ -27,7 +27,7 @@ namespace CBP
     void Renderer::GenerateMovingNodes(
         const simActorList_t& a_actorList,
         float a_radius,
-        bool a_centerOfMass,
+        bool a_centerOfGravity,
         Game::ObjectHandle a_markedHandle)
     {
 
@@ -36,7 +36,7 @@ namespace CBP
             if (e.second.IsSuspended())
                 continue;
 
-            if (a_centerOfMass)
+            if (a_centerOfGravity)
             {
                 auto& nl = e.second.GetNodeList();
 
@@ -47,7 +47,7 @@ namespace CBP
 
                     if (n->HasMotion()) {
                         auto& tf = n->GetParentWorldTransform();
-                        auto& p = n->GetCenterOfMass();
+                        auto& p = n->GetCenterOfGravity();
                         GenerateSphere(tf * NiPoint3(p.x(), p.y(), p.z()), a_radius * tf.scale, MOVING_NODES_COL);
                     }
                 }
@@ -184,7 +184,7 @@ namespace CBP
 
         return true;
     }
-    
+
     bool Renderer::GetScreenPt(const btVector3& a_pos, const DirectX::XMFLOAT4& a_col, VertexType& a_out)
     {
         NiPoint3 tmp(a_pos.x(), a_pos.y(), a_pos.z());
@@ -315,7 +315,7 @@ namespace CBP
 
         m_lines.emplace_back(std::move(item));
     }
-    
+
     void Renderer::drawLine(const btVector3& from, const btVector3& to, const DirectX::XMFLOAT4& color)
     {
         ItemLine item;
@@ -327,7 +327,7 @@ namespace CBP
 
         m_lines.emplace_back(std::move(item));
     }
-    
+
     void Renderer::drawLine(const NiPoint3& from, const NiPoint3& to, const DirectX::XMFLOAT4& color)
     {
         ItemLine item;

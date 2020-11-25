@@ -35,40 +35,40 @@ public:
     iterator begin() = delete;
     iterator end() = delete;
 
-    [[nodiscard]] inline const_iterator begin() const noexcept {
+    [[nodiscard]] SKMP_FORCEINLINE const_iterator begin() const noexcept {
         return m_vec.begin();
     }
 
-    [[nodiscard]] inline const_iterator end() const noexcept {
+    [[nodiscard]] SKMP_FORCEINLINE const_iterator end() const noexcept {
         return m_vec.end();
     }
 
-    [[nodiscard]] inline map_const_iterator map_begin() const noexcept {
+    [[nodiscard]] SKMP_FORCEINLINE map_const_iterator map_begin() const noexcept {
         return m_map.begin();
     }
 
-    [[nodiscard]] inline map_const_iterator map_end() const noexcept {
+    [[nodiscard]] SKMP_FORCEINLINE map_const_iterator map_end() const noexcept {
         return m_map.end();
     }
 
-    [[nodiscard]] inline map_const_iterator find(const key_type& a_key) const {
+    [[nodiscard]] SKMP_FORCEINLINE map_const_iterator find(const key_type& a_key) const {
         return m_map.find(a_key);
     }
 
-    [[nodiscard]] inline bool contains(const key_type& a_key) const {
+    [[nodiscard]] SKMP_FORCEINLINE bool contains(const key_type& a_key) const {
         return m_map.find(a_key) != m_map.end();
     }
 
-    [[nodiscard]] inline const mapped_type& at(const key_type& a_key) const {
+    [[nodiscard]] SKMP_FORCEINLINE const mapped_type& at(const key_type& a_key) const {
         return m_map.at(a_key);
     }
 
-    [[nodiscard]] inline const keyMap_t* operator->() const {
+    [[nodiscard]] SKMP_FORCEINLINE const keyMap_t* operator->() const {
         return std::addressof(m_map);
     }
 
 private:
-    inline void init() {
+    SKMP_FORCEINLINE void init() {
         for (auto& p : m_vec)
             m_map.emplace(p.first, p.second);
     }

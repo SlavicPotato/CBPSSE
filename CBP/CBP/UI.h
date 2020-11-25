@@ -60,7 +60,7 @@ namespace CBP
         void HelpMarker(const std::string& a_text) const;
 
         template <typename T>
-        inline void SetGlobal(T& a_member, T const a_value) const;
+        SKMP_FORCEINLINE void SetGlobal(T& a_member, T const a_value) const;
 
     protected:
 
@@ -193,7 +193,7 @@ namespace CBP
         [[nodiscard]] virtual std::string GetGCSID(
             const std::string& a_name) const;
 
-        [[nodiscard]] inline std::string GetCSID(
+        [[nodiscard]] SKMP_FORCEINLINE std::string GetCSID(
             const std::string& a_name) const
         {
             std::ostringstream ss;
@@ -201,7 +201,7 @@ namespace CBP
             return ss.str();
         }
 
-        [[nodiscard]] inline std::string GetCSSID(
+        [[nodiscard]] SKMP_FORCEINLINE std::string GetCSSID(
             const std::string& a_name, const char* a_group) const
         {
             std::ostringstream ss;
@@ -211,7 +211,7 @@ namespace CBP
 
         float GetActualSliderValue(const armorCacheValue_t& a_cacheval, float a_baseval) const;
 
-        inline void MarkCurrentForErase() {
+        SKMP_FORCEINLINE void MarkCurrentForErase() {
             m_eraseCurrent = true;
         }
 
@@ -258,18 +258,18 @@ namespace CBP
             configComponents_t& a_data,
             configComponentsValue_t& a_pair);
 
-        __forceinline bool DrawSlider(
+        SKMP_FORCEINLINE bool DrawSlider(
             const componentValueDescMap_t::vec_value_type& a_entry,
             float* a_pValue,
             bool a_scalar);
 
-        __forceinline bool DrawSlider(
+        SKMP_FORCEINLINE bool DrawSlider(
             const componentValueDescMap_t::vec_value_type& a_entry,
             float* a_pValue,
             const armorCacheEntry_t::mapped_type* a_cacheEntry,
             bool a_scalar);
 
-        __forceinline void DrawColliderShapeCombo(
+        SKMP_FORCEINLINE void DrawColliderShapeCombo(
             T a_handle,
             configComponents_t& a_data,
             configComponentsValue_t& a_pair,
@@ -295,7 +295,7 @@ namespace CBP
 
     protected:
 
-        [[nodiscard]] inline std::string GetCSID(
+        [[nodiscard]] SKMP_FORCEINLINE std::string GetCSID(
             const std::string& a_name) const
         {
             std::ostringstream ss;
@@ -445,11 +445,11 @@ namespace CBP
     {
     public:
 
-        inline void QueueListUpdateCurrent() {
+        SKMP_FORCEINLINE void QueueListUpdateCurrent() {
             m_listNextUpdateCurrent = true;
         }
 
-        inline void QueueListUpdate() {
+        SKMP_FORCEINLINE void QueueListUpdate() {
             m_listNextUpdate = true;
         }
 
@@ -595,7 +595,7 @@ namespace CBP
     {
     public:
 
-        [[nodiscard]] inline bool GetChanged() {
+        [[nodiscard]] SKMP_FORCEINLINE bool GetChanged() {
             bool r = m_changed;
             m_changed = false;
             return r;
@@ -609,7 +609,7 @@ namespace CBP
 
         [[nodiscard]] virtual const entryValue_t& GetData(Game::FormID a_formid) = 0;
 
-        inline void MarkChanged() { m_changed = true; }
+        SKMP_FORCEINLINE void MarkChanged() { m_changed = true; }
 
         bool m_changed;
     };
@@ -727,7 +727,7 @@ namespace CBP
         void SetRes(int a_res);
         void SetHeight(float a_height);
 
-        inline void SetShowAvg(bool a_switch) {
+        SKMP_FORCEINLINE void SetShowAvg(bool a_switch) {
             m_avg = a_switch;
         }
 
@@ -800,11 +800,11 @@ namespace CBP
         void DrawFileSelector();
         bool DeleteExport(const fs::path& a_file);
 
-        inline const auto& GetSelected() const {
+        SKMP_FORCEINLINE const auto& GetSelected() const {
             return m_selected;
         }
 
-        inline const auto& GetLastException() const {
+        SKMP_FORCEINLINE const auto& GetLastException() const {
             return m_lastExcept;
         }
 
@@ -854,7 +854,7 @@ namespace CBP
 
         void Draw(bool* a_active);
 
-        inline void SetScrollBottom() {
+        SKMP_FORCEINLINE void SetScrollBottom() {
             m_doScrollBottom = true;
         }
 
@@ -875,15 +875,13 @@ namespace CBP
 
     private:
 
-        //void SelectFirstValidActor(const char*& a_curSelName);
-        //void ValidateCurrentActor(const char*& a_curSelName);
-        //void DrawActorList();
         void DrawNodeTree(const nodeRefEntry_t& a_entry);
         void DrawConfigGroupMap();
         void DrawTreeContextMenu(const nodeRefEntry_t& a_entry);
 
         void AddNode(const std::string& a_node, const std::string& a_confGroup);
         void AddNodeNewGroup(const std::string& a_node);
+        void RemoveNode(const std::string& a_node);
 
         virtual ConfigClass GetActorClass(Game::ObjectHandle a_handle) const;
         virtual configGlobalActor_t& GetActorConfig() const;
@@ -898,7 +896,7 @@ namespace CBP
         virtual listValue_t* ListGetSelected();
         virtual void ListSetCurrentItem(Game::ObjectHandle a_handle);
 
-        [[nodiscard]] inline std::string GetCSID(
+        [[nodiscard]] SKMP_FORCEINLINE std::string GetCSID(
             const std::string& a_name) const
         {
             std::ostringstream ss;
@@ -908,7 +906,6 @@ namespace CBP
 
         bool m_update;
         UICommon::UIGenericFilter m_filter;
-        //SelectedItem<Game::ObjectHandle> m_refActor;
         UIContext& m_parent;
 
         entryValue_t m_dummyEntry;
@@ -1064,15 +1061,15 @@ namespace CBP
 
         void QueueListUpdateAll();
 
-        [[nodiscard]] inline uint32_t GetLoadInstance() const noexcept {
+        [[nodiscard]] SKMP_FORCEINLINE uint32_t GetLoadInstance() const noexcept {
             return m_activeLoadInstance;
         }
 
-        inline void LogNotify() {
+        SKMP_FORCEINLINE void LogNotify() {
             m_log.SetScrollBottom();
         }
 
-        inline auto& GetPopupQueue() {
+        SKMP_FORCEINLINE auto& GetPopupQueue() {
             return m_popup;
         }
 

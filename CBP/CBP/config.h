@@ -119,10 +119,9 @@ namespace CBP
             float contactNormalLength = 2.0f;
             bool enableMovingNodes = false;
             bool enableMovementConstraints = false;
-            bool movingNodesCenterOfMass = false;
+            bool movingNodesCenterOfGravity = false;
             float movingNodesRadius = 0.75f;
             bool drawAABB = false;
-            //bool drawBroadphaseAABB = false;
         } debugRenderer;
 
     };
@@ -189,7 +188,7 @@ namespace CBP
         DescUIGroupType groupType = DescUIGroupType::None;
         std::string groupName;
 
-        [[nodiscard]] __forceinline float GetCounterpartValue(const float* a_pvalue) const
+        [[nodiscard]] SKMP_FORCEINLINE float GetCounterpartValue(const float* a_pvalue) const
         {
             if ((marker & DescUIMarker::MirrorNegate) == DescUIMarker::MirrorNegate)
             {
@@ -215,7 +214,7 @@ namespace CBP
     typedef iKVStorage<std::string, const componentValueDesc_t> componentValueDescMap_t;
     typedef KVStorage<ColliderShapeType, const colliderDesc_t> colliderDescMap_t;
 
-    struct physicsDataF32_t
+    struct SKMP_ALIGN(physicsDataF32_t, 16)
     {
         float stiffness;
         float stiffness2;
@@ -270,23 +269,23 @@ namespace CBP
         __m256 d5;
         __m256 d6;
 
-        __forceinline physicsDataMM256_t(const physicsDataMM256_t& a_rhs)
+        SKMP_FORCEINLINE physicsDataMM256_t(const physicsDataMM256_t& a_rhs)
         {
             __copy(a_rhs);
         }
 
-        __forceinline physicsDataMM256_t(physicsDataMM256_t&& a_rhs) noexcept
+        SKMP_FORCEINLINE physicsDataMM256_t(physicsDataMM256_t&& a_rhs) noexcept
         {
             __copy(a_rhs);
         }
 
-        __forceinline physicsDataMM256_t& operator=(const physicsDataMM256_t& a_rhs)
+        SKMP_FORCEINLINE physicsDataMM256_t& operator=(const physicsDataMM256_t& a_rhs)
         {
             __copy(a_rhs);
             return *this;
         }
 
-        __forceinline physicsDataMM256_t& operator=(physicsDataMM256_t&& a_rhs) noexcept
+        SKMP_FORCEINLINE physicsDataMM256_t& operator=(physicsDataMM256_t&& a_rhs) noexcept
         {
             __copy(a_rhs);
             return *this;
@@ -294,7 +293,7 @@ namespace CBP
 
     private:
 
-        __forceinline void __copy(const physicsDataMM256_t& a_rhs)
+        SKMP_FORCEINLINE void __copy(const physicsDataMM256_t& a_rhs)
         {
             d0 = a_rhs.d0;
             d1 = a_rhs.d1;
@@ -327,23 +326,23 @@ namespace CBP
         __m128 d12;
         __m128 d13;
 
-        __forceinline physicsDataMM128_t(const physicsDataMM128_t& a_rhs)
+        SKMP_FORCEINLINE physicsDataMM128_t(const physicsDataMM128_t& a_rhs)
         {
             __copy(a_rhs);
         }
 
-        __forceinline physicsDataMM128_t(physicsDataMM128_t&& a_rhs) noexcept
+        SKMP_FORCEINLINE physicsDataMM128_t(physicsDataMM128_t&& a_rhs) noexcept
         {
             __copy(a_rhs);
         }
 
-        __forceinline physicsDataMM128_t& operator=(const physicsDataMM128_t& a_rhs)
+        SKMP_FORCEINLINE physicsDataMM128_t& operator=(const physicsDataMM128_t& a_rhs)
         {
             __copy(a_rhs);
             return *this;
         }
 
-        __forceinline physicsDataMM128_t& operator=(physicsDataMM128_t&& a_rhs) noexcept
+        SKMP_FORCEINLINE physicsDataMM128_t& operator=(physicsDataMM128_t&& a_rhs) noexcept
         {
             __copy(a_rhs);
             return *this;
@@ -351,7 +350,7 @@ namespace CBP
 
     private:
 
-        __forceinline void __copy(const physicsDataMM128_t& a_rhs)
+        SKMP_FORCEINLINE void __copy(const physicsDataMM128_t& a_rhs)
         {
             d0 = a_rhs.d0;
             d1 = a_rhs.d1;
@@ -371,7 +370,7 @@ namespace CBP
 
     };
 
-    struct __declspec(align(32)) defaultPhysicsDataHolder_t
+    struct SKMP_ALIGN(defaultPhysicsDataHolder_t, 32)
     {
         defaultPhysicsDataHolder_t();
 
@@ -392,7 +391,7 @@ namespace CBP
 
     extern const defaultPhysicsDataHolder_t g_defaultPhysicsData;
 
-    struct __declspec(align(32)) physicsData32_t
+    struct SKMP_ALIGN(physicsData32_t, 32)
     {
 
     public:
@@ -412,7 +411,7 @@ namespace CBP
             static_assert(sizeof(f32) == sizeof(mm128));
         };
 
-        __forceinline physicsData32_t()
+        SKMP_FORCEINLINE physicsData32_t()
         {
 #if defined(__AVX__) || defined(__AVX2__)
             mm256 = g_defaultPhysicsData.mm256;
@@ -421,23 +420,23 @@ namespace CBP
 #endif
         }
 
-        __forceinline physicsData32_t(const physicsData32_t& a_rhs)
+        SKMP_FORCEINLINE physicsData32_t(const physicsData32_t & a_rhs) noexcept
         {
             __copy(a_rhs);
         }
 
-        __forceinline physicsData32_t(physicsData32_t&& a_rhs) noexcept
+        SKMP_FORCEINLINE physicsData32_t(physicsData32_t && a_rhs) noexcept
         {
             __copy(a_rhs);
         }
 
-        __forceinline physicsData32_t& operator=(const physicsData32_t& a_rhs)
+        SKMP_FORCEINLINE physicsData32_t& operator=(const physicsData32_t & a_rhs)
         {
             __copy(a_rhs);
             return *this;
         }
 
-        __forceinline physicsData32_t& operator=(physicsData32_t&& a_rhs)
+        SKMP_FORCEINLINE physicsData32_t& operator=(physicsData32_t && a_rhs)
         {
             __copy(a_rhs);
             return *this;
@@ -445,7 +444,7 @@ namespace CBP
 
     private:
 
-        __forceinline void __copy(const physicsData32_t& a_rhs)
+        SKMP_FORCEINLINE void __copy(const physicsData32_t & a_rhs)
         {
 #if defined(__AVX__) || defined(__AVX2__)
             mm256 = a_rhs.mm256;
@@ -456,7 +455,46 @@ namespace CBP
 
     };
 
-    struct __declspec(align(32)) configComponent32_t
+    struct physicsDataExtra_t
+    {
+        SKMP_FORCEINLINE physicsDataExtra_t() :
+            colShape(ColliderShapeType::Sphere)
+        {
+        }
+
+        SKMP_FORCEINLINE physicsDataExtra_t(const physicsDataExtra_t& a_rhs) noexcept :
+            colShape(a_rhs.colShape),
+            colMesh(a_rhs.colMesh)
+        {
+        }
+
+        SKMP_FORCEINLINE physicsDataExtra_t(physicsDataExtra_t&& a_rhs) noexcept :
+            colShape(a_rhs.colShape),
+            colMesh(std::move(a_rhs.colMesh))
+        {
+        }
+
+        SKMP_FORCEINLINE physicsDataExtra_t& operator=(const physicsDataExtra_t& a_rhs)
+        {
+            colShape = a_rhs.colShape;
+            colMesh = a_rhs.colMesh;
+
+            return *this;
+        }
+
+        SKMP_FORCEINLINE physicsDataExtra_t& operator=(physicsDataExtra_t&& a_rhs)
+        {
+            colShape = a_rhs.colShape;
+            colMesh = std::move(a_rhs.colMesh);
+
+            return *this;
+        }
+
+        ColliderShapeType colShape;
+        std::string colMesh;
+    };
+
+    struct SKMP_ALIGN(configComponent32_t, 32)
     {
         friend class boost::serialization::access;
 
@@ -472,7 +510,7 @@ namespace CBP
             DataVersion6 = 6
         };
 
-        [[nodiscard]] __forceinline bool Get(const std::string& a_key, float& a_out) const
+        [[nodiscard]] SKMP_FORCEINLINE bool Get(const std::string & a_key, float& a_out) const
         {
             const auto it = descMap.find(a_key);
             if (it == descMap.map_end())
@@ -485,7 +523,7 @@ namespace CBP
             return true;
         }
 
-        [[nodiscard]] __forceinline float* Get(const std::string& a_key) const
+        [[nodiscard]] SKMP_FORCEINLINE float* Get(const std::string & a_key) const
         {
             const auto it = descMap.find(a_key);
             if (it == descMap.map_end())
@@ -496,12 +534,12 @@ namespace CBP
             return reinterpret_cast<float*>(addr);
         }
 
-        [[nodiscard]] __forceinline auto Contains(const std::string& a_key) const
+        [[nodiscard]] SKMP_FORCEINLINE auto Contains(const std::string & a_key) const
         {
             return descMap.find(a_key) != descMap.map_end();
         }
 
-        __forceinline bool Set(const std::string& a_key, float a_value)
+        SKMP_FORCEINLINE bool Set(const std::string & a_key, float a_value)
         {
             const auto it = descMap.find(a_key);
             if (it == descMap.map_end())
@@ -514,21 +552,21 @@ namespace CBP
             return true;
         }
 
-        __forceinline void Set(const componentValueDesc_t& a_desc, float a_value)
+        SKMP_FORCEINLINE void Set(const componentValueDesc_t & a_desc, float a_value)
         {
             auto addr = reinterpret_cast<uintptr_t>(this) + a_desc.offset;
 
             *reinterpret_cast<float*>(addr) = a_value;
         }
 
-        __forceinline void Set(const componentValueDesc_t& a_desc, const float* a_pvalue)
+        SKMP_FORCEINLINE void Set(const componentValueDesc_t & a_desc, const float* a_pvalue)
         {
             auto addr = reinterpret_cast<uintptr_t>(this) + a_desc.offset;
 
             *reinterpret_cast<float*>(addr) = *a_pvalue;
         }
 
-        __forceinline bool Set(const std::string& a_key, float* a_value, size_t a_size)
+        SKMP_FORCEINLINE bool Set(const std::string & a_key, float* a_value, size_t a_size)
         {
             const auto it = descMap.find(a_key);
             if (it == descMap.map_end())
@@ -542,7 +580,7 @@ namespace CBP
             return true;
         }
 
-        __forceinline void Set(const componentValueDesc_t& a_desc, float* a_value, size_t a_size)
+        SKMP_FORCEINLINE void Set(const componentValueDesc_t & a_desc, float* a_value, size_t a_size)
         {
             auto addr = reinterpret_cast<uintptr_t>(this) + a_desc.offset;
 
@@ -550,7 +588,7 @@ namespace CBP
                 reinterpret_cast<float*>(addr)[i] = a_value[i];
         }
 
-        __forceinline bool Mul(const std::string& a_key, float a_multiplier)
+        SKMP_FORCEINLINE bool Mul(const std::string & a_key, float a_multiplier)
         {
             const auto it = descMap.find(a_key);
             if (it == descMap.map_end())
@@ -563,7 +601,7 @@ namespace CBP
             return true;
         }
 
-        [[nodiscard]] __forceinline float& operator[](const std::string& a_key) const
+        [[nodiscard]] SKMP_FORCEINLINE float& operator[](const std::string& a_key) const
         {
             auto addr = reinterpret_cast<uintptr_t>(this) +
                 descMap.at(a_key).offset;
@@ -571,28 +609,20 @@ namespace CBP
             return *reinterpret_cast<float*>(addr);
         }
 
-        __forceinline void SetColShape(ColliderShapeType a_shape) {
+        SKMP_FORCEINLINE void SetColShape(ColliderShapeType a_shape) {
             ex.colShape = a_shape;
         }
 
-        [[nodiscard]] __forceinline float* GetAddress(const componentValueDesc_t& a_desc)
+        [[nodiscard]] SKMP_FORCEINLINE float* GetAddress(const componentValueDesc_t & a_desc)
         {
             auto addr = reinterpret_cast<uintptr_t>(this) + a_desc.offset;
             return reinterpret_cast<float*>(addr);
         }
 
-        configComponent32_t() :
-            ex {.colShape = ColliderShapeType::Sphere }
-        {
-        }
+        configComponent32_t() = default;
 
         physicsData32_t fp;
-
-        struct
-        {
-            ColliderShapeType colShape;
-            std::string colMesh;
-        } ex;
+        physicsDataExtra_t ex;
 
         static const componentValueDescMap_t descMap;
         static const colliderDescMap_t colDescMap;
@@ -601,7 +631,7 @@ namespace CBP
     private:
 
         template<class Archive>
-        void save(Archive& ar, const unsigned int version) const
+        void save(Archive & ar, const unsigned int version) const
         {
             ar& fp.f32.stiffness;
             ar& fp.f32.stiffness2;
@@ -641,7 +671,7 @@ namespace CBP
         }
 
         template<class Archive>
-        void load(Archive& ar, const unsigned int version)
+        void load(Archive & ar, const unsigned int version)
         {
             ar& fp.f32.stiffness;
             ar& fp.f32.stiffness2;
@@ -700,7 +730,7 @@ namespace CBP
         BOOST_SERIALIZATION_SPLIT_MEMBER()
     };
 
-    struct __declspec(align(16)) physicsData16_t
+    struct SKMP_ALIGN(physicsData16_t, 16)
     {
         union
         {
@@ -710,82 +740,68 @@ namespace CBP
             static_assert(sizeof(f32) == sizeof(mm128));
         };
 
-        __forceinline physicsData16_t()
+        SKMP_FORCEINLINE physicsData16_t()
         {
             mm128 = g_defaultPhysicsData.mm128;
         }
 
-        __forceinline physicsData16_t(const physicsData32_t& a_rhs)
+        SKMP_FORCEINLINE physicsData16_t(const physicsData32_t & a_rhs)
         {
             mm128 = a_rhs.mm128;
         }
 
-        __forceinline physicsData16_t(physicsData32_t&& a_rhs)
+        SKMP_FORCEINLINE physicsData16_t(physicsData32_t && a_rhs)
         {
             mm128 = a_rhs.mm128;
         }
 
-        __forceinline physicsData16_t& operator=(const physicsData32_t& a_rhs)
+        SKMP_FORCEINLINE physicsData16_t& operator=(const physicsData32_t & a_rhs)
         {
             mm128 = a_rhs.mm128;
             return *this;
         }
 
-        __forceinline physicsData16_t& operator=(physicsData32_t&& a_rhs)
+        SKMP_FORCEINLINE physicsData16_t& operator=(physicsData32_t && a_rhs)
         {
             mm128 = a_rhs.mm128;
             return *this;
         }
     };
 
-    struct __declspec(align(16)) configComponent16_t
+    struct SKMP_ALIGN(configComponent16_t, 16)
     {
-        __forceinline configComponent16_t()
+        configComponent16_t() = default;
+
+        SKMP_FORCEINLINE configComponent16_t(const configComponent32_t & a_rhs) :
+            fp(a_rhs.fp),
+            ex(a_rhs.ex)
         {
-            ex.colShape = ColliderShapeType::Sphere;
         }
 
-        __forceinline configComponent16_t(const configComponent32_t& a_rhs) :
-            fp(a_rhs.fp)
+        SKMP_FORCEINLINE configComponent16_t(configComponent32_t && a_rhs) :
+            fp(a_rhs.fp),
+            ex(std::move(a_rhs.ex))
         {
-            ex.colShape = a_rhs.ex.colShape;
-            ex.colMesh = a_rhs.ex.colMesh;
         }
 
-        __forceinline configComponent16_t(configComponent32_t&& a_rhs) :
-            fp(a_rhs.fp)
-        {
-            ex.colShape = a_rhs.ex.colShape;
-            ex.colMesh = std::move(a_rhs.ex.colMesh);
-        }
-
-        __forceinline configComponent16_t& operator=(const configComponent32_t& a_rhs)
+        SKMP_FORCEINLINE configComponent16_t& operator=(const configComponent32_t & a_rhs)
         {
             fp = a_rhs.fp;
-
-            ex.colShape = a_rhs.ex.colShape;
-            ex.colMesh = a_rhs.ex.colMesh;
+            ex = a_rhs.ex;
 
             return *this;
         }
 
-        __forceinline configComponent16_t& operator=(configComponent32_t&& a_rhs)
+        SKMP_FORCEINLINE configComponent16_t& operator=(configComponent32_t && a_rhs)
         {
             fp = a_rhs.fp;
-
-            ex.colShape = a_rhs.ex.colShape;
-            ex.colMesh = std::move(a_rhs.ex.colMesh);
+            ex = std::move(a_rhs.ex);
 
             return *this;
         }
 
         physicsData16_t fp;
-
-        struct
-        {
-            ColliderShapeType colShape;
-            std::string colMesh;
-        } ex;
+        physicsDataExtra_t ex;
     };
 
 
@@ -804,7 +820,7 @@ namespace CBP
 
     typedef stl::unordered_map<Game::ObjectHandle, configComponents_t> mergedConfCache_t;
 
-    struct __declspec(align(32)) nodeDataF32_t
+    struct SKMP_ALIGN(nodeDataF32_t, 32)
     {
         float colOffsetMin[3];
         float colOffsetMax[3];
@@ -818,23 +834,23 @@ namespace CBP
 
         __m256 d0;
 
-        __forceinline nodeDataMM256_t(const nodeDataMM256_t& a_rhs)
+        SKMP_FORCEINLINE nodeDataMM256_t(const nodeDataMM256_t& a_rhs)
         {
             __copy(a_rhs);
         }
 
-        __forceinline nodeDataMM256_t(nodeDataMM256_t&& a_rhs)
+        SKMP_FORCEINLINE nodeDataMM256_t(nodeDataMM256_t&& a_rhs)
         {
             __copy(a_rhs);
         }
 
-        __forceinline nodeDataMM256_t& operator=(const nodeDataMM256_t& a_rhs)
+        SKMP_FORCEINLINE nodeDataMM256_t& operator=(const nodeDataMM256_t& a_rhs)
         {
             __copy(a_rhs);
             return *this;
         }
 
-        __forceinline nodeDataMM256_t& operator=(nodeDataMM256_t&& a_rhs)
+        SKMP_FORCEINLINE nodeDataMM256_t& operator=(nodeDataMM256_t&& a_rhs)
         {
             __copy(a_rhs);
             return *this;
@@ -842,7 +858,7 @@ namespace CBP
 
     private:
 
-        __forceinline void __copy(const nodeDataMM256_t& a_rhs)
+        SKMP_FORCEINLINE void __copy(const nodeDataMM256_t& a_rhs)
         {
             d0 = a_rhs.d0;
         }
@@ -857,23 +873,23 @@ namespace CBP
         __m128 d0;
         __m128 d1;
 
-        __forceinline nodeDataMM128_t(const nodeDataMM128_t& a_rhs)
+        SKMP_FORCEINLINE nodeDataMM128_t(const nodeDataMM128_t& a_rhs)
         {
             __copy(a_rhs);
         }
 
-        __forceinline nodeDataMM128_t(nodeDataMM128_t&& a_rhs) noexcept
+        SKMP_FORCEINLINE nodeDataMM128_t(nodeDataMM128_t&& a_rhs) noexcept
         {
             __copy(a_rhs);
         }
 
-        __forceinline nodeDataMM128_t& operator=(const nodeDataMM128_t& a_rhs)
+        SKMP_FORCEINLINE nodeDataMM128_t& operator=(const nodeDataMM128_t& a_rhs)
         {
             __copy(a_rhs);
             return *this;
         }
 
-        __forceinline nodeDataMM128_t& operator=(nodeDataMM128_t&& a_rhs) noexcept
+        SKMP_FORCEINLINE nodeDataMM128_t& operator=(nodeDataMM128_t&& a_rhs) noexcept
         {
             __copy(a_rhs);
             return *this;
@@ -881,7 +897,7 @@ namespace CBP
 
     private:
 
-        __forceinline void __copy(const nodeDataMM128_t& a_rhs)
+        SKMP_FORCEINLINE void __copy(const nodeDataMM128_t& a_rhs)
         {
             d0 = a_rhs.d0;
             d1 = a_rhs.d1;
@@ -909,7 +925,7 @@ namespace CBP
 
     extern const defaultNodeDataHolder_t g_defaultNodeData;
 
-    struct __declspec(align(32)) nodeData32_t
+    struct SKMP_ALIGN(nodeData32_t, 32)
     {
 
     public:
@@ -928,7 +944,7 @@ namespace CBP
             static_assert(sizeof(f32) == sizeof(mm128));
         };
 
-        __forceinline nodeData32_t()
+        SKMP_FORCEINLINE nodeData32_t()
         {
 #if defined(__AVX__) || defined(__AVX2__)
             mm256 = g_defaultNodeData.mm256;
@@ -937,23 +953,23 @@ namespace CBP
 #endif
         }
 
-        __forceinline nodeData32_t(const nodeData32_t& a_rhs)
+        SKMP_FORCEINLINE nodeData32_t(const nodeData32_t & a_rhs)
         {
             __copy(a_rhs);
         }
 
-        __forceinline nodeData32_t(nodeData32_t&& a_rhs) noexcept
+        SKMP_FORCEINLINE nodeData32_t(nodeData32_t && a_rhs) noexcept
         {
             __copy(a_rhs);
         }
 
-        __forceinline nodeData32_t& operator=(const nodeData32_t& a_rhs)
+        SKMP_FORCEINLINE nodeData32_t& operator=(const nodeData32_t & a_rhs)
         {
             __copy(a_rhs);
             return *this;
         }
 
-        __forceinline nodeData32_t& operator=(nodeData32_t&& a_rhs)
+        SKMP_FORCEINLINE nodeData32_t& operator=(nodeData32_t && a_rhs)
         {
             __copy(a_rhs);
             return *this;
@@ -961,7 +977,7 @@ namespace CBP
 
     private:
 
-        __forceinline void __copy(const nodeData32_t& a_rhs)
+        SKMP_FORCEINLINE void __copy(const nodeData32_t & a_rhs)
         {
 #if defined(__AVX__) || defined(__AVX2__)
             mm256 = a_rhs.mm256;
@@ -974,7 +990,7 @@ namespace CBP
 
     struct nodeBools_t
     {
-        __forceinline nodeBools_t()
+        SKMP_FORCEINLINE nodeBools_t()
         {
             u64.d0 = 0ULL;
         }
@@ -1025,7 +1041,7 @@ namespace CBP
     static_assert(offsetof(nodeBools_t, b.overrideScale) == offsetof(nodeBools_t, u32.d1));
     static_assert(offsetof(nodeBools_t, b.motion.female) == offsetof(nodeBools_t, u16.d1));
 
-    struct __declspec(align(32)) configNode_t
+    struct SKMP_ALIGN(configNode_t, 32)
     {
         friend class boost::serialization::access;
 
@@ -1040,7 +1056,7 @@ namespace CBP
         nodeData32_t fp;
         nodeBools_t bl;
 
-        __forceinline void Get(
+        SKMP_FORCEINLINE void Get(
             char a_sex,
             bool& a_collisionsOut,
             bool& a_movementOut) const noexcept
@@ -1055,22 +1071,22 @@ namespace CBP
             }
         }
 
-        [[nodiscard]] __forceinline bool Enabled() const noexcept {
+        [[nodiscard]] SKMP_FORCEINLINE bool Enabled() const noexcept {
             return bl.u32.d0 != 0ULL;
         }
 
-        [[nodiscard]] __forceinline bool HasMotion() const noexcept {
+        [[nodiscard]] SKMP_FORCEINLINE bool HasMotion() const noexcept {
             return bl.u16.d1 != 0;
         }
 
-        [[nodiscard]] __forceinline bool HasCollisions() const noexcept {
+        [[nodiscard]] SKMP_FORCEINLINE bool HasCollisions() const noexcept {
             return bl.u16.d0 != 0;
         }
 
     private:
 
         template<class Archive>
-        void save(Archive& ar, const unsigned int version) const
+        void save(Archive & ar, const unsigned int version) const
         {
             ar& bl.b.motion.female;
             ar& bl.b.collisions.female;
@@ -1084,7 +1100,7 @@ namespace CBP
         }
 
         template<class Archive>
-        void load(Archive& ar, const unsigned int version)
+        void load(Archive & ar, const unsigned int version)
         {
             ar& bl.b.motion.female;
             ar& bl.b.collisions.female;
@@ -1148,7 +1164,7 @@ namespace CBP
         static void SetActorPhysics(Game::ObjectHandle a_handle, const configComponents_t& a_conf);
         static void SetActorPhysics(Game::ObjectHandle a_handle, configComponents_t&& a_conf);
 
-        inline static decltype(auto) EraseActorPhysics(Game::ObjectHandle handle) {
+        SKMP_FORCEINLINE static decltype(auto) EraseActorPhysics(Game::ObjectHandle handle) noexcept {
             return actorConfHolder.erase(handle);
         }
 
@@ -1158,147 +1174,147 @@ namespace CBP
         [[nodiscard]] static configComponents_t& GetOrCreateRacePhysics(Game::FormID a_formid);
         static void SetRacePhysics(Game::FormID a_formid, const configComponents_t& a_conf);
         static void SetRacePhysics(Game::FormID a_formid, configComponents_t&& a_conf);
-        inline static decltype(auto) EraseRacePhysics(Game::FormID handle) {
+        SKMP_FORCEINLINE static decltype(auto) EraseRacePhysics(Game::FormID handle) noexcept {
             return raceConfHolder.erase(handle);
         }
 
-        [[nodiscard]] inline static auto& GetGlobalPhysics() {
+        [[nodiscard]] SKMP_FORCEINLINE static auto& GetGlobalPhysics() noexcept {
             return physicsGlobalConfig;
         }
 
-        inline static void SetGlobalPhysics(const configComponents_t& a_rhs) noexcept {
+        SKMP_FORCEINLINE static void SetGlobalPhysics(const configComponents_t& a_rhs) noexcept {
             physicsGlobalConfig = a_rhs;
         }
 
-        inline static void SetGlobalPhysics(configComponents_t&& a_rhs) noexcept {
+        SKMP_FORCEINLINE static void SetGlobalPhysics(configComponents_t&& a_rhs) noexcept {
             physicsGlobalConfig = std::move(a_rhs);
         }
 
-        [[nodiscard]] inline static auto& GetActorPhysicsHolder() {
+        [[nodiscard]] SKMP_FORCEINLINE static auto& GetActorPhysicsHolder() noexcept {
             return actorConfHolder;
         }
 
-        inline static void SetActorPhysicsConfigHolder(actorConfigComponentsHolder_t&& a_rhs) noexcept {
+        SKMP_FORCEINLINE static void SetActorPhysicsConfigHolder(actorConfigComponentsHolder_t&& a_rhs) noexcept {
             actorConfHolder = std::move(a_rhs);
         }
 
-        [[nodiscard]] inline static auto& GetRacePhysicsHolder() {
+        [[nodiscard]] SKMP_FORCEINLINE static auto& GetRacePhysicsHolder() noexcept {
             return raceConfHolder;
         }
 
-        inline static void SetRacePhysicsHolder(raceConfigComponentsHolder_t&& a_rhs) noexcept {
+        SKMP_FORCEINLINE static void SetRacePhysicsHolder(raceConfigComponentsHolder_t&& a_rhs) noexcept {
             raceConfHolder = std::move(a_rhs);
         }
 
-        inline static void SetRaceNodeHolder(raceConfigNodesHolder_t&& a_rhs) noexcept {
+        SKMP_FORCEINLINE static void SetRaceNodeHolder(raceConfigNodesHolder_t&& a_rhs) noexcept {
             raceNodeConfigHolder = std::move(a_rhs);
         }
 
-        inline static void ClearActorPhysicsHolder() noexcept {
+        SKMP_FORCEINLINE static void ClearActorPhysicsHolder() noexcept {
             actorConfHolder.clear();
         }
 
-        inline static void ClearRacePhysicsHolder() noexcept {
+        SKMP_FORCEINLINE static void ClearRacePhysicsHolder() noexcept {
             raceConfHolder.clear();
         }
 
-        [[nodiscard]] inline static auto& GetGlobal() noexcept {
+        [[nodiscard]] SKMP_FORCEINLINE static auto& GetGlobal() noexcept {
             return globalConfig;
         }
 
-        inline static void SetGlobal(const configGlobal_t& a_rhs) noexcept {
+        SKMP_FORCEINLINE static void SetGlobal(const configGlobal_t& a_rhs) noexcept {
             globalConfig = a_rhs;
         }
 
-        inline static void SetGlobal(configGlobal_t&& a_rhs) noexcept {
+        SKMP_FORCEINLINE static void SetGlobal(configGlobal_t&& a_rhs) noexcept {
             globalConfig = std::move(a_rhs);
         }
 
-        inline static void ResetGlobal() noexcept {
+        SKMP_FORCEINLINE static void ResetGlobal() noexcept {
             globalConfig = configGlobal_t();
         }
 
-        inline static void ClearGlobalPhysics() noexcept {
+        SKMP_FORCEINLINE static void ClearGlobalPhysics() noexcept {
             physicsGlobalConfig.clear();
         }
 
-        [[nodiscard]] inline static const auto& GetNodeMap() noexcept {
+        [[nodiscard]] SKMP_FORCEINLINE static const auto& GetNodeMap() noexcept {
             return nodeMap;
         }
 
-        [[nodiscard]] inline static bool IsValidNode(const std::string& a_key) noexcept {
+        [[nodiscard]] SKMP_FORCEINLINE static bool IsValidNode(const std::string& a_key) noexcept {
             return nodeMap.find(a_key) != nodeMap.end();
         }
 
-        [[nodiscard]] inline static bool IsValidGroup(const std::string& a_key) {
+        [[nodiscard]] SKMP_FORCEINLINE static bool IsValidGroup(const std::string& a_key) {
             return validConfGroups.find(a_key) != validConfGroups.end();
         }
 
-        [[nodiscard]] inline static const auto& GetConfigGroups() {
+        [[nodiscard]] SKMP_FORCEINLINE static const auto& GetConfigGroups() noexcept {
             return validConfGroups;
         }
 
-        [[nodiscard]] inline static auto& GetCollisionGroups() {
+        [[nodiscard]] SKMP_FORCEINLINE static auto& GetCollisionGroups() noexcept {
             return collisionGroups;
         }
 
-        inline static void SetCollisionGroups(collisionGroups_t& a_rhs) noexcept {
+        SKMP_FORCEINLINE static void SetCollisionGroups(collisionGroups_t& a_rhs) noexcept {
             collisionGroups = a_rhs;
         }
 
-        inline static void SetCollisionGroups(collisionGroups_t&& a_rhs) noexcept {
+        SKMP_FORCEINLINE static void SetCollisionGroups(collisionGroups_t&& a_rhs) noexcept {
             collisionGroups = std::move(a_rhs);
         }
 
-        inline static void ClearCollisionGroups() {
+        SKMP_FORCEINLINE static void ClearCollisionGroups() noexcept {
             collisionGroups.clear();
         }
 
-        [[nodiscard]] inline static auto& GetNodeCollisionGroupMap() {
+        [[nodiscard]] SKMP_FORCEINLINE static auto& GetNodeCollisionGroupMap() {
             return nodeCollisionGroupMap;
         }
 
-        inline static void SetNodeCollisionGroupMap(nodeCollisionGroupMap_t& a_rhs) noexcept {
+        SKMP_FORCEINLINE static void SetNodeCollisionGroupMap(nodeCollisionGroupMap_t& a_rhs) noexcept {
             nodeCollisionGroupMap = a_rhs;
         }
 
-        inline static void SetNodeCollisionGroupMap(nodeCollisionGroupMap_t&& a_rhs) noexcept {
+        SKMP_FORCEINLINE static void SetNodeCollisionGroupMap(nodeCollisionGroupMap_t&& a_rhs) noexcept {
             nodeCollisionGroupMap = std::move(a_rhs);
         }
 
         [[nodiscard]] static uint64_t GetNodeCollisionGroupId(const std::string& a_node);
 
-        inline static void ClearNodeCollisionGroupMap() {
+        SKMP_FORCEINLINE static void ClearNodeCollisionGroupMap() noexcept {
             nodeCollisionGroupMap.clear();
         }
 
-        [[nodiscard]] inline static auto& GetGlobalNode() {
+        [[nodiscard]] SKMP_FORCEINLINE static auto& GetGlobalNode() noexcept {
             return nodeGlobalConfig;
         }
 
-        inline static void SetGlobalNode(const configNodes_t& a_rhs) noexcept {
+        SKMP_FORCEINLINE static void SetGlobalNode(const configNodes_t& a_rhs) noexcept {
             nodeGlobalConfig = a_rhs;
         }
 
-        inline static void SetGlobalNode(configNodes_t&& a_rhs) noexcept {
+        SKMP_FORCEINLINE static void SetGlobalNode(configNodes_t&& a_rhs) noexcept {
             nodeGlobalConfig = std::move(a_rhs);
         }
 
-        inline static void ClearGlobalNode() {
+        SKMP_FORCEINLINE static void ClearGlobalNode() noexcept {
             nodeGlobalConfig.clear();
         }
 
         static bool GetGlobalNode(const std::string& a_node, configNode_t& a_out);
 
-        [[nodiscard]] inline static auto& GetActorNodeHolder() {
+        [[nodiscard]] SKMP_FORCEINLINE static auto& GetActorNodeHolder() noexcept {
             return actorNodeConfigHolder;
         }
 
-        [[nodiscard]] inline static auto& GetRaceNodeHolder() {
+        [[nodiscard]] SKMP_FORCEINLINE static auto& GetRaceNodeHolder() noexcept {
             return raceNodeConfigHolder;
         }
 
-        inline static void SetActorNodeHolder(actorConfigNodesHolder_t&& a_rhs) noexcept {
+        SKMP_FORCEINLINE static void SetActorNodeHolder(actorConfigNodesHolder_t&& a_rhs) {
             actorNodeConfigHolder = std::move(a_rhs);
         }
 
@@ -1312,27 +1328,27 @@ namespace CBP
         static void SetRaceNode(Game::FormID a_handle, const configNodes_t& a_conf);
         static void SetRaceNode(Game::FormID a_handle, configNodes_t&& a_conf);
 
-        inline static void EraseActorNode(Game::ObjectHandle a_formid) noexcept {
+        SKMP_FORCEINLINE static void EraseActorNode(Game::ObjectHandle a_formid) noexcept {
             actorNodeConfigHolder.erase(a_formid);
         }
 
-        inline static void EraseRaceNode(Game::FormID a_formid) noexcept {
+        SKMP_FORCEINLINE static void EraseRaceNode(Game::FormID a_formid) noexcept {
             raceNodeConfigHolder.erase(a_formid);
         }
 
-        inline static void ClearActorNodeHolder() {
+        SKMP_FORCEINLINE static void ClearActorNodeHolder() noexcept {
             actorNodeConfigHolder.clear();
         }
 
-        inline static void ClearRaceNodeHolder() {
+        SKMP_FORCEINLINE static void ClearRaceNodeHolder() noexcept {
             raceNodeConfigHolder.clear();
         }
 
-        inline static const auto& GetConfigGroupMap() {
+        SKMP_FORCEINLINE static const auto& GetConfigGroupMap() noexcept {
             return configGroupMap;
         }
 
-        inline static void StoreDefaultProfile()
+        SKMP_FORCEINLINE static void StoreDefaultProfile()
         {
             defaultProfileStorage = {
                 physicsGlobalConfig,
@@ -1341,11 +1357,11 @@ namespace CBP
             };
         }
 
-        [[nodiscard]] inline static auto& GetDefaultProfile() {
+        [[nodiscard]] SKMP_FORCEINLINE static auto& GetDefaultProfile() noexcept {
             return defaultProfileStorage;
         }
 
-        [[nodiscard]] inline static bool HasArmorOverride(Game::ObjectHandle a_handle) {
+        [[nodiscard]] SKMP_FORCEINLINE static bool HasArmorOverride(Game::ObjectHandle a_handle) {
             return armorOverrides.find(a_handle) != armorOverrides.end();
         }
 
@@ -1370,30 +1386,30 @@ namespace CBP
             return nullptr;
         }
 
-        inline static bool RemoveArmorOverride(Game::ObjectHandle a_handle) noexcept {
+        SKMP_FORCEINLINE static bool RemoveArmorOverride(Game::ObjectHandle a_handle) noexcept {
             return armorOverrides.erase(a_handle) == 1;
         }
 
-        inline static void ClearArmorOverrides() noexcept {
+        SKMP_FORCEINLINE static void ClearArmorOverrides() noexcept {
             armorOverrides.clear();
         }
 
-        inline static const auto& GetPhysicsTemplateBase() noexcept {
+        SKMP_FORCEINLINE static const auto& GetPhysicsTemplateBase() noexcept {
             return templateBasePhysicsHolder;
         }
 
-        inline static const auto& GetNodeTemplateBase() noexcept {
+        SKMP_FORCEINLINE static const auto& GetNodeTemplateBase() noexcept {
             return templateBaseNodeHolder;
         }
 
         template <typename T, std::enable_if_t<std::is_same<T, configComponents_t>::value, int> = 0>
-        inline static T& GetTemplateBase() noexcept
+        SKMP_FORCEINLINE static T& GetTemplateBase() noexcept
         {
             return templateBasePhysicsHolder;
         }
 
         template <typename T, std::enable_if_t<std::is_same<T, configNodes_t>::value, int> = 0>
-        inline static T& GetTemplateBase() noexcept
+        SKMP_FORCEINLINE static T& GetTemplateBase() noexcept
         {
             return templateBaseNodeHolder;
         }
@@ -1404,15 +1420,15 @@ namespace CBP
         static void Copy(const configComponents_t& a_lhs, configComponents_t& a_rhs);
         static void Copy(const configNodes_t& a_lhs, configNodes_t& a_rhs);
 
-        inline static void ClearMergedCache() noexcept {
+        SKMP_FORCEINLINE static void ClearMergedCache() noexcept {
             mergedConfCache.clear();
         }
 
-        inline static void RemoveMergedCacheEntry(Game::ObjectHandle a_handle) noexcept {
+        SKMP_FORCEINLINE static void RemoveMergedCacheEntry(Game::ObjectHandle a_handle) noexcept {
             mergedConfCache.erase(a_handle);
         }
 
-        inline static void ClearMergedCacheThreshold(mergedConfCache_t::size_type a_threshold = 200) noexcept {
+        SKMP_FORCEINLINE static void ClearMergedCacheThreshold(mergedConfCache_t::size_type a_threshold = 200) noexcept {
             if (mergedConfCache.size() > a_threshold)
                 mergedConfCache.clear();
         }
@@ -1422,16 +1438,20 @@ namespace CBP
         static size_t PruneInactivePhysics();
         static size_t PruneInactiveRace();
 
-        static const auto& GetDefaultPhysics() {
+        SKMP_FORCEINLINE static const auto& GetDefaultPhysics() {
             return defaultPhysicsConfig;
         }
 
-        static const auto& GetDefaultNode() {
+        SKMP_FORCEINLINE static const auto& GetDefaultNode() {
             return defaultNodeConfig;
         }
 
         static bool AddNode(const std::string& a_node, const std::string& a_confGroup, bool a_save = true);
         static bool RemoveNode(const std::string& a_node, bool a_save = true);
+
+        SKMP_FORCEINLINE static const auto& GetLastException() {
+            return lastException;
+        }
 
     private:
 
@@ -1439,7 +1459,7 @@ namespace CBP
         [[nodiscard]] static bool SaveNodeMap(const configGroupMap_t& a_in);
 
         template <typename T>
-        __forceinline static void CopyImpl(const T& a_lhs, T& a_rhs);
+        SKMP_FORCEINLINE static void CopyImpl(const T& a_lhs, T& a_rhs);
 
         static configComponents_t physicsGlobalConfig;
         static actorConfigComponentsHolder_t actorConfHolder;
@@ -1469,6 +1489,7 @@ namespace CBP
         static configNode_t defaultNodeConfig;
 
         static IConfigLog log;
+        static except::descriptor lastException;
     };
 }
 

@@ -43,7 +43,7 @@ namespace CBP
         btTriangleIndexVertexArray* m_triVertexArray;
     };
 
-    class __declspec(align(16)) CollisionShape
+    class SKMP_ALIGN(CollisionShape, 16)
     {
     public:
         BT_DECLARE_ALIGNED_ALLOCATOR();
@@ -67,7 +67,7 @@ namespace CBP
     };
 
     template <class T>
-    class __declspec(align(16)) CollisionShapeBase :
+    class SKMP_ALIGN(CollisionShapeBase, 16) :
         public CollisionShape
     {
 
@@ -83,8 +83,8 @@ namespace CBP
         CollisionShapeBase(btCollisionObject* a_collider, Args&&... a_args);
 
         template <typename... Args>
-        __forceinline void RecreateShape(Args&&... a_args);
-        __forceinline void PostUpdateShape();
+        SKMP_FORCEINLINE void RecreateShape(Args&&... a_args);
+        SKMP_FORCEINLINE void PostUpdateShape();
 
         union
         {
@@ -96,7 +96,7 @@ namespace CBP
     };
 
     template <class T>
-    class __declspec(align(16)) CollisionShapeTemplRH :
+    class SKMP_ALIGN(CollisionShapeTemplRH, 16) :
         public CollisionShapeBase<T>
     {
     protected:
@@ -122,7 +122,7 @@ namespace CBP
     };
 
     template <class T>
-    class __declspec(align(16)) CollisionShapeTemplExtent :
+    class SKMP_ALIGN(CollisionShapeTemplExtent, 16) :
         public CollisionShapeBase<T>
     {
     public:
@@ -156,7 +156,7 @@ namespace CBP
     };
 
 
-    class __declspec(align(16)) CollisionShapeCapsule :
+    class SKMP_ALIGN(CollisionShapeCapsule, 16) :
         public CollisionShapeTemplRH<btCapsuleShape>
     {
     public:
@@ -165,7 +165,7 @@ namespace CBP
         virtual void DoRecreateShape(float a_radius, float a_height);
     };
 
-    class __declspec(align(16)) CollisionShapeCone :
+    class SKMP_ALIGN(CollisionShapeCone, 16) :
         public CollisionShapeTemplRH<btConeShape>
     {
     public:
@@ -174,7 +174,7 @@ namespace CBP
         virtual void DoRecreateShape(float a_radius, float a_height);
     };
 
-    class __declspec(align(16)) CollisionShapeBox :
+    class SKMP_ALIGN(CollisionShapeBox, 16) :
         public CollisionShapeTemplExtent<btBoxShape>
     {
     public:
@@ -183,7 +183,7 @@ namespace CBP
         virtual void DoRecreateShape(const btVector3& a_extent);
     };
 
-    class __declspec(align(16)) CollisionShapeCylinder :
+    class SKMP_ALIGN(CollisionShapeCylinder, 16) :
         public CollisionShapeTemplRH<btCylinderShape>
     {
     public:
@@ -205,7 +205,7 @@ namespace CBP
         static const btVector3 m_vertices[4];
     };
 
-    class __declspec(align(16)) CollisionShapeMesh :
+    class SKMP_ALIGN(CollisionShapeMesh, 16) :
         public CollisionShapeTemplExtent<btGImpactMeshShape>
     {
     public:
@@ -222,7 +222,7 @@ namespace CBP
         btTriangleIndexVertexArray* m_triVertexArray;
     };
 
-    class __declspec(align(16)) CollisionShapeConvexHull :
+    class SKMP_ALIGN(CollisionShapeConvexHull, 16) :
         public CollisionShapeTemplExtent<btConvexHullShape>
     {
     public:
@@ -242,7 +242,7 @@ namespace CBP
         int m_convexHullNumVertices;
     };
 
-    __declspec(align(16)) class Collider :
+    class SKMP_ALIGN(Collider,16) :
         ILog
     {
         static constexpr float crdrmul = float(MATH_PI) / 180.0f;
@@ -257,9 +257,9 @@ namespace CBP
 
         bool Create(ColliderShapeType a_shape);
         bool Destroy();
-        __forceinline void Update();
+        SKMP_FORCEINLINE void Update();
 
-        inline void SetColliderRotation(float a_x, float a_y, float a_z)
+        SKMP_FORCEINLINE void SetColliderRotation(float a_x, float a_y, float a_z)
         {
             m_colRot.setEulerZYX(
                 a_x * crdrmul,
@@ -268,43 +268,43 @@ namespace CBP
             );
         }
         
-        inline void SetRadius(float a_val) {
+        SKMP_FORCEINLINE void SetRadius(float a_val) {
             if (m_created)
                 m_colshape->SetRadius(a_val);
         }
 
-        inline void SetHeight(float a_val) {
+        SKMP_FORCEINLINE void SetHeight(float a_val) {
             if (m_created)
                 m_colshape->SetHeight(a_val);
         }
 
-        inline void SetExtent(const btVector3& a_extent)
+        SKMP_FORCEINLINE void SetExtent(const btVector3& a_extent)
         {
             if (m_created)
                 m_colshape->SetExtent(a_extent);
         }
 
-        inline void SetOffset(const btVector3& a_offset, const btVector3& a_initial) {
+        SKMP_FORCEINLINE void SetOffset(const btVector3& a_offset, const btVector3& a_initial) {
             m_bodyOffset = a_offset;
             m_bodyOffsetPlusInitial = a_offset + a_initial;
         }
 
-        [[nodiscard]] inline bool IsActive() const {
+        [[nodiscard]] SKMP_FORCEINLINE bool IsActive() const {
             return m_created && m_active;
         }
 
-        [[nodiscard]] inline const auto& GetSphereOffset() const {
+        [[nodiscard]] SKMP_FORCEINLINE const auto& GetSphereOffset() const {
             return m_bodyOffset;
         }
 
-        inline void SetPositionScale(float a_scale) {
+        SKMP_FORCEINLINE void SetPositionScale(float a_scale) {
             m_positionScale = a_scale;
             m_doPositionScaling = a_scale != 1.0f;
         }
 
         void SetShouldProcess(bool a_switch);
 
-        inline void SetOffsetParent(bool a_switch) {
+        SKMP_FORCEINLINE void SetOffsetParent(bool a_switch) {
             m_offsetParent = a_switch;
         }
 
@@ -335,29 +335,24 @@ namespace CBP
         bool m_doPositionScaling;
         bool m_offsetParent;
 
-        PerfTimer pt;
-
         SimComponent& m_parent;
     };
 
-    __declspec(align(16)) class SimComponent
+    class SKMP_ALIGN(SimComponent, 16)
     {
-        __declspec(align(16)) struct Force
+        struct SKMP_ALIGN(Force, 16)
         {
             Force(
                 uint32_t a_steps,
-                const btVector3& a_norm,
-                float a_mag)
+                const btVector3& a_norm)
                 :
                 m_steps(a_steps),
-                m_norm(a_norm),
-                m_mag(a_mag)
+                m_force(a_norm)
             {
             }
 
-            btVector3 m_norm;
+            btVector3 m_force;
             uint32_t m_steps;
-            float m_mag;
         };
 
         friend class Collider;
@@ -379,7 +374,7 @@ namespace CBP
         btVector3 m_ld;
         btVector3 m_velocity;
 
-        btVector3 m_extent;
+        btVector3 m_colExtent;
         btVector3 m_colOffset;
         btVector3 m_linearScale;
 
@@ -397,8 +392,9 @@ namespace CBP
         float m_colRad;
         float m_colHeight;
         float m_nodeScale;
-        float m_massInv;
+        float m_invMass;
         float m_maxVelocity2;
+        float m_gravForce;
         uint64_t m_groupId;
         uint64_t m_parentId;
 
@@ -421,12 +417,12 @@ namespace CBP
 
         Collider m_collider;
 
-        bool ColUpdateWeightData(
+        void ColUpdateWeightData(
             Actor* a_actor,
             const configComponent16_t& a_config,
             const configNode_t& a_nodeConf);
 
-        __forceinline void ClampVelocity()
+        SKMP_FORCEINLINE void ClampVelocity()
         {
             float len2 = m_velocity.length2();
             if (len2 < m_maxVelocity2)
@@ -436,14 +432,14 @@ namespace CBP
             m_velocity *= m_conf.fp.f32.maxVelocity;
         }
 
-        __forceinline void ConstrainMotion(
+        SKMP_FORCEINLINE void ConstrainMotion(
             const btMatrix3x3& a_invRot,
             const btVector3& a_target,
             float a_timeStep
         );
 
-        __forceinline void SIMDFillObj();
-        __forceinline void SIMDFillParent();
+        SKMP_FORCEINLINE void SIMDFillObj();
+        SKMP_FORCEINLINE void SIMDFillParent();
 
     public:
         BT_DECLARE_ALIGNED_ALLOCATOR();
@@ -475,7 +471,7 @@ namespace CBP
             bool a_movement) noexcept;
 
         void UpdateMotion(float timeStep);
-        __forceinline void UpdateVelocity();
+        SKMP_FORCEINLINE void UpdateVelocity();
         void Reset();
         bool ValidateNodes(NiAVObject* a_obj);
 
@@ -485,86 +481,86 @@ namespace CBP
         void UpdateDebugInfo();
 #endif
 
-        __forceinline void AddVelocity(const btVector3& a_vel) {
+        SKMP_FORCEINLINE void AddVelocity(const btVector3& a_vel) {
             m_velocity += a_vel;
         }
 
-        [[nodiscard]] inline const auto& GetVelocity() const {
+        [[nodiscard]] SKMP_FORCEINLINE const auto& GetVelocity() const {
             return m_velocity;
         }
 
-        [[nodiscard]] inline const auto& GetConfig() const {
+        [[nodiscard]] SKMP_FORCEINLINE const auto& GetConfig() const {
             return m_conf;
         }
 
-        [[nodiscard]] inline const auto& GetConfigGroupName() const {
+        [[nodiscard]] SKMP_FORCEINLINE const auto& GetConfigGroupName() const {
             return m_configGroupName;
         }
         
-        [[nodiscard]] inline const auto& GetNodeName() const {
+        [[nodiscard]] SKMP_FORCEINLINE const auto& GetNodeName() const {
             return m_nodeName;
         }
 
-        [[nodiscard]] inline bool IsSameGroup(const SimComponent& a_rhs) const {
+        [[nodiscard]] SKMP_FORCEINLINE bool IsSameGroup(const SimComponent& a_rhs) const {
             return a_rhs.m_groupId != 0 && m_groupId != 0 &&
                 a_rhs.m_parentId == m_parentId &&
                 a_rhs.m_groupId == m_groupId;
         }
 
-        inline void UpdateGroupInfo(uint64_t a_groupId) {
+        SKMP_FORCEINLINE void UpdateGroupInfo(uint64_t a_groupId) {
             m_groupId = a_groupId;
         };
 
-        [[nodiscard]] inline bool HasMotion() const {
+        [[nodiscard]] SKMP_FORCEINLINE bool HasMotion() const {
             return m_movement;
         }
 
-        [[nodiscard]] inline bool HasActiveCollider() const {
+        [[nodiscard]] SKMP_FORCEINLINE bool HasActiveCollider() const {
             return m_collider.IsActive();
         }
 
-        [[nodiscard]] inline const auto& GetPos() const {
+        [[nodiscard]] SKMP_FORCEINLINE const auto& GetPos() const {
             return m_obj->m_worldTransform.pos;
         }
 
-        [[nodiscard]] inline const auto& GetWorldTransform() const {
+        [[nodiscard]] SKMP_FORCEINLINE const auto& GetWorldTransform() const {
             return m_obj->m_worldTransform;
         }
 
-        [[nodiscard]] inline const auto& GetParentWorldTransform() const {
+        [[nodiscard]] SKMP_FORCEINLINE const auto& GetParentWorldTransform() const {
             return m_objParent->m_worldTransform;
         }
 
-        [[nodiscard]] inline const auto& GetVirtualPos() const {
+        [[nodiscard]] SKMP_FORCEINLINE const auto& GetVirtualPos() const {
             return m_virtld;
         }
 
-        [[nodiscard]] inline const auto& GetCenterOfMass() const {
+        [[nodiscard]] SKMP_FORCEINLINE const auto& GetCenterOfGravity() const {
             return m_cogOffset;
         }
 
-        [[nodiscard]] inline float GetNodeScale() const {
+        [[nodiscard]] SKMP_FORCEINLINE float GetNodeScale() const {
             return m_obj->m_worldTransform.scale;
         }
 
-        [[nodiscard]] inline auto& GetCollider() {
+        [[nodiscard]] SKMP_FORCEINLINE auto& GetCollider() {
             return m_collider;
         }
 
-        [[nodiscard]] inline const auto& GetCollider() const {
+        [[nodiscard]] SKMP_FORCEINLINE const auto& GetCollider() const {
             return m_collider;
         }
 
-        [[nodiscard]] inline const float GetMassInverse() const {
-            return m_massInv;
+        [[nodiscard]] SKMP_FORCEINLINE const float GetMassInverse() const {
+            return m_invMass;
         }
 
-        [[nodiscard]] inline auto GetNode() {
+        [[nodiscard]] SKMP_FORCEINLINE auto GetNode() {
             return m_obj.m_pObject;
         }
 
 #ifdef _CBP_ENABLE_DEBUG
-        [[nodiscard]] inline const auto& GetDebugInfo() const {
+        [[nodiscard]] SKMP_FORCEINLINE const auto& GetDebugInfo() const {
             return m_debugInfo;
         }
 #endif
@@ -572,15 +568,15 @@ namespace CBP
 
     namespace Math
     {
-        __forceinline float norm(float a_val, float a_min, float a_max) {
+        SKMP_FORCEINLINE float norm(float a_val, float a_min, float a_max) {
             return (a_val - a_min) / (a_max - a_min);
         }
 
-        __forceinline float normc(float a_val, float a_min, float a_max) {
+        SKMP_FORCEINLINE float normc(float a_val, float a_min, float a_max) {
             return std::clamp(norm(a_val, a_min, a_max), 0.0f, 1.0f);
         }
 
-        __forceinline constexpr float sgn(float a_val) {
+        SKMP_FORCEINLINE constexpr float sgn(float a_val) {
             return a_val < 0.0f ? -1.0f : 1.0f;
         }
     }

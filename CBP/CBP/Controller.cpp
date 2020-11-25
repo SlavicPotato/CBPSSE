@@ -2,7 +2,7 @@
 
 namespace CBP
 {
-    __forceinline static bool ActorValid(const Actor* actor)
+    SKMP_FORCEINLINE static bool ActorValid(const Actor* actor)
     {
         if (actor == nullptr ||
             actor->loadedState == nullptr ||
@@ -14,7 +14,7 @@ namespace CBP
         return true;
     }
 
-    __forceinline static bool ActorValid2(const Actor* actor)
+    SKMP_FORCEINLINE static bool ActorValid2(const Actor* actor)
     {
         if (actor->loadedState == nullptr ||
             actor->loadedState->node == nullptr ||
@@ -56,7 +56,7 @@ namespace CBP
                 renderer->GenerateMovingNodes(
                     actorList,
                     globalConf.debugRenderer.movingNodesRadius,
-                    globalConf.debugRenderer.movingNodesCenterOfMass,
+                    globalConf.debugRenderer.movingNodesCenterOfGravity,
                     m_markedActor);
             }
         }
@@ -238,9 +238,7 @@ namespace CBP
             if (!ActorValid(actor))
             {
                 if (globalConfig.general.controllerStats)
-                {
                     Debug("Removing [%.8llX] [%s] (no longer valid)", GetFormID(it->first), GetActorName(actor));
-                }
 
                 IConfig::RemoveArmorOverride(it->first);
                 IConfig::ClearMergedCacheThreshold();
@@ -259,9 +257,7 @@ namespace CBP
                     it->second.SetSuspended(true);
 
                     if (globalConfig.general.controllerStats)
-                    {
                         Debug("Suspended [%.8llX] [%s]", GetFormID(it->first), GetActorName(actor));
-                    }
                 }
             }
             else
@@ -271,9 +267,7 @@ namespace CBP
                     it->second.SetSuspended(false);
 
                     if (globalConfig.general.controllerStats)
-                    {
                         Debug("Unsuspended [%.8llX] [%s]", GetFormID(it->first), GetActorName(actor));
-                    }
                 }
             }
 
@@ -307,12 +301,13 @@ namespace CBP
         if (npc != nullptr) {
             sex = CALL_MEMBER_FN(npc, GetSex)();
         }
-        else
+        else {
             sex = 0;
 
-        if (sex == 0 && globalConfig.general.femaleOnly)
-            return;
-
+            if (globalConfig.general.femaleOnly)
+                return;
+        }
+        
         if (globalConfig.general.armorOverrides)
         {
             armorOverrideResults_t ovResult;
@@ -410,11 +405,9 @@ namespace CBP
 
     void ControllerTask::DoConfigUpdate(Game::ObjectHandle a_handle, Actor* a_actor, SimObject& a_obj)
     {
-        const auto& globalConfig = IConfig::GetGlobal();
-
         a_obj.UpdateConfig(
             a_actor,
-            globalConfig.phys.collisions,
+            IConfig::GetGlobal().phys.collisions,
             IConfig::GetActorPhysicsAO(a_handle));
     }
 
@@ -424,24 +417,26 @@ namespace CBP
         const std::string& a_component,
         const NiPoint3& a_force)
     {
-        if (a_handle) {
+        if (a_handle != Game::ObjectHandle(0)) 
+        {
             auto it = m_actors.find(a_handle);
             if (it != m_actors.end())
                 it->second.ApplyForce(a_steps, a_component, a_force);
         }
-        else {
+        else
+        {
             for (auto& e : m_actors)
                 e.second.ApplyForce(a_steps, a_component, a_force);
         }
     }
 
-    void ControllerTask::ClearActors()
+    void ControllerTask::ClearActors(bool a_noNotify)
     {
         const auto& globalConfig = IConfig::GetGlobal();
 
-        if (globalConfig.general.controllerStats)
+        if (globalConfig.general.controllerStats && !a_noNotify)
         {
-            for (auto& e : m_actors)
+            for (const auto& e : m_actors)
             {
                 auto actor = Game::ResolveObject<Actor>(e.first, Actor::kTypeID);
                 Debug("Removing [%.8llX] [%s] (CLR)", GetFormID(e.first), GetActorName(actor));
@@ -459,9 +454,7 @@ namespace CBP
         const auto& globalConfig = IConfig::GetGlobal();
 
         if (globalConfig.general.controllerStats)
-        {
             Debug("Resetting");
-        }
 
         handleSet_t handles;
 
@@ -481,8 +474,6 @@ namespace CBP
     {
         for (auto& e : m_actors)
             e.second.Reset();
-
-        auto& globalConf = IConfig::GetGlobal();
     }
 
     void ControllerTask::WeightUpdate(Game::ObjectHandle a_handle)
@@ -658,11 +649,11 @@ namespace CBP
         if (!globalConfig.general.armorOverrides)
             return;
 
-        for (auto& e : m_actors) {
-
+        for (auto& e : m_actors) 
+        {
             auto actor = Game::ResolveObject<Actor>(e.first, Actor::kTypeID);
             if (!actor)
-                return;
+                continue;
 
             DoUpdateArmorOverrides(e, actor);
         }

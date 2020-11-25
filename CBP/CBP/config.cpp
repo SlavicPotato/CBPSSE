@@ -29,6 +29,7 @@ namespace CBP
     configNode_t IConfig::defaultNodeConfig;
 
     IConfig::IConfigLog IConfig::log;
+    except::descriptor IConfig::lastException;
 
     static const nodeMap_t defaultNodeMap
     {
@@ -53,12 +54,9 @@ namespace CBP
 
             return parser.Parse(root, a_out);
         }
-        catch (const std::system_error& e)
-        {
-            log.Error("%s: %s", __FUNCTION__, e.what());
-        }
         catch (const std::exception& e)
         {
+            lastException = e;
             log.Error("%s: %s", __FUNCTION__, e.what());
         }
 
@@ -81,12 +79,9 @@ namespace CBP
 
             return true;
         }
-        catch (const std::system_error& e)
-        {
-            log.Error("%s: %s", __FUNCTION__, e.what());
-        }
         catch (const std::exception& e)
         {
+            lastException = e;
             log.Error("%s: %s", __FUNCTION__, e.what());
         }
 
@@ -124,7 +119,10 @@ namespace CBP
         bool a_save)
     {
         if (nodeMap.contains(a_node))
+        {
+            lastException = "Node already belongs to a group";
             return false;
+        }
 
         nodeMap.try_emplace(a_node, a_confGroup);
         validConfGroups.emplace(a_confGroup);
@@ -143,13 +141,19 @@ namespace CBP
     {
         auto itm = nodeMap.find(a_node);
         if (itm == nodeMap.end())
+        {
+            lastException = "Node not found";
             return false;
+        }
 
         auto& confGroup = itm->second;
 
         auto itc = configGroupMap.find(confGroup);
         if (itc == configGroupMap.end())
+        {
+            lastException = "Config group not found";
             return false;
+        }
 
         auto it = std::find(itc->second.begin(), itc->second.end(), a_node);
         if (it != itc->second.end())

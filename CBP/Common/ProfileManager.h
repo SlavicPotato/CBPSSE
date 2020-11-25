@@ -26,56 +26,56 @@ public:
     virtual bool Save(const T& a_data, bool a_store) = 0;
     virtual void SetDefaults() noexcept = 0;
 
-    inline void SetPath(const std::filesystem::path& a_path) noexcept {
+    SKMP_FORCEINLINE void SetPath(const std::filesystem::path& a_path) noexcept {
         m_path = a_path;
         m_name = a_path.stem().string();
     }
 
-    inline void SetDescription(const std::string& a_text) noexcept {
+    SKMP_FORCEINLINE void SetDescription(const std::string& a_text) noexcept {
         m_desc = a_text;
     }
 
-    inline void SetDescription(std::string&& a_text) noexcept {
+    SKMP_FORCEINLINE void SetDescription(std::string&& a_text) noexcept {
         m_desc = std::move(a_text);
     }
 
-    inline void ClearDescription() noexcept {
+    SKMP_FORCEINLINE void ClearDescription() noexcept {
         m_desc.Clear();
     }
 
-    [[nodiscard]] inline const auto& GetDescription() const noexcept {
+    [[nodiscard]] SKMP_FORCEINLINE const auto& GetDescription() const noexcept {
         return m_desc;
     }
 
-    [[nodiscard]] inline const auto& Name() const noexcept {
+    [[nodiscard]] SKMP_FORCEINLINE const auto& Name() const noexcept {
         return m_name;
     }
     
-    [[nodiscard]] inline const auto& Path() const noexcept {
+    [[nodiscard]] SKMP_FORCEINLINE const auto& Path() const noexcept {
         return m_path;
     }
 
-    [[nodiscard]] inline const auto& PathStr() const noexcept {
+    [[nodiscard]] SKMP_FORCEINLINE const auto& PathStr() const noexcept {
         return m_pathStr;
     }
 
-    [[nodiscard]] inline T& Data() noexcept {
+    [[nodiscard]] SKMP_FORCEINLINE T& Data() noexcept {
         return m_data;
     }
 
-    [[nodiscard]] inline const T& Data() const noexcept {
+    [[nodiscard]] SKMP_FORCEINLINE const T& Data() const noexcept {
         return m_data;
     }
 
-    [[nodiscard]] inline const auto& GetLastException() const noexcept {
+    [[nodiscard]] SKMP_FORCEINLINE const auto& GetLastException() const noexcept {
         return m_lastExcept;
     }
 
-    [[nodiscard]] inline uint64_t GetID() const noexcept {
+    [[nodiscard]] SKMP_FORCEINLINE uint64_t GetID() const noexcept {
         return m_id;
     }
 
-    inline void SetID(uint64_t a_id) noexcept {
+    SKMP_FORCEINLINE void SetID(uint64_t a_id) noexcept {
         m_id = a_id;
     }
 
@@ -115,7 +115,7 @@ public:
     virtual bool Save(const T& a_data, bool a_store);
     virtual void SetDefaults() noexcept;
 
-    inline bool Save() {
+    SKMP_FORCEINLINE bool Save() {
         return Save(m_data, false);
     }
 
@@ -229,17 +229,17 @@ public:
     [[nodiscard]] bool DeleteProfile(const std::string& a_name);
     [[nodiscard]] bool RenameProfile(const std::string& a_oldName, const std::string& a_newName);
 
-    [[nodiscard]] inline profileStorage_t& Data() noexcept { return m_storage; }
-    [[nodiscard]] inline const profileStorage_t& Data() const noexcept { return m_storage; }
-    [[nodiscard]] inline T& Get(const std::string& a_key) { return m_storage.at(a_key); };
-    [[nodiscard]] inline typename profileStorage_t::const_iterator Find(const std::string& a_key) const { return m_storage.find(a_key); };
-    [[nodiscard]] inline typename profileStorage_t::const_iterator End() const { return m_storage.end(); };
-    [[nodiscard]] inline const T& Get(const std::string& a_key) const { return m_storage.at(a_key); };
-    [[nodiscard]] inline bool Contains(const std::string& a_key) const { return m_storage.contains(a_key); };
-    [[nodiscard]] inline const auto& GetLastException() const noexcept { return m_lastExcept; }
-    [[nodiscard]] inline bool IsInitialized() const noexcept { return m_isInitialized; }
-    [[nodiscard]] inline typename profileStorage_t::size_type Size() const noexcept { return m_storage.size(); }
-    [[nodiscard]] inline bool Empty() const noexcept { return m_storage.empty(); }
+    [[nodiscard]] SKMP_FORCEINLINE profileStorage_t& Data() noexcept { return m_storage; }
+    [[nodiscard]] SKMP_FORCEINLINE const profileStorage_t& Data() const noexcept { return m_storage; }
+    [[nodiscard]] SKMP_FORCEINLINE T& Get(const std::string& a_key) { return m_storage.at(a_key); };
+    [[nodiscard]] SKMP_FORCEINLINE typename profileStorage_t::const_iterator Find(const std::string& a_key) const { return m_storage.find(a_key); };
+    [[nodiscard]] SKMP_FORCEINLINE typename profileStorage_t::const_iterator End() const { return m_storage.end(); };
+    [[nodiscard]] SKMP_FORCEINLINE const T& Get(const std::string& a_key) const { return m_storage.at(a_key); };
+    [[nodiscard]] SKMP_FORCEINLINE bool Contains(const std::string& a_key) const { return m_storage.contains(a_key); };
+    [[nodiscard]] SKMP_FORCEINLINE const auto& GetLastException() const noexcept { return m_lastExcept; }
+    [[nodiscard]] SKMP_FORCEINLINE bool IsInitialized() const noexcept { return m_isInitialized; }
+    [[nodiscard]] SKMP_FORCEINLINE typename profileStorage_t::size_type Size() const noexcept { return m_storage.size(); }
+    [[nodiscard]] SKMP_FORCEINLINE bool Empty() const noexcept { return m_storage.empty(); }
 
     //void MarkChanged(const std::string& a_key);
 

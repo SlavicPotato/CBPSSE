@@ -119,7 +119,7 @@ namespace CBP
         static void DispatchActorTask(Actor* actor, ControllerInstruction::Action action);
         static void DispatchActorTask(Game::ObjectHandle handle, ControllerInstruction::Action action);
 
-        [[nodiscard]] inline static const auto& GetSimActorList() {
+        [[nodiscard]] SKMP_FORCEINLINE static const auto& GetSimActorList() {
             return m_Instance.m_updateTask.GetSimActorList();
         }
 
@@ -140,27 +140,27 @@ namespace CBP
 
         static bool SaveAll();
 
-        inline static bool SaveGlobals() {
+        SKMP_FORCEINLINE static bool SaveGlobals() {
             return m_Instance.m_serialization.SaveGlobalConfig();
         }
 
-        inline static void MarkGlobalsForSave() {
+        SKMP_FORCEINLINE static void MarkGlobalsForSave() {
             m_Instance.m_serialization.MarkForSave(ISerialization::kGlobals);
         }
 
-        inline static void MarkForSave(ISerialization::Group a_grp) {
+        SKMP_FORCEINLINE static void MarkForSave(ISerialization::Group a_grp) {
             m_Instance.m_serialization.MarkForSave(a_grp);
         }
 
-        inline static bool SaveCollisionGroups() {
+        SKMP_FORCEINLINE static bool SaveCollisionGroups() {
             return m_Instance.m_serialization.SaveCollisionGroups();
         }
 
-        inline static bool SavePending() {
+        SKMP_FORCEINLINE static bool SavePending() {
             return m_Instance.m_serialization.SavePending();
         }
 
-        inline static bool SaveToDefaultGlobalProfile() {
+        SKMP_FORCEINLINE static bool SaveToDefaultGlobalProfile() {
             return m_Instance.m_serialization.SaveToDefaultGlobalProfile();
         }
 
@@ -168,63 +168,63 @@ namespace CBP
         static bool ImportData(const std::filesystem::path& a_path, ISerialization::ImportFlags a_flags);
         static bool GetImportInfo(const std::filesystem::path& a_path, importInfo_t& a_out);
 
-        [[nodiscard]] inline static const auto& GetLastSerializationException() {
+        [[nodiscard]] SKMP_FORCEINLINE static const auto& GetLastSerializationException() {
             return m_Instance.m_serialization.GetLastException();
         }
 
-        inline static void UIQueueUpdateCurrentActorA() {
+        SKMP_FORCEINLINE static void UIQueueUpdateCurrentActorA() {
             m_Instance.m_uiContext.QueueListUpdateCurrent();
         }
 
-        inline static void QueueActorCacheUpdate() {
+        SKMP_FORCEINLINE static void QueueActorCacheUpdate() {
             DTasks::AddTask(&m_Instance.m_updateActorCacheTask);
         }
 
-        [[nodiscard]] inline static auto& GetUpdateTask() {
+        [[nodiscard]] SKMP_FORCEINLINE static auto& GetUpdateTask() {
             return m_Instance.m_updateTask;
         }
 
         static void ResetProfiler();
         static void SetProfilerInterval(long long a_interval);
 
-        [[nodiscard]] inline static auto& GetProfiler() {
+        [[nodiscard]] SKMP_FORCEINLINE static auto& GetProfiler() {
             return m_Instance.m_updateTask.GetProfiler();
         }
 
-        inline static void Lock() {
+        SKMP_FORCEINLINE static void Lock() {
             m_Instance.m_lock.Enter();
         }
 
-        inline static void Unlock() {
+        SKMP_FORCEINLINE static void Unlock() {
             m_Instance.m_lock.Leave();
         }
 
-        inline static auto GetLock() {
+        SKMP_FORCEINLINE static auto GetLock() {
             return std::addressof(m_Instance.m_lock);
         }
 
-        [[nodiscard]] inline static const auto& GetDriverConfig()
+        [[nodiscard]] SKMP_FORCEINLINE static const auto& GetDriverConfig()
         {
             return m_Instance.m_conf;
         }
 
-        inline static auto& GetRenderer() {
+        SKMP_FORCEINLINE static auto& GetRenderer() {
             return m_Instance.m_renderer;
         }
 
-        inline static void UpdateKeys() {
+        SKMP_FORCEINLINE static void UpdateKeys() {
             m_Instance.m_inputEventHandler.UpdateKeys();
         }
 
-        inline static void SetMarkedActor(Game::ObjectHandle a_handle) {
+        SKMP_FORCEINLINE static void SetMarkedActor(Game::ObjectHandle a_handle) {
             m_Instance.m_updateTask.SetMarkedActor(a_handle);
         }
 
-        inline static void QueueUIReset() {
+        SKMP_FORCEINLINE static void QueueUIReset() {
             m_Instance.m_resetUI = true;
         }
 
-        inline static auto& GetUIContext() {
+        SKMP_FORCEINLINE static auto& GetUIContext() {
             return m_Instance.m_uiContext;
         }
 

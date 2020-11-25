@@ -66,7 +66,7 @@ namespace CBP
         static void UpdateActorMaps(Game::ObjectHandle a_handle, Actor* a_actor);
         static void UpdateActorMaps(Game::ObjectHandle a_handle);
 
-        static inline const actorRefData_t* GetActorRefInfo(Game::ObjectHandle a_handle) {
+        static SKMP_FORCEINLINE const actorRefData_t* GetActorRefInfo(Game::ObjectHandle a_handle) {
             auto it = actorNpcMap.find(a_handle);
             if (it != actorNpcMap.end()) {
                 return std::addressof(it->second);
@@ -76,31 +76,31 @@ namespace CBP
 
         static void UpdateActorCache(const simActorList_t& a_list);
 
-        [[nodiscard]] inline static const auto& GetActorCache() {
+        [[nodiscard]] SKMP_FORCEINLINE static const auto& GetActorCache() {
             return actorCache;
         }
 
-        [[nodiscard]] inline static uint64_t GetActorCacheUpdateId() {
+        [[nodiscard]] SKMP_FORCEINLINE static uint64_t GetActorCacheUpdateId() {
             return actorCacheUpdateId;
         }
 
-        [[nodiscard]] inline static auto GetCrosshairRef() {
+        [[nodiscard]] SKMP_FORCEINLINE static auto GetCrosshairRef() {
             return crosshairRef;
         }
 
-        [[nodiscard]] inline static const auto& GetRaceListEntry(Game::FormID a_formid) {
+        [[nodiscard]] SKMP_FORCEINLINE static const auto& GetRaceListEntry(Game::FormID a_formid) {
             return raceList.at(a_formid);
         }
 
-        [[nodiscard]] inline static const auto& GetRaceList() {
+        [[nodiscard]] SKMP_FORCEINLINE static const auto& GetRaceList() {
             return raceList;
         }
 
-        [[nodiscard]] inline static auto RaceListSize() {
+        [[nodiscard]] SKMP_FORCEINLINE static auto RaceListSize() {
             return raceList.size();
         }
 
-        [[nodiscard]] inline static bool IsIgnoredRace(Game::FormID a_formid) {
+        [[nodiscard]] SKMP_FORCEINLINE static bool IsIgnoredRace(Game::FormID a_formid) {
             return ignoredRaces.find(a_formid) != ignoredRaces.end();
         }
 
@@ -110,7 +110,7 @@ namespace CBP
         static const armorCacheEntry_t* GetArmorCacheEntry(const std::string& a_path);
         static bool UpdateArmorCache(const std::string& a_path, armorCacheEntry_t** a_out);
 
-        [[nodiscard]] inline static const auto& GetLastException() {
+        [[nodiscard]] SKMP_FORCEINLINE static const auto& GetLastException() {
             return lastException;
         }
 

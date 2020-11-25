@@ -20,7 +20,6 @@ namespace stl
     template <class C, class T = std::char_traits<C>, class A = mem::aligned_allocator<C, 32>>
     using basic_string = std::basic_string<C, T, A>;
 
-
     template <class C, class T = std::char_traits<C>, class A = mem::aligned_allocator<C, 32>>
     using basic_ostringstream = std::basic_ostringstream<C, T, A>;
 

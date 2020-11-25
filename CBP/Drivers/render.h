@@ -12,7 +12,7 @@ namespace CBP
     public:
         static bool Initialize();
 
-        inline static void AddPresentCallback(presentCallback_t f) {
+        SKMP_FORCEINLINE static void AddPresentCallback(presentCallback_t f) {
             m_Instance.m_presentCallbacks.push_back(f);
         }
 

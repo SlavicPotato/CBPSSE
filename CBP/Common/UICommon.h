@@ -6,7 +6,7 @@ namespace UICommon
     {
     protected:
 
-        inline float GetNextTextOffset(const char* a_text, bool a_clear = false)
+        SKMP_FORCEINLINE float GetNextTextOffset(const char* a_text, bool a_clear = false)
         {
             if (a_clear)
                 ClearTextOffset();
@@ -18,11 +18,11 @@ namespace UICommon
             return (m_posOffset += ImGui::CalcTextSize(a_text).x + 5.0f);
         }
 
-        inline void ClearTextOffset() {
+        SKMP_FORCEINLINE void ClearTextOffset() {
             m_posOffset = 0.0f;
         }
 
-        inline bool ButtonRight(const char* a_text)
+        SKMP_FORCEINLINE bool ButtonRight(const char* a_text)
         {
             bool res = ImGui::Button(a_text);
             m_ctlPositions[a_text] = ImGui::GetItemRectSize().x;
@@ -203,27 +203,27 @@ namespace UICommon
 
         virtual bool Test(const std::string& a_haystack) const = 0;
 
-        inline bool IsOpen() const noexcept {
+        SKMP_FORCEINLINE bool IsOpen() const noexcept {
             return m_searchOpen;
         }
 
-        [[nodiscard]] inline explicit operator bool() const noexcept {
+        [[nodiscard]] SKMP_FORCEINLINE explicit operator bool() const noexcept {
             return m_filter.Has();
         }
 
-        [[nodiscard]] inline const auto& operator*() const noexcept {
+        [[nodiscard]] SKMP_FORCEINLINE const auto& operator*() const noexcept {
             return m_filter;
         }
 
-        [[nodiscard]] inline const auto* operator->() const noexcept {
+        [[nodiscard]] SKMP_FORCEINLINE const auto* operator->() const noexcept {
             return std::addressof(m_filter);
         }
 
-        inline void NextSetFocus() {
+        SKMP_FORCEINLINE void NextSetFocus() {
             m_nextSetFocus = true;
         }
 
-        inline bool Has() const noexcept {
+        SKMP_FORCEINLINE bool Has() const noexcept {
             return m_filter.Has();
         }
 
@@ -366,7 +366,7 @@ namespace UICommon
         void Run(float a_fontScale);
 
         template <class... Args>
-        inline decltype(auto) push(Args&&... a_v) {
+        SKMP_FORCEINLINE decltype(auto) push(Args&&... a_v) {
             return m_queue.emplace(std::forward<Args>(a_v)...);
         }
 
@@ -450,7 +450,7 @@ namespace UICommon
         }
 
         template <typename T>
-        __forceinline T get(storage_type::size_type a_index) const
+        SKMP_FORCEINLINE T get(storage_type::size_type a_index) const
         {
             return boost::any_cast<T>(m_data[a_index]);
         }
@@ -500,15 +500,15 @@ namespace UICommon
             _snprintf_s(m_buf, _TRUNCATE, a_fmt, std::forward<Args>(a_args)...);
         }
 
-        inline void call(const func_type& a_func) {
+        SKMP_FORCEINLINE void call(const func_type& a_func) {
             m_func = a_func;
         }
 
-        inline void call(func_type&& a_func) {
+        SKMP_FORCEINLINE void call(func_type&& a_func) {
             m_func = std::move(a_func);
         }
 
-        inline const auto& GetInput() const noexcept {
+        SKMP_FORCEINLINE const auto& GetInput() const noexcept {
             return m_input;
         }
 
@@ -759,7 +759,7 @@ namespace UICommon
 
         void Draw(bool* a_active, float a_scale);
 
-        inline const char* GetName() const {
+        SKMP_FORCEINLINE const char* GetName() const {
             return m_name;
         }
     protected:

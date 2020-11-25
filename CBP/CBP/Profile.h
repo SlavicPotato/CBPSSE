@@ -37,12 +37,12 @@ namespace CBP
 
     public:
         template <typename T, std::enable_if_t<std::is_same<T, PhysicsProfile>::value, int> = 0>
-        [[nodiscard]] inline static ProfileManager<T>& GetSingleton() noexcept {
+        [[nodiscard]] SKMP_FORCEINLINE static ProfileManager<T>& GetSingleton() noexcept {
             return m_Instance1;
         }
 
         template <typename T, std::enable_if_t<std::is_same<T, NodeProfile>::value, int> = 0>
-        [[nodiscard]] inline static ProfileManager<T>& GetSingleton() noexcept {
+        [[nodiscard]] SKMP_FORCEINLINE static ProfileManager<T>& GetSingleton() noexcept {
             return m_Instance2;
         }
 

@@ -4,7 +4,7 @@
 
 namespace CBP
 {
-    struct ControllerInstruction
+    struct __declspec(align(16)) ControllerInstruction
     {
         enum class Action : uint32_t 
         {
@@ -55,22 +55,22 @@ namespace CBP
 
     private:
 
-        __forceinline void CullActors();
-        __forceinline void UpdatePhase1();
-        __forceinline void UpdateActorsPhase2(float a_timeStep);
+        SKMP_FORCEINLINE void CullActors();
+        SKMP_FORCEINLINE void UpdatePhase1();
+        SKMP_FORCEINLINE void UpdateActorsPhase2(float a_timeStep);
 
-        __forceinline uint32_t UpdatePhysics(Game::BSMain* a_main, float a_interval);
+        SKMP_FORCEINLINE uint32_t UpdatePhysics(Game::BSMain* a_main, float a_interval);
 
 #ifdef _CBP_ENABLE_DEBUG
-        __forceinline void UpdatePhase3();
+        SKMP_FORCEINLINE void UpdatePhase3();
 #endif
 
-        __forceinline uint32_t UpdatePhase2(
+        SKMP_FORCEINLINE uint32_t UpdatePhase2(
             float a_timeStep, 
             float a_timeTick, 
             float a_maxTime);
 
-        __forceinline uint32_t UpdatePhase2Collisions(
+        SKMP_FORCEINLINE uint32_t UpdatePhase2Collisions(
             float a_timeStep,
             float a_timeTick, 
             float a_maxTime);
@@ -95,7 +95,7 @@ namespace CBP
     public:
         void PhysicsTick(Game::BSMain* a_main);
 
-        void ClearActors();
+        void ClearActors(bool a_noNotify = false);
 
         void ApplyForce(
             Game::ObjectHandle a_handle,
@@ -105,24 +105,26 @@ namespace CBP
 
         void UpdateDebugRenderer();
 
-        inline const auto& GetSimActorList() const {
+        SKMP_FORCEINLINE const auto& GetSimActorList() const {
             return m_actors;
         };
 
-        inline auto& GetProfiler() {
+        SKMP_FORCEINLINE auto& GetProfiler() {
             return m_profiler;
         }
 
-        inline void UpdateTimeTick(float a_val) {
+        SKMP_FORCEINLINE void UpdateTimeTick(float a_val) {
             m_averageInterval = a_val;
         }
 
-        inline void SetMarkedActor(Game::ObjectHandle a_handle) {
+        SKMP_FORCEINLINE void SetMarkedActor(Game::ObjectHandle a_handle) {
             m_markedActor = a_handle;
         }
 
         FN_NAMEPROC("Controller")
+
     private:
+
         void ProcessTasks();
         void GatherActors(handleSet_t& a_out);
 
@@ -139,16 +141,16 @@ namespace CBP
             simActorList_t::value_type& a_entry,
             Actor* a_actor);
 
-        __forceinline void DoConfigUpdate(
+        SKMP_FORCEINLINE void DoConfigUpdate(
             Game::ObjectHandle a_handle, 
             Actor* a_actor, 
             SimObject& a_obj);
 
-        __forceinline const char* GetActorName(Actor* a_actor) {
+        SKMP_FORCEINLINE const char* GetActorName(Actor* a_actor) {
             return a_actor ? CALL_MEMBER_FN(a_actor, GetReferenceName)() : "nullptr";
         }
 
-        __forceinline Game::FormID GetFormID(Game::ObjectHandle a_handle) {
+        SKMP_FORCEINLINE Game::FormID GetFormID(Game::ObjectHandle a_handle) {
             return Game::FormID(a_handle & 0xFFFFFFFF);
         }
 

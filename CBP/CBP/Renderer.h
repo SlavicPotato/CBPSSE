@@ -29,16 +29,16 @@ namespace CBP
         Renderer() = delete;
 
         void Draw();
-        void GenerateMovingNodes(const simActorList_t& a_actorList, float a_radius, bool a_centerOfMass, Game::ObjectHandle a_markedHandle);
+        void GenerateMovingNodes(const simActorList_t& a_actorList, float a_radius, bool a_centerOfGravity, Game::ObjectHandle a_markedHandle);
         void GenerateMovementConstraints(const simActorList_t& a_actorList, float a_radius);
 
         void Clear();
 
-        inline void SetContactPointSphereRadius(btScalar a_val) {
+        SKMP_FORCEINLINE void SetContactPointSphereRadius(btScalar a_val) {
             m_contactPointSphereRadius = a_val;
         }
 
-        inline void SetContactNormalLength(btScalar a_val) {
+        SKMP_FORCEINLINE void SetContactNormalLength(btScalar a_val) {
             m_contactNormalLength = a_val;
         }
         
@@ -71,9 +71,9 @@ namespace CBP
 
         void GenerateSphere(const NiPoint3& a_pos, float a_radius, const DirectX::XMFLOAT4& a_col);
 
-        __forceinline bool GetScreenPt(const btVector3& a_pos, const btVector3 &a_col, VertexType& a_out);
-        __forceinline bool GetScreenPt(const btVector3& a_pos, const DirectX::XMFLOAT4& a_col, VertexType& a_out);
-        __forceinline bool GetScreenPt(const NiPoint3& a_pos, const DirectX::XMFLOAT4& a_col, VertexType& a_out);
+        SKMP_FORCEINLINE bool GetScreenPt(const btVector3& a_pos, const btVector3 &a_col, VertexType& a_out);
+        SKMP_FORCEINLINE bool GetScreenPt(const btVector3& a_pos, const DirectX::XMFLOAT4& a_col, VertexType& a_out);
+        SKMP_FORCEINLINE bool GetScreenPt(const NiPoint3& a_pos, const DirectX::XMFLOAT4& a_col, VertexType& a_out);
 
         virtual void drawLine(const btVector3& from, const btVector3& to, const btVector3& color) override;
         virtual void drawTriangle(const btVector3& v0, const btVector3& v1, const btVector3& v2, const btVector3& color, btScalar /*alpha*/) override;
