@@ -147,9 +147,6 @@
     <ClInclude Include="CBP\SimComponent.h">
       <Filter>Header Files\CBP</Filter>
     </ClInclude>
-    <ClInclude Include="Common\Hash.h">
-      <Filter>Header Files\Common</Filter>
-    </ClInclude>
     <ClInclude Include="Common\ProfileManager.h">
       <Filter>Header Files\Common</Filter>
     </ClInclude>
@@ -173,12 +170,6 @@
     </ClInclude>
     <ClInclude Include="CBP\Config.h">
       <Filter>Header Files\CBP</Filter>
-    </ClInclude>
-    <ClInclude Include="Common\STL.h">
-      <Filter>Header Files\Common</Filter>
-    </ClInclude>
-    <ClInclude Include="Common\Mem.h">
-      <Filter>Header Files\Common</Filter>
     </ClInclude>
     <ClInclude Include="resource.h">
       <Filter>Header Files</Filter>

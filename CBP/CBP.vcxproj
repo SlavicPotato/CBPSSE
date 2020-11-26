@@ -338,7 +338,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>BT_USE_SSE_IN_API;B3_USE_SSE_IN_API;BT_THREADSAFE=0;IMGUI_IMPL_WIN32_DISABLE_GAMEPAD;NOMINMAX;NTDDI_VERSION=NTDDI_WIN10;_DEBUG;CBP_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING;BT_USE_SSE_IN_API;B3_USE_SSE_IN_API;BT_THREADSAFE=0;IMGUI_IMPL_WIN32_DISABLE_GAMEPAD;NOMINMAX;NTDDI_VERSION=NTDDI_WIN10;_DEBUG;CBP_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>false</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
@@ -374,7 +374,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>false</SDLCheck>
-      <PreprocessorDefinitions>BT_USE_SSE_IN_API;B3_USE_SSE_IN_API;BT_THREADSAFE=0;IMGUI_IMPL_WIN32_DISABLE_GAMEPAD;NOMINMAX;NTDDI_VERSION=NTDDI_WIN10;NDEBUG;CBP_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING;BT_USE_SSE_IN_API;B3_USE_SSE_IN_API;BT_THREADSAFE=0;IMGUI_IMPL_WIN32_DISABLE_GAMEPAD;NOMINMAX;NTDDI_VERSION=NTDDI_WIN10;NDEBUG;CBP_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>false</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
@@ -414,7 +414,7 @@
       <WarningLevel>Level3</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>BT_USE_SSE_IN_API;B3_USE_SSE_IN_API;BT_THREADSAFE=0;IMGUI_IMPL_WIN32_DISABLE_GAMEPAD;NOMINMAX;NTDDI_VERSION=NTDDI_WIN7;NDEBUG;CBP_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING;BT_USE_SSE_IN_API;B3_USE_SSE_IN_API;BT_THREADSAFE=0;IMGUI_IMPL_WIN32_DISABLE_GAMEPAD;NOMINMAX;NTDDI_VERSION=NTDDI_WIN7;NDEBUG;CBP_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>false</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
@@ -454,7 +454,7 @@
       <WarningLevel>Level3</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>BT_USE_SSE_IN_API;B3_USE_SSE_IN_API;BT_THREADSAFE=0;IMGUI_IMPL_WIN32_DISABLE_GAMEPAD;NOMINMAX;NTDDI_VERSION=NTDDI_WIN7;NDEBUG;CBP_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING;BT_USE_SSE_IN_API;B3_USE_SSE_IN_API;BT_THREADSAFE=0;IMGUI_IMPL_WIN32_DISABLE_GAMEPAD;NOMINMAX;NTDDI_VERSION=NTDDI_WIN7;NDEBUG;CBP_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>false</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
@@ -497,7 +497,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>false</SDLCheck>
-      <PreprocessorDefinitions>BT_USE_SSE_IN_API;B3_USE_SSE_IN_API;BT_THREADSAFE=0;IMGUI_IMPL_WIN32_DISABLE_GAMEPAD;NOMINMAX;NTDDI_VERSION=NTDDI_WIN10;NDEBUG;CBP_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING;BT_USE_SSE_IN_API;B3_USE_SSE_IN_API;BT_THREADSAFE=0;IMGUI_IMPL_WIN32_DISABLE_GAMEPAD;NOMINMAX;NTDDI_VERSION=NTDDI_WIN10;NDEBUG;CBP_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>false</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
@@ -537,7 +537,7 @@
       <WarningLevel>Level3</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>BT_USE_SSE_IN_API;B3_USE_SSE_IN_API;BT_THREADSAFE=0;IMGUI_IMPL_WIN32_DISABLE_GAMEPAD;NOMINMAX;NTDDI_VERSION=NTDDI_WIN10;NDEBUG;CBP_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING;BT_USE_SSE_IN_API;B3_USE_SSE_IN_API;BT_THREADSAFE=0;IMGUI_IMPL_WIN32_DISABLE_GAMEPAD;NOMINMAX;NTDDI_VERSION=NTDDI_WIN10;NDEBUG;CBP_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>false</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
@@ -581,7 +581,7 @@
       <WarningLevel>Level3</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>BT_USE_SSE_IN_API;B3_USE_SSE_IN_API;BT_THREADSAFE=0;IMGUI_IMPL_WIN32_DISABLE_GAMEPAD;NOMINMAX;NTDDI_VERSION=NTDDI_WIN10;NDEBUG;CBP_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING;BT_USE_SSE_IN_API;B3_USE_SSE_IN_API;BT_THREADSAFE=0;IMGUI_IMPL_WIN32_DISABLE_GAMEPAD;NOMINMAX;NTDDI_VERSION=NTDDI_WIN10;NDEBUG;CBP_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>false</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
@@ -625,7 +625,7 @@
       <WarningLevel>Level3</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>BT_USE_SSE_IN_API;B3_USE_SSE_IN_API;BT_THREADSAFE=0;IMGUI_IMPL_WIN32_DISABLE_GAMEPAD;NOMINMAX;NTDDI_VERSION=NTDDI_WIN10;NDEBUG;CBP_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING;BT_USE_SSE_IN_API;B3_USE_SSE_IN_API;BT_THREADSAFE=0;IMGUI_IMPL_WIN32_DISABLE_GAMEPAD;NOMINMAX;NTDDI_VERSION=NTDDI_WIN10;NDEBUG;CBP_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>false</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
@@ -665,7 +665,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
-      <PreprocessorDefinitions>BT_USE_SSE_IN_API;B3_USE_SSE_IN_API;BT_THREADSAFE=0;IMGUI_IMPL_WIN32_DISABLE_GAMEPAD;NOMINMAX;NTDDI_VERSION=NTDDI_WIN10;NDEBUG;CBP_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING;BT_USE_SSE_IN_API;B3_USE_SSE_IN_API;BT_THREADSAFE=0;IMGUI_IMPL_WIN32_DISABLE_GAMEPAD;NOMINMAX;NTDDI_VERSION=NTDDI_WIN10;NDEBUG;CBP_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>false</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
@@ -708,7 +708,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
-      <PreprocessorDefinitions>BT_USE_SSE_IN_API;B3_USE_SSE_IN_API;BT_THREADSAFE=0;IMGUI_IMPL_WIN32_DISABLE_GAMEPAD;NOMINMAX;NTDDI_VERSION=NTDDI_WIN7;NDEBUG;CBP_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING;BT_USE_SSE_IN_API;B3_USE_SSE_IN_API;BT_THREADSAFE=0;IMGUI_IMPL_WIN32_DISABLE_GAMEPAD;NOMINMAX;NTDDI_VERSION=NTDDI_WIN7;NDEBUG;CBP_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>false</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
@@ -750,7 +750,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
-      <PreprocessorDefinitions>BT_USE_SSE_IN_API;B3_USE_SSE_IN_API;BT_THREADSAFE=0;BT_USE_SSE_IN_API;B3_USE_SSE_IN_API;BT_THREADSAFE=0;IMGUI_IMPL_WIN32_DISABLE_GAMEPAD;NOMINMAX;NTDDI_VERSION=NTDDI_WIN7;NDEBUG;CBP_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING;BT_USE_SSE_IN_API;B3_USE_SSE_IN_API;BT_THREADSAFE=0;BT_USE_SSE_IN_API;B3_USE_SSE_IN_API;BT_THREADSAFE=0;IMGUI_IMPL_WIN32_DISABLE_GAMEPAD;NOMINMAX;NTDDI_VERSION=NTDDI_WIN7;NDEBUG;CBP_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>false</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
@@ -794,7 +794,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
-      <PreprocessorDefinitions>BT_USE_SSE_IN_API;B3_USE_SSE_IN_API;BT_THREADSAFE=0;BT_USE_SSE_IN_API;B3_USE_SSE_IN_API;BT_THREADSAFE=0;IMGUI_IMPL_WIN32_DISABLE_GAMEPAD;NOMINMAX;NTDDI_VERSION=NTDDI_WIN7;NDEBUG;CBP_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING;BT_USE_SSE_IN_API;B3_USE_SSE_IN_API;BT_THREADSAFE=0;BT_USE_SSE_IN_API;B3_USE_SSE_IN_API;BT_THREADSAFE=0;IMGUI_IMPL_WIN32_DISABLE_GAMEPAD;NOMINMAX;NTDDI_VERSION=NTDDI_WIN7;NDEBUG;CBP_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>false</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
@@ -838,7 +838,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
-      <PreprocessorDefinitions>BT_USE_SSE_IN_API;B3_USE_SSE_IN_API;BT_THREADSAFE=0;IMGUI_IMPL_WIN32_DISABLE_GAMEPAD;NOMINMAX;NTDDI_VERSION=NTDDI_WIN10;NDEBUG;CBP_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING;BT_USE_SSE_IN_API;B3_USE_SSE_IN_API;BT_THREADSAFE=0;IMGUI_IMPL_WIN32_DISABLE_GAMEPAD;NOMINMAX;NTDDI_VERSION=NTDDI_WIN10;NDEBUG;CBP_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>false</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
@@ -887,7 +887,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
-      <PreprocessorDefinitions>BT_USE_SSE_IN_API;B3_USE_SSE_IN_API;BT_THREADSAFE=0;IMGUI_IMPL_WIN32_DISABLE_GAMEPAD;NOMINMAX;NTDDI_VERSION=NTDDI_WIN7;NDEBUG;CBP_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING;BT_USE_SSE_IN_API;B3_USE_SSE_IN_API;BT_THREADSAFE=0;IMGUI_IMPL_WIN32_DISABLE_GAMEPAD;NOMINMAX;NTDDI_VERSION=NTDDI_WIN7;NDEBUG;CBP_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>false</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
@@ -937,7 +937,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
-      <PreprocessorDefinitions>BT_USE_SSE_IN_API;B3_USE_SSE_IN_API;BT_THREADSAFE=0;IMGUI_IMPL_WIN32_DISABLE_GAMEPAD;NOMINMAX;NTDDI_VERSION=NTDDI_WIN7;NDEBUG;CBP_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING;BT_USE_SSE_IN_API;B3_USE_SSE_IN_API;BT_THREADSAFE=0;IMGUI_IMPL_WIN32_DISABLE_GAMEPAD;NOMINMAX;NTDDI_VERSION=NTDDI_WIN7;NDEBUG;CBP_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>false</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
@@ -999,11 +999,8 @@
     <ClInclude Include="CBP\SimComponent.h" />
     <ClInclude Include="CBP\UI.h" />
     <ClInclude Include="Common\Data.h" />
-    <ClInclude Include="Common\Hash.h" />
-    <ClInclude Include="Common\Mem.h" />
     <ClInclude Include="Common\ProfileManager.h" />
     <ClInclude Include="Common\Serialization.h" />
-    <ClInclude Include="Common\STL.h" />
     <ClInclude Include="Common\UICommon.h" />
     <ClInclude Include="Common\UIData.h" />
     <ClInclude Include="config.h" />

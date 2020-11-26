@@ -13,7 +13,7 @@ namespace CBP
         static bool Initialize();
 
         SKMP_FORCEINLINE static void AddPresentCallback(presentCallback_t f) {
-            m_Instance.m_presentCallbacks.push_back(f);
+            m_Instance.m_presentCallbacks.emplace_back(f);
         }
 
         FN_NAMEPROC("Render")
