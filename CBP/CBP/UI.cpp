@@ -913,8 +913,7 @@ namespace CBP
                 {
                     ImGui::PushID(static_cast<const void*>(std::addressof(e.second)));
 
-                    bool selected = m_forceState.selected &&
-                        e.first == *m_forceState.selected;
+                    bool selected = m_forceState.selected == e.first;
 
                     if (selected)
                         if (ImGui::IsWindowAppearing()) ImGui::SetScrollHereY();
@@ -1828,7 +1827,15 @@ namespace CBP
 
                 ImGui::Spacing();
 
-                Checkbox("Lock game controls while UI active", &globalConfig.ui.lockControls);
+                if (Checkbox("Lock game controls while UI active", &globalConfig.ui.lockControls)) {
+                    DCBP::GetUIRenderTask().SetLock(globalConfig.ui.lockControls);
+                    DUI::EvaluateTaskState();
+                }
+
+                if (Checkbox("Freeze time while UI active", &globalConfig.ui.freezeTime)) {
+                    DCBP::GetUIRenderTask().SetFreeze(globalConfig.ui.freezeTime);
+                    DUI::EvaluateTaskState();
+                }
 
                 ImGui::Spacing();
 
@@ -1871,7 +1878,8 @@ namespace CBP
                 {
                     ImGui::Spacing();
 
-                    Checkbox("Enable", &globalConfig.debugRenderer.enabled);
+                    if (Checkbox("Enable", &globalConfig.debugRenderer.enabled))
+                        DCBP::UpdateDebugRendererState();
 
                     Checkbox("Wireframe", &globalConfig.debugRenderer.wireframe);
 
@@ -2953,7 +2961,8 @@ namespace CBP
             }
         }
 
-        if (d.size()) {
+        if (d.size()) 
+        {
             ImGui::Separator();
 
             if (ImGui::MenuItem("Clear")) {
@@ -3651,6 +3660,9 @@ namespace CBP
                 HelpMarker(MiscHelpText::frameTimer);
                 ImGui::Text("Actors:");
                 ImGui::Text("UI:");
+#if defined(SKMP_MEMDBG)
+                ImGui::Text("Mem:");
+#endif
 
                 ImGui::NextColumn();
 
@@ -3670,6 +3682,9 @@ namespace CBP
                 ImGui::Text("%.4f", stats.avgFrameTime);
                 ImGui::Text("%u", stats.avgActorCount);
                 ImGui::Text("%lld \xC2\xB5s", DUI::GetPerf());
+#if defined(SKMP_MEMDBG)
+                ImGui::Text("%llu ", mem::g_allocatedSize.load());
+#endif
 
                 ImGui::Columns(1);
 

@@ -631,6 +631,7 @@ namespace CBP
         m_colRad(1.0f),
         m_colHeight(0.001f),
         m_nodeScale(1.0f),
+        m_gravityCorrection(0.0f, 0.0f, 0.0f),
         m_itrInitialPos(
             a_obj->m_localTransform.pos.x,
             a_obj->m_localTransform.pos.y,
@@ -748,7 +749,7 @@ namespace CBP
         }
 
         m_cogOffset.setValue(m_conf.fp.f32.cogOffset[0], m_conf.fp.f32.cogOffset[1], m_conf.fp.f32.cogOffset[2]);
-        m_gravityCorrection.setValue(0.0f, 0.0f, m_conf.fp.f32.gravityCorrection);
+        m_gravityCorrection.setZ(m_conf.fp.f32.gravityCorrection);
 
         if (m_conf.fp.f32.resistance > 0.0f) {
             m_resistanceOn = true;
@@ -771,7 +772,7 @@ namespace CBP
         m_conf.fp.f32.colPenMass = std::clamp(m_conf.fp.f32.colPenMass, 1.0f, 100.0f);
         m_conf.fp.f32.maxOffsetVelResponseScale = std::clamp(m_conf.fp.f32.maxOffsetVelResponseScale, 0.0f, 1.0f);
         m_conf.fp.f32.maxVelocity = std::clamp(m_conf.fp.f32.maxVelocity, 4.0f, 10000.0f);
-        m_maxVelocity2 = m_conf.fp.f32.maxVelocity * m_conf.fp.f32.maxVelocity; //  ASSERT(m_maxVelocity2 > _EPSILON);       
+        m_maxVelocity2 = m_conf.fp.f32.maxVelocity * m_conf.fp.f32.maxVelocity;
         m_conf.fp.f32.maxOffsetRestitutionCoefficient = std::clamp(m_conf.fp.f32.maxOffsetRestitutionCoefficient, 0.0f, 4.0f);
         m_conf.fp.f32.maxOffsetMaxBiasMag = std::max(m_conf.fp.f32.maxOffsetMaxBiasMag, 0.0f);
 
@@ -797,7 +798,7 @@ namespace CBP
                 m_hasScaleOverride = true;
             }
 
-            m_nodeScale = std::clamp(a_nodeConf.fp.f32.nodeScale, 0.0f, 20.0f);
+            m_nodeScale = std::clamp(a_nodeConf.fp.f32.nodeScale, 0.0f, 60.0f);
 
             m_obj->m_localTransform.scale = m_nodeScale;
         }

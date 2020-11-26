@@ -6,8 +6,9 @@ namespace CBP
 
     DUI::DUI() :
         m_imInitialized(false),
-        m_suspended(false),
         m_nextResetIO(false),
+        m_suspended(true),
+        state({ 0, 0, 0, false, false }),
         m_uiRenderPerf({ 1000000LL, 0 })
     {
     }
@@ -50,15 +51,17 @@ namespace CBP
 
         ImGui::NewFrame();
 
-        auto it = m_drawCallbacks.begin();
-        while (it != m_drawCallbacks.end())
+        auto it = m_drawTasks.begin();
+        while (it != m_drawTasks.end())
         {
             ImGui::PushID(static_cast<const void*>(it->second));
-            bool res = it->second();
+            bool res = it->second->Run();
             ImGui::PopID();
 
-            if (!res) {
-                it = m_drawCallbacks.erase(it);
+            if (!res)
+            {
+                OnTaskRemove(it->second);
+                it = m_drawTasks.erase(it);
             }
             else {
                 ++it;
@@ -68,11 +71,8 @@ namespace CBP
         ImGui::Render();
         ::ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
 
-        if (m_drawCallbacks.empty()) 
-        {
-            ResetImGuiIO();
+        if (m_drawTasks.empty())
             Suspend();
-        }
 
         m_uiRenderPerf.timer.End(
             m_uiRenderPerf.current);
@@ -225,7 +225,7 @@ namespace CBP
                 if (ev == KeyEvent::KeyDown)
                 {
                     if (GetKeyboardState(keyState)) {
-                        if (!ToAscii(vkCode, keyCode, keyState, &Char, 0) != 0) {
+                        if (ToAscii(vkCode, keyCode, keyState, &Char, 0) == 0) {
                             Char = 0;
                         }
                     }
@@ -293,24 +293,172 @@ namespace CBP
         }
     }
 
-    void DUI::AddCallback(uint32_t id, const uiDrawCallback_t f)
+    void DUI::LockControls(bool a_switch)
+    {
+        state.controlsLocked = a_switch;
+        DTasks::AddTask<LockControlsTask>(a_switch);
+    }
+
+    void DUI::FreezeTime(bool a_switch)
+    {
+        state.timeFrozen = a_switch;
+        DTasks::AddTask<FreezeTimeTask>(a_switch);
+    }
+
+    static UInt32 controlDisableFlags =
+        USER_EVENT_FLAG::kAll;
+
+    static UInt8 byChargenDisableFlags =
+        PlayerCharacter::kDisableSaving |
+        PlayerCharacter::kDisableWaiting;
+
+    void DUI::LockControlsTask::Run()
+    {
+        auto player = *g_thePlayer;
+        auto im = InputManager::GetSingleton();
+
+        if (im)
+            im->EnableControls(controlDisableFlags, !m_switch);
+
+        if (m_switch)
+        {
+            if (player)
+                player->byCharGenFlag |= byChargenDisableFlags;
+        }
+        else
+        {
+            if (player)
+                player->byCharGenFlag &= ~byChargenDisableFlags;
+        }
+    }
+
+    void DUI::FreezeTimeTask::Run()
+    {
+        /*auto bm = Game::BSMain::GetSingleton();
+        if (bm)
+            bm->freezeTime = m_switch;*/
+
+        auto unk = Game::Unk00::GetSingleton();
+
+        unk->SetGlobalTimeMultiplier(m_switch ? 1e-006f : 1.0f, true);
+    }
+
+    void DUI::AddTask(uint32_t id, UIRenderTaskBase* a_task)
     {
         IScopedCriticalSection _(std::addressof(m_Instance.m_lock));
 
-        m_Instance.m_drawCallbacks.insert_or_assign(id, f);
+        auto it = m_Instance.m_drawTasks.emplace(id, a_task);
+        if (!it.second)
+            return;
+
+        a_task->m_state.holdsLock = a_task->m_options.lock;
+        a_task->m_state.holdsFreeze = a_task->m_options.freeze;
+
+        if (a_task->m_state.holdsLock)
+            m_Instance.state.lockCounter++;
+
+        if (a_task->m_state.holdsFreeze)
+            m_Instance.state.freezeCounter++;
 
         if (m_Instance.m_suspended)
             m_Instance.m_suspended = false;
+
+        if (!m_Instance.state.controlsLocked && m_Instance.state.lockCounter > 0)
+            m_Instance.LockControls(true);
+
+        if (!m_Instance.state.timeFrozen && m_Instance.state.freezeCounter > 0)
+            m_Instance.FreezeTime(true);
     }
 
-    void DUI::RemoveCallback(uint32_t id)
+    void DUI::RemoveTask(uint32_t id)
     {
         IScopedCriticalSection _(std::addressof(m_Instance.m_lock));
 
-        m_Instance.m_drawCallbacks.erase(id);
+        auto it = m_Instance.m_drawTasks.find(id);
+        if (it == m_Instance.m_drawTasks.end())
+            return;
 
-        if (m_Instance.m_drawCallbacks.empty())
+        m_Instance.OnTaskRemove(it->second);
+
+        m_Instance.m_drawTasks.erase(it);
+
+        if (m_Instance.m_drawTasks.empty())
             m_Instance.Suspend();
+    }
+
+    void DUI::EvaluateTaskState()
+    {
+        DTasks::AddTask(&m_Instance.m_evalTaskState);
+    }
+
+    void DUI::EvaluateTaskStateTask::Run()
+    {
+        m_Instance.EvaluateTaskStateImpl();
+    }
+
+    void DUI::EvaluateTaskStateImpl()
+    {
+        IScopedCriticalSection _(std::addressof(m_lock));
+
+        for (auto& e : m_drawTasks)
+        {
+            if (e.second->m_options.lock != e.second->m_state.holdsLock)
+            {
+                e.second->m_state.holdsLock = e.second->m_options.lock;
+
+                if (e.second->m_state.holdsLock)
+                    state.lockCounter++;
+                else
+                    state.lockCounter--;
+            }
+
+            if (e.second->m_options.freeze != e.second->m_state.holdsFreeze)
+            {
+                e.second->m_state.holdsFreeze = e.second->m_options.freeze;
+
+                if (e.second->m_state.holdsFreeze)
+                    state.freezeCounter++;
+                else
+                    state.freezeCounter--;
+            }
+        }
+
+        if (state.controlsLocked)
+        {
+            if (state.lockCounter == 0)
+                LockControls(false);
+        }
+        else
+        {
+            if (state.lockCounter > 0)
+                LockControls(true);
+        }
+
+        if (state.timeFrozen)
+        {
+            if (state.freezeCounter == 0)
+                FreezeTime(false);
+        }
+        else
+        {
+            if (state.freezeCounter > 0)
+                FreezeTime(true);
+        }
+    }
+
+    void DUI::OnTaskRemove(UIRenderTaskBase* a_task)
+    {
+        if (a_task->m_state.holdsLock)
+            state.lockCounter--;
+
+        if (a_task->m_state.holdsFreeze)
+            state.freezeCounter--;
+
+        if (state.controlsLocked && state.lockCounter == 0)
+            LockControls(false);
+
+        if (state.timeFrozen && state.freezeCounter == 0)
+            FreezeTime(false);
     }
 
     void DUI::ResetImGuiIO()
@@ -331,7 +479,61 @@ namespace CBP
     void DUI::Suspend()
     {
         ResetImGuiIO();
+
+        if (state.controlsLocked)
+        {
+            state.lockCounter = 0;
+            LockControls(false);
+        }
+        if (state.timeFrozen)
+        {
+            state.freezeCounter = 0;
+            FreezeTime(false);
+        }
         m_suspended = true;
     }
 
+    bool UIRenderTaskBase::RunEnableChecks()
+    {
+        if (Game::InPausedMenu()) {
+            Game::Debug::Notification("UI unavailable while in menu");
+            return false;
+        }
+
+        if (!m_options.enableChecks)
+            return true;
+
+        auto player = *g_thePlayer;
+        if (!player)
+            return false;
+
+        if (player->IsInCombat()) {
+            Game::Debug::Notification("UI unavailable while in combat");
+            return false;
+        }
+
+        auto pl = Game::ProcessLists::GetSingleton();
+        if (pl && pl->GuardsPursuing(player)) {
+            Game::Debug::Notification("UI unavailable while pursued by guards");
+            return false;
+        }
+
+        auto tm = MenuTopicManager::GetSingleton();
+        if (tm && tm->GetDialogueTarget() != nullptr) {
+            Game::Debug::Notification("UI unavailable while in a conversation");
+            return false;
+        }
+
+        if (player->unkBDA & PlayerCharacter::FlagBDA::kAIDriven) {
+            Game::Debug::Notification("UI unavailable while player is AI driven");
+            return false;
+        }
+
+        /*if (player->byCharGenFlag & PlayerCharacter::ByCharGenFlag::kAll) {
+            Game::Debug::Notification("CBP UI currently unavailable");
+            return false;
+        }*/
+
+        return true;
+    }
 }

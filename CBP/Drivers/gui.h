@@ -15,12 +15,18 @@ namespace CBP
     public:
         virtual bool Run() = 0;
 
+        virtual bool RunEnableChecks();
+
         SKMP_FORCEINLINE void SetLock(bool a_switch) {
             m_options.lock = a_switch;
         }
 
         SKMP_FORCEINLINE void SetFreeze(bool a_switch) {
             m_options.freeze = a_switch;
+        }
+
+        SKMP_FORCEINLINE void EnableChecks(bool a_switch) {
+            m_options.enableChecks = a_switch;
         }
 
         SKMP_FORCEINLINE bool GetFreeze() {
@@ -32,6 +38,8 @@ namespace CBP
         {
             bool lock = true;
             bool freeze = false;
+
+            bool enableChecks = true;
         } m_options;
 
         struct
@@ -83,6 +91,47 @@ namespace CBP
             WCHAR m_k;
         };
 
+        class LockControlsTask :
+            public TaskDelegate
+        {
+        public:
+            LockControlsTask(bool a_switch) :
+                m_switch(a_switch)
+            {
+            }
+
+            virtual void Run();
+            virtual void Dispose() {
+                delete this;
+            };
+        private:
+            bool m_switch;
+        };
+
+        class FreezeTimeTask :
+            public TaskDelegate
+        {
+        public:
+            FreezeTimeTask(bool a_switch) :
+                m_switch(a_switch)
+            {
+            }
+
+            virtual void Run();
+            virtual void Dispose() {
+                delete this;
+            };
+        private:
+            bool m_switch;
+        };
+
+        class EvaluateTaskStateTask :
+            public TaskDelegateStatic
+        {
+        public:
+            virtual void Run();
+        };
+
     public:
         static bool Initialize();
 
@@ -95,15 +144,15 @@ namespace CBP
         }
 
         SKMP_FORCEINLINE static bool HasCallbacks() {
-            return m_Instance.m_drawCallbacks.size() != 0;
+            return !m_Instance.m_drawTasks.empty();
         }
 
-        static void AddCallback(uint32_t id, const uiDrawCallback_t f);
-        static void RemoveCallback(uint32_t id);
+        static void AddTask(uint32_t id, UIRenderTaskBase* a_task);
+        static void RemoveTask(uint32_t id);
 
         SKMP_FORCEINLINE static bool HasCallback(uint32_t id) {
-            return m_Instance.m_drawCallbacks.find(id) !=
-                m_Instance.m_drawCallbacks.end();
+            return m_Instance.m_drawTasks.find(id) !=
+                m_Instance.m_drawTasks.end();
         }
 
         SKMP_FORCEINLINE static const UIRect& GetBufferSize() {
@@ -111,7 +160,6 @@ namespace CBP
         }
 
         void ResetImGuiIO();
-        void Suspend();
 
         SKMP_FORCEINLINE static void QueueResetIO()
         {
@@ -130,6 +178,8 @@ namespace CBP
             return m_Instance.m_uiRenderPerf.current;
         }
 
+        static void EvaluateTaskState();
+
         FN_NAMEPROC("UI")
     private:
         DUI();
@@ -147,6 +197,15 @@ namespace CBP
         static void OnD3D11PostCreate_DUI(Event, void* data);
         static void OnExit_DUI(Event, void* data);
 
+        void Suspend();
+
+        void LockControls(bool a_switch);
+        void FreezeTime(bool a_switch);
+
+        void EvaluateTaskStateImpl();
+
+        void OnTaskRemove(UIRenderTaskBase* a_task);
+
         SKMP_FORCEINLINE static auto& GetKeyPressQueue() {
             return m_Instance.m_keyEvents;
         }
@@ -155,6 +214,12 @@ namespace CBP
 
         struct {
             uint32_t active;
+
+            uint32_t lockCounter;
+            uint32_t freezeCounter;
+
+            bool controlsLocked;
+            bool timeFrozen;
         } state;
 
         struct {
@@ -171,7 +236,9 @@ namespace CBP
             long long current = 0;
         } m_uiRenderPerf;
 
-        stl::map<uint32_t, uiDrawCallback_t> m_drawCallbacks;
+        stl::map<uint32_t, UIRenderTaskBase*> m_drawTasks;
+
+        EvaluateTaskStateTask m_evalTaskState;
 
         KeyPressHandler m_inputEventHandler;
 

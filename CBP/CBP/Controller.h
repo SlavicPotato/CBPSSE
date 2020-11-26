@@ -13,7 +13,6 @@ namespace CBP
             UpdateConfig,
             UpdateConfigAll,
             Reset,
-            UpdateGroupInfoAll,
             PhysicsReset,
             NiNodeUpdate,
             NiNodeUpdateAll,
@@ -79,7 +78,7 @@ namespace CBP
         void RemoveActor(Game::ObjectHandle a_handle);
         bool ValidateActor(simActorList_t::value_type &a_entry);
         void UpdateConfigOnAllActors();
-        void UpdateGroupInfoOnAllActors();
+        //void UpdateGroupInfoOnAllActors();
         void UpdateConfig(Game::ObjectHandle a_handle);
         void Reset();
         void PhysicsReset();

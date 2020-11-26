@@ -175,6 +175,7 @@ namespace CBP
                     (a_timeStep * (2880.0f * pbf)) * std::max(depth - 0.01f, 0.0f) : 0.0f;
 
                 float impulse = (deltaVDotN + bias) / (sma + smb);
+
                 if (impulse <= 0.0f)
                     continue;
 

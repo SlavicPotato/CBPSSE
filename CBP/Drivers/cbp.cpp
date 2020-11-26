@@ -18,6 +18,8 @@ namespace CBP
     constexpr const char* CKEY_COMPLEVEL = "CompressionLevel";
     constexpr const char* CKEY_DATAPATH = "DataPath";
     constexpr const char* CKEY_IMGUIINI = "ImGuiSettings";
+    constexpr const char* CKEY_UIOPENRESTRICTIONS = "UIOpenRestrictions";
+
     constexpr const char* CKEY_BTEPA = "UseEpaPenetrationAlgorithm";
     constexpr const char* CKEY_BTMANIFOLDPOOLSIZE = "MaxPersistentManifoldPoolSize";
     constexpr const char* CKEY_BTALGOPOOLSIZE = "MaxCollisionAlgorithmPoolSize";
@@ -47,12 +49,6 @@ namespace CBP
     {
         m_Instance.m_updateTask.AddTask(
             ControllerInstruction::Action::UpdateConfigAll);
-    }
-
-    void DCBP::UpdateGroupInfoOnAllActors()
-    {
-        m_Instance.m_updateTask.AddTask(
-            ControllerInstruction::Action::UpdateGroupInfoAll);
     }
 
     void DCBP::ResetPhysics()
@@ -233,6 +229,7 @@ namespace CBP
         m_conf.force_ini_keys = GetConfigValue(SECTION_CBP, CKEY_FORCEINIKEYS, false);
         m_conf.compression_level = std::clamp(GetConfigValue(SECTION_CBP, CKEY_COMPLEVEL, 1), 0, 9);
         m_conf.imguiIni = GetConfigValue(SECTION_CBP, CKEY_IMGUIINI, PLUGIN_IMGUI_INI_FILE);
+        m_conf.ui_open_restrictions = GetConfigValue(SECTION_CBP, CKEY_UIOPENRESTRICTIONS, true);
 
         m_conf.use_epa = GetConfigValue(SECTION_CBP, CKEY_BTEPA, true);
         m_conf.maxPersistentManifoldPoolSize = GetConfigValue(SECTION_CBP, CKEY_BTMANIFOLDPOOLSIZE, 4096);
@@ -404,6 +401,8 @@ namespace CBP
 
             DInput::RegisterForKeyEvents(&m_Instance.m_inputEventHandler);
 
+            GetUIRenderTask().EnableChecks(m_Instance.m_conf.ui_open_restrictions);
+
             m_Instance.Message("UI enabled");
 
         }
@@ -540,6 +539,11 @@ namespace CBP
             if (GetDriverConfig().ui_enabled)
             {
                 GetUIContext().Initialize();
+
+                auto& uirt = GetUIRenderTask();
+
+                uirt.SetLock(globalConf.ui.lockControls);
+                uirt.SetFreeze(globalConf.ui.freezeTime);
             }
 
             IEvents::GetBackLog().SetLimit(globalConf.ui.backlogLimit);
@@ -870,9 +874,11 @@ namespace CBP
         {
             uiState.show = false;
         }
-        else {
-            if (Game::InPausedMenu())
+        else 
+        {
+            if (Game::InPausedMenu()) {
                 uiState.show = false;
+            }
             else
             {
                 if (m_resetUI)
@@ -886,34 +892,18 @@ namespace CBP
         }
 
         if (!uiState.show)
-            DTasks::AddTask<SwitchUITask>(false);
+            DisableUI();
 
         return uiState.show;
     }
 
-    bool DCBP::UICallback()
+    bool DCBP::UIRenderTask::Run()
     {
         return m_Instance.ProcessUICallbackImpl();
     }
 
     void DCBP::EnableUI()
     {
-        auto player = *g_thePlayer;
-        if (player) {
-            player->byCharGenFlag |= byChargenDisableFlags;
-        }
-
-        auto& globalConf = IConfig::GetGlobal();
-
-        uiState.lockControls = globalConf.ui.lockControls;
-
-        if (uiState.lockControls) {
-            auto im = InputManager::GetSingleton();
-            if (im) {
-                im->EnableControls(controlDisableFlags, false);
-            }
-        }
-
         m_uiContext.Reset(m_loadInstance);
 
         IData::UpdateActorCache(GetSimActorList());
@@ -921,62 +911,7 @@ namespace CBP
 
     void DCBP::DisableUI()
     {
-        SavePending();
-
         m_uiContext.Reset(m_loadInstance);
-
-        if (uiState.lockControls) {
-            auto im = InputManager::GetSingleton();
-            if (im) {
-                im->EnableControls(controlDisableFlags, true);
-            }
-        }
-
-        auto player = *g_thePlayer;
-        if (player) {
-            player->byCharGenFlag &= ~byChargenDisableFlags;
-        }
-    }
-
-    bool DCBP::RunEnableUIChecks()
-    {
-        if (Game::InPausedMenu()) {
-            Game::Debug::Notification("CBP UI unavailable while in menu");
-            return false;
-        }
-
-        auto player = *g_thePlayer;
-        if (!player)
-            return false;
-
-        if (player->IsInCombat()) {
-            Game::Debug::Notification("CBP UI unavailable while in combat");
-            return false;
-        }
-
-        auto pl = Game::ProcessLists::GetSingleton();
-        if (pl && pl->GuardsPursuing(player)) {
-            Game::Debug::Notification("CBP UI unavailable while pursued by guards");
-            return false;
-        }
-
-        auto tm = MenuTopicManager::GetSingleton();
-        if (tm && tm->GetDialogueTarget() != nullptr) {
-            Game::Debug::Notification("CBP UI unavailable while in a conversation");
-            return false;
-        }
-
-        if (player->unkBDA & PlayerCharacter::FlagBDA::kAIDriven) {
-            Game::Debug::Notification("CBP UI unavailable while player is AI driven");
-            return false;
-        }
-
-        if (player->byCharGenFlag & PlayerCharacter::ByCharGenFlag::kAll) {
-            Game::Debug::Notification("CBP UI currently unavailable");
-            return false;
-        }
-
-        return true;
     }
 
     void DCBP::KeyPressHandler::UpdateKeys()
@@ -1005,12 +940,20 @@ namespace CBP
         switch (ev)
         {
         case KeyEvent::KeyDown:
-            if (m_comboKey && keyCode == m_comboKey)
-                combo_down = true;
-            if (m_comboKeyDR && keyCode == m_comboKeyDR)
-                combo_downDR = true;
 
-            if (keyCode == m_showKey) {
+            if (keyCode == m_comboKey)
+            {
+                if (m_comboKey)
+                    combo_down = true;
+            }
+            else if (keyCode == m_comboKeyDR)
+            {
+                if (m_comboKeyDR)
+                    combo_downDR = true;
+            }
+
+            if (keyCode == m_showKey) 
+            {
                 if (m_comboKey && !combo_down)
                     break;
 
@@ -1020,7 +963,8 @@ namespace CBP
 
                 DTasks::AddTask(&m_Instance.m_taskToggle);
             }
-            if (keyCode == m_showKeyDR) {
+            if (keyCode == m_showKeyDR) 
+            {
                 if (m_comboKeyDR && !combo_downDR)
                     break;
 
@@ -1036,10 +980,17 @@ namespace CBP
             }
             break;
         case KeyEvent::KeyUp:
-            if (m_comboKey && keyCode == m_comboKey)
-                combo_down = false;
-            if (m_comboKeyDR && keyCode == m_comboKeyDR)
-                combo_downDR = false;
+
+            if (keyCode == m_comboKey)
+            {
+                if (m_comboKey)
+                    combo_down = false;
+            }
+            else if (keyCode == m_comboKeyDR)
+            {
+                if (m_comboKeyDR)
+                    combo_downDR = false;
+            }
 
             break;
         }
@@ -1050,10 +1001,10 @@ namespace CBP
         switch (Toggle())
         {
         case ToggleResult::kResultEnabled:
-            DUI::AddCallback(1, UICallback);
+            DUI::AddTask(1, std::addressof(GetUIRenderTask()));
             break;
         case ToggleResult::kResultDisabled:
-            DUI::RemoveCallback(1);
+            DUI::RemoveTask(1);
             break;
         }
     }
@@ -1069,7 +1020,7 @@ namespace CBP
             return ToggleResult::kResultDisabled;
         }
         else {
-            if (m_Instance.RunEnableUIChecks()) {
+            if (GetUIRenderTask().RunEnableChecks()) {
                 m_Instance.uiState.show = true;
                 m_Instance.EnableUI();
                 return ToggleResult::kResultEnabled;
@@ -1077,15 +1028,6 @@ namespace CBP
         }
 
         return ToggleResult::kResultNone;
-    }
-
-    void DCBP::SwitchUITask::Run()
-    {
-        if (!m_switch) {
-            Lock();
-            m_Instance.DisableUI();
-            Unlock();
-        }
     }
 
     DCBP::ApplyForceTask::ApplyForceTask(

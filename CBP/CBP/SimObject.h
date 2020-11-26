@@ -58,6 +58,7 @@ namespace CBP
 
         SKMP_FORCEINLINE void UpdateMotion(float a_timeStep);
         SKMP_FORCEINLINE void UpdateVelocity();
+
         void UpdateConfig(Actor* a_actor, bool a_collisions, const configComponents_t& a_config);
         void Reset();
         bool ValidateNodes(Actor* a_actor);
@@ -67,16 +68,6 @@ namespace CBP
 #ifdef _CBP_ENABLE_DEBUG
         void UpdateDebugInfo();
 #endif
-
-        void UpdateGroupInfo();
-
-        /*[[nodiscard]] SKMP_FORCEINLINE bool HasNode(const std::string& a_node) const {
-            return m_things.find(a_node) != m_things.end();
-        }*/
-
-        /*[[nodiscard]] SKMP_FORCEINLINE bool HasConfigGroup(const std::string& a_cg) const {
-            return m_configGroups.find(a_cg) != m_configGroups.end();
-        }*/
 
         [[nodiscard]] static auto CreateNodeDescriptorList(
             Game::ObjectHandle a_handle,
@@ -88,14 +79,6 @@ namespace CBP
             nodeDescList_t& a_out)
             ->nodeDescList_t::size_type;
 
-        /*[[nodiscard]] SKMP_FORCEINLINE const_iterator begin() const noexcept {
-            return m_thingList.begin();
-        }
-
-        [[nodiscard]] SKMP_FORCEINLINE const_iterator end() const noexcept {
-            return m_thingList.end();
-        }*/
-
 #ifdef _CBP_ENABLE_DEBUG
         [[nodiscard]] SKMP_FORCEINLINE const std::string& GetActorName() const noexcept {
             return m_actorName;
@@ -103,10 +86,7 @@ namespace CBP
 #endif
 
         [[nodiscard]] SKMP_FORCEINLINE const NiTransform* GetHeadTransform() const {
-            if (m_objHead)
-                return std::addressof(m_objHead->m_worldTransform);
-            else
-                return nullptr;
+            return m_objHead ? std::addressof(m_objHead->m_worldTransform) : nullptr;
         }
 
         void SetSuspended(bool a_switch);
@@ -118,10 +98,6 @@ namespace CBP
         [[nodiscard]] SKMP_FORCEINLINE const auto& GetNodeList() const {
             return m_objList;
         }
-
-        /*[[nodiscard]] SKMP_FORCEINLINE auto& GetActor() const {
-            return m_actor;
-        }*/
 
     private:
 

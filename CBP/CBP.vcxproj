@@ -1081,6 +1081,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="..\.gitignore" />
+    <None Include="..\config\CBP.ini" />
     <None Include="..\config\CBP\Default.json" />
     <None Include="..\config\CBP\Nodes.json" />
     <None Include="..\config\CBP\Profiles\Node\Blank.json" />
@@ -1092,6 +1093,7 @@
     <None Include="..\installer\mktemplate.py" />
     <None Include="..\README.md" />
     <None Include="..\scripts\CBP.psc" />
+    <None Include="cpp.hint" />
     <None Include="exports.def" />
   </ItemGroup>
   <ItemGroup>

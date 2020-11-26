@@ -214,7 +214,7 @@ namespace CBP
     typedef iKVStorage<std::string, const componentValueDesc_t> componentValueDescMap_t;
     typedef KVStorage<ColliderShapeType, const colliderDesc_t> colliderDescMap_t;
 
-    struct SKMP_ALIGN(physicsDataF32_t, 16)
+    struct SKMP_ALIGN(16) physicsDataF32_t
     {
         float stiffness;
         float stiffness2;
@@ -370,7 +370,7 @@ namespace CBP
 
     };
 
-    struct SKMP_ALIGN(defaultPhysicsDataHolder_t, 32)
+    struct SKMP_ALIGN(32) defaultPhysicsDataHolder_t
     {
         defaultPhysicsDataHolder_t();
 
@@ -391,7 +391,7 @@ namespace CBP
 
     extern const defaultPhysicsDataHolder_t g_defaultPhysicsData;
 
-    struct SKMP_ALIGN(physicsData32_t, 32)
+    struct SKMP_ALIGN(32) physicsData32_t
     {
 
     public:
@@ -494,7 +494,7 @@ namespace CBP
         std::string colMesh;
     };
 
-    struct SKMP_ALIGN(configComponent32_t, 32)
+    struct SKMP_ALIGN(32) configComponent32_t
     {
         friend class boost::serialization::access;
 
@@ -730,7 +730,7 @@ namespace CBP
         BOOST_SERIALIZATION_SPLIT_MEMBER()
     };
 
-    struct SKMP_ALIGN(physicsData16_t, 16)
+    struct SKMP_ALIGN(16) physicsData16_t
     {
         union
         {
@@ -768,7 +768,7 @@ namespace CBP
         }
     };
 
-    struct SKMP_ALIGN(configComponent16_t, 16)
+    struct SKMP_ALIGN(16) configComponent16_t
     {
         configComponent16_t() = default;
 
@@ -820,7 +820,7 @@ namespace CBP
 
     typedef stl::unordered_map<Game::ObjectHandle, configComponents_t> mergedConfCache_t;
 
-    struct SKMP_ALIGN(nodeDataF32_t, 32)
+    struct SKMP_ALIGN(32) nodeDataF32_t
     {
         float colOffsetMin[3];
         float colOffsetMax[3];
@@ -925,7 +925,7 @@ namespace CBP
 
     extern const defaultNodeDataHolder_t g_defaultNodeData;
 
-    struct SKMP_ALIGN(nodeData32_t, 32)
+    struct SKMP_ALIGN(32) nodeData32_t
     {
 
     public:
@@ -1041,7 +1041,7 @@ namespace CBP
     static_assert(offsetof(nodeBools_t, b.overrideScale) == offsetof(nodeBools_t, u32.d1));
     static_assert(offsetof(nodeBools_t, b.motion.female) == offsetof(nodeBools_t, u16.d1));
 
-    struct SKMP_ALIGN(configNode_t, 32)
+    struct SKMP_ALIGN(32) configNode_t
     {
         friend class boost::serialization::access;
 

@@ -370,11 +370,11 @@ namespace CBP
         return a_entry.second.ValidateNodes(actor);
     }
 
-    void ControllerTask::UpdateGroupInfoOnAllActors()
+    /*void ControllerTask::UpdateGroupInfoOnAllActors()
     {
         for (auto& a : m_actors)
             a.second.UpdateGroupInfo();
-    }
+    }*/
 
     void ControllerTask::UpdateConfigOnAllActors()
     {
@@ -690,9 +690,6 @@ namespace CBP
                 break;
             case ControllerInstruction::Action::Reset:
                 Reset();
-                break;
-            case ControllerInstruction::Action::UpdateGroupInfoAll:
-                UpdateGroupInfoOnAllActors();
                 break;
             case ControllerInstruction::Action::PhysicsReset:
                 PhysicsReset();

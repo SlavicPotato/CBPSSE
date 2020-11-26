@@ -2,17 +2,18 @@
 
 namespace CBP
 {
-    __declspec(align(16)) class Renderer : public btIDebugDraw
+    class SKMP_ALIGN(16) Renderer : 
+        public btIDebugDraw
     {
         using VertexType = DirectX::VertexPositionColor;
 
-        __declspec(align(16)) struct ItemLine
+        struct SKMP_ALIGN(16) ItemLine
         {
             VertexType pos1;
             VertexType pos2;
         };
 
-        __declspec(align(16)) struct ItemTri
+        struct SKMP_ALIGN(16) ItemTri
         {
             VertexType pos1;
             VertexType pos2;
@@ -33,6 +34,7 @@ namespace CBP
         void GenerateMovementConstraints(const simActorList_t& a_actorList, float a_radius);
 
         void Clear();
+        void Release();
 
         SKMP_FORCEINLINE void SetContactPointSphereRadius(btScalar a_val) {
             m_contactPointSphereRadius = a_val;

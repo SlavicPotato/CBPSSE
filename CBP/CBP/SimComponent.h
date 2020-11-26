@@ -43,7 +43,7 @@ namespace CBP
         btTriangleIndexVertexArray* m_triVertexArray;
     };
 
-    class SKMP_ALIGN(CollisionShape, 16)
+    class SKMP_ALIGN(16) CollisionShape
     {
     public:
         BT_DECLARE_ALIGNED_ALLOCATOR();
@@ -52,7 +52,7 @@ namespace CBP
 
         virtual void SetRadius(float a_radius);
         virtual void SetHeight(float a_height);
-        virtual void SetExtent(const btVector3& a_extent);
+        virtual void SetExtent(const btVector3 & a_extent);
         virtual void SetNodeScale(float a_scale);
 
         virtual btCollisionShape* GetBTShape() = 0;
@@ -67,7 +67,7 @@ namespace CBP
     };
 
     template <class T>
-    class SKMP_ALIGN(CollisionShapeBase, 16) :
+    class SKMP_ALIGN(16) CollisionShapeBase :
         public CollisionShape
     {
 
@@ -80,7 +80,7 @@ namespace CBP
         virtual ~CollisionShapeBase() noexcept;
 
         template <typename... Args>
-        CollisionShapeBase(btCollisionObject* a_collider, Args&&... a_args);
+        CollisionShapeBase(btCollisionObject * a_collider, Args&&... a_args);
 
         template <typename... Args>
         SKMP_FORCEINLINE void RecreateShape(Args&&... a_args);
@@ -96,13 +96,13 @@ namespace CBP
     };
 
     template <class T>
-    class SKMP_ALIGN(CollisionShapeTemplRH, 16) :
+    class SKMP_ALIGN(16) CollisionShapeTemplRH :
         public CollisionShapeBase<T>
     {
     protected:
 
         template <typename... Args>
-        CollisionShapeTemplRH(btCollisionObject* a_collider, Args&&... a_args);
+        CollisionShapeTemplRH(btCollisionObject * a_collider, Args&&... a_args);
 
     public:
 
@@ -122,18 +122,18 @@ namespace CBP
     };
 
     template <class T>
-    class SKMP_ALIGN(CollisionShapeTemplExtent, 16) :
+    class SKMP_ALIGN(16) CollisionShapeTemplExtent :
         public CollisionShapeBase<T>
     {
     public:
 
         template <typename... Args>
-        CollisionShapeTemplExtent(btCollisionObject* a_collider, Args&&... a_args);
+        CollisionShapeTemplExtent(btCollisionObject * a_collider, Args&&... a_args);
 
-        virtual void DoRecreateShape(const btVector3& a_extent) = 0;
-        virtual void SetShapeProperties(const btVector3& a_extent);
+        virtual void DoRecreateShape(const btVector3 & a_extent) = 0;
+        virtual void SetShapeProperties(const btVector3 & a_extent);
         virtual void UpdateShape();
-        virtual void SetExtent(const btVector3& a_extent);
+        virtual void SetExtent(const btVector3 & a_extent);
 
     protected:
         btVector3 m_extent;
@@ -156,85 +156,85 @@ namespace CBP
     };
 
 
-    class SKMP_ALIGN(CollisionShapeCapsule, 16) :
+    class SKMP_ALIGN(16) CollisionShapeCapsule :
         public CollisionShapeTemplRH<btCapsuleShape>
     {
     public:
-        CollisionShapeCapsule(btCollisionObject* a_collider, float a_radius, float a_height);
+        CollisionShapeCapsule(btCollisionObject * a_collider, float a_radius, float a_height);
 
         virtual void DoRecreateShape(float a_radius, float a_height);
     };
 
-    class SKMP_ALIGN(CollisionShapeCone, 16) :
+    class SKMP_ALIGN(16) CollisionShapeCone :
         public CollisionShapeTemplRH<btConeShape>
     {
     public:
-        CollisionShapeCone(btCollisionObject* a_collider, float a_radius, float a_height);
+        CollisionShapeCone(btCollisionObject * a_collider, float a_radius, float a_height);
 
         virtual void DoRecreateShape(float a_radius, float a_height);
     };
 
-    class SKMP_ALIGN(CollisionShapeBox, 16) :
+    class SKMP_ALIGN(16) CollisionShapeBox :
         public CollisionShapeTemplExtent<btBoxShape>
     {
     public:
-        CollisionShapeBox(btCollisionObject* a_collider, const btVector3& a_extent);
+        CollisionShapeBox(btCollisionObject * a_collider, const btVector3 & a_extent);
 
-        virtual void DoRecreateShape(const btVector3& a_extent);
+        virtual void DoRecreateShape(const btVector3 & a_extent);
     };
 
-    class SKMP_ALIGN(CollisionShapeCylinder, 16) :
+    class SKMP_ALIGN(16) CollisionShapeCylinder :
         public CollisionShapeTemplRH<btCylinderShape>
     {
     public:
-        CollisionShapeCylinder(btCollisionObject* a_collider, float a_radius, float a_height);
+        CollisionShapeCylinder(btCollisionObject * a_collider, float a_radius, float a_height);
 
         virtual void DoRecreateShape(float a_radius, float a_height);
     };
 
-    class __declspec(align(16)) CollisionShapeTetrahedron :
+    class SKMP_ALIGN(16) CollisionShapeTetrahedron :
         public CollisionShapeTemplExtent<btTetrahedronShapeEx>
     {
     public:
-        CollisionShapeTetrahedron(btCollisionObject* a_collider, const btVector3& a_extent);
+        CollisionShapeTetrahedron(btCollisionObject * a_collider, const btVector3 & a_extent);
 
-        virtual void DoRecreateShape(const btVector3& a_extent);
-        virtual void SetShapeProperties(const btVector3& a_extent);
+        virtual void DoRecreateShape(const btVector3 & a_extent);
+        virtual void SetShapeProperties(const btVector3 & a_extent);
 
     private:
         static const btVector3 m_vertices[4];
     };
 
-    class SKMP_ALIGN(CollisionShapeMesh, 16) :
+    class SKMP_ALIGN(16) CollisionShapeMesh :
         public CollisionShapeTemplExtent<btGImpactMeshShape>
     {
     public:
         CollisionShapeMesh(
-            btCollisionObject* a_collider,
-            btTriangleIndexVertexArray* a_data,
-            const btVector3& a_extent);
+            btCollisionObject * a_collider,
+            btTriangleIndexVertexArray * a_data,
+            const btVector3 & a_extent);
 
-        virtual void DoRecreateShape(const btVector3& a_extent);
-        virtual void SetShapeProperties(const btVector3& a_extent);
+        virtual void DoRecreateShape(const btVector3 & a_extent);
+        virtual void SetShapeProperties(const btVector3 & a_extent);
 
     private:
 
         btTriangleIndexVertexArray* m_triVertexArray;
     };
 
-    class SKMP_ALIGN(CollisionShapeConvexHull, 16) :
+    class SKMP_ALIGN(16) CollisionShapeConvexHull :
         public CollisionShapeTemplExtent<btConvexHullShape>
     {
     public:
 
         CollisionShapeConvexHull(
-            btCollisionObject* a_collider,
-            const std::shared_ptr<MeshPoint[]>& a_data,
+            btCollisionObject * a_collider,
+            const std::shared_ptr<MeshPoint[]>&a_data,
             int a_numVertices,
-            const btVector3& a_extent);
+            const btVector3 & a_extent);
 
-        virtual void DoRecreateShape(const btVector3& a_extent);
-        virtual void SetShapeProperties(const btVector3& a_extent);
+        virtual void DoRecreateShape(const btVector3 & a_extent);
+        virtual void SetShapeProperties(const btVector3 & a_extent);
 
     private:
 
@@ -242,18 +242,18 @@ namespace CBP
         int m_convexHullNumVertices;
     };
 
-    class SKMP_ALIGN(Collider,16) :
+    class SKMP_ALIGN(16) Collider :
         ILog
     {
         static constexpr float crdrmul = float(MATH_PI) / 180.0f;
 
     public:
-        Collider(SimComponent& a_parent);
+        Collider(SimComponent & a_parent);
         virtual ~Collider() noexcept;
 
         Collider() = delete;
-        Collider(const Collider& a_rhs) = delete;
-        Collider(Collider&& a_rhs) = delete;
+        Collider(const Collider & a_rhs) = delete;
+        Collider(Collider && a_rhs) = delete;
 
         bool Create(ColliderShapeType a_shape);
         bool Destroy();
@@ -267,7 +267,7 @@ namespace CBP
                 a_z * crdrmul
             );
         }
-        
+
         SKMP_FORCEINLINE void SetRadius(float a_val) {
             if (m_created)
                 m_colshape->SetRadius(a_val);
@@ -278,13 +278,13 @@ namespace CBP
                 m_colshape->SetHeight(a_val);
         }
 
-        SKMP_FORCEINLINE void SetExtent(const btVector3& a_extent)
+        SKMP_FORCEINLINE void SetExtent(const btVector3 & a_extent)
         {
             if (m_created)
                 m_colshape->SetExtent(a_extent);
         }
 
-        SKMP_FORCEINLINE void SetOffset(const btVector3& a_offset, const btVector3& a_initial) {
+        SKMP_FORCEINLINE void SetOffset(const btVector3 & a_offset, const btVector3 & a_initial) {
             m_bodyOffset = a_offset;
             m_bodyOffsetPlusInitial = a_offset + a_initial;
         }
@@ -338,13 +338,13 @@ namespace CBP
         SimComponent& m_parent;
     };
 
-    class SKMP_ALIGN(SimComponent, 16)
+    class SKMP_ALIGN(16) SimComponent
     {
-        struct SKMP_ALIGN(Force, 16)
+        struct SKMP_ALIGN(16) Force
         {
             Force(
                 uint32_t a_steps,
-                const btVector3& a_norm)
+                const btVector3 & a_norm)
                 :
                 m_steps(a_steps),
                 m_force(a_norm)
@@ -418,9 +418,9 @@ namespace CBP
         Collider m_collider;
 
         void ColUpdateWeightData(
-            Actor* a_actor,
-            const configComponent16_t& a_config,
-            const configNode_t& a_nodeConf);
+            Actor * a_actor,
+            const configComponent16_t & a_config,
+            const configNode_t & a_nodeConf);
 
         SKMP_FORCEINLINE void ClampVelocity()
         {
@@ -433,8 +433,8 @@ namespace CBP
         }
 
         SKMP_FORCEINLINE void ConstrainMotion(
-            const btMatrix3x3& a_invRot,
-            const btVector3& a_target,
+            const btMatrix3x3 & a_invRot,
+            const btVector3 & a_target,
             float a_timeStep
         );
 
@@ -445,12 +445,12 @@ namespace CBP
         BT_DECLARE_ALIGNED_ALLOCATOR();
 
         SimComponent(
-            Actor* a_actor,
-            NiAVObject* a_obj,
-            const std::string& a_nodeName,
-            const std::string& a_configBoneName,
-            const configComponent32_t& config,
-            const configNode_t& a_nodeConf,
+            Actor * a_actor,
+            NiAVObject * a_obj,
+            const std::string & a_nodeName,
+            const std::string & a_configBoneName,
+            const configComponent32_t & config,
+            const configNode_t & a_nodeConf,
             uint64_t a_parentId,
             uint64_t a_groupId,
             bool a_collisions,
@@ -460,28 +460,28 @@ namespace CBP
         virtual ~SimComponent() noexcept;
 
         SimComponent() = delete;
-        SimComponent(const SimComponent& a_rhs) = delete;
-        SimComponent(SimComponent&& a_rhs) = delete;
+        SimComponent(const SimComponent & a_rhs) = delete;
+        SimComponent(SimComponent && a_rhs) = delete;
 
         void UpdateConfig(
-            Actor* a_actor,
-            const configComponent32_t* a_physConf,
-            const configNode_t& a_nodeConf,
+            Actor * a_actor,
+            const configComponent32_t * a_physConf,
+            const configNode_t & a_nodeConf,
             bool a_collisions,
             bool a_movement) noexcept;
 
         void UpdateMotion(float timeStep);
         SKMP_FORCEINLINE void UpdateVelocity();
         void Reset();
-        bool ValidateNodes(NiAVObject* a_obj);
+        bool ValidateNodes(NiAVObject * a_obj);
 
-        void ApplyForce(uint32_t a_steps, const NiPoint3& a_force);
+        void ApplyForce(uint32_t a_steps, const NiPoint3 & a_force);
 
 #ifdef _CBP_ENABLE_DEBUG
         void UpdateDebugInfo();
 #endif
 
-        SKMP_FORCEINLINE void AddVelocity(const btVector3& a_vel) {
+        SKMP_FORCEINLINE void AddVelocity(const btVector3 & a_vel) {
             m_velocity += a_vel;
         }
 
@@ -496,20 +496,17 @@ namespace CBP
         [[nodiscard]] SKMP_FORCEINLINE const auto& GetConfigGroupName() const {
             return m_configGroupName;
         }
-        
+
         [[nodiscard]] SKMP_FORCEINLINE const auto& GetNodeName() const {
             return m_nodeName;
         }
 
-        [[nodiscard]] SKMP_FORCEINLINE bool IsSameGroup(const SimComponent& a_rhs) const {
+        [[nodiscard]] SKMP_FORCEINLINE bool IsSameGroup(const SimComponent & a_rhs) const 
+        {
             return a_rhs.m_groupId != 0 && m_groupId != 0 &&
                 a_rhs.m_parentId == m_parentId &&
                 a_rhs.m_groupId == m_groupId;
         }
-
-        SKMP_FORCEINLINE void UpdateGroupInfo(uint64_t a_groupId) {
-            m_groupId = a_groupId;
-        };
 
         [[nodiscard]] SKMP_FORCEINLINE bool HasMotion() const {
             return m_movement;

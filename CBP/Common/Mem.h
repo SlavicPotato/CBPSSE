@@ -2,6 +2,10 @@
 
 namespace mem
 {
+#if defined(SKMP_MEMDBG)
+    extern std::atomic_size_t g_allocatedSize;
+#endif
+
     /**
  * Allocator for aligned data.
  *
@@ -22,17 +26,17 @@ namespace mem
         typedef std::size_t size_type;
         typedef ptrdiff_t difference_type;
 
-        T* address(T& r) const
+        SKMP_FORCEINLINE T* address(T& r) const
         {
-            return &r;
+            return std::addressof(r);
         }
 
-        const T* address(const T& s) const
+        SKMP_FORCEINLINE const T* address(const T& s) const
         {
-            return &s;
+            return std::addressof(s);
         }
 
-        std::size_t max_size() const
+        SKMP_FORCEINLINE std::size_t max_size() const
         {
             // The following has been carefully written to be independent of
             // the definition of size_t and to avoid signed/unsigned warnings.
@@ -47,19 +51,19 @@ namespace mem
             typedef aligned_allocator<U, Alignment> other;
         };
 
-        bool operator!=(const aligned_allocator& other) const
+        SKMP_FORCEINLINE bool operator!=(const aligned_allocator& other) const
         {
             return !(*this == other);
         }
 
-        void construct(T* const p, const T& t) const
+        SKMP_FORCEINLINE void construct(T* const p, const T& t) const
         {
             void* const pv = static_cast<void*>(p);
 
             new (pv) T(t);
         }
 
-        void destroy(T* const p) const
+        SKMP_FORCEINLINE void destroy(T* const p) const
         {
             p->~T();
         }
@@ -67,11 +71,10 @@ namespace mem
         // Returns true if and only if storage allocated from *this
         // can be deallocated from other, and vice versa.
         // Always returns true for stateless allocators.
-        bool operator==(const aligned_allocator& other) const
+        SKMP_FORCEINLINE bool operator==(const aligned_allocator& other) const
         {
             return true;
         }
-
 
         // Default constructor, copy constructor, rebinding constructor, and destructor.
         // Empty for stateless allocators.
@@ -85,7 +88,7 @@ namespace mem
 
 
         // The following will be different for each allocator.
-        T* allocate(const std::size_t n) const
+        SKMP_FORCEINLINE T* allocate(const std::size_t n) const
         {
             // The return value of allocate(0) is unspecified.
             // Mallocator returns NULL in order to avoid depending
@@ -105,8 +108,14 @@ namespace mem
                 throw std::length_error("aligned_allocator<T>::allocate() - Integer overflow.");
             }
 
+            size_t size = n * sizeof(T);
+
             // Mallocator wraps malloc().
-            void* const pv = _mm_malloc(n * sizeof(T), Alignment);
+            void* const pv = _mm_malloc(size, Alignment);
+
+#if defined(SKMP_MEMDBG)
+            g_allocatedSize += size;
+#endif
 
             // Allocators should throw std::bad_alloc in the case of memory allocation failure.
             if (pv == NULL)
@@ -117,15 +126,19 @@ namespace mem
             return static_cast<T*>(pv);
         }
 
-        void deallocate(T* const p, const std::size_t n) const
+        SKMP_FORCEINLINE void deallocate(T* const p, const std::size_t n) const
         {
+#if defined(SKMP_MEMDBG)
+            g_allocatedSize -= n * sizeof(T);
+#endif
+
             _mm_free(p);
         }
 
 
         // The following will be the same for all allocators that ignore hints.
         template <typename U>
-        T* allocate(const std::size_t n, const U* /* const hint */) const
+        SKMP_FORCEINLINE T* allocate(const std::size_t n, const U* /* const hint */) const
         {
             return allocate(n);
         }
@@ -140,5 +153,7 @@ namespace mem
         // the STL headers, but that warning is useless.
     private:
         aligned_allocator& operator=(const aligned_allocator&);
+
     };
+
 };

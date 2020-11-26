@@ -122,6 +122,12 @@ namespace CBP
         m_lines.clear();
     }
 
+    void Renderer::Release()
+    {
+        m_tris.swap(decltype(m_tris)());
+        m_lines.swap(decltype(m_lines)());
+    }
+
     void Renderer::Draw()
     {
         m_pImmediateContext->OMSetBlendState(m_states->AlphaBlend(), nullptr, 0xFFFFFFFF);
@@ -134,7 +140,7 @@ namespace CBP
 
         m_batch->Begin();
 
-        auto& globalConfig = IConfig::GetGlobal();
+        const auto& globalConfig = IConfig::GetGlobal();
 
         for (const auto& e : m_lines)
             m_batch->DrawLine(e.pos1, e.pos2);

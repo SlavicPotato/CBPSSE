@@ -45,23 +45,6 @@ namespace CBP
             ToggleResult Toggle();
         };
 
-        class SwitchUITask :
-            public TaskDelegate
-        {
-        public:
-            SwitchUITask(bool a_switch) :
-                m_switch(a_switch)
-            {
-            }
-
-            virtual void Run();
-            virtual void Dispose() {
-                delete this;
-            };
-        private:
-            bool m_switch;
-        };
-
         class ApplyForceTask :
             public TaskDelegate
         {
@@ -89,6 +72,13 @@ namespace CBP
         {
         public:
             virtual void Run();
+        };
+
+        class UIRenderTask :
+            public UIRenderTaskBase
+        {
+        public:
+            virtual bool Run();
         };
 
         typedef void (*mainLoopUpdateFunc_t)(Game::BSMain *a_main);
@@ -124,7 +114,6 @@ namespace CBP
         }
 
         static void UpdateConfigOnAllActors();
-        static void UpdateGroupInfoOnAllActors();
         static void ResetPhysics();
         static void NiNodeUpdate();
         static void NiNodeUpdate(Game::ObjectHandle a_handle);
@@ -224,8 +213,12 @@ namespace CBP
             m_Instance.m_resetUI = true;
         }
 
-        SKMP_FORCEINLINE static auto& GetUIContext() {
+        [[nodiscard]] SKMP_FORCEINLINE static auto& GetUIContext() {
             return m_Instance.m_uiContext;
+        }
+
+        [[nodiscard]] SKMP_FORCEINLINE static auto& GetUIRenderTask() {
+            return m_Instance.m_uiRenderTask;
         }
 
         FN_NAMEPROC("CBP")
@@ -256,11 +249,10 @@ namespace CBP
 
         static uint32_t ConfigGetComboKey(int32_t param);
 
-        static bool UICallback();
-
         void EnableUI();
         void DisableUI();
-        bool RunEnableUIChecks();
+
+        UIRenderTask m_uiRenderTask;
 
         struct
         {
@@ -268,6 +260,7 @@ namespace CBP
             bool debug_renderer;
             bool force_ini_keys;
             int compression_level;
+            bool ui_open_restrictions;
 
             bool use_epa;
             int maxPersistentManifoldPoolSize;

@@ -137,9 +137,7 @@ namespace CBP
     {
         int count = m_objList.size();
         for (int i = 0; i < count; i++)
-        {
             delete m_objList[i];
-        }
     }
 
     void SimObject::Reset()
@@ -151,7 +149,8 @@ namespace CBP
 
     bool SimObject::ValidateNodes(Actor* a_actor)
     {
-        BSFixedString n("NPC Head [Head]");
+        BSFixedString n(NODE_HEAD);
+
         auto head = a_actor->loadedState->node->GetObjectByName(&n.data);
         if (head != m_objHead)
             return false;
@@ -233,18 +232,6 @@ namespace CBP
             m_objList[i]->UpdateDebugInfo();
     }
 #endif
-
-    void SimObject::UpdateGroupInfo()
-    {
-        int count = m_objList.size();
-        for (int i = 0; i < count; i++)
-        {
-            auto p = m_objList[i];
-
-            p->UpdateGroupInfo(
-                IConfig::GetNodeCollisionGroupId(p->GetNodeName()));
-        }
-    }
 
     void SimObject::SetSuspended(bool a_switch)
     {

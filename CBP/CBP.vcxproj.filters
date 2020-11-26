@@ -329,6 +329,10 @@
       <Filter>Installer</Filter>
     </None>
     <None Include="..\.gitignore" />
+    <None Include="cpp.hint" />
+    <None Include="..\config\CBP.ini">
+      <Filter>Config</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Resource.rc">
