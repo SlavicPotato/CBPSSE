@@ -105,7 +105,7 @@ namespace CBP
         if (!driverConfig.debug_renderer)
             return;
 
-        GetRenderer()->Clear();
+        GetRenderer()->Release();
     }
 
     void DCBP::UpdateDebugRendererSettings()
@@ -828,7 +828,7 @@ namespace CBP
         IScopedCriticalSection _(GetLock());
 
         if (GetDriverConfig().debug_renderer)
-            GetRenderer()->Clear();
+            GetRenderer()->Release();
 
         m_Instance.m_loadInstance++;
 
