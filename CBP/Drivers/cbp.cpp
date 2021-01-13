@@ -367,10 +367,13 @@ namespace CBP
             g_branchTrampoline.Write5Branch(CreateArmorNodePost, code.get());
         }
 
-        m_controller =
-            m_conf.taskpool_offload ?
-            std::make_unique<CBP::ControllerTaskSim>() :
-            std::make_unique<CBP::ControllerTask>();
+        if (m_conf.taskpool_offload) {
+            m_controller = std::make_unique<CBP::ControllerTaskSim>();
+            Message("Taskpool offload enabled");
+        }
+        else {
+            m_controller = std::make_unique<CBP::ControllerTask>();
+        }
 
         DTasks::AddTaskFixed(m_controller.get());
 

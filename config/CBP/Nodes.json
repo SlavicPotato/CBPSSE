@@ -1,33 +1,167 @@
 {
-	"breast left" : ["NPC L Breast"],
-	"breast right" : ["NPC R Breast"],
-	"butt left" : ["NPC L Butt"],
-	"butt right" : ["NPC R Butt"],
-	"belly" : ["HDT Belly"],
-	"belly2" : ["NPC Belly"],
-	"pelvis": ["NPC Pelvis [Pelv]"],
-	"hand left": ["NPC L Hand [LHnd]"],	
-	"hand right": ["NPC R Hand [RHnd]"],
-	"forearm left": ["NPC L Forearm [LLar]"],
-	"forearm right": ["NPC R Forearm [RLar]"],
-	"palm left": ["NPC L Finger20 [LF20]"],
-	"palm right": ["NPC R Finger20 [RF20]"],
-	"extra breast left 1": ["L Breast01"],
-	"extra breast left 2": ["L Breast02"],
-	"extra breast left 3": ["L Breast03"],
-	"extra breast right 1": ["R Breast01"],
-	"extra breast right 2": ["R Breast02"],
-	"extra breast right 3": ["R Breast03"],
-	"genitals 1": ["NPC Genitals01 [Gen01]"],
-	"genitals 2": ["NPC Genitals02 [Gen02]"],
-	"genitals 3": ["NPC Genitals03 [Gen03]"],
-	"genitals 4": ["NPC Genitals04 [Gen04]"],
-	"genitals 5": ["NPC Genitals05 [Gen05]"],
-	"genitals 6": ["NPC Genitals06 [Gen06]"],
-	"front thigh left": ["NPC L FrontThigh"],
-	"front thigh right": ["NPC R FrontThigh"],
-	"rear thigh left": ["NPC L RearThigh"],
-	"rear thigh right": ["NPC R RearThigh"],
-	"rear calf left": ["NPC L RearCalf [LrClf]"],
-	"rear calf right": ["NPC R RearCalf [RrClf]"]
+	"Belly": [
+		"HDT Belly"
+	],
+	"Belly2": [
+		"NPC Belly"
+	],
+	"Breast left": [
+		"NPC L Breast"
+	],
+	"Breast right": [
+		"NPC R Breast"
+	],
+	"Butt left": [
+		"NPC L Butt"
+	],
+	"Butt right": [
+		"NPC R Butt"
+	],
+	"Calf left": [
+		"NPC L Calf [LClf]"
+	],
+	"Calf right": [
+		"NPC R Calf [RClf]"
+	],
+	"Extra breast left 1": [
+		"L Breast01"
+	],
+	"Extra breast left 2": [
+		"L Breast02"
+	],
+	"Extra breast left 3": [
+		"L Breast03"
+	],
+	"Extra breast right 1": [
+		"R Breast01"
+	],
+	"Extra breast right 2": [
+		"R Breast02"
+	],
+	"Extra breast right 3": [
+		"R Breast03"
+	],
+	"Finger index 0": [
+		"NPC L Finger10 [LF10]",
+		"NPC R Finger10 [RF10]"
+	],
+	"Finger index 1": [
+		"NPC L Finger11 [LF11]",
+		"NPC R Finger11 [RF11]"
+	],
+	"Finger index 2": [
+		"NPC L Finger12 [LF12]",
+		"NPC R Finger12 [RF12]"
+	],
+	"Finger middle 0": [
+		"NPC L Finger20 [LF20]",
+		"NPC R Finger20 [RF20]"
+	],
+	"Finger middle 1": [
+		"NPC L Finger21 [LF21]",
+		"NPC R Finger21 [RF21]"
+	],
+	"Finger middle 2": [
+		"NPC L Finger22 [LF22]",
+		"NPC R Finger22 [RF22]"
+	],
+	"Finger pinky 0": [
+		"NPC L Finger40 [LF40]",
+		"NPC R Finger40 [RF40]"
+	],
+	"Finger pinky 1": [
+		"NPC L Finger41 [LF41]",
+		"NPC R Finger41 [RF41]"
+	],
+	"Finger pinky 2": [
+		"NPC L Finger42 [LF42]",
+		"NPC R Finger42 [RF42]"
+	],
+	"Finger ring 0": [
+		"NPC L Finger30 [LF30]",
+		"NPC R Finger30 [RF30]"
+	],
+	"Finger ring 1": [
+		"NPC L Finger31 [LF31]",
+		"NPC R Finger31 [RF31]"
+	],
+	"Finger ring 2": [
+		"NPC L Finger32 [LF32]",
+		"NPC R Finger32 [RF32]"
+	],
+	"Finger thumb 0": [
+		"NPC L Finger00 [LF00]",
+		"NPC R Finger00 [RF00]"
+	],
+	"Finger thumb 1": [
+		"NPC L Finger01 [LF01]",
+		"NPC R Finger01 [RF01]"
+	],
+	"Finger thumb 2": [
+		"NPC L Finger02 [LF02]",
+		"NPC R Finger02 [RF02]"
+	],
+	"Forearm left": [
+		"NPC L Forearm [LLar]"
+	],
+	"Forearm right": [
+		"NPC R Forearm [RLar]"
+	],
+	"Front thigh left": [
+		"NPC L FrontThigh"
+	],
+	"Front thigh right": [
+		"NPC R FrontThigh"
+	],
+	"Genitals 1": [
+		"NPC Genitals01 [Gen01]"
+	],
+	"Genitals 2": [
+		"NPC Genitals02 [Gen02]"
+	],
+	"Genitals 3": [
+		"NPC Genitals03 [Gen03]"
+	],
+	"Genitals 4": [
+		"NPC Genitals04 [Gen04]"
+	],
+	"Genitals 5": [
+		"NPC Genitals05 [Gen05]"
+	],
+	"Genitals 6": [
+		"NPC Genitals06 [Gen06]"
+	],
+	"Hand left": [
+		"NPC L Hand [LHnd]"
+	],
+	"Hand right": [
+		"NPC R Hand [RHnd]"
+	],
+	"Pelvis": [
+		"NPC Pelvis [Pelv]"
+	],
+	"Rear thigh left": [
+		"NPC L RearThigh"
+	],
+	"Rear thigh right": [
+		"NPC R RearThigh"
+	],
+	"Spine lower": [
+		"NPC Spine1 [Spn1]"
+	],
+	"Spine middle": [
+		"NPC Spine2 [Spn2]"
+	],
+	"Thigh left": [
+		"NPC L Thigh [LThg]"
+	],
+	"Thigh right": [
+		"NPC R Thigh [RThg]"
+	],
+	"Upperarm left": [
+		"NPC L UpperArm [LUar]"
+	],
+	"Upperarm right": [
+		"NPC R UpperArm [RUar]"
+	]
 }
