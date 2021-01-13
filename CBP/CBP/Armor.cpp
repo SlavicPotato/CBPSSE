@@ -101,7 +101,7 @@ namespace CBP
     {
         for (UInt32 i = 0; i < a_armor->armorAddons.count; i++)
         {
-            TESObjectARMA* arma = nullptr;
+            TESObjectARMA* arma(nullptr);
             if (!a_armor->armorAddons.GetNthItem(i, arma))
                 continue;
 
@@ -119,22 +119,26 @@ namespace CBP
         char buf[MAX_PATH];
         a_arma->GetNodeName(buf, a_actor, a_armor, -1.0f);
 
-        NiNode* root[2];
-        root[0] = a_actor->GetNiRootNode(false);
-        root[1] = a_actor->GetNiRootNode(true);
+        NiNode* root[2]
+        {
+            a_actor->GetNiRootNode(false),
+            a_actor->GetNiRootNode(true)
+        };
 
         if (root[1] == root[0])
             root[1] = nullptr;
 
-        BSFixedString pcName("CBPA");
+        BSFixedString pcName(NISTRING_EXTRA_DATA_NAME);
         BSFixedString aaName(buf);
 
         for (int i = 0; i < 2; i++)
         {
-            if (!root[i])
+            auto node = root[i];
+
+            if (!node)
                 continue;
 
-            NiAVObject* armorNode = root[i]->GetObjectByName(&aaName.data);
+            auto armorNode = node->GetObjectByName(&aaName.data);
 
             if (!armorNode || !armorNode->m_parent)
                 continue;
@@ -149,12 +153,12 @@ namespace CBP
                 Game::NodeTraverse(childNode, [&](NiAVObject* object)
                     {
                         auto data = object->GetExtraData(pcName);
-                        if (data) {
-                            auto extraData = ni_cast(data, NiStringExtraData);
+                        if (!data)
+                            return;
 
-                            if (extraData && extraData->m_pString)
-                                a_out.emplace(extraData->m_pString);
-                        }
+                        auto extraData = ni_cast(data, NiStringExtraData);
+                        if (extraData && extraData->m_pString)
+                            a_out.emplace(extraData->m_pString);
                     });
             }
         }

@@ -180,6 +180,9 @@
     <ClInclude Include="gitparams.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="CBP\ArmorCache.h">
+      <Filter>Header Files\CBP</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp">
@@ -285,6 +288,9 @@
       <Filter>Source Files\CBP</Filter>
     </ClCompile>
     <ClCompile Include="CBP\Config.cpp">
+      <Filter>Source Files\CBP</Filter>
+    </ClCompile>
+    <ClCompile Include="CBP\ArmorCache.cpp">
       <Filter>Source Files\CBP</Filter>
     </ClCompile>
   </ItemGroup>

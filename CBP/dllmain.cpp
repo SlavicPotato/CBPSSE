@@ -16,7 +16,9 @@ static bool Initialize(const SKSEInterface* skse)
         gLog.Warning("Couldn't load configuration from '%s'", PLUGIN_INI_FILE);
     }
 
-    if (!CBP::DCBP::LoadPaths()) {
+    auto& dcbp = CBP::DCBP::GetSingleton();
+
+    if (!dcbp.LoadPaths()) {
         gLog.FatalError("Couldn't construct data paths, this is fatal. Make sure DataPath is set to an existing, writable folder.");
         return false;
     }
@@ -33,7 +35,7 @@ static bool Initialize(const SKSEInterface* skse)
     CBP::IEvents::Initialize();
     CBP::DData::Initialize();
     CBP::DInput::Initialize();
-    CBP::DCBP::Initialize();
+    dcbp.Initialize();
     ASSERT(CBP::DRender::Initialize());
 
     return true;

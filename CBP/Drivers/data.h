@@ -70,19 +70,26 @@ namespace CBP
 
         bool Populate();
 
-        [[nodiscard]] SKMP_FORCEINLINE bool IsPopulated() {
+        [[nodiscard]] SKMP_FORCEINLINE bool IsPopulated() const {
             return m_populated;
         }
 
-        [[nodiscard]] SKMP_FORCEINLINE const auto& Get() {
-            return modList;
+        [[nodiscard]] SKMP_FORCEINLINE const auto& Get() const {
+            return m_modList;
         }
+
+        [[nodiscard]] SKMP_FORCEINLINE const auto& GetLookupRef() const {
+            return m_mlnref;
+        }
+
+        [[nodiscard]] const modData_t* Lookup(const std::string& a_modName) const;
 
     private:
 
         bool m_populated;
 
-        stl::map<UInt32, modData_t> modList;
+        stl::map<UInt32, modData_t> m_modList;
+        stl::iunordered_map<std::string, modData_t&> m_mlnref;
     };
 
     class DData :
@@ -94,12 +101,16 @@ namespace CBP
 
         static void MessageHandler(Event, void* args);
 
-        SKMP_FORCEINLINE static bool HasModList() {
+        [[nodiscard]] SKMP_FORCEINLINE static bool HasModList() {
             return m_Instance.m_modList.IsPopulated();
         }
 
-        SKMP_FORCEINLINE static auto& GetModList() {
+        [[nodiscard]] SKMP_FORCEINLINE static auto& GetModList() {
             return m_Instance.m_modList.Get();
+        }
+
+        [[nodiscard]] SKMP_FORCEINLINE static const auto& GetModData() {
+            return m_Instance.m_modList;
         }
 
         FN_NAMEPROC("Data")

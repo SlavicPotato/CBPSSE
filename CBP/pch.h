@@ -6,6 +6,7 @@
 #include <ext/ITasks.h>
 #include <ext/JITASM.h>
 #include <ext/INIReader.h>
+#include <ext/StrHelpers.h>
 #include <common/IMemPool.h>
 #include <common/ICriticalSection.h>
 #include <skse64/PluginAPI.h>
@@ -117,6 +118,7 @@ namespace fs = std::filesystem;
 #include "Common/UIData.h"
 #include "Common/UICommon.h"
 #include "cbp/Data.h"
+#include "cbp/ArmorCache.h"
 #include "cbp/Config.h"
 #include "cbp/Serialization.h"
 #include "cbp/Profile.h"

@@ -12,7 +12,8 @@ namespace CBP
             kDataVersion2 = 2,
         };
 
-        class KeyPressHandler : public KeyEventHandler
+        class KeyPressHandler :
+            public KeyEventHandler
         {
         public:
             virtual void ReceiveEvent(KeyEvent, UInt32) override;
@@ -56,8 +57,8 @@ namespace CBP
                 const NiPoint3& a_force
             );
 
-            virtual void Run();
-            virtual void Dispose() {
+            virtual void Run() override;
+            virtual void Dispose() override {
                 delete this;
             }
         private:
@@ -81,7 +82,7 @@ namespace CBP
             virtual bool Run();
         };
 
-        typedef void (*mainLoopUpdateFunc_t)(Game::BSMain *a_main);
+        typedef void (*mainLoopUpdateFunc_t)(Game::BSMain* a_main);
 
     public:
 
@@ -99,21 +100,26 @@ namespace CBP
             Game::ObjectHandle m_handle;
         };
 
-        static bool LoadPaths();
-        static void Initialize();
+        bool LoadPaths();
+        void Initialize();
 
-        static void MainLoop_Hook(Game::BSMain* a_main);
-        static void OnCreateArmorNode(TESObjectREFR* a_ref, BipedParam* a_params);
-        static NiAVObject* CreateArmorNode_Hook(NiAVObject* a_obj, Biped* a_info, BipedParam* a_params);
-
-        static void DispatchActorTask(Actor* actor, ControllerInstruction::Action action);
-        static void DispatchActorTask(Game::ObjectHandle handle, ControllerInstruction::Action action);
+        SKMP_FORCEINLINE static void DispatchActorTask(Actor* a_actor, CBP::ControllerInstruction::Action a_action);
+        SKMP_FORCEINLINE static void DispatchActorTask(Game::ObjectHandle handle, CBP::ControllerInstruction::Action action);
 
         [[nodiscard]] SKMP_FORCEINLINE static const auto& GetSimActorList() {
-            return m_Instance.m_updateTask.GetSimActorList();
+            return m_Instance.m_controller->GetSimActorList();
+        }
+
+        [[nodiscard]] SKMP_FORCEINLINE static auto& GetSerializationInterface() {
+            return m_Instance.m_serialization;
+        }
+
+        [[nodiscard]] SKMP_FORCEINLINE static auto& GetSingleton() {
+            return m_Instance;
         }
 
         static void UpdateConfigOnAllActors();
+        static void ResetActors();
         static void ResetPhysics();
         static void NiNodeUpdate();
         static void NiNodeUpdate(Game::ObjectHandle a_handle);
@@ -121,23 +127,20 @@ namespace CBP
         static void WeightUpdate(Game::ObjectHandle a_handle);
         static void ClearArmorOverrides();
         static void UpdateArmorOverridesAll();
-        static void ResetActors();
         static void UpdateDebugRendererState();
         static void UpdateDebugRendererSettings();
         static void UpdateProfilerSettings();
         static void ApplyForce(Game::ObjectHandle a_handle, uint32_t a_steps, const std::string& a_component, const NiPoint3& a_force);
-
-        static bool SaveAll();
 
         SKMP_FORCEINLINE static bool SaveGlobals() {
             return m_Instance.m_serialization.SaveGlobalConfig();
         }
 
         SKMP_FORCEINLINE static void MarkGlobalsForSave() {
-            m_Instance.m_serialization.MarkForSave(ISerialization::kGlobals);
+            m_Instance.m_serialization.MarkForSave(CBP::ISerialization::Group::kGlobals);
         }
 
-        SKMP_FORCEINLINE static void MarkForSave(ISerialization::Group a_grp) {
+        SKMP_FORCEINLINE static void MarkForSave(CBP::ISerialization::Group a_grp) {
             m_Instance.m_serialization.MarkForSave(a_grp);
         }
 
@@ -154,37 +157,41 @@ namespace CBP
         }
 
         static bool ExportData(const std::filesystem::path& a_path);
-        static bool ImportData(const std::filesystem::path& a_path, ISerialization::ImportFlags a_flags);
-        static bool GetImportInfo(const std::filesystem::path& a_path, importInfo_t& a_out);
+        static bool ImportData(const std::filesystem::path& a_path, CBP::ISerialization::ImportFlags a_flags);
+
+        static bool GetImportInfo(const std::filesystem::path& a_path, CBP::importInfo_t& a_out);
 
         [[nodiscard]] SKMP_FORCEINLINE static const auto& GetLastSerializationException() {
             return m_Instance.m_serialization.GetLastException();
-        }
-
-        SKMP_FORCEINLINE static void UIQueueUpdateCurrentActorA() {
-            m_Instance.m_uiContext.QueueListUpdateCurrent();
         }
 
         SKMP_FORCEINLINE static void QueueActorCacheUpdate() {
             DTasks::AddTask(&m_Instance.m_updateActorCacheTask);
         }
 
-        [[nodiscard]] SKMP_FORCEINLINE static auto& GetUpdateTask() {
-            return m_Instance.m_updateTask;
+        [[nodiscard]] SKMP_FORCEINLINE static auto GetController() {
+            return m_Instance.m_controller.get();
         }
 
         static void ResetProfiler();
         static void SetProfilerInterval(long long a_interval);
 
         [[nodiscard]] SKMP_FORCEINLINE static auto& GetProfiler() {
-            return m_Instance.m_updateTask.GetProfiler();
+            return m_Instance.m_controller->GetProfiler();
         }
 
-        SKMP_FORCEINLINE static void Lock() {
+        SKMP_FORCEINLINE static void Lock()
+        {
             m_Instance.m_lock.Enter();
         }
 
-        SKMP_FORCEINLINE static void Unlock() {
+        SKMP_FORCEINLINE static bool TryLock()
+        {
+            return m_Instance.m_lock.TryEnter();
+        }
+
+        SKMP_FORCEINLINE static void Unlock()
+        {
             m_Instance.m_lock.Leave();
         }
 
@@ -197,8 +204,8 @@ namespace CBP
             return m_Instance.m_conf;
         }
 
-        SKMP_FORCEINLINE static auto& GetRenderer() {
-            return m_Instance.m_renderer;
+        [[nodiscard]] SKMP_FORCEINLINE static auto GetRenderer() {
+            return m_Instance.m_renderer.get();
         }
 
         SKMP_FORCEINLINE static void UpdateKeys() {
@@ -206,19 +213,27 @@ namespace CBP
         }
 
         SKMP_FORCEINLINE static void SetMarkedActor(Game::ObjectHandle a_handle) {
-            m_Instance.m_updateTask.SetMarkedActor(a_handle);
+            m_Instance.m_controller->SetMarkedActor(a_handle);
         }
 
         SKMP_FORCEINLINE static void QueueUIReset() {
             m_Instance.m_resetUI = true;
         }
 
-        [[nodiscard]] SKMP_FORCEINLINE static auto& GetUIContext() {
-            return m_Instance.m_uiContext;
+        [[nodiscard]] SKMP_FORCEINLINE static auto GetUIContext() {
+            return m_Instance.m_uiContext.get();
         }
 
         [[nodiscard]] SKMP_FORCEINLINE static auto& GetUIRenderTask() {
             return m_Instance.m_uiRenderTask;
+        }
+
+        [[nodiscard]] SKMP_FORCEINLINE static bool IsUIActive() {
+            return m_Instance.uiState.show;
+        }
+
+        SKMP_FORCEINLINE static void SetDebugRendererEnabled(bool a_switch) {
+            m_Instance.m_drEnabled = a_switch;
         }
 
         FN_NAMEPROC("CBP")
@@ -226,12 +241,17 @@ namespace CBP
         DCBP();
 
         void LoadConfig();
+        void LoadProfiles();
 
         bool ProcessUICallbackImpl();
 
+        static void MainLoop_Hook(Game::BSMain* a_main);
+        static void MainLoopOffload_Hook(Game::BSMain* a_main);
+        static NiAVObject* CreateArmorNode_Hook(NiAVObject* a_obj, Biped* a_info, BipedParam* a_params);
+        static void OnCreateArmorNode(TESObjectREFR* a_ref, BipedParam* a_params);
+
+        static void OnLogMessage(Event m_code, void* args);
         static void MessageHandler(Event m_code, void* args);
-        static void OnLogMessage(Event, void* args);
-        static void OnExit(Event, void* data);
 
         static void RevertHandler(Event m_code, void* args);
         static void LoadGameHandler(SKSESerializationInterface* intfc, UInt32 type, UInt32 length, UInt32 version);
@@ -245,6 +265,7 @@ namespace CBP
         static bool SerializeToSave(SKSESerializationInterface* intfc, UInt32 a_type, T a_func);
 
         static void OnD3D11PostCreate_CBP(Event code, void* data);
+        static void OnExit(Event, void* data);
         static void Present_Pre();
 
         static uint32_t ConfigGetComboKey(int32_t param);
@@ -256,11 +277,13 @@ namespace CBP
 
         struct
         {
+            bool enabled;
             bool ui_enabled;
             bool debug_renderer;
             bool force_ini_keys;
             int compression_level;
             bool ui_open_restrictions;
+            bool taskpool_offload;
 
             bool use_epa;
             int maxPersistentManifoldPoolSize;
@@ -283,33 +306,53 @@ namespace CBP
                 fs::path templateProfilesNode;
                 fs::path templatePlugins;
                 fs::path colliderData;
+                //fs::path imguiSettings;
             } paths;
 
             std::string imguiIni;
         } m_conf;
 
-        KeyPressHandler m_inputEventHandler;
-        UIContext m_uiContext;
+        DUI* m_uiDriver;
+        std::unique_ptr <CBP::UIContext> m_uiContext;
+        std::unique_ptr<CBP::Renderer> m_renderer;
         uint32_t m_loadInstance;
-
-        ControllerTask m_updateTask;
         ToggleUITask m_taskToggle;
         UpdateActorCacheTask m_updateActorCacheTask;
+        KeyPressHandler m_inputEventHandler;
 
         struct {
             bool show;
-            bool lockControls;
         } uiState;
 
-        ISerialization m_serialization;
-        std::unique_ptr<Renderer> m_renderer;
+        CBP::ISerialization m_serialization;
+
+        std::unique_ptr<CBP::ControllerTask> m_controller;
+
+        ICriticalSection m_lock;
 
         mainLoopUpdateFunc_t mainLoopUpdateFunc_o;
 
         bool m_resetUI;
-
-        ICriticalSection m_lock;
+        bool m_drEnabled;
 
         static DCBP m_Instance;
     };
+
+    void DCBP::DispatchActorTask(
+        Actor* a_actor,
+        CBP::ControllerInstruction::Action a_action)
+    {
+        if (a_actor != nullptr) {
+            Game::ObjectHandle handle;
+            if (Game::GetHandle(a_actor, a_actor->formType, handle))
+                m_Instance.m_controller->AddTask(a_action, handle);
+        }
+    }
+
+    void DCBP::DispatchActorTask(
+        Game::ObjectHandle handle,
+        CBP::ControllerInstruction::Action action)
+    {
+        m_Instance.m_controller->AddTask(action, handle);
+    }
 }

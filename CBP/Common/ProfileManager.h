@@ -26,7 +26,7 @@ public:
     virtual bool Save(const T& a_data, bool a_store) = 0;
     virtual void SetDefaults() noexcept = 0;
 
-    SKMP_FORCEINLINE void SetPath(const std::filesystem::path& a_path) noexcept {
+    SKMP_FORCEINLINE void SetPath(const fs::path& a_path) noexcept {
         m_path = a_path;
         m_name = a_path.stem().string();
     }
@@ -50,7 +50,7 @@ public:
     [[nodiscard]] SKMP_FORCEINLINE const auto& Name() const noexcept {
         return m_name;
     }
-    
+
     [[nodiscard]] SKMP_FORCEINLINE const auto& Path() const noexcept {
         return m_path;
     }
@@ -197,11 +197,10 @@ bool Profile<T>::Load()
 }
 
 template <class T>
-void Profile<T>::SetDefaults() noexcept 
+void Profile<T>::SetDefaults() noexcept
 {
     GetDefault(m_data);
 }
-
 
 template <class T>
 class ProfileManager
@@ -211,17 +210,21 @@ class ProfileManager
     using profileStorage_t = stl::imap<std::string, T>;
 
 public:
-    ProfileManager(const std::string& a_fc, const fs::path &a_ext = ".json");
+    static constexpr size_t MAX_FILENAME_LENGTH = 64;
+
+    ProfileManager(const std::string& a_fc, const fs::path& a_ext = ".json");
 
     ProfileManager() = delete;
     virtual ~ProfileManager() noexcept = default;
 
-    ProfileManager(const ProfileManager&) = delete;
-    ProfileManager(ProfileManager&&) = delete;
-    ProfileManager& operator=(const ProfileManager&) = delete;
-    void operator=(ProfileManager&&) = delete;
+    ProfileManager(const ProfileManager<T>&) = delete;
+    ProfileManager(ProfileManager<T>&&) = delete;
+    ProfileManager<T>& operator=(const ProfileManager<T>&) = delete;
+    ProfileManager<T>& operator=(ProfileManager<T>&&) = delete;
 
     bool Load(const fs::path& a_path);
+    bool Unload();
+
     [[nodiscard]] bool CreateProfile(const std::string& a_name, T& a_out, bool a_save = false);
 
     [[nodiscard]] bool AddProfile(const T& a_in);
@@ -233,7 +236,9 @@ public:
     [[nodiscard]] SKMP_FORCEINLINE const profileStorage_t& Data() const noexcept { return m_storage; }
     [[nodiscard]] SKMP_FORCEINLINE T& Get(const std::string& a_key) { return m_storage.at(a_key); };
     [[nodiscard]] SKMP_FORCEINLINE typename profileStorage_t::const_iterator Find(const std::string& a_key) const { return m_storage.find(a_key); };
+    [[nodiscard]] SKMP_FORCEINLINE typename profileStorage_t::iterator Find(const std::string& a_key) { return m_storage.find(a_key); };
     [[nodiscard]] SKMP_FORCEINLINE typename profileStorage_t::const_iterator End() const { return m_storage.end(); };
+    [[nodiscard]] SKMP_FORCEINLINE typename profileStorage_t::iterator End() { return m_storage.end(); };
     [[nodiscard]] SKMP_FORCEINLINE const T& Get(const std::string& a_key) const { return m_storage.at(a_key); };
     [[nodiscard]] SKMP_FORCEINLINE bool Contains(const std::string& a_key) const { return m_storage.contains(a_key); };
     [[nodiscard]] SKMP_FORCEINLINE const auto& GetLastException() const noexcept { return m_lastExcept; }
@@ -241,12 +246,14 @@ public:
     [[nodiscard]] SKMP_FORCEINLINE typename profileStorage_t::size_type Size() const noexcept { return m_storage.size(); }
     [[nodiscard]] SKMP_FORCEINLINE bool Empty() const noexcept { return m_storage.empty(); }
 
-    //void MarkChanged(const std::string& a_key);
-
-    FN_NAMEPROC("ProfileManager");
+    FN_NAMEPROC("ProfileManager")
 private:
 
     void CheckProfileKey(const std::string& a_key) const;
+
+    virtual void OnProfileAdd(T& a_profile);
+    virtual void OnProfileDelete(T& a_profile);
+    virtual void OnProfileRename(T& a_profile, const std::string &a_oldName);
 
     profileStorage_t m_storage;
     fs::path m_root;
@@ -259,7 +266,7 @@ private:
 template <typename T>
 ProfileManager<T>::ProfileManager(
     const std::string& a_fc,
-    const fs::path &a_ext)
+    const fs::path& a_ext)
     :
     m_isInitialized(false),
     m_rFileCheck(a_fc,
@@ -305,7 +312,7 @@ bool ProfileManager<T>::Load(const fs::path& a_path)
             }
 
             auto filename = path.filename().string();
-            if (filename.length() > 64) {
+            if (filename.length() > MAX_FILENAME_LENGTH) {
                 Warning("Filename too long: %s", filename.c_str());
                 continue;
             }
@@ -320,10 +327,32 @@ bool ProfileManager<T>::Load(const fs::path& a_path)
             /*if (m_lowercase)
                 transform(key.begin(), key.end(), key.begin(), ::tolower);*/
 
-            m_storage.emplace(key, std::move(profile));
+            m_storage.emplace(profile.Name(), std::move(profile));
         }
 
         Debug("Loaded %zu profile(s)", m_storage.size());
+
+        return true;
+    }
+    catch (const std::exception& e) {
+        Error("%s: %s", __FUNCTION__, e.what());
+        m_lastExcept = e;
+        return false;
+    }
+}
+
+template <class T>
+bool ProfileManager<T>::Unload()
+{
+    try
+    {
+        if (!m_isInitialized)
+            throw std::exception("Not initialized");
+
+        m_storage.clear();
+        m_root.clear();
+
+        m_isInitialized = false;
 
         return true;
     }
@@ -354,7 +383,7 @@ bool ProfileManager<T>::CreateProfile(const std::string& a_name, T& a_out, bool 
         path += ".json";
 
         auto filename = path.filename().string();
-        if (filename.length() > 64)
+        if (filename.length() > MAX_FILENAME_LENGTH)
             throw std::exception("Profile name too long");
 
         if (fs::exists(path))
@@ -391,7 +420,11 @@ bool ProfileManager<T>::AddProfile(const T& a_in)
 
         CheckProfileKey(key);
 
-        m_storage.emplace(key, a_in);
+        auto r = m_storage.emplace(key, a_in);
+        if (r.second)
+            OnProfileAdd(r.first->second);
+        else
+            throw std::exception("Profile already exists");
 
         return true;
     }
@@ -414,7 +447,11 @@ bool ProfileManager<T>::AddProfile(T&& a_in)
 
         CheckProfileKey(key);
 
-        m_storage.emplace(key, std::move(a_in));
+        auto r = m_storage.emplace(key, std::move(a_in));
+        if (r.second)
+            OnProfileAdd(r.first->second);
+        else
+            throw std::exception("Profile already exists");
 
         return true;
     }
@@ -428,9 +465,6 @@ bool ProfileManager<T>::AddProfile(T&& a_in)
 template <class T>
 void ProfileManager<T>::CheckProfileKey(const std::string& a_key) const
 {
-    if (m_storage.find(a_key) != m_storage.end())
-        throw std::exception("Profile already exists");
-
     if (!std::regex_match(a_key, m_rFileCheck))
         throw std::exception("Invalid characters in profile name");
 }
@@ -449,14 +483,16 @@ bool ProfileManager<T>::DeleteProfile(const std::string& a_name)
             throw std::exception("No such profile exists");
         }
 
-        if (fs::exists(it->second.Path()) &&
-            fs::is_regular_file(it->second.Path()))
+        const auto& path = it->second.Path();
+
+        if (fs::exists(path) && fs::is_regular_file(path))
         {
-            if (!fs::remove(it->second.Path()))
+            if (!fs::remove(path))
                 throw std::exception("Failed to remove the file");
         }
 
-        m_storage.erase(a_name);
+        OnProfileDelete(it->second);
+        m_storage.erase(it);
 
         return true;
     }
@@ -477,9 +513,6 @@ bool ProfileManager<T>::RenameProfile(
         if (!m_isInitialized)
             throw std::exception("Not initialized");
 
-        if (!std::regex_match(a_newName, m_rFileCheck))
-            throw std::exception("Invalid characters in profile name");
-
         auto it = m_storage.find(a_oldName);
         if (it == m_storage.end())
             throw std::exception("No such profile exists");
@@ -487,10 +520,13 @@ bool ProfileManager<T>::RenameProfile(
         if (m_storage.find(a_newName) != m_storage.end())
             throw std::exception("A profile with that name already exists");
 
+        if (!std::regex_match(a_newName, m_rFileCheck))
+            throw std::exception("Invalid characters in profile name");
+
         fs::path newFilename(a_newName);
         newFilename += ".json";
 
-        if (newFilename.string().length() > 64)
+        if (newFilename.string().length() > MAX_FILENAME_LENGTH)
             throw std::exception("Profile name too long");
 
         auto newPath = it->second.Path();
@@ -504,8 +540,10 @@ bool ProfileManager<T>::RenameProfile(
 
         it->second.SetPath(newPath);
 
-        m_storage.emplace(a_newName, std::move(it->second));
-        m_storage.erase(a_oldName);
+        auto r = m_storage.emplace(it->second.Name(), std::move(it->second));
+        m_storage.erase(it);
+
+        OnProfileRename(r.first->second, a_oldName);
 
         return true;
     }
@@ -514,4 +552,19 @@ bool ProfileManager<T>::RenameProfile(
         m_lastExcept = e;
         return false;
     }
+}
+
+template <class T>
+void ProfileManager<T>::OnProfileAdd(T&)
+{
+}
+
+template <class T>
+void ProfileManager<T>::OnProfileDelete(T&)
+{
+}
+
+template <class T>
+void ProfileManager<T>::OnProfileRename(T&, const std::string&)
+{
 }

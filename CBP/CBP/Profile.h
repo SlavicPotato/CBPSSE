@@ -10,7 +10,13 @@ namespace CBP
         class ProfileManagerPhysics :
             public ProfileManager<PhysicsProfile>
         {
+            friend class GlobalProfileManager;
+
         public:
+
+            FN_NAMEPROC("CBP::ProfileManagerPhysics");
+
+        private:
 
             template<typename... Args>
             ProfileManagerPhysics(Args&&... a_args) :
@@ -18,13 +24,18 @@ namespace CBP
             {
             }
 
-            FN_NAMEPROC("CBP::ProfileManagerPhysics");
         };
 
         class ProfileManagerNode :
             public ProfileManager<NodeProfile>
         {
+            friend class GlobalProfileManager;
+
         public:
+
+            FN_NAMEPROC("CBP::ProfileManagerNode");
+
+        private:
 
             template<typename... Args>
             ProfileManagerNode(Args&&... a_args) :
@@ -32,7 +43,6 @@ namespace CBP
             {
             }
 
-            FN_NAMEPROC("CBP::ProfileManagerNode");
         };
 
     public:

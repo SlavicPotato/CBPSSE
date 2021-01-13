@@ -13,6 +13,8 @@ namespace CBP
 
     class IArmor
     {
+        static constexpr const char* NISTRING_EXTRA_DATA_NAME = "CBPA";
+
     public:
         static bool GetEquippedArmor(Actor* a_actor, EquippedArmorCollector& a_out);
 

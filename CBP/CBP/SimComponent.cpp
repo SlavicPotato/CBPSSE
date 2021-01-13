@@ -333,7 +333,9 @@ namespace CBP
         m_parent(a_parent),
         m_shape(ColliderShapeType::Sphere),
         m_positionScale(1.0f),
+        m_rotationScale(1.0f),
         m_doPositionScaling(false),
+        m_doRotationScaling(false),
         m_offsetParent(false)
     {
     }
@@ -352,7 +354,7 @@ namespace CBP
                 if (a_shape == ColliderShapeType::Mesh ||
                     a_shape == ColliderShapeType::ConvexHull)
                 {
-                    if (_stricmp(m_parent.m_conf.ex.colMesh.c_str(), m_meshShape.c_str()) == 0)
+                    if (StrHelpers::icompare(m_parent.m_conf.ex.colMesh, m_meshShape) == 0)
                         return true;
                 }
                 else {
@@ -426,7 +428,7 @@ namespace CBP
             else
             {
                 m_colshape = new CollisionShapeConvexHull(
-                    collider, data.m_hullPoints, data.numIndices, m_parent.m_colExtent);
+                    collider, data.m_hullPoints, data.m_numIndices, m_parent.m_colExtent);
             }
         }
         break;
@@ -551,20 +553,32 @@ namespace CBP
 
         auto& transform = m_collider->getWorldTransform();
 
-        if (m_parent.m_movement && m_doPositionScaling)
+        float parentScale = m_parent.m_objParent->m_worldTransform.scale;
+
+        if (m_parent.m_motion && m_parent.m_rotScaleOn && m_doRotationScaling)
+        {
+            m_tempRotScale.setEulerZYX(
+                m_parent.m_lr.z() * m_rotationScale,
+                m_parent.m_lr.x() * m_rotationScale,
+                m_parent.m_lr.y() * m_rotationScale);
+
+            m_parent.m_itrMatObj = (m_parent.m_itrMatParent * (m_parent.m_itrInitialMat * m_tempRotScale));
+        }
+
+        if (m_parent.m_motion && m_doPositionScaling)
         {
             if (m_offsetParent)
             {
                 transform.setOrigin(
                     ((m_parent.m_itrMatParent * (m_bodyOffsetPlusInitial + (m_parent.m_ld * m_positionScale))) *=
-                        nodeScale) += m_parent.m_itrPosParent
+                        parentScale) += m_parent.m_itrPosParent
                 );
             }
             else
             {
                 transform.setOrigin(
-                    (((m_parent.m_itrMatParent * (m_parent.m_itrInitialPos + (m_parent.m_ld * m_positionScale))) +=
-                        (m_parent.m_itrMatObj * m_bodyOffset)) *= nodeScale) += m_parent.m_itrPosParent
+                    (((m_parent.m_itrMatParent * (m_parent.m_itrInitialPos + (m_parent.m_ld * m_positionScale))) *= parentScale) +=
+                        ((m_parent.m_itrMatObj * m_bodyOffset)) *= nodeScale) += m_parent.m_itrPosParent
                 );
             }
         }
@@ -573,7 +587,7 @@ namespace CBP
             if (m_offsetParent)
             {
                 transform.setOrigin(
-                    ((m_parent.m_itrMatParent * m_bodyOffset) *= nodeScale) += m_parent.m_itrPosObj
+                    ((m_parent.m_itrMatParent * m_bodyOffset) *= parentScale) += m_parent.m_itrPosObj
                 );
             }
             else
@@ -586,7 +600,7 @@ namespace CBP
 
         if (m_rotation)
         {
-            (transform.getBasis() = m_parent.m_itrMatObj) *= m_colRot;
+            transform.getBasis() = m_parent.m_itrMatObj * m_colRot;
         }
 
         if (nodeScale != m_nodeScale)
@@ -598,12 +612,11 @@ namespace CBP
 
     SimComponent::SimComponent(
         Actor* a_actor,
-        NiAVObject* a_obj,
+        NiNode* a_obj,
         const std::string& a_nodeName,
         const std::string& a_configGroupName,
         const configComponent32_t& a_config,
         const configNode_t& a_nodeConf,
-        uint64_t a_parentId,
         uint64_t a_groupId,
         bool a_collisions,
         bool a_movement)
@@ -617,7 +630,6 @@ namespace CBP
         m_initialTransform(a_obj->m_localTransform),
         m_hasScaleOverride(false),
         m_collider(*this),
-        m_parentId(a_parentId),
         m_groupId(a_groupId),
         m_rotScaleOn(false),
         m_obj(a_obj),
@@ -625,7 +637,7 @@ namespace CBP
         m_updateCtx({ 0.0f, 0 }),
         m_formid(a_actor->formID),
         m_conf(a_config),
-        m_movement(a_movement),
+        m_motion(a_movement),
         m_velocity(0.0f, 0.0f, 0.0f),
         m_virtld(0.0f, 0.0f, 0.0f),
         m_colRad(1.0f),
@@ -656,7 +668,7 @@ namespace CBP
 
     SimComponent::~SimComponent()
     {
-        if (m_movement)
+        if (m_motion)
             m_obj->m_localTransform = m_initialTransform;
     }
 
@@ -694,9 +706,9 @@ namespace CBP
 
         m_collisions = a_collisions;
 
-        if (a_movement != m_movement)
+        if (a_movement != m_motion)
         {
-            m_movement = a_movement;
+            m_motion = a_movement;
             m_applyForceQueue.swap(decltype(m_applyForceQueue)());
         }
 
@@ -713,7 +725,8 @@ namespace CBP
 
                 m_collider.SetPositionScale(
                     std::clamp(m_conf.fp.f32.colPositionScale, 0.0f, 15.0f));
-
+                m_collider.SetRotationScale(
+                    std::clamp(m_conf.fp.f32.colRotationScale, 0.0f, 15.0f));
                 m_collider.SetOffsetParent(a_nodeConf.bl.b.offsetParent);
 
                 switch (m_conf.ex.colShape)
@@ -723,9 +736,9 @@ namespace CBP
                 case ColliderShapeType::Cylinder:
                     m_collider.SetHeight(m_colHeight);
                     m_collider.SetColliderRotation(
-                        m_conf.fp.f32.colRot[0],
-                        m_conf.fp.f32.colRot[1],
-                        m_conf.fp.f32.colRot[2]
+                        m_conf.fp.f32.colRot[0] + a_nodeConf.fp.f32.colRot[0],
+                        m_conf.fp.f32.colRot[1] + a_nodeConf.fp.f32.colRot[1],
+                        m_conf.fp.f32.colRot[2] + a_nodeConf.fp.f32.colRot[1]
                     );
                 case ColliderShapeType::Sphere:
                     m_collider.SetRadius(m_colRad);
@@ -736,9 +749,9 @@ namespace CBP
                 case ColliderShapeType::ConvexHull:
                     m_collider.SetExtent(m_colExtent);
                     m_collider.SetColliderRotation(
-                        m_conf.fp.f32.colRot[0],
-                        m_conf.fp.f32.colRot[1],
-                        m_conf.fp.f32.colRot[2]
+                        m_conf.fp.f32.colRot[0] + a_nodeConf.fp.f32.colRot[0],
+                        m_conf.fp.f32.colRot[1] + a_nodeConf.fp.f32.colRot[1],
+                        m_conf.fp.f32.colRot[2] + a_nodeConf.fp.f32.colRot[2]
                     );
                     break;
                 }
@@ -755,8 +768,9 @@ namespace CBP
             m_resistanceOn = true;
             m_conf.fp.f32.resistance = std::min(m_conf.fp.f32.resistance, 250.0f);
         }
-        else
+        else {
             m_resistanceOn = false;
+        }
 
         bool rot =
             m_conf.fp.f32.rotational[0] != 0.0f ||
@@ -784,7 +798,7 @@ namespace CBP
         m_conf.fp.f32.maxOffsetN[1] = std::min(m_conf.fp.f32.maxOffsetN[1], 0.0f);
         m_conf.fp.f32.maxOffsetN[2] = std::min(m_conf.fp.f32.maxOffsetN[2], 0.0f);
 
-        m_invMass = m_movement ? 1.0f / m_conf.fp.f32.mass : 0.0f;
+        m_invMass = m_motion ? 1.0f / m_conf.fp.f32.mass : 0.0f;
 
         m_linearScale.setValue(m_conf.fp.f32.linear[0], m_conf.fp.f32.linear[1], m_conf.fp.f32.linear[2]);
 
@@ -820,7 +834,7 @@ namespace CBP
 
     void SimComponent::Reset()
     {
-        if (m_movement)
+        if (m_motion)
         {
             m_obj->m_localTransform.pos = m_initialTransform.pos;
             m_obj->m_localTransform.rot = m_initialTransform.rot;
@@ -841,6 +855,16 @@ namespace CBP
         m_collider.Update();
 
         m_applyForceQueue.swap(decltype(m_applyForceQueue)());
+    }
+
+    void SimComponent::ClampVelocity()
+    {
+        float len2 = m_velocity.length2();
+        if (len2 < m_maxVelocity2)
+            return;
+
+        m_velocity /= std::sqrtf(len2);
+        m_velocity *= m_conf.fp.f32.maxVelocity;
     }
 
     void SimComponent::ConstrainMotion(
@@ -916,13 +940,11 @@ namespace CBP
         auto n = m_itrMatParent * diff;
         n.safeNormalize();
 
+        float impulse = m_velocity.dot(n);
         float mag = depth.length();
 
-        float bias = mag > 0.01f ?
-            (a_timeStep * 2880.0f) * std::clamp(mag - 0.01f, 0.0f, m_conf.fp.f32.maxOffsetMaxBiasMag) : 0.0f;
-
-        float vdotn = m_velocity.dot(n);
-        float impulse = vdotn + bias;
+        if (mag > 0.01f)
+            impulse += (a_timeStep * 2880.0f) * std::clamp(mag - 0.01f, 0.0f, m_conf.fp.f32.maxOffsetMaxBiasMag);
 
         if (impulse <= 0.0f)
             return;
@@ -956,12 +978,12 @@ namespace CBP
 
         SIMDFillParent();
 
-        if (m_movement)
+        if (m_motion)
         {
             auto target(((m_itrMatParent * m_cogOffset) *= m_objParent->m_worldTransform.scale) += m_itrPosParent);
 
-            auto diff(target - m_oldWorldPos);
-            auto adiff(diff.absolute());
+            auto diff = target - m_oldWorldPos;
+            auto adiff = diff.absolute();
 
             float maxDiff(IConfig::GetGlobal().phys.maxDiff);
 
@@ -970,9 +992,8 @@ namespace CBP
                 return;
             }
 
-            auto force(diff);
-            force *= m_conf.fp.f32.stiffness;
-            force += ((diff *= adiff) *= m_conf.fp.f32.stiffness2);
+            auto force = diff * m_conf.fp.f32.stiffness;
+            force += (diff *= adiff) *= m_conf.fp.f32.stiffness2;
 
             force.setZ(force.z() - m_gravForce);
 
@@ -980,24 +1001,23 @@ namespace CBP
             {
                 auto& current = m_applyForceQueue.front();
 
-                auto vmag = m_itrMatParent * current.m_force;
-
-                force += (vmag *= m_conf.fp.f32.mass) /= a_timeStep;
+                force += ((m_itrMatParent * current.m_force) *=
+                    m_conf.fp.f32.mass) /= a_timeStep;
 
                 if (!current.m_steps--)
                     m_applyForceQueue.pop();
             }
 
             float res(m_resistanceOn ?
-                (1.0f - 1.0f / (m_velocity.length() * 0.0075f + 1.0f)) * m_conf.fp.f32.resistance + 1.0f : 1.0f);
+                (1.0f - 1.0f / (m_velocity.length() * 0.0075f + 1.0f)) *
+                m_conf.fp.f32.resistance + 1.0f : 1.0f);
 
-            m_velocity = (
-                (m_velocity + (force / m_conf.fp.f32.mass * a_timeStep)) -
-                (m_velocity * ((m_conf.fp.f32.damping * res) * a_timeStep)));
+            m_velocity -= m_velocity * ((m_conf.fp.f32.damping * res) * a_timeStep);
+            m_velocity += (force / m_conf.fp.f32.mass * a_timeStep);
 
             ClampVelocity();
 
-            auto invRot(m_itrMatParent.transpose());
+            auto invRot = m_itrMatParent.transpose();
             m_virtld = invRot * ((m_oldWorldPos + (m_velocity * a_timeStep)) -= target);
 
             ConstrainMotion(invRot, target, a_timeStep);
@@ -1005,7 +1025,7 @@ namespace CBP
             m_oldWorldPos = (m_itrMatParent * m_virtld) += target;
 
             m_ld = m_virtld * m_linearScale;
-            m_ld += (invRot * m_gravityCorrection) *= m_obj->m_localTransform.scale;
+            m_ld += invRot * m_gravityCorrection;
 
             m_obj->m_localTransform.pos.x = m_initialTransform.pos.x + m_ld.x();
             m_obj->m_localTransform.pos.y = m_initialTransform.pos.y + m_ld.y();
@@ -1016,10 +1036,11 @@ namespace CBP
 
             if (m_rotScaleOn)
             {
-                m_tempLocalRot.SetEulerAngles(
-                    m_virtld.x() * m_conf.fp.f32.rotational[0],
-                    m_virtld.y() * m_conf.fp.f32.rotational[1],
-                    (m_virtld.z() + m_conf.fp.f32.rotGravityCorrection) * m_conf.fp.f32.rotational[2]);
+                m_lr.setX(m_virtld.x() * m_conf.fp.f32.rotational[0]);
+                m_lr.setY(m_virtld.y() * m_conf.fp.f32.rotational[1]);
+                m_lr.setZ((m_virtld.z() + m_conf.fp.f32.rotGravityCorrection) * m_conf.fp.f32.rotational[2]);
+
+                m_tempLocalRot.SetEulerAngles(m_lr.x(), m_lr.y(), m_lr.z());
 
                 m_obj->m_localTransform.rot = m_initialTransform.rot * m_tempLocalRot;
             }
@@ -1030,14 +1051,14 @@ namespace CBP
         m_collider.Update();
     }
 
-    bool SimComponent::ValidateNodes(NiAVObject* a_obj)
+    /*bool SimComponent::ValidateNodes(NiAVObject* a_obj)
     {
         return m_obj == a_obj && m_objParent == a_obj->m_parent;
-    }
+    }*/
 
     void SimComponent::ApplyForce(uint32_t a_steps, const NiPoint3& a_force)
     {
-        if (!a_steps || !m_movement)
+        if (!a_steps || !m_motion)
             return;
 
         if (a_force.Length2() < _EPSILON * _EPSILON)
@@ -1057,4 +1078,7 @@ namespace CBP
         m_debugInfo.localTransformParent = m_objParent->m_localTransform;
     }
 #endif
+
+    static_assert(std::is_same<float, btScalar>::value, "btScalar must be float");
+
 }

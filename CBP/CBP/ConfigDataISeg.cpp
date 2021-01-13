@@ -57,6 +57,7 @@ namespace CBP
         f32.colPenBiasFactor = 1.0f;
         f32.colPenMass = 1.0f;
         f32.colPositionScale = 1.0f;
+        f32.colRotationScale = 1.0f;
     }
 
     const defaultPhysicsDataHolder_t g_defaultPhysicsData;
@@ -69,6 +70,9 @@ namespace CBP
         f32.colOffsetMax[0] = 0.0f;
         f32.colOffsetMax[1] = 0.0f;
         f32.colOffsetMax[2] = 0.0f;
+        f32.colRot[0] = 0.0f;
+        f32.colRot[1] = 0.0f;
+        f32.colRot[2] = 0.0f;
         f32.nodeScale = 1.0f;
     }
 

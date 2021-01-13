@@ -19,6 +19,7 @@ namespace CBP
     constexpr const char* CKEY_DATAPATH = "DataPath";
     constexpr const char* CKEY_IMGUIINI = "ImGuiSettings";
     constexpr const char* CKEY_UIOPENRESTRICTIONS = "UIOpenRestrictions";
+    constexpr const char* CKEY_TPOFFLOAD = "TaskpoolOffload";
 
     constexpr const char* CKEY_BTEPA = "UseEpaPenetrationAlgorithm";
     constexpr const char* CKEY_BTMANIFOLDPOOLSIZE = "MaxPersistentManifoldPoolSize";
@@ -26,113 +27,103 @@ namespace CBP
 
     DCBP::DCBP() :
         m_loadInstance(0),
-        uiState({ false, false }),
-        m_resetUI(false)
+        uiState({ false }),
+        m_resetUI(false),
+        m_drEnabled(false)
     {
-    }
-
-    void DCBP::DispatchActorTask(Actor* actor, ControllerInstruction::Action action)
-    {
-        if (actor != nullptr) {
-            Game::ObjectHandle handle;
-            if (Game::GetHandle(actor, actor->formType, handle))
-                m_Instance.m_updateTask.AddTask(action, handle);
-        }
-    }
-
-    void DCBP::DispatchActorTask(Game::ObjectHandle handle, ControllerInstruction::Action action)
-    {
-        m_Instance.m_updateTask.AddTask(action, handle);
     }
 
     void DCBP::UpdateConfigOnAllActors()
     {
-        m_Instance.m_updateTask.AddTask(
-            ControllerInstruction::Action::UpdateConfigAll);
-    }
-
-    void DCBP::ResetPhysics()
-    {
-        m_Instance.m_updateTask.AddTask(
-            ControllerInstruction::Action::PhysicsReset);
-    }
-
-    void DCBP::NiNodeUpdate()
-    {
-        m_Instance.m_updateTask.AddTask(
-            ControllerInstruction::Action::NiNodeUpdateAll);
-    }
-
-    void DCBP::NiNodeUpdate(Game::ObjectHandle a_handle)
-    {
-        m_Instance.m_updateTask.AddTask(
-            ControllerInstruction::Action::NiNodeUpdate, a_handle);
-    }
-
-    void DCBP::WeightUpdate()
-    {
-        m_Instance.m_updateTask.AddTask(
-            ControllerInstruction::Action::WeightUpdateAll);
-    }
-
-    void DCBP::WeightUpdate(Game::ObjectHandle a_handle)
-    {
-        m_Instance.m_updateTask.AddTask(
-            ControllerInstruction::Action::WeightUpdate, a_handle);
+        m_Instance.m_controller->AddTask(
+            CBP::ControllerInstruction::Action::UpdateConfigAll);
     }
 
     void DCBP::ResetActors()
     {
-        m_Instance.m_updateTask.AddTask(
-            ControllerInstruction::Action::Reset);
+        m_Instance.m_controller->AddTask(
+            CBP::ControllerInstruction::Action::Reset);
+    }
+
+    void DCBP::ResetPhysics()
+    {
+        m_Instance.m_controller->AddTask(
+            CBP::ControllerInstruction::Action::PhysicsReset);
+    }
+
+    void DCBP::NiNodeUpdate()
+    {
+        m_Instance.m_controller->AddTask(
+            CBP::ControllerInstruction::Action::NiNodeUpdateAll);
+    }
+
+    void DCBP::NiNodeUpdate(Game::ObjectHandle a_handle)
+    {
+        m_Instance.m_controller->AddTask(
+            CBP::ControllerInstruction::Action::NiNodeUpdate, a_handle);
+    }
+
+    void DCBP::WeightUpdate()
+    {
+        m_Instance.m_controller->AddTask(
+            CBP::ControllerInstruction::Action::WeightUpdateAll);
+    }
+
+    void DCBP::WeightUpdate(Game::ObjectHandle a_handle)
+    {
+        m_Instance.m_controller->AddTask(
+            CBP::ControllerInstruction::Action::WeightUpdate, a_handle);
     }
 
     void DCBP::ClearArmorOverrides()
     {
-        m_Instance.m_updateTask.AddTask(
-            ControllerInstruction::Action::ClearArmorOverrides);
+        m_Instance.m_controller->AddTask(
+            CBP::ControllerInstruction::Action::ClearArmorOverrides);
     }
 
     void DCBP::UpdateArmorOverridesAll()
     {
-        m_Instance.m_updateTask.AddTask(
-            ControllerInstruction::Action::UpdateArmorOverridesAll);
+        m_Instance.m_controller->AddTask(
+            CBP::ControllerInstruction::Action::UpdateArmorOverridesAll);
     }
 
     void DCBP::UpdateDebugRendererState()
     {
-        auto& driverConfig = GetDriverConfig();
-        if (!driverConfig.debug_renderer)
+        auto dr = GetRenderer();
+
+        if (!dr)
             return;
 
         GetRenderer()->Release();
+
+        const auto& globalConf = CBP::IConfig::GetGlobal();
+        SetDebugRendererEnabled(globalConf.debugRenderer.enabled);
     }
 
     void DCBP::UpdateDebugRendererSettings()
     {
-        auto& driverConfig = GetDriverConfig();
-        if (!driverConfig.debug_renderer)
+        auto dr = GetRenderer();
+
+        if (!dr)
             return;
 
         const auto& globalConf = CBP::IConfig::GetGlobal();
 
-        auto& r = GetRenderer();
+        dr->Clear();
 
-        r->Clear();
-
-        int flags(r->DBG_DrawWireframe | r->DBG_DrawContactPoints);
+        int flags(dr->DBG_DrawWireframe | dr->DBG_FastWireframe | dr->DBG_DrawContactPoints);
 
         if (globalConf.debugRenderer.drawAABB)
-            flags |= r->DBG_DrawAabb;
+            flags |= dr->DBG_DrawAabb;
 
-        r->setDebugMode(flags);
-        r->SetContactPointSphereRadius(globalConf.debugRenderer.contactPointSphereRadius);
-        r->SetContactNormalLength(globalConf.debugRenderer.contactNormalLength);
+        dr->setDebugMode(flags);
+        dr->SetContactPointSphereRadius(globalConf.debugRenderer.contactPointSphereRadius);
+        dr->SetContactNormalLength(globalConf.debugRenderer.contactNormalLength);
     }
 
     void DCBP::UpdateProfilerSettings()
     {
-        auto& globalConf = IConfig::GetGlobal();
+        const auto& globalConf = CBP::IConfig::GetGlobal();
         auto& profiler = GetProfiler();
 
         profiler.SetInterval(static_cast<long long>(
@@ -175,25 +166,15 @@ namespace CBP
         return iface.GetImportInfo(a_path, a_out);
     }
 
-    bool DCBP::SaveAll()
-    {
-        auto& iface = m_Instance.m_serialization;
-
-        bool failed(false);
-
-        failed |= !iface.SaveGlobalConfig();
-
-        return !failed;
-    }
 
     void DCBP::ResetProfiler()
     {
-        m_Instance.m_updateTask.GetProfiler().Reset();
+        m_Instance.m_controller->GetProfiler().Reset();
     }
 
     void DCBP::SetProfilerInterval(long long a_interval)
     {
-        m_Instance.m_updateTask.GetProfiler().SetInterval(a_interval);
+        m_Instance.m_controller->GetProfiler().SetInterval(a_interval);
     }
 
     uint32_t DCBP::ConfigGetComboKey(int32_t param)
@@ -230,38 +211,30 @@ namespace CBP
         m_conf.compression_level = std::clamp(GetConfigValue(SECTION_CBP, CKEY_COMPLEVEL, 1), 0, 9);
         m_conf.imguiIni = GetConfigValue(SECTION_CBP, CKEY_IMGUIINI, PLUGIN_IMGUI_INI_FILE);
         m_conf.ui_open_restrictions = GetConfigValue(SECTION_CBP, CKEY_UIOPENRESTRICTIONS, true);
+        m_conf.taskpool_offload = GetConfigValue(SECTION_CBP, CKEY_TPOFFLOAD, false);
 
         m_conf.use_epa = GetConfigValue(SECTION_CBP, CKEY_BTEPA, true);
         m_conf.maxPersistentManifoldPoolSize = GetConfigValue(SECTION_CBP, CKEY_BTMANIFOLDPOOLSIZE, 4096);
         m_conf.maxCollisionAlgorithmPoolSize = GetConfigValue(SECTION_CBP, CKEY_BTALGOPOOLSIZE, 4096);
 
-        auto& globalConfig = IConfig::GetGlobal();
-
-        globalConfig.ui.comboKey = m_conf.comboKey = ConfigGetComboKey(GetConfigValue(SECTION_CBP, CKEY_COMBOKEY, 1));
-        globalConfig.ui.showKey = m_conf.showKey = std::clamp<UInt32>(
-            GetConfigValue<UInt32>(SECTION_CBP, CKEY_SHOWKEY, DIK_END),
+        m_conf.comboKey = ConfigGetComboKey(GetConfigValue(SECTION_CBP, CKEY_COMBOKEY, 1));
+        m_conf.showKey = std::clamp<UInt32>(GetConfigValue<UInt32>(SECTION_CBP, CKEY_SHOWKEY, DIK_END),
             1, InputMap::kMacro_NumKeyboardKeys - 1);
     }
 
     bool DCBP::LoadPaths()
     {
-        auto& paths = m_Instance.m_conf.paths;
+        auto& paths = m_conf.paths;
 
         try
         {
-            paths.root = m_Instance.GetConfigValue(SECTION_CBP, CKEY_DATAPATH, CBP_DATA_BASE_PATH);
+            paths.root = GetConfigValue(SECTION_CBP, CKEY_DATAPATH, CBP_DATA_BASE_PATH);
 
             if (paths.root.empty())
                 return false;
 
             if (!fs::is_directory(paths.root))
                 return false;
-
-            /*auto perms = fs::status(paths.root).permissions();
-            auto expected = fs::perms::owner_write | fs::perms::owner_read;
-
-            if ((perms & expected) != expected)
-                return false;*/
 
             paths.profilesPhysics = paths.root / PLUGIN_CBP_PROFILE_PATH_R;
             paths.profilesNode = paths.root / PLUGIN_CBP_PROFILE_NODE_PATH_R;
@@ -284,7 +257,29 @@ namespace CBP
 
     void DCBP::MainLoop_Hook(Game::BSMain* a_main) {
         m_Instance.mainLoopUpdateFunc_o(a_main);
-        m_Instance.m_updateTask.PhysicsTick(a_main);
+
+        auto controller = GetController();
+
+        IScopedCriticalSection _(GetLock());
+
+        if (CBP::IConfig::GetGlobal().debugRenderer.enabled)
+            controller->UpdateDebugRenderer();
+
+        controller->PhysicsTick(a_main, *Game::frameTimerSlow);
+    }
+
+    void DCBP::MainLoopOffload_Hook(Game::BSMain* a_main)
+    {
+        auto controller = GetController();
+
+        controller->ResetFrame(*Game::frameTimerSlow);
+
+        m_Instance.mainLoopUpdateFunc_o(a_main);
+
+        if (CBP::IConfig::GetGlobal().debugRenderer.enabled) {
+            IScopedCriticalSection _(GetLock());
+            controller->UpdateDebugRenderer();
+        }
     }
 
     void DCBP::OnCreateArmorNode(TESObjectREFR* a_ref, BipedParam* a_params)
@@ -325,12 +320,17 @@ namespace CBP
 
     void DCBP::Initialize()
     {
-        m_Instance.LoadConfig();
+        LoadConfig();
+
+        auto hf =
+            m_conf.taskpool_offload ?
+            uintptr_t(MainLoopOffload_Hook) :
+            uintptr_t(MainLoop_Hook);
 
         ASSERT(Hook::Call5(
             MainLoopAddr,
-            reinterpret_cast<uintptr_t>(MainLoop_Hook),
-            m_Instance.mainLoopUpdateFunc_o));
+            hf,
+            mainLoopUpdateFunc_o));
 
         struct CreateArmorNodeInject : JITASM::JITASM {
             CreateArmorNodeInject(uintptr_t targetAddr
@@ -367,7 +367,12 @@ namespace CBP
             g_branchTrampoline.Write5Branch(CreateArmorNodePost, code.get());
         }
 
-        DTasks::AddTaskFixed(&m_Instance.m_updateTask);
+        m_controller =
+            m_conf.taskpool_offload ?
+            std::make_unique<CBP::ControllerTaskSim>() :
+            std::make_unique<CBP::ControllerTask>();
+
+        DTasks::AddTaskFixed(m_controller.get());
 
         IEvents::RegisterForEvent(Event::OnMessage, MessageHandler);
         IEvents::RegisterForEvent(Event::OnRevert, RevertHandler);
@@ -379,37 +384,46 @@ namespace CBP
         SKSE::g_papyrus->Register(RegisterFuncs);
 
         ICollision::Initialize(
-            m_Instance.m_conf.use_epa,
-            m_Instance.m_conf.maxPersistentManifoldPoolSize,
-            m_Instance.m_conf.maxCollisionAlgorithmPoolSize
+            m_conf.use_epa,
+            m_conf.maxPersistentManifoldPoolSize,
+            m_conf.maxCollisionAlgorithmPoolSize
         );
 
-        if (m_Instance.m_conf.debug_renderer)
+        if (m_conf.debug_renderer)
         {
             IEvents::RegisterForEvent(Event::OnD3D11PostCreate, OnD3D11PostCreate_CBP);
 
             DRender::AddPresentCallback(Present_Pre);
 
-            m_Instance.Message("Debug renderer enabled");
+            Message("Debug renderer enabled");
         }
 
-        if (m_Instance.m_conf.ui_enabled)
+        if (m_conf.ui_enabled)
         {
             DUI::Initialize();
+            DUI::SetImGuiIni(m_conf.imguiIni);
 
-            DUI::SetImGuiIni(m_Instance.m_conf.imguiIni);
+            m_uiContext = std::make_unique<CBP::UIContext>();
 
-            DInput::RegisterForKeyEvents(&m_Instance.m_inputEventHandler);
+            DInput::RegisterForKeyEvents(&m_inputEventHandler);
 
-            GetUIRenderTask().EnableChecks(m_Instance.m_conf.ui_open_restrictions);
+            GetUIRenderTask().EnableChecks(m_conf.ui_open_restrictions);
 
-            m_Instance.Message("UI enabled");
+            Message("UI enabled");
 
         }
-
+ 
         IConfig::Initialize();
 
+        LoadProfiles();
+    }
+
+    void DCBP::LoadProfiles()
+    {
         auto& driverConf = GetDriverConfig();
+
+        PerfTimer pt;
+        pt.Start();
 
         auto& pms = GlobalProfileManager::GetSingleton<PhysicsProfile>();
         pms.Load(driverConf.paths.profilesPhysics);
@@ -419,20 +433,22 @@ namespace CBP
 
         auto& pmc = CBP::ProfileManagerCollider::GetSingleton();
         pmc.Load(driverConf.paths.colliderData);
+
+        Debug("Profiles loaded in %fs", pt.Stop());
     }
 
     void DCBP::OnD3D11PostCreate_CBP(Event, void* data)
     {
         auto info = static_cast<D3D11CreateEventPost*>(data);
 
+        IScopedCriticalSection _(GetLock());
+
         if (m_Instance.m_conf.debug_renderer)
         {
-            m_Instance.m_renderer = std::make_unique<Renderer>(
+            m_Instance.m_renderer = std::make_unique<CBP::Renderer>(
                 info->m_pDevice, info->m_pImmediateContext);
 
             auto& r = m_Instance.m_renderer;
-
-            r->setDebugMode(r->DBG_DrawWireframe | r->DBG_DrawContactPoints);
 
             CBP::ICollision::GetWorld()->setDebugDrawer(r.get());
 
@@ -442,32 +458,31 @@ namespace CBP
 
     void DCBP::Present_Pre()
     {
-        Lock();
+        if (!m_Instance.m_drEnabled)
+            return;
 
-        auto& globalConf = IConfig::GetGlobal();
+        if (Game::InPausedMenu())
+            return;
 
-        if (globalConf.debugRenderer.enabled)
+        IScopedCriticalSection _(GetLock());
+
+        auto& globalConf = CBP::IConfig::GetGlobal();
+
+        try
         {
-            if (!Game::InPausedMenu())
-            {
-                try {
-                    m_Instance.m_renderer->Draw();
-                }
-                catch (const std::exception& e) {
-                    m_Instance.Error("%s: exception occurred during draw, disabling debug renderer: %s", __FUNCTION__, e.what());
-                    globalConf.debugRenderer.enabled = false;
-                }
-            }
+            m_Instance.m_renderer->Draw();
         }
-
-        Unlock();
+        catch (const std::exception& e) {
+            m_Instance.Error("%s: %s", __FUNCTION__, e.what());
+            globalConf.debugRenderer.enabled = false;
+            UpdateDebugRendererState();
+        }
     }
 
     void DCBP::OnLogMessage(Event, void* a_args)
     {
-        auto str = static_cast<const char*>(a_args);
-
-        m_Instance.m_uiContext.LogNotify();
+        if (m_Instance.m_uiContext.get())
+            m_Instance.m_uiContext->LogNotify();
     }
 
     void DCBP::OnExit(Event, void* data)
@@ -476,10 +491,12 @@ namespace CBP
 
         IScopedCriticalSection _(GetLock());
 
-        m_Instance.m_updateTask.ClearActors(true);
-        m_Instance.m_renderer.reset();
-
         SavePending();
+
+        m_Instance.m_controller->ClearActors(true);
+        m_Instance.m_renderer.reset();
+        m_Instance.m_controller.reset();
+        m_Instance.m_uiContext.reset();
     }
 
     void DCBP::MessageHandler(Event, void* args)
@@ -506,7 +523,7 @@ namespace CBP
             if (IData::PopulateRaceList())
                 m_Instance.Debug("%zu TESRace forms found", IData::RaceListSize());
 
-            auto& iface = m_Instance.m_serialization;
+            auto& iface = GetSerializationInterface();
 
             PerfTimer pt;
             pt.Start();
@@ -517,10 +534,6 @@ namespace CBP
             iface.LoadCollisionGroups();
             if (iface.LoadDefaultProfile())
                 IConfig::StoreDefaultProfile();
-
-            UpdateDebugRendererState();
-            UpdateDebugRendererSettings();
-            UpdateProfilerSettings();
 
             if (DData::HasModList())
             {
@@ -533,12 +546,18 @@ namespace CBP
 
             const auto& globalConf = CBP::IConfig::GetGlobal();
 
-            GetUpdateTask().UpdateTimeTick(globalConf.phys.timeTick);
+            GetController()->UpdateTimeTick(globalConf.phys.timeTick);
             UpdateKeys();
 
-            if (GetDriverConfig().ui_enabled)
+            UpdateDebugRendererSettings();
+            UpdateDebugRendererState();
+            UpdateProfilerSettings();
+
+            auto uictx = GetUIContext();
+
+            if (uictx != nullptr)
             {
-                GetUIContext().Initialize();
+                uictx->Initialize();
 
                 auto& uirt = GetUIRenderTask();
 
@@ -646,9 +665,7 @@ namespace CBP
             return false;
 
         if (a_bin)
-        {
             SerializationStats(a_type, iface.GetStats());
-        }
 
         m_Instance.Debug("%s [%.4s]: %zu record(s), %fs (%u/%lld)", __FUNCTION__, &a_type, num, pt.Stop(), dataLength, length);
 
@@ -810,7 +827,7 @@ namespace CBP
     void DCBP::SaveGameHandler(Event, void* args)
     {
         auto intfc = static_cast<SKSESerializationInterface*>(args);
-        auto& iface = m_Instance.m_serialization;
+        auto& iface = GetSerializationInterface();
 
         IScopedCriticalSection _(GetLock());
 
@@ -827,17 +844,18 @@ namespace CBP
 
         IScopedCriticalSection _(GetLock());
 
-        if (GetDriverConfig().debug_renderer)
-            GetRenderer()->Release();
+        GetController()->ClearActors(false, true);
 
-        m_Instance.m_loadInstance++;
+        IConfig::ReleaseActorPhysicsHolder();
+        IConfig::ReleaseActorNodeHolder();
+        IConfig::ReleaseRacePhysicsHolder();
+        IConfig::ReleaseRaceNodeHolder();
+        IConfig::ReleaseMergedCache();
 
-        IConfig::ClearActorPhysicsHolder();
-        IConfig::ClearActorNodeHolder();
-        IConfig::ClearRacePhysicsHolder();
-        IConfig::ClearRaceNodeHolder();
+        IData::ReleaseActorCache();
+        IData::ReleaseActorMaps();
 
-        auto& iface = m_Instance.m_serialization;
+        auto& sif = GetSerializationInterface();
         auto& dgp = IConfig::GetDefaultProfile();
 
         if (dgp.stored) {
@@ -848,20 +866,18 @@ namespace CBP
             IConfig::ClearGlobalPhysics();
             IConfig::ClearGlobalNode();
 
-            if (iface.LoadDefaultProfile())
+            if (sif.LoadDefaultProfile())
                 IConfig::StoreDefaultProfile();
         }
 
-        GetUpdateTask().ClearActors();
+        auto dr = GetRenderer();
+        if (dr)
+            dr->Release();
+
         QueueUIReset();
+
+        m_Instance.m_loadInstance++;
     }
-
-    static UInt32 controlDisableFlags =
-        USER_EVENT_FLAG::kAll;
-
-    static UInt8 byChargenDisableFlags =
-        PlayerCharacter::kDisableSaving |
-        PlayerCharacter::kDisableWaiting;
 
     bool DCBP::ProcessUICallbackImpl()
     {
@@ -869,12 +885,12 @@ namespace CBP
 
         auto& io = ImGui::GetIO();
 
-        if (m_loadInstance != m_uiContext.GetLoadInstance() ||
+        if (m_loadInstance != m_uiContext->GetLoadInstance() ||
             io.KeysDown[VK_ESCAPE])
         {
             uiState.show = false;
         }
-        else 
+        else
         {
             if (Game::InPausedMenu()) {
                 uiState.show = false;
@@ -884,10 +900,10 @@ namespace CBP
                 if (m_resetUI)
                 {
                     m_resetUI = false;
-                    m_uiContext.Reset(m_loadInstance);
+                    m_uiContext->Reset(m_loadInstance);
                 }
 
-                m_uiContext.Draw(&uiState.show);
+                m_uiContext->Draw(&uiState.show);
             }
         }
 
@@ -904,14 +920,14 @@ namespace CBP
 
     void DCBP::EnableUI()
     {
-        m_uiContext.Reset(m_loadInstance);
+        CBP::IData::UpdateActorCache(GetSimActorList());
 
-        IData::UpdateActorCache(GetSimActorList());
+        m_uiContext->Reset(m_loadInstance);
     }
 
     void DCBP::DisableUI()
     {
-        m_uiContext.Reset(m_loadInstance);
+        m_uiContext->Reset(m_loadInstance);
     }
 
     void DCBP::KeyPressHandler::UpdateKeys()
@@ -952,31 +968,29 @@ namespace CBP
                     combo_downDR = true;
             }
 
-            if (keyCode == m_showKey) 
+            if (keyCode == m_showKey)
             {
                 if (m_comboKey && !combo_down)
                     break;
 
-                auto mm = MenuManager::GetSingleton();
-                if (mm && mm->InPausedMenu())
+                if (Game::InPausedMenu())
                     break;
 
                 DTasks::AddTask(&m_Instance.m_taskToggle);
             }
-            if (keyCode == m_showKeyDR) 
+            if (keyCode == m_showKeyDR)
             {
                 if (m_comboKeyDR && !combo_downDR)
                     break;
 
-                Lock();
+                IScopedCriticalSection _(GetLock());
 
                 auto& globalConfig = IConfig::GetGlobal();
                 globalConfig.debugRenderer.enabled = !globalConfig.debugRenderer.enabled;
+                SetDebugRendererEnabled(globalConfig.debugRenderer.enabled);
 
                 MarkGlobalsForSave();
                 UpdateDebugRendererState();
-
-                Unlock();
             }
             break;
         case KeyEvent::KeyUp:
@@ -1045,14 +1059,13 @@ namespace CBP
 
     void DCBP::ApplyForceTask::Run()
     {
-        m_Instance.m_updateTask.ApplyForce(m_handle, m_steps, m_component, m_force);
+        m_Instance.m_controller->ApplyForce(m_handle, m_steps, m_component, m_force);
     }
 
     void DCBP::UpdateActorCacheTask::Run()
     {
-        Lock();
-        IData::UpdateActorCache(GetSimActorList());
-        Unlock();
+        IScopedCriticalSection _(GetLock());
+        CBP::IData::UpdateActorCache(GetSimActorList());
     }
 
     DCBP::UpdateNodeRefDataTask::UpdateNodeRefDataTask(Game::ObjectHandle a_handle) :
@@ -1066,7 +1079,7 @@ namespace CBP
         if (!actor)
             return;
 
-        IScopedCriticalSection(std::addressof(m_Instance.m_lock));
+        IScopedCriticalSection _(GetLock());
 
         CBP::IData::UpdateNodeReferenceData(actor);
     }

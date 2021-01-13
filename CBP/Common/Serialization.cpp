@@ -37,7 +37,7 @@ namespace Serialization
         else if (!fs::is_directory(base))
             throw std::exception("Root path is not a directory");
 
-        auto tmpPath = a_path;
+        auto tmpPath(a_path);
         tmpPath += s_tmpExt;
 
         std::ofstream ofs;

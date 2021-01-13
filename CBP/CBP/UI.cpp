@@ -194,19 +194,18 @@ namespace CBP
         if (globalConfig.ui.profile.clampValues)
             *a_val = std::clamp(*a_val, a_desc.second.min, a_desc.second.max);
 
-        Propagate(a_data, nullptr, a_pair, [&](configComponent32_t& a_v) {
-            a_v.Set(a_desc.second, *a_val); });
+        bool sync = !a_desc.second.counterpart.empty() &&
+            globalConfig.ui.profile.syncWeightSliders;
+        float mval;
 
-        if (a_desc.second.counterpart.size() &&
-            globalConfig.ui.profile.syncWeightSliders)
+        if (sync)
         {
-            float mval(a_desc.second.GetCounterpartValue(a_val));
+            mval = a_desc.second.GetCounterpartValue(a_val);
 
             a_pair.second.Set(a_desc.second.counterpart, mval);
-
-            Propagate(a_data, nullptr, a_pair, [&](configComponent32_t& a_v) {
-                a_v.Set(a_desc.second.counterpart, mval); });
         }
+
+        DoOnChangePropagation(a_data, nullptr, a_pair, a_desc, a_val, sync, mval);
     }
 
     void UIProfileEditorPhysics::OnColliderShapeChange(
@@ -222,8 +221,10 @@ namespace CBP
         PhysicsProfile::base_type& a_data,
         PhysicsProfile::base_type::value_type& a_pair)
     {
-        Propagate(a_data, nullptr, a_pair, [&](configComponent32_t& a_v) {
-            a_v = a_pair.second; });
+        /*Propagate(a_data, nullptr, a_pair,
+            [&](configComponent32_t& a_v, const configPropagate_t& a_p) {
+                a_v = a_pair.second;
+            });*/
     }
 
     bool UIProfileEditorPhysics::GetNodeConfig(
@@ -730,20 +731,19 @@ namespace CBP
 
         entry.Set(a_desc.second, a_val);
 
-        Propagate(a_data, std::addressof(raceConf), a_pair, [&](configComponent32_t& a_v) {
-            a_v.Set(a_desc.second, *a_val); });
+        bool sync = !a_desc.second.counterpart.empty() &&
+            globalConfig.ui.race.syncWeightSliders;
+        float mval;
 
-        if (a_desc.second.counterpart.size() &&
-            globalConfig.ui.race.syncWeightSliders)
+        if (sync)
         {
-            float mval(a_desc.second.GetCounterpartValue(a_val));
+            mval = a_desc.second.GetCounterpartValue(a_val);
 
             a_pair.second.Set(a_desc.second.counterpart, mval);
             entry.Set(a_desc.second.counterpart, mval);
-
-            Propagate(a_data, std::addressof(raceConf), a_pair, [&](configComponent32_t& a_v) {
-                a_v.Set(a_desc.second.counterpart, mval); });
         }
+
+        DoOnChangePropagation(a_data, std::addressof(raceConf), a_pair, a_desc, a_val, sync, mval);
 
         MarkChanged();
         DCBP::UpdateConfigOnAllActors();
@@ -773,8 +773,10 @@ namespace CBP
         auto& raceConf = IConfig::GetOrCreateRacePhysics(a_formid);
         raceConf[a_pair.first] = a_pair.second;
 
-        Propagate(a_data, std::addressof(raceConf), a_pair, [&](configComponent32_t& a_v) {
-            a_v = a_pair.second; });
+        /*Propagate(a_data, std::addressof(raceConf), a_pair,
+            [&](configComponent32_t& a_v, const configPropagate_t& a_p) {
+                a_v = a_pair.second;
+            });*/
 
         MarkChanged();
         DCBP::UpdateConfigOnAllActors();
@@ -878,7 +880,7 @@ namespace CBP
 
             const char* curSelName(nullptr);
 
-            if (m_forceState.selected) 
+            if (m_forceState.selected)
             {
                 if (!data.contains(*m_forceState.selected))
                     m_forceState.selected.Clear();
@@ -918,7 +920,7 @@ namespace CBP
                     if (selected)
                         if (ImGui::IsWindowAppearing()) ImGui::SetScrollHereY();
 
-                    if (ImGui::Selectable(e.first.c_str(), selected)) 
+                    if (ImGui::Selectable(e.first.c_str(), selected))
                     {
                         m_forceState.selected = (
                             globalConfig.ui.forceActorSelected = e.first);
@@ -1122,10 +1124,10 @@ namespace CBP
 
         if (m_addGlobal) {
             m_listData.try_emplace(0, "Global", GetData(Game::ObjectHandle(0)));
-            minEntries = 1;
+            minEntries = T::size_type(1);
         }
         else {
-            minEntries = 0;
+            minEntries = T::size_type(0);
         }
 
         if (m_listData.size() == minEntries) {
@@ -1154,7 +1156,7 @@ namespace CBP
             if (actorConf.lastActor &&
                 m_listData.find(actorConf.lastActor) != m_listData.end())
             {
-                m_listCurrent = actorConf.lastActor;
+                ListSetCurrentItem(actorConf.lastActor);
             }
         }
     }
@@ -1167,7 +1169,7 @@ namespace CBP
         if (cacheUpdateId != m_lastCacheUpdateId)
         {
             m_lastCacheUpdateId = cacheUpdateId;
-            ListUpdate();
+            m_listNextUpdate = true;
         }
 
         ListTick();
@@ -1363,10 +1365,11 @@ namespace CBP
         m_scActor(*this),
         m_scGlobal(*this),
         m_nodeMap(*this),
+        m_armorOverride(*this),
         m_tsNoActors(PerfCounter::Query()),
         m_pePhysics("Physics profile editor"),
         m_peNodes("Node profile editor"),
-        m_state({ {false, false, false, false, false, false, false, false, false, false, false, false} }),
+        m_state({ {false, false, false, false, false, false, false, false, false, false, false, false, false} }),
         UIActorList<actorListPhysConf_t>(true)
     {
     }
@@ -1592,12 +1595,12 @@ namespace CBP
     {
         auto& globalConfig = IConfig::GetGlobal();
 
-        SetWindowDimensions();
-
         m_state.menu.openImportDialog = false;
         m_state.menu.openExportDialog = false;
 
         ImGui::PushID(static_cast<const void*>(this));
+
+        SetWindowDimensions();
 
         if (ImGui::Begin("CBP Config Editor##CBP", a_active, ImGuiWindowFlags_MenuBar))
         {
@@ -1633,13 +1636,23 @@ namespace CBP
 
                 ImGui::Text("Config in use: %s", TranslateConfigClass(confClass));
 
-                if (IConfig::HasArmorOverride(m_listCurrent))
+                auto armorOverrides = IConfig::GetArmorOverrides(m_listCurrent);
+
+                if (armorOverrides)
                 {
                     ImGui::PushStyleColor(ImGuiCol_Text, s_colorWarning);
-                    ImGui::SameLine(wcm.x - GetNextTextOffset("Armor overrides active", true));
+                    //ImGui::SameLine(wcm.x - GetNextTextOffset("Armor overrides active", true));
                     ImGui::Text("Armor overrides active");
                     ImGui::PopStyleColor();
+
+                    ImGui::SameLine(wcm.x - GetNextTextOffset("Edit", true));
+                    if (ButtonRight("Edit"))
+                    {
+                        m_armorOverride.SetCurrentOverrides(armorOverrides->first);
+                        m_state.windows.armorOverride = true;
+                    }
                 }
+
             }
 
             ImGui::Spacing();
@@ -1736,6 +1749,9 @@ namespace CBP
 
         if (m_state.windows.nodeMap)
             m_nodeMap.Draw(&m_state.windows.nodeMap);
+
+        if (m_state.windows.armorOverride)
+            m_armorOverride.Draw(&m_state.windows.armorOverride);
 
 #ifdef _CBP_ENABLE_DEBUG
         if (m_state.windows.debug)
@@ -1855,17 +1871,20 @@ namespace CBP
                 ImGui::Spacing();
 
                 float timeTick = 1.0f / globalConfig.phys.timeTick;
-                if (SliderFloat("Time tick", &timeTick, 1.0f, 300.0f, "%.0f"))
-                    globalConfig.phys.timeTick = 1.0f / timeTick;
+                if (SliderFloat("Time tick", &timeTick, 30.0f, 300.0f, "%.0f"))
+                    globalConfig.phys.timeTick = 1.0f / std::clamp(timeTick, 30.0f, 300.0f);
 
                 HelpMarker(MiscHelpText::timeTick);
 
-                SliderFloat("Max. substeps", &globalConfig.phys.maxSubSteps, 1.0f, 20.0f, "%.0f");
+                if (SliderFloat("Max. substeps", &globalConfig.phys.maxSubSteps, 1.0f, 20.0f, "%.0f"))
+                    globalConfig.phys.maxSubSteps = std::clamp(globalConfig.phys.maxSubSteps, 1.0f, 20.0f);
+
                 HelpMarker(MiscHelpText::maxSubSteps);
 
                 ImGui::Spacing();
 
-                SliderFloat("Max. diff", &globalConfig.phys.maxDiff, 200.0f, 2000.0f, "%.0f");
+                if (SliderFloat("Max. diff", &globalConfig.phys.maxDiff, 200.0f, 2000.0f, "%.0f"))
+                    globalConfig.phys.maxDiff = std::clamp(globalConfig.phys.maxDiff, 200.0f, 2000.0f);
 
                 ImGui::Spacing();
 
@@ -2330,20 +2349,19 @@ namespace CBP
 
         entry.Set(a_desc.second, a_val);
 
-        Propagate(a_data, std::addressof(actorConf), a_pair, [&](configComponent32_t& a_v) {
-            a_v.Set(a_desc.second, *a_val); });
+        bool sync = !a_desc.second.counterpart.empty() &&
+            globalConfig.ui.actor.syncWeightSliders;
+        float mval;
 
-        if (a_desc.second.counterpart.size() &&
-            globalConfig.ui.actor.syncWeightSliders)
+        if (sync)
         {
-            float mval(a_desc.second.GetCounterpartValue(a_val));
+            mval = a_desc.second.GetCounterpartValue(a_val);
 
             a_pair.second.Set(a_desc.second.counterpart, mval);
             entry.Set(a_desc.second.counterpart, mval);
-
-            Propagate(a_data, std::addressof(actorConf), a_pair, [&](configComponent32_t& a_v) {
-                a_v.Set(a_desc.second.counterpart, mval); });
         }
+
+        DoOnChangePropagation(a_data, std::addressof(actorConf), a_pair, a_desc, a_val, sync, mval);
 
         DCBP::DispatchActorTask(
             a_handle, ControllerInstruction::Action::UpdateConfig);
@@ -2373,8 +2391,10 @@ namespace CBP
         auto& actorConf = IConfig::GetOrCreateActorPhysics(a_handle);
         actorConf[a_pair.first] = a_pair.second;
 
-        Propagate(a_data, std::addressof(actorConf), a_pair, [&](configComponent32_t& a_v) {
-            a_v = a_pair.second; });
+        /*Propagate(a_data, std::addressof(actorConf), a_pair,
+            [&](configComponent32_t& a_v, const configPropagate_t& a_p) {
+                a_v = a_pair.second;
+            });*/
 
         DCBP::DispatchActorTask(
             a_handle, ControllerInstruction::Action::UpdateConfig);
@@ -2503,20 +2523,19 @@ namespace CBP
 
         entry.Set(a_desc.second, a_val);
 
-        Propagate(a_data, std::addressof(conf), a_pair, [&](configComponent32_t& a_v) {
-            a_v.Set(a_desc.second, *a_val); });
+        bool sync = !a_desc.second.counterpart.empty() &&
+            globalConfig.ui.actor.syncWeightSliders;
+        float mval;
 
-        if (a_desc.second.counterpart.size() &&
-            globalConfig.ui.actor.syncWeightSliders)
+        if (sync)
         {
-            float mval(a_desc.second.GetCounterpartValue(a_val));
+            mval = a_desc.second.GetCounterpartValue(a_val);
 
             a_pair.second.Set(a_desc.second.counterpart, mval);
             entry.Set(a_desc.second.counterpart, mval);
-
-            Propagate(a_data, std::addressof(conf), a_pair, [&](configComponent32_t& a_v) {
-                a_v.Set(a_desc.second.counterpart, mval); });
         }
+
+        DoOnChangePropagation(a_data, std::addressof(conf), a_pair, a_desc, a_val, sync, mval);
 
         DCBP::UpdateConfigOnAllActors();
     }
@@ -2544,8 +2563,10 @@ namespace CBP
         auto& conf = IConfig::GetGlobalPhysics();
         conf[a_pair.first] = a_pair.second;
 
-        Propagate(a_data, std::addressof(conf), a_pair, [&](configComponent32_t& a_v) {
-            a_v = a_pair.second; });
+        /*Propagate(a_data, std::addressof(conf), a_pair,
+            [&](configComponent32_t& a_v, const configPropagate_t& a_p) {
+                a_v = a_pair.second;
+            });*/
 
         DCBP::UpdateConfigOnAllActors();
     }
@@ -2750,12 +2771,12 @@ namespace CBP
         configComponents_t& a_dl,
         configComponents_t* a_dg,
         const configComponentsValue_t& a_pair,
-        std::function<void(configComponent32_t&)> a_func) const
+        propagateFunc_t a_func) const
     {
         const auto& globalConfig = IConfig::GetGlobal();
 
-        auto itm = globalConfig.ui.mirror.find(ID);
-        if (itm == globalConfig.ui.mirror.end())
+        auto itm = globalConfig.ui.propagate.find(ID);
+        if (itm == globalConfig.ui.propagate.end())
             return;
 
         auto it = itm->second.find(a_pair.first);
@@ -2764,17 +2785,17 @@ namespace CBP
 
         for (auto& e : it->second)
         {
-            if (!e.second)
+            if (!e.second.enabled)
                 continue;
 
             auto it1 = a_dl.find(e.first);
             if (it1 != a_dl.end())
-                a_func(it1->second);
+                a_func(it1->second, e.second);
 
             if (a_dg != nullptr) {
                 auto it2 = a_dg->find(e.first);
                 if (it2 != a_dg->end())
-                    a_func(it2->second);
+                    a_func(it2->second, e.second);
             }
         }
     }
@@ -2809,6 +2830,8 @@ namespace CBP
         T a_handle,
         configComponents_t& a_data)
     {
+        //ImGui::PushID(static_cast<const void*>(std::addressof(a_data)));
+
         DrawItemFilter();
 
         ImGui::Separator();
@@ -2874,6 +2897,8 @@ namespace CBP
         }
 
         ImGui::EndChild();
+
+        // ImGui::PopID();
     }
 
     template <class T, UIEditorID ID>
@@ -2884,8 +2909,8 @@ namespace CBP
         nodeConfigList_t& a_nodeConfig
     )
     {
-        if (ImGui::Button("Mirroring >"))
-            ImGui::OpenPopup("mirror_popup");
+        if (ImGui::Button("Propagate >"))
+            ImGui::OpenPopup("propagate_popup");
 
         auto profile = GetSelectedProfile();
         if (profile)
@@ -2908,9 +2933,9 @@ namespace CBP
             "Copy failed",
             "Could not copy values from selected profile");
 
-        if (ImGui::BeginPopup("mirror_popup"))
+        if (ImGui::BeginPopup("propagate_popup"))
         {
-            DrawMirrorContextMenu(a_handle, a_data, a_pair);
+            DrawPropagateContextMenu(a_handle, a_data, a_pair);
             ImGui::EndPopup();
         }
 
@@ -2920,16 +2945,16 @@ namespace CBP
     }
 
     template <class T, UIEditorID ID>
-    void UISimComponent<T, ID>::DrawMirrorContextMenu(
+    void UISimComponent<T, ID>::DrawPropagateContextMenu(
         T a_handle,
         configComponents_t& a_data,
         configComponents_t::value_type& a_entry)
     {
         auto& globalConfig = IConfig::GetGlobal();
 
-        auto& mirrorTo = globalConfig.ui.mirror[ID];
+        auto& propmap = globalConfig.ui.propagate[ID];
 
-        auto c = mirrorTo.try_emplace(a_entry.first);
+        auto c = propmap.try_emplace(a_entry.first);
         auto& d = c.first->second;
 
         nodeConfigList_t nodeList;
@@ -2939,7 +2964,7 @@ namespace CBP
 
         for (const auto& g : cg)
         {
-            if (_stricmp(g.first.c_str(), a_entry.first.c_str()) == 0)
+            if (StrHelpers::icompare(g.first, a_entry.first) == 0)
                 continue;
 
             nodeList.clear();
@@ -2951,22 +2976,38 @@ namespace CBP
 
             auto& e = *a_data.try_emplace(g.first).first;
 
-            auto i = d.try_emplace(e.first, false);
-            if (ImGui::MenuItem(e.first.c_str(), nullptr, std::addressof(i.first->second)))
+            auto i = d.try_emplace(e.first);
+            if (ImGui::MenuItem(e.first.c_str(), nullptr, std::addressof(i.first->second.enabled)))
             {
-                auto f = mirrorTo.try_emplace(e.first);
+                auto f = propmap.try_emplace(e.first);
                 f.first->second.insert_or_assign(a_entry.first, i.first->second);
 
                 DCBP::MarkGlobalsForSave();
             }
         }
 
-        if (d.size()) 
+        if (!d.empty())
         {
             ImGui::Separator();
 
-            if (ImGui::MenuItem("Clear")) {
-                mirrorTo.erase(a_entry.first);
+            if (ImGui::MenuItem("Clear"))
+            {
+                auto it = propmap.find(a_entry.first);
+
+                for (auto& e : it->second)
+                {
+                    e.second.enabled = false;
+
+                    auto f = propmap.find(e.first);
+                    if (f != propmap.end()) {
+                        auto g = f->second.find(a_entry.first);
+                        if (g != f->second.end())
+                            g->second.enabled = false;
+                    }
+                }
+
+                //propmap.erase(a_entry.first);
+
                 DCBP::MarkGlobalsForSave();
             }
         }
@@ -3009,6 +3050,34 @@ namespace CBP
         default:
             return a_baseval;
         }
+    }
+
+    template <class T, UIEditorID ID>
+    void UISimComponent<T, ID>::DoOnChangePropagation(
+        configComponents_t& a_data,
+        configComponents_t* a_dg,
+        configComponentsValue_t& a_pair,
+        const componentValueDescMap_t::vec_value_type& a_desc,
+        float* a_val,
+        bool a_sync,
+        float a_mval) const
+    {
+        configPropagate_t::keyList_t keys{ std::addressof(a_desc.first) };
+
+        if (a_sync)
+        {
+            keys.emplace_back(std::addressof(a_desc.second.counterpart));
+
+            Propagate(a_data, a_dg, a_pair,
+                [&](configComponent32_t& a_v, const configPropagate_t& a_p) {
+                    a_v.Set(a_desc.second.counterpart, a_p.ResolveValue(keys, a_mval));
+                });
+        }
+
+        Propagate(a_data, a_dg, a_pair,
+            [&](configComponent32_t& a_v, const configPropagate_t& a_p) {
+                a_v.Set(a_desc.second, a_p.ResolveValue(keys, *a_val));
+            });
     }
 
     template <class T, UIEditorID ID>
@@ -3136,7 +3205,7 @@ namespace CBP
             {
                 for (const auto& e : data)
                 {
-                    bool selected = _stricmp(a_pair.second.ex.colMesh.c_str(), e.first.c_str()) == 0;
+                    bool selected = StrHelpers::icompare(a_pair.second.ex.colMesh, e.first) == 0;
                     if (selected)
                         if (ImGui::IsWindowAppearing()) ImGui::SetScrollHereY();
 
@@ -3218,8 +3287,6 @@ namespace CBP
         if (CanClip())
             return;
 
-        const auto& globalConfig = IConfig::GetGlobal();
-
         auto aoSect = GetArmorOverrideSection(a_handle, a_pair.first);
 
         bool drawingGroup(false);
@@ -3235,12 +3302,17 @@ namespace CBP
         bool drawingFloat3 = false;
         const componentValueDesc_t* currentDesc;
 
-        for (const auto& e : configComponent32_t::descMap)
+        auto& dm = configComponent32_t::descMap.getvec();
+        auto count = dm.size();
+
+        for (decltype(count) i = decltype(count)(0); i < count; i++)
         {
+            auto& e = dm[i];
+
             auto addr = reinterpret_cast<uintptr_t>(std::addressof(a_pair.second)) + e.second.offset;
             float* pValue = reinterpret_cast<float*>(addr);
 
-            if ((e.second.marker & DescUIMarker::BeginGroup) == DescUIMarker::BeginGroup)
+            if ((e.second.flags & DescUIFlags::BeginGroup) == DescUIFlags::BeginGroup)
             {
                 if (e.second.groupType == DescUIGroupType::Physics ||
                     e.second.groupType == DescUIGroupType::PhysicsExtra)
@@ -3257,7 +3329,7 @@ namespace CBP
                     openState = Tree(
                         GetCSSID(a_pair.first, e.second.groupName.c_str()),
                         e.second.groupName.c_str(),
-                        (e.second.marker & DescUIMarker::Collapsed) != DescUIMarker::Collapsed);
+                        (e.second.flags & DescUIFlags::Collapsed) != DescUIFlags::Collapsed);
 
                     if (openState && e.second.groupType == DescUIGroupType::Collisions)
                         DrawColliderShapeCombo(a_handle, a_data, a_pair, e);
@@ -3267,55 +3339,65 @@ namespace CBP
 
             if (groupType == DescUIGroupType::Collisions)
             {
-                auto flags = e.second.marker & UIMARKER_COL_SHAPE_FLAGS;
+                auto flags = e.second.flags & UIMARKER_COL_SHAPE_FLAGS;
 
-                if (flags != DescUIMarker::None)
+                if (flags != DescUIFlags::None)
                 {
-                    auto f(DescUIMarker::None);
+                    auto f(DescUIFlags::None);
 
                     switch (a_pair.second.ex.colShape)
                     {
                     case ColliderShapeType::Sphere:
-                        f |= (flags & DescUIMarker::ColliderSphere);
+                        f |= (flags & DescUIFlags::ColliderSphere);
                         break;
                     case ColliderShapeType::Capsule:
-                        f |= (flags & DescUIMarker::ColliderCapsule);
+                        f |= (flags & DescUIFlags::ColliderCapsule);
                         break;
                     case ColliderShapeType::Box:
-                        f |= (flags & DescUIMarker::ColliderBox);
+                        f |= (flags & DescUIFlags::ColliderBox);
                         break;
                     case ColliderShapeType::Cone:
-                        f |= (flags & DescUIMarker::ColliderCone);
+                        f |= (flags & DescUIFlags::ColliderCone);
                         break;
                     case ColliderShapeType::Tetrahedron:
-                        f |= (flags & DescUIMarker::ColliderTetrahedron);
+                        f |= (flags & DescUIFlags::ColliderTetrahedron);
                         break;
                     case ColliderShapeType::Cylinder:
-                        f |= (flags & DescUIMarker::ColliderCylinder);
+                        f |= (flags & DescUIFlags::ColliderCylinder);
                         break;
                     case ColliderShapeType::Mesh:
-                        f |= (flags & DescUIMarker::ColliderMesh);
+                        f |= (flags & DescUIFlags::ColliderMesh);
                         break;
                     case ColliderShapeType::ConvexHull:
-                        f |= (flags & DescUIMarker::ColliderConvexHull);
+                        f |= (flags & DescUIFlags::ColliderConvexHull);
                         break;
                     }
 
-                    if (f == DescUIMarker::None)
+                    if (f == DescUIFlags::None)
                         continue;
                 }
             }
 
             if (!drawingGroup || (drawingGroup && openState && showCurrentGroup))
             {
-                if (!drawingFloat3 && (e.second.marker & DescUIMarker::Float3) == DescUIMarker::Float3)
+                if (!drawingFloat3 && (e.second.flags & DescUIFlags::Float3) == DescUIFlags::Float3)
                 {
                     currentDesc = std::addressof(e.second);
                     float3Index = 0;
                     drawingFloat3 = true;
 
+                    ImGui::PushID(currentDesc->descTag.c_str());
+
+                    if ((e.second.flags & DescUIFlags::Float3Mirror) == DescUIFlags::Float3Mirror) {
+                        if (ImGui::Button("+"))
+                            ImGui::OpenPopup("slider_opts");
+
+                        DrawSliderContextMenu(std::addressof(e), a_pair);
+
+                        ImGui::SameLine(0, GImGui->Style.ItemInnerSpacing.x);
+                    }
+
                     ImGui::BeginGroup();
-                    ImGui::PushID(e.second.descTag.c_str());
                     ImGui::PushMultiItemsWidths(3, ImGui::CalcItemWidth());
                 }
 
@@ -3331,22 +3413,24 @@ namespace CBP
                         DrawSlider(e, pValue, aoSect, true) :
                         ImGui::SliderScalar("", ImGuiDataType_Float, pValue, &e.second.min, &e.second.max, "%.3f");
 
-                    if (changed)
-                        OnSimSliderChange(a_handle, a_data, a_pair, e, pValue);
-
                     ImGui::PopID();
                     ImGui::PopItemWidth();
 
+                    if (changed)
+                        OnSimSliderChange(a_handle, a_data, a_pair, e, pValue);
+
                     float3Index++;
+
                     if (float3Index == 3)
                     {
                         ImGui::PopID();
 
-                        const char* label_end = ImGui::FindRenderedTextEnd(currentDesc->descTag.c_str());
-                        if (currentDesc->descTag.c_str() != label_end)
+                        const char* desc_text = currentDesc->descTag.c_str();
+                        const char* label_end = ImGui::FindRenderedTextEnd(desc_text);
+                        if (desc_text != label_end)
                         {
                             ImGui::SameLine(0, g.Style.ItemInnerSpacing.x);
-                            ImGui::TextEx(currentDesc->descTag.c_str(), label_end);
+                            ImGui::TextEx(desc_text, label_end);
                         }
 
                         ImGui::EndGroup();
@@ -3369,7 +3453,7 @@ namespace CBP
                 }
             }
 
-            if ((e.second.marker & DescUIMarker::EndGroup) == DescUIMarker::EndGroup)
+            if ((e.second.flags & DescUIFlags::EndGroup) == DescUIFlags::EndGroup)
             {
                 if (openState) {
                     ImGui::TreePop();
@@ -3382,6 +3466,87 @@ namespace CBP
 
         ImGui::PopItemWidth();
         ImGui::PopID();
+    }
+
+    template <class T, UIEditorID ID>
+    void UISimComponent<T, ID>::DrawSliderContextMenu(
+        const componentValueDescMap_t::vec_value_type* a_desc,
+        const configComponentsValue_t& a_pair) const
+    {
+
+        if (ImGui::BeginPopup("slider_opts"))
+        {
+            auto& globalConfig = IConfig::GetGlobal();
+
+            auto& propmap = globalConfig.ui.propagate[ID];
+
+            auto it = propmap.find(a_pair.first);
+
+            if (it != propmap.end())
+            {
+                if (ImGui::BeginMenu("Mirror"))
+                {
+                    bool has_one(false);
+
+                    for (auto& e : it->second)
+                    {
+                        if (!e.second.enabled)
+                            continue;
+
+                        has_one = true;
+
+                        if (!ImGui::BeginMenu(e.first.c_str()))
+                            continue;
+
+                        DrawSliderContextMenuMirrorItem("X", a_desc, e, a_pair, propmap);
+                        DrawSliderContextMenuMirrorItem("Y", (a_desc + 1), e, a_pair, propmap);
+                        DrawSliderContextMenuMirrorItem("Z", (a_desc + 2), e, a_pair, propmap);
+
+                        ImGui::EndMenu();
+
+                    }
+
+                    if (!has_one) {
+                        ImGui::MenuItem("Propagation disabled", nullptr, false, false);
+                    }
+
+                    ImGui::EndMenu();
+
+                }
+            }
+            else {
+                ImGui::MenuItem("Propagation disabled", nullptr, false, false);
+            }
+
+
+            ImGui::EndPopup();
+        }
+    }
+
+    template <class T, UIEditorID ID>
+    void UISimComponent<T, ID>::DrawSliderContextMenuMirrorItem(
+        const char* a_label,
+        const componentValueDescMap_t::vec_value_type* a_desc,
+        configPropagateEntry_t::value_type& a_propEntry,
+        const configComponentsValue_t& a_pair,
+        configPropagateMap_t& a_propMap) const
+    {
+        auto it = a_propEntry.second.mirror.find(a_desc->first);
+
+        bool selected = it != a_propEntry.second.mirror.end();
+
+        if (ImGui::MenuItem(a_label, nullptr, selected))
+        {
+            if (selected) {
+                a_propEntry.second.mirror.erase(it);
+            }
+            else {
+                a_propEntry.second.mirror.emplace(a_desc->first);
+            }
+
+            auto f = a_propMap.try_emplace(a_propEntry.first);
+            f.first->second.insert_or_assign(a_pair.first, a_propEntry.second);
+        }
     }
 
     template <class T, UIEditorID ID>
@@ -3459,6 +3624,9 @@ namespace CBP
 
         changed2 |= ImGui::SliderFloat3("Offset max", a_conf.fp.f32.colOffsetMax, -250.0f, 250.0f);
         HelpMarker(MiscHelpText::offsetMax);
+
+        changed2 |= ImGui::SliderFloat3("Rotation", a_conf.fp.f32.colRot, -360.0f, 360.0f);
+        HelpMarker(MiscHelpText::rotation);
 
         if (ImGui::SliderFloat("Scale", &a_conf.fp.f32.nodeScale, 0.0f, 20.0f))
         {
@@ -3666,7 +3834,7 @@ namespace CBP
 
                 ImGui::NextColumn();
 
-                bool tWarn(stats.avgStepsPerUpdate > 1);
+                bool tWarn(stats.avgStepsPerUpdate > 1.0f);
 
                 if (tWarn)
                     ImGui::PushStyleColor(ImGuiCol_Text, s_colorWarning);
@@ -3676,9 +3844,9 @@ namespace CBP
                 if (tWarn)
                     ImGui::PopStyleColor();
 
-                ImGui::Text("%lld/s (%u/frame)", stats.avgStepRate, stats.avgStepsPerUpdate);
-                ImGui::Text("%lld", stats.avgStepsPerUpdate > 0
-                    ? stats.avgStepRate / stats.avgStepsPerUpdate : 0);
+                ImGui::Text("%.1f/s (%.1f/frame)", stats.avgStepRate, stats.avgStepsPerUpdate);
+                ImGui::Text("%.1f", stats.avgStepsPerUpdate > _EPSILON
+                    ? stats.avgStepRate / stats.avgStepsPerUpdate : 0.0);
                 ImGui::Text("%.4f", stats.avgFrameTime);
                 ImGui::Text("%u", stats.avgActorCount);
                 ImGui::Text("%lld \xC2\xB5s", DUI::GetPerf());
@@ -3860,13 +4028,13 @@ namespace CBP
 
                         ImGui::Columns(1);
                         ImGui::Separator();
-                    }
+            }
 
                     if (!m_sized)
                         m_sized = true;
-                }
-            }
         }
+    }
+}
 
         ImGui::End();
 
@@ -3993,7 +4161,7 @@ namespace CBP
 
         ImGui::PushID(static_cast<const void*>(this));
 
-        if (ImGui::Begin("Select file to import##CBP", a_active))
+        if (ImGui::Begin("Import##CBP", a_active))
         {
             ImGui::SetWindowFontScale(globalConfig.ui.fontScale);
 
@@ -4040,7 +4208,7 @@ namespace CBP
 
             ImGui::Separator();
 
-            uint8_t importFlags = 0;
+            uint8_t importFlags(0);
 
             Checkbox("Global", &globalConfig.ui.import.global);
             ImGui::SameLine();
@@ -4266,7 +4434,7 @@ namespace CBP
 
         ImGui::PushID(static_cast<const void*>(this));
 
-        if (ImGui::Begin("Node Map##CBP", a_active))
+        if (ImGui::Begin("Node Map##CBP", a_active, ImGuiWindowFlags_MenuBar))
         {
             ActorListTick();
 
@@ -4279,6 +4447,8 @@ namespace CBP
             }
 
             ImGui::SetWindowFontScale(globalConfig.ui.fontScale);
+
+            DrawMenuBar(a_active);
 
             auto& data = IData::GetNodeReferenceData();
 
@@ -4344,6 +4514,27 @@ namespace CBP
     void UINodeMap::Reset()
     {
         ListReset();
+    }
+
+    void UINodeMap::DrawMenuBar(bool* a_active)
+    {
+        if (ImGui::BeginMenuBar())
+        {
+            if (ImGui::BeginMenu("File"))
+            {
+                if (ImGui::MenuItem("New node"))
+                    AddNodeNew();
+
+                ImGui::Separator();
+
+                if (ImGui::MenuItem("Exit"))
+                    *a_active = false;
+
+                ImGui::EndMenu();
+            }
+
+            ImGui::EndMenuBar();
+        }
     }
 
     void UINodeMap::DrawNodeTree(const nodeRefEntry_t& a_entry)
@@ -4566,6 +4757,26 @@ namespace CBP
         );
     }
 
+    void UINodeMap::AddNodeNew()
+    {
+        auto& popup = m_parent.GetPopupQueue();
+
+        popup.push(
+            UIPopupType::Input,
+            "Add node",
+            "Enter the node name:"
+        ).call([&](auto& a_p, auto& a_d)
+            {
+                auto& in = a_p.GetInput();
+
+                if (!strlen(in))
+                    return;
+
+                AddNodeNewGroup(in);
+            }
+        );
+    }
+
     void UINodeMap::RemoveNode(const std::string& a_node)
     {
         if (IConfig::RemoveNode(a_node))
@@ -4686,4 +4897,427 @@ namespace CBP
     {
     }
 
+    UIArmorOverrideEditor::UIArmorOverrideEditor(
+        UIContext& a_parent) noexcept
+        :
+        m_parent(a_parent)
+    {
+    }
+
+    void UIArmorOverrideEditor::Draw(bool* a_active)
+    {
+        const auto& globalConfig = IConfig::GetGlobal();
+
+        SetWindowDimensions(225.0f);
+
+        ImGui::PushID(static_cast<const void*>(this));
+
+        if (ImGui::Begin("Armor Override Editor##CBP", a_active))
+        {
+            DrawOverrideList();
+
+            if (m_currentEntry)
+            {
+                auto& entry = *m_currentEntry;
+
+                DrawToolbar(entry);
+                ImGui::Separator();
+                DrawSliders(entry);
+            }
+        }
+
+        ImGui::End();
+
+        ImGui::PopID();
+    }
+
+    void UIArmorOverrideEditor::DrawSliders(entry_type& a_entry)
+    {
+        const float width = ImGui::GetWindowContentRegionMax().x;
+
+        if (ImGui::BeginChild("aoe_sliders", ImVec2(width, 0.0f)))
+        {
+            ImGui::PushItemWidth(ImGui::GetFontSize() * -16.0f);
+
+            for (auto& e : a_entry.second)
+                DrawGroup(a_entry, e);
+
+            ImGui::PopItemWidth();
+        }
+
+        ImGui::EndChild();
+    }
+
+    void UIArmorOverrideEditor::DrawToolbar(entry_type& a_entry)
+    {
+        if (ImGui::Button("Add group"))
+            ImGui::OpenPopup("__add_group");
+
+        if (ImGui::BeginPopup("__add_group"))
+        {
+            DrawAddGroupContextMenu(a_entry);
+            ImGui::EndPopup();
+        }
+
+        auto wcm = ImGui::GetWindowContentRegionMax();
+
+        ImGui::SameLine(wcm.x - GetNextTextOffset("Save", true));
+        if (ButtonRight("Save"))
+            DoSave(a_entry);
+
+        ImGui::SameLine(wcm.x - GetNextTextOffset("Reload"));
+        if (ButtonRight("Reload"))
+        {
+            auto& popup = m_parent.GetPopupQueue();
+
+            popup.push(
+                UIPopupType::Confirm,
+                UIPopupData(a_entry.first),
+                "Reload",
+                "Reload data from '%s'?",
+                a_entry.first.c_str()
+            ).call([&](auto&, auto& a_d)
+                {
+                    if (!m_currentEntry)
+                        return;
+
+                    auto& path = a_d.get<const std::string&>(0);
+
+                    if (StrHelpers::icompare(path, m_currentEntry->first) != 0)
+                        return;
+
+                    SetCurrentEntry(path, true);
+                }
+            );
+
+        }
+    }
+
+    void UIArmorOverrideEditor::RemoveGroup(
+        const std::string& a_path,
+        const std::string& a_group)
+    {
+        auto& popup = m_parent.GetPopupQueue();
+
+        popup.push(
+            UIPopupType::Confirm,
+            UIPopupData(a_path, a_group),
+            "Confirm",
+            "Delete group '%s'?",
+            a_group.c_str()
+        ).call([&](auto&, auto& a_d)
+            {
+                if (!m_currentEntry)
+                    return;
+
+                auto& path = a_d.get<const std::string&>(0);
+
+                if (StrHelpers::icompare(m_currentEntry->first, path) != 0)
+                    return;
+
+                auto& group = a_d.get<const std::string&>(1);
+
+                m_currentEntry->second.erase(group);
+            }
+        );
+    }
+
+    void UIArmorOverrideEditor::DrawGroup(
+        entry_type& a_entry,
+        entry_type::second_type::value_type& a_e)
+    {
+        const auto& globalConfig = IConfig::GetGlobal();
+
+        ImGui::PushID(static_cast<const void*>(std::addressof(a_e)));
+
+        ImGui::PushID("__controls");
+
+        if (ImGui::Button("-"))
+            RemoveGroup(a_entry.first, a_e.first);
+
+        ImGui::SameLine();
+
+        if (ImGui::Button("+"))
+            ImGui::OpenPopup("__add_slider");
+
+        if (ImGui::BeginPopup("__add_slider"))
+        {
+            DrawAddSliderContextMenu(a_e);
+            ImGui::EndPopup();
+        }
+
+        ImGui::PopID();
+
+        ImGui::SameLine();
+
+        if (ImGui::CollapsingHeader(a_e.first.c_str(),
+            ImGuiTreeNodeFlags_DefaultOpen))
+        {
+            ImGui::PushItemWidth(ImGui::GetFontSize() * -15.5f);
+
+            auto eit = a_e.second.begin();
+
+            while (eit != a_e.second.end())
+            {
+                auto& e = *eit;
+
+                ImGui::PushID(static_cast<const void*>(std::addressof(e)));
+
+                if (ImGui::Button("-"))
+                {
+                    eit = a_e.second.erase(eit);
+                }
+                else
+                {
+                    auto dit = configComponent32_t::descMap.find(e.first);
+                    if (dit != configComponent32_t::descMap.map_end())
+                    {
+                        ImGui::PushID(static_cast<const void*>(std::addressof(e.second)));
+
+                        ImGui::SameLine();
+
+                        ImGui::PushItemWidth(100.0f);
+                        DrawSliderOverrideModeSelector(e);
+                        ImGui::PopItemWidth();
+
+                        auto name(dit->second.descTag);
+                        name.append(" (");
+                        name.append(e.first);
+                        name.append(")");
+
+                        ImGui::SameLine();
+                        ImGui::SliderFloat(name.c_str(), std::addressof(e.second.second), dit->second.min, dit->second.max);
+
+                        //HelpMarker(e.first);
+
+                        ImGui::PopID();
+                    }
+
+                    ++eit;
+                }
+
+                ImGui::PopID();
+            }
+
+            ImGui::PopItemWidth();
+        }
+
+        ImGui::PopID();
+    }
+
+    void UIArmorOverrideEditor::DrawAddSliderContextMenu(
+        entry_type::second_type::value_type& a_e)
+    {
+        ImGui::PushID(static_cast<const void*>(std::addressof(configComponent32_t::descMap)));
+
+        for (auto& e : configComponent32_t::descMap)
+        {
+            if (a_e.second.contains(e.first))
+                continue;
+
+            ImGui::PushID(static_cast<const void*>(std::addressof(e)));
+
+            auto name(e.first);
+            name.append(" (");
+            name.append(e.second.descTag);
+            name.append(")");
+
+            if (ImGui::MenuItem(name.c_str()))
+                a_e.second.emplace(e.first, armorCacheValue_t(0U, 0.0f));
+
+            ImGui::PopID();
+        }
+
+        ImGui::PopID();
+    }
+
+    void UIArmorOverrideEditor::DrawAddGroupContextMenu(
+        entry_type& a_entry)
+    {
+        auto& cgMap = IConfig::GetConfigGroupMap();
+
+        ImGui::PushID(static_cast<const void*>(std::addressof(cgMap)));
+
+        for (auto& e : cgMap)
+        {
+            if (a_entry.second.contains(e.first))
+                continue;
+
+            if (ImGui::MenuItem(e.first.c_str()))
+                a_entry.second.try_emplace(e.first);
+        }
+
+        ImGui::PopID();
+    }
+
+    const char* UIArmorOverrideEditor::OverrideModeToDesc(uint32_t a_mode)
+    {
+        switch (a_mode)
+        {
+        case uint32_t(0):
+            return "Absolute";
+        case uint32_t(1):
+            return "Modifier";
+        default:
+            return nullptr;
+        }
+    }
+
+    void UIArmorOverrideEditor::DrawSliderOverrideModeSelector(
+        entry_type::second_type::mapped_type::value_type& a_entry)
+    {
+        ImGui::PushID("__list_mode");
+
+        auto curSelName = OverrideModeToDesc(a_entry.second.first);
+
+        if (ImGui::BeginCombo("", curSelName))
+        {
+            for (uint32_t i = 0; i < 2; i++)
+            {
+                bool selected = a_entry.second.first == i;
+
+                if (selected)
+                    if (ImGui::IsWindowAppearing()) ImGui::SetScrollHereY();
+
+                if (ImGui::Selectable(OverrideModeToDesc(i), selected))
+                {
+                    a_entry.second.first = i;
+                }
+            }
+
+            ImGui::EndCombo();
+        }
+
+        ImGui::PopID();
+    }
+
+    void UIArmorOverrideEditor::DrawOverrideList()
+    {
+        if (!m_currentOverrides)
+            return;
+
+        ImGui::PushID("__list");
+
+        const char* curSelName = m_currentEntry ? m_currentEntry->first.c_str() : nullptr;
+
+        if (ImGui::BeginCombo("Overrides", curSelName))
+        {
+            for (const auto& e : *m_currentOverrides)
+            {
+                ImGui::PushID(static_cast<const void*>(std::addressof(e)));
+
+                bool selected = StrHelpers::icompare(m_currentEntry->first, e) == 0;
+
+                if (selected)
+                    if (ImGui::IsWindowAppearing()) ImGui::SetScrollHereY();
+
+                if (ImGui::Selectable(e.c_str(), selected))
+                {
+                    SetCurrentEntry(e);
+                }
+
+                ImGui::PopID();
+            }
+
+            ImGui::EndCombo();
+        }
+
+        ImGui::PopID();
+    }
+
+    void UIArmorOverrideEditor::SetCurrentEntry(
+        const std::string& a_path,
+        const armorCacheEntry_t& a_entry)
+    {
+        auto& data = *m_currentEntry;
+        data.first = a_path;
+        IArmorCache::Copy(a_entry, data.second);
+        m_currentEntry.Mark(true);
+    }
+
+    bool UIArmorOverrideEditor::SetCurrentEntry(
+        const std::string& a_path,
+        bool a_fromDisk)
+    {
+        const armorCacheEntry_t* data(nullptr);
+
+        if (a_fromDisk)
+            IArmorCache::Load(a_path, data);
+        else
+            data = IArmorCache::GetEntry(a_path);
+
+        if (!data)
+        {
+            auto& popup = m_parent.GetPopupQueue();
+            auto& except = IArmorCache::GetLastException();
+
+            popup.push(
+                UIPopupType::Message,
+                "Error",
+                "Couldn't load data from '%s'.\n\n%s",
+                a_path.c_str(),
+                except.what());
+
+            return false;
+        }
+
+        SetCurrentEntry(a_path, *data);
+
+        return true;
+    }
+
+    void UIArmorOverrideEditor::SetCurrentOverrides(
+        const armorOverrideResults_t& a_overrides)
+    {
+        m_currentOverrides = a_overrides;
+
+        auto it = m_currentOverrides->begin();
+        if (it != m_currentOverrides->end())
+        {
+            if (SetCurrentEntry(*it))
+                return;
+        }
+
+        m_currentEntry.Clear();
+    }
+
+    void UIArmorOverrideEditor::DoSave(
+        const entry_type& a_entry)
+    {
+
+        auto& popup = m_parent.GetPopupQueue();
+
+        popup.push(
+            UIPopupType::Confirm,
+            UIPopupData(a_entry),
+            "Save",
+            "Save data to '%s'?",
+            a_entry.first.c_str()
+        ).call([&](auto&, auto& a_d)
+            {
+                auto& entry = a_d.get<const entry_type&>(0);
+
+                armorCacheEntry_t tmp;
+                IArmorCache::Copy(entry.second, tmp);
+
+                if (IArmorCache::Save(entry.first, std::move(tmp))) {
+                    DCBP::ClearArmorOverrides();
+                    DCBP::UpdateArmorOverridesAll();
+                }
+                else {
+                    auto& popup = m_parent.GetPopupQueue();
+                    auto& except = IArmorCache::GetLastException();
+
+                    popup.push(
+                        UIPopupType::Message,
+                        "Error",
+                        "Couldn't save data to '%s'.\n\n%s",
+                        entry.first.c_str(),
+                        except.what());
+                }
+            }
+        );
+
+
+    }
 }

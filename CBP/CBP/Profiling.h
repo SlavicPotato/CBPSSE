@@ -8,9 +8,9 @@ namespace CBP
         {
             long long avgTime;
             uint32_t avgActorCount;
-            long long avgStepRate;
-            uint32_t avgStepsPerUpdate;
-            float avgFrameTime;
+            double avgStepRate;
+            double avgStepsPerUpdate;
+            double avgFrameTime;
         };
 
     public:
@@ -37,7 +37,7 @@ namespace CBP
 
         uint32_t m_numActorsAccum;
         uint32_t m_numStepsAccum;
-        float m_frameTimeAccum;
+        double m_frameTimeAccum;
         uint32_t m_runCount;
 
         uint32_t m_uid;

@@ -21,7 +21,11 @@ namespace CBP
             BSFixedString cs(b.first.c_str());
 
             auto object = a_actor->loadedState->node->GetObjectByName(&cs.data);
-            if (!object || !object->m_parent)
+            if (!object)
+                continue;
+
+            auto node = object->GetAsNiNode();
+            if (!node || !node->m_parent)
                 continue;
 
             if (!IConfig::IsValidGroup(b.second))
@@ -43,7 +47,7 @@ namespace CBP
 
             a_out.emplace_back(
                 b.first,
-                object,
+                node,
                 b.second,
                 a_collisions && collisions,
                 movement,
@@ -55,11 +59,23 @@ namespace CBP
         return a_out.size();
     }
 
+    SKMP_FORCEINLINE static bool IsNodeBelow(NiNode* a_node, NiNode* a_other)
+    {
+        while (a_other != nullptr)
+        {
+            if (a_node->IsEqual(a_other))
+                return true;
+
+            a_other = a_other->m_parent;
+        }
+
+        return false;
+    }
+
     SimObject::SimObject(
         Game::ObjectHandle a_handle,
         Actor* a_actor,
         char a_sex,
-        uint64_t a_Id,
         const nodeDescList_t& a_desc)
         :
         m_handle(a_handle),
@@ -89,7 +105,6 @@ namespace CBP
                 e.confGroup,
                 e.physConf,
                 e.nodeConf,
-                a_Id,
                 IConfig::GetNodeCollisionGroupId(e.nodeName),
                 e.collisions,
                 e.movement
@@ -101,7 +116,7 @@ namespace CBP
             {
                 auto p = (*it)->GetNode()->m_parent;
 
-                if (e.node->IsEqual(p))
+                if (IsNodeBelow(e.node, p))
                     break;
 
                 ++it;
@@ -110,67 +125,28 @@ namespace CBP
             tmp.emplace(it, obj);
         }
 
-        for (auto e : tmp)
+        for (auto &e : tmp)
             m_objList.push_back(e);
 
-        /*if (a_actor->formID == 0x14)
-        {
-            _DMESSAGE(">>");
-
-            int count = m_objList.size();
-            for (int i = 0; i < count; i++)
-            {
-                auto p = m_objList[i];
-
-                _DMESSAGE("\t: %s", p->GetNode()->m_name);
-            }
-
-            _DMESSAGE("<<");
-
-        }*/
-
         BSFixedString n(NODE_HEAD);
-        m_objHead = a_actor->loadedState->node->GetObjectByName(&n.data);
+        auto head = a_actor->loadedState->node->GetObjectByName(&n.data);
+        if (head != nullptr) {
+            m_objHead = head->GetAsNiNode();
+        }
     }
 
     SimObject::~SimObject() noexcept
     {
-        int count = m_objList.size();
-        for (int i = 0; i < count; i++)
+        auto count = m_objList.size();
+        for (decltype(count) i = 0; i < count; i++)
             delete m_objList[i];
     }
 
     void SimObject::Reset()
     {
-        int count = m_objList.size();
-        for (int i = 0; i < count; i++)
+        auto count = m_objList.size();
+        for (decltype(count) i = 0; i < count; i++)
             m_objList[i]->Reset();
-    }
-
-    bool SimObject::ValidateNodes(Actor* a_actor)
-    {
-        BSFixedString n(NODE_HEAD);
-
-        auto head = a_actor->loadedState->node->GetObjectByName(&n.data);
-        if (head != m_objHead)
-            return false;
-
-        int count = m_objList.size();
-        for (int i = 0; i < count; i++)
-        {
-            auto p = m_objList[i];
-
-            BSFixedString cs(p->GetNodeName().c_str());
-
-            auto object = a_actor->loadedState->node->GetObjectByName(&cs.data);
-            if (!object || !object->m_parent)
-                return false;
-
-            if (!p->ValidateNodes(object))
-                return false;
-        }
-
-        return true;
     }
 
     void SimObject::UpdateConfig(
@@ -180,8 +156,8 @@ namespace CBP
     {
         auto& nodeConfig = IConfig::GetActorNode(m_handle);
 
-        int count = m_objList.size();
-        for (int i = 0; i < count; i++)
+        auto count = m_objList.size();
+        for (decltype(count) i = 0; i < count; i++)
         {
             auto p = m_objList[i];
 
@@ -214,12 +190,12 @@ namespace CBP
         const std::string& a_component,
         const NiPoint3& a_force)
     {
-        int count = m_objList.size();
-        for (int i = 0; i < count; i++)
+        auto count = m_objList.size();
+        for (decltype(count) i = 0; i < count; i++)
         {
             auto p = m_objList[i];
 
-            if (_stricmp(p->GetConfigGroupName().c_str(), a_component.c_str()) == 0)
+            if (StrHelpers::icompare(p->GetConfigGroupName(), a_component) == 0)
                 p->ApplyForce(a_steps, a_force);
         }
     }
@@ -227,8 +203,8 @@ namespace CBP
 #ifdef _CBP_ENABLE_DEBUG
     void SimObject::UpdateDebugInfo()
     {
-        int count = m_objList.size();
-        for (int i = 0; i < count; i++)
+        auto count = m_objList.size();
+        for (decltype(count) i = 0; i < count; i++)
             m_objList[i]->UpdateDebugInfo();
     }
 #endif
@@ -237,8 +213,8 @@ namespace CBP
     {
         m_suspended = a_switch;
 
-        int count = m_objList.size();
-        for (int i = 0; i < count; i++)
+        auto count = m_objList.size();
+        for (decltype(count) i = 0; i < count; i++)
             m_objList[i]->GetCollider().SetShouldProcess(!a_switch);
 
         if (!a_switch)

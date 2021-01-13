@@ -31,16 +31,16 @@ namespace CBP
 
     void DTasks::TaskInterface1_Hook(BSTaskPool* taskpool)
     {
-        RunTasks();
-
         SKSE_BSTaskPoolProc1_O(taskpool);
+
+        RunTasks();
     }
 
     void DTasks::TaskInterface2_Hook(BSTaskPool* taskpool)
     {
-        RunTasks();
-
         SKSE_BSTaskPoolProc2_O(taskpool);
+
+        RunTasks();
     }
 
     void DTasks::TaskInit_Hook()
@@ -55,13 +55,4 @@ namespace CBP
         MainInitHook_O();
     }
 
-    void DTasks::AddTaskFixed(TaskDelegateFixed* cmd)
-    {
-        s_tasks_fixed.push_back(cmd);
-    }
-
-    void DTasks::AddTask(TaskDelegate* cmd)
-    {
-        s_tasks.AddTask(cmd);
-    }
 }

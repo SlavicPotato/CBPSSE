@@ -3,3 +3,4 @@
 // For more information see https://go.microsoft.com/fwlink/?linkid=865984
 #define SKMP_FORCEINLINE
 #define SKMP_ALIGN(x) __declspec(align(x))
+#define FN_NAMEPROC(x) virtual const char *ModuleName() const { return x; };

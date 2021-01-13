@@ -178,7 +178,7 @@ namespace CBP
     {
         a_out.clear();
 
-        for (const auto& e : a_in)
+        for (auto& e : a_in)
         {
             Game::ObjectHandle newHandle(0);
 

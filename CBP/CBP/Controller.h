@@ -4,7 +4,7 @@
 
 namespace CBP
 {
-    struct __declspec(align(16)) ControllerInstruction
+    struct SKMP_ALIGN(16) ControllerInstruction
     {
         enum class Action : uint32_t 
         {
@@ -28,10 +28,10 @@ namespace CBP
         Game::ObjectHandle m_handle{ 0 };
     };
 
-    class ControllerTask :
+    class SKMP_ALIGN(32) ControllerTask :
         public TaskDelegateFixed,
         public TaskQueueBase<ControllerInstruction>,
-        ILog
+        protected ILog
     {
         typedef stl::unordered_set<Game::ObjectHandle> handleSet_t;
 
@@ -48,13 +48,24 @@ namespace CBP
         };
 
     public:
+        SKMP_DECLARE_ALIGNED_ALLOCATOR(32);
+
         ControllerTask();
 
         virtual void Run() override;
 
+    protected:
+
+        void CullActors();
+        void ProcessTasks();
+
+        bool m_ranFrame;
+        float m_lastFrameTime;
+
+        //PerfTimerInt m_pt{ 1000000 };
+
     private:
 
-        SKMP_FORCEINLINE void CullActors();
         SKMP_FORCEINLINE void UpdatePhase1();
         SKMP_FORCEINLINE void UpdateActorsPhase2(float a_timeStep);
 
@@ -76,7 +87,7 @@ namespace CBP
 
         void AddActor(Game::ObjectHandle a_handle);
         void RemoveActor(Game::ObjectHandle a_handle);
-        bool ValidateActor(simActorList_t::value_type &a_entry);
+        //bool ValidateActor(simActorList_t::value_type &a_entry);
         void UpdateConfigOnAllActors();
         //void UpdateGroupInfoOnAllActors();
         void UpdateConfig(Game::ObjectHandle a_handle);
@@ -92,9 +103,9 @@ namespace CBP
         void ClearArmorOverrides();
 
     public:
-        void PhysicsTick(Game::BSMain* a_main);
+        void PhysicsTick(Game::BSMain* a_main, float a_interval);
 
-        void ClearActors(bool a_noNotify = false);
+        void ClearActors(bool a_noNotify = false, bool a_release = false);
 
         void ApplyForce(
             Game::ObjectHandle a_handle,
@@ -120,11 +131,15 @@ namespace CBP
             m_markedActor = a_handle;
         }
 
+        SKMP_FORCEINLINE void ResetFrame(float a_frameTime) {
+            m_ranFrame = false;
+            m_lastFrameTime = a_frameTime;
+        }
+
         FN_NAMEPROC("Controller")
 
     private:
 
-        void ProcessTasks();
         void GatherActors(handleSet_t& a_out);
 
         bool ApplyArmorOverrides(
@@ -150,7 +165,7 @@ namespace CBP
         }
 
         SKMP_FORCEINLINE Game::FormID GetFormID(Game::ObjectHandle a_handle) {
-            return Game::FormID(a_handle & 0xFFFFFFFF);
+            return static_cast<Game::FormID>(a_handle & 0xFFFFFFFF);
         }
 
         simActorList_t m_actors;
@@ -159,10 +174,21 @@ namespace CBP
         float m_timeAccum;
         float m_averageInterval;
 
-        static uint64_t m_nextGroupId;
-
         Profiler m_profiler;
         //PerfTimerInt m_pt;
+    };
+
+    class ControllerTaskSim :
+        public ControllerTask
+    {
+    public:
+
+        ControllerTaskSim() :
+            ControllerTask()
+        {
+        }
+
+        virtual void Run() override;
     };
 
 }

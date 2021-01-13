@@ -2,18 +2,18 @@
 
 namespace CBP
 {
-    class SKMP_ALIGN(16) Renderer : 
+    class SKMP_ALIGN(32) Renderer : 
         public btIDebugDraw
     {
         using VertexType = DirectX::VertexPositionColor;
 
-        struct SKMP_ALIGN(16) ItemLine
+        struct ItemLine
         {
             VertexType pos1;
             VertexType pos2;
         };
 
-        struct SKMP_ALIGN(16) ItemTri
+        struct ItemTri
         {
             VertexType pos1;
             VertexType pos2;
@@ -23,6 +23,8 @@ namespace CBP
         int m_debugMode;
 
     public:
+        SKMP_DECLARE_ALIGNED_ALLOCATOR(32)
+
         Renderer(
             ID3D11Device* a_pDevice,
             ID3D11DeviceContext* a_pImmediateContext);
@@ -30,7 +32,7 @@ namespace CBP
         Renderer() = delete;
 
         void Draw();
-        void GenerateMovingNodes(const simActorList_t& a_actorList, float a_radius, bool a_centerOfGravity, Game::ObjectHandle a_markedHandle);
+        void GenerateMovingNodes(const simActorList_t& a_actorList, float a_radius, bool a_moving, bool a_centerOfGravity, Game::ObjectHandle a_markedHandle);
         void GenerateMovementConstraints(const simActorList_t& a_actorList, float a_radius);
 
         void Clear();
@@ -49,6 +51,7 @@ namespace CBP
         static constexpr int NB_STACKS_SPHERE = 5;
 
         static constexpr auto MOVING_NODES_COL = DirectX::XMFLOAT4(1.0f, 0.0f, 0.0f, 0.85f);
+        static constexpr auto MOVING_NODES_COG_COL = DirectX::XMFLOAT4(0.76f, 0.55f, 0.1f, 0.85f);
         static constexpr auto ACTOR_MARKER_COL = DirectX::XMFLOAT4(0.921f, 0.596f, 0.203f, 0.85f);
 
         static constexpr auto CONSTRAINT_BOX_COL = DirectX::XMFLOAT4(0.2f, 0.9f, 0.5f, 0.85f);
@@ -71,7 +74,7 @@ namespace CBP
         btScalar m_contactPointSphereRadius;
         btScalar m_contactNormalLength;
 
-        void GenerateSphere(const NiPoint3& a_pos, float a_radius, const DirectX::XMFLOAT4& a_col);
+        void GenerateSphere(const btVector3& a_pos, float a_radius, const DirectX::XMFLOAT4& a_col);
 
         SKMP_FORCEINLINE bool GetScreenPt(const btVector3& a_pos, const btVector3 &a_col, VertexType& a_out);
         SKMP_FORCEINLINE bool GetScreenPt(const btVector3& a_pos, const DirectX::XMFLOAT4& a_col, VertexType& a_out);

@@ -6,7 +6,7 @@ namespace CBP
         public ProfileBase<ColliderData>,
         ILog
     {
-        static constexpr int IMPORT_RVC_FLAGS = 
+        static constexpr int IMPORT_RVC_FLAGS =
             aiComponent_COLORS |
             aiComponent_NORMALS |
             aiComponent_TANGENTS_AND_BITANGENTS |
@@ -24,6 +24,7 @@ namespace CBP
             aiProcess_Triangulate |
             aiProcess_ValidateDataStructure |
             aiProcess_JoinIdenticalVertices;
+
     public:
 
         ColliderProfile(const ColliderProfile&) = default;
@@ -40,7 +41,7 @@ namespace CBP
         virtual bool Load();
         virtual bool Save(const ColliderData& a_data, bool a_store);
         virtual void SetDefaults() noexcept;
-       
+
         FN_NAMEPROC("ColliderProfile");
     };
 
@@ -49,12 +50,6 @@ namespace CBP
     {
     public:
 
-        template<typename... Args>
-        ProfileManagerCollider(Args&&... a_args) :
-            ProfileManager<ColliderProfile>(std::forward<Args>(a_args)...)
-        {
-        }
-
         SKMP_FORCEINLINE static ProfileManagerCollider& GetSingleton() {
             return m_Instance;
         }
@@ -62,16 +57,26 @@ namespace CBP
         FN_NAMEPROC("CBP::ProfileManagerCollider");
 
     private:
+
+        template<typename... Args>
+        ProfileManagerCollider(Args&&... a_args) :
+            ProfileManager<ColliderProfile>(std::forward<Args>(a_args)...)
+        {
+        }
+
         static ProfileManagerCollider m_Instance;
     };
 
-    class ICollision 
+    class ICollision
     {
         struct overlapFilter :
             public btOverlapFilterCallback
         {
-            virtual bool needBroadphaseCollision(btBroadphaseProxy* proxy0, btBroadphaseProxy* proxy1) const;
+            virtual bool needBroadphaseCollision(btBroadphaseProxy* proxy0, btBroadphaseProxy* proxy1) const override;
         };
+
+        static constexpr int MAX_PERSISTENT_MANIFOLD_POOL_SIZE = 4096;
+        static constexpr int MAX_COLLISION_ALGORITHM_POOL_SIZE = 4096;
 
     public:
 
@@ -83,15 +88,21 @@ namespace CBP
             return m_Instance.m_ptrs.bt_collision_world;
         }
 
-        static void Initialize(bool a_useEPA = true, int a_maxPersistentManifoldPoolSize = 4096, int a_maxCollisionAlgorithmPoolSize = 4096);
-        SKMP_FORCEINLINE static void Update(float a_timeStep);
+        static void Initialize(
+            bool a_useEPA = true,
+            int a_maxPersistentManifoldPoolSize = MAX_PERSISTENT_MANIFOLD_POOL_SIZE,
+            int a_maxCollisionAlgorithmPoolSize = MAX_COLLISION_ALGORITHM_POOL_SIZE);
+
+        static void Destroy();
+
+        SKMP_FORCEINLINE static void DoCollisionDetection(float a_timeStep);
 
         static void CleanProxyFromPairs(btCollisionObject* a_collider);
 
         ICollision(const ICollision&) = delete;
         ICollision(ICollision&&) = delete;
         ICollision& operator=(const ICollision&) = delete;
-        void operator=(ICollision&&) = delete;
+        ICollision& operator=(ICollision&&) = delete;
 
     private:
         ICollision() = default;
@@ -104,11 +115,11 @@ namespace CBP
             btCollisionWorld* bt_collision_world;
         } m_ptrs;
 
-        SKMP_FORCEINLINE static const btCollisionDispatcher* GetDispatcher() {
+        SKMP_FORCEINLINE static btCollisionDispatcher* GetDispatcher() {
             return m_Instance.m_ptrs.bt_dispatcher;
         }
 
-        SKMP_FORCEINLINE static void PerformCollisionDetection() {
+        SKMP_FORCEINLINE static void btPerformCollisionDetection() {
             m_Instance.m_ptrs.bt_collision_world->performDiscreteCollisionDetection();
         }
 
@@ -117,19 +128,19 @@ namespace CBP
         static ICollision m_Instance;
     };
 
-    void ICollision::Update(float a_timeStep)
+    void ICollision::DoCollisionDetection(float a_timeStep)
     {
-        PerformCollisionDetection();
+        btPerformCollisionDetection();
 
-        auto dispatcher = GetDispatcher();
+        const auto* dispatcher = GetDispatcher();
 
-        int numManifolds = dispatcher->getNumManifolds();
+        auto numManifolds = dispatcher->getNumManifolds();
 
-        for (int i = 0; i < numManifolds; i++)
+        for (decltype(numManifolds) i = 0; i < numManifolds; i++)
         {
             auto contactManifold = dispatcher->getManifoldByIndexInternal(i);
 
-            int numContacts = contactManifold->getNumContacts();
+            auto numContacts = contactManifold->getNumContacts();
 
             if (!numContacts)
                 continue;
@@ -146,17 +157,18 @@ namespace CBP
             bool mova = sc1->HasMotion();
             bool movb = sc2->HasMotion();
 
-            float sma = sc1->GetMassInverse();
-            float smb = sc2->GetMassInverse();
+            float mia = sc1->GetMassInverse();
+            float mib = sc2->GetMassInverse();
+            float miab = mia + mib;
 
             float pbf = std::max(conf1.fp.f32.colPenBiasFactor, conf2.fp.f32.colPenBiasFactor);
-            float spm = 1.0f / std::max(conf1.fp.f32.colPenMass, conf2.fp.f32.colPenMass);
+            float pmi = 1.0f / std::max(conf1.fp.f32.colPenMass, conf2.fp.f32.colPenMass);
 
-            for (int j = 0; j < numContacts; j++)
+            for (decltype(numContacts) j = 0; j < numContacts; j++)
             {
                 auto& contactPoint = contactManifold->getContactPoint(j);
 
-                auto depth = contactPoint.getDistance();
+                float depth = contactPoint.getDistance();
                 if (depth >= 0.0f)
                     continue;
 
@@ -169,26 +181,26 @@ namespace CBP
 
                 auto deltaV(v2 - v1);
 
-                float deltaVDotN = deltaV.dot(n);
+                float impulse = deltaV.dot(n);
 
-                float bias = depth > 0.01f ?
-                    (a_timeStep * (2880.0f * pbf)) * std::max(depth - 0.01f, 0.0f) : 0.0f;
-
-                float impulse = (deltaVDotN + bias) / (sma + smb);
+                if (depth > 0.01f)
+                    impulse += (a_timeStep * (2880.0f * pbf)) * std::max(depth - 0.01f, 0.0f);
 
                 if (impulse <= 0.0f)
                     continue;
 
+                impulse /= miab;
+
                 if (mova)
                 {
                     float Jm = (1.0f + conf1.fp.f32.colRestitutionCoefficient) * impulse;
-                    sc1->AddVelocity(n * (Jm * sma * spm));
+                    sc1->AddVelocity(n * (Jm * mia * pmi));
                 }
 
                 if (movb)
                 {
                     float Jm = (1.0f + conf2.fp.f32.colRestitutionCoefficient) * impulse;
-                    sc2->AddVelocity(n * -(Jm * smb * spm));
+                    sc2->SubVelocity(n * (Jm * mib * pmi));
                 }
             }
         }

@@ -5,11 +5,17 @@ namespace CBP
     class DTasks
     {
     public:
-        static void AddTaskFixed(TaskDelegateFixed* cmd);
-        static void AddTask(TaskDelegate* cmd);
+
+        SKMP_FORCEINLINE static void AddTaskFixed(TaskDelegateFixed* cmd) {
+            s_tasks_fixed.emplace_back(cmd);
+        }
+
+        SKMP_FORCEINLINE static void AddTask(TaskDelegate* cmd) {
+            s_tasks.AddTask(cmd);
+        }
 
         template <class T, typename... Args>
-        __forceinline static void AddTask(Args&&... a_args)
+        SKMP_FORCEINLINE static void AddTask(Args&&... a_args)
         {
             static_assert(std::is_base_of<TaskDelegate, T>::value);
 
@@ -25,7 +31,7 @@ namespace CBP
 
         static void TaskInit_Hook();
 
-        __forceinline static void RunTasks();
+        SKMP_FORCEINLINE static void RunTasks();
 
         static stl::vector<TaskDelegateFixed*> s_tasks_fixed;
         static TaskQueue s_tasks;

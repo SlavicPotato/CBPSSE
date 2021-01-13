@@ -15,7 +15,8 @@ namespace CBP
         if (!dh)
             return false;
 
-        modList.clear();
+        m_modList.clear();
+        m_mlnref.clear();
 
         for (auto it = dh->modList.modInfoList.Begin(); !it.End(); ++it)
         {
@@ -26,16 +27,27 @@ namespace CBP
             if (!modInfo->IsActive())
                 continue;
 
-            modList.try_emplace(it->GetPartialIndex(),
+            auto r = m_modList.try_emplace(it->GetPartialIndex(),
                 modInfo->fileFlags,
                 modInfo->modIndex,
                 modInfo->lightIndex,
                 modInfo->name);
+
+            m_mlnref.emplace(modInfo->name, r.first->second);
         }
 
         m_populated = true;
 
         return true;
+    }
+
+    const modData_t* ModList::Lookup(const std::string& a_modName) const
+    {
+        const auto it = m_mlnref.find(a_modName);
+        if (it != m_mlnref.end()) {
+            return std::addressof(it->second);
+        }
+        return nullptr;
     }
 
     void DData::Initialize()

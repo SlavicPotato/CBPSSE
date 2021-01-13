@@ -6,7 +6,7 @@ namespace CBP
     {
         nodeDesc_t(
             const std::string& a_nodeName,
-            NiAVObject* a_node,
+            NiNode* a_node,
             const std::string& a_confGroup,
             bool a_collisions,
             bool a_movement,
@@ -21,11 +21,10 @@ namespace CBP
             physConf(a_physConf),
             nodeConf(a_nodeConf)
         {
-
         }
 
         const std::string& nodeName;
-        NiAVObject* node;
+        NiNode* node;
         const std::string& confGroup;
         bool collisions;
         bool movement;
@@ -47,7 +46,6 @@ namespace CBP
             Game::ObjectHandle a_handle,
             Actor* actor,
             char a_sex,
-            uint64_t a_Id,
             const nodeDescList_t& a_desc);
 
         virtual ~SimObject() noexcept;
@@ -56,12 +54,15 @@ namespace CBP
         SimObject(const SimObject& a_rhs) = delete;
         SimObject(SimObject&& a_rhs) = delete;
 
+        SimObject& operator=(const SimObject&) = delete;
+        SimObject& operator=(SimObject&&) = delete;
+
         SKMP_FORCEINLINE void UpdateMotion(float a_timeStep);
         SKMP_FORCEINLINE void UpdateVelocity();
 
         void UpdateConfig(Actor* a_actor, bool a_collisions, const configComponents_t& a_config);
         void Reset();
-        bool ValidateNodes(Actor* a_actor);
+        //bool ValidateNodes(Actor* a_actor);
 
         void ApplyForce(uint32_t a_steps, const std::string& a_component, const NiPoint3& a_force);
 
@@ -101,13 +102,12 @@ namespace CBP
 
     private:
 
-        //thingList_t m_things;
         thingList_t m_objList;
 
         Game::ObjectHandle m_handle;
 
         NiPointer<NiNode> m_node;
-        NiPointer<NiAVObject> m_objHead;
+        NiPointer<NiNode> m_objHead;
 
         char m_sex;
 
@@ -123,8 +123,8 @@ namespace CBP
         if (m_suspended)
             return;
 
-        int count = m_objList.size();
-        for (int i = 0; i < count; i++)
+        auto count = m_objList.size();
+        for (decltype(count) i = 0; i < count; i++)
             m_objList[i]->UpdateMotion(a_timeStep);
     }
 
@@ -133,8 +133,8 @@ namespace CBP
         if (m_suspended)
             return;
 
-        int count = m_objList.size();
-        for (int i = 0; i < count; i++)
+        auto count = m_objList.size();
+        for (decltype(count) i = 0; i < count; i++)
             m_objList[i]->UpdateVelocity();
     }
 

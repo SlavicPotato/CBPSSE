@@ -2,6 +2,9 @@
 
 namespace Serialization
 {
+
+    static const std::string s_keyMaxOffset("maxoffset");
+
     template<>
     bool Parser<CBP::configComponents_t>::Parse(const Json::Value& a_in, CBP::configComponents_t& a_outData) const
     {
@@ -32,8 +35,6 @@ namespace Serialization
                 Error("Empty config group name");
                 return false;
             }
-
-            //transform(configGroup.begin(), configGroup.end(), configGroup.begin(), ::tolower);
 
             auto& e = a_outData.try_emplace(configGroup).first->second;
 
@@ -74,14 +75,12 @@ namespace Serialization
                             return false;
                         }
 
-                        std::string valName = it2.key().asString();
-                        //transform(valName.begin(), valName.end(), valName.begin(), ::tolower);
+                        std::string valName(it2.key().asString());
 
-                        static const std::string m("maxoffset");
-                        if (version < 2 && valName == m)
+                        if (version < 2 && StrHelpers::icompare(valName, s_keyMaxOffset) == 0)
                         {
                             float v = it2->asFloat();
-                            float tv[3] = { v, v, v };
+                            float tv[3]{ v, v, v };
                             e.Set("mox", tv, 3);
                         }
                         else
@@ -103,9 +102,10 @@ namespace Serialization
                         auto& v = (*physData)[desc.first];
 
                         if (!v.isNumeric()) {
-                            if (!v.isNull())
+                            if (!v.isNull()) {
                                 Warning("(%s) (%s) Bad value type, expected number: %d",
                                     configGroup.c_str(), desc.first.c_str(), Enum::Underlying(v.type()));
+                            }
                             continue;
                         }
 
@@ -117,31 +117,22 @@ namespace Serialization
 
                 if (!ex.empty())
                 {
-                    uint32_t s = static_cast<uint32_t>(ex.get("cs", 0).asUInt());
+                    auto s = static_cast<uint32_t>(ex.get("cs", 0).asUInt());
 
                     switch (s)
                     {
-                    case 0:
-                        e.SetColShape(CBP::ColliderShapeType::Sphere);
+                    case Enum::Underlying(CBP::ColliderShapeType::Sphere):
+                    case Enum::Underlying(CBP::ColliderShapeType::Capsule):
+                    case Enum::Underlying(CBP::ColliderShapeType::Box):
+                    case Enum::Underlying(CBP::ColliderShapeType::Cone):
+                    case Enum::Underlying(CBP::ColliderShapeType::Tetrahedron):
+                    case Enum::Underlying(CBP::ColliderShapeType::Cylinder):
+                    case Enum::Underlying(CBP::ColliderShapeType::Mesh):
+                    case Enum::Underlying(CBP::ColliderShapeType::ConvexHull):
+                        e.SetColShape(static_cast<CBP::ColliderShapeType>(s));
                         break;
-                    case 1:
-                        e.SetColShape(CBP::ColliderShapeType::Capsule);
-                        break;
-                    case 2:
-                        e.SetColShape(CBP::ColliderShapeType::Box);
-                        break;
-                    case 3:
-                        e.SetColShape(CBP::ColliderShapeType::Cone);
-                        break;
-                    case 4:
-                        e.SetColShape(CBP::ColliderShapeType::Tetrahedron);
-                        break;
-                    case 5:
-                        e.SetColShape(CBP::ColliderShapeType::Mesh);
-                        break;
-                    case 6:
-                        e.SetColShape(CBP::ColliderShapeType::Cylinder);
-                        break;
+                    default:
+                        Warning("(%s) Unknown collision shape specifier: %u", configGroup.c_str(), s);
                     }
 
                     e.ex.colMesh = ex.get("cm", "").asString();
@@ -180,6 +171,7 @@ namespace Serialization
     bool Parser<CBP::configNodes_t>::Parse(const Json::Value& a_in, CBP::configNodes_t& a_out) const
     {
         uint32_t version;
+
         if (!ParseVersion(a_in, "nodes_version", version)) {
             Error("Bad version data");
             return false;
@@ -269,6 +261,17 @@ namespace Serialization
                     }
                 }
 
+                if (version >= 2) {
+                    auto& rot = (*it)["r"];
+
+                    if (!rot.empty()) {
+                        if (!ParseFloatArray(rot, nc.fp.f32.colRot, ARRAYSIZE(nc.fp.f32.colRot))) {
+                            Error("Couldn't parse colRot");
+                            return false;
+                        }
+                    }
+                }
+
                 nc.fp.f32.nodeScale = std::clamp(it->get("s", 1.0f).asFloat(), 0.0f, 20.0f);
                 nc.bl.b.overrideScale = it->get("o", false).asBool();
             }
@@ -303,11 +306,17 @@ namespace Serialization
             offmax[1] = e.second.fp.f32.colOffsetMax[1];
             offmax[2] = e.second.fp.f32.colOffsetMax[2];
 
+            auto& rot = n["r"];
+
+            rot[0] = e.second.fp.f32.colRot[0];
+            rot[1] = e.second.fp.f32.colRot[1];
+            rot[2] = e.second.fp.f32.colRot[2];
+
             n["s"] = e.second.fp.f32.nodeScale;
             n["o"] = e.second.bl.b.overrideScale;
         }
 
-        a_out["nodes_version"] = Json::Value::UInt(1);
+        a_out["nodes_version"] = Json::Value::UInt(2);
     }
 
 
@@ -469,11 +478,11 @@ namespace CBP
 
                 if (ui.isMember("import"))
                 {
-                    const auto& import = ui["import"];
+                    const auto& imp = ui["import"];
 
-                    globalConfig.ui.import.global = import.get("global", true).asBool();
-                    globalConfig.ui.import.actors = import.get("actors", true).asBool();
-                    globalConfig.ui.import.races = import.get("races", true).asBool();
+                    globalConfig.ui.import.global = imp.get("global", true).asBool();
+                    globalConfig.ui.import.actors = imp.get("actors", true).asBool();
+                    globalConfig.ui.import.races = imp.get("races", true).asBool();
                 }
 
                 if (ui.isMember("force")) {
@@ -514,13 +523,13 @@ namespace CBP
                     }
                 }
 
-                if (ui.isMember("mirror"))
+                if (ui.isMember("propagate"))
                 {
-                    auto& mirror = ui["mirror"];
+                    auto& propagate = ui["propagate"];
 
-                    if (mirror.isObject()) {
+                    if (propagate.isObject()) {
 
-                        for (auto it1 = mirror.begin(); it1 != mirror.end(); ++it1)
+                        for (auto it1 = propagate.begin(); it1 != propagate.end(); ++it1)
                         {
                             if (!it1->isObject())
                                 continue;
@@ -534,7 +543,7 @@ namespace CBP
                                 continue;
                             }
 
-                            auto& mm = globalConfig.ui.mirror[ki];
+                            auto& mm = globalConfig.ui.propagate[ki];
 
                             for (auto it2 = it1->begin(); it2 != it1->end(); ++it2)
                             {
@@ -550,7 +559,7 @@ namespace CBP
 
                                 for (auto it3 = it2->begin(); it3 != it2->end(); ++it3)
                                 {
-                                    if (!it3->isBool())
+                                    if (!it3->isObject())
                                         continue;
 
                                     k = it3.key().asString();
@@ -558,7 +567,16 @@ namespace CBP
                                     if (!IConfig::IsValidGroup(k))
                                         continue;
 
-                                    me[k] = it3->asBool();
+                                    auto& v = me[k];
+
+                                    v.enabled = it3->get("e", false).asBool();
+
+                                    auto &m = (*it3)["m"];
+
+                                    for (auto& mv : m) {
+                                        if (mv.isString())
+                                            v.mirror.emplace(mv.asString());
+                                    }
                                 }
                             }
                         }
@@ -650,11 +668,11 @@ namespace CBP
             ui["fontScale"] = globalConfig.ui.fontScale;
             ui["backlogLimit"] = globalConfig.ui.backlogLimit;
 
-            auto& import = ui["import"];
+            auto& imp = ui["import"];
 
-            ui["global"] = globalConfig.ui.import.global;
-            ui["actors"] = globalConfig.ui.import.actors;
-            ui["races"] = globalConfig.ui.import.races;
+            imp["global"] = globalConfig.ui.import.global;
+            imp["actors"] = globalConfig.ui.import.actors;
+            imp["races"] = globalConfig.ui.import.races;
 
             auto& force = ui["force"];
 
@@ -670,17 +688,27 @@ namespace CBP
 
             ui["forceSelected"] = globalConfig.ui.forceActorSelected;
 
-            auto& mirror = ui["mirror"];
-            for (const auto& e : globalConfig.ui.mirror)
+            auto& propagate = ui["propagate"];
+            for (const auto& e : globalConfig.ui.propagate)
             {
-                auto& je = mirror[std::to_string(Enum::Underlying(e.first))];
+                auto& je = propagate[std::to_string(Enum::Underlying(e.first))];
 
                 for (const auto& k : e.second)
                 {
                     auto& ke = je[k.first];
 
                     for (const auto& l : k.second) {
-                        ke[l.first] = l.second;
+                        auto& v = ke[l.first];
+
+                        v["e"] = l.second.enabled;
+
+                        if (!l.second.mirror.empty()) {
+                            auto& m = v["m"] = Json::Value(Json::ValueType::arrayValue);
+
+                            for (auto& mv : l.second.mirror) {
+                                m.append(mv);
+                            }
+                        }
                     }
                 }
             }
@@ -706,7 +734,7 @@ namespace CBP
 
             return true;
         }
-        catch (const std::exception& e) 
+        catch (const std::exception& e)
         {
             m_lastException = e;
             Error("%s: %s", __FUNCTION__, e.what());

@@ -45,7 +45,7 @@ namespace CBP
             0.0f, 255.0f,
             "Linear spring stiffness",
             "Linear stiffness",
-            DescUIMarker::BeginGroup,
+            DescUIFlags::BeginGroup,
             DescUIGroupType::Physics,
             "Motion"
         }},
@@ -69,43 +69,43 @@ namespace CBP
             0.0f, 1.0f,
             "Linear motion scale (side to side, front to back, up and down respectively)",
             "Linear motion scale",
-            DescUIMarker::Float3
+            DescUIFlags::Float3
         }},
         {"ly", {
             offsetof(configComponent32_t, fp.f32.linear[1]),
             "",
             0.0f, 1.0f,
             "",
-            ""
+            "Linear motion scale"
         }},
         {"lz", {
             offsetof(configComponent32_t, fp.f32.linear[2]),
             "",
-            0.0f, 1.0f ,
+            0.0f, 1.0f,
             "",
-            ""
+            "Linear motion scale"
         }},
         {"rx", {
             offsetof(configComponent32_t, fp.f32.rotational[0]),
             "",
-            0.0f, 1.0f,
+            -1.0f, 1.0f,
             "Scale of the bones rotation around the X, Y and Z axes respectively",
             "Rotational scale",
-            DescUIMarker::Float3
+            DescUIFlags::Float3
         }},
         {"ry", {
             offsetof(configComponent32_t, fp.f32.rotational[1]),
             "",
-            0.0f, 1.0f,
+            -1.0f, 1.0f,
             "",
-            ""
+            "Rotational scale"
         }},
         {"rz", {
             offsetof(configComponent32_t, fp.f32.rotational[2]),
             "",
-            0.0f, 1.0f,
+            -1.0f, 1.0f,
             "",
-            ""
+            "Rotational scale"
         }},
         {"cox", {
             offsetof(configComponent32_t, fp.f32.cogOffset[0]),
@@ -113,21 +113,21 @@ namespace CBP
             -100.0f, 100.0f,
             "Center of gravity offset from the bone root, changes how rotation will impact motion",
             "COG offset",
-            DescUIMarker::Float3
+            DescUIFlags::Float3
         }},
         {"coy", {
             offsetof(configComponent32_t, fp.f32.cogOffset[1]),
             "",
             -100.0f, 100.0f,
             "",
-            ""
+            "COG offset"
         }},
         {"coz", {
             offsetof(configComponent32_t, fp.f32.cogOffset[2]),
             "",
             -100.0f, 100.0f,
             "",
-            ""
+            "COG offset"
         }},
         {"r", {
             offsetof(configComponent32_t, fp.f32.resistance),
@@ -161,7 +161,7 @@ namespace CBP
             offsetof(configComponent32_t, fp.f32.gravityCorrection),
             "",
             -100.0f, 100.0f,
-            "Amount to move the target point up to counteract the neutral effect of gravity bias",
+            "Amount to offset node position along the Z axis (worldspace). Useful to counteract the neutral effect of gravity bias",
             "Gravity correction"
         }},
         {"rgc", {
@@ -170,7 +170,7 @@ namespace CBP
             -100.0f, 100.0f,
             "Amount to offset rotation to counteract the neutral effect of gravity bias",
             "Rot. grav. correction",
-            DescUIMarker::EndGroup,
+            DescUIFlags::EndGroup,
             DescUIGroupType::Physics
         }},
         {"cr-", {
@@ -179,7 +179,7 @@ namespace CBP
             0.001f, 100.0,
             "Collider object radius (weigth 0)",
             "Radius min",
-            DescUIMarker::BeginGroup | DescUIMarker::ColliderSphere | DescUIMarker::ColliderCapsule | DescUIMarker::ColliderCone | DescUIMarker::ColliderCylinder,
+            DescUIFlags::BeginGroup | DescUIFlags::ColliderSphere | DescUIFlags::ColliderCapsule | DescUIFlags::ColliderCone | DescUIFlags::ColliderCylinder,
             DescUIGroupType::Collisions,
             "Collisions"
         }},
@@ -189,7 +189,7 @@ namespace CBP
             0.001f, 100.0f,
             "Collider object radius (weight 100)",
             "Radius max",
-            DescUIMarker::ColliderSphere | DescUIMarker::ColliderCapsule | DescUIMarker::ColliderCone | DescUIMarker::ColliderCylinder
+            DescUIFlags::ColliderSphere | DescUIFlags::ColliderCapsule | DescUIFlags::ColliderCone | DescUIFlags::ColliderCylinder
         }},
         {"ch-", {
             offsetof(configComponent32_t, fp.f32.colHeightMin),
@@ -197,7 +197,7 @@ namespace CBP
             0.001f, 250.0f,
             "Collider object height (weight 0)",
             "Height min",
-            DescUIMarker::ColliderCapsule | DescUIMarker::ColliderCone | DescUIMarker::ColliderCylinder
+            DescUIFlags::ColliderCapsule | DescUIFlags::ColliderCone | DescUIFlags::ColliderCylinder
         }},
         {"ch+", {
             offsetof(configComponent32_t, fp.f32.colHeightMax),
@@ -205,7 +205,7 @@ namespace CBP
             0.001f, 250.0f,
             "Collider object height (weight 100)",
             "Height max",
-            DescUIMarker::ColliderCapsule | DescUIMarker::ColliderCone | DescUIMarker::ColliderCylinder
+            DescUIFlags::ColliderCapsule | DescUIFlags::ColliderCone | DescUIFlags::ColliderCylinder
         }},
         {"cox-", {
             offsetof(configComponent32_t, fp.f32.colOffsetMin[0]),
@@ -213,21 +213,21 @@ namespace CBP
             -50.0f, 50.0f,
             "Collider object offset (X, Y, Z, weight 0)",
             "Offset min",
-            DescUIMarker::Float3
+            DescUIFlags::Float3 | DescUIFlags::Float3Mirror
         }},
         {"coy-", {
             offsetof(configComponent32_t, fp.f32.colOffsetMin[1]),
             "coy+",
             -50.0f, 50.0f,
             "",
-            ""
+            "Offset min"
         }},
         {"coz-", {
             offsetof(configComponent32_t, fp.f32.colOffsetMin[2]),
             "coz+",
             -50.0f, 50.0f,
             "",
-            ""
+            "Offset min"
         }},
         {"cox+", {
             offsetof(configComponent32_t, fp.f32.colOffsetMax[0]),
@@ -235,21 +235,21 @@ namespace CBP
             -50.0f, 50.0f,
             "Collider body offset (X, Y, Z, weight 100)",
             "Offset max",
-            DescUIMarker::Float3
+            DescUIFlags::Float3 | DescUIFlags::Float3Mirror
         }},
         {"coy+", {
             offsetof(configComponent32_t, fp.f32.colOffsetMax[1]),
             "coy-",
             -50.0f, 50.0f,
             "",
-            ""
+            "Offset max"
         }},
         {"coz+", {
             offsetof(configComponent32_t, fp.f32.colOffsetMax[2]),
             "coz-",
             -50.0f, 50.0f,
             "",
-            ""
+            "Offset max"
         }},
         {"ex-", {
             offsetof(configComponent32_t, fp.f32.colExtentMin[0]),
@@ -257,23 +257,23 @@ namespace CBP
             0.0f, 50.0f,
             "Extent (X, Y, Z, weight 0)",
             "Extent min",
-            DescUIMarker::Float3 | DescUIMarker::ColliderBox | DescUIMarker::ColliderMesh | DescUIMarker::ColliderTetrahedron | DescUIMarker::ColliderConvexHull
+            DescUIFlags::Float3 | DescUIFlags::ColliderBox | DescUIFlags::ColliderMesh | DescUIFlags::ColliderTetrahedron | DescUIFlags::ColliderConvexHull
         }},
         {"ey-", {
             offsetof(configComponent32_t, fp.f32.colExtentMin[1]),
             "ey+",
             0.0f, 50.0f,
             "",
-            "",
-            DescUIMarker::ColliderBox | DescUIMarker::ColliderMesh |  DescUIMarker::ColliderTetrahedron | DescUIMarker::ColliderConvexHull
+            "Extent min",
+            DescUIFlags::ColliderBox | DescUIFlags::ColliderMesh |  DescUIFlags::ColliderTetrahedron | DescUIFlags::ColliderConvexHull
         }},
         {"ez-", {
             offsetof(configComponent32_t, fp.f32.colExtentMin[2]),
             "ez+",
             0.0f, 50.0f,
             "",
-            "",
-            DescUIMarker::ColliderBox | DescUIMarker::ColliderMesh | DescUIMarker::ColliderTetrahedron | DescUIMarker::ColliderConvexHull
+            "Extent min",
+            DescUIFlags::ColliderBox | DescUIFlags::ColliderMesh | DescUIFlags::ColliderTetrahedron | DescUIFlags::ColliderConvexHull
         }},
         {"ex+", {
             offsetof(configComponent32_t, fp.f32.colExtentMax[0]),
@@ -281,23 +281,23 @@ namespace CBP
             0.0f, 50.0f,
             "Extent (X, Y, Z, weight 100)",
             "Extent max",
-            DescUIMarker::Float3 | DescUIMarker::ColliderBox | DescUIMarker::ColliderMesh | DescUIMarker::ColliderTetrahedron | DescUIMarker::ColliderConvexHull
+            DescUIFlags::Float3 | DescUIFlags::ColliderBox | DescUIFlags::ColliderMesh | DescUIFlags::ColliderTetrahedron | DescUIFlags::ColliderConvexHull
         }},
         {"ey+", {
             offsetof(configComponent32_t, fp.f32.colExtentMax[1]),
             "ey-",
             0.0f, 50.0f,
             "",
-            "",
-            DescUIMarker::ColliderBox | DescUIMarker::ColliderMesh | DescUIMarker::ColliderTetrahedron | DescUIMarker::ColliderConvexHull
+            "Extent max",
+            DescUIFlags::ColliderBox | DescUIFlags::ColliderMesh | DescUIFlags::ColliderTetrahedron | DescUIFlags::ColliderConvexHull
         }},
         {"ez+", {
             offsetof(configComponent32_t, fp.f32.colExtentMax[2]),
             "ez-",
             0.0f, 50.0f,
             "",
-            "",
-            DescUIMarker::ColliderBox | DescUIMarker::ColliderMesh | DescUIMarker::ColliderTetrahedron | DescUIMarker::ColliderConvexHull
+            "Extent max",
+            DescUIFlags::ColliderBox | DescUIFlags::ColliderMesh | DescUIFlags::ColliderTetrahedron | DescUIFlags::ColliderConvexHull
         }},
         {"crx", {
             offsetof(configComponent32_t, fp.f32.colRot[0]),
@@ -305,23 +305,23 @@ namespace CBP
             -360.0f, 360.0f,
             "Collider rotation in degrees around the X, Y and Z axes respectively.",
             "Collider rotation",
-            DescUIMarker::ColliderCapsule | DescUIMarker::ColliderBox | DescUIMarker::ColliderMesh | DescUIMarker::ColliderCylinder | DescUIMarker::ColliderTetrahedron | DescUIMarker::ColliderConvexHull | DescUIMarker::ColliderCone | DescUIMarker::Float3
+            DescUIFlags::Float3 | DescUIFlags::Float3Mirror | DescUIFlags::ColliderCapsule | DescUIFlags::ColliderBox | DescUIFlags::ColliderMesh | DescUIFlags::ColliderCylinder | DescUIFlags::ColliderTetrahedron | DescUIFlags::ColliderConvexHull | DescUIFlags::ColliderCone
         }},
         {"cry", {
             offsetof(configComponent32_t, fp.f32.colRot[1]),
             "",
             -360.0f, 360.0f,
             "",
-            "",
-            DescUIMarker::ColliderCapsule | DescUIMarker::ColliderBox | DescUIMarker::ColliderMesh | DescUIMarker::ColliderCylinder | DescUIMarker::ColliderTetrahedron | DescUIMarker::ColliderConvexHull | DescUIMarker::ColliderCone
+            "Collider rotation",
+            DescUIFlags::ColliderCapsule | DescUIFlags::ColliderBox | DescUIFlags::ColliderMesh | DescUIFlags::ColliderCylinder | DescUIFlags::ColliderTetrahedron | DescUIFlags::ColliderConvexHull | DescUIFlags::ColliderCone
         }},
         {"crz", {
             offsetof(configComponent32_t, fp.f32.colRot[2]),
             "",
             -360.0f, 360.0f,
             "",
-            "",
-            DescUIMarker::ColliderCapsule | DescUIMarker::ColliderBox | DescUIMarker::ColliderMesh |DescUIMarker::ColliderCylinder | DescUIMarker::ColliderTetrahedron | DescUIMarker::ColliderConvexHull | DescUIMarker::ColliderCone
+            "Collider rotation",
+            DescUIFlags::ColliderCapsule | DescUIFlags::ColliderBox | DescUIFlags::ColliderMesh |DescUIFlags::ColliderCylinder | DescUIFlags::ColliderTetrahedron | DescUIFlags::ColliderConvexHull | DescUIFlags::ColliderCone
         }},
         {"cb", {
             offsetof(configComponent32_t, fp.f32.colRestitutionCoefficient),
@@ -349,8 +349,15 @@ namespace CBP
             "",
             0.0f, 1.0f,
             "Collider object position scaling.",
-            "Position scaling",
-            DescUIMarker::EndGroup,
+            "Position scaling"
+        }},       
+        {"cr", {
+            offsetof(configComponent32_t, fp.f32.colRotationScale),
+            "",
+            0.0f, 1.0f,
+            "Collider object rotation scaling.",
+            "Rotation scaling",
+            DescUIFlags::EndGroup,
             DescUIGroupType::Collisions
         }},        
         {"mox-", {
@@ -359,7 +366,7 @@ namespace CBP
             -128.0f, 0.0f,
             "Maximum amount the bone is allowed to move from target (-X, -Y, -Z)",
             "Constraint box min",
-            DescUIMarker::Float3 | DescUIMarker::BeginGroup | DescUIMarker::Collapsed | DescUIMarker::MirrorNegate,
+            DescUIFlags::Float3 | DescUIFlags::BeginGroup | DescUIFlags::Collapsed | DescUIFlags::SyncNegate,
             DescUIGroupType::PhysicsExtra,
             "Motion constraints"
         }},
@@ -368,16 +375,16 @@ namespace CBP
             "moy",
             -128.0f, 0.0f,
             "",
-            "",
-            DescUIMarker::MirrorNegate
+            "Constraint box min",
+            DescUIFlags::SyncNegate
         }},
         { "moz-", {
             offsetof(configComponent32_t, fp.f32.maxOffsetN[2]),
             "moz",
             -128.0f, 0.0f,
             "",
-            "",
-            DescUIMarker::MirrorNegate
+            "Constraint box min",
+            DescUIFlags::SyncNegate
         }},
         {"mox", {
             offsetof(configComponent32_t, fp.f32.maxOffsetP[0]),
@@ -385,24 +392,24 @@ namespace CBP
             0.0f, 128.0f,
             "Maximum amount the bone is allowed to move from target (+X, +Y, +Z)",
             "Constraint box max",
-            DescUIMarker::Float3 | DescUIMarker::MirrorNegate
+            DescUIFlags::Float3 | DescUIFlags::SyncNegate
         }},
         {"moy", {
             offsetof(configComponent32_t, fp.f32.maxOffsetP[1]),
             "moy-",
             0.0f, 128.0f,
             "",
-            "",
-            DescUIMarker::MirrorNegate
+            "Constraint box max",
+            DescUIFlags::SyncNegate
         }},
         {"moz", {
             offsetof(configComponent32_t, fp.f32.maxOffsetP[2]),
             "moz-",
             0.0f, 128.0f,
             "",
-            "",
-            DescUIMarker::MirrorNegate
-        } },
+            "Constraint box max",
+            DescUIFlags::SyncNegate
+        }},
         {"moc", {
             offsetof(configComponent32_t, fp.f32.maxOffsetVelResponseScale),
             "",
@@ -413,7 +420,7 @@ namespace CBP
         {"mod", {
             offsetof(configComponent32_t, fp.f32.maxOffsetMaxBiasMag),
             "",
-            0.5f, 50.0f,
+            0.5f, 500.0f,
             "Penetration bias depth limit",
             "Bias limit"
         }},
@@ -423,7 +430,7 @@ namespace CBP
             0.0f, 1.0f,
             "Restitution coefficient",
             "Restitution coef.",
-            DescUIMarker::EndGroup
+            DescUIFlags::EndGroup
         }}
         }
     );

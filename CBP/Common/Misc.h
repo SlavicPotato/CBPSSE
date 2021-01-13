@@ -66,6 +66,10 @@ public:
         return std::addressof(m_map);
     }
 
+    [[nodiscard]] SKMP_FORCEINLINE const keyVec_t& getvec() const {
+        return m_vec;
+    }
+
 private:
     SKMP_FORCEINLINE void init() {
         for (auto& p : m_vec)
@@ -79,9 +83,9 @@ private:
 template <class K, class V, typename mapType = stl::unordered_map<K, const V&>>
 class KVStorage :
     public KVStorageBase<K, V, mapType>
-{
-    using keyVec_t = typename stl::vector<std::pair<const K, const V>>;
+{    
 public:
+    using keyVec_t = typename stl::vector<std::pair<const K, const V>>;
 
     KVStorage(const keyVec_t& a_in) :
         KVStorageBase<K, V, mapType>(a_in)
@@ -99,8 +103,10 @@ template <class K, class V, typename mapType = stl::iunordered_map<K, const V&>>
 class iKVStorage :
     public KVStorageBase<K, V, mapType>
 {
-    using keyVec_t = typename KVStorageBase<K, V, mapType>::keyVec_t;
+    
 public:
+
+    using keyVec_t = typename KVStorageBase<K, V, mapType>::keyVec_t;
 
     iKVStorage(const keyVec_t& a_in) :
         KVStorageBase<K, V, mapType>(a_in)

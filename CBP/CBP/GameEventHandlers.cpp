@@ -7,7 +7,7 @@ namespace CBP
     {
         if (evn) {
             auto form = LookupFormByID(evn->formId);
-            if (form != nullptr && form->formType == Actor::kTypeID) {
+            if (form && form->formType == Actor::kTypeID) {
                 DCBP::DispatchActorTask(
                     DYNAMIC_CAST(form, TESForm, Actor),
                     evn->loaded ?
@@ -22,8 +22,10 @@ namespace CBP
     auto EventHandler::ReceiveEvent(TESInitScriptEvent* evn, EventDispatcher<TESInitScriptEvent>*)
         -> EventResult
     {
-        if (evn != nullptr && evn->reference != nullptr) {
-            if (evn->reference->formType == Actor::kTypeID) {
+        if (evn && evn->reference) {
+            if (evn->reference->loadedState && 
+                evn->reference->formType == Actor::kTypeID) 
+            {
                 DCBP::DispatchActorTask(
                     DYNAMIC_CAST(evn->reference, TESObjectREFR, Actor),
                     ControllerInstruction::Action::AddActor);
@@ -41,7 +43,7 @@ namespace CBP
         return kEvent_Continue;
     }
 
-    static void HandleEquipEvent(TESEquipEvent* evn)
+    SKMP_FORCEINLINE static void HandleEquipEvent(TESEquipEvent* evn)
     {
         if (evn->actor->formType != Actor::kTypeID)
             return;
@@ -70,7 +72,7 @@ namespace CBP
     auto EventHandler::ReceiveEvent(TESEquipEvent* evn, EventDispatcher<TESEquipEvent>*)
         -> EventResult
     {
-        if (evn && evn->actor && !evn->equipped)
+        if (evn && evn->actor != nullptr && !evn->equipped)
             HandleEquipEvent(evn);
 
         return kEvent_Continue;

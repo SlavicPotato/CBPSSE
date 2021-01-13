@@ -25,23 +25,28 @@ namespace CBP
         return true;
     }
 
-    uint64_t ControllerTask::m_nextGroupId(0);
-
     ControllerTask::ControllerTask() :
         m_timeAccum(0.0f),
         m_averageInterval(1.0f / 60.0f),
         m_profiler(1000000),
-        m_markedActor(0)
+        m_markedActor(0),
+        m_ranFrame(true),
+        m_lastFrameTime(1.0f / 60.0f)
     {
     }
 
     void ControllerTask::UpdateDebugRenderer()
     {
-        auto& globalConf = IConfig::GetGlobal();
-        auto& renderer = DCBP::GetRenderer();
+        auto renderer = DCBP::GetRenderer();
+        if (renderer == nullptr)
+            return;
+
+        const auto& globalConf = IConfig::GetGlobal();
 
         try
         {
+            renderer->Clear();
+
             auto& actorList = GetSimActorList();
 
             if (globalConf.debugRenderer.enableMovementConstraints)
@@ -51,14 +56,15 @@ namespace CBP
                     globalConf.debugRenderer.movingNodesRadius);
             }
 
-            if (globalConf.debugRenderer.enableMovingNodes)
-            {
-                renderer->GenerateMovingNodes(
-                    actorList,
-                    globalConf.debugRenderer.movingNodesRadius,
-                    globalConf.debugRenderer.movingNodesCenterOfGravity,
-                    m_markedActor);
-            }
+            renderer->GenerateMovingNodes(
+                actorList,
+                globalConf.debugRenderer.movingNodesRadius,
+                globalConf.debugRenderer.enableMovingNodes,
+                globalConf.debugRenderer.movingNodesCenterOfGravity,
+                m_markedActor);
+
+            auto world = ICollision::GetWorld();
+            world->debugDrawWorld();
         }
         catch (...) {}
     }
@@ -99,14 +105,14 @@ namespace CBP
         while (a_timeStep >= a_maxTime)
         {
             UpdateActorsPhase2(a_timeTick);
-            ICollision::Update(a_timeTick);
+            ICollision::DoCollisionDetection(a_timeTick);
             a_timeStep -= a_timeTick;
 
             c++;
         }
 
         UpdateActorsPhase2(a_timeStep);
-        ICollision::Update(a_timeStep);
+        ICollision::DoCollisionDetection(a_timeStep);
 
         return c;
     }
@@ -128,12 +134,20 @@ namespace CBP
             return 0;
         }
 
+        auto daz = _MM_GET_DENORMALS_ZERO_MODE();
+        auto ftz = _MM_GET_FLUSH_ZERO_MODE();
+
+        _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
+        _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
+
         const auto& globalConfig = IConfig::GetGlobal();
 
         m_averageInterval = m_averageInterval * 0.875f + a_interval * 0.125f;
-        auto timeTick = std::min(m_averageInterval, globalConfig.phys.timeTick);
+        float timeTick = std::min(m_averageInterval, globalConfig.phys.timeTick);
 
         m_timeAccum += a_interval;
+
+        uint32_t steps;
 
         if (m_timeAccum > timeTick * 0.25f)
         {
@@ -143,8 +157,6 @@ namespace CBP
             float maxTime = timeTick * 1.25f;
 
             UpdatePhase1();
-
-            uint32_t steps;
 
             if (globalConfig.phys.collisions)
                 steps = UpdatePhase2Collisions(timeStep, timeTick, maxTime);
@@ -157,59 +169,39 @@ namespace CBP
 
             m_timeAccum = 0.0f;
 
-            return steps;
         }
-        else
-            return 0;
-    }
-
-    void ControllerTask::PhysicsTick(Game::BSMain* a_main)
-    {
-        DCBP::Lock();
-
-        const auto& globalConfig = IConfig::GetGlobal();
-
-        if (globalConfig.profiling.enableProfiling)
-            m_profiler.Begin();
-
-        bool debugRendererEnabled =
-            globalConfig.debugRenderer.enabled &&
-            DCBP::GetDriverConfig().debug_renderer;
-
-        if (debugRendererEnabled)
-            DCBP::GetRenderer()->Clear();
-
-        auto daz = _MM_GET_DENORMALS_ZERO_MODE();
-        auto ftz = _MM_GET_FLUSH_ZERO_MODE();
-
-        _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
-        _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
-
-        float interval = *Game::frameTimerSlow;
-
-        auto steps = UpdatePhysics(a_main, interval);
+        else {
+            steps = 0;
+        }
 
         _MM_SET_DENORMALS_ZERO_MODE(daz);
         _MM_SET_FLUSH_ZERO_MODE(ftz);
 
-        if (globalConfig.profiling.enableProfiling)
-            m_profiler.End(static_cast<uint32_t>(m_actors.size()), steps, interval);
+        return steps;
+    }
 
-        if (debugRendererEnabled)
-        {
-            UpdateDebugRenderer();
-            auto world = ICollision::GetWorld();
-            world->debugDrawWorld();
-        }
+    void ControllerTask::PhysicsTick(Game::BSMain* a_main, float a_interval)
+    {
+        const auto& globalConfig = IConfig::GetGlobal();
 
-        DCBP::Unlock();
+        bool profiling = globalConfig.profiling.enableProfiling;
+
+        if (profiling)
+            m_profiler.Begin();
+
+        auto steps = UpdatePhysics(a_main, a_interval);
+
+        if (profiling)
+            m_profiler.End(static_cast<uint32_t>(m_actors.size()), steps, a_interval);
     }
 
     void ControllerTask::Run()
     {
         //m_pt.Begin();
 
-        DCBP::Lock();
+        //_DMESSAGE("%lu : %d", GetCurrentThreadId(), cc);
+
+        IScopedCriticalSection _(DCBP::GetLock());
 
         CullActors();
 
@@ -217,7 +209,29 @@ namespace CBP
         if (player && player->loadedState && player->parentCell)
             ProcessTasks();
 
-        DCBP::Unlock();
+        /*long long t;
+        if (m_pt.End(t))
+            Debug(">> %lld", t);*/
+    }
+
+    void ControllerTaskSim::Run()
+    {
+        //m_pt.Begin();
+
+        IScopedCriticalSection _(DCBP::GetLock());
+
+        if (m_ranFrame)
+            return;
+
+        m_ranFrame = true;
+
+        CullActors();
+
+        auto player = *g_thePlayer;
+        if (player && player->loadedState && player->parentCell)
+            ProcessTasks();
+
+        PhysicsTick(Game::BSMain::GetSingleton(), m_lastFrameTime);
 
         /*long long t;
         if (m_pt.End(t))
@@ -238,7 +252,7 @@ namespace CBP
             if (!ActorValid(actor))
             {
                 if (globalConfig.general.controllerStats)
-                    Debug("Removing [%.8llX] [%s] (no longer valid)", GetFormID(it->first), GetActorName(actor));
+                    Debug("Removing [%.8X] [%s] (no longer valid)", GetFormID(it->first), GetActorName(actor));
 
                 IConfig::RemoveArmorOverride(it->first);
                 IConfig::ClearMergedCacheThreshold();
@@ -257,7 +271,7 @@ namespace CBP
                     it->second.SetSuspended(true);
 
                     if (globalConfig.general.controllerStats)
-                        Debug("Suspended [%.8llX] [%s]", GetFormID(it->first), GetActorName(actor));
+                        Debug("Suspended [%.8X] [%s]", actor->formID, GetActorName(actor));
                 }
             }
             else
@@ -267,7 +281,7 @@ namespace CBP
                     it->second.SetSuspended(false);
 
                     if (globalConfig.general.controllerStats)
-                        Debug("Unsuspended [%.8llX] [%s]", GetFormID(it->first), GetActorName(actor));
+                        Debug("Unsuspended [%.8X] [%s]", actor->formID, GetActorName(actor));
                 }
             }
 
@@ -277,15 +291,26 @@ namespace CBP
 
     void ControllerTask::AddActor(Game::ObjectHandle a_handle)
     {
-        const auto& globalConfig = IConfig::GetGlobal();
-
-        auto it = m_actors.find(a_handle);
-        if (it != m_actors.end())
+        if (m_actors.contains(a_handle))
             return;
 
         auto actor = Game::ResolveObject<Actor>(a_handle, Actor::kTypeID);
         if (!ActorValid(actor))
             return;
+
+        const auto& globalConfig = IConfig::GetGlobal();
+
+        char sex;
+        auto npc = DYNAMIC_CAST(actor->baseForm, TESForm, TESNPC);
+        if (npc != nullptr) {
+            sex = CALL_MEMBER_FN(npc, GetSex)();
+        }
+        else {
+            if (globalConfig.general.femaleOnly)
+                return;
+
+            sex = 0;
+        }
 
         if (actor->race != nullptr)
         {
@@ -296,18 +321,6 @@ namespace CBP
                 return;
         }
 
-        char sex;
-        auto npc = DYNAMIC_CAST(actor->baseForm, TESForm, TESNPC);
-        if (npc != nullptr) {
-            sex = CALL_MEMBER_FN(npc, GetSex)();
-        }
-        else {
-            sex = 0;
-
-            if (globalConfig.general.femaleOnly)
-                return;
-        }
-        
         if (globalConfig.general.armorOverrides)
         {
             armorOverrideResults_t ovResult;
@@ -321,24 +334,24 @@ namespace CBP
         auto& nodeMap = IConfig::GetNodeMap();
 
         nodeDescList_t descList;
-        if (!SimObject::CreateNodeDescriptorList(
+        if (SimObject::CreateNodeDescriptorList(
             a_handle,
             actor,
             sex,
             conf,
             nodeMap,
             globalConfig.phys.collisions,
-            descList))
+            descList) == nodeDescList_t::size_type(0))
         {
             return;
         }
 
         if (globalConfig.general.controllerStats)
         {
-            Debug("Adding [%.8llX] [%s]", actor->formID, CALL_MEMBER_FN(actor, GetReferenceName)());
+            Debug("Adding [%.8X] [%s]", actor->formID, CALL_MEMBER_FN(actor, GetReferenceName)());
         }
 
-        m_actors.try_emplace(a_handle, a_handle, actor, sex, m_nextGroupId++, descList);
+        m_actors.try_emplace(a_handle, a_handle, actor, sex, descList);
     }
 
     void ControllerTask::RemoveActor(Game::ObjectHandle a_handle)
@@ -352,7 +365,7 @@ namespace CBP
         if (globalConfig.general.controllerStats)
         {
             auto actor = Game::ResolveObject<Actor>(a_handle, Actor::kTypeID);
-            Debug("Removing [%.8llX] [%s]", GetFormID(a_handle), GetActorName(actor));
+            Debug("Removing [%.8X] [%s]", GetFormID(a_handle), GetActorName(actor));
         }
 
         m_actors.erase(it);
@@ -361,14 +374,14 @@ namespace CBP
         IConfig::ClearMergedCacheThreshold();
     }
 
-    bool ControllerTask::ValidateActor(simActorList_t::value_type& a_entry)
+    /*bool ControllerTask::ValidateActor(simActorList_t::value_type& a_entry)
     {
         auto actor = Game::ResolveObject<Actor>(a_entry.first, Actor::kTypeID);
         if (!ActorValid(actor))
             return false;
 
         return a_entry.second.ValidateNodes(actor);
-    }
+    }*/
 
     /*void ControllerTask::UpdateGroupInfoOnAllActors()
     {
@@ -417,7 +430,7 @@ namespace CBP
         const std::string& a_component,
         const NiPoint3& a_force)
     {
-        if (a_handle != Game::ObjectHandle(0)) 
+        if (a_handle != Game::ObjectHandle(0))
         {
             auto it = m_actors.find(a_handle);
             if (it != m_actors.end())
@@ -430,7 +443,7 @@ namespace CBP
         }
     }
 
-    void ControllerTask::ClearActors(bool a_noNotify)
+    void ControllerTask::ClearActors(bool a_noNotify, bool a_release)
     {
         const auto& globalConfig = IConfig::GetGlobal();
 
@@ -439,14 +452,17 @@ namespace CBP
             for (const auto& e : m_actors)
             {
                 auto actor = Game::ResolveObject<Actor>(e.first, Actor::kTypeID);
-                Debug("Removing [%.8llX] [%s] (CLR)", GetFormID(e.first), GetActorName(actor));
+                Debug("Removing [%.8X] [%s] (CLR)", GetFormID(e.first), GetActorName(actor));
             }
         }
 
-        m_actors.clear();
+        if (a_release)
+            m_actors.swap(decltype(m_actors)());
+        else
+            m_actors.clear();
 
-        IConfig::ClearMergedCache();
-        IConfig::ClearArmorOverrides();
+        IConfig::ReleaseMergedCache();
+        IConfig::ReleaseArmorOverrides();
     }
 
     void ControllerTask::Reset()
@@ -463,7 +479,7 @@ namespace CBP
 
         GatherActors(handles);
 
-        ClearActors();
+        ClearActors(false, true);
         for (const auto e : handles)
             AddActor(e);
 
@@ -623,10 +639,10 @@ namespace CBP
     {
         for (const auto& e : a_in)
         {
-            auto entry = IData::GetArmorCacheEntry(e);
+            auto entry = IArmorCache::GetEntry(e);
             if (!entry) {
-                Warning("[%llX] [%s] Couldn't read armor override data: %s",
-                    a_handle, e.c_str(), IData::GetLastException().what());
+                Warning("[%.8X] [%s] Couldn't read armor override data: %s",
+                    GetFormID(a_handle), e.c_str(), IArmorCache::GetLastException().what());
                 continue;
             }
 
@@ -634,7 +650,7 @@ namespace CBP
 
             for (const auto& ea : *entry)
             {
-                auto& r = a_out.second.emplace(ea.first, ea.second);
+                auto r = a_out.second.emplace(ea.first, ea.second);
                 for (const auto& eb : ea.second)
                     r.first->second.insert_or_assign(eb.first, eb.second);
             }
@@ -649,7 +665,7 @@ namespace CBP
         if (!globalConfig.general.armorOverrides)
             return;
 
-        for (auto& e : m_actors) 
+        for (auto& e : m_actors)
         {
             auto actor = Game::ResolveObject<Actor>(e.first, Actor::kTypeID);
             if (!actor)
@@ -753,18 +769,18 @@ namespace CBP
             return;
 
         auto npc = DYNAMIC_CAST(actor->baseForm, TESForm, TESNPC);
-        if (npc)
-        {
-            auto faceNode = actor->GetFaceGenNiNode();
-            if (faceNode) {
-                CALL_MEMBER_FN(faceNode, AdjustHeadMorph)(BSFaceGenNiNode::kAdjustType_Neck, 0, 0.0f);
-                UpdateModelFace(faceNode);
-            }
+        if (!npc)
+            return;
 
-            if (actor->actorState.IsWeaponDrawn()) {
-                actor->DrawSheatheWeapon(false);
-                actor->DrawSheatheWeapon(true);
-            }
+        auto faceNode = actor->GetFaceGenNiNode();
+        if (faceNode) {
+            CALL_MEMBER_FN(faceNode, AdjustHeadMorph)(BSFaceGenNiNode::kAdjustType_Neck, 0, 0.0f);
+            UpdateModelFace(faceNode);
+        }
+
+        if (actor->actorState.IsWeaponDrawn()) {
+            actor->DrawSheatheWeapon(false);
+            actor->DrawSheatheWeapon(true);
         }
     }
 

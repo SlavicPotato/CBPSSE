@@ -984,6 +984,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="CBP\Armor.h" />
+    <ClInclude Include="CBP\ArmorCache.h" />
     <ClInclude Include="CBP\Collision.h" />
     <ClInclude Include="CBP\Config.h" />
     <ClInclude Include="CBP\Controller.h" />
@@ -1025,6 +1026,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CBP\Armor.cpp" />
+    <ClCompile Include="CBP\ArmorCache.cpp" />
     <ClCompile Include="CBP\Collision.cpp" />
     <ClCompile Include="CBP\Config.cpp" />
     <ClCompile Include="CBP\ConfigData.cpp" />

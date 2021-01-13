@@ -27,20 +27,58 @@ namespace CBP
 
     struct ColliderData
     {
+    public:
         ColliderData() :
             m_triVertexArray(nullptr)
         {
+        }
+
+        ColliderData(ColliderData&& a_rhs)
+        {
+            __move(std::move(a_rhs));
+        }
+
+        ColliderData(const ColliderData& a_rhs) = delete;
+
+        virtual ~ColliderData() noexcept 
+        {
+            if (m_triVertexArray)
+                delete m_triVertexArray;
+        }
+
+        ColliderData& operator=(const ColliderData& a_rhs) = delete;
+
+        ColliderData& operator=(ColliderData&& a_rhs)
+        {
+            __move(std::move(a_rhs));
+            return *this;
         }
 
         std::shared_ptr<MeshPoint[]> m_vertices;
         std::shared_ptr<MeshPoint[]> m_hullPoints;
         std::shared_ptr<int[]> m_indices;
 
-        int numVertices;
-        int numTriangles;
-        int numIndices;
+        int m_numVertices;
+        int m_numTriangles;
+        int m_numIndices;
 
         btTriangleIndexVertexArray* m_triVertexArray;
+
+    private:
+
+        void __move(ColliderData&& a_rhs)
+        {
+            m_vertices = std::move(a_rhs.m_vertices);
+            m_hullPoints = std::move(a_rhs.m_hullPoints);
+            m_indices = std::move(a_rhs.m_indices);
+
+            m_numVertices = a_rhs.m_numVertices;
+            m_numTriangles = a_rhs.m_numTriangles;
+            m_numIndices = a_rhs.m_numIndices;
+
+            m_triVertexArray = a_rhs.m_triVertexArray;
+            a_rhs.m_triVertexArray = nullptr;
+        }
     };
 
     class SKMP_ALIGN(16) CollisionShape
@@ -301,6 +339,11 @@ namespace CBP
             m_positionScale = a_scale;
             m_doPositionScaling = a_scale != 1.0f;
         }
+        
+        SKMP_FORCEINLINE void SetRotationScale(float a_scale) {
+            m_rotationScale = a_scale;
+            m_doRotationScaling = a_scale != 1.0f;
+        }
 
         void SetShouldProcess(bool a_switch);
 
@@ -314,6 +357,8 @@ namespace CBP
         void Deactivate();
 
         btMatrix3x3 m_colRot;
+        btMatrix3x3 m_tempRotScale;
+
         btVector3 m_bodyOffset;
         btVector3 m_bodyOffsetPlusInitial;
 
@@ -321,9 +366,10 @@ namespace CBP
         CollisionShape* m_colshape;
 
         ColliderShapeType m_shape;
-        std::string m_meshShape;
 
         float m_nodeScale;
+        float m_positionScale;
+        float m_rotationScale;
 
         bool m_created;
         bool m_active;
@@ -331,9 +377,11 @@ namespace CBP
         bool m_process;
         bool m_rotation;
 
-        float m_positionScale;
         bool m_doPositionScaling;
+        bool m_doRotationScaling;
         bool m_offsetParent;
+
+        std::string m_meshShape;
 
         SimComponent& m_parent;
     };
@@ -359,78 +407,12 @@ namespace CBP
 
     private:
 
-        btMatrix3x3 m_itrInitialMat;
-        btMatrix3x3 m_itrMatObj;
-        btMatrix3x3 m_itrMatParent;
-        btVector3 m_itrInitialPos;
-        btVector3 m_itrPosObj;
-        btVector3 m_itrPosParent;
-
-        btVector3 m_cogOffset;
-        btVector3 m_gravityCorrection;
-
-        btVector3 m_oldWorldPos;
-        btVector3 m_virtld;
-        btVector3 m_ld;
-        btVector3 m_velocity;
-
-        btVector3 m_colExtent;
-        btVector3 m_colOffset;
-        btVector3 m_linearScale;
-
-        NiTransform m_initialTransform;
-        NiMatrix33 m_tempLocalRot;
-
-        std::string m_nodeName;
-        std::string m_configGroupName;
-
-        configComponent16_t m_conf;
-
-        bool m_collisions;
-        bool m_movement;
-
-        float m_colRad;
-        float m_colHeight;
-        float m_nodeScale;
-        float m_invMass;
-        float m_maxVelocity2;
-        float m_gravForce;
-        uint64_t m_groupId;
-        uint64_t m_parentId;
-
-        bool m_resistanceOn;
-        bool m_rotScaleOn;
-        bool m_hasScaleOverride;
-
-        NiPointer<NiAVObject> m_obj;
-        NiPointer<NiAVObject> m_objParent;
-
-        NiAVObject::ControllerUpdateContext m_updateCtx;
-
-        std::queue<Force, std::deque<Force, mem::aligned_allocator<Force, 16>>> m_applyForceQueue;
-
-#ifdef _CBP_ENABLE_DEBUG
-        SimDebugInfo m_debugInfo;
-#endif
-
-        Game::FormID m_formid;
-
-        Collider m_collider;
-
         void ColUpdateWeightData(
             Actor * a_actor,
             const configComponent16_t & a_config,
             const configNode_t & a_nodeConf);
 
-        SKMP_FORCEINLINE void ClampVelocity()
-        {
-            float len2 = m_velocity.length2();
-            if (len2 < m_maxVelocity2)
-                return;
-
-            m_velocity /= std::sqrtf(len2);
-            m_velocity *= m_conf.fp.f32.maxVelocity;
-        }
+        SKMP_FORCEINLINE void ClampVelocity();
 
         SKMP_FORCEINLINE void ConstrainMotion(
             const btMatrix3x3 & a_invRot,
@@ -444,14 +426,15 @@ namespace CBP
     public:
         BT_DECLARE_ALIGNED_ALLOCATOR();
 
+        bool a;
+
         SimComponent(
             Actor * a_actor,
-            NiAVObject * a_obj,
+            NiNode* a_obj,
             const std::string & a_nodeName,
             const std::string & a_configBoneName,
             const configComponent32_t & config,
             const configNode_t & a_nodeConf,
-            uint64_t a_parentId,
             uint64_t a_groupId,
             bool a_collisions,
             bool a_movement
@@ -463,6 +446,9 @@ namespace CBP
         SimComponent(const SimComponent & a_rhs) = delete;
         SimComponent(SimComponent && a_rhs) = delete;
 
+        SimComponent& operator=(const SimComponent&) = delete;
+        SimComponent& operator=(SimComponent&&) = delete;
+
         void UpdateConfig(
             Actor * a_actor,
             const configComponent32_t * a_physConf,
@@ -473,7 +459,7 @@ namespace CBP
         void UpdateMotion(float timeStep);
         SKMP_FORCEINLINE void UpdateVelocity();
         void Reset();
-        bool ValidateNodes(NiAVObject * a_obj);
+        //bool ValidateNodes(NiAVObject * a_obj);
 
         void ApplyForce(uint32_t a_steps, const NiPoint3 & a_force);
 
@@ -483,6 +469,10 @@ namespace CBP
 
         SKMP_FORCEINLINE void AddVelocity(const btVector3 & a_vel) {
             m_velocity += a_vel;
+        }
+
+        SKMP_FORCEINLINE void SubVelocity(const btVector3 & a_vel) {
+            m_velocity -= a_vel;
         }
 
         [[nodiscard]] SKMP_FORCEINLINE const auto& GetVelocity() const {
@@ -501,15 +491,15 @@ namespace CBP
             return m_nodeName;
         }
 
-        [[nodiscard]] SKMP_FORCEINLINE bool IsSameGroup(const SimComponent & a_rhs) const 
+        [[nodiscard]] SKMP_FORCEINLINE bool IsSameGroup(const SimComponent & a_rhs) const
         {
             return a_rhs.m_groupId != 0 && m_groupId != 0 &&
-                a_rhs.m_parentId == m_parentId &&
+                a_rhs.m_formid == m_formid &&
                 a_rhs.m_groupId == m_groupId;
         }
 
         [[nodiscard]] SKMP_FORCEINLINE bool HasMotion() const {
-            return m_movement;
+            return m_motion;
         }
 
         [[nodiscard]] SKMP_FORCEINLINE bool HasActiveCollider() const {
@@ -556,12 +546,76 @@ namespace CBP
             return m_obj.m_pObject;
         }
 
+        [[nodiscard]] SKMP_FORCEINLINE auto const GetNode() const {
+            return m_obj.m_pObject;
+        }
+
 #ifdef _CBP_ENABLE_DEBUG
         [[nodiscard]] SKMP_FORCEINLINE const auto& GetDebugInfo() const {
             return m_debugInfo;
-        }
+    }
 #endif
-    };
+
+    private:
+
+        btMatrix3x3 m_itrInitialMat;
+        btMatrix3x3 m_itrMatObj;
+        btMatrix3x3 m_itrMatParent;
+        btVector3 m_itrInitialPos;
+        btVector3 m_itrPosObj;
+        btVector3 m_itrPosParent;
+
+        btVector3 m_cogOffset;
+        btVector3 m_gravityCorrection;
+
+        btVector3 m_oldWorldPos;
+        btVector3 m_virtld;
+        btVector3 m_ld;
+        btVector3 m_lr;
+        btVector3 m_velocity;
+
+        btVector3 m_colExtent;
+        btVector3 m_colOffset;
+        btVector3 m_linearScale;
+
+        NiTransform m_initialTransform;
+        NiMatrix33 m_tempLocalRot;
+
+        configComponent16_t m_conf;
+
+        float m_colRad;
+        float m_colHeight;
+        float m_nodeScale;
+        float m_invMass;
+        float m_maxVelocity2;
+        float m_gravForce;
+        uint64_t m_groupId;
+
+        bool m_collisions;
+        bool m_motion;
+
+        bool m_resistanceOn;
+        bool m_rotScaleOn;
+        bool m_hasScaleOverride;
+
+        NiPointer<NiNode> m_obj;
+        NiPointer<NiNode> m_objParent;
+
+        NiAVObject::ControllerUpdateContext m_updateCtx;
+
+        std::string m_nodeName;
+        std::string m_configGroupName;
+
+        std::queue<Force, std::deque<Force, mem::aligned_allocator<Force, 16>>> m_applyForceQueue;
+
+#ifdef _CBP_ENABLE_DEBUG
+        SimDebugInfo m_debugInfo;
+#endif
+
+        Game::FormID m_formid;
+
+        Collider m_collider;
+};
 
     namespace Math
     {
@@ -572,16 +626,11 @@ namespace CBP
         SKMP_FORCEINLINE float normc(float a_val, float a_min, float a_max) {
             return std::clamp(norm(a_val, a_min, a_max), 0.0f, 1.0f);
         }
-
-        SKMP_FORCEINLINE constexpr float sgn(float a_val) {
-            return a_val < 0.0f ? -1.0f : 1.0f;
-        }
     }
-
 
     void SimComponent::UpdateVelocity()
     {
-        if (m_movement)
+        if (m_motion)
             return;
 
         btVector3 pos(

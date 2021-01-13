@@ -27,7 +27,8 @@ namespace CBP
         {MiscHelpText::dataFilterPhys, "Filter by configuration group name. Press enter to apply."},
         {MiscHelpText::dataFilterNode, "Filter by node name. Press enter to apply."},
         {MiscHelpText::frameTimer, "Skyrim's frame timer, affected by time modifier."},
-        {MiscHelpText::timePerFrame, "Amount of time the physics simulation consumes per frame (in microseconds)."}
+        {MiscHelpText::timePerFrame, "Amount of time the physics simulation consumes per frame (in microseconds)."},
+        {MiscHelpText::rotation, "Collider rotation in degrees around the X, Y and Z axes respectively."}
         });
 
     const keyDesc_t UIBase::m_comboKeyDesc({

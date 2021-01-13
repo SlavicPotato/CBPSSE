@@ -9,6 +9,45 @@ namespace CBP
 
     struct raceCacheEntry_t
     {
+        raceCacheEntry_t(
+            bool a_playable,
+            std::string&& a_fullname,
+            std::string&& a_edid,
+            UInt32 a_flags
+        ) :
+            playable(a_playable),
+            fullname(std::move(a_fullname)),
+            edid(std::move(a_edid)),
+            flags(a_flags)
+        {
+        }
+        
+        raceCacheEntry_t(
+            bool a_playable,
+            const std::string& a_fullname,
+            const std::string& a_edid,
+            UInt32 a_flags
+        ) :
+            playable(a_playable),
+            fullname(a_fullname),
+            edid(a_edid),
+            flags(a_flags)
+        {
+        }
+
+        raceCacheEntry_t(
+            bool a_playable,
+            const char* a_fullname,
+            const char* a_edid,
+            UInt32 a_flags
+        ) :
+            playable(a_playable),
+            fullname(a_fullname),
+            edid(a_edid),
+            flags(a_flags)
+        {
+        }
+
         bool playable;
         std::string fullname;
         std::string edid;
@@ -48,10 +87,6 @@ namespace CBP
         nodeReferenceMap_t m_children;
     };
 
-    typedef std::pair<uint32_t, float> armorCacheValue_t;
-    typedef stl::iunordered_map<std::string, stl::iunordered_map<std::string, armorCacheValue_t>> armorCacheEntry_t;
-    typedef stl::iunordered_map<std::string, armorCacheEntry_t> armorCache_t;
-
     class IData
     {
         typedef stl::unordered_map<Game::FormID, raceCacheEntry_t> raceList_t;
@@ -65,6 +100,7 @@ namespace CBP
         [[nodiscard]] static bool PopulateRaceList();
         static void UpdateActorMaps(Game::ObjectHandle a_handle, Actor* a_actor);
         static void UpdateActorMaps(Game::ObjectHandle a_handle);
+        static void ReleaseActorMaps();
 
         static SKMP_FORCEINLINE const actorRefData_t* GetActorRefInfo(Game::ObjectHandle a_handle) {
             auto it = actorNpcMap.find(a_handle);
@@ -75,6 +111,7 @@ namespace CBP
         }
 
         static void UpdateActorCache(const simActorList_t& a_list);
+        static void ReleaseActorCache();
 
         [[nodiscard]] SKMP_FORCEINLINE static const auto& GetActorCache() {
             return actorCache;
@@ -101,22 +138,18 @@ namespace CBP
         }
 
         [[nodiscard]] SKMP_FORCEINLINE static bool IsIgnoredRace(Game::FormID a_formid) {
-            return ignoredRaces.find(a_formid) != ignoredRaces.end();
+            return ignoredRaces.contains(a_formid);
         }
 
         static bool GetActorName(Game::ObjectHandle a_handle, std::string& a_out);
-
-        static bool HasArmorCacheEntry(const std::string& a_path);
-        static const armorCacheEntry_t* GetArmorCacheEntry(const std::string& a_path);
-        static bool UpdateArmorCache(const std::string& a_path, armorCacheEntry_t** a_out);
 
         [[nodiscard]] SKMP_FORCEINLINE static const auto& GetLastException() {
             return lastException;
         }
 
-        static void UpdateNodeReferenceData(const Actor * a_actor);
+        static void UpdateNodeReferenceData(const Actor* a_actor);
 
-        [[nodiscard]] static const auto& GetNodeReferenceData() {
+        [[nodiscard]] SKMP_FORCEINLINE static const auto& GetNodeReferenceData() {
             return nodeRefData;
         }
 
@@ -130,7 +163,6 @@ namespace CBP
         static actorRefMap_t actorNpcMap;
         static actorCache_t actorCache;
         static SelectedItem<Game::ObjectHandle> crosshairRef;
-        static armorCache_t armorCache;
 
         static nodeReferenceMap_t nodeRefData;
 

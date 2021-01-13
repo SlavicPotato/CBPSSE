@@ -34,7 +34,8 @@ namespace CBP
         dataFilterPhys,
         dataFilterNode,
         frameTimer,
-        timePerFrame
+        timePerFrame,
+        rotation
     };
 
     typedef std::pair<const std::string, configComponents_t> actorEntryPhysConf_t;
@@ -47,6 +48,8 @@ namespace CBP
     typedef stl::map<Game::ObjectHandle, actorEntryCache_t> actorListCache_t;
 
     typedef stl::vector<std::pair<const std::string, const configNode_t*>> nodeConfigList_t;
+
+    typedef std::function<void(configComponent32_t&, const configPropagate_t&)> propagateFunc_t;
 
     class UIBase :
         virtual protected UICommon::UIWindow,
@@ -188,7 +191,7 @@ namespace CBP
             configComponents_t& a_dl,
             configComponents_t* a_dg,
             const configComponentsValue_t& a_pair,
-            std::function<void(configComponent32_t&)> a_func) const;
+            propagateFunc_t a_func) const;
 
         [[nodiscard]] virtual std::string GetGCSID(
             const std::string& a_name) const;
@@ -215,7 +218,27 @@ namespace CBP
             m_eraseCurrent = true;
         }
 
+        void DoOnChangePropagation(
+            configComponents_t& a_data,
+            configComponents_t* a_dg,
+            configComponentsValue_t& a_pair,
+            const componentValueDescMap_t::vec_value_type& a_desc,
+            float* a_val,
+            bool a_sync,
+            float a_mval = 0.0f) const;
+
     private:
+
+        void DrawSliderContextMenu(
+            const componentValueDescMap_t::vec_value_type *a_desc,
+            const configComponentsValue_t& a_pair) const;
+
+        void DrawSliderContextMenuMirrorItem(
+            const char *a_label,
+            const componentValueDescMap_t::vec_value_type* a_desc,
+            configPropagateEntry_t::value_type &a_propEntry,
+            const configComponentsValue_t& a_pair,
+            configPropagateMap_t &a_propMap) const;
 
         virtual bool ShouldDrawComponent(
             T a_handle,
@@ -248,7 +271,7 @@ namespace CBP
             nodeConfigList_t& a_nodeConfig
         );
 
-        void DrawMirrorContextMenu(
+        void DrawPropagateContextMenu(
             T a_handle,
             configComponents_t& a_data,
             configComponents_t::value_type& a_entry);
@@ -875,12 +898,14 @@ namespace CBP
 
     private:
 
+        void DrawMenuBar(bool* a_active);
         void DrawNodeTree(const nodeRefEntry_t& a_entry);
         void DrawConfigGroupMap();
         void DrawTreeContextMenu(const nodeRefEntry_t& a_entry);
 
         void AddNode(const std::string& a_node, const std::string& a_confGroup);
         void AddNodeNewGroup(const std::string& a_node);
+        void AddNodeNew();
         void RemoveNode(const std::string& a_node);
 
         virtual ConfigClass GetActorClass(Game::ObjectHandle a_handle) const;
@@ -911,7 +936,47 @@ namespace CBP
         entryValue_t m_dummyEntry;
     };
 
-    class UIContext :
+    class UIArmorOverrideEditor :
+        UIBase
+    {
+        using entry_type = std::pair<std::string, armorCacheEntrySorted_t>;
+
+    public:
+
+        UIArmorOverrideEditor(UIContext& a_parent) noexcept;
+        virtual ~UIArmorOverrideEditor() noexcept = default;
+
+        void Draw(bool* a_active);
+
+        void SetCurrentOverrides(const armorOverrideResults_t& a_overrides);
+
+    private:
+
+        void DrawSliders(entry_type& a_entry);
+        void DrawToolbar(entry_type& a_entry);
+        void DrawOverrideList();
+        void DrawGroup(entry_type& a_entry, entry_type::second_type::value_type& a_e);
+        void DrawAddSliderContextMenu(entry_type::second_type::value_type& a_e);
+        void DrawAddGroupContextMenu(entry_type& a_e);
+        void DrawSliderOverrideModeSelector(entry_type::second_type::mapped_type::value_type& a_entry);
+
+        void SetCurrentEntry(const std::string& a_path, const armorCacheEntry_t& a_entry);
+        bool SetCurrentEntry(const std::string& a_path, bool a_fromDisk = false);
+
+        void RemoveGroup(const std::string &a_path, const std::string &a_group);
+        void DoSave(const entry_type& a_entry);
+
+        static const char* OverrideModeToDesc(uint32_t a_mode);
+
+        SelectedItem<armorOverrideResults_t> m_currentOverrides;
+        SelectedItem<entry_type> m_currentEntry;
+
+        UICommon::UIPopupQueue<UICommon::UIPopupData> m_popupPostGroup;
+
+        UIContext& m_parent;
+    };
+
+    class SKMP_ALIGN(32) UIContext :
         virtual UIBase,
         public UIActorList<actorListPhysConf_t>,
         public UIProfileSelector<actorListPhysConf_t::value_type, PhysicsProfile>,
@@ -1051,8 +1116,10 @@ namespace CBP
         };
 
     public:
+        SKMP_DECLARE_ALIGNED_ALLOCATOR(32);
 
         UIContext() noexcept;
+        virtual ~UIContext() noexcept = default;
 
         void Initialize();
 
@@ -1075,20 +1142,20 @@ namespace CBP
 
     private:
 
-        void DrawMenuBar(bool* a_active, const listValue_t* a_entry);
+        void DrawMenuBar(bool* a_active, const listValue_t * a_entry);
 
-        virtual void ApplyProfile(listValue_t* a_data, const PhysicsProfile& m_peComponents);
+        virtual void ApplyProfile(listValue_t * a_data, const PhysicsProfile & m_peComponents);
 
         virtual void ApplyForce(
-            listValue_t* a_data,
+            listValue_t * a_data,
             uint32_t a_steps,
-            const std::string& a_component,
-            const NiPoint3& a_force) const;
+            const std::string & a_component,
+            const NiPoint3 & a_force) const;
 
         virtual void ListResetAllValues(Game::ObjectHandle a_handle);
 
         [[nodiscard]] virtual const entryValue_t& GetData(Game::ObjectHandle a_handle);
-        [[nodiscard]] virtual const entryValue_t& GetData(const listValue_t* a_data);
+        [[nodiscard]] virtual const entryValue_t& GetData(const listValue_t * a_data);
 
         [[nodiscard]] virtual ConfigClass GetActorClass(Game::ObjectHandle a_handle) const;
         [[nodiscard]] virtual configGlobalActor_t& GetActorConfig() const;
@@ -1111,6 +1178,7 @@ namespace CBP
                 bool log;
                 bool importDialog;
                 bool nodeMap;
+                bool armorOverride;
             } windows;
 
             struct {
@@ -1135,6 +1203,7 @@ namespace CBP
         UIDialogExport m_exportDialog;
         UILog m_log;
         UINodeMap m_nodeMap;
+        UIArmorOverrideEditor m_armorOverride;
 
 #ifdef _CBP_ENABLE_DEBUG
         UIDebugInfo m_debug;

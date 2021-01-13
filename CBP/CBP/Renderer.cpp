@@ -27,6 +27,7 @@ namespace CBP
     void Renderer::GenerateMovingNodes(
         const simActorList_t& a_actorList,
         float a_radius,
+        bool a_moving,
         bool a_centerOfGravity,
         Game::ObjectHandle a_markedHandle)
     {
@@ -36,24 +37,8 @@ namespace CBP
             if (e.second.IsSuspended())
                 continue;
 
-            if (a_centerOfGravity)
+            if (a_moving || a_centerOfGravity)
             {
-                auto& nl = e.second.GetNodeList();
-
-                int count = nl.size();
-                for (int i = 0; i < count; i++)
-                {
-                    auto n = nl[i];
-
-                    if (n->HasMotion()) {
-                        auto& tf = n->GetParentWorldTransform();
-                        auto& p = n->GetCenterOfGravity();
-                        GenerateSphere(tf * NiPoint3(p.x(), p.y(), p.z()), a_radius * tf.scale, MOVING_NODES_COL);
-                    }
-                }
-            }
-            else {
-
                 auto& nl = e.second.GetNodeList();
 
                 int count = nl.size();
@@ -61,9 +46,21 @@ namespace CBP
                 {
                     auto& n = nl[i];
 
-                    if (n->HasMotion()) {
+                    if (!n->HasMotion())
+                        continue;
+
+                    if (a_moving)
+                    {
                         auto& tf = n->GetWorldTransform();
-                        GenerateSphere(tf.pos, a_radius * tf.scale, MOVING_NODES_COL);
+                        GenerateSphere(btVector3(tf.pos.x, tf.pos.y, tf.pos.z), a_radius * tf.scale, MOVING_NODES_COL);
+                    }
+
+                    if (a_centerOfGravity)
+                    {
+                        auto& tf = n->GetParentWorldTransform();
+                        auto& p = n->GetCenterOfGravity();
+                        auto pos = tf * NiPoint3(p.x(), p.y(), p.z());
+                        GenerateSphere(btVector3(pos.x, pos.y, pos.z), a_radius * tf.scale, MOVING_NODES_COG_COL);
                     }
                 }
             }
@@ -71,9 +68,11 @@ namespace CBP
             if (e.first == a_markedHandle)
             {
                 auto ht = e.second.GetHeadTransform();
-                if (ht) {
+                if (ht) 
+                {
+                    auto pos = *ht * NiPoint3(0.0f, 0.0f, 20.0f);
                     GenerateSphere(
-                        *ht * NiPoint3(0.0f, 0.0f, 20.0f),
+                        btVector3(pos.x, pos.y, pos.z),
                         2.0f * ht->scale, ACTOR_MARKER_COL);
                 }
             }
@@ -110,8 +109,9 @@ namespace CBP
 
                 auto& tf = n->GetParentWorldTransform();
                 auto& p = n->GetVirtualPos();
+                auto pos = tf * NiPoint3(p.x(), p.y(), p.z());
 
-                GenerateSphere(tf * NiPoint3(p.x(), p.y(), p.z()), a_radius * tf.scale, VIRTUAL_POS_COL);
+                GenerateSphere(btVector3(pos.x, pos.y, pos.z), a_radius * tf.scale, VIRTUAL_POS_COL);
             }
         }
     }
@@ -248,9 +248,9 @@ namespace CBP
     }
 
     // Adapted from https://github.com/DanielChappuis/reactphysics3d/blob/master/src/utils/DebugRenderer.cpp#L122
-    void Renderer::GenerateSphere(const NiPoint3& a_pos, float a_radius, const DirectX::XMFLOAT4& a_col)
+    void Renderer::GenerateSphere(const btVector3& a_pos, float a_radius, const DirectX::XMFLOAT4& a_col)
     {
-        NiPoint3 vertices[(NB_SECTORS_SPHERE + 1) * (NB_STACKS_SPHERE + 1) + (NB_SECTORS_SPHERE + 1)];
+        btVector3 vertices[(NB_SECTORS_SPHERE + 1) * (NB_STACKS_SPHERE + 1) + (NB_SECTORS_SPHERE + 1)];
 
         // Vertices
         const float sectorStep = 2 * float(MATH_PI) / NB_SECTORS_SPHERE;
@@ -268,7 +268,7 @@ namespace CBP
                 const float x = radiusCosStackAngle * std::cos(sectorAngle);
                 const float y = radiusCosStackAngle * std::sin(sectorAngle);
 
-                vertices[i * (NB_SECTORS_SPHERE + 1) + j] = a_pos + NiPoint3(x, y, z);
+                vertices[i * (NB_SECTORS_SPHERE + 1) + j] = a_pos + btVector3(x, y, z);
             }
         }
 
@@ -282,28 +282,27 @@ namespace CBP
 
                 // 2 triangles per sector except for the first and last stacks
 
+                ItemTri item;
+
                 if (i != 0)
                 {
-                    ItemTri item;
 
                     if (GetScreenPt(vertices[a1], a_col, item.pos1) &&
                         GetScreenPt(vertices[a2], a_col, item.pos2) &&
                         GetScreenPt(vertices[a1 + 1], a_col, item.pos3))
                     {
-                        m_tris.emplace_back(item);
+                        m_tris.emplace_back(std::move(item));
                     }
 
                 }
 
                 if (i != (NB_STACKS_SPHERE - 1))
                 {
-                    ItemTri item;
-
                     if (GetScreenPt(vertices[a1 + 1], a_col, item.pos1) &&
                         GetScreenPt(vertices[a2], a_col, item.pos2) &&
                         GetScreenPt(vertices[a2 + 1], a_col, item.pos3))
                     {
-                        m_tris.emplace_back(item);
+                        m_tris.emplace_back(std::move(item));
                     }
                 }
             }

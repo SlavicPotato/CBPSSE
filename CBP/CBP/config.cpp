@@ -227,14 +227,6 @@ namespace CBP
         actorConfHolder.insert_or_assign(a_handle, std::move(a_conf));
     }
 
-    uint64_t IConfig::GetNodeCollisionGroupId(const std::string& a_node) {
-        auto it = nodeCollisionGroupMap.find(a_node);
-        if (it != nodeCollisionGroupMap.end())
-            return it->second;
-
-        return 0;
-    }
-
     bool IConfig::GetGlobalNode(const std::string& a_node, configNode_t& a_out)
     {
         auto& nodeConfig = GetGlobalNode();
