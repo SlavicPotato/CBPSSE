@@ -63,7 +63,7 @@ namespace CBP
     {
         while (a_other != nullptr)
         {
-            if (a_node->IsEqual(a_other))
+            if (a_node == a_other)
                 return true;
 
             a_other = a_other->m_parent;
