@@ -612,7 +612,7 @@ namespace CBP
 
     SimComponent::SimComponent(
         Actor* a_actor,
-        NiNode* a_obj,
+        NiAVObject* a_obj,
         const std::string& a_nodeName,
         const std::string& a_configGroupName,
         const configComponent32_t& a_config,

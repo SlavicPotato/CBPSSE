@@ -6,7 +6,7 @@ namespace CBP
     {
         nodeDesc_t(
             const std::string& a_nodeName,
-            NiNode* a_node,
+            NiAVObject* a_node,
             const std::string& a_confGroup,
             bool a_collisions,
             bool a_movement,
@@ -24,7 +24,7 @@ namespace CBP
         }
 
         const std::string& nodeName;
-        NiNode* node;
+        NiAVObject* node;
         const std::string& confGroup;
         bool collisions;
         bool movement;
@@ -107,7 +107,7 @@ namespace CBP
         Game::ObjectHandle m_handle;
 
         NiPointer<NiNode> m_node;
-        NiPointer<NiNode> m_objHead;
+        NiPointer<NiAVObject> m_objHead;
 
         char m_sex;
 

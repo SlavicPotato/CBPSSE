@@ -59,7 +59,7 @@ namespace CBP
         return a_out.size();
     }
 
-    SKMP_FORCEINLINE static bool IsNodeBelow(NiNode* a_node, NiNode* a_other)
+    SKMP_FORCEINLINE static bool IsObjectBelow(NiAVObject* a_node, NiNode* a_other)
     {
         while (a_other != nullptr)
         {
@@ -116,7 +116,7 @@ namespace CBP
             {
                 auto p = (*it)->GetNode()->m_parent;
 
-                if (IsNodeBelow(e.node, p))
+                if (IsObjectBelow(e.node, p))
                     break;
 
                 ++it;
@@ -125,14 +125,11 @@ namespace CBP
             tmp.emplace(it, obj);
         }
 
-        for (auto &e : tmp)
+        for (auto& e : tmp)
             m_objList.push_back(e);
 
         BSFixedString n(NODE_HEAD);
-        auto head = a_actor->loadedState->node->GetObjectByName(&n.data);
-        if (head != nullptr) {
-            m_objHead = head->GetAsNiNode();
-        }
+        m_objHead = a_actor->loadedState->node->GetObjectByName(&n.data);
     }
 
     SimObject::~SimObject() noexcept
@@ -221,4 +218,4 @@ namespace CBP
             Reset();
     }
 
-}
+    }

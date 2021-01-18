@@ -430,7 +430,7 @@ namespace CBP
 
         SimComponent(
             Actor * a_actor,
-            NiNode* a_obj,
+            NiAVObject* a_obj,
             const std::string & a_nodeName,
             const std::string & a_configBoneName,
             const configComponent32_t & config,
@@ -598,7 +598,7 @@ namespace CBP
         bool m_rotScaleOn;
         bool m_hasScaleOverride;
 
-        NiPointer<NiNode> m_obj;
+        NiPointer<NiAVObject> m_obj;
         NiPointer<NiNode> m_objParent;
 
         NiAVObject::ControllerUpdateContext m_updateCtx;
