@@ -2,6 +2,7 @@
 
 namespace CBP
 {
+    class SimObject;
     class SimComponent;
     class Collider;
 
@@ -18,69 +19,7 @@ namespace CBP
     };
 #endif
 
-    struct MeshPoint
-    {
-        btScalar x;
-        btScalar y;
-        btScalar z;
-    };
-
-    struct ColliderData
-    {
-    public:
-        ColliderData() :
-            m_triVertexArray(nullptr)
-        {
-        }
-
-        ColliderData(ColliderData&& a_rhs)
-        {
-            __move(std::move(a_rhs));
-        }
-
-        ColliderData(const ColliderData& a_rhs) = delete;
-
-        virtual ~ColliderData() noexcept 
-        {
-            if (m_triVertexArray)
-                delete m_triVertexArray;
-        }
-
-        ColliderData& operator=(const ColliderData& a_rhs) = delete;
-
-        ColliderData& operator=(ColliderData&& a_rhs)
-        {
-            __move(std::move(a_rhs));
-            return *this;
-        }
-
-        std::shared_ptr<MeshPoint[]> m_vertices;
-        std::shared_ptr<MeshPoint[]> m_hullPoints;
-        std::shared_ptr<int[]> m_indices;
-
-        int m_numVertices;
-        int m_numTriangles;
-        int m_numIndices;
-
-        btTriangleIndexVertexArray* m_triVertexArray;
-
-    private:
-
-        void __move(ColliderData&& a_rhs)
-        {
-            m_vertices = std::move(a_rhs.m_vertices);
-            m_hullPoints = std::move(a_rhs.m_hullPoints);
-            m_indices = std::move(a_rhs.m_indices);
-
-            m_numVertices = a_rhs.m_numVertices;
-            m_numTriangles = a_rhs.m_numTriangles;
-            m_numIndices = a_rhs.m_numIndices;
-
-            m_triVertexArray = a_rhs.m_triVertexArray;
-            a_rhs.m_triVertexArray = nullptr;
-        }
-    };
-
+    
     class SKMP_ALIGN(16) CollisionShape
     {
     public:
@@ -293,7 +232,7 @@ namespace CBP
         Collider(const Collider & a_rhs) = delete;
         Collider(Collider && a_rhs) = delete;
 
-        bool Create(ColliderShapeType a_shape);
+        bool Create(const configNode_t & a_nodeConf, ColliderShapeType a_shape);
         bool Destroy();
         SKMP_FORCEINLINE void Update();
 
@@ -330,6 +269,14 @@ namespace CBP
         [[nodiscard]] SKMP_FORCEINLINE bool IsActive() const {
             return m_created && m_active;
         }
+        
+        [[nodiscard]] SKMP_FORCEINLINE bool IsCreated() const {
+            return m_created;
+        }
+        
+        [[nodiscard]] SKMP_FORCEINLINE bool IsBoneCast() const {
+            return m_bonecast;
+        }
 
         [[nodiscard]] SKMP_FORCEINLINE const auto& GetSphereOffset() const {
             return m_bodyOffset;
@@ -339,7 +286,7 @@ namespace CBP
             m_positionScale = a_scale;
             m_doPositionScaling = a_scale != 1.0f;
         }
-        
+
         SKMP_FORCEINLINE void SetRotationScale(float a_scale) {
             m_rotationScale = a_scale;
             m_doRotationScaling = a_scale != 1.0f;
@@ -364,8 +311,12 @@ namespace CBP
 
         btCollisionObject* m_collider;
         CollisionShape* m_colshape;
+        std::unique_ptr<ColliderData> m_colliderData;
 
         ColliderShapeType m_shape;
+
+        bool m_bonecast;
+        BoneCacheUpdateID m_bcUpdateID;
 
         float m_nodeScale;
         float m_positionScale;
@@ -426,11 +377,10 @@ namespace CBP
     public:
         BT_DECLARE_ALIGNED_ALLOCATOR();
 
-        bool a;
-
         SimComponent(
+            SimObject &a_parent,
             Actor * a_actor,
-            NiAVObject* a_obj,
+            NiAVObject * a_obj,
             const std::string & a_nodeName,
             const std::string & a_configBoneName,
             const configComponent32_t & config,
@@ -550,10 +500,15 @@ namespace CBP
             return m_obj.m_pObject;
         }
 
+        [[nodiscard]] SKMP_FORCEINLINE bool HasBoneCastCollider() const {
+            return m_collider.IsCreated() && m_collider.IsBoneCast();
+        }
+
+
 #ifdef _CBP_ENABLE_DEBUG
         [[nodiscard]] SKMP_FORCEINLINE const auto& GetDebugInfo() const {
             return m_debugInfo;
-    }
+        }
 #endif
 
     private:
@@ -615,18 +570,9 @@ namespace CBP
         Game::FormID m_formid;
 
         Collider m_collider;
-};
 
-    namespace Math
-    {
-        SKMP_FORCEINLINE float norm(float a_val, float a_min, float a_max) {
-            return (a_val - a_min) / (a_max - a_min);
-        }
-
-        SKMP_FORCEINLINE float normc(float a_val, float a_min, float a_max) {
-            return std::clamp(norm(a_val, a_min, a_max), 0.0f, 1.0f);
-        }
-    }
+        SimObject& m_parent;
+    };
 
     void SimComponent::UpdateVelocity()
     {

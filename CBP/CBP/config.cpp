@@ -48,7 +48,7 @@ namespace CBP
 
             Json::Value root;
 
-            Serialization::ReadJsonData(driverConf.paths.nodes, root);
+            Serialization::ReadData(driverConf.paths.nodes, root);
 
             Serialization::Parser<nodeMap_t> parser;
 
@@ -75,7 +75,7 @@ namespace CBP
 
             parser.Create(a_in, root);
 
-            Serialization::WriteJsonData(driverConf.paths.nodes, root);
+            Serialization::WriteData(driverConf.paths.nodes, root);
 
             return true;
         }
@@ -272,7 +272,7 @@ namespace CBP
 
         return IConfig::GetGlobalNode();
     }
-
+    
     configNodes_t& IConfig::GetOrCreateActorNode(Game::ObjectHandle a_handle)
     {
         auto it = actorNodeConfigHolder.find(a_handle);

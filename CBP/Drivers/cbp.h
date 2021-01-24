@@ -306,6 +306,7 @@ namespace CBP
                 fs::path templateProfilesNode;
                 fs::path templatePlugins;
                 fs::path colliderData;
+                fs::path boneCastData;
                 //fs::path imguiSettings;
             } paths;
 
@@ -344,7 +345,7 @@ namespace CBP
     {
         if (a_actor != nullptr) {
             Game::ObjectHandle handle;
-            if (Game::GetHandle(a_actor, a_actor->formType, handle))
+            if (handle.Get(a_actor))
                 m_Instance.m_controller->AddTask(a_action, handle);
         }
     }

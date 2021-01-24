@@ -114,6 +114,10 @@ namespace CBP
         FN_NAMEPROC("Serialization")
     private:
 
+        void ResolvePluginName(Game::FormID a_formid, Json::Value& a_out);
+        bool ResolvePluginFormID(const Json::Value& a_root, Game::FormID a_in, Game::FormID& a_out);
+        bool ResolvePluginHandle(const Json::Value& a_root, Game::ObjectHandle a_in, Game::ObjectHandle& a_out);
+
         template <class T>
         void MoveActorConfig(SKSESerializationInterface* intfc, const T& a_in, T& a_out);
         template <class T>
@@ -182,7 +186,7 @@ namespace CBP
         {
             Game::ObjectHandle newHandle(0);
 
-            if (!SKSE::ResolveHandle(intfc, e.first, &newHandle)) {
+            if (!SKSE::ResolveHandle(intfc, e.first, newHandle)) {
                 Error("0x%llX: Couldn't resolve handle, discarding", e.first);
                 continue;
             }
@@ -209,7 +213,7 @@ namespace CBP
         {
             Game::FormID newFormID(0);
 
-            if (!SKSE::ResolveRaceForm(intfc, e.first, &newFormID)) {
+            if (!SKSE::ResolveRaceForm(intfc, e.first, newFormID)) {
                 Error("0x%lX: Couldn't resolve form, discarding", e.first);
                 continue;
             }

@@ -138,7 +138,7 @@ bool Profile<T>::Save(const T& a_data, bool a_store)
         if (m_desc)
             root["desc"] = *m_desc;
 
-        Serialization::WriteJsonData(m_path, root);
+        Serialization::WriteData(m_path, root);
 
         if (a_store)
             m_data = a_data;

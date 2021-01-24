@@ -5,13 +5,13 @@ import subprocess
 import argparse
 from installer.generateFomod import FomodGenerator
 
-assert 'MSBUILD_PATH' in os.environ
+assert 'MSBUILD_PATH_PREVIEW' in os.environ
 assert 'CBP_SLN_ROOT' in os.environ
 
-assert os.path.isdir(os.environ['MSBUILD_PATH'])
+assert os.path.isdir(os.environ['MSBUILD_PATH_PREVIEW'])
 assert os.path.isdir(os.environ['CBP_SLN_ROOT'])
 
-MSBUILD_PATH = os.path.join(os.environ['MSBUILD_PATH'], 'msbuild.exe')
+MSBUILD_PATH = os.path.join(os.environ['MSBUILD_PATH_PREVIEW'], 'msbuild.exe')
 SLN_ROOT = os.environ['CBP_SLN_ROOT']
 
 # relative to SLN_ROOT

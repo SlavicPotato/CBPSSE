@@ -195,7 +195,7 @@ namespace CBP
         const char* a_profileName)
     {
         const auto& data = GetPluginData();
-        auto& mm = DData::GetModData().GetLookupRef();
+        auto& mm = DData::GetPluginData().GetLookupRef();
 
         auto& dataHolder = GetDataHolder<T>();
         auto type = GetRecordType<T>();
@@ -253,7 +253,7 @@ namespace CBP
             while (itfmn != d.first.end())
             { // TESNPC
                 if (itfmn->second.profile == addr) {
-                    itfmn = mm.erase(itfmn);
+                    itfmn = d.first.erase(itfmn);
                 }
                 else {
                     ++itfmn;
@@ -264,7 +264,7 @@ namespace CBP
             while (itfmr != d.second.end())
             { // TESRace
                 if (itfmr->second.profile == addr) {
-                    itfmr = mm.erase(itfmr);
+                    itfmr = d.second.erase(itfmr);
                 }
                 else {
                     ++itfmr;
@@ -322,7 +322,7 @@ namespace CBP
     void ITemplate::ProcessTemplateRecord(
         DataHolder<T>& a_data,
         const TRecPlugin::entry_t& a_entry,
-        const modData_t& a_modData,
+        const pluginInfo_t& a_modData,
         const char* a_profileName) const
     {
         auto& pm = a_data.GetProfileManager();
@@ -365,7 +365,7 @@ namespace CBP
                 {
                     auto formid = a_modData.GetFormID(p);
 
-                    auto form = LookupFormByID(formid);
+                    auto form = formid.Lookup();
                     if (!form) {
                         Warning("%s: [%s] [%s] %.8X: form not found",
                             __FUNCTION__, a_modData.name.c_str(), t.first.c_str(), formid);
@@ -421,7 +421,7 @@ namespace CBP
             return false;
 
         const auto& data = GetPluginData();
-        auto& mm = DData::GetModData().GetLookupRef();
+        auto& mm = DData::GetPluginData().GetLookupRef();
 
         for (auto& rec : data)
         {

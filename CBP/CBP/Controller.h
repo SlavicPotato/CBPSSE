@@ -4,7 +4,7 @@
 
 namespace CBP
 {
-    struct SKMP_ALIGN(16) ControllerInstruction
+    struct ControllerInstruction
     {
         enum class Action : uint32_t 
         {
@@ -106,6 +106,7 @@ namespace CBP
         void PhysicsTick(Game::BSMain* a_main, float a_interval);
 
         void ClearActors(bool a_noNotify = false, bool a_release = false);
+        void ResetInstructionQueue();
 
         void ApplyForce(
             Game::ObjectHandle a_handle,
@@ -162,10 +163,6 @@ namespace CBP
 
         SKMP_FORCEINLINE const char* GetActorName(Actor* a_actor) {
             return a_actor ? CALL_MEMBER_FN(a_actor, GetReferenceName)() : "nullptr";
-        }
-
-        SKMP_FORCEINLINE Game::FormID GetFormID(Game::ObjectHandle a_handle) {
-            return static_cast<Game::FormID>(a_handle & 0xFFFFFFFF);
         }
 
         simActorList_t m_actors;

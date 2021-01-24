@@ -61,6 +61,12 @@
     <Filter Include="Source Files\Common">
       <UniqueIdentifier>{95edb7d9-3637-441e-a286-7007bda497ae}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\CBP\UI">
+      <UniqueIdentifier>{f75db03e-d124-47c4-86da-ec33c8718b18}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\CBP\UI">
+      <UniqueIdentifier>{7db5c4b9-1cba-4ec2-b065-23f6d6ed7fe2}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">
@@ -76,9 +82,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="plugin.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="game.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="config.h">
@@ -183,6 +186,48 @@
     <ClInclude Include="CBP\ArmorCache.h">
       <Filter>Header Files\CBP</Filter>
     </ClInclude>
+    <ClInclude Include="CBP\UI\ActorList.h">
+      <Filter>Header Files\CBP\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="CBP\UI\Base.h">
+      <Filter>Header Files\CBP\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="CBP\UI\Force.h">
+      <Filter>Header Files\CBP\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="CBP\UI\List.h">
+      <Filter>Header Files\CBP\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="CBP\UI\Node.h">
+      <Filter>Header Files\CBP\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="CBP\UI\Profile.h">
+      <Filter>Header Files\CBP\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="CBP\UI\Race.h">
+      <Filter>Header Files\CBP\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="CBP\UI\RaceList.h">
+      <Filter>Header Files\CBP\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="CBP\UI\SimComponent.h">
+      <Filter>Header Files\CBP\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="CBP\BoneCast.h">
+      <Filter>Header Files\CBP</Filter>
+    </ClInclude>
+    <ClInclude Include="CBP\ColliderData.h">
+      <Filter>Header Files\CBP</Filter>
+    </ClInclude>
+    <ClInclude Include="Common\Crypto.h">
+      <Filter>Header Files\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Common\Game.h">
+      <Filter>Header Files\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Common\Misc.h">
+      <Filter>Header Files\Common</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp">
@@ -192,9 +237,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="skse.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="game.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="config.cpp">
@@ -292,6 +334,42 @@
     </ClCompile>
     <ClCompile Include="CBP\ArmorCache.cpp">
       <Filter>Source Files\CBP</Filter>
+    </ClCompile>
+    <ClCompile Include="CBP\UI\ActorList.cpp">
+      <Filter>Source Files\CBP\UI</Filter>
+    </ClCompile>
+    <ClCompile Include="CBP\UI\Base.cpp">
+      <Filter>Source Files\CBP\UI</Filter>
+    </ClCompile>
+    <ClCompile Include="CBP\UI\Force.cpp">
+      <Filter>Source Files\CBP\UI</Filter>
+    </ClCompile>
+    <ClCompile Include="CBP\UI\List.cpp">
+      <Filter>Source Files\CBP\UI</Filter>
+    </ClCompile>
+    <ClCompile Include="CBP\UI\Node.cpp">
+      <Filter>Source Files\CBP\UI</Filter>
+    </ClCompile>
+    <ClCompile Include="CBP\UI\Profile.cpp">
+      <Filter>Source Files\CBP\UI</Filter>
+    </ClCompile>
+    <ClCompile Include="CBP\UI\RaceList.cpp">
+      <Filter>Source Files\CBP\UI</Filter>
+    </ClCompile>
+    <ClCompile Include="CBP\UI\SimComponent.cpp">
+      <Filter>Source Files\CBP\UI</Filter>
+    </ClCompile>
+    <ClCompile Include="CBP\BoneCast.cpp">
+      <Filter>Source Files\CBP</Filter>
+    </ClCompile>
+    <ClCompile Include="CBP\ColliderData.cpp">
+      <Filter>Source Files\CBP</Filter>
+    </ClCompile>
+    <ClCompile Include="Common\Crypto.cpp">
+      <Filter>Source Files\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="Common\Game.cpp">
+      <Filter>Source Files\Common</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

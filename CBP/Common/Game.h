@@ -1,54 +1,153 @@
 #pragma once
 
+#include <ctime>
+
+#include <LinearMath/btVector3.h>
+
+#include <skse64/NiLight.h>
+
 namespace Game
 {
-    typedef UInt64 ObjectHandle;
-    typedef UInt32 FormID;
-    typedef UInt32 ActorHandle;
-
     extern float* frameTimer;
     extern float* frameTimerSlow;
 
-    namespace Debug 
+    namespace Debug
     {
         void Notification(const char* a_message, bool a_cancelIfQueued = true, const char* a_sound = nullptr);
     }
 
-    bool GetModIndex(UInt32 a_formID, UInt32& a_out);
+    void AIProcessVisitActors(const std::function<void(Actor*)> &a_func);
 
-    bool GetHandle(void* src, UInt32 typeID, Game::ObjectHandle& out);
-    void* ResolveObject(UInt64 handle, UInt32 typeID);
-
-    template <typename T>
-    T* ResolveObject(UInt64 handle, UInt32 typeID) {
-        return reinterpret_cast<T*>(ResolveObject(handle, typeID));
-    }
-
-    void AIProcessVisitActors(std::function<void(Actor*)> a_func);
-
-    __forceinline bool InPausedMenu()
+    SKMP_FORCEINLINE bool InPausedMenu()
     {
         auto mm = MenuManager::GetSingleton();
         return mm && mm->InPausedMenu();
     }
 
-    __forceinline void NodeTraverse(NiAVObject* parent, std::function<void(NiAVObject*)> a_func)
+    namespace Node
     {
-        a_func(parent);
 
-        auto node = parent->GetAsNiNode();
-        if (!node)
-            return;
-
-        for (UInt16 i = 0; i < node->m_children.m_emptyRunStart; i++)
+        SKMP_FORCEINLINE void Traverse(NiAVObject* parent, const std::function<void(NiAVObject*)> &a_func)
         {
-            auto object = node->m_children.m_data[i];
-            if (object)
-                NodeTraverse(object, a_func);
+            a_func(parent);
+
+            auto node = parent->GetAsNiNode();
+            if (!node)
+                return;
+
+            for (UInt16 i = 0; i < node->m_children.m_emptyRunStart; i++)
+            {
+                auto object = node->m_children.m_data[i];
+                if (object)
+                    Traverse(object, a_func);
+            }
         }
+
+
+        SKMP_FORCEINLINE bool Traverse2(NiAVObject* parent, const std::function<bool(NiAVObject*)> &a_func)
+        {
+            if (a_func(parent))
+                return true;
+
+            auto node = parent->GetAsNiNode();
+            if (!node)
+                return false;
+
+            for (UInt16 i = 0; i < node->m_children.m_emptyRunStart; i++)
+            {
+                auto object = node->m_children.m_data[i];
+                if (object) {
+                    if (Traverse2(object, a_func))
+                        return true;
+                }
+            }
+
+            return false;
+        }
+
+        // skee64
+        SKMP_FORCEINLINE bool TraverseBiped(TESObjectREFR* a_ref, const std::function<bool(bool, UInt32, NiNode*, NiAVObject*)> &a_func)
+        {
+            for (SInt32 k = 0; k <= 1; ++k)
+            {
+                auto weightModel = a_ref->GetBiped(k);
+                if (weightModel && weightModel->bipedData)
+                {
+                    auto rootNode = a_ref->GetNiRootNode(k);
+
+                    for (int i = 0; i < 42; ++i)
+                    {
+                        NiAVObject* node = weightModel->bipedData->unk10[i].object;
+                        if (node)
+                        {
+                            if (a_func(k == 1, i, rootNode, node))
+                                return true;
+                        }
+                    }
+                    for (int i = 0; i < 42; ++i)
+                    {
+                        NiAVObject* node = weightModel->bipedData->unk13C0[i].object;
+                        if (node)
+                        {
+                            if (a_func(k == 1, i, rootNode, node))
+                                return true;
+                        }
+                    }
+                }
+            }
+
+            return false;
+
+        }
+
+        SKMP_FORCEINLINE NiAVObject* Find(NiAVObject* parent, const std::function<bool(NiAVObject*)> &a_func)
+        {
+            if (a_func(parent))
+                return parent;
+
+            auto node = parent->GetAsNiNode();
+            if (node)
+            {
+                for (UInt16 i = 0; i < node->m_children.m_emptyRunStart; i++)
+                {
+                    auto object = node->m_children.m_data[i];
+                    if (object) {
+                        auto res = Find(object, a_func);
+                        if (res != nullptr)
+                            return res;
+                    }
+                }
+            }
+
+            return nullptr;
+        }
+
     }
 
-    __forceinline float GetNPCWeight(TESNPC* a_npc)
+
+    // skee64
+    SKMP_FORCEINLINE TESObjectARMO* GetActorSkin(Actor* a_actor)
+    {
+        auto npc = DYNAMIC_CAST(a_actor->baseForm, TESForm, TESNPC);
+        if (npc) {
+            if (npc->skinForm.skin)
+                return npc->skinForm.skin;
+        }
+
+        auto actorRace = a_actor->race;
+        if (actorRace)
+            return actorRace->skin.skin;
+
+        if (npc) {
+            actorRace = npc->race.race;
+            if (actorRace)
+                return actorRace->skin.skin;
+        }
+
+        return nullptr;
+    }
+
+    SKMP_FORCEINLINE float GetNPCWeight(TESNPC* a_npc)
     {
         if (a_npc->nextTemplate)
         {
@@ -60,7 +159,7 @@ namespace Game
         return a_npc->weight;
     }
 
-    __forceinline float GetActorWeight(Actor* a_actor)
+    SKMP_FORCEINLINE float GetActorWeight(Actor* a_actor)
     {
         auto npc = DYNAMIC_CAST(a_actor->baseForm, TESForm, TESNPC);
 
@@ -69,8 +168,6 @@ namespace Game
 
         return CALL_MEMBER_FN(a_actor, GetWeight)();
     }
-
-    TESObjectREFR* GetReference(Game::FormID a_formid);
 
     // https://github.com/Ryan-rsm-McKenzie/CommonLibSSE/blob/master/include/RE/AI/ProcessLists.h
     class ProcessLists
@@ -144,7 +241,6 @@ namespace Game
     static_assert(offsetof(BSMain, quitGame) == 0x10);
     static_assert(sizeof(BSMain) == 0x18);
 
-
     class Unk00
     {
     public:
@@ -157,4 +253,6 @@ namespace Game
         DEFINE_MEMBER_FN(_SetGlobalTimeMultiplier, void, 0xC078B0, float a_scale, bool a_unk);
     };
 
+
 }
+

@@ -252,7 +252,7 @@ namespace CBP
             if (!ActorValid(actor))
             {
                 if (globalConfig.general.controllerStats)
-                    Debug("Removing [%.8X] [%s] (no longer valid)", GetFormID(it->first), GetActorName(actor));
+                    Debug("Removing [%.8X] [%s] (no longer valid)", it->first.GetFormID(), GetActorName(actor));
 
                 IConfig::RemoveArmorOverride(it->first);
                 IConfig::ClearMergedCacheThreshold();
@@ -294,7 +294,7 @@ namespace CBP
         if (m_actors.contains(a_handle))
             return;
 
-        auto actor = Game::ResolveObject<Actor>(a_handle, Actor::kTypeID);
+        auto actor = a_handle.Resolve<Actor>();
         if (!ActorValid(actor))
             return;
 
@@ -364,8 +364,8 @@ namespace CBP
 
         if (globalConfig.general.controllerStats)
         {
-            auto actor = Game::ResolveObject<Actor>(a_handle, Actor::kTypeID);
-            Debug("Removing [%.8X] [%s]", GetFormID(a_handle), GetActorName(actor));
+            auto actor = a_handle.Resolve<Actor>();
+            Debug("Removing [%.8X] [%s]", a_handle.GetFormID(), GetActorName(actor));
         }
 
         m_actors.erase(it);
@@ -393,7 +393,7 @@ namespace CBP
     {
         for (auto& e : m_actors)
         {
-            auto actor = Game::ResolveObject<Actor>(e.first, Actor::kTypeID);
+            auto actor = e.first.Resolve<Actor>();
 
             if (!ActorValid(actor))
                 continue;
@@ -408,7 +408,7 @@ namespace CBP
         if (it == m_actors.end())
             return;
 
-        auto actor = Game::ResolveObject<Actor>(it->first, Actor::kTypeID);
+        auto actor = it->first.Resolve<Actor>();
 
         if (!ActorValid(actor))
             return;
@@ -451,8 +451,8 @@ namespace CBP
         {
             for (const auto& e : m_actors)
             {
-                auto actor = Game::ResolveObject<Actor>(e.first, Actor::kTypeID);
-                Debug("Removing [%.8X] [%s] (CLR)", GetFormID(e.first), GetActorName(actor));
+                auto actor = e.first.Resolve<Actor>();
+                Debug("Removing [%.8X] [%s] (CLR)", e.first.GetFormID(), GetActorName(actor));
             }
         }
 
@@ -463,6 +463,11 @@ namespace CBP
 
         IConfig::ReleaseMergedCache();
         IConfig::ReleaseArmorOverrides();
+    }
+
+    void ControllerTask::ResetInstructionQueue()
+    {
+        m_queue.swap(decltype(m_queue)());
     }
 
     void ControllerTask::Reset()
@@ -494,7 +499,7 @@ namespace CBP
 
     void ControllerTask::WeightUpdate(Game::ObjectHandle a_handle)
     {
-        auto actor = Game::ResolveObject<Actor>(a_handle, Actor::kTypeID);
+        auto actor = a_handle.Resolve<Actor>();
         if (ActorValid(actor)) {
             CALL_MEMBER_FN(actor, QueueNiNodeUpdate)(true);
             DTasks::AddTask<UpdateWeightTask>(a_handle);
@@ -509,7 +514,7 @@ namespace CBP
 
     void ControllerTask::NiNodeUpdate(Game::ObjectHandle a_handle)
     {
-        auto actor = Game::ResolveObject<Actor>(a_handle, Actor::kTypeID);
+        auto actor = a_handle.Resolve<Actor>();
         if (ActorValid(actor))
             CALL_MEMBER_FN(actor, QueueNiNodeUpdate)(true);
     }
@@ -532,11 +537,11 @@ namespace CBP
         if (it == m_actors.end())
             return;
 
-        auto actor = Game::ResolveObject<Actor>(a_handle, Actor::kTypeID);
+        auto actor = a_handle.Resolve<Actor>();
         if (!actor)
             return;
 
-        auto form = LookupFormByID(a_formid);
+        auto form = a_formid.Lookup();
         if (!form)
             return;
 
@@ -578,7 +583,7 @@ namespace CBP
         if (it == m_actors.end())
             return;
 
-        auto actor = Game::ResolveObject<Actor>(a_handle, Actor::kTypeID);
+        auto actor = a_handle.Resolve<Actor>();
         if (!actor)
             return;
 
@@ -642,7 +647,7 @@ namespace CBP
             auto entry = IArmorCache::GetEntry(e);
             if (!entry) {
                 Warning("[%.8X] [%s] Couldn't read armor override data: %s",
-                    GetFormID(a_handle), e.c_str(), IArmorCache::GetLastException().what());
+                    a_handle.GetFormID(), e.c_str(), IArmorCache::GetLastException().what());
                 continue;
             }
 
@@ -667,7 +672,7 @@ namespace CBP
 
         for (auto& e : m_actors)
         {
-            auto actor = Game::ResolveObject<Actor>(e.first, Actor::kTypeID);
+            auto actor = e.first.Resolve<Actor>();
             if (!actor)
                 continue;
 
@@ -686,20 +691,20 @@ namespace CBP
         while (!TaskQueueEmpty())
         {
             m_lock.Enter();
-            auto task = m_queue.front();
+            ControllerInstruction instr = m_queue.front();
             m_queue.pop();
             m_lock.Leave();
 
-            switch (task.m_action)
+            switch (instr.m_action)
             {
             case ControllerInstruction::Action::AddActor:
-                AddActor(task.m_handle);
+                AddActor(instr.m_handle);
                 break;
             case ControllerInstruction::Action::RemoveActor:
-                RemoveActor(task.m_handle);
+                RemoveActor(instr.m_handle);
                 break;
             case ControllerInstruction::Action::UpdateConfig:
-                UpdateConfig(task.m_handle);
+                UpdateConfig(instr.m_handle);
                 break;
             case ControllerInstruction::Action::UpdateConfigAll:
                 UpdateConfigOnAllActors();
@@ -711,13 +716,13 @@ namespace CBP
                 PhysicsReset();
                 break;
             case ControllerInstruction::Action::NiNodeUpdate:
-                NiNodeUpdate(task.m_handle);
+                NiNodeUpdate(instr.m_handle);
                 break;
             case ControllerInstruction::Action::NiNodeUpdateAll:
                 NiNodeUpdateAll();
                 break;
             case ControllerInstruction::Action::WeightUpdate:
-                WeightUpdate(task.m_handle);
+                WeightUpdate(instr.m_handle);
                 break;
             case ControllerInstruction::Action::WeightUpdateAll:
                 WeightUpdateAll();
@@ -726,7 +731,7 @@ namespace CBP
                     AddArmorOverride(task.m_handle, task.m_formid);
                     break;*/
             case ControllerInstruction::Action::UpdateArmorOverride:
-                UpdateArmorOverrides(task.m_handle);
+                UpdateArmorOverrides(instr.m_handle);
                 break;
             case ControllerInstruction::Action::UpdateArmorOverridesAll:
                 UpdateArmorOverridesAll();
@@ -747,7 +752,7 @@ namespace CBP
                     return;
 
                 Game::ObjectHandle handle;
-                if (!Game::GetHandle(a_actor, a_actor->formType, handle))
+                if (!handle.Get(a_actor))
                     return;
 
                 a_out.emplace(handle);
@@ -764,7 +769,7 @@ namespace CBP
 
     void ControllerTask::UpdateWeightTask::Run()
     {
-        auto actor = Game::ResolveObject<Actor>(m_handle, Actor::kTypeID);
+        auto actor = m_handle.Resolve<Actor>();
         if (!actor)
             return;
 

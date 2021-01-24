@@ -309,7 +309,7 @@ namespace CBP
      */
 
 #if defined(__AVX__) || defined(__AVX2__)
-    struct physicsDataMM256_t
+    struct SKMP_ALIGN(32) physicsDataMM256_t
     {
 
     public:
@@ -359,7 +359,7 @@ namespace CBP
     };
 #endif
 
-    struct physicsDataMM128_t
+    struct SKMP_ALIGN(16) physicsDataMM128_t
     {
 
     public:
@@ -561,7 +561,8 @@ namespace CBP
             DataVersion4 = 4,
             DataVersion5 = 5,
             DataVersion6 = 6,
-            DataVersion7 = 7
+            DataVersion7 = 7,
+            DataVersion8 = 8
         };
 
         [[nodiscard]] SKMP_FORCEINLINE bool Get(const std::string & a_key, float& a_out) const
@@ -886,6 +887,9 @@ namespace CBP
         float colOffsetMax[3];
         float colRot[3];
         float nodeScale;
+        float bcWeightThreshold;
+        float bcSimplifyTarget;
+        float bcSimplifyTargetError;
     };
 
     struct nodeDataMM256_t
@@ -1080,6 +1084,7 @@ namespace CBP
 
                 bool overrideScale;
                 bool offsetParent;
+                bool boneCast;
             } b;
 
             struct
@@ -1107,6 +1112,12 @@ namespace CBP
         };
     };
 
+    struct nodeExtra_t
+    {
+
+        std::string bcShape;
+    };
+
     static_assert(offsetof(nodeBools_t, b.overrideScale) == offsetof(nodeBools_t, u32.d1));
     static_assert(offsetof(nodeBools_t, b.motion.female) == offsetof(nodeBools_t, u16.d1));
 
@@ -1119,11 +1130,13 @@ namespace CBP
         {
             DataVersion1 = 1,
             DataVersion2 = 2,
-            DataVersion3 = 3
+            DataVersion3 = 3,
+            DataVersion4 = 4
         };
 
         nodeData32_t fp;
         nodeBools_t bl;
+        nodeExtra_t ex;
 
         SKMP_FORCEINLINE void Get(
             char a_sex,
@@ -1167,6 +1180,11 @@ namespace CBP
             ar& fp.f32.nodeScale;
             ar& bl.b.offsetParent;
             ar& fp.f32.colRot;
+            ar& bl.b.boneCast;
+            ar& fp.f32.bcWeightThreshold;
+            ar& fp.f32.bcSimplifyTarget;
+            ar& fp.f32.bcSimplifyTargetError;
+            ar& ex.bcShape;
         }
 
         template<class Archive>
@@ -1186,6 +1204,14 @@ namespace CBP
 
                 if (version >= DataVersion3) {
                     ar& fp.f32.colRot;
+
+                    if (version >= DataVersion4) {
+                        ar& bl.b.boneCast;
+                        ar& fp.f32.bcWeightThreshold;
+                        ar& fp.f32.bcSimplifyTarget;
+                        ar& fp.f32.bcSimplifyTargetError;
+                        ar& ex.bcShape;
+                    }
                 }
             }
         }
@@ -1596,4 +1622,4 @@ namespace CBP
 }
 
 BOOST_CLASS_VERSION(CBP::configComponent32_t, CBP::configComponent32_t::Serialization::DataVersion7)
-BOOST_CLASS_VERSION(CBP::configNode_t, CBP::configNode_t::Serialization::DataVersion3)
+BOOST_CLASS_VERSION(CBP::configNode_t, CBP::configNode_t::Serialization::DataVersion4)

@@ -6,6 +6,7 @@ namespace CBP
 
     static UInt32 PP_GetVersion(StaticFunctionTag*)
     {
+
         return MAKE_PLUGIN_VERSION(
             PLUGIN_VERSION_MAJOR,
             PLUGIN_VERSION_MINOR,
@@ -33,7 +34,7 @@ namespace CBP
             return false;
 
         Game::ObjectHandle handle;
-        if (!Game::GetHandle(actor, actor->formType, handle))
+        if (!handle.Get(actor))
             return false;
 
         auto cmd = ConfigUpdateTask::Create(handle, sect, key, val);

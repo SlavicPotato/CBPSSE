@@ -40,11 +40,15 @@ namespace CBP
         return true;
     }
 
-    bool IArmor::FindOverridesA(Actor* a_actor, armorOverrideResults_t& a_out)
+    bool IArmor::FindOverridesA(
+        Actor* a_actor,
+        armorOverrideResults_t& a_out)
     {
-        NiNode* root[2];
-        root[0] = a_actor->GetNiRootNode(false);
-        root[1] = a_actor->GetNiRootNode(true);
+        NiNode* root[2]
+        {
+            a_actor->GetNiRootNode(false),
+            a_actor->GetNiRootNode(true)
+        };
 
         if (root[1] == root[0])
             root[1] = nullptr;
@@ -56,7 +60,7 @@ namespace CBP
             if (!root[i])
                 continue;
 
-            Game::NodeTraverse(root[i], [&](NiAVObject* object)
+            Game::Node::Traverse(root[i], [&](NiAVObject* object)
                 {
                     auto data = object->GetExtraData(name);
                     if (data) {
@@ -71,7 +75,9 @@ namespace CBP
         return !a_out.empty();
     }
 
-    bool IArmor::GetEquippedArmor(Actor* a_actor, EquippedArmorCollector& a_out)
+    bool IArmor::GetEquippedArmor(
+        Actor* a_actor,
+        EquippedArmorCollector& a_out)
     {
         auto containerChanges = static_cast<ExtraContainerChanges*>(a_actor->extraData.GetByType(kExtraData_ContainerChanges));
         if (containerChanges &&
@@ -85,11 +91,16 @@ namespace CBP
         return false;
     }
 
-    bool IArmor::FindOverrides(Actor* a_actor, armorOverrideResults_t& a_out)
+    bool IArmor::FindOverrides(
+        Actor* a_actor, 
+        armorOverrideResults_t& a_out)
     {
         EquippedArmorCollector pieces;
-        if (!GetEquippedArmor(a_actor, pieces))
-            return false;
+        GetEquippedArmor(a_actor, pieces);
+
+        auto skin = Game::GetActorSkin(a_actor);
+        if (skin)
+            pieces.m_results.emplace(skin);
 
         for (auto& armor : pieces.m_results)
             FindOverrides(a_actor, armor, a_out);
@@ -97,7 +108,10 @@ namespace CBP
         return !a_out.empty();
     }
 
-    bool IArmor::FindOverrides(Actor* a_actor, TESObjectARMO* a_armor, armorOverrideResults_t& a_out)
+    bool IArmor::FindOverrides(
+        Actor* a_actor, 
+        TESObjectARMO* a_armor, 
+        armorOverrideResults_t& a_out)
     {
         for (UInt32 i = 0; i < a_armor->armorAddons.count; i++)
         {
@@ -114,7 +128,143 @@ namespace CBP
         return !a_out.empty();
     }
 
-    void IArmor::FindOverrides(Actor* a_actor, TESObjectARMO* a_armor, TESObjectARMA* a_arma, armorOverrideResults_t& a_out)
+
+    bool IArmor::VisitArmorAddon(
+        Actor* a_actor, 
+        TESObjectARMO* a_armor, 
+        TESObjectARMA* a_arma, 
+        bool a_noTraverse, 
+        const std::function<bool(bool, NiNode*, NiAVObject*)> &a_func)
+    {
+        char buf[MAX_PATH];
+        a_arma->GetNodeName(buf, a_actor, a_armor, -1.0f);
+
+        NiNode* root[2]
+        {
+            a_actor->GetNiRootNode(false),
+            a_actor->GetNiRootNode(true)
+        };
+
+        if (root[1] == root[0])
+            root[1] = nullptr;
+
+        BSFixedString aaName(buf);
+
+        auto func = [&](bool a_firstPerson, UInt32, NiNode* a_rootNode, NiAVObject* a_object)
+        {
+            if (a_object->m_name == aaName.data)
+                return a_func(a_firstPerson, a_rootNode, a_object);
+
+            return false;
+        };
+
+        if (Game::Node::TraverseBiped(a_actor, func))
+            return true;
+
+        for (int i = 0; i < 2; i++)
+        {
+            auto node = root[i];
+
+            if (!node)
+                continue;
+
+            auto armorObject = node->GetObjectByName(&aaName.data);
+
+            if (!armorObject || !armorObject->m_parent)
+                continue;
+
+            auto parent = armorObject->m_parent;
+            for (UInt16 j = 0; j < parent->m_children.m_emptyRunStart; j++)
+            {
+                auto object = parent->m_children.m_data[j];
+                if (!object || object->m_name != aaName.data)
+                    continue;
+
+                if (a_noTraverse)
+                {
+                    if (a_func(i == 1, node, object))
+                        return true;
+                }
+                else {
+                    if (Game::Node::Traverse2(object, [&](NiAVObject* a_node)
+                        {
+                            return a_func(i == 1, node, a_node);
+                        }))
+                    {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
+
+    bool IArmor::VisitEquippedNodes(
+        Actor* a_actor, 
+        const std::function<bool(TESObjectARMO*, TESObjectARMA*, NiAVObject*, bool)> &a_func)
+    {
+        EquippedArmorCollector pieces;
+        GetEquippedArmor(a_actor, pieces);
+
+        auto skin = Game::GetActorSkin(a_actor);
+        if (skin)
+            pieces.m_results.emplace(skin);
+
+        for (auto& armor : pieces.m_results) {
+
+            for (UInt32 i = 0; i < armor->armorAddons.count; i++)
+            {
+                TESObjectARMA* arma(nullptr);
+                if (!armor->armorAddons.GetNthItem(i, arma))
+                    continue;
+
+                if (!arma || !arma->isValidRace(a_actor->race))
+                    continue;
+
+                if (VisitArmorAddon(a_actor, armor, arma, false, [&](bool a_firstPerson, NiNode*, NiAVObject* a_object) {
+                    return a_func(armor, arma, a_object, a_firstPerson);
+                    }))
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    bool IArmor::VisitArmor(
+        Actor* a_actor, 
+        TESObjectARMO* a_armor, 
+        bool a_noTraverse, 
+        const std::function<bool(TESObjectARMO*, TESObjectARMA*, NiAVObject*, bool)> &a_func)
+    {
+        for (UInt32 i = 0; i < a_armor->armorAddons.count; i++)
+        {
+            TESObjectARMA* arma(nullptr);
+            if (!a_armor->armorAddons.GetNthItem(i, arma))
+                continue;
+
+            if (!arma || !arma->isValidRace(a_actor->race))
+                continue;
+
+            if (VisitArmorAddon(a_actor, a_armor, arma, a_noTraverse, [&](bool a_firstPerson, NiNode*, NiAVObject* a_object) {
+                return a_func(a_armor, arma, a_object, a_firstPerson);
+                }))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    void IArmor::FindOverrides(
+        Actor* a_actor,
+        TESObjectARMO* a_armor, 
+        TESObjectARMA* a_arma, 
+        armorOverrideResults_t& a_out)
     {
         char buf[MAX_PATH];
         a_arma->GetNodeName(buf, a_actor, a_armor, -1.0f);
@@ -131,6 +281,22 @@ namespace CBP
         BSFixedString pcName(NISTRING_EXTRA_DATA_NAME);
         BSFixedString aaName(buf);
 
+        Game::Node::TraverseBiped(a_actor, [&](bool, UInt32, NiNode*, NiAVObject* a_object)
+            {
+                if (a_object->m_name == aaName.data)
+                {
+                    auto data = a_object->GetExtraData(pcName);
+                    if (!data)
+                        return false;
+
+                    auto extraData = ni_cast(data, NiStringExtraData);
+                    if (extraData && extraData->m_pString)
+                        a_out.emplace(extraData->m_pString);
+                }
+
+                return false;
+            });
+
         for (int i = 0; i < 2; i++)
         {
             auto node = root[i];
@@ -138,21 +304,21 @@ namespace CBP
             if (!node)
                 continue;
 
-            auto armorNode = node->GetObjectByName(&aaName.data);
+            auto armorObject = node->GetObjectByName(&aaName.data);
 
-            if (!armorNode || !armorNode->m_parent)
+            if (!armorObject || !armorObject->m_parent)
                 continue;
 
-            auto parent = armorNode->m_parent;
+            auto parent = armorObject->m_parent;
             for (UInt16 j = 0; j < parent->m_children.m_emptyRunStart; j++)
             {
-                auto childNode = parent->m_children.m_data[j];
-                if (!childNode || BSFixedString(childNode->m_name) != aaName)
+                auto object = parent->m_children.m_data[j];
+                if (!object || object->m_name != aaName.data)
                     continue;
 
-                Game::NodeTraverse(childNode, [&](NiAVObject* object)
+                Game::Node::Traverse(object, [&](NiAVObject* a_object)
                     {
-                        auto data = object->GetExtraData(pcName);
+                        auto data = a_object->GetExtraData(pcName);
                         if (!data)
                             return;
 

@@ -15,5 +15,6 @@ constexpr const char* PLUGIN_CBP_TEMP_PROF_PHYS_R = "Templates\\Profiles\\Physic
 constexpr const char* PLUGIN_CBP_TEMP_PROF_NODE_R = "Templates\\Profiles\\Node";
 constexpr const char* PLUGIN_CBP_TEMP_PLUG_R = "Templates\\Plugins";
 constexpr const char* PLUGIN_CBP_COLLIDER_DATA_R = "ColliderData";
+constexpr const char* PLUGIN_CBP_BONECAST_DATA_R = "BoneCastData";
 
 constexpr const char* PLUGIN_IMGUI_INI_FILE = PLUGIN_BASE_PATH "CBP_ImGui.ini";

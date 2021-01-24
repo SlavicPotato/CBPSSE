@@ -257,7 +257,7 @@ namespace CBP
         void ProcessTemplateRecord(
             DataHolder<T>& a_data, 
             const TRecPlugin::entry_t& a_entry,
-            const modData_t& a_modData,
+            const pluginInfo_t& a_modData,
             const char *a_profileName = nullptr) const;
 
         DataHolder<PhysicsProfile> m_dataPhysics;
@@ -276,7 +276,7 @@ namespace CBP
         const actorRefData_t* a_param)
     {
         UInt32 modIndex;
-        if (!Game::GetModIndex(a_param->npc, modIndex))
+        if (!a_param->npc.GetPluginPartialIndex(modIndex))
             return nullptr;
 
         const auto& fm = a_data.GetFormMap();

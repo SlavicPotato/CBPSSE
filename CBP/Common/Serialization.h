@@ -75,7 +75,68 @@ namespace Serialization
         return true;
     }
 
-    [[nodiscard]] void ReadJsonData(const fs::path& a_path, Json::Value& a_out);
-    void WriteJsonData(const fs::path& a_path, const Json::Value& a_root);
+    SKMP_FORCEINLINE static void SafeCleanup(const fs::path& a_path) noexcept
+    {
+        try
+        {
+            fs::remove(a_path);
+        }
+        catch (...)
+        {
+        }
+    }
+
+    template <class T>
+    void ReadData(const fs::path& a_path, T& a_root)
+    {
+        std::ifstream ifs;
+
+        ifs.open(a_path, std::ifstream::in | std::ifstream::binary);
+        if (!ifs.is_open())
+            throw std::system_error(errno, std::system_category(), a_path.string());
+
+        ifs >> a_root;
+    }
+
+    SKMP_FORCEINLINE void CreateRootPath(const fs::path& a_path)
+    {
+        auto base = a_path.parent_path();
+
+        if (!fs::exists(base)) {
+            if (!fs::create_directories(base))
+                throw std::exception("Couldn't create base directory");
+        }
+        else if (!fs::is_directory(base))
+            throw std::exception("Root path is not a directory");
+    }
+
+    template <class T>
+    void WriteData(const fs::path& a_path, const T& a_root)
+    {
+        CreateRootPath(a_path);
+
+        auto tmpPath(a_path);
+        tmpPath += ".tmp";
+
+        try
+        {
+            {
+                std::ofstream ofs;
+                ofs.open(tmpPath, std::ofstream::out | std::ofstream::binary | std::ofstream::trunc);
+
+                if (!ofs.is_open())
+                    throw std::system_error(errno, std::system_category(), tmpPath.string());
+
+                ofs << a_root;
+            }
+
+            fs::rename(tmpPath, a_path);
+        }
+        catch (const std::exception& e)
+        {
+            SafeCleanup(tmpPath);
+            throw e;
+        }
+    }
 
 }

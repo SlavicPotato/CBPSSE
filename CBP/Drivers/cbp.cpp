@@ -7,7 +7,7 @@ namespace CBP
     DCBP DCBP::m_Instance;
 
     static auto MainLoopAddr = IAL::Addr(35551, 0x11f);
-    static auto CreateArmorNodePost = IAL::Addr(15501, 0xB58);
+    static auto CreateArmorNodePostAddr = IAL::Addr(15501, 0xB58);
 
     constexpr const char* SECTION_CBP = "CBP";
     constexpr const char* CKEY_COMBOKEY = "ComboKey";
@@ -247,6 +247,7 @@ namespace CBP
             paths.templateProfilesNode = paths.root / PLUGIN_CBP_TEMP_PROF_NODE_R;
             paths.templatePlugins = paths.root / PLUGIN_CBP_TEMP_PLUG_R;
             paths.colliderData = paths.root / PLUGIN_CBP_COLLIDER_DATA_R;
+            paths.boneCastData = paths.root / PLUGIN_CBP_BONECAST_DATA_R;
 
             return true;
         }
@@ -288,7 +289,7 @@ namespace CBP
             return;
 
         Game::ObjectHandle handle;
-        if (!Game::GetHandle(a_ref, a_ref->formType, handle))
+        if (!handle.Get(Actor::kTypeID, a_ref))
             return;
 
         /*auto armor = a_params->data.armor;
@@ -363,8 +364,8 @@ namespace CBP
         };
 
         {
-            CreateArmorNodeInject code(CreateArmorNodePost);
-            g_branchTrampoline.Write5Branch(CreateArmorNodePost, code.get());
+            CreateArmorNodeInject code(CreateArmorNodePostAddr);
+            g_branchTrampoline.Write5Branch(CreateArmorNodePostAddr, code.get());
         }
 
         if (m_conf.taskpool_offload) {
@@ -423,7 +424,7 @@ namespace CBP
 
     void DCBP::LoadProfiles()
     {
-        auto& driverConf = GetDriverConfig();
+        const auto& driverConf = GetDriverConfig();
 
         PerfTimer pt;
         pt.Start();
@@ -497,9 +498,12 @@ namespace CBP
         SavePending();
 
         m_Instance.m_controller->ClearActors(true);
+
         m_Instance.m_renderer.reset();
         m_Instance.m_controller.reset();
         m_Instance.m_uiContext.reset();
+
+        CBP::ICollision::Destroy();
     }
 
     void DCBP::MessageHandler(Event, void* args)
@@ -538,7 +542,7 @@ namespace CBP
             if (iface.LoadDefaultProfile())
                 IConfig::StoreDefaultProfile();
 
-            if (DData::HasModList())
+            if (DData::HasPluginList())
             {
                 if (!ITemplate::LoadProfiles())
                     m_Instance.Error("%s: ITemplate::LoadProfiles failed: %s",
@@ -576,8 +580,12 @@ namespace CBP
         }
         break;
         case SKSEMessagingInterface::kMessage_NewGame:
-            ResetActors();
-            break;
+        {
+            IScopedCriticalSection _(GetLock());
+            GetController()->ResetInstructionQueue();
+        }
+        ResetActors();
+        break;
         }
     }
 
@@ -618,7 +626,7 @@ namespace CBP
             return false;
         }
 
-        std::unique_ptr<char[]> data(new char[dataLength]);
+        auto data = std::make_unique<char[]>(dataLength);
 
         if (a_intfc->ReadRecordData(data.get(), dataLength) != dataLength) {
             m_Instance.Error("[%.4s]: Couldn't read record data", &a_type);
@@ -632,13 +640,13 @@ namespace CBP
         {
             using namespace boost::iostreams;
 
-            typedef basic_array_source<char> Device;
+            using Device = basic_array_source<char>;
             stream<Device> stream(data.get(), dataLength);
 
             filtering_streambuf<input> in;
-            in.push(gzip_decompressor(zlib::default_window_bits, 1024 * 256));
+            in.push(gzip_decompressor(zlib::default_window_bits, 1024 * 64));
             in.push(stream);
-            length = copy(in, out);
+            length = copy(in, out, 1024 * 64);
         }
         catch (const boost::iostreams::gzip_error& e)
         {
@@ -731,6 +739,8 @@ namespace CBP
         GetProfiler().Reset();
         QueueUIReset();
 
+        GetController()->ResetInstructionQueue();
+
         Unlock();
 
         m_Instance.Debug("%s: %f", __FUNCTION__, pt.Stop());
@@ -785,9 +795,9 @@ namespace CBP
             using namespace boost::iostreams;
 
             filtering_streambuf<input> in;
-            in.push(gzip_compressor(gzip_params(driverConf.compression_level), 1024 * 256));
+            in.push(gzip_compressor(gzip_params(driverConf.compression_level), 1024 * 64));
             in.push(ss);
-            length = static_cast<UInt32>(copy(in, out));
+            length = static_cast<UInt32>(copy(in, out, 1024 * 64));
         }
         catch (const boost::iostreams::gzip_error& e)
         {
@@ -1078,7 +1088,7 @@ namespace CBP
 
     void DCBP::UpdateNodeRefDataTask::Run()
     {
-        auto actor = Game::ResolveObject<Actor>(m_handle, Actor::kTypeID);
+        auto actor = m_handle.Resolve<Actor>();
         if (!actor)
             return;
 

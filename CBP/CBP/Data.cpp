@@ -43,13 +43,13 @@ namespace CBP
 
     void IData::UpdateActorMaps(Game::ObjectHandle a_handle)
     {
-        auto actor = Game::ResolveObject<Actor>(a_handle, Actor::kTypeID);
+        auto actor = a_handle.Resolve<Actor>();
         if (actor == nullptr)
             return;
 
         UpdateActorMaps(a_handle, actor);
     }
-    
+
     void IData::ReleaseActorMaps()
     {
         actorNpcMap.swap(decltype(actorNpcMap)());
@@ -60,7 +60,7 @@ namespace CBP
         std::ostringstream ss;
 
         ss << "[" << std::uppercase << std::setfill('0') <<
-            std::setw(8) << std::hex << (a_handle & 0xFFFFFFFF) << "]";
+            std::setw(8) << std::hex << a_handle.GetFormID() << "]";
 
         a_out.name = ss.str();
 
@@ -126,7 +126,7 @@ namespace CBP
 
         e.first->second.active = false;
 
-        auto actor = Game::ResolveObject<Actor>(a_handle, Actor::kTypeID);
+        auto actor = a_handle.Resolve<Actor>();
 
         if (actor)
             FillActorCacheEntry(actor, e.first->second);
@@ -141,7 +141,7 @@ namespace CBP
 
         for (auto& e : a_list)
         {
-            auto actor = Game::ResolveObject<Actor>(e.first, Actor::kTypeID);
+            auto actor = e.first.Resolve<Actor>();
             if (actor == nullptr)
                 continue;
 
@@ -161,23 +161,20 @@ namespace CBP
         auto refHolder = CrosshairRefHandleHolder::GetSingleton();
         if (refHolder)
         {
-            auto handle = refHolder->CrosshairRefHandle();
-            if (handle != 0 && handle != (*g_invalidRefHandle))
-            {
-                NiPointer<TESObjectREFR> ref;
-                LookupREFRByHandle(handle, ref);
+            auto &handle = refHolder->CrosshairRefHandle();
 
-                if (ref != nullptr)
+            NiPointer<TESObjectREFR> ref;
+
+            if (handle.LookupREFR(ref))
+            {
+                if (ref->formType == Actor::kTypeID)
                 {
-                    if (ref->formType == Actor::kTypeID)
+                    Game::ObjectHandle handle;
+                    if (handle.Get(ref))
                     {
-                        Game::ObjectHandle handle;
-                        if (Game::GetHandle(ref, ref->formType, handle))
-                        {
-                            auto it = actorCache.find(handle);
-                            if (it != actorCache.end()) {
-                                crosshairRef = it->first;
-                            }
+                        auto it = actorCache.find(handle);
+                        if (it != actorCache.end()) {
+                            crosshairRef = it->first;
                         }
                     }
                 }
@@ -263,12 +260,12 @@ namespace CBP
 
     void IData::UpdateNodeReferenceData(const Actor* a_actor)
     {
-        /*if (!a_actor->loadedState || !a_actor->loadedState->node)
+        /*if (!a_actor->loadedState || !a_actor->loadedState->object)
             return;
 
         BSFixedString bone("NPC Root [Root]");
 
-        auto root = a_actor->loadedState->node->GetObjectByName(&bone.data);
+        auto root = a_actor->loadedState->object->GetObjectByName(&bone.data);
         if (!root)
             return;*/
 

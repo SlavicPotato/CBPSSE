@@ -10,6 +10,7 @@ namespace SKSE
     SKSEMessagingInterface* g_messaging;
     SKSEPapyrusInterface* g_papyrus;
     SKSESerializationInterface* g_serialization;
+    SKSETaskInterface* g_taskInterface;
 
     size_t branchTrampolineSize = 0;
     size_t localTrampolineSize = 0;
@@ -89,6 +90,17 @@ namespace SKSE
             return false;
         }
 
+        g_taskInterface = (SKSETaskInterface*)skse->QueryInterface(kInterface_Task);
+        if (g_taskInterface == nullptr) {
+            gLog.FatalError("Couldn't get task interface.");
+            return false;
+        }
+
+        if (g_taskInterface->interfaceVersion < SKSETaskInterface::kInterfaceVersion) {
+            gLog.FatalError("Task interface too old (%d expected %d)", g_taskInterface->interfaceVersion, SKSETaskInterface::kInterfaceVersion);
+            return false;
+        }
+
         branchTrampolineSize = Hook::InitBranchTrampoline(skse, MAX_TRAMPOLINE_BRANCH);
         if (!branchTrampolineSize)
         {
@@ -107,27 +119,15 @@ namespace SKSE
     }
 
     // adapted from skee64
-    bool ResolveHandle(SKSESerializationInterface* intfc, UInt64 a_handle, UInt64* a_newHandle)
+    bool ResolveHandle(SKSESerializationInterface* intfc, Game::ObjectHandle a_handle, Game::ObjectHandle& a_out)
     {
-        UInt32 modID = (a_handle & 0xFF000000) >> 24;
-
-        // Do this until the light mod ResolveHandle bug is fixed in skse
-        if (modID == 0xFE)
-        {
-            UInt32 newFormID;
-            if (!intfc->ResolveFormId(a_handle & 0xFFFFFFFF, &newFormID)) {
-                return false;
-            }
-
-            *a_newHandle = static_cast<UInt64>(newFormID) | (a_handle & 0xFFFFFFFF00000000);
-        }
-        else if (modID != 0xFF) {
-            if (!intfc->ResolveHandle(a_handle, a_newHandle)) {
+        if (!a_handle.IsTemporary()) {
+            if (!intfc->ResolveHandle(a_handle, &a_out)) {
                 return false;
             }
         }
         else {
-            auto formCheck = LookupFormByID(a_handle & 0xFFFFFFFF);
+            auto formCheck = a_handle.GetFormID().Lookup();
             if (!formCheck) {
                 return false;
             }
@@ -137,26 +137,26 @@ namespace SKSE
                 return false;
             }
 
-            *a_newHandle = a_handle;
+            a_out = a_handle;
         }
 
         return true;
     }
 
-    bool ResolveRaceForm(SKSESerializationInterface* intfc, UInt32 a_formid, UInt32* a_newFormid)
+    bool ResolveRaceForm(SKSESerializationInterface* intfc, Game::FormID a_formID, Game::FormID& a_out)
     {
-        UInt32 tmp;
+        Game::FormID tmp;
 
-        if (((a_formid & 0xFF000000) >> 24) != 0xFF) {
-            if (!intfc->ResolveFormId(a_formid, &tmp)) {
+        if (!a_formID.IsTemporary()) {
+            if (!intfc->ResolveFormId(a_formID, &tmp)) {
                 return false;
             }
         }
         else {
-            tmp = a_formid;
+            tmp = a_formID;
         }
 
-        auto formCheck = LookupFormByID(tmp);
+        auto formCheck = tmp.Lookup();
         if (!formCheck) {
             return false;
         }
@@ -166,7 +166,7 @@ namespace SKSE
             return false;
         }
 
-        *a_newFormid = tmp;
+        a_out = tmp;
 
         return true;
     }

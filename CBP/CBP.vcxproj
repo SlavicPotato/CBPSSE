@@ -342,7 +342,7 @@
       <ConformanceMode>false</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include;$(SolutionDir)..\DirectXTK;$(SolutionDir)..\assimp\include;$(ProjectDir);$(SolutionDir)..\bullet3\src</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include;$(SolutionDir)..\DirectXTK;$(SolutionDir)..\assimp\include;$(ProjectDir);$(SolutionDir)..\bullet3\src;$(SolutionDir)..\meshoptimizer\src</AdditionalIncludeDirectories>
       <ForcedIncludeFiles>common/IPrefix.h</ForcedIncludeFiles>
       <UseFullPaths>false</UseFullPaths>
       <LanguageStandard>stdcpplatest</LanguageStandard>
@@ -378,7 +378,7 @@
       <ConformanceMode>false</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include;$(SolutionDir)..\DirectXTK;$(SolutionDir)..\assimp\include;$(ProjectDir);$(SolutionDir)..\bullet3\src</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include;$(SolutionDir)..\DirectXTK;$(SolutionDir)..\assimp\include;$(ProjectDir);$(SolutionDir)..\bullet3\src;$(SolutionDir)..\meshoptimizer\src</AdditionalIncludeDirectories>
       <ForcedIncludeFiles>common/IPrefix.h</ForcedIncludeFiles>
       <UseFullPaths>false</UseFullPaths>
       <LanguageStandard>stdcpplatest</LanguageStandard>
@@ -418,7 +418,7 @@
       <ConformanceMode>false</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include;$(SolutionDir)..\DirectXTK;$(SolutionDir)..\assimp\include;$(ProjectDir);$(SolutionDir)..\bullet3\src</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include;$(SolutionDir)..\DirectXTK;$(SolutionDir)..\assimp\include;$(ProjectDir);$(SolutionDir)..\bullet3\src;$(SolutionDir)..\meshoptimizer\src</AdditionalIncludeDirectories>
       <ForcedIncludeFiles>common/IPrefix.h</ForcedIncludeFiles>
       <UseFullPaths>false</UseFullPaths>
       <LanguageStandard>stdcpplatest</LanguageStandard>
@@ -458,7 +458,7 @@
       <ConformanceMode>false</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include;$(SolutionDir)..\DirectXTK;$(SolutionDir)..\assimp\include;$(ProjectDir);$(SolutionDir)..\bullet3\src</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include;$(SolutionDir)..\DirectXTK;$(SolutionDir)..\assimp\include;$(ProjectDir);$(SolutionDir)..\bullet3\src;$(SolutionDir)..\meshoptimizer\src</AdditionalIncludeDirectories>
       <ForcedIncludeFiles>common/IPrefix.h</ForcedIncludeFiles>
       <UseFullPaths>false</UseFullPaths>
       <LanguageStandard>stdcpplatest</LanguageStandard>
@@ -501,7 +501,7 @@
       <ConformanceMode>false</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include;$(SolutionDir)..\DirectXTK;$(SolutionDir)..\assimp\include;$(ProjectDir);$(SolutionDir)..\bullet3\src</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include;$(SolutionDir)..\DirectXTK;$(SolutionDir)..\assimp\include;$(ProjectDir);$(SolutionDir)..\bullet3\src;$(SolutionDir)..\meshoptimizer\src</AdditionalIncludeDirectories>
       <ForcedIncludeFiles>common/IPrefix.h</ForcedIncludeFiles>
       <UseFullPaths>false</UseFullPaths>
       <LanguageStandard>stdcpplatest</LanguageStandard>
@@ -541,7 +541,7 @@
       <ConformanceMode>false</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include;$(SolutionDir)..\DirectXTK;$(SolutionDir)..\assimp\include;$(ProjectDir);$(SolutionDir)..\bullet3\src</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include;$(SolutionDir)..\DirectXTK;$(SolutionDir)..\assimp\include;$(ProjectDir);$(SolutionDir)..\bullet3\src;$(SolutionDir)..\meshoptimizer\src</AdditionalIncludeDirectories>
       <ForcedIncludeFiles>common/IPrefix.h</ForcedIncludeFiles>
       <UseFullPaths>false</UseFullPaths>
       <LanguageStandard>stdcpplatest</LanguageStandard>
@@ -585,7 +585,7 @@
       <ConformanceMode>false</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include;$(SolutionDir)..\DirectXTK;$(SolutionDir)..\assimp\include;$(ProjectDir);$(SolutionDir)..\bullet3\src</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include;$(SolutionDir)..\DirectXTK;$(SolutionDir)..\assimp\include;$(ProjectDir);$(SolutionDir)..\bullet3\src;$(SolutionDir)..\meshoptimizer\src</AdditionalIncludeDirectories>
       <ForcedIncludeFiles>common/IPrefix.h</ForcedIncludeFiles>
       <UseFullPaths>false</UseFullPaths>
       <LanguageStandard>stdcpplatest</LanguageStandard>
@@ -629,7 +629,7 @@
       <ConformanceMode>false</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include;$(SolutionDir)..\DirectXTK;$(SolutionDir)..\assimp\include;$(ProjectDir);$(SolutionDir)..\bullet3\src</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include;$(SolutionDir)..\DirectXTK;$(SolutionDir)..\assimp\include;$(ProjectDir);$(SolutionDir)..\bullet3\src;$(SolutionDir)..\meshoptimizer\src</AdditionalIncludeDirectories>
       <ForcedIncludeFiles>common/IPrefix.h</ForcedIncludeFiles>
       <UseFullPaths>false</UseFullPaths>
       <LanguageStandard>stdcpplatest</LanguageStandard>
@@ -669,7 +669,7 @@
       <ConformanceMode>false</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include;$(SolutionDir)..\DirectXTK;$(SolutionDir)..\assimp\include;$(ProjectDir);$(SolutionDir)..\bullet3\src</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include;$(SolutionDir)..\DirectXTK;$(SolutionDir)..\assimp\include;$(ProjectDir);$(SolutionDir)..\bullet3\src;$(SolutionDir)..\meshoptimizer\src</AdditionalIncludeDirectories>
       <ForcedIncludeFiles>common/IPrefix.h</ForcedIncludeFiles>
       <UseFullPaths>false</UseFullPaths>
       <LanguageStandard>stdcpplatest</LanguageStandard>
@@ -712,7 +712,7 @@
       <ConformanceMode>false</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include;$(SolutionDir)..\DirectXTK;$(SolutionDir)..\assimp\include;$(ProjectDir);$(SolutionDir)..\bullet3\src</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include;$(SolutionDir)..\DirectXTK;$(SolutionDir)..\assimp\include;$(ProjectDir);$(SolutionDir)..\bullet3\src;$(SolutionDir)..\meshoptimizer\src</AdditionalIncludeDirectories>
       <ForcedIncludeFiles>common/IPrefix.h</ForcedIncludeFiles>
       <UseFullPaths>false</UseFullPaths>
       <LanguageStandard>stdcpplatest</LanguageStandard>
@@ -754,7 +754,7 @@
       <ConformanceMode>false</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include;$(SolutionDir)..\DirectXTK;$(SolutionDir)..\assimp\include;$(ProjectDir);$(SolutionDir)..\bullet3\src</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include;$(SolutionDir)..\DirectXTK;$(SolutionDir)..\assimp\include;$(ProjectDir);$(SolutionDir)..\bullet3\src;$(SolutionDir)..\meshoptimizer\src</AdditionalIncludeDirectories>
       <ForcedIncludeFiles>common/IPrefix.h</ForcedIncludeFiles>
       <UseFullPaths>false</UseFullPaths>
       <LanguageStandard>stdcpplatest</LanguageStandard>
@@ -798,7 +798,7 @@
       <ConformanceMode>false</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include;$(SolutionDir)..\DirectXTK;$(SolutionDir)..\assimp\include;$(ProjectDir);$(SolutionDir)..\bullet3\src</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include;$(SolutionDir)..\DirectXTK;$(SolutionDir)..\assimp\include;$(ProjectDir);$(SolutionDir)..\bullet3\src;$(SolutionDir)..\meshoptimizer\src</AdditionalIncludeDirectories>
       <ForcedIncludeFiles>common/IPrefix.h</ForcedIncludeFiles>
       <UseFullPaths>false</UseFullPaths>
       <LanguageStandard>stdcpplatest</LanguageStandard>
@@ -842,7 +842,7 @@
       <ConformanceMode>false</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include;$(SolutionDir)..\DirectXTK;$(SolutionDir)..\assimp\include;$(ProjectDir);$(SolutionDir)..\bullet3\src</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include;$(SolutionDir)..\DirectXTK;$(SolutionDir)..\assimp\include;$(ProjectDir);$(SolutionDir)..\bullet3\src;$(SolutionDir)..\meshoptimizer\src</AdditionalIncludeDirectories>
       <ForcedIncludeFiles>common/IPrefix.h</ForcedIncludeFiles>
       <UseFullPaths>false</UseFullPaths>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
@@ -891,7 +891,7 @@
       <ConformanceMode>false</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include;$(SolutionDir)..\DirectXTK;$(SolutionDir)..\assimp\include;$(ProjectDir);$(SolutionDir)..\bullet3\src</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include;$(SolutionDir)..\DirectXTK;$(SolutionDir)..\assimp\include;$(ProjectDir);$(SolutionDir)..\bullet3\src;$(SolutionDir)..\meshoptimizer\src</AdditionalIncludeDirectories>
       <ForcedIncludeFiles>common/IPrefix.h</ForcedIncludeFiles>
       <UseFullPaths>false</UseFullPaths>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
@@ -941,7 +941,7 @@
       <ConformanceMode>false</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include;$(SolutionDir)..\DirectXTK;$(SolutionDir)..\assimp\include;$(ProjectDir);$(SolutionDir)..\bullet3\src</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include;$(SolutionDir)..\DirectXTK;$(SolutionDir)..\assimp\include;$(ProjectDir);$(SolutionDir)..\bullet3\src;$(SolutionDir)..\meshoptimizer\src</AdditionalIncludeDirectories>
       <ForcedIncludeFiles>common/IPrefix.h</ForcedIncludeFiles>
       <UseFullPaths>false</UseFullPaths>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
@@ -985,6 +985,8 @@
   <ItemGroup>
     <ClInclude Include="CBP\Armor.h" />
     <ClInclude Include="CBP\ArmorCache.h" />
+    <ClInclude Include="CBP\BoneCast.h" />
+    <ClInclude Include="CBP\ColliderData.h" />
     <ClInclude Include="CBP\Collision.h" />
     <ClInclude Include="CBP\Config.h" />
     <ClInclude Include="CBP\Controller.h" />
@@ -999,7 +1001,19 @@
     <ClInclude Include="CBP\Template.h" />
     <ClInclude Include="CBP\SimComponent.h" />
     <ClInclude Include="CBP\UI.h" />
+    <ClInclude Include="CBP\UI\ActorList.h" />
+    <ClInclude Include="CBP\UI\Base.h" />
+    <ClInclude Include="CBP\UI\Force.h" />
+    <ClInclude Include="CBP\UI\List.h" />
+    <ClInclude Include="CBP\UI\Node.h" />
+    <ClInclude Include="CBP\UI\Profile.h" />
+    <ClInclude Include="CBP\UI\Race.h" />
+    <ClInclude Include="CBP\UI\RaceList.h" />
+    <ClInclude Include="CBP\UI\SimComponent.h" />
+    <ClInclude Include="Common\Crypto.h" />
     <ClInclude Include="Common\Data.h" />
+    <ClInclude Include="Common\Game.h" />
+    <ClInclude Include="Common\Misc.h" />
     <ClInclude Include="Common\ProfileManager.h" />
     <ClInclude Include="Common\Serialization.h" />
     <ClInclude Include="Common\UICommon.h" />
@@ -1012,7 +1026,6 @@
     <ClInclude Include="Drivers\input.h" />
     <ClInclude Include="Drivers\render.h" />
     <ClInclude Include="Drivers\tasks.h" />
-    <ClInclude Include="game.h" />
     <ClInclude Include="gitparams.h" />
     <ClInclude Include="ImGui\imgui_impl_dx11.h" />
     <ClInclude Include="ImGui\imgui_impl_win32.h" />
@@ -1027,6 +1040,8 @@
   <ItemGroup>
     <ClCompile Include="CBP\Armor.cpp" />
     <ClCompile Include="CBP\ArmorCache.cpp" />
+    <ClCompile Include="CBP\BoneCast.cpp" />
+    <ClCompile Include="CBP\ColliderData.cpp" />
     <ClCompile Include="CBP\Collision.cpp" />
     <ClCompile Include="CBP\Config.cpp" />
     <ClCompile Include="CBP\ConfigData.cpp" />
@@ -1044,6 +1059,16 @@
     <ClCompile Include="CBP\SimComponent.cpp" />
     <ClCompile Include="CBP\UI.cpp" />
     <ClCompile Include="CBP\UIData.cpp" />
+    <ClCompile Include="CBP\UI\ActorList.cpp" />
+    <ClCompile Include="CBP\UI\Base.cpp" />
+    <ClCompile Include="CBP\UI\Force.cpp" />
+    <ClCompile Include="CBP\UI\List.cpp" />
+    <ClCompile Include="CBP\UI\Node.cpp" />
+    <ClCompile Include="CBP\UI\Profile.cpp" />
+    <ClCompile Include="CBP\UI\RaceList.cpp" />
+    <ClCompile Include="CBP\UI\SimComponent.cpp" />
+    <ClCompile Include="Common\Crypto.cpp" />
+    <ClCompile Include="Common\Game.cpp" />
     <ClCompile Include="Common\Serialization.cpp" />
     <ClCompile Include="Common\UICommon.cpp" />
     <ClCompile Include="Common\UIData.cpp" />
@@ -1056,7 +1081,6 @@
     <ClCompile Include="Drivers\input.cpp" />
     <ClCompile Include="Drivers\render.cpp" />
     <ClCompile Include="Drivers\tasks.cpp" />
-    <ClCompile Include="game.cpp" />
     <ClCompile Include="ImGui\imgui_impl_dx11.cpp" />
     <ClCompile Include="ImGui\imgui_impl_win32.cpp" />
     <ClCompile Include="pch.cpp">
@@ -1110,6 +1134,9 @@
     </ProjectReference>
     <ProjectReference Include="..\..\imgui\deployment\a\imgui.vcxproj">
       <Project>{9f316e83-5ae5-4939-a723-305a94f48005}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\meshoptimizer\meshoptimizer.vcxproj">
+      <Project>{9c77c6b0-2b22-3322-a98c-38c9e1722617}</Project>
     </ProjectReference>
     <ProjectReference Include="..\..\sse-build-resources\skse64\common\common_vc14.vcxproj">
       <Project>{472e19ab-def0-42df-819b-18722e8dc822}</Project>

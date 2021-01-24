@@ -24,8 +24,7 @@ namespace CBP
             if (!object)
                 continue;
 
-            auto node = object->GetAsNiNode();
-            if (!node || !node->m_parent)
+            if (!object || !object->m_parent)
                 continue;
 
             if (!IConfig::IsValidGroup(b.second))
@@ -47,7 +46,7 @@ namespace CBP
 
             a_out.emplace_back(
                 b.first,
-                node,
+                object,
                 b.second,
                 a_collisions && collisions,
                 movement,
@@ -59,12 +58,13 @@ namespace CBP
         return a_out.size();
     }
 
-    SKMP_FORCEINLINE static bool IsObjectBelow(NiAVObject* a_node, NiNode* a_other)
+    SKMP_FORCEINLINE static bool IsObjectBelow(NiAVObject* a_object, NiNode* a_other)
     {
         while (a_other != nullptr)
         {
-            if (a_node == a_other)
+            if (a_object == a_other) {
                 return true;
+            }
 
             a_other = a_other->m_parent;
         }
@@ -79,7 +79,7 @@ namespace CBP
         const nodeDescList_t& a_desc)
         :
         m_handle(a_handle),
-        //m_actor(a_actor),
+        //m_handle(a_actor),
         m_sex(a_sex),
         m_node(a_actor->loadedState->node),
         m_suspended(false)
@@ -99,8 +99,9 @@ namespace CBP
         for (auto& e : a_desc)
         {
             auto obj = new SimComponent(
+                *this,
                 a_actor,
-                e.node,
+                e.object,
                 e.nodeName,
                 e.confGroup,
                 e.physConf,
@@ -116,7 +117,7 @@ namespace CBP
             {
                 auto p = (*it)->GetNode()->m_parent;
 
-                if (IsObjectBelow(e.node, p))
+                if (IsObjectBelow(e.object, p))
                     break;
 
                 ++it;
@@ -218,4 +219,4 @@ namespace CBP
             Reset();
     }
 
-    }
+}

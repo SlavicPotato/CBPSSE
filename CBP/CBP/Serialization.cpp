@@ -270,6 +270,15 @@ namespace Serialization
                             return false;
                         }
                     }
+
+                    if (version >= 3)
+                    {
+                        nc.bl.b.boneCast = it->get("b", false).asBool();
+                        nc.fp.f32.bcSimplifyTarget = it->get("bt", 1.0f).asFloat();
+                        nc.fp.f32.bcSimplifyTargetError = it->get("be", 0.02f).asFloat();
+                        nc.fp.f32.bcWeightThreshold = it->get("bw", 0.0f).asFloat();
+                        nc.ex.bcShape = it->get("bs", "").asString();
+                    }
                 }
 
                 nc.fp.f32.nodeScale = std::clamp(it->get("s", 1.0f).asFloat(), 0.0f, 20.0f);
@@ -314,9 +323,15 @@ namespace Serialization
 
             n["s"] = e.second.fp.f32.nodeScale;
             n["o"] = e.second.bl.b.overrideScale;
+
+            n["b"] = e.second.bl.b.boneCast;
+            n["bt"] = e.second.fp.f32.bcSimplifyTarget;
+            n["be"] = e.second.fp.f32.bcSimplifyTargetError;
+            n["bw"] = e.second.fp.f32.bcWeightThreshold;
+            n["bs"] = e.second.ex.bcShape;
         }
 
-        a_out["nodes_version"] = Json::Value::UInt(2);
+        a_out["nodes_version"] = Json::Value::UInt(3);
     }
 
 
@@ -412,7 +427,7 @@ namespace CBP
             auto& driverConf = DCBP::GetDriverConfig();
 
             Json::Value root;
-            ReadJsonData(driverConf.paths.settings, root);
+            ReadData(driverConf.paths.settings, root);
 
             if (root.empty())
                 return;
@@ -571,7 +586,7 @@ namespace CBP
 
                                     v.enabled = it3->get("e", false).asBool();
 
-                                    auto &m = (*it3)["m"];
+                                    auto& m = (*it3)["m"];
 
                                     for (auto& mv : m) {
                                         if (mv.isString())
@@ -730,7 +745,7 @@ namespace CBP
 
             auto& driverConf = DCBP::GetDriverConfig();
 
-            WriteJsonData(driverConf.paths.settings, root);
+            WriteData(driverConf.paths.settings, root);
 
             return true;
         }
@@ -752,7 +767,7 @@ namespace CBP
             auto& driverConf = DCBP::GetDriverConfig();
 
             Json::Value root;
-            ReadJsonData(driverConf.paths.collisionGroups, root);
+            ReadData(driverConf.paths.collisionGroups, root);
 
             if (root.isMember("groups")) {
                 auto& groups = root["groups"];
@@ -831,7 +846,7 @@ namespace CBP
 
             auto& driverConf = DCBP::GetDriverConfig();
 
-            WriteJsonData(driverConf.paths.collisionGroups, root);
+            WriteData(driverConf.paths.collisionGroups, root);
 
             return true;
         }
@@ -905,7 +920,7 @@ namespace CBP
 
             auto& driverConf = DCBP::GetDriverConfig();
 
-            ReadJsonData(driverConf.paths.defaultProfile, root);
+            ReadData(driverConf.paths.defaultProfile, root);
 
             return _LoadGlobalProfile(root) != 0;
         }
@@ -958,7 +973,7 @@ namespace CBP
 
             if (intfc != nullptr)
             {
-                if (!SKSE::ResolveHandle(intfc, handle, &newHandle)) {
+                if (!SKSE::ResolveHandle(intfc, handle, newHandle)) {
                     Error("0x%llX: Couldn't resolve handle, discarding", handle);
                     continue;
                 }
@@ -969,7 +984,8 @@ namespace CBP
                 }
             }
             else {
-                newHandle = handle;
+                if (!ResolvePluginHandle(*it, handle, newHandle))
+                    newHandle = handle;
             }
 
             configComponents_t componentData;
@@ -1029,7 +1045,7 @@ namespace CBP
             Game::FormID newFormID = 0;
 
             if (intfc != nullptr) {
-                if (!SKSE::ResolveRaceForm(intfc, formID, &newFormID)) {
+                if (!SKSE::ResolveRaceForm(intfc, formID, newFormID)) {
                     Error("0x%lX: Couldn't resolve handle, discarding", formID);
                     continue;
                 }
@@ -1040,7 +1056,8 @@ namespace CBP
                 }
             }
             else {
-                newFormID = formID;
+                if (!ResolvePluginFormID(*it, formID, newFormID))
+                    newFormID = formID;
             }
 
             auto& rl = IData::GetRaceList();
@@ -1094,7 +1111,7 @@ namespace CBP
 
     void ISerialization::ReadImportData(const fs::path& a_path, Json::Value& a_out) const
     {
-        ReadJsonData(a_path, a_out);
+        ReadData(a_path, a_out);
 
         if (a_out.empty())
             throw std::exception("Empty root object");
@@ -1197,11 +1214,13 @@ namespace CBP
             for (const auto& e : IConfig::GetActorPhysicsHolder()) {
                 auto& actor = actors[std::to_string(e.first)];
                 m_componentParser.Create(e.second, actor);
+                ResolvePluginName(e.first.GetFormID(), actor);
             }
 
             for (const auto& e : IConfig::GetActorNodeHolder()) {
                 auto& actor = actors[std::to_string(e.first)];
                 m_nodeParser.Create(e.second, actor);
+                ResolvePluginName(e.first.GetFormID(), actor);
             }
 
             auto& races = root["races"];
@@ -1209,11 +1228,13 @@ namespace CBP
             for (const auto& e : IConfig::GetRacePhysicsHolder()) {
                 auto& race = races[std::to_string(e.first)];
                 m_componentParser.Create(e.second, race);
+                ResolvePluginName(e.first, race);
             }
 
             for (const auto& e : IConfig::GetRaceNodeHolder()) {
                 auto& race = races[std::to_string(e.first)];
                 m_nodeParser.Create(e.second, race);
+                ResolvePluginName(e.first, race);
             }
 
             auto& global = root["global"];
@@ -1221,7 +1242,7 @@ namespace CBP
             m_componentParser.Create(IConfig::GetGlobalPhysics(), global);
             m_nodeParser.Create(IConfig::GetGlobalNode(), global);
 
-            WriteJsonData(a_path, root);
+            WriteData(a_path, root);
 
             return true;
         }
@@ -1231,6 +1252,60 @@ namespace CBP
             Error("%s: %s", __FUNCTION__, e.what());
             return false;
         }
+    }
+
+    void ISerialization::ResolvePluginName(Game::FormID a_formid, Json::Value& a_out)
+    {
+        if (!DData::HasPluginList())
+            return;
+
+        UInt32 modID;
+        if (!a_formid.GetPluginPartialIndex(modID))
+            return;
+
+        auto& modData = DData::GetPluginData();
+
+        auto modInfo = modData.Lookup(modID);
+        if (!modInfo)
+            return;
+
+        a_out["plugin"] = modInfo->name;
+        a_out["form"] = static_cast<uint32_t>(modInfo->GetFormIDLower(a_formid));
+    }
+
+    bool ISerialization::ResolvePluginFormID(const Json::Value& a_root, Game::FormID a_in, Game::FormID& a_out)
+    {
+        if (!DData::HasPluginList())
+            return false;
+
+        auto& v = a_root["plugin"];
+        if (v.empty() || !v.isString())
+            return false;
+
+        auto& z = a_root["form"];
+        if (z.empty() || !z.isIntegral())
+            return false;
+
+        auto& modData = DData::GetPluginData();
+
+        auto info = modData.Lookup(v.asString());
+        if (!info)
+            return false;
+
+        a_out = info->GetFormID(z.asUInt());
+
+        return true;
+    }
+
+    bool ISerialization::ResolvePluginHandle(const Json::Value& a_root, Game::ObjectHandle a_in, Game::ObjectHandle& a_out)
+    {
+        Game::FormID formid;
+        if (!ResolvePluginFormID(a_root, a_in.GetFormID(), formid))
+            return false;
+
+        a_out = a_in.StripLower() | formid;
+
+        return true;
     }
 
     size_t ISerialization::LoadRaceProfiles(SKSESerializationInterface* intfc, std::stringstream& a_data)
@@ -1347,7 +1422,7 @@ namespace CBP
 
             auto& driverConf = DCBP::GetDriverConfig();
 
-            WriteJsonData(driverConf.paths.defaultProfile, root);
+            WriteData(driverConf.paths.defaultProfile, root);
 
             return true;
         }

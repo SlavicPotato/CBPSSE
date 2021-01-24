@@ -60,10 +60,11 @@ namespace CBP
             for (unsigned int i = 0; i < mesh->mNumVertices; i++)
             {
                 auto& e = mesh->mVertices[i];
+                auto& f = tmp.m_vertices[i];
 
-                tmp.m_vertices[i].x = e.x;
-                tmp.m_vertices[i].y = e.y;
-                tmp.m_vertices[i].z = e.z;
+                f.x = e.x;
+                f.y = e.y;
+                f.z = e.z;
             }
 
             int numIndices(0);
@@ -75,30 +76,28 @@ namespace CBP
                 if (n != 3)
                     throw std::exception("aiFace.mNumIndices != 3");
 
-                numIndices += static_cast<int>(n);
+                numIndices += n;
             }
 
             if (numIndices < 1)
                 throw std::exception("No indices");
 
-            tmp.m_indices = std::make_shared<int[]>(numIndices);
-            tmp.m_hullPoints = std::make_shared<MeshPoint[]>(numIndices);
+            tmp.m_indices = std::make_shared<int[]>(size_t(numIndices));
+            tmp.m_hullPoints = std::make_shared<MeshPoint[]>(size_t(numIndices));
 
             for (unsigned int i = 0, n = 0; i < mesh->mNumFaces; i++)
             {
                 auto& e = mesh->mFaces[i];
 
-                for (unsigned int j = 0; j < e.mNumIndices; j++)
+                for (unsigned int j = 0; j < e.mNumIndices; j++, n++)
                 {
                     int index = static_cast<int>(e.mIndices[j]);
 
                     tmp.m_indices[n] = index;
                     tmp.m_hullPoints[n] = tmp.m_vertices[index];
-
-                    n++;
                 }
             }
-
+            
             tmp.m_triVertexArray = new btTriangleIndexVertexArray(
                 mesh->mNumFaces, tmp.m_indices.get(), sizeof(int) * 3,
                 numVertices, reinterpret_cast<btScalar*>(tmp.m_vertices.get()),

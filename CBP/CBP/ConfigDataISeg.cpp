@@ -44,12 +44,12 @@ namespace CBP
         f32.colOffsetMax[2] = 0.0f;
         f32.colHeightMin = 0.001f;
         f32.colHeightMax = 0.001f;
-        f32.colExtentMin[0] = 4.0f;
-        f32.colExtentMin[1] = 4.0f;
-        f32.colExtentMin[2] = 4.0f;
-        f32.colExtentMax[0] = 4.0f;
-        f32.colExtentMax[1] = 4.0f;
-        f32.colExtentMax[2] = 4.0f;
+        f32.colExtentMin[0] = 1.0f;
+        f32.colExtentMin[1] = 1.0f;
+        f32.colExtentMin[2] = 1.0f;
+        f32.colExtentMax[0] = 1.0f;
+        f32.colExtentMax[1] = 1.0f;
+        f32.colExtentMax[2] = 1.0f;
         f32.colRot[0] = 0.0f;
         f32.colRot[1] = 0.0f;
         f32.colRot[2] = 0.0f;
@@ -74,6 +74,9 @@ namespace CBP
         f32.colRot[1] = 0.0f;
         f32.colRot[2] = 0.0f;
         f32.nodeScale = 1.0f;
+        f32.bcWeightThreshold = 0.0f;
+        f32.bcSimplifyTarget = 1.0f;
+        f32.bcSimplifyTargetError = 0.02f;
     }
 
     const defaultNodeDataHolder_t g_defaultNodeData;

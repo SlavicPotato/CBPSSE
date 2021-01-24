@@ -27,6 +27,7 @@
 #include <skse64/GameRTTI.h>
 #include <skse64/NiRenderer.h>
 #include <skse64/NiExtraData.h>
+#include <skse64/NiGeometry.h>
 
 #include <map>
 #include <set>
@@ -79,8 +80,10 @@
 #include <boost/archive/binary_oarchive.hpp> 
 #include <boost/archive/binary_iarchive.hpp> 
 
+#include <boost/serialization/access.hpp>
 #include <boost/serialization/unordered_map.hpp> 
 #include <boost/serialization/string.hpp> 
+#include <boost/serialization/vector.hpp> 
 #include <boost/serialization/split_member.hpp>
 #include <boost/serialization/version.hpp>
 
@@ -89,10 +92,13 @@
 #include <json/json.h>
 
 #include <imgui.h>
+#include <misc/cpp/imgui_stdlib.h>
 
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
+
+#include <meshoptimizer.h>
 
 #include "imgui/imgui_impl_win32.h"
 #include "imgui/imgui_impl_dx11.h"
@@ -104,7 +110,6 @@ namespace fs = std::filesystem;
 #include "plugin.h"
 #include "paths.h"
 #include "Common/Data.h"
-#include "game.h"
 #include "skse.h"
 #include "config.h"
 #include "drivers/tasks.h"
@@ -117,12 +122,16 @@ namespace fs = std::filesystem;
 #include "Common/ProfileManager.h"
 #include "Common/UIData.h"
 #include "Common/UICommon.h"
+#include "Common/Crypto.h"
+#include "Common/Game.h"
 #include "cbp/Data.h"
 #include "cbp/ArmorCache.h"
+#include "CBP/ColliderData.h"
 #include "cbp/Config.h"
 #include "cbp/Serialization.h"
 #include "cbp/Profile.h"
 #include "cbp/Template.h"
+#include "CBP/BoneCast.h"
 #include "cbp/SimComponent.h"
 #include "cbp/SimObject.h"
 #include "cbp/Collision.h"

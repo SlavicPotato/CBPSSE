@@ -26,7 +26,7 @@ namespace CBP
         {
             Json::Value root;
 
-            Serialization::ReadJsonData(a_path, root);
+            Serialization::ReadData(a_path, root);
 
             if (root.isNull())
                 throw std::exception("root == null");
@@ -158,7 +158,7 @@ namespace CBP
             }
         }
 
-        Serialization::WriteJsonData(a_path, root);
+        Serialization::WriteData(a_path, root);
 
     }
     

@@ -20,3 +20,4 @@ Modified version of [CBP Physics for Skyrim SE](https://github.com/cbpphysics/CB
 * [DirectXTK](https://github.com/Microsoft/DirectXTK)
 * [boost](https://github.com/boostorg/boost)
 * [assimp (OBJ format only)](https://github.com/assimp/assimp)
+* [meshoptimizer](https://github.com/zeux/meshoptimizer)

@@ -2,7 +2,7 @@
 
 namespace CBP
 {
-    struct modData_t
+    struct pluginInfo_t
     {
         UInt32 fileFlags;
         UInt32 modIndex;
@@ -12,7 +12,7 @@ namespace CBP
         bool isLight;
         UInt32 partialIndex;
 
-        modData_t(
+        pluginInfo_t(
             UInt32 a_fileFlags,
             UInt8 a_modIndex,
             UInt16 a_lightIndex,
@@ -49,24 +49,24 @@ namespace CBP
             return isLight;
         }
 
-        SKMP_FORCEINLINE UInt32 GetFormID(UInt32 a_formIDLower) const
+        SKMP_FORCEINLINE Game::FormID GetFormID(Game::FormID a_formIDLower) const
         {
             return !isLight ?
                 modIndex << 24 | (a_formIDLower & 0xFFFFFF) :
                 0xFE000000 | (lightIndex << 12) | (a_formIDLower & 0xFFF);
         }
 
-        SKMP_FORCEINLINE UInt32 GetFormIDLower(UInt32 a_formID) const
+        SKMP_FORCEINLINE Game::FormID GetFormIDLower(Game::FormID a_formID) const
         {
             return isLight ? (a_formID & 0xFFF) : (a_formID & 0xFFFFFF);
         }
     };
 
-    class ModList
+    class IPluginInfo
     {
     public:
 
-        ModList();
+        IPluginInfo();
 
         bool Populate();
 
@@ -74,22 +74,23 @@ namespace CBP
             return m_populated;
         }
 
-        [[nodiscard]] SKMP_FORCEINLINE const auto& Get() const {
-            return m_modList;
+        [[nodiscard]] SKMP_FORCEINLINE const auto& GetIndexMap() const {
+            return m_pluginIndexMap;
         }
 
         [[nodiscard]] SKMP_FORCEINLINE const auto& GetLookupRef() const {
-            return m_mlnref;
+            return m_pluginNameMap;
         }
 
-        [[nodiscard]] const modData_t* Lookup(const std::string& a_modName) const;
+        [[nodiscard]] const pluginInfo_t* Lookup(const std::string& a_modName) const;
+        [[nodiscard]] const pluginInfo_t* Lookup(UInt32 const a_modID) const;
 
     private:
 
         bool m_populated;
 
-        stl::map<UInt32, modData_t> m_modList;
-        stl::iunordered_map<std::string, modData_t&> m_mlnref;
+        stl::map<UInt32, pluginInfo_t> m_pluginIndexMap;
+        stl::iunordered_map<std::string, pluginInfo_t&> m_pluginNameMap;
     };
 
     class DData :
@@ -101,22 +102,22 @@ namespace CBP
 
         static void MessageHandler(Event, void* args);
 
-        [[nodiscard]] SKMP_FORCEINLINE static bool HasModList() {
-            return m_Instance.m_modList.IsPopulated();
+        [[nodiscard]] SKMP_FORCEINLINE static bool HasPluginList() {
+            return m_Instance.m_pluginData.IsPopulated();
         }
 
-        [[nodiscard]] SKMP_FORCEINLINE static auto& GetModList() {
-            return m_Instance.m_modList.Get();
+        [[nodiscard]] SKMP_FORCEINLINE static const auto& GetPluginMap() {
+            return m_Instance.m_pluginData.GetIndexMap();
         }
 
-        [[nodiscard]] SKMP_FORCEINLINE static const auto& GetModData() {
-            return m_Instance.m_modList;
+        [[nodiscard]] SKMP_FORCEINLINE static const auto& GetPluginData() {
+            return m_Instance.m_pluginData;
         }
 
         FN_NAMEPROC("Data")
 
     private:
-        ModList m_modList;
+        IPluginInfo m_pluginData;
 
         static DData m_Instance;
     };

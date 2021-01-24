@@ -336,7 +336,8 @@ namespace CBP
         m_rotationScale(1.0f),
         m_doPositionScaling(false),
         m_doRotationScaling(false),
-        m_offsetParent(false)
+        m_offsetParent(false),
+        m_bonecast(false)
     {
     }
 
@@ -345,7 +346,7 @@ namespace CBP
         Destroy();
     }
 
-    bool Collider::Create(ColliderShapeType a_shape)
+    bool Collider::Create(const configNode_t& a_nodeConf, ColliderShapeType a_shape)
     {
         if (m_created)
         {
@@ -354,8 +355,26 @@ namespace CBP
                 if (a_shape == ColliderShapeType::Mesh ||
                     a_shape == ColliderShapeType::ConvexHull)
                 {
-                    if (StrHelpers::icompare(m_parent.m_conf.ex.colMesh, m_meshShape) == 0)
-                        return true;
+                    if (m_bonecast == a_nodeConf.bl.b.boneCast)
+                    {
+                        if (a_nodeConf.bl.b.boneCast)
+                        {
+                            BoneCastCache::const_iterator result;
+
+                            bool r = IBoneCast::Get(
+                                m_parent.m_parent.GetActorHandle(), 
+                                m_parent.m_nodeName, 
+                                false,
+                                result);
+
+                            if (r && result->second.m_data.second == a_nodeConf && result->second.m_updateID == m_bcUpdateID)
+                                return true;
+                        }
+                        else {
+                            if (StrHelpers::icompare(m_parent.m_conf.ex.colMesh, m_meshShape) == 0)
+                                return true;
+                        }
+                    }
                 }
                 else {
                     return true;
@@ -364,6 +383,8 @@ namespace CBP
 
             Destroy();
         }
+
+        //Destroy();
 
         m_nodeScale = m_parent.m_obj->m_localTransform.scale;
 
@@ -398,37 +419,61 @@ namespace CBP
         case ColliderShapeType::Mesh:
         case ColliderShapeType::ConvexHull:
         {
-            if (m_parent.m_conf.ex.colMesh.empty())
+            m_bonecast = a_nodeConf.bl.b.boneCast;
+
+            if (a_nodeConf.bl.b.boneCast)
             {
-                delete collider;
-                return false;
+                BoneResult res;
+
+                if (!IBoneCast::Get(
+                    m_parent.m_parent.GetActorHandle(),
+                    m_parent.GetNodeName(),
+                    a_nodeConf,
+                    res))
+                {
+                    delete collider;
+                    return false;
+                }
+
+                m_bcUpdateID = res.updateID;
+
+                m_colliderData = std::move(res.data);                
             }
-
-            const auto& pm = ProfileManagerCollider::GetSingleton();
-
-            auto it = pm.Find(m_parent.m_conf.ex.colMesh);
-            if (it == pm.End())
+            else 
             {
-                Warning("%s: couldn'transform find convex mesh",
-                    m_parent.m_conf.ex.colMesh.c_str());
+                if (m_parent.m_conf.ex.colMesh.empty())
+                {
+                    delete collider;
+                    return false;
+                }
 
-                delete collider;
-                return false;
+                const auto& pm = ProfileManagerCollider::GetSingleton();
+
+                auto it = pm.Find(m_parent.m_conf.ex.colMesh);
+                if (it == pm.End())
+                {
+                    Warning("%s: couldn't find mesh",
+                        m_parent.m_conf.ex.colMesh.c_str());
+
+                    delete collider;
+                    return false;
+                }
+
+                m_meshShape = m_parent.m_conf.ex.colMesh;
+
+                m_colliderData = std::make_unique<ColliderData>(it->second.Data());
             }
-
-            m_meshShape = m_parent.m_conf.ex.colMesh;
-
-            auto& data = it->second.Data();
 
             if (a_shape == ColliderShapeType::Mesh)
             {
                 m_colshape = new CollisionShapeMesh(
-                    collider, data.m_triVertexArray, m_parent.m_colExtent);
+                    collider, m_colliderData->m_triVertexArray, m_parent.m_colExtent);
             }
             else
             {
                 m_colshape = new CollisionShapeConvexHull(
-                    collider, data.m_hullPoints, data.m_numIndices, m_parent.m_colExtent);
+                    collider, m_colliderData->m_hullPoints, m_colliderData->m_numIndices, m_parent.m_colExtent);
+
             }
         }
         break;
@@ -478,8 +523,10 @@ namespace CBP
 
         delete m_collider;
         delete m_colshape;
+        m_colliderData.reset();
 
         m_meshShape.clear();
+        m_bonecast = false;
 
         m_created = false;
 
@@ -551,8 +598,6 @@ namespace CBP
 
         m_parent.SIMDFillObj();
 
-        auto& transform = m_collider->getWorldTransform();
-
         float parentScale = m_parent.m_objParent->m_worldTransform.scale;
 
         if (m_parent.m_motion && m_parent.m_rotScaleOn && m_doRotationScaling)
@@ -564,6 +609,8 @@ namespace CBP
 
             m_parent.m_itrMatObj = (m_parent.m_itrMatParent * (m_parent.m_itrInitialMat * m_tempRotScale));
         }
+
+        auto& transform = m_collider->getWorldTransform();
 
         if (m_parent.m_motion && m_doPositionScaling)
         {
@@ -611,6 +658,7 @@ namespace CBP
     }
 
     SimComponent::SimComponent(
+        SimObject& a_parent,
         Actor* a_actor,
         NiAVObject* a_obj,
         const std::string& a_nodeName,
@@ -621,6 +669,7 @@ namespace CBP
         bool a_collisions,
         bool a_movement)
         :
+        m_parent(a_parent),
         m_nodeName(a_nodeName),
         m_configGroupName(a_configGroupName),
         m_oldWorldPos(
@@ -716,7 +765,7 @@ namespace CBP
         {
             ColUpdateWeightData(a_actor, m_conf, a_nodeConf);
 
-            if (m_collider.Create(m_conf.ex.colShape))
+            if (m_collider.Create(a_nodeConf, m_conf.ex.colShape))
             {
                 m_collider.SetOffset(
                     m_colOffset,

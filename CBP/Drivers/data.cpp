@@ -4,19 +4,19 @@ namespace CBP
 {
     DData DData::m_Instance;
 
-    ModList::ModList() :
+    IPluginInfo::IPluginInfo() :
         m_populated(false)
     {
     }
 
-    bool ModList::Populate()
+    bool IPluginInfo::Populate()
     {
         auto dh = DataHandler::GetSingleton();
         if (!dh)
             return false;
 
-        m_modList.clear();
-        m_mlnref.clear();
+        m_pluginIndexMap.clear();
+        m_pluginNameMap.clear();
 
         for (auto it = dh->modList.modInfoList.Begin(); !it.End(); ++it)
         {
@@ -27,24 +27,31 @@ namespace CBP
             if (!modInfo->IsActive())
                 continue;
 
-            auto r = m_modList.try_emplace(it->GetPartialIndex(),
+            auto r = m_pluginIndexMap.try_emplace(it->GetPartialIndex(),
                 modInfo->fileFlags,
                 modInfo->modIndex,
                 modInfo->lightIndex,
                 modInfo->name);
 
-            m_mlnref.emplace(modInfo->name, r.first->second);
+            m_pluginNameMap.emplace(modInfo->name, r.first->second);
         }
 
-        m_populated = true;
-
-        return true;
+        return (m_populated = true);
     }
 
-    const modData_t* ModList::Lookup(const std::string& a_modName) const
+    const pluginInfo_t* IPluginInfo::Lookup(const std::string& a_modName) const
     {
-        const auto it = m_mlnref.find(a_modName);
-        if (it != m_mlnref.end()) {
+        const auto it = m_pluginNameMap.find(a_modName);
+        if (it != m_pluginNameMap.end()) {
+            return std::addressof(it->second);
+        }
+        return nullptr;
+    }
+
+    const pluginInfo_t* IPluginInfo::Lookup(UInt32 const a_modID) const
+    {
+        const auto it = m_pluginIndexMap.find(a_modID);
+        if (it != m_pluginIndexMap.end()) {
             return std::addressof(it->second);
         }
         return nullptr;
@@ -61,7 +68,7 @@ namespace CBP
 
         if (message->type == SKSEMessagingInterface::kMessage_DataLoaded)
         {
-            if (!m_Instance.m_modList.Populate())
+            if (!m_Instance.m_pluginData.Populate())
                 m_Instance.Error("Couldn't populate modlist");
 
             m_Instance.Message("Initialized");

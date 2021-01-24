@@ -6,7 +6,7 @@ namespace CBP
         -> EventResult
     {
         if (evn) {
-            auto form = LookupFormByID(evn->formId);
+            auto form = evn->formId.Lookup();
             if (form && form->formType == Actor::kTypeID) {
                 DCBP::DispatchActorTask(
                     DYNAMIC_CAST(form, TESForm, Actor),
@@ -53,10 +53,10 @@ namespace CBP
             return;
 
         Game::ObjectHandle handle;
-        if (!Game::GetHandle(actor, actor->formType, handle))
+        if (!handle.Get(actor))
             return;
 
-        auto form = LookupFormByID(evn->baseObject);
+        auto form = evn->baseObject.Lookup();
         if (!form)
             return;
 

@@ -1,371 +1,17 @@
 #pragma once
 
+#include "UI/Base.h"
+#include "UI/Node.h"
+#include "UI/SimComponent.h"
+#include "UI/List.h"
+#include "UI/ActorList.h"
+#include "UI/RaceList.h"
+#include "UI/Profile.h"
+#include "UI/Force.h"
+#include "UI/Race.h"
+
 namespace CBP
 {
-
-    class UIContext;
-
-    typedef KVStorage<UInt32, const char*> keyDesc_t;
-
-    enum class MiscHelpText : int
-    {
-        timeTick,
-        maxSubSteps,
-        timeScale,
-        colMaxPenetrationDepth,
-        showAllActors,
-        profileSelect,
-        clampValues,
-        syncMinMax,
-        rescanActors,
-        resetConfOnActor,
-        resetConfOnRace,
-        showEDIDs,
-        playableOnly,
-        colGroupEditor,
-        importDialog,
-        exportDialog,
-        simRate,
-        armorOverrides,
-        offsetMin,
-        offsetMax,
-        applyForce,
-        showNodes,
-        dataFilterPhys,
-        dataFilterNode,
-        frameTimer,
-        timePerFrame,
-        rotation
-    };
-
-    typedef std::pair<const std::string, configComponents_t> actorEntryPhysConf_t;
-    typedef stl::map<Game::ObjectHandle, actorEntryPhysConf_t> actorListPhysConf_t;
-
-    typedef std::pair<const std::string, configNodes_t> actorEntryNodeConf_t;
-    typedef stl::map<Game::ObjectHandle, actorEntryNodeConf_t> actorListNodeConf_t;
-
-    typedef std::pair<const std::string, actorCacheEntry_t> actorEntryCache_t;
-    typedef stl::map<Game::ObjectHandle, actorEntryCache_t> actorListCache_t;
-
-    typedef stl::vector<std::pair<const std::string, const configNode_t*>> nodeConfigList_t;
-
-    typedef std::function<void(configComponent32_t&, const configPropagate_t&)> propagateFunc_t;
-
-    class UIBase :
-        virtual protected UICommon::UIWindow,
-        virtual protected UICommon::UIAlignment,
-        virtual protected UICommon::UICollapsibles,
-        virtual protected UICommon::UIControls
-    {
-    protected:
-
-        void HelpMarker(MiscHelpText a_id) const;
-        void HelpMarker(const std::string& a_text) const;
-
-        template <typename T>
-        SKMP_FORCEINLINE void SetGlobal(T& a_member, T const a_value) const;
-
-    protected:
-
-        static const keyDesc_t m_comboKeyDesc;
-        static const keyDesc_t m_keyDesc;
-
-    private:
-
-        virtual UIData::UICollapsibleStates& GetCollapsibleStatesData() const;
-        virtual void OnCollapsibleStatesUpdate() const;
-        virtual void OnControlValueChange() const;
-
-        static const stl::unordered_map<MiscHelpText, const char*> m_helpText;
-    };
-
-    template <typename T>
-    class UINodeCommon :
-        virtual protected UIBase
-    {
-    protected:
-        virtual void UpdateNodeData(
-            T a_handle,
-            const std::string& a_node,
-            const configNode_t& a_data,
-            bool a_reset) = 0;
-
-        /*void DrawConfigGroupNodeItems(
-            T a_handle,
-            const std::string& a_confGroup,
-            configNodes_t& a_data
-        );*/
-
-        void DrawNodeItem(
-            T a_handle,
-            const std::string& a_nodeName,
-            configNode_t& a_conf
-        );
-    };
-
-    template <typename T, UIEditorID ID>
-    class UINodeConfGroupMenu :
-        protected UINodeCommon<T>
-    {
-    protected:
-        virtual void DrawConfGroupNodeMenu(
-            T a_handle,
-            nodeConfigList_t& a_nodeList
-        );
-
-        void DrawConfGroupNodeMenuImpl(
-            T a_handle,
-            nodeConfigList_t& a_nodeList
-        );
-    };
-
-    template <UIEditorID ID>
-    class UIMainItemFilter :
-        virtual protected UIBase
-    {
-    protected:
-
-        UIMainItemFilter(MiscHelpText a_helpText);
-
-        void DrawItemFilter();
-
-        virtual std::string GetGCSID(
-            const std::string& a_name) const = 0;
-
-        UICommon::UIRegexFilter m_dataFilter;
-    };
-
-    template <class T, UIEditorID ID>
-    class UISimComponent :
-        virtual protected UIBase,
-        protected UINodeConfGroupMenu<T, ID>,
-        UIMainItemFilter<ID>
-    {
-    public:
-        void DrawSimComponents(
-            T a_handle,
-            configComponents_t& a_data);
-
-    protected:
-        UISimComponent();
-        virtual ~UISimComponent() noexcept = default;
-
-        void DrawSliders(
-            T a_handle,
-            configComponents_t& a_data,
-            configComponentsValue_t& a_pair,
-            nodeConfigList_t& a_nodeConfig
-        );
-
-        virtual void OnSimSliderChange(
-            T a_handle,
-            configComponents_t& a_data,
-            configComponentsValue_t& a_pair,
-            const componentValueDescMap_t::vec_value_type& a_desc,
-            float* a_val
-        ) = 0;
-
-        virtual void OnColliderShapeChange(
-            T a_handle,
-            configComponents_t& a_data,
-            configComponentsValue_t& a_pair,
-            const componentValueDescMap_t::vec_value_type& a_desc
-        ) = 0;
-
-        virtual void OnComponentUpdate(
-            T a_handle,
-            configComponents_t& a_data,
-            configComponentsValue_t& a_pair) = 0;
-
-        virtual configGlobalSimComponent_t& GetSimComponentConfig() const = 0;
-
-        virtual const PhysicsProfile* GetSelectedProfile() const;
-
-        virtual void DrawGroupOptions(
-            T a_handle,
-            configComponents_t& a_data,
-            configComponentsValue_t& a_pair,
-            nodeConfigList_t& a_nodeConfig);
-
-        void Propagate(
-            configComponents_t& a_dl,
-            configComponents_t* a_dg,
-            const configComponentsValue_t& a_pair,
-            propagateFunc_t a_func) const;
-
-        [[nodiscard]] virtual std::string GetGCSID(
-            const std::string& a_name) const;
-
-        [[nodiscard]] SKMP_FORCEINLINE std::string GetCSID(
-            const std::string& a_name) const
-        {
-            std::ostringstream ss;
-            ss << "UISC#" << Enum::Underlying(ID) << "#" << a_name;
-            return ss.str();
-        }
-
-        [[nodiscard]] SKMP_FORCEINLINE std::string GetCSSID(
-            const std::string& a_name, const char* a_group) const
-        {
-            std::ostringstream ss;
-            ss << "UISC#" << Enum::Underlying(ID) << "#" << a_name << "#" << a_group;
-            return ss.str();
-        }
-
-        float GetActualSliderValue(const armorCacheValue_t& a_cacheval, float a_baseval) const;
-
-        SKMP_FORCEINLINE void MarkCurrentForErase() {
-            m_eraseCurrent = true;
-        }
-
-        void DoOnChangePropagation(
-            configComponents_t& a_data,
-            configComponents_t* a_dg,
-            configComponentsValue_t& a_pair,
-            const componentValueDescMap_t::vec_value_type& a_desc,
-            float* a_val,
-            bool a_sync,
-            float a_mval = 0.0f) const;
-
-    private:
-
-        void DrawSliderContextMenu(
-            const componentValueDescMap_t::vec_value_type *a_desc,
-            const configComponentsValue_t& a_pair) const;
-
-        void DrawSliderContextMenuMirrorItem(
-            const char *a_label,
-            const componentValueDescMap_t::vec_value_type* a_desc,
-            configPropagateEntry_t::value_type &a_propEntry,
-            const configComponentsValue_t& a_pair,
-            configPropagateMap_t &a_propMap) const;
-
-        virtual bool ShouldDrawComponent(
-            T a_handle,
-            configComponents_t& a_data,
-            const configGroupMap_t::value_type& a_cgdata,
-            const nodeConfigList_t& a_nodeConfig) const;
-
-        virtual bool HasMotion(
-            const nodeConfigList_t& a_nodeConfig) const;
-
-        virtual bool HasCollisions(
-            const nodeConfigList_t& a_nodeConfig) const;
-
-        virtual const armorCacheEntry_t::mapped_type* GetArmorOverrideSection(
-            T a_handle,
-            const std::string& a_comp) const;
-
-        virtual bool GetNodeConfig(
-            const configNodes_t& a_nodeConf,
-            const configGroupMap_t::value_type& cg_data,
-            nodeConfigList_t& a_out) const = 0;
-
-        virtual const configNodes_t& GetNodeData(
-            T a_handle) const = 0;
-
-        void DrawComponentTab(
-            T a_handle,
-            configComponents_t& a_data,
-            configComponentsValue_t& a_pair,
-            nodeConfigList_t& a_nodeConfig
-        );
-
-        void DrawPropagateContextMenu(
-            T a_handle,
-            configComponents_t& a_data,
-            configComponents_t::value_type& a_entry);
-
-        bool CopyFromSelectedProfile(
-            T a_handle,
-            configComponents_t& a_data,
-            configComponentsValue_t& a_pair);
-
-        SKMP_FORCEINLINE bool DrawSlider(
-            const componentValueDescMap_t::vec_value_type& a_entry,
-            float* a_pValue,
-            bool a_scalar);
-
-        SKMP_FORCEINLINE bool DrawSlider(
-            const componentValueDescMap_t::vec_value_type& a_entry,
-            float* a_pValue,
-            const armorCacheEntry_t::mapped_type* a_cacheEntry,
-            bool a_scalar);
-
-        SKMP_FORCEINLINE void DrawColliderShapeCombo(
-            T a_handle,
-            configComponents_t& a_data,
-            configComponentsValue_t& a_pair,
-            const componentValueDescMap_t::vec_value_type& a_entry);
-
-        char m_scBuffer1[64 + std::numeric_limits<float>::digits];
-        bool m_eraseCurrent;
-    };
-
-    template <class T, UIEditorID ID>
-    class UINode :
-        virtual protected UIBase,
-        UINodeCommon<T>,
-        UIMainItemFilter<ID>
-    {
-    public:
-        UINode();
-        virtual ~UINode() = default;
-
-        void DrawNodes(
-            T a_handle,
-            configNodes_t& a_data);
-
-    protected:
-
-        [[nodiscard]] SKMP_FORCEINLINE std::string GetCSID(
-            const std::string& a_name) const
-        {
-            std::ostringstream ss;
-            ss << "UIND#" << Enum::Underlying(ID) << "#" << a_name;
-            return ss.str();
-        }
-
-        [[nodiscard]] virtual std::string GetGCSID(
-            const std::string& a_name) const;
-
-    };
-
-    template <class T, class P>
-    class UIProfileSelector :
-        public UICommon::UIProfileSelectorBase<T, P>
-    {
-    protected:
-        virtual ProfileManager<P>& GetProfileManager() const;
-    };
-
-    template <class T>
-    class UIApplyForce :
-        virtual protected UIBase,
-        UICommon::UIDataBase<T, configComponents_t>
-    {
-        static constexpr float FORCE_MIN = -1000.0f;
-        static constexpr float FORCE_MAX = 1000.0f;
-    protected:
-        UIApplyForce() = default;
-        virtual ~UIApplyForce() = default;
-
-        void DrawForceSelector(T* a_data, configForceMap_t& a_forceData);
-
-        virtual void ApplyForce(
-            T* a_data,
-            uint32_t a_steps,
-            const std::string& a_component,
-            const NiPoint3& a_force) const = 0;
-
-    private:
-        struct {
-            SelectedItem<std::string> selected;
-        } m_forceState;
-
-        static const std::string m_chKey;
-    };
-
     class UIProfileEditorPhysics :
         public UICommon::UIProfileEditorBase<PhysicsProfile>,
         UISimComponent<int, UIEditorID::kProfileEditorPhys>
@@ -462,108 +108,6 @@ namespace CBP
             UInt32& a_out);
     };
 
-    template <class T, class P>
-    class UIListBase :
-        virtual protected UIBase
-    {
-    public:
-
-        SKMP_FORCEINLINE void QueueListUpdateCurrent() {
-            m_listNextUpdateCurrent = true;
-        }
-
-        SKMP_FORCEINLINE void QueueListUpdate() {
-            m_listNextUpdate = true;
-        }
-
-    protected:
-        typedef typename T::value_type listValue_t;
-        typedef typename T::value_type::second_type::second_type entryValue_t;
-
-        void ListTick();
-        void ListReset();
-        void ListUpdateCurrent();
-        void ListDrawInfo(listValue_t* a_entry);
-
-        UIListBase(float a_itemWidthScalar = -10.5f) noexcept;
-        virtual ~UIListBase() noexcept = default;
-
-        virtual void ListDraw(listValue_t*& a_entry, const char*& a_curSelName);
-        virtual void ListFilterSelected(listValue_t*& a_entry, const char*& a_curSelName);
-        virtual void ListDrawInfoText(listValue_t* a_entry) = 0;
-        virtual listValue_t* ListGetSelected() = 0;
-        virtual void ListSetCurrentItem(P a_handle) = 0;
-        virtual void ListUpdate() = 0;
-        virtual void ListResetAllValues(P a_handle) = 0;
-        [[nodiscard]] virtual const entryValue_t& GetData(P a_formid) = 0;
-        [[nodiscard]] virtual const entryValue_t& GetData(const listValue_t* a_data) = 0;
-
-        bool m_listFirstUpdate;
-        bool m_listNextUpdateCurrent;
-        bool m_listNextUpdate;
-
-        T m_listData;
-        P m_listCurrent;
-
-        char m_listBuf1[128];
-        UICommon::UIGenericFilter m_listFilter;
-        float m_itemWidthScalar;
-    };
-
-    template <class T>
-    class UIActorList :
-        public UIListBase<T, Game::ObjectHandle>
-    {
-    public:
-        void ActorListTick();
-        virtual void ListReset();
-    protected:
-        using listValue_t = typename UIListBase<T, Game::ObjectHandle>::listValue_t;
-        using entryValue_t = typename UIListBase<T, Game::ObjectHandle>::entryValue_t;
-
-        UIActorList(bool a_mark, bool a_addGlobal = true, float a_itemWidthScalar = -10.5f);
-        virtual ~UIActorList() noexcept = default;
-
-        virtual listValue_t* ListGetSelected();
-        virtual void ListDraw(listValue_t*& a_entry, const char*& a_curSelName);
-        virtual void ListSetCurrentItem(Game::ObjectHandle a_handle);
-
-        virtual ConfigClass GetActorClass(Game::ObjectHandle a_handle) const = 0;
-        virtual configGlobalActor_t& GetActorConfig() const = 0;
-        virtual bool HasArmorOverride(Game::ObjectHandle a_handle) const = 0;
-    private:
-        virtual void ListUpdate();
-        virtual void ListFilterSelected(listValue_t*& a_entry, const char*& a_curSelName);
-        virtual void ListDrawInfoText(listValue_t* a_entry);
-
-        uint64_t m_lastCacheUpdateId;
-
-        bool m_markActor;
-        bool m_addGlobal;
-    };
-
-    template <class T>
-    class UIRaceList :
-        public UIListBase<T, Game::FormID>
-    {
-    protected:
-        using listValue_t = typename UIListBase<T, Game::FormID>::listValue_t;
-        using entryValue_t = typename UIListBase<T, Game::FormID>::entryValue_t;
-
-        UIRaceList();
-        virtual ~UIRaceList() noexcept = default;
-
-        virtual listValue_t* ListGetSelected();
-        virtual void ListSetCurrentItem(Game::FormID a_formid);
-
-        [[nodiscard]] virtual configGlobalRace_t& GetRaceConfig() const = 0;
-
-    private:
-        virtual void ListUpdate();
-        virtual void ListFilterSelected(listValue_t*& a_entry, const char*& a_curSelName);
-        virtual void ListDrawInfoText(listValue_t* a_entry);
-    };
-
     class UICollisionGroups :
         virtual protected UIBase
     {
@@ -599,44 +143,17 @@ namespace CBP
             const configNode_t& a_data,
             bool a_reset);
 
+        virtual void DrawBoneCastSample(
+            Game::ObjectHandle a_handle,
+            const std::string& a_nodeName,
+            configNode_t& a_conf);
+
         [[nodiscard]] virtual ConfigClass GetActorClass(Game::ObjectHandle a_handle) const;
         [[nodiscard]] virtual configGlobalActor_t& GetActorConfig() const;
         [[nodiscard]] virtual bool HasArmorOverride(Game::ObjectHandle a_handle) const;
     };
 
-    typedef std::pair<const std::string, configComponents_t> raceEntryPhysConf_t;
-    typedef stl::map<Game::FormID, raceEntryPhysConf_t> raceListPhysConf_t;
-
-    typedef std::pair<const std::string, configNodes_t> raceEntryNodeConf_t;
-    typedef stl::map<Game::FormID, raceEntryNodeConf_t> raceListNodeConf_t;
-
-    template <class T, class N>
-    class UIRaceEditorBase :
-        virtual protected UIBase,
-        public UIRaceList<T>,
-        protected UIProfileSelector<typename T::value_type, N>
-    {
-    public:
-
-        [[nodiscard]] SKMP_FORCEINLINE bool GetChanged() {
-            bool r = m_changed;
-            m_changed = false;
-            return r;
-        }
-
-        virtual void Reset();
-
-    protected:
-        UIRaceEditorBase() noexcept;
-        virtual ~UIRaceEditorBase() noexcept = default;
-
-        [[nodiscard]] virtual const entryValue_t& GetData(Game::FormID a_formid) = 0;
-
-        SKMP_FORCEINLINE void MarkChanged() { m_changed = true; }
-
-        bool m_changed;
-    };
-
+    
     class UIRaceEditorNode :
         public UIRaceEditorBase<raceListNodeConf_t, NodeProfile>,
         UINode<Game::FormID, UIEditorID::kRaceNodeEditor>
@@ -796,7 +313,7 @@ namespace CBP
 
         bool m_sized = false;
         char m_buffer[64];
-    };
+};
 #endif
 
     class UIFileSelector :
@@ -963,7 +480,7 @@ namespace CBP
         void SetCurrentEntry(const std::string& a_path, const armorCacheEntry_t& a_entry);
         bool SetCurrentEntry(const std::string& a_path, bool a_fromDisk = false);
 
-        void RemoveGroup(const std::string &a_path, const std::string &a_group);
+        void RemoveGroup(const std::string& a_path, const std::string& a_group);
         void DoSave(const entry_type& a_entry);
 
         static const char* OverrideModeToDesc(uint32_t a_mode);
@@ -1025,6 +542,9 @@ namespace CBP
 
             virtual bool HasCollisions(
                 const nodeConfigList_t& a_nodeConfig) const;
+            
+            virtual bool HasBoneCast(
+                const nodeConfigList_t& a_nodeConfig) const;
 
             virtual const armorCacheEntry_t::mapped_type* GetArmorOverrideSection(
                 Game::ObjectHandle a_handle,
@@ -1043,6 +563,11 @@ namespace CBP
                 const std::string& a_node,
                 const configNode_t& a_data,
                 bool a_reset);
+
+            virtual void DrawBoneCastSample(
+                Game::ObjectHandle a_handle,
+                const std::string& a_nodeName,
+                configNode_t& a_conf);
 
             virtual configGlobalSimComponent_t& GetSimComponentConfig() const;
 

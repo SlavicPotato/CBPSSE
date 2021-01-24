@@ -14,7 +14,7 @@ namespace CBP
             const configNode_t& a_nodeConf)
             :
             nodeName(a_nodeName),
-            node(a_node),
+            object(a_node),
             confGroup(a_confGroup),
             collisions(a_collisions),
             movement(a_movement),
@@ -24,7 +24,7 @@ namespace CBP
         }
 
         const std::string& nodeName;
-        NiAVObject* node;
+        NiAVObject* object;
         const std::string& confGroup;
         bool collisions;
         bool movement;
@@ -98,6 +98,10 @@ namespace CBP
 
         [[nodiscard]] SKMP_FORCEINLINE const auto& GetNodeList() const {
             return m_objList;
+        }
+
+        [[nodiscard]] SKMP_FORCEINLINE auto GetActorHandle() const {
+            return m_handle;
         }
 
     private:
