@@ -46,8 +46,7 @@ namespace Game
         }
     }
 
-
-    static RelocAddr<ProcessLists**> s_processLists(0x1ebead0);
+    static auto s_processLists = IAL::Addr<ProcessLists**>(514167);
 
     ProcessLists* ProcessLists::GetSingleton()
     {
@@ -59,14 +58,14 @@ namespace Game
         return CALL_MEMBER_FN(this, _GuardsPursuing)(a_actor, 0x15, 0) != 0;
     }
 
-    static RelocAddr<BSMain**> s_BSMain(0x2f26bf8);
+    static auto s_BSMain = IAL::Addr<BSMain**>(516943);
 
     BSMain* BSMain::GetSingleton()
     {
         return *s_BSMain;
     }
 
-    static RelocAddr<Unk00*> s_Unk00(0x2F6B930);
+    static Unk00* s_Unk00 = IAL::Addr<Unk00*>(523657);
 
     Unk00* Unk00::GetSingleton()
     {
@@ -77,5 +76,4 @@ namespace Game
     {
         CALL_MEMBER_FN(this, _SetGlobalTimeMultiplier)(a_scale, a_unk);
     }
-
 }
