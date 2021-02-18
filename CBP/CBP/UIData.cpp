@@ -2,34 +2,40 @@
 
 namespace CBP
 {
-    const stl::unordered_map<MiscHelpText, const char*> UIBase::m_helpText({
-        {MiscHelpText::timeTick, "Target update rate. Setting this below 60 is not recommended."},
-        {MiscHelpText::maxSubSteps, ""},
-        {MiscHelpText::timeScale, "Simulation rate, speeds up or slows down time"},
-        {MiscHelpText::colMaxPenetrationDepth, "Maximum penetration depth during collisions"},
-        {MiscHelpText::showAllActors, "Checked: Show all known actors\nUnchecked: Only show actors currently simulated"},
-        {MiscHelpText::clampValues, "Clamp slider values to the default range."},
-        {MiscHelpText::syncMinMax, "Move weighted sliders together."},
-        {MiscHelpText::rescanActors, "Scan for nearby actors and update list."},
-        {MiscHelpText::resetConfOnActor, "Clear configuration for currently selected actor."},
-        {MiscHelpText::resetConfOnRace, "Clear configuration for currently selected race."},
-        {MiscHelpText::showEDIDs, "Show editor ID's instead of names."},
-        {MiscHelpText::playableOnly, "Show playable races only."},
-        {MiscHelpText::colGroupEditor, "Nodes assigned to the same group will not collide with eachother. This applies only to nodes on the same actor."},
-        {MiscHelpText::importDialog, "Import and apply actor, race and global settings from the selected file."},
-        {MiscHelpText::exportDialog, "Export actor, race and global settings."},
-        {MiscHelpText::simRate, "If this value isn't equal to framerate the simulation speed is affected. Increase max. sub steps or adjust timeTick to get proper results."},
-        {MiscHelpText::armorOverrides, ""},
-        {MiscHelpText::offsetMin, "Collider body offset (X, Y, Z, weight 0)."},
-        {MiscHelpText::offsetMax, "Collider body offset (X, Y, Z, weight 100)."},
-        {MiscHelpText::applyForce, "Apply force to node along the X, Y and Z axes, respectively."},
-        {MiscHelpText::showNodes, ""},
-        {MiscHelpText::dataFilterPhys, "Filter by configuration group name. Press enter to apply."},
-        {MiscHelpText::dataFilterNode, "Filter by node name. Press enter to apply."},
-        {MiscHelpText::frameTimer, "Skyrim's frame timer, affected by time modifier."},
-        {MiscHelpText::timePerFrame, "Amount of time the physics simulation consumes per frame (in microseconds)."},
-        {MiscHelpText::rotation, "Collider rotation in degrees around the X, Y and Z axes respectively."}
-        });
+    const char* UIBase::GetHelpText(MiscHelpText a_code)
+    {
+        switch (a_code)
+        {
+        case MiscHelpText::timeTick: return "Target update rate. Setting this below 60 is not recommended.";
+        case MiscHelpText::maxSubSteps: return "";
+        case MiscHelpText::timeScale: return "Simulation rate, speeds up or slows down time";
+        case MiscHelpText::colMaxPenetrationDepth: return "Maximum penetration depth during collisions";
+        case MiscHelpText::showAllActors: return "Checked: Show all known actors\nUnchecked: Only show actors currently simulated";
+        case MiscHelpText::clampValues: return "Clamp slider values to the default range.";
+        case MiscHelpText::syncMinMax: return "Move weighted sliders together.";
+        case MiscHelpText::rescanActors: return "Scan for nearby actors and update list.";
+        case MiscHelpText::resetConfOnActor: return "Clear configuration for currently selected actor.";
+        case MiscHelpText::resetConfOnRace: return "Clear configuration for currently selected race.";
+        case MiscHelpText::showEDIDs: return "Show editor ID's instead of names.";
+        case MiscHelpText::playableOnly: return "Show playable races only.";
+        case MiscHelpText::colGroupEditor: return "Nodes assigned to the same group will not collide with eachother. This applies only to nodes on the same actor.";
+        case MiscHelpText::importDialog: return "Import and apply actor, race and global settings from the selected file.";
+        case MiscHelpText::exportDialog: return "Export actor, race and global settings.";
+        case MiscHelpText::simRate: return "If this value isn't equal to framerate the simulation speed is affected. Increase max. sub steps or adjust timeTick to get proper results.";
+        case MiscHelpText::armorOverrides: return "";
+        case MiscHelpText::offsetMin: return "Collider body offset (X, Y, Z, weight 0).";
+        case MiscHelpText::offsetMax: return "Collider body offset (X, Y, Z, weight 100).";
+        case MiscHelpText::applyForce: return "Apply force to node along the X, Y and Z axes, respectively.";
+        case MiscHelpText::showNodes: return "";
+        case MiscHelpText::dataFilterPhys: return "Filter by configuration group name. Press enter to apply.";
+        case MiscHelpText::dataFilterNode: return "Filter by node name. Press enter to apply.";
+        case MiscHelpText::frameTimer: return "Skyrim's frame timer, affected by time modifier.";
+        case MiscHelpText::timePerFrame: return "Amount of time the physics simulation consumes per frame (in microseconds).";
+        case MiscHelpText::rotation: return "Collider rotation in degrees around the Z, Y and Y axes respectively.";
+        case MiscHelpText::controllerStats: return "Physics controller prints information to the log. Use this only for debugging.";
+        default: return "??";
+        }
+    }
 
     const keyDesc_t UIBase::m_comboKeyDesc({
         {0, "None"},
@@ -132,5 +138,6 @@ namespace CBP
         {DIK_Y,"Y"},
         {DIK_Z,"Z"}
         });
+
 
 }

@@ -27,13 +27,14 @@ namespace CBP
             if (!modInfo->IsActive())
                 continue;
 
-            auto r = m_pluginIndexMap.try_emplace(it->GetPartialIndex(),
+            auto r = m_pluginIndexMap.try_emplace(
+                it->GetPartialIndex(),
                 modInfo->fileFlags,
                 modInfo->modIndex,
                 modInfo->lightIndex,
                 modInfo->name);
 
-            m_pluginNameMap.emplace(modInfo->name, r.first->second);
+            m_pluginNameMap.try_emplace(modInfo->name, r.first->second);
         }
 
         return (m_populated = true);

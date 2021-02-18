@@ -4,37 +4,35 @@ namespace CBP
 {
     bool EquippedArmorCollector::Accept(InventoryEntryData* a_entryData)
     {
-        if (!a_entryData || !a_entryData->type || a_entryData->type->formType != TESObjectARMO::kTypeID)
+        if (!a_entryData || !a_entryData->type || a_entryData->countDelta < 1)
             return true;
-
+        
         auto extendDataList = a_entryData->extendDataList;
         if (!extendDataList)
             return true;
 
-        auto bipedObject = DYNAMIC_CAST(a_entryData->type, TESForm, BGSBipedObjectForm);
-        if (!bipedObject || bipedObject->data.parts == 0)
+        auto armor = RTTI<TESObjectARMO>()(a_entryData->type);
+        if (!armor)
             return true;
 
-        for (auto it = extendDataList->Begin(); !it.End(); ++it)
+        /*auto bipedObject = RTTI<BGSBipedObjectForm>::Cast(a_entryData->type);
+        if (!bipedObject || bipedObject->data.parts == 0)
+            return true;*/
+
+        SInt32 i = 0;
+        auto extraDataList = extendDataList->GetNthItem(i);
+
+        while (extraDataList)
         {
-            auto extraDataList = it.Get();
-
-            if (!extraDataList)
-                continue;
-
-            if (!extraDataList->HasType(kExtraData_Worn) &&
-                !extraDataList->HasType(kExtraData_WornLeft))
+            if (extraDataList->HasType(kExtraData_Worn) ||
+                extraDataList->HasType(kExtraData_WornLeft))
             {
-                continue;
+                m_results.emplace(armor);
+                break;
             }
 
-            auto armor = DYNAMIC_CAST(a_entryData->type, TESForm, TESObjectARMO);
-            if (!armor)
-                continue;
-
-            m_results.emplace(armor);
-
-            break;
+            i++;
+            extraDataList = extendDataList->GetNthItem(i);
         }
 
         return true;
@@ -102,8 +100,9 @@ namespace CBP
         if (skin)
             pieces.m_results.emplace(skin);
 
-        for (auto& armor : pieces.m_results)
+        for (auto& armor : pieces.m_results) {
             FindOverrides(a_actor, armor, a_out);
+        }
 
         return !a_out.empty();
     }
@@ -115,6 +114,7 @@ namespace CBP
     {
         for (UInt32 i = 0; i < a_armor->armorAddons.count; i++)
         {
+
             TESObjectARMA* arma(nullptr);
             if (!a_armor->armorAddons.GetNthItem(i, arma))
                 continue;

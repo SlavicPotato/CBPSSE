@@ -66,19 +66,55 @@ namespace CBP
             auto world = ICollision::GetWorld();
             world->debugDrawWorld();
         }
-        catch (...) {}
+        catch (const std::exception&) {}
     }
 
     void ControllerTask::UpdatePhase1()
     {
-        for (auto& e : m_actors)
-            e.second.UpdateVelocity();
+        auto data = m_actors.getdata();
+        auto size = m_actors.vecsize();
+
+        for (size_t i = 0; i < size; i++)
+            data[i]->UpdateVelocity();
     }
 
     void ControllerTask::UpdateActorsPhase2(float a_timeStep)
     {
-        for (auto& e : m_actors)
-            e.second.UpdateMotion(a_timeStep);
+        auto data = m_actors.getdata();
+        auto size = m_actors.vecsize();
+
+#if BT_THREADSAFE
+
+        if (DCBP::GetDriverConfig().multiThreadedMotionUpdates)
+        {
+            concurrency::structured_task_group task_group;
+
+            for (size_t i = 0; i < size; i++)
+            {
+                auto p = data[i];
+                p->SetTimeStep(a_timeStep);
+
+                task_group.run(p->GetTask());
+            }
+
+            task_group.wait();
+        }
+        else
+        {
+#endif
+            for (size_t i = 0; i < size; i++)
+            {
+                data[i]->UpdateMotion(a_timeStep);
+            }
+
+#if BT_THREADSAFE
+        }
+
+#endif
+        /*concurrency::parallel_for(size_t(0), size, [&](size_t a_index) {
+            data[a_index]->UpdateMotion(a_timeStep);
+        });*/
+
     }
 
     uint32_t ControllerTask::UpdatePhase2(float a_timeStep, float a_timeTick, float a_maxTime)
@@ -240,52 +276,67 @@ namespace CBP
 
     void ControllerTask::CullActors()
     {
-        const auto& globalConfig = IConfig::GetGlobal();
-
         auto policy = (*g_skyrimVM)->GetClassRegistry()->GetHandlePolicy();
 
-        auto it = m_actors.begin();
-        while (it != m_actors.end())
+        bool notMarked(true);
+
+        auto data = m_actors.getdata();
+        auto size = m_actors.vecsize();
+
+        for (size_t i = 0; i < size; i++)
         {
-            auto actor = static_cast<Actor*>(policy->Resolve(Actor::kTypeID, it->first));
+            auto e = data[i];
+
+            auto actor = static_cast<Actor*>(policy->Resolve(Actor::kTypeID, e->GetActorHandle()));
 
             if (!ActorValid(actor))
             {
-                if (globalConfig.general.controllerStats)
-                    Debug("Removing [%.8X] [%s] (no longer valid)", it->first.GetFormID(), GetActorName(actor));
+                notMarked = false;
 
-                IConfig::RemoveArmorOverride(it->first);
-                IConfig::ClearMergedCacheThreshold();
-
-                it = m_actors.erase(it);
-
+                e->MarkForDelete();
                 continue;
             }
 
             bool attached = actor->parentCell && actor->parentCell->cellState == TESObjectCELL::kAttached;
 
-            if (!it->second.IsSuspended())
+            if (!e->IsSuspended())
             {
                 if (!attached)
                 {
-                    it->second.SetSuspended(true);
+                    e->SetSuspended(true);
 
-                    if (globalConfig.general.controllerStats)
-                        Debug("Suspended [%.8X] [%s]", actor->formID, GetActorName(actor));
+                    PrintStats("Suspended [%.8X] [%s]", actor->formID, actor->GetDisplayName());
                 }
             }
             else
             {
                 if (attached)
                 {
-                    it->second.SetSuspended(false);
+                    e->SetSuspended(false);
 
-                    if (globalConfig.general.controllerStats)
-                        Debug("Unsuspended [%.8X] [%s]", actor->formID, GetActorName(actor));
+                    PrintStats("Unsuspended [%.8X] [%s]", actor->formID, actor->GetDisplayName());
                 }
             }
+        }
 
-            ++it;
+        if (notMarked)
+            return;
+
+        auto it = m_actors.begin();
+        while (it != m_actors.end())
+        {
+            if (it->second.IsMarkedForDelete())
+            {
+                PrintStats("Removing [%.8X] (no longer valid)", it->first.GetFormID());
+
+                IConfig::RemoveArmorOverride(it->first);
+                IConfig::ClearMergedCacheThreshold();
+
+                it = m_actors.erase(it);
+            }
+            else {
+                ++it;
+            }
         }
     }
 
@@ -298,19 +349,19 @@ namespace CBP
         if (!ActorValid(actor))
             return;
 
-        const auto& globalConfig = IConfig::GetGlobal();
-
         char sex;
-        auto npc = DYNAMIC_CAST(actor->baseForm, TESForm, TESNPC);
+        auto npc = RTTI<TESNPC>()(actor->baseForm);
         if (npc != nullptr) {
             sex = CALL_MEMBER_FN(npc, GetSex)();
         }
         else {
-            if (globalConfig.general.femaleOnly)
-                return;
-
             sex = 0;
         }
+
+        const auto& globalConfig = IConfig::GetGlobal();
+
+        if (sex == 0 && globalConfig.general.femaleOnly)
+            return;
 
         if (actor->race != nullptr)
         {
@@ -346,10 +397,7 @@ namespace CBP
             return;
         }
 
-        if (globalConfig.general.controllerStats)
-        {
-            Debug("Adding [%.8X] [%s]", actor->formID, CALL_MEMBER_FN(actor, GetReferenceName)());
-        }
+        PrintStats("Adding [%.8X] [%s]", actor->formID, actor->GetDisplayName());
 
         m_actors.try_emplace(a_handle, a_handle, actor, sex, descList);
     }
@@ -360,13 +408,7 @@ namespace CBP
         if (it == m_actors.end())
             return;
 
-        const auto& globalConfig = IConfig::GetGlobal();
-
-        if (globalConfig.general.controllerStats)
-        {
-            auto actor = a_handle.Resolve<Actor>();
-            Debug("Removing [%.8X] [%s]", a_handle.GetFormID(), GetActorName(actor));
-        }
+        PrintStats("Removing [%.8X]", a_handle.GetFormID());
 
         m_actors.erase(it);
 
@@ -416,6 +458,18 @@ namespace CBP
         DoConfigUpdate(a_handle, actor, it->second);
     }
 
+    void ControllerTask::UpdateConfig(Game::ObjectHandle a_handle, Actor* a_actor)
+    {
+        if (!ActorValid(a_actor))
+            return;
+
+        auto it = m_actors.find(a_handle);
+        if (it == m_actors.end())
+            return;
+
+        DoConfigUpdate(a_handle, a_actor, it->second);
+    }
+
     void ControllerTask::DoConfigUpdate(Game::ObjectHandle a_handle, Actor* a_actor, SimObject& a_obj)
     {
         a_obj.UpdateConfig(
@@ -457,7 +511,7 @@ namespace CBP
         }
 
         if (a_release)
-            m_actors.swap(decltype(m_actors)());
+            m_actors.release();
         else
             m_actors.clear();
 
@@ -474,8 +528,7 @@ namespace CBP
     {
         const auto& globalConfig = IConfig::GetGlobal();
 
-        if (globalConfig.general.controllerStats)
-            Debug("Resetting");
+        PrintStats("Resetting");
 
         handleSet_t handles;
 
@@ -500,10 +553,32 @@ namespace CBP
     void ControllerTask::WeightUpdate(Game::ObjectHandle a_handle)
     {
         auto actor = a_handle.Resolve<Actor>();
-        if (ActorValid(actor)) {
-            CALL_MEMBER_FN(actor, QueueNiNodeUpdate)(true);
-            DTasks::AddTask<UpdateWeightTask>(a_handle);
-        }
+        if (!ActorValid(actor))
+            return;
+
+        CALL_MEMBER_FN(actor, QueueNiNodeUpdate)(true);
+        DTasks::AddTask([=]()
+            {
+                auto actor = a_handle.Resolve<Actor>();
+                if (!ActorValid(actor))
+                    return;
+
+                auto npc = RTTI<TESNPC>()(actor->baseForm);
+                if (!npc)
+                    return;
+
+                auto faceNode = actor->GetFaceGenNiNode();
+                if (faceNode) {
+                    CALL_MEMBER_FN(faceNode, AdjustHeadMorph)(BSFaceGenNiNode::kAdjustType_Neck, 0, 0.0f);
+                    UpdateModelFace(faceNode);
+                }
+
+                if (actor->actorState.IsWeaponDrawn()) {
+                    actor->DrawSheatheWeapon(false);
+                    actor->DrawSheatheWeapon(true);
+                }
+            });
+
     }
 
     void ControllerTask::WeightUpdateAll()
@@ -541,14 +616,7 @@ namespace CBP
         if (!actor)
             return;
 
-        auto form = a_formid.Lookup();
-        if (!form)
-            return;
-
-        if (form->formType != TESObjectARMO::kTypeID)
-            return;
-
-        auto armor = DYNAMIC_CAST(form, TESForm, TESObjectARMO);
+        auto armor = a_formid.Lookup<TESObjectARMO>();
         if (!armor)
             return;
 
@@ -573,7 +641,8 @@ namespace CBP
         DoConfigUpdate(a_handle, actor, it->second);
     }
 
-    void ControllerTask::UpdateArmorOverrides(Game::ObjectHandle a_handle)
+    void ControllerTask::UpdateArmorOverrides(
+        Game::ObjectHandle a_handle)
     {
         auto& globalConfig = IConfig::GetGlobal();
         if (!globalConfig.general.armorOverrides)
@@ -591,7 +660,7 @@ namespace CBP
     }
 
     void ControllerTask::DoUpdateArmorOverrides(
-        simActorList_t::value_type& a_entry,
+        simActorList_t::map_type::value_type& a_entry,
         Actor* a_actor)
     {
         bool updateConfig;
@@ -760,36 +829,4 @@ namespace CBP
         );
     }
 
-    ControllerTask::UpdateWeightTask::UpdateWeightTask(
-        Game::ObjectHandle a_handle)
-        :
-        m_handle(a_handle)
-    {
-    }
-
-    void ControllerTask::UpdateWeightTask::Run()
-    {
-        auto actor = m_handle.Resolve<Actor>();
-        if (!actor)
-            return;
-
-        auto npc = DYNAMIC_CAST(actor->baseForm, TESForm, TESNPC);
-        if (!npc)
-            return;
-
-        auto faceNode = actor->GetFaceGenNiNode();
-        if (faceNode) {
-            CALL_MEMBER_FN(faceNode, AdjustHeadMorph)(BSFaceGenNiNode::kAdjustType_Neck, 0, 0.0f);
-            UpdateModelFace(faceNode);
-        }
-
-        if (actor->actorState.IsWeaponDrawn()) {
-            actor->DrawSheatheWeapon(false);
-            actor->DrawSheatheWeapon(true);
-        }
-    }
-
-    void ControllerTask::UpdateWeightTask::Dispose() {
-        delete this;
-    }
 }

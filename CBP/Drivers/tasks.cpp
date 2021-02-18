@@ -2,30 +2,30 @@
 
 namespace CBP
 {
-    stl::vector<TaskDelegateFixed*> DTasks::s_tasks_fixed;
-    TaskQueue DTasks::s_tasks;
+    stl::vector<TaskDelegateFixed*> DTasks::m_tasks_fixed;
+    TaskQueue DTasks::m_tasks;
 
-    typedef void (*mainInitHook_t)(void);
     typedef void(*BSTaskPoolProc_t)(BSTaskPool*);
 
-    static auto MainInitHook_Target = IAL::Addr(35548, 0xFE);
     static auto BSTaskPool_Enter1 = IAL::Addr(35565, 0x6B8);
     static auto BSTaskPool_Enter2 = IAL::Addr(35582, 0x1C);
 
-    static mainInitHook_t MainInitHook_O;
     static BSTaskPoolProc_t SKSE_BSTaskPoolProc1_O;
     static BSTaskPoolProc_t SKSE_BSTaskPoolProc2_O;
 
-    bool DTasks::Initialize()
+    void DTasks::InstallHooks()
     {
-        return Hook::Call5(MainInitHook_Target, uintptr_t(TaskInit_Hook), MainInitHook_O);
+        ASSERT(Hook::Call5(BSTaskPool_Enter1, uintptr_t(TaskInterface1_Hook), SKSE_BSTaskPoolProc1_O) &&
+            Hook::Call5(BSTaskPool_Enter2, uintptr_t(TaskInterface2_Hook), SKSE_BSTaskPoolProc2_O));
+
+        FlushInstructionCache(GetCurrentProcess(), NULL, 0);
     }
 
     void DTasks::RunTasks()
     {
-        s_tasks.ProcessTasks();
+        m_tasks.ProcessTasks();
 
-        for (auto cmd : s_tasks_fixed)
+        for (auto &cmd : m_tasks_fixed)
             cmd->Run();
     }
 
@@ -41,18 +41,6 @@ namespace CBP
         SKSE_BSTaskPoolProc2_O(taskpool);
 
         RunTasks();
-    }
-
-    void DTasks::TaskInit_Hook()
-    {
-        ASSERT(Hook::Call5(BSTaskPool_Enter1, uintptr_t(TaskInterface1_Hook), SKSE_BSTaskPoolProc1_O) &&
-            Hook::Call5(BSTaskPool_Enter2, uintptr_t(TaskInterface2_Hook), SKSE_BSTaskPoolProc2_O));
-
-        FlushInstructionCache(GetCurrentProcess(), NULL, 0);
-
-        // _DMESSAGE(">> %zu", SKSE::branchTrampolineSize - g_branchTrampoline.Remain());
-
-        MainInitHook_O();
     }
 
 }

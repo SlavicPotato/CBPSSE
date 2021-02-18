@@ -16,9 +16,8 @@ namespace CBP
 
         ImGui::SameLine(width - GetNextTextOffset("Sample", true) - 4.0f);
         if (ButtonRight("Sample")) {
-            if (!a_conf.ex.bcShape.empty()) {
-                DTasks::AddTask<BoneCastCreateTask0>(a_handle, a_nodeName);
-            }
+            if (!a_conf.ex.bcShape.empty()) 
+                DCBP::BoneCastSample(a_handle, a_nodeName);
         }
 
         BoneCastCache::const_iterator it;
@@ -27,10 +26,10 @@ namespace CBP
             auto& data1 = it->second.m_data.first;
             auto& data2 = it->second.m_data.second;
 
-            ImGui::TextWrapped("Vertices: %zu, Indices: %zu / %zu, Mem: %zu kb", 
-                data1.m_vertices.size(), 
-                data2.m_indices.size(), 
-                data1.m_indices.size(), 
+            ImGui::TextWrapped("Vertices: %zu, Indices: %zu / %zu, Mem: %zu kb",
+                data1.m_vertices.size(),
+                data2.m_indices.size(),
+                data1.m_indices.size(),
                 it->second.m_size / size_t(1024));
 
         }

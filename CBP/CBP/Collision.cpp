@@ -3,7 +3,6 @@
 namespace CBP
 {
     ICollision ICollision::m_Instance;
-    ProfileManagerCollider ProfileManagerCollider::m_Instance("^[a-zA-Z0-9_\\- ]+$", ".obj");
 
     bool ColliderProfile::Save(const ColliderData& a_data, bool a_store)
     {
@@ -28,7 +27,7 @@ namespace CBP
                 throw std::exception("Bad path");
 
             Assimp::Importer importer;
-            
+
             importer.SetPropertyInteger(AI_CONFIG_PP_RVC_FLAGS, IMPORT_RVC_FLAGS);
 
             auto scene = importer.ReadFile(m_pathStr, IMPORT_FLAGS);
@@ -69,7 +68,7 @@ namespace CBP
 
             int numIndices(0);
 
-            for (unsigned int i = 0; i < mesh->mNumFaces; i++) 
+            for (unsigned int i = 0; i < mesh->mNumFaces; i++)
             {
                 int n = static_cast<int>(mesh->mFaces[i].mNumIndices);
 
@@ -97,7 +96,7 @@ namespace CBP
                     tmp.m_hullPoints[n] = tmp.m_vertices[index];
                 }
             }
-            
+
             tmp.m_triVertexArray = new btTriangleIndexVertexArray(
                 mesh->mNumFaces, tmp.m_indices.get(), sizeof(int) * 3,
                 numVertices, reinterpret_cast<btScalar*>(tmp.m_vertices.get()),
@@ -124,11 +123,11 @@ namespace CBP
     }
 
     void ColliderProfile::SetDefaults() noexcept {
-        
+
     }
 
     bool ICollision::overlapFilter::needBroadphaseCollision(
-        btBroadphaseProxy* proxy0, 
+        btBroadphaseProxy* proxy0,
         btBroadphaseProxy* proxy1) const
     {
         auto o1 = static_cast<const btCollisionObject*>(proxy0->m_clientObject);
@@ -144,8 +143,12 @@ namespace CBP
     }
 
     void ICollision::Initialize(
-        bool a_useEPA, 
-        int a_maxPersistentManifoldPoolSize, 
+#if BT_THREADSAFE
+        bool a_useThreading,
+#endif
+        bool a_useRelativeContactBreakingThreshold,
+        bool a_useEPA,
+        int a_maxPersistentManifoldPoolSize,
         int a_maxCollisionAlgorithmPoolSize)
     {
         auto& ptrs = m_Instance.m_ptrs;
@@ -157,8 +160,39 @@ namespace CBP
         conf.m_defaultMaxCollisionAlgorithmPoolSize = a_maxCollisionAlgorithmPoolSize;
 
         ptrs.bt_collision_configuration = new btDefaultCollisionConfiguration(conf);
-        ptrs.bt_dispatcher = new btCollisionDispatcher(ptrs.bt_collision_configuration);
+
+#if BT_THREADSAFE
+        if (a_useThreading)
+        {
+            auto ts = btCreateDefaultTaskScheduler();
+            //ts->setNumThreads(6);
+            btSetTaskScheduler(ts);
+
+            m_Instance.m_numThreads = ts->getNumThreads();
+
+            ptrs.bt_dispatcher = new btCollisionDispatcherMt(ptrs.bt_collision_configuration);
+
+            for (int i = 0; i < m_Instance.m_numThreads; i++) {
+                m_Instance.m_responseTasks.emplace_back();
+            }
+        }
+        else
+        {
+#endif
+            ptrs.bt_dispatcher = new btCollisionDispatcher(ptrs.bt_collision_configuration);
+#if BT_THREADSAFE
+            m_Instance.m_numThreads = 0;
+        }
+#endif
+
         ptrs.bt_broadphase = new btDbvtBroadphase();
+
+        if (!a_useRelativeContactBreakingThreshold)
+        {
+            auto flags = ptrs.bt_dispatcher->getDispatcherFlags();
+            flags &= ~btCollisionDispatcher::CD_USE_RELATIVE_CONTACT_BREAKING_THRESHOLD;
+            ptrs.bt_dispatcher->setDispatcherFlags(flags);
+        }
 
         auto world = new btCollisionWorld(ptrs.bt_dispatcher, ptrs.bt_broadphase, ptrs.bt_collision_configuration);
         world->getPairCache()->setOverlapFilterCallback(&m_Instance.m_overlapFilter);
@@ -166,6 +200,7 @@ namespace CBP
         ptrs.bt_collision_world = world;
 
         btGImpactCollisionAlgorithm::registerAlgorithm(ptrs.bt_dispatcher);
+
     }
 
     void ICollision::Destroy()
@@ -180,8 +215,41 @@ namespace CBP
 
     void ICollision::CleanProxyFromPairs(btCollisionObject* a_collider)
     {
+#if BT_THREADSAFE
+        m_Instance.m_mutex.lock();
+#endif
+
         GetWorld()->getPairCache()->cleanProxyFromPairs(
-            a_collider->getBroadphaseHandle(), GetDispatcher());
+            a_collider->getBroadphaseHandle(), GetWorld()->getDispatcher());
+
+#if BT_THREADSAFE
+        m_Instance.m_mutex.unlock();
+#endif
+    }
+
+    void ICollision::AddCollisionObject(btCollisionObject* a_collider)
+    {
+#if BT_THREADSAFE
+        m_Instance.m_mutex.lock();
+#endif
+
+        GetWorld()->addCollisionObject(a_collider);
+
+#if BT_THREADSAFE
+        m_Instance.m_mutex.unlock();
+#endif
+    }
+    void ICollision::RemoveCollisionObject(btCollisionObject* a_collider)
+    {
+#if BT_THREADSAFE
+        m_Instance.m_mutex.lock();
+#endif
+
+        GetWorld()->removeCollisionObject(a_collider);
+
+#if BT_THREADSAFE
+        m_Instance.m_mutex.unlock();
+#endif
     }
 
 }

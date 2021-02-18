@@ -32,30 +32,6 @@ namespace CBP
         BoneCacheUpdateID updateID;
     };
 
-    class BoneCastCreateTask0 :
-        public TaskDelegate
-    {
-    public:
-
-        BoneCastCreateTask0(
-            Game::ObjectHandle a_handle,
-            const std::string& a_nodeName)
-            :
-            m_handle(a_handle),
-            m_nodeName(a_nodeName)
-        {}
-
-        virtual void Run();
-        virtual void Dispose() {
-            delete this;
-        }
-
-    private:
-
-        Game::ObjectHandle m_handle;
-        std::string m_nodeName;
-    };
-
     class BoneCastCreateTask1 :
         public TaskDelegate
     {
@@ -163,14 +139,14 @@ namespace CBP
             Game::ObjectHandle a_actor,
             const std::string& a_nodeName);
 
-        template <class T, BoneCastCache::is_iterator_type<T> = 0>
+        template <class T, is_iterator_type<T> = 0>
         void Remove(const T& a_it);
 
         void EvictOverflow();
 
         void UpdateSize(CacheEntry& a_in);
 
-        [[nodiscard]] SKMP_FORCEINLINE auto GetSize() {
+        [[nodiscard]] SKMP_FORCEINLINE auto GetSize() const noexcept {
             return m_totalSize;
         }
 
@@ -258,14 +234,18 @@ namespace CBP
     {
         friend class BoneCastCreateTask;
 
-        struct Triangle
+        struct SKMP_ALIGN(32) Triangle
         {
+            SKMP_DECLARE_ALIGNED_ALLOCATOR(32)
+
             uint32_t m_indices[3];
             bool m_isBoneTri;
         };
 
-        struct Vertex
+        struct SKMP_ALIGN(32) Vertex
         {
+            SKMP_DECLARE_ALIGNED_ALLOCATOR(32)
+
             Vertex() :
                 m_weight(-1.0f),
                 m_index(0),
@@ -274,7 +254,7 @@ namespace CBP
                 m_triangles.reserve(40);
             }
 
-            std::vector<Triangle*> m_triangles;
+            stl::vector<Triangle*> m_triangles;
 
             uint32_t m_index;
             bool m_hasVertex;
@@ -298,6 +278,12 @@ namespace CBP
 
         static bool Update(
             Game::ObjectHandle a_handle,
+            const std::string& a_nodeName,
+            const configNode_t& a_nodeConfig);
+        
+        static bool Update(
+            Game::ObjectHandle a_handle,
+            Actor* a_actor,
             const std::string& a_nodeName,
             const configNode_t& a_nodeConfig);
 

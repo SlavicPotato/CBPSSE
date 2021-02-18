@@ -49,7 +49,7 @@ namespace CBP
 
     static ImVec4 s_colorWarning(1.0f, 0.66f, 0.13f, 1.0f);
 
-   
+
     ProfileManager<PhysicsProfile>& UIProfileEditorPhysics::GetProfileManager() const
     {
         return GlobalProfileManager::GetSingleton<PhysicsProfile>();
@@ -1102,6 +1102,7 @@ namespace CBP
                 }
 
                 Checkbox("Controller stats", &globalConfig.general.controllerStats);
+                HelpMarker(MiscHelpText::controllerStats);
 
                 ImGui::Spacing();
 
@@ -1218,8 +1219,8 @@ namespace CBP
                     ImGui::Spacing();
 
                     Checkbox("Draw moving nodes", &globalConfig.debugRenderer.enableMovingNodes);
+                    Checkbox("Draw moving nodes center of gravity", &globalConfig.debugRenderer.movingNodesCenterOfGravity);
                     Checkbox("Draw movement constraints", &globalConfig.debugRenderer.enableMovementConstraints);
-                    Checkbox("Show moving nodes center of gravity", &globalConfig.debugRenderer.movingNodesCenterOfGravity);
 
                     SliderFloat("Moving nodes sphere radius", &globalConfig.debugRenderer.movingNodesRadius, 0.1f, 10.0f, "%.2f");
 
@@ -1243,36 +1244,36 @@ namespace CBP
     void UIOptions::DrawKeyOptions(
         const char* a_desc,
         const keyDesc_t& a_dmap,
-        UInt32& a_out)
+        UInt32 a_key)
     {
-        std::string tmp;
+        std::unique_ptr<stl::string> tmp;
         const char* curSelName;
 
-        auto it = a_dmap->find(a_out);
+        auto it = a_dmap->find(a_key);
         if (it != a_dmap->end())
             curSelName = it->second;
         else {
-            std::ostringstream stream;
+            stl::ostringstream stream;
             stream << "0x"
                 << std::uppercase
                 << std::setfill('0') << std::setw(2)
-                << std::hex << a_out;
-            tmp = std::move(stream.str());
-            curSelName = tmp.c_str();
+                << std::hex << a_key;
+            tmp = std::make_unique<stl::string>(std::move(stream.str()));
+            curSelName = tmp->c_str();
         }
 
         if (ImGui::BeginCombo(a_desc, curSelName, ImGuiComboFlags_HeightLarge))
         {
-            for (const auto& e : a_dmap)
+            for (auto& e : a_dmap)
             {
-                ImGui::PushID(reinterpret_cast<const void*>(std::addressof(e.second)));
-                bool selected = e.first == a_out;
+                ImGui::PushID(static_cast<const void*>(std::addressof(e.second)));
+                bool selected = e.first == a_key;
                 if (selected)
                     if (ImGui::IsWindowAppearing()) ImGui::SetScrollHereY();
 
                 if (ImGui::Selectable(e.second, selected)) {
-                    if (a_out != e.first) {
-                        a_out = e.first;
+                    if (a_key != e.first) {
+                        a_key = e.first;
                         DCBP::UpdateKeys();
                         DCBP::MarkGlobalsForSave();
                     }
@@ -1287,7 +1288,6 @@ namespace CBP
 
     void UICollisionGroups::Draw(bool* a_active)
     {
-        auto& io = ImGui::GetIO();
         const auto& globalConfig = IConfig::GetGlobal();;
 
         SetWindowDimensions(0.0f, 400.0f, -1.0f, true);
@@ -1799,7 +1799,7 @@ namespace CBP
 
         return false;
     }
-    
+
     bool UIContext::UISimComponentActor::HasBoneCast(
         const nodeConfigList_t& a_nodeConfig) const
     {
@@ -2150,13 +2150,14 @@ namespace CBP
     UIProfiling::UIProfiling() :
         m_lastUID(0),
         m_plotUpdateTime("Time/frame", ImVec2(0, 30.0f), false, 200),
-        m_plotFramerate("Timer", ImVec2(0, 30.0f), false, 200)
+        m_plotFramerate("Timer", ImVec2(0, 30.0f), false, 200),
+        m_lastVMIUpdate(PerfCounter::Query() - 1000000LL)
     {
     }
 
     void UIProfiling::Initialize()
     {
-        auto& globalConfig = IConfig::GetGlobal();
+        const auto& globalConfig = IConfig::GetGlobal();
 
         m_plotUpdateTime.SetRes(globalConfig.profiling.plotValues);
         m_plotFramerate.SetRes(globalConfig.profiling.plotValues);
@@ -2167,6 +2168,44 @@ namespace CBP
         m_plotUpdateTime.SetShowAvg(globalConfig.profiling.showAvg);
         m_plotFramerate.SetShowAvg(globalConfig.profiling.showAvg);
     }
+
+    /*void UIProfiling::VMemInfo::Query()
+    {
+        auto rm = BSRenderManager::GetSingleton();
+        if (!rm) {
+            m_has = false;
+            return;
+        }
+
+        IScopedCriticalSectionEx(std::addressof(rm->lock));
+
+        try
+        {
+            using namespace Microsoft::WRL;
+
+            ComPtr<IDXGIDevice> pDXGIDevice;
+            DirectX::ThrowIfFailed(rm->forwarder->QueryInterface(IID_PPV_ARGS(pDXGIDevice.GetAddressOf())));
+
+            ComPtr<IDXGIAdapter> pDXGIAdapter;
+            DirectX::ThrowIfFailed(pDXGIDevice->GetAdapter(pDXGIAdapter.GetAddressOf()));
+
+            ComPtr<IDXGIAdapter3> adapter;
+            DirectX::ThrowIfFailed(pDXGIAdapter.As(&adapter));
+
+            DirectX::ThrowIfFailed(adapter->QueryVideoMemoryInfo(0, DXGI_MEMORY_SEGMENT_GROUP_LOCAL, std::addressof(m_data)));
+
+            m_data.Budget /= 1024 * 1024;
+            m_data.CurrentUsage /= 1024 * 1024;
+            m_data.AvailableForReservation /= 1024 * 1024;
+            m_data.CurrentReservation /= 1024 * 1024;
+
+            m_has = true;
+        }
+        catch (const DirectX::com_exception&)
+        {
+            m_has = false;
+        }
+    }*/
 
     void UIProfiling::Draw(bool* a_active)
     {
@@ -2186,20 +2225,40 @@ namespace CBP
                 auto& profiler = DCBP::GetProfiler();
                 auto& stats = profiler.Current();
 
+                /*auto t = PerfCounter::Query();
+                if (PerfCounter::delta_us(m_lastVMIUpdate, t) >= 1000000)
+                {
+                    m_lastVMIUpdate = t;
+
+                    m_vMemInfo.Query();
+                }*/
+
                 ImGui::Columns(2, nullptr, false);
 
-                ImGui::Text("Time/frame:");
+                ImGui::TextWrapped("Time/frame:");
                 HelpMarker(MiscHelpText::timePerFrame);
-                ImGui::Text("Step rate:");
-                ImGui::Text("Sim. rate:");
+                ImGui::TextWrapped("Step rate:");
+                ImGui::TextWrapped("Sim. rate:");
                 HelpMarker(MiscHelpText::simRate);
-                ImGui::Text("Timer:");
+                ImGui::TextWrapped("Timer:");
                 HelpMarker(MiscHelpText::frameTimer);
-                ImGui::Text("Actors:");
-                ImGui::Text("UI:");
-                ImGui::Text("BoneCast cache:");
+                ImGui::TextWrapped("Actors:");
+                ImGui::TextWrapped("UI:");
+                ImGui::TextWrapped("BoneCast cache:");
+                ImGui::Spacing();
+                /*if (m_vMemInfo.Has())
+                {
+                    ImGui::TextWrapped("VRAM");
+                    ImGui::Indent();
+                    ImGui::TextWrapped("Usage:");
+                    ImGui::TextWrapped("Budget:");
+                    ImGui::TextWrapped("Reserved:");
+                    ImGui::TextWrapped("Available:");
+                    ImGui::Unindent();
+                }*/
+
 #if defined(SKMP_MEMDBG)
-                ImGui::Text("Mem:");
+                ImGui::TextWrapped("Mem:");
 #endif
 
                 ImGui::NextColumn();
@@ -2209,20 +2268,32 @@ namespace CBP
                 if (tWarn)
                     ImGui::PushStyleColor(ImGuiCol_Text, s_colorWarning);
 
-                ImGui::Text("%lld \xC2\xB5s", stats.avgTime);
+                ImGui::TextWrapped("%lld \xC2\xB5s", stats.avgTime);
 
                 if (tWarn)
                     ImGui::PopStyleColor();
 
-                ImGui::Text("%.1f/s (%.1f/frame)", stats.avgStepRate, stats.avgStepsPerUpdate);
-                ImGui::Text("%.1f", stats.avgStepsPerUpdate > _EPSILON
+                ImGui::TextWrapped("%.1f/s (%.1f/frame)", stats.avgStepRate, stats.avgStepsPerUpdate);
+                ImGui::TextWrapped("%.1f", stats.avgStepsPerUpdate > _EPSILON
                     ? stats.avgStepRate / stats.avgStepsPerUpdate : 0.0);
-                ImGui::Text("%.4f", stats.avgFrameTime);
-                ImGui::Text("%u", stats.avgActorCount);
-                ImGui::Text("%lld \xC2\xB5s", DUI::GetPerf());
-                ImGui::Text("%zu kb", IBoneCast::GetCacheSize() / size_t(1024));
+                ImGui::TextWrapped("%.4f", stats.avgFrameTime);
+                ImGui::TextWrapped("%u", stats.avgActorCount);
+                ImGui::TextWrapped("%lld \xC2\xB5s", DUI::GetPerf());
+                ImGui::TextWrapped("%zu kb", IBoneCast::GetCacheSize() / size_t(1024));
+                ImGui::Spacing();
+                /*if (m_vMemInfo.Has())
+                {
+                    auto& data = m_vMemInfo.Get();
+
+                    ImGui::TextWrapped("");
+                    ImGui::TextWrapped("%llu mb", data.CurrentUsage);
+                    ImGui::TextWrapped("%llu mb", data.Budget);
+                    ImGui::TextWrapped("%llu mb", data.CurrentReservation);
+                    ImGui::TextWrapped("%llu mb", data.AvailableForReservation);
+                }*/
+
 #if defined(SKMP_MEMDBG)
-                ImGui::Text("%llu ", mem::g_allocatedSize.load());
+                ImGui::TextWrapped("%llu ", mem::g_allocatedSize.load());
 #endif
 
                 ImGui::Columns(1);
@@ -2814,7 +2885,7 @@ namespace CBP
             if (entry && m_update)
             {
                 m_update = false;
-                DTasks::AddTask<DCBP::UpdateNodeRefDataTask>(entry->first);
+                DCBP::UpdateNodeReferenceData(entry->first);
             }
 
             ImGui::SetWindowFontScale(globalConfig.ui.fontScale);

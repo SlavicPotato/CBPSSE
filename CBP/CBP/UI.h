@@ -105,7 +105,7 @@ namespace CBP
         void DrawKeyOptions(
             const char* a_desc,
             const keyDesc_t& a_dmap,
-            UInt32& a_out);
+            UInt32 a_key);
     };
 
     class UICollisionGroups :
@@ -288,6 +288,26 @@ namespace CBP
     class UIProfiling :
         UIBase
     {
+
+        /*struct VMemInfo
+        {
+            VMemInfo() : m_has(false) {}
+
+            SKMP_FORCEINLINE bool Has() const {
+                return m_has;
+            }
+
+            SKMP_FORCEINLINE const auto& Get() const {
+                return m_data;
+            }
+
+            void Query();
+
+        private:
+            DXGI_QUERY_VIDEO_MEMORY_INFO m_data;
+            bool m_has;
+        };*/
+
     public:
         UIProfiling();
 
@@ -299,6 +319,10 @@ namespace CBP
 
         UIPlot m_plotUpdateTime;
         UIPlot m_plotFramerate;
+
+        long long m_lastVMIUpdate;
+
+        //VMemInfo m_vMemInfo;
     };
 
 #ifdef _CBP_ENABLE_DEBUG

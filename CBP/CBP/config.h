@@ -21,7 +21,7 @@ namespace CBP
 
     struct configPropagate_t
     {
-        typedef std::vector<const std::string*> keyList_t;
+        typedef stl::vector<const std::string*> keyList_t;
 
         bool enabled = false;
         stl::iunordered_set<std::string> mirror;
@@ -197,7 +197,7 @@ namespace CBP
 
     DEFINE_ENUM_CLASS_BITWISE(DescUIFlags);
 
-    constexpr auto UIMARKER_COL_SHAPE_FLAGS =
+    inline static constexpr auto UIMARKER_COL_SHAPE_FLAGS =
         DescUIFlags::ColliderSphere |
         DescUIFlags::ColliderCapsule |
         DescUIFlags::ColliderBox |
@@ -268,6 +268,17 @@ namespace CBP
 
     struct physicsDataF32_t
     {
+        float maxOffsetN[4];
+        float maxOffsetP[4];
+        float cogOffset[4];
+        float linear[4];
+        float rotational[4];
+        float colOffsetMin[4];
+        float colOffsetMax[4];
+        float colExtentMin[4];
+        float colExtentMax[4];
+        float colRot[4];
+
         float stiffness;
         float stiffness2;
         float damping;
@@ -290,18 +301,28 @@ namespace CBP
         float colPositionScale;
         float colRotationScale;
 
-        float maxOffsetN[3];
-        float maxOffsetP[3];
-        float cogOffset[3];
-        float linear[3];
-        float rotational[3];
-        float colOffsetMin[3];
-        float colOffsetMax[3];
-        float colExtentMin[3];
-        float colExtentMax[3];
-        float colRot[3];
+        float __pad[3];
+    };
+    
+    struct physicsDataVector_t
+    {
+        btVector3 maxOffsetN;
+        btVector3 maxOffsetP;
+        btVector3 cogOffset;
+        btVector3 linear;
+        btVector3 rotational;
+        btVector3 colOffsetMin;
+        btVector3 colOffsetMax;
+        btVector3 colExtentMin;
+        btVector3 colExtentMax;
+        btVector3 colRot;
 
-        float __pad[5];
+        btVector3 v10;
+        btVector3 v11;
+        btVector3 v12;
+        btVector3 v13;
+        btVector3 v14;
+        btVector3 v15;
     };
 
     /* MSVC will generate extra instructions when copying these structs to avoid (v)movups displacements
@@ -345,6 +366,7 @@ namespace CBP
         __m256 d4;
         __m256 d5;
         __m256 d6;
+        __m256 d7;
 
         SKMP_FORCEINLINE void __copy(const physicsDataMM256_t& a_rhs)
         {
@@ -355,6 +377,7 @@ namespace CBP
             d4 = a_rhs.d4;
             d5 = a_rhs.d5;
             d6 = a_rhs.d6;
+            d7 = a_rhs.d7;
         }
     };
 #endif
@@ -386,39 +409,43 @@ namespace CBP
             return *this;
         }
 
-    private:
-
-        __m128 d0;
-        __m128 d1;
-        __m128 d2;
-        __m128 d3;
-        __m128 d4;
-        __m128 d5;
-        __m128 d6;
-        __m128 d7;
-        __m128 d8;
-        __m128 d9;
+        __m128 maxOffsetN;
+        __m128 maxOffsetP;
+        __m128 cogOffset;
+        __m128 linear;
+        __m128 rotational;
+        __m128 colOffsetMin;
+        __m128 colOffsetMax;
+        __m128 colExtentMin;
+        __m128 colExtentMax;
+        __m128 colRot;
         __m128 d10;
         __m128 d11;
         __m128 d12;
         __m128 d13;
+        __m128 d14;
+        __m128 d15;
+
+    private:
 
         SKMP_FORCEINLINE void __copy(const physicsDataMM128_t& a_rhs)
         {
-            d0 = a_rhs.d0;
-            d1 = a_rhs.d1;
-            d2 = a_rhs.d2;
-            d3 = a_rhs.d3;
-            d4 = a_rhs.d4;
-            d5 = a_rhs.d5;
-            d6 = a_rhs.d6;
-            d7 = a_rhs.d7;
-            d8 = a_rhs.d8;
-            d9 = a_rhs.d9;
+            maxOffsetN = a_rhs.maxOffsetN;
+            maxOffsetP = a_rhs.maxOffsetP;
+            cogOffset = a_rhs.cogOffset;
+            linear = a_rhs.linear;
+            rotational = a_rhs.rotational;
+            colOffsetMin = a_rhs.colOffsetMin;
+            colOffsetMax = a_rhs.colOffsetMax;
+            colExtentMin = a_rhs.colExtentMin;
+            colExtentMax = a_rhs.colExtentMax;
+            colRot = a_rhs.colRot;
             d10 = a_rhs.d10;
             d11 = a_rhs.d11;
             d12 = a_rhs.d12;
             d13 = a_rhs.d13;
+            d14 = a_rhs.d14;
+            d15 = a_rhs.d15;
         }
 
     };
@@ -439,6 +466,10 @@ namespace CBP
             physicsDataMM128_t mm128;
 
             static_assert(sizeof(f32) == sizeof(mm128));
+
+            physicsDataVector_t vec;
+
+            static_assert(sizeof(physicsDataVector_t) == sizeof(mm128));
         };
     };
 
@@ -462,6 +493,10 @@ namespace CBP
             physicsDataMM128_t mm128;
 
             static_assert(sizeof(f32) == sizeof(mm128));
+
+            physicsDataVector_t vec;
+
+            static_assert(sizeof(physicsDataVector_t) == sizeof(mm128));
         };
 
         SKMP_FORCEINLINE physicsData32_t()
@@ -591,7 +626,7 @@ namespace CBP
 
         [[nodiscard]] SKMP_FORCEINLINE auto Contains(const std::string & a_key) const
         {
-            return descMap.find(a_key) != descMap.map_end();
+            return descMap.contains(a_key);
         }
 
         SKMP_FORCEINLINE bool Set(const std::string & a_key, float a_value)
@@ -796,9 +831,11 @@ namespace CBP
         union
         {
             physicsDataF32_t f32;
-            physicsDataMM128_t mm128;
+            physicsDataMM128_t mm128; 
+            physicsDataVector_t vec;
 
             static_assert(sizeof(f32) == sizeof(mm128));
+            static_assert(sizeof(physicsDataVector_t) == sizeof(mm128));
         };
 
         SKMP_FORCEINLINE physicsData16_t() noexcept
@@ -868,6 +905,7 @@ namespace CBP
 
     typedef stl::iunordered_map<std::string, configComponent32_t> configComponents_t;
     typedef configComponents_t::value_type configComponentsValue_t;
+    typedef Profile<configComponents_t> PhysicsProfile;
     typedef stl::unordered_map<Game::ObjectHandle, configComponents_t> actorConfigComponentsHolder_t;
     typedef stl::unordered_map<Game::FormID, configComponents_t> raceConfigComponentsHolder_t;
     typedef stl::imap<std::string, std::string> nodeMap_t;
@@ -883,13 +921,21 @@ namespace CBP
 
     struct SKMP_ALIGN(32) nodeDataF32_t
     {
-        float colOffsetMin[3];
-        float colOffsetMax[3];
-        float colRot[3];
+        float colOffsetMin[4];
+        float colOffsetMax[4];
+        float colRot[4];
         float nodeScale;
         float bcWeightThreshold;
         float bcSimplifyTarget;
         float bcSimplifyTargetError;
+    };
+    
+    struct SKMP_ALIGN(32) nodeDataVector_t
+    {
+        btVector3 colOffsetMin;
+        btVector3 colOffsetMax;
+        btVector3 colRot;
+        btVector3 v4;
     };
 
     struct nodeDataMM256_t
@@ -961,16 +1007,16 @@ namespace CBP
 
     private:
 
-        __m128 d0;
-        __m128 d1;
-        __m128 d2;
+        __m128 colOffsetMin;
+        __m128 colOffsetMax;
+        __m128 colRot;
         __m128 d3;
 
         SKMP_FORCEINLINE void __copy(const nodeDataMM128_t& a_rhs) noexcept
         {
-            d0 = a_rhs.d0;
-            d1 = a_rhs.d1;
-            d2 = a_rhs.d2;
+            colOffsetMin = a_rhs.colOffsetMin;
+            colOffsetMax = a_rhs.colOffsetMax;
+            colRot = a_rhs.colRot;
             d3 = a_rhs.d3;
         }
     };
@@ -991,6 +1037,10 @@ namespace CBP
             nodeDataMM128_t mm128;
 
             static_assert(sizeof(f32) == sizeof(mm128));
+
+            nodeDataVector_t vec;
+
+            static_assert(sizeof(mm128) == sizeof(vec));
         };
     };
 
@@ -1013,6 +1063,10 @@ namespace CBP
             nodeDataMM128_t mm128;
 
             static_assert(sizeof(f32) == sizeof(mm128));
+
+            nodeDataVector_t vec;
+
+            static_assert(sizeof(mm128) == sizeof(vec));
         };
 
         SKMP_FORCEINLINE nodeData32_t() noexcept
@@ -1154,15 +1208,15 @@ namespace CBP
         }
 
         [[nodiscard]] SKMP_FORCEINLINE bool Enabled() const noexcept {
-            return bl.u32.d0 != 0ULL;
+            return bl.u32.d0 != 0ui32;
         }
 
         [[nodiscard]] SKMP_FORCEINLINE bool HasMotion() const noexcept {
-            return bl.u16.d1 != 0;
+            return bl.u16.d1 != 0ui16;
         }
 
         [[nodiscard]] SKMP_FORCEINLINE bool HasCollisions() const noexcept {
-            return bl.u16.d0 != 0;
+            return bl.u16.d0 != 0ui16;
         }
 
     private:
@@ -1221,6 +1275,7 @@ namespace CBP
 
     typedef stl::iunordered_map<std::string, configNode_t> configNodes_t;
     typedef configNodes_t::value_type configNodesValue_t;
+    typedef Profile<configNodes_t> NodeProfile;
     typedef stl::unordered_map<Game::ObjectHandle, configNodes_t> actorConfigNodesHolder_t;
     typedef stl::unordered_map<Game::FormID, configNodes_t> raceConfigNodesHolder_t;
 
@@ -1530,13 +1585,13 @@ namespace CBP
             return templateBaseNodeHolder;
         }
 
-        template <typename T, std::enable_if_t<std::is_same<T, configComponents_t>::value, int> = 0>
+        template <class T, std::enable_if_t<std::is_same<T, configComponents_t>::value, int> = 0>
         SKMP_FORCEINLINE static T& GetTemplateBase() noexcept
         {
             return templateBasePhysicsHolder;
         }
 
-        template <typename T, std::enable_if_t<std::is_same<T, configNodes_t>::value, int> = 0>
+        template <class T, std::enable_if_t<std::is_same<T, configNodes_t>::value, int> = 0>
         SKMP_FORCEINLINE static T& GetTemplateBase() noexcept
         {
             return templateBaseNodeHolder;

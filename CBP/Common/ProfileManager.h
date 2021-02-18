@@ -3,7 +3,9 @@
 template <class T>
 class ProfileBase
 {
-protected:
+public:
+
+    using base_type = T;
 
     ProfileBase() :
         m_id(0)
@@ -17,10 +19,6 @@ protected:
         m_name(a_path.stem().string())
     {
     }
-
-public:
-
-    typedef typename T base_type;
 
     virtual bool Load() = 0;
     virtual bool Save(const T& a_data, bool a_store) = 0;
@@ -443,11 +441,11 @@ bool ProfileManager<T>::AddProfile(T&& a_in)
         if (!m_isInitialized)
             throw std::exception("Not initialized");
 
-        auto& key = a_in.Name();
+        auto key = a_in.Name();
 
         CheckProfileKey(key);
 
-        auto r = m_storage.emplace(key, std::move(a_in));
+        auto r = m_storage.emplace(std::move(key), std::move(a_in));
         if (r.second)
             OnProfileAdd(r.first->second);
         else

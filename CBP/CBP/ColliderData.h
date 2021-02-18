@@ -8,6 +8,8 @@ namespace CBP
     {
         friend class boost::serialization::access;
 
+        SKMP_DECLARE_ALIGNED_ALLOCATOR(32);
+
         enum Serialization : unsigned int
         {
             DataVersion1 = 1
@@ -26,7 +28,7 @@ namespace CBP
             ar& y;
             ar& z;
         }
-        
+
         template<class Archive>
         void load(Archive& ar, const unsigned int version) {
             ar& x;
@@ -43,6 +45,8 @@ namespace CBP
     struct ColliderData
     {
     public:
+        SKMP_DECLARE_ALIGNED_ALLOCATOR(32);
+
         ColliderData() :
             m_triVertexArray(nullptr)
         {
@@ -77,7 +81,7 @@ namespace CBP
             __move(std::move(a_rhs));
             return *this;
         }
-                
+
         ColliderData(const ColliderDataStorage& a_rhs) :
             m_triVertexArray(nullptr)
         {
@@ -87,7 +91,7 @@ namespace CBP
         ColliderData(ColliderDataStorage&& a_rhs) :
             m_triVertexArray(nullptr)
         {
-            __move(a_rhs);
+            __move(std::move(a_rhs));
         };
 
         ColliderData& operator=(const ColliderDataStorage& a_rhs)
@@ -96,9 +100,9 @@ namespace CBP
             return *this;
         }
 
-        ColliderData& operator=(ColliderDataStorage&& a_rhs) 
+        ColliderData& operator=(ColliderDataStorage&& a_rhs)
         {
-            __move(a_rhs);
+            __move(std::move(a_rhs));
             return *this;
         }
 
@@ -108,9 +112,21 @@ namespace CBP
             __copy(a_rhs);
         };
 
+        ColliderData(ColliderDataStoragePair&& a_rhs) :
+            m_triVertexArray(nullptr)
+        {
+            __move(std::move(a_rhs));
+        };
+
         ColliderData& operator=(const ColliderDataStoragePair& a_rhs)
         {
             __copy(a_rhs);
+            return *this;
+        }
+
+        ColliderData& operator=(ColliderDataStoragePair&& a_rhs)
+        {
+            __move(std::move(a_rhs));
             return *this;
         }
 
@@ -134,6 +150,7 @@ namespace CBP
         void __copy(const ColliderDataStorage& a_rhs);
 
         void __copy(const ColliderDataStoragePair& a_rhs);
+        void __move(ColliderDataStoragePair&& a_rhs);
     };
 
     SKMP_FORCEINLINE void ColliderData::__move(ColliderData&& a_rhs)
@@ -178,6 +195,8 @@ namespace CBP
     struct ColliderDataStorage
     {
         friend class boost::serialization::access;
+
+        SKMP_DECLARE_ALIGNED_ALLOCATOR(32);
 
         enum Serialization : unsigned int
         {
@@ -250,7 +269,7 @@ namespace CBP
 
             ar& m_numTriangles;
         }
-        
+
         template<class Archive>
         void load(Archive& ar, const unsigned int version) {
             ar& m_vertices;
@@ -314,7 +333,7 @@ namespace CBP
         SKMP_FORCEINLINE size_t GetSize() const {
             return first.GetSize() + second.GetSize();
         }
-        
+
         SKMP_FORCEINLINE void UpdateSize() {
             first.UpdateSize();
             second.UpdateSize();
@@ -325,7 +344,7 @@ namespace CBP
         void save(Archive& ar, const unsigned int version) const {
             ar& first;
         }
-        
+
         template<class Archive>
         void load(Archive& ar, const unsigned int version) {
             ar& first;
@@ -373,7 +392,7 @@ namespace CBP
 
         GenerateTriVertexArray();
     }
-    
+
     SKMP_FORCEINLINE void ColliderData::__move(ColliderDataStorage&& a_rhs)
     {
         m_vertices = std::make_shared<MeshPoint[]>(a_rhs.m_vertices.size());
@@ -401,6 +420,24 @@ namespace CBP
         std::copy(a_rhs.first.m_vertices.begin(), a_rhs.first.m_vertices.end(), m_vertices.get());
         std::copy(a_rhs.second.m_hullPoints.begin(), a_rhs.second.m_hullPoints.end(), m_hullPoints.get());
         std::copy(a_rhs.second.m_indices.begin(), a_rhs.second.m_indices.end(), m_indices.get());
+
+        m_numVertices = static_cast<int>(a_rhs.first.m_vertices.size());
+        m_numIndices = static_cast<int>(a_rhs.second.m_indices.size());
+        m_numTriangles = a_rhs.second.m_numTriangles;
+
+        GenerateTriVertexArray();
+    }
+
+
+    SKMP_FORCEINLINE void ColliderData::__move(ColliderDataStoragePair&& a_rhs)
+    {
+        m_vertices = std::make_shared<MeshPoint[]>(a_rhs.first.m_vertices.size());
+        m_hullPoints = std::make_shared<MeshPoint[]>(a_rhs.second.m_hullPoints.size());
+        m_indices = std::make_shared<int[]>(a_rhs.second.m_indices.size());
+
+        std::move(a_rhs.first.m_vertices.begin(), a_rhs.first.m_vertices.end(), m_vertices.get());
+        std::move(a_rhs.second.m_hullPoints.begin(), a_rhs.second.m_hullPoints.end(), m_hullPoints.get());
+        std::move(a_rhs.second.m_indices.begin(), a_rhs.second.m_indices.end(), m_indices.get());
 
         m_numVertices = static_cast<int>(a_rhs.first.m_vertices.size());
         m_numIndices = static_cast<int>(a_rhs.second.m_indices.size());

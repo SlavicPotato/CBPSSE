@@ -163,7 +163,15 @@ namespace CBP
     template <class T>
     void ProfileManagerTemplate<T>::OnProfileAdd(T& a_profile)
     {
-        DTasks::AddTask<ITemplate::AddProfileRecordsTask<T>>(a_profile.Name());
+        //DTasks::AddTask<ITemplate::AddProfileRecordsTask<T>>(a_profile.Name());
+
+        DTasks::AddTask([name = a_profile.Name()]()
+        {
+            IScopedCriticalSection _(DCBP::GetLock());
+
+            auto& tif = ITemplate::GetSingleton();
+            tif.AddProfileRecords<T>(name.c_str());
+        });
     }
 
     template <class T>
@@ -173,7 +181,7 @@ namespace CBP
         tif.DeleteProfileRecords(a_profile);
     }
 
-    template <class T>
+    /*template <class T>
     ITemplate::AddProfileRecordsTask<T>::AddProfileRecordsTask(
         const std::string& a_profileName)
         :
@@ -188,7 +196,7 @@ namespace CBP
 
         auto& tif = ITemplate::GetSingleton();
         tif.AddProfileRecords<T>(m_profileName.c_str());
-    }
+    }*/
 
     template <class T>
     void ITemplate::AddProfileRecords(
@@ -214,9 +222,9 @@ namespace CBP
                     continue;
 
                 ProcessTemplateRecord(
-                    dataHolder, 
-                    e.second, 
-                    it->second, 
+                    dataHolder,
+                    e.second,
+                    it->second,
                     a_profileName
                 );
             }

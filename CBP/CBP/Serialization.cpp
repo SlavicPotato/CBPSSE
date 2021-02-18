@@ -221,7 +221,7 @@ namespace Serialization
                 auto& offsetMin = (*it)["offsetMin"];
 
                 if (!offsetMin.empty()) {
-                    if (!ParseFloatArray(offsetMin, nc.fp.f32.colOffsetMin, ARRAYSIZE(nc.fp.f32.colOffsetMin))) {
+                    if (!ParseFloatArray(offsetMin, nc.fp.f32.colOffsetMin, 3)) {
                         Error("Couldn't parse offsetMin");
                         return false;
                     }
@@ -230,7 +230,7 @@ namespace Serialization
                 auto& offsetMax = (*it)["offsetMax"];
 
                 if (!offsetMax.empty()) {
-                    if (!ParseFloatArray(offsetMax, nc.fp.f32.colOffsetMax, ARRAYSIZE(nc.fp.f32.colOffsetMax))) {
+                    if (!ParseFloatArray(offsetMax, nc.fp.f32.colOffsetMax, 3)) {
                         Error("Couldn't parse offsetMax");
                         return false;
                     }
@@ -246,7 +246,7 @@ namespace Serialization
                 auto& offsetMin = (*it)["o-"];
 
                 if (!offsetMin.empty()) {
-                    if (!ParseFloatArray(offsetMin, nc.fp.f32.colOffsetMin, ARRAYSIZE(nc.fp.f32.colOffsetMin))) {
+                    if (!ParseFloatArray(offsetMin, nc.fp.f32.colOffsetMin, 3)) {
                         Error("Couldn't parse offsetMin");
                         return false;
                     }
@@ -255,7 +255,7 @@ namespace Serialization
                 auto& offsetMax = (*it)["o+"];
 
                 if (!offsetMax.empty()) {
-                    if (!ParseFloatArray(offsetMax, nc.fp.f32.colOffsetMax, ARRAYSIZE(nc.fp.f32.colOffsetMax))) {
+                    if (!ParseFloatArray(offsetMax, nc.fp.f32.colOffsetMax, 3)) {
                         Error("Couldn't parse offsetMax");
                         return false;
                     }
@@ -265,7 +265,7 @@ namespace Serialization
                     auto& rot = (*it)["r"];
 
                     if (!rot.empty()) {
-                        if (!ParseFloatArray(rot, nc.fp.f32.colRot, ARRAYSIZE(nc.fp.f32.colRot))) {
+                        if (!ParseFloatArray(rot, nc.fp.f32.colRot, 3)) {
                             Error("Couldn't parse colRot");
                             return false;
                         }
@@ -894,7 +894,7 @@ namespace CBP
         return 1;
     }
 
-    size_t ISerialization::LoadGlobalProfile(SKSESerializationInterface* intfc, std::stringstream& a_data)
+    size_t ISerialization::LoadGlobalProfile(SKSESerializationInterface* intfc, stl::stringstream& a_data)
     {
         try
         {
@@ -1083,7 +1083,7 @@ namespace CBP
         return c;
     }
 
-    size_t ISerialization::LoadActorProfiles(SKSESerializationInterface* intfc, std::stringstream& a_data)
+    size_t ISerialization::LoadActorProfiles(SKSESerializationInterface* intfc, stl::stringstream& a_data)
     {
         try
         {
@@ -1308,7 +1308,7 @@ namespace CBP
         return true;
     }
 
-    size_t ISerialization::LoadRaceProfiles(SKSESerializationInterface* intfc, std::stringstream& a_data)
+    size_t ISerialization::LoadRaceProfiles(SKSESerializationInterface* intfc, stl::stringstream& a_data)
     {
         try
         {
@@ -1747,7 +1747,7 @@ namespace CBP
         }
     }
 
-    size_t ISerialization::BinSerializeLoad(SKSESerializationInterface* intfc, std::stringstream& a_in)
+    size_t ISerialization::BinSerializeLoad(SKSESerializationInterface* intfc, stl::stringstream& a_in)
     {
         try
         {

@@ -79,14 +79,17 @@ namespace CBP
         const nodeDescList_t& a_desc)
         :
         m_handle(a_handle),
-        //m_handle(a_actor),
         m_sex(a_sex),
         m_node(a_actor->loadedState->node),
-        m_suspended(false)
+        m_suspended(false),
+        m_markedForDelete(false)
+#if BT_THREADSAFE
+        , m_task(this)
+#endif
     {
 
 #ifdef _CBP_ENABLE_DEBUG
-        m_actorName = CALL_MEMBER_FN(a_actor, GetReferenceName)();
+        m_actorName = a_actor->GetDisplayName();
 #endif
 
         stl::vector<SimComponent*> tmp;
@@ -131,6 +134,7 @@ namespace CBP
 
         BSFixedString n(NODE_HEAD);
         m_objHead = a_actor->loadedState->node->GetObjectByName(&n.data);
+
     }
 
     SimObject::~SimObject() noexcept

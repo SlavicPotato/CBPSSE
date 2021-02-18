@@ -88,22 +88,22 @@ namespace CBP
         {"rx", {
             offsetof(configComponent32_t, fp.f32.rotational[0]),
             "",
-            -1.0f, 1.0f,
-            "Scale of the bones rotation around the X, Y and Z axes respectively",
+            -10.0f, 10.0f,
+            "Scale of the bones rotation around the Z, Y and X axes respectively",
             "Rotational scale",
             DescUIFlags::Float3
         }},
         {"ry", {
             offsetof(configComponent32_t, fp.f32.rotational[1]),
             "",
-            -1.0f, 1.0f,
+            -10.0f, 10.0f,
             "",
             "Rotational scale"
         }},
         {"rz", {
             offsetof(configComponent32_t, fp.f32.rotational[2]),
             "",
-            -1.0f, 1.0f,
+            -10.0f, 10.0f,
             "",
             "Rotational scale"
         }},

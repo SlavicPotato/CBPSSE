@@ -19,7 +19,7 @@ namespace CBP
     };
 #endif
 
-    
+
     class SKMP_ALIGN(16) CollisionShape
     {
     public:
@@ -27,10 +27,10 @@ namespace CBP
 
         virtual void UpdateShape() = 0;
 
-        virtual void SetRadius(float a_radius);
-        virtual void SetHeight(float a_height);
+        virtual void SetRadius(btScalar a_radius);
+        virtual void SetHeight(btScalar a_height);
         virtual void SetExtent(const btVector3 & a_extent);
-        virtual void SetNodeScale(float a_scale);
+        virtual void SetNodeScale(btScalar a_scale);
 
         virtual btCollisionShape* GetBTShape() = 0;
 
@@ -38,9 +38,9 @@ namespace CBP
 
     protected:
 
-        CollisionShape(float a_nodeScale);
+        CollisionShape(btScalar a_nodeScale);
 
-        float m_nodeScale;
+        btScalar m_nodeScale;
     };
 
     template <class T>
@@ -83,19 +83,19 @@ namespace CBP
 
     public:
 
-        virtual void DoRecreateShape(float a_radius, float a_height) = 0;
+        virtual void DoRecreateShape(btScalar a_radius, btScalar a_height) = 0;
 
         virtual void UpdateShape();
-        virtual void SetRadius(float a_radius);
-        virtual void SetHeight(float a_height);
+        virtual void SetRadius(btScalar a_radius);
+        virtual void SetHeight(btScalar a_height);
 
     protected:
 
-        float m_radius;
-        float m_height;
+        btScalar m_radius;
+        btScalar m_height;
 
-        float m_currentRadius;
-        float m_currentHeight;
+        btScalar m_currentRadius;
+        btScalar m_currentHeight;
     };
 
     template <class T>
@@ -122,14 +122,14 @@ namespace CBP
     {
     public:
 
-        CollisionShapeSphere(btCollisionObject* a_collider, float a_radius);
+        CollisionShapeSphere(btCollisionObject* a_collider, btScalar a_radius);
 
         virtual void UpdateShape();
-        virtual void SetRadius(float a_radius);
+        virtual void SetRadius(btScalar a_radius);
 
     private:
-        float m_radius;
-        float m_currentRadius;
+        btScalar m_radius;
+        btScalar m_currentRadius;
     };
 
 
@@ -137,18 +137,18 @@ namespace CBP
         public CollisionShapeTemplRH<btCapsuleShape>
     {
     public:
-        CollisionShapeCapsule(btCollisionObject * a_collider, float a_radius, float a_height);
+        CollisionShapeCapsule(btCollisionObject * a_collider, btScalar a_radius, btScalar a_height);
 
-        virtual void DoRecreateShape(float a_radius, float a_height);
+        virtual void DoRecreateShape(btScalar a_radius, btScalar a_height);
     };
 
     class SKMP_ALIGN(16) CollisionShapeCone :
         public CollisionShapeTemplRH<btConeShape>
     {
     public:
-        CollisionShapeCone(btCollisionObject * a_collider, float a_radius, float a_height);
+        CollisionShapeCone(btCollisionObject * a_collider, btScalar a_radius, btScalar a_height);
 
-        virtual void DoRecreateShape(float a_radius, float a_height);
+        virtual void DoRecreateShape(btScalar a_radius, btScalar a_height);
     };
 
     class SKMP_ALIGN(16) CollisionShapeBox :
@@ -164,9 +164,9 @@ namespace CBP
         public CollisionShapeTemplRH<btCylinderShape>
     {
     public:
-        CollisionShapeCylinder(btCollisionObject * a_collider, float a_radius, float a_height);
+        CollisionShapeCylinder(btCollisionObject * a_collider, btScalar a_radius, btScalar a_height);
 
-        virtual void DoRecreateShape(float a_radius, float a_height);
+        virtual void DoRecreateShape(btScalar a_radius, btScalar a_height);
     };
 
     class SKMP_ALIGN(16) CollisionShapeTetrahedron :
@@ -183,7 +183,7 @@ namespace CBP
     };
 
     class SKMP_ALIGN(16) CollisionShapeMesh :
-        public CollisionShapeTemplExtent<btGImpactMeshShape>
+        public CollisionShapeTemplExtent<btGImpactMeshShapePart>
     {
     public:
         CollisionShapeMesh(
@@ -222,7 +222,7 @@ namespace CBP
     class SKMP_ALIGN(16) Collider :
         ILog
     {
-        static constexpr float crdrmul = float(MATH_PI) / 180.0f;
+        inline static constexpr btScalar crdrmul = std::numbers::pi_v<btScalar> / 180.0f;
 
     public:
         Collider(SimComponent & a_parent);
@@ -236,7 +236,7 @@ namespace CBP
         bool Destroy();
         SKMP_FORCEINLINE void Update();
 
-        SKMP_FORCEINLINE void SetColliderRotation(float a_x, float a_y, float a_z)
+        SKMP_FORCEINLINE void SetColliderRotation(btScalar a_x, btScalar a_y, btScalar a_z)
         {
             m_colRot.setEulerZYX(
                 a_x * crdrmul,
@@ -244,13 +244,22 @@ namespace CBP
                 a_z * crdrmul
             );
         }
+        
+        SKMP_FORCEINLINE void SetColliderRotation(const btVector3 &a_vec)
+        {
+            m_colRot.setEulerZYX(
+                a_vec.x() * crdrmul,
+                a_vec.y() * crdrmul,
+                a_vec.z() * crdrmul
+            );
+        }
 
-        SKMP_FORCEINLINE void SetRadius(float a_val) {
+        SKMP_FORCEINLINE void SetRadius(btScalar a_val) {
             if (m_created)
                 m_colshape->SetRadius(a_val);
         }
 
-        SKMP_FORCEINLINE void SetHeight(float a_val) {
+        SKMP_FORCEINLINE void SetHeight(btScalar a_val) {
             if (m_created)
                 m_colshape->SetHeight(a_val);
         }
@@ -269,11 +278,11 @@ namespace CBP
         [[nodiscard]] SKMP_FORCEINLINE bool IsActive() const {
             return m_created && m_active;
         }
-        
+
         [[nodiscard]] SKMP_FORCEINLINE bool IsCreated() const {
             return m_created;
         }
-        
+
         [[nodiscard]] SKMP_FORCEINLINE bool IsBoneCast() const {
             return m_bonecast;
         }
@@ -282,14 +291,14 @@ namespace CBP
             return m_bodyOffset;
         }
 
-        SKMP_FORCEINLINE void SetPositionScale(float a_scale) {
+        SKMP_FORCEINLINE void SetPositionScale(btScalar a_scale) {
             m_positionScale = a_scale;
             m_doPositionScaling = a_scale != 1.0f;
         }
 
-        SKMP_FORCEINLINE void SetRotationScale(float a_scale) {
-            m_rotationScale = a_scale;
+        SKMP_FORCEINLINE void SetRotationScale(btScalar a_scale) {
             m_doRotationScaling = a_scale != 1.0f;
+            m_rotationScale = std::max(a_scale, 0.001f);
         }
 
         void SetShouldProcess(bool a_switch);
@@ -302,9 +311,9 @@ namespace CBP
 
         void Activate();
         void Deactivate();
+        void UpdateWorldData(bool a_basis);
 
         btMatrix3x3 m_colRot;
-        btMatrix3x3 m_tempRotScale;
 
         btVector3 m_bodyOffset;
         btVector3 m_bodyOffsetPlusInitial;
@@ -318,9 +327,9 @@ namespace CBP
         bool m_bonecast;
         BoneCacheUpdateID m_bcUpdateID;
 
-        float m_nodeScale;
-        float m_positionScale;
-        float m_rotationScale;
+        btScalar m_nodeScale;
+        btScalar m_positionScale;
+        btScalar m_rotationScale;
 
         bool m_created;
         bool m_active;
@@ -345,14 +354,24 @@ namespace CBP
                 uint32_t a_steps,
                 const btVector3 & a_norm)
                 :
-                m_steps(a_steps),
+                m_numImpulses(a_steps),
                 m_force(a_norm)
             {
             }
 
             btVector3 m_force;
-            uint32_t m_steps;
+            uint32_t m_numImpulses;
         };
+
+        struct SKMP_ALIGN(16) rotationParams_t
+        {
+            SKMP_FORCEINLINE rotationParams_t();
+            SKMP_FORCEINLINE void Zero();
+
+            btVector3 m_axis;
+            btScalar m_angle;
+            btScalar m_axisLength;
+        } ;
 
         friend class Collider;
 
@@ -368,17 +387,17 @@ namespace CBP
         SKMP_FORCEINLINE void ConstrainMotion(
             const btMatrix3x3 & a_invRot,
             const btVector3 & a_target,
-            float a_timeStep
+            btScalar a_timeStep
         );
 
-        SKMP_FORCEINLINE void SIMDFillObj();
+        //SKMP_FORCEINLINE void SIMDFillObj();
         SKMP_FORCEINLINE void SIMDFillParent();
 
     public:
         BT_DECLARE_ALIGNED_ALLOCATOR();
 
         SimComponent(
-            SimObject &a_parent,
+            SimObject & a_parent,
             Actor * a_actor,
             NiAVObject * a_obj,
             const std::string & a_nodeName,
@@ -404,9 +423,9 @@ namespace CBP
             const configComponent32_t * a_physConf,
             const configNode_t & a_nodeConf,
             bool a_collisions,
-            bool a_movement) noexcept;
+            bool a_motion) noexcept;
 
-        void UpdateMotion(float timeStep);
+        void UpdateMotion(btScalar timeStep);
         SKMP_FORCEINLINE void UpdateVelocity();
         void Reset();
         //bool ValidateNodes(NiAVObject * a_obj);
@@ -464,8 +483,16 @@ namespace CBP
             return m_obj->m_worldTransform;
         }
 
+        [[nodiscard]] SKMP_FORCEINLINE void GetWorldTransform(Bullet::btTransformEx& a_out) const {
+            a_out = m_obj->m_worldTransform;
+        }
+
         [[nodiscard]] SKMP_FORCEINLINE const auto& GetParentWorldTransform() const {
             return m_objParent->m_worldTransform;
+        }
+        
+        [[nodiscard]] SKMP_FORCEINLINE void GetParentWorldTransform(Bullet::btTransformEx &a_out) const {
+            a_out = m_objParent->m_worldTransform;
         }
 
         [[nodiscard]] SKMP_FORCEINLINE const auto& GetVirtualPos() const {
@@ -473,10 +500,10 @@ namespace CBP
         }
 
         [[nodiscard]] SKMP_FORCEINLINE const auto& GetCenterOfGravity() const {
-            return m_cogOffset;
+            return m_conf.fp.vec.cogOffset;
         }
 
-        [[nodiscard]] SKMP_FORCEINLINE float GetNodeScale() const {
+        [[nodiscard]] SKMP_FORCEINLINE btScalar GetNodeScale() const {
             return m_obj->m_worldTransform.scale;
         }
 
@@ -488,7 +515,7 @@ namespace CBP
             return m_collider;
         }
 
-        [[nodiscard]] SKMP_FORCEINLINE const float GetMassInverse() const {
+        [[nodiscard]] SKMP_FORCEINLINE const btScalar GetMassInverse() const {
             return m_invMass;
         }
 
@@ -504,6 +531,15 @@ namespace CBP
             return m_collider.IsCreated() && m_collider.IsBoneCast();
         }
 
+#if BT_THREADSAFE
+        SKMP_FORCEINLINE void Lock() const {
+            m_mutex.lock();
+        }
+
+        SKMP_FORCEINLINE void Unlock() const {
+            m_mutex.unlock();
+        }
+#endif
 
 #ifdef _CBP_ENABLE_DEBUG
         [[nodiscard]] SKMP_FORCEINLINE const auto& GetDebugInfo() const {
@@ -512,39 +548,39 @@ namespace CBP
 #endif
 
     private:
+        inline static constexpr btScalar crdrmul = std::numbers::pi_v<float> / 180.0f;
 
         btMatrix3x3 m_itrInitialMat;
-        btMatrix3x3 m_itrMatObj;
         btMatrix3x3 m_itrMatParent;
+
+        btQuaternion m_itrInitialRot;
+        rotationParams_t m_rotParams;
+
         btVector3 m_itrInitialPos;
-        btVector3 m_itrPosObj;
         btVector3 m_itrPosParent;
 
-        btVector3 m_cogOffset;
         btVector3 m_gravityCorrection;
 
         btVector3 m_oldWorldPos;
         btVector3 m_virtld;
         btVector3 m_ld;
-        btVector3 m_lr;
         btVector3 m_velocity;
 
         btVector3 m_colExtent;
         btVector3 m_colOffset;
-        btVector3 m_linearScale;
 
         NiTransform m_initialTransform;
-        NiMatrix33 m_tempLocalRot;
+
+        btScalar m_colRad;
+        btScalar m_colHeight;
+        btScalar m_nodeScale;
+        btScalar m_invMass;
+        btScalar m_maxVelocity2;
+        btScalar m_gravForce;
+
+        uint64_t m_groupId;
 
         configComponent16_t m_conf;
-
-        float m_colRad;
-        float m_colHeight;
-        float m_nodeScale;
-        float m_invMass;
-        float m_maxVelocity2;
-        float m_gravForce;
-        uint64_t m_groupId;
 
         bool m_collisions;
         bool m_motion;
@@ -561,13 +597,17 @@ namespace CBP
         std::string m_nodeName;
         std::string m_configGroupName;
 
-        std::queue<Force, std::deque<Force, mem::aligned_allocator<Force, 16>>> m_applyForceQueue;
+        stl::queue<Force> m_applyForceQueue;
 
 #ifdef _CBP_ENABLE_DEBUG
         SimDebugInfo m_debugInfo;
 #endif
 
         Game::FormID m_formid;
+
+#if BT_THREADSAFE
+        mutable btSpinMutex m_mutex;
+#endif
 
         Collider m_collider;
 
@@ -579,13 +619,22 @@ namespace CBP
         if (m_motion)
             return;
 
-        btVector3 pos(
-            m_obj->m_worldTransform.pos.x,
-            m_obj->m_worldTransform.pos.y,
-            m_obj->m_worldTransform.pos.z);
+        btVector3 pos(_mm_and_ps(_mm_loadu_ps(reinterpret_cast<const float*>(&m_obj->m_worldTransform.pos)), btvFFF0fMask));
 
         m_velocity = pos - m_oldWorldPos;
         m_oldWorldPos = pos;
     }
+
+    SimComponent::rotationParams_t::rotationParams_t() {
+        Zero();
+    }
+
+    void SimComponent::rotationParams_t::Zero()
+    {
+        m_axis.setValue(1.0f, 0.0f, 0.0f);
+        m_angle = 0.0f;
+        m_axisLength = 1.0f;
+    }
+
 
 }

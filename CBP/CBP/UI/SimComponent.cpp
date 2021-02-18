@@ -390,7 +390,7 @@ namespace CBP
     {
         auto& desc = configComponent32_t::colDescMap.at(a_pair.second.ex.colShape);
 
-        auto& pm = ProfileManagerCollider::GetSingleton();
+        auto& pm = GlobalProfileManager::GetSingleton<ColliderProfile>();
 
         if (ImGui::BeginCombo("Collider shape", desc.name.c_str()))
         {

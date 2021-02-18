@@ -278,7 +278,7 @@ namespace CBP
         case KeyEventType::Keyboard:
             if (m_event == KeyEvent::KeyDown)
             {
-                if (b.m_uval < ARRAYSIZE(io.KeysDown))
+                if (b.m_uval < std::size(io.KeysDown))
                     io.KeysDown[b.m_uval] = true;
 
                 if (m_k != 0)
@@ -286,61 +286,50 @@ namespace CBP
             }
             else
             {
-                if (b.m_uval < ARRAYSIZE(io.KeysDown))
+                if (b.m_uval < std::size(io.KeysDown))
                     io.KeysDown[b.m_uval] = false;
             }
             break;
         }
     }
 
+    static UInt32 s_controlDisableFlags =
+        USER_EVENT_FLAG::kAll;
+
+    static UInt8 s_byChargenDisableFlags =
+        PlayerCharacter::kDisableSaving |
+        PlayerCharacter::kDisableWaiting;
+
     void DUI::LockControls(bool a_switch)
     {
         state.controlsLocked = a_switch;
-        DTasks::AddTask<LockControlsTask>(a_switch);
+        DTasks::AddTask([a_switch]()
+            {
+                auto im = InputManager::GetSingleton();
+
+                if (im)
+                    im->EnableControls(s_controlDisableFlags, !a_switch);
+
+                auto player = *g_thePlayer;
+                if (player)
+                {
+                    if (a_switch)
+                        player->byCharGenFlag |= s_byChargenDisableFlags;
+                    else
+                        player->byCharGenFlag &= ~s_byChargenDisableFlags;
+                }
+
+            });
     }
 
     void DUI::FreezeTime(bool a_switch)
     {
         state.timeFrozen = a_switch;
-        DTasks::AddTask<FreezeTimeTask>(a_switch);
-    }
-
-    static UInt32 controlDisableFlags =
-        USER_EVENT_FLAG::kAll;
-
-    static UInt8 byChargenDisableFlags =
-        PlayerCharacter::kDisableSaving |
-        PlayerCharacter::kDisableWaiting;
-
-    void DUI::LockControlsTask::Run()
-    {
-        auto player = *g_thePlayer;
-        auto im = InputManager::GetSingleton();
-
-        if (im)
-            im->EnableControls(controlDisableFlags, !m_switch);
-
-        if (m_switch)
-        {
-            if (player)
-                player->byCharGenFlag |= byChargenDisableFlags;
-        }
-        else
-        {
-            if (player)
-                player->byCharGenFlag &= ~byChargenDisableFlags;
-        }
-    }
-
-    void DUI::FreezeTimeTask::Run()
-    {
-        /*auto bm = Game::BSMain::GetSingleton();
-        if (bm)
-            bm->freezeTime = m_switch;*/
-
-        auto unk = Game::Unk00::GetSingleton();
-
-        unk->SetGlobalTimeMultiplier(m_switch ? 1e-006f : 1.0f, true);
+        DTasks::AddTask([a_switch]()
+            {
+                auto unk = Game::Unk00::GetSingleton();
+                unk->SetGlobalTimeMultiplier(a_switch ? 1e-006f : 1.0f, true);
+            });
     }
 
     void DUI::AddTask(uint32_t id, UIRenderTaskBase* a_task)
@@ -529,10 +518,10 @@ namespace CBP
             return false;
         }
 
-        /*if (player->byCharGenFlag & PlayerCharacter::ByCharGenFlag::kAll) {
-            Game::Debug::Notification("CBP UI currently unavailable");
+        if (player->byCharGenFlag & PlayerCharacter::ByCharGenFlag::kHandsBound) {
+            Game::Debug::Notification("UI unavailable while player hands are bound");
             return false;
-        }*/
+        }
 
         return true;
     }

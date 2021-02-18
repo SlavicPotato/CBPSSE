@@ -12,7 +12,7 @@ namespace CBP
             kDataVersion2 = 2,
         };
 
-        class MainKeyPressHandler :
+        class UIKeyPressHandler :
             public ComboKeyPressHandler
         {
         public:
@@ -41,28 +41,6 @@ namespace CBP
             ToggleResult Toggle();
         };
 
-        class ApplyForceTask :
-            public TaskDelegate
-        {
-        public:
-            ApplyForceTask(
-                Game::ObjectHandle a_handle,
-                uint32_t a_steps,
-                const std::string& a_component,
-                const NiPoint3& a_force
-            );
-
-            virtual void Run() override;
-            virtual void Dispose() override {
-                delete this;
-            }
-        private:
-            Game::ObjectHandle m_handle;
-            uint32_t m_steps;
-            std::string m_component;
-            NiPoint3 m_force;
-        };
-
         class UpdateActorCacheTask :
             public TaskDelegateStatic
         {
@@ -78,6 +56,7 @@ namespace CBP
         };
 
         typedef void (*mainLoopUpdateFunc_t)(Game::BSMain* a_main);
+        typedef void (*mainInitHook_t)(void);
 
     public:
 
@@ -97,6 +76,8 @@ namespace CBP
 
         bool LoadPaths();
         void Initialize();
+
+        static void MainInit_Hook();
 
         SKMP_FORCEINLINE static void DispatchActorTask(Actor* a_actor, CBP::ControllerInstruction::Action a_action);
         SKMP_FORCEINLINE static void DispatchActorTask(Game::ObjectHandle handle, CBP::ControllerInstruction::Action action);
@@ -126,6 +107,9 @@ namespace CBP
         static void UpdateDebugRendererSettings();
         static void UpdateProfilerSettings();
         static void ApplyForce(Game::ObjectHandle a_handle, uint32_t a_steps, const std::string& a_component, const NiPoint3& a_force);
+
+        static void BoneCastSample(Game::ObjectHandle a_handle, const std::string& a_nodeName);
+        static void UpdateNodeReferenceData(Game::ObjectHandle a_handle);
 
         SKMP_FORCEINLINE static bool SaveGlobals() {
             return m_Instance.m_serialization.SaveGlobalConfig();
@@ -224,7 +208,7 @@ namespace CBP
         }
 
         [[nodiscard]] SKMP_FORCEINLINE static bool IsUIActive() {
-            return m_Instance.uiState.show;
+            return m_Instance.m_uiState.show;
         }
 
         SKMP_FORCEINLINE static void SetDebugRendererEnabled(bool a_switch) {
@@ -236,6 +220,7 @@ namespace CBP
         DCBP();
 
         void LoadConfig();
+        void PostLoadConfig();
         void LoadProfiles();
 
         bool ProcessUICallbackImpl();
@@ -257,7 +242,7 @@ namespace CBP
         template <typename T>
         static bool LoadRecord(SKSESerializationInterface* intfc, UInt32 a_type, bool a_bin, T a_func);
         template <typename T>
-        static bool SerializeToSave(SKSESerializationInterface* intfc, UInt32 a_type, T a_func);
+        static bool SaveRecord(SKSESerializationInterface* intfc, UInt32 a_type, T a_func);
 
         static void OnD3D11PostCreate_CBP(Event code, void* data);
         static void OnExit(Event, void* data);
@@ -282,7 +267,13 @@ namespace CBP
             bool ui_open_restrictions;
             bool taskpool_offload;
 
+#if BT_THREADSAFE
+            bool multiThreadedCollisionDetection;
+            bool multiThreadedMotionUpdates;
+#endif
+
             bool use_epa;
+            bool useRelativeContactBreakingThreshold;
             int maxPersistentManifoldPoolSize;
             int maxCollisionAlgorithmPoolSize;
 
@@ -311,29 +302,31 @@ namespace CBP
         } m_conf;
 
         DUI* m_uiDriver;
+
         std::unique_ptr <CBP::UIContext> m_uiContext;
         std::unique_ptr<CBP::Renderer> m_renderer;
+        std::unique_ptr<CBP::ControllerTask> m_controller;
+
         uint32_t m_loadInstance;
         ToggleUITask m_taskToggle;
         UpdateActorCacheTask m_updateActorCacheTask;
 
-        MainKeyPressHandler m_mainKeyPressEventHandler;
+        UIKeyPressHandler m_uiKeyPressEventHandler;
         DebugRendererKeyPressHandler m_drKeyPressEventHandler;
 
         struct {
             bool show;
-        } uiState;
+        } m_uiState;
 
         CBP::ISerialization m_serialization;
-
-        std::unique_ptr<CBP::ControllerTask> m_controller;
 
         ICriticalSection m_lock;
 
         mainLoopUpdateFunc_t mainLoopUpdateFunc_o;
+        mainInitHook_t mainInitHook_o;
 
         bool m_resetUI;
-        bool m_drEnabled;
+        volatile bool m_drEnabled;
 
         static DCBP m_Instance;
     };

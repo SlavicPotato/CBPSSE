@@ -2,22 +2,54 @@
 
 namespace CBP
 {
+
+    struct SKMP_ALIGN(16) VertexPositionColorAV
+    {
+        VertexPositionColorAV() = default;
+
+        VertexPositionColorAV(const VertexPositionColorAV&) = default;
+        VertexPositionColorAV& operator=(const VertexPositionColorAV&) = default;
+
+        VertexPositionColorAV(VertexPositionColorAV&&) = default;
+        VertexPositionColorAV& operator=(VertexPositionColorAV&&) = default;
+
+        VertexPositionColorAV(DirectX::XMVECTOR const& iposition, DirectX::XMVECTOR const& icolor) noexcept
+            :
+            position(iposition),
+            color(icolor)
+        { 
+        }
+
+        VertexPositionColorAV(DirectX::FXMVECTOR iposition, DirectX::XMFLOAT4 icolor) noexcept :
+            position(iposition)
+        {
+            this->color = DirectX::XMLoadFloat4(&icolor);
+        }
+
+        DirectX::XMVECTOR position;
+        DirectX::XMVECTOR color;
+
+        static constexpr unsigned int InputElementCount = 2;
+        static const D3D11_INPUT_ELEMENT_DESC InputElements[InputElementCount];
+    };
+
+
     class SKMP_ALIGN(32) Renderer : 
         public btIDebugDraw
     {
-        using VertexType = DirectX::VertexPositionColor;
+        using VertexType = VertexPositionColorAV;
 
-        struct ItemLine
+        struct SKMP_ALIGN(32) ItemLine
         {
-            VertexType pos1;
-            VertexType pos2;
+            VertexType v0;
+            VertexType v1;
         };
 
-        struct ItemTri
+        struct SKMP_ALIGN(32) ItemTri
         {
-            VertexType pos1;
-            VertexType pos2;
-            VertexType pos3;
+            VertexType v0;
+            VertexType v1;
+            VertexType v2;
         };
 
         int m_debugMode;
@@ -50,15 +82,6 @@ namespace CBP
         static constexpr int NB_SECTORS_SPHERE = 9;
         static constexpr int NB_STACKS_SPHERE = 5;
 
-        static constexpr auto MOVING_NODES_COL = DirectX::XMFLOAT4(1.0f, 0.0f, 0.0f, 0.85f);
-        static constexpr auto MOVING_NODES_COG_COL = DirectX::XMFLOAT4(0.76f, 0.55f, 0.1f, 0.85f);
-        static constexpr auto ACTOR_MARKER_COL = DirectX::XMFLOAT4(0.921f, 0.596f, 0.203f, 0.85f);
-
-        static constexpr auto CONSTRAINT_BOX_COL = DirectX::XMFLOAT4(0.2f, 0.9f, 0.5f, 0.85f);
-        static constexpr auto VIRTUAL_POS_COL = DirectX::XMFLOAT4(0.3f, 0.7f, 0.7f, 0.85f);
-
-        static constexpr auto CONTACT_NORMAL_COL = DirectX::XMFLOAT4(0.0f, 0.749f, 1.0f, 1.0f);
-
         std::unique_ptr<DirectX::BasicEffect> m_effect;
         std::unique_ptr<DirectX::CommonStates> m_states;
         std::unique_ptr<DirectX::PrimitiveBatch<VertexType>> m_batch;
@@ -74,11 +97,19 @@ namespace CBP
         btScalar m_contactPointSphereRadius;
         btScalar m_contactNormalLength;
 
-        void GenerateSphere(const btVector3& a_pos, float a_radius, const DirectX::XMFLOAT4& a_col);
+        void GenerateSphere(const btVector3& a_pos, float a_radius, const DirectX::XMVECTOR& a_col);
 
-        SKMP_FORCEINLINE bool GetScreenPt(const btVector3& a_pos, const btVector3 &a_col, VertexType& a_out);
-        SKMP_FORCEINLINE bool GetScreenPt(const btVector3& a_pos, const DirectX::XMFLOAT4& a_col, VertexType& a_out);
-        SKMP_FORCEINLINE bool GetScreenPt(const NiPoint3& a_pos, const DirectX::XMFLOAT4& a_col, VertexType& a_out);
+        SKMP_NOINLINE void FillScreenPt(VertexType& a_out, const btVector3& a_col);
+        SKMP_NOINLINE void FillScreenPt(VertexType& a_out, const DirectX::XMVECTOR& a_col);
+
+        SKMP_FORCEINLINE bool GetScreenPt(const btVector3& a_pos, VertexType& a_out);
+
+        template <class T>
+        SKMP_FORCEINLINE bool GetTriangle(const btVector3& v0, const btVector3& v1, const btVector3& v2, const T& a_col, ItemTri& a_out);
+        template <class T>
+        SKMP_FORCEINLINE bool GetLine(const btVector3& v0, const btVector3& v1, const T& a_col, ItemLine& a_out);
+
+        SKMP_FORCEINLINE bool IsValidPosition(const DirectX::XMVECTOR& a_pos);
 
         virtual void drawLine(const btVector3& from, const btVector3& to, const btVector3& color) override;
         virtual void drawTriangle(const btVector3& v0, const btVector3& v1, const btVector3& v2, const btVector3& color, btScalar /*alpha*/) override;
@@ -86,9 +117,8 @@ namespace CBP
         virtual void draw3dText(const btVector3& location, const char* textString) override;
         virtual void reportErrorWarning(const char* warningString) override;
 
-        void drawLine(const NiPoint3& from, const NiPoint3& to, const DirectX::XMFLOAT4& color);
-        void drawLine(const btVector3& from, const btVector3& to, const DirectX::XMFLOAT4& color);
-        void drawBox(const NiPoint3& bbMin, const NiPoint3& bbMax, const NiTransform& trans, const DirectX::XMFLOAT4& color);
+        void drawLine(const btVector3& from, const btVector3& to, const DirectX::XMVECTOR& color);
+        void drawBox(const btVector3& bbMin, const btVector3& bbMax, const Bullet::btTransformEx& trans, const DirectX::XMVECTOR& color);
 
     public:
         virtual void setDebugMode(int debugMode) override;

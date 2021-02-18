@@ -27,14 +27,7 @@ namespace CBP
 
     public:
 
-        ColliderProfile(const ColliderProfile&) = default;
-        ColliderProfile(ColliderProfile&&) = default;
-
-        template <typename... Args>
-        ColliderProfile(Args&&... a_args) :
-            ProfileBase<ColliderData>(std::forward<Args>(a_args)...)
-        {
-        }
+        using ProfileBase<ColliderData>::ProfileBase;
 
         virtual ~ColliderProfile() noexcept = default;
 
@@ -43,28 +36,6 @@ namespace CBP
         virtual void SetDefaults() noexcept;
 
         FN_NAMEPROC("ColliderProfile");
-    };
-
-    class ProfileManagerCollider :
-        public ProfileManager<ColliderProfile>
-    {
-    public:
-
-        SKMP_FORCEINLINE static ProfileManagerCollider& GetSingleton() {
-            return m_Instance;
-        }
-
-        FN_NAMEPROC("CBP::ProfileManagerCollider");
-
-    private:
-
-        template<typename... Args>
-        ProfileManagerCollider(Args&&... a_args) :
-            ProfileManager<ColliderProfile>(std::forward<Args>(a_args)...)
-        {
-        }
-
-        static ProfileManagerCollider m_Instance;
     };
 
     class ICollision
@@ -89,6 +60,10 @@ namespace CBP
         }
 
         static void Initialize(
+#if BT_THREADSAFE
+            bool a_useThreading = false,
+#endif
+            bool a_useRelativeContactBreakingThreshold = true,
             bool a_useEPA = true,
             int a_maxPersistentManifoldPoolSize = MAX_PERSISTENT_MANIFOLD_POOL_SIZE,
             int a_maxCollisionAlgorithmPoolSize = MAX_COLLISION_ALGORITHM_POOL_SIZE);
@@ -98,6 +73,8 @@ namespace CBP
         SKMP_FORCEINLINE static void DoCollisionDetection(float a_timeStep);
 
         static void CleanProxyFromPairs(btCollisionObject* a_collider);
+        static void AddCollisionObject(btCollisionObject* a_collider);
+        static void RemoveCollisionObject(btCollisionObject* a_collider);
 
         ICollision(const ICollision&) = delete;
         ICollision(ICollision&&) = delete;
@@ -118,38 +95,82 @@ namespace CBP
         SKMP_FORCEINLINE static btCollisionDispatcher* GetDispatcher() {
             return m_Instance.m_ptrs.bt_dispatcher;
         }
+        
+#if BT_THREADSAFE
+        SKMP_FORCEINLINE static int GetNumThreads() {
+            return m_Instance.m_numThreads;
+        }
+#endif
 
         SKMP_FORCEINLINE static void btPerformCollisionDetection() {
             m_Instance.m_ptrs.bt_collision_world->performDiscreteCollisionDetection();
         }
 
+        SKMP_FORCEINLINE static void PerformCollisionResponse(int a_low, int a_high, float a_timeStep);
+
+#if BT_THREADSAFE
+        struct taskObject_t
+        {
+            using task_t = concurrency::task_handle<std::function<void()>>;
+
+            taskObject_t() : m_task([&]() { PerformCollisionResponseImpl(); }) {};
+
+            // lambda needs to be initialized again so the capture points to this, can discard everything from rhs
+            explicit taskObject_t(taskObject_t&& a_rhs) :
+                m_task([&]() { PerformCollisionResponseImpl(); }) {};
+            explicit taskObject_t(const taskObject_t&) :
+                m_task([&]() { PerformCollisionResponseImpl(); }) {};
+
+            taskObject_t& operator=(taskObject_t&&) = delete;
+            taskObject_t& operator=(const taskObject_t&) = delete;
+
+            SKMP_FORCEINLINE void PerformCollisionResponseImpl()
+            {
+                auto daz = _MM_GET_DENORMALS_ZERO_MODE();
+                auto ftz = _MM_GET_FLUSH_ZERO_MODE();
+
+                _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
+                _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
+
+                PerformCollisionResponse(m_low, m_high, m_timeStep);
+
+                _MM_SET_DENORMALS_ZERO_MODE(daz);
+                _MM_SET_FLUSH_ZERO_MODE(ftz);
+            }
+
+            int m_low, m_high;
+            float m_timeStep;
+            task_t m_task;
+        };
+
+        stl::vector<taskObject_t> m_responseTasks;
+        btSpinMutex m_mutex;
+        int m_numThreads;
+#endif
         overlapFilter m_overlapFilter;
 
         static ICollision m_Instance;
     };
 
-    void ICollision::DoCollisionDetection(float a_timeStep)
+    void ICollision::PerformCollisionResponse(int a_low, int a_high, float a_timeStep)
     {
-        btPerformCollisionDetection();
+        auto dispatcher = GetDispatcher();
 
-        const auto* dispatcher = GetDispatcher();
-
-        auto numManifolds = dispatcher->getNumManifolds();
-
-        for (decltype(numManifolds) i = 0; i < numManifolds; i++)
+        for (int i = a_low; i < a_high; i++)
         {
             auto contactManifold = dispatcher->getManifoldByIndexInternal(i);
 
             auto numContacts = contactManifold->getNumContacts();
 
-            if (!numContacts)
+            if (!numContacts) {
                 continue;
+            }
 
-            auto obA = contactManifold->getBody0();
-            auto obB = contactManifold->getBody1();
+            auto ob1 = contactManifold->getBody0();
+            auto ob2 = contactManifold->getBody1();
 
-            auto sc1 = static_cast<SimComponent*>(obA->getUserPointer());
-            auto sc2 = static_cast<SimComponent*>(obB->getUserPointer());
+            auto sc1 = static_cast<SimComponent*>(ob1->getUserPointer());
+            auto sc2 = static_cast<SimComponent*>(ob2->getUserPointer());
 
             auto& conf1 = sc1->GetConfig();
             auto& conf2 = sc2->GetConfig();
@@ -164,13 +185,20 @@ namespace CBP
             float pbf = std::max(conf1.fp.f32.colPenBiasFactor, conf2.fp.f32.colPenBiasFactor);
             float pmi = 1.0f / std::max(conf1.fp.f32.colPenMass, conf2.fp.f32.colPenMass);
 
+#if BT_THREADSAFE
+            sc1->Lock();
+            sc2->Lock();
+#endif
+
             for (decltype(numContacts) j = 0; j < numContacts; j++)
             {
                 auto& contactPoint = contactManifold->getContactPoint(j);
 
                 float depth = contactPoint.getDistance();
-                if (depth >= 0.0f)
+                if (depth >= 0.0f) {
+
                     continue;
+                }
 
                 depth = -depth;
 
@@ -203,7 +231,74 @@ namespace CBP
                     sc2->SubVelocity(n * (Jm * mib * pmi));
                 }
             }
+
+#if BT_THREADSAFE
+            sc2->Unlock();
+            sc1->Unlock();
+#endif
+
         }
+    }
+
+    void ICollision::DoCollisionDetection(float a_timeStep)
+    {
+        btPerformCollisionDetection();
+
+        /*static PerfTimerInt pta(1000000);
+        pta.Begin();
+        */
+
+        auto* dispatcher = GetDispatcher();
+
+        int numManifolds = dispatcher->getNumManifolds();
+
+#if BT_THREADSAFE
+        if (!numManifolds)
+            return;
+
+        //_DMESSAGE("got %d manifolds", numManifolds);
+
+        int numThreads = GetNumThreads();
+        if (numThreads == 0 || numManifolds < 400) {
+            PerformCollisionResponse(0, numManifolds, a_timeStep);;
+        }
+        else
+        {
+            int seg = numManifolds / numThreads;
+            int rem = numManifolds % numThreads;
+
+            concurrency::structured_task_group task_group;
+
+            for (int i = 0, ii = numManifolds - rem; ii > 0; ii -= seg, i++)
+            {
+                ASSERT(i < numThreads);
+
+                auto& task = m_Instance.m_responseTasks[i];
+
+                //_DMESSAGE("assigning chunk %d-%d", ii - seg, ii);
+                task.m_low = ii - seg;
+                task.m_high = ii;
+                task.m_timeStep = a_timeStep;
+
+                task_group.run(task.m_task);
+            }
+
+            if (rem > 0)
+            {
+                //_DMESSAGE("rem %d-%d", numManifolds - rem, numManifolds);
+                PerformCollisionResponse(numManifolds - rem, numManifolds, a_timeStep);
+            }
+
+            task_group.wait();
+        }
+#else
+        PerformCollisionResponse(0, numManifolds, a_timeStep);
+#endif
+
+        /*long long a;
+        if (pta.End(a))
+            _DMESSAGE("%lld | %d | %d", a, dispatcher->getNumManifolds(), numThreads);*/
+
     }
 
 }

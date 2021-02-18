@@ -19,18 +19,20 @@ namespace CBP
 
     void UIBase::HelpMarker(MiscHelpText a_id) const
     {
-        const auto& globalConfig = IConfig::GetGlobal();
-
-        ImGui::SameLine();
-        UICommon::HelpMarker(m_helpText.at(a_id), globalConfig.ui.fontScale);
+        HelpMarker(GetHelpText(a_id));
     }
 
     void UIBase::HelpMarker(const std::string& a_text) const
     {
+        HelpMarker(a_text.c_str());
+    }
+
+    void UIBase::HelpMarker(const char* a_text) const
+    {
         const auto& globalConfig = IConfig::GetGlobal();
 
         ImGui::SameLine();
-        UICommon::HelpMarker(a_text.c_str(), globalConfig.ui.fontScale);
+        UICommon::HelpMarker(a_text, globalConfig.ui.fontScale);
     }
 
 }

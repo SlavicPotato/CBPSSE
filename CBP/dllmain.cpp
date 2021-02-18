@@ -27,11 +27,6 @@ static bool Initialize(const SKSEInterface* skse)
         return false;
     }
 
-    if (!CBP::DTasks::Initialize()) {
-        gLog.FatalError("Couldn't initialize task interface");
-        return false;
-    }
-
     CBP::IEvents::Initialize();
     CBP::DData::Initialize();
     CBP::DInput::Initialize();

@@ -21,7 +21,7 @@ namespace CBP
 
     void IData::UpdateActorMaps(Game::ObjectHandle a_handle, Actor* a_actor)
     {
-        auto npc = DYNAMIC_CAST(a_actor->baseForm, TESForm, TESNPC);
+        auto npc = RTTI<TESNPC>()(a_actor->baseForm);
         if (npc == nullptr)
             return;
 
@@ -90,7 +90,7 @@ namespace CBP
 
         ss << "[" << std::uppercase << std::setfill('0') <<
             std::setw(8) << std::hex << a_actor->formID << "] " <<
-            CALL_MEMBER_FN(a_actor, GetReferenceName)();
+            a_actor->GetDisplayName();
 
         a_out.name = ss.str();
 
@@ -99,7 +99,7 @@ namespace CBP
         else
             a_out.race = Game::FormID(0);
 
-        auto npc = DYNAMIC_CAST(a_actor->baseForm, TESForm, TESNPC);
+        auto npc = RTTI<TESNPC>()(a_actor->baseForm);
         if (npc != nullptr)
         {
             a_out.base = npc->formID;
@@ -167,10 +167,11 @@ namespace CBP
 
             if (handle.LookupREFR(ref))
             {
-                if (ref->formType == Actor::kTypeID)
+                auto actor = RTTI<Actor>::Cast(ref);
+                if (actor)
                 {
                     Game::ObjectHandle handle;
-                    if (handle.Get(ref))
+                    if (handle.Get(actor))
                     {
                         auto it = actorCache.find(handle);
                         if (it != actorCache.end()) {
@@ -258,7 +259,7 @@ namespace CBP
         }
     }
 
-    void IData::UpdateNodeReferenceData(const Actor* a_actor)
+    void IData::UpdateNodeReferenceData(Actor* a_actor)
     {
         /*if (!a_actor->loadedState || !a_actor->loadedState->object)
             return;
@@ -273,10 +274,15 @@ namespace CBP
             if (!root)
                 return;*/
 
-        if (!a_actor->loadedState || !a_actor->loadedState->node)
+        if (!a_actor->loadedState)
             return;
 
-        auto root = a_actor->loadedState->node;
+        auto root = a_actor->GetNiRootNode(false);
+        if (!root) {
+            root = a_actor->GetNiRootNode(true);
+            if (!root)
+                return;
+        }
 
         nodeRefData.swap(decltype(nodeRefData)());
 

@@ -74,16 +74,16 @@ namespace CBP
         void LoadGlobalConfig();
         bool SaveGlobalConfig();
 
-        size_t LoadActorProfiles(SKSESerializationInterface* intfc, std::stringstream& a_data);
+        size_t LoadActorProfiles(SKSESerializationInterface* intfc, stl::stringstream& a_data);
         size_t SerializeActorProfiles(std::stringstream& a_out);
 
-        size_t LoadGlobalProfile(SKSESerializationInterface* intfc, std::stringstream& a_data);
+        size_t LoadGlobalProfile(SKSESerializationInterface* intfc, stl::stringstream& a_data);
         size_t SerializeGlobalProfile(std::stringstream& a_out);
 
         bool LoadDefaultProfile();
         bool SaveToDefaultGlobalProfile();
 
-        size_t LoadRaceProfiles(SKSESerializationInterface* intfc, std::stringstream& a_data);
+        size_t LoadRaceProfiles(SKSESerializationInterface* intfc, stl::stringstream& a_data);
         size_t SerializeRaceProfiles(std::stringstream& a_out);
 
         void LoadCollisionGroups();
@@ -105,7 +105,7 @@ namespace CBP
         bool SavePending();
 
         size_t BinSerializeSave(boost::archive::binary_oarchive& a_out);
-        size_t BinSerializeLoad(SKSESerializationInterface* intfc, std::stringstream& a_in);
+        size_t BinSerializeLoad(SKSESerializationInterface* intfc, stl::stringstream& a_in);
 
         const auto& GetStats() {
             return m_stats;
@@ -184,15 +184,15 @@ namespace CBP
 
         for (auto& e : a_in)
         {
-            Game::ObjectHandle newHandle(0);
+            Game::ObjectHandle newHandle;
 
             if (!SKSE::ResolveHandle(intfc, e.first, newHandle)) {
                 Error("0x%llX: Couldn't resolve handle, discarding", e.first);
                 continue;
             }
 
-            if (newHandle == Game::ObjectHandle(0)) {
-                Error("ObjectHandle == 0");
+            if (!newHandle.IsValid() || newHandle == Game::ObjectHandle(0)) {
+                Error("Invalid handle");
                 continue;
             }
 
@@ -211,7 +211,7 @@ namespace CBP
 
         for (const auto& e : a_in)
         {
-            Game::FormID newFormID(0);
+            Game::FormID newFormID;
 
             if (!SKSE::ResolveRaceForm(intfc, e.first, newFormID)) {
                 Error("0x%lX: Couldn't resolve form, discarding", e.first);

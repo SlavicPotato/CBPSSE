@@ -9,17 +9,33 @@ namespace CBP
         virtual void Run() = 0;
     };
 
+    class TaskDelegateStatic
+        : public TaskDelegate
+    {
+    public:
+        virtual void Dispose() override {};
+    };
 
     class DTasks
     {
     public:
 
         SKMP_FORCEINLINE static void AddTaskFixed(TaskDelegateFixed* cmd) {
-            s_tasks_fixed.emplace_back(cmd);
+            m_tasks_fixed.emplace_back(cmd);
         }
 
         SKMP_FORCEINLINE static void AddTask(TaskDelegate* cmd) {
-            s_tasks.AddTask(cmd);
+            m_tasks.AddTask(cmd);
+        }
+
+        SKMP_FORCEINLINE static void AddTask(TaskFunctor::func_t a_func)
+        {
+            m_tasks.AddTask(std::move(a_func));
+        }
+
+        SKMP_FORCEINLINE static void SKSEAddTask(TaskFunctor::func_t a_func)
+        {
+            SKSE::g_taskInterface->AddTask(new TaskFunctor(std::move(a_func)));
         }
 
         template <class T, typename... Args>
@@ -27,10 +43,14 @@ namespace CBP
         {
             static_assert(std::is_base_of<TaskDelegate, T>::value);
 
-            s_tasks.AddTask<T>(std::forward<Args>(a_args)...);
+            m_tasks.AddTask<T>(std::forward<Args>(a_args)...);
         }
 
-        static bool Initialize();
+        SKMP_FORCEINLINE static auto& Queue() {
+            return m_tasks;
+        }
+
+        static void InstallHooks();
     private:
         DTasks() = default;
 
@@ -41,7 +61,7 @@ namespace CBP
 
         SKMP_FORCEINLINE static void RunTasks();
 
-        static stl::vector<TaskDelegateFixed*> s_tasks_fixed;
-        static TaskQueue s_tasks;
+        static stl::vector<TaskDelegateFixed*> m_tasks_fixed;
+        static TaskQueue m_tasks;
     };
 }

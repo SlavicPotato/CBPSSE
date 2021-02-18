@@ -53,10 +53,16 @@
 
 #include <wrl/client.h>
 
+#include <ppl.h>
+
 #define DIRECTINPUT_VERSION 0x0800
 #include <dinput.h>
 
 #include <btBulletCollisionCommon.h>
+#if BT_THREADSAFE
+#include <LinearMath/btThreads.h>
+#include <BulletCollision/CollisionDispatch/btCollisionDispatcherMt.h>
+#endif
 #include <BulletCollision/CollisionShapes/btShapeHull.h>
 #include <BulletCollision/Gimpact/btGImpactShape.h>
 #include <BulletCollision/Gimpact/btGImpactCollisionAlgorithm.h>
@@ -86,6 +92,8 @@
 #include <boost/serialization/vector.hpp> 
 #include <boost/serialization/split_member.hpp>
 #include <boost/serialization/version.hpp>
+
+#include <boost/uuid/detail/sha1.hpp>
 
 #include <boost/algorithm/string.hpp>
 
@@ -124,12 +132,12 @@ namespace fs = std::filesystem;
 #include "Common/UICommon.h"
 #include "Common/Crypto.h"
 #include "Common/Game.h"
+#include "Common/BulletExtensions.h"
 #include "cbp/Data.h"
 #include "cbp/ArmorCache.h"
 #include "CBP/ColliderData.h"
 #include "cbp/Config.h"
 #include "cbp/Serialization.h"
-#include "cbp/Profile.h"
 #include "cbp/Template.h"
 #include "CBP/BoneCast.h"
 #include "cbp/SimComponent.h"
@@ -142,6 +150,7 @@ namespace fs = std::filesystem;
 #include "cbp/Profiling.h"
 #include "cbp/Controller.h"
 #include "cbp/GameEventHandlers.h"
+#include "cbp/Profile.h"
 #include "drivers/cbp.h"
 
 #endif //PCH_H

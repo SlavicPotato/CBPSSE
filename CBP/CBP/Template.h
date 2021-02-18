@@ -2,8 +2,6 @@
 
 namespace CBP
 {
-    class ITemplate;
-
     enum class TRecType : uint32_t {
         Physics,
         Node
@@ -63,6 +61,8 @@ namespace CBP
         except::descriptor m_lastExcept;
     };
 
+    class ITemplate;
+
     template <class T>
     class ProfileManagerTemplate :
         public ProfileManager<T>
@@ -76,11 +76,7 @@ namespace CBP
         virtual void OnProfileAdd(T& a_profile);
         virtual void OnProfileDelete(T& a_profile);
 
-        template<typename... Args>
-        ProfileManagerTemplate(Args&&... a_args) :
-            ProfileManager<T>(std::forward<Args>(a_args)...)
-        {
-        }
+        using ProfileManager<T>::ProfileManager;
     };
 
     class ITemplate :
@@ -155,7 +151,7 @@ namespace CBP
             templateModMap_t m_mod;
         };
 
-        template <class T>
+        /*template <class T>
         class AddProfileRecordsTask :
             public TaskDelegate
         {
@@ -170,7 +166,7 @@ namespace CBP
             }
         private:
             std::string m_profileName;
-        };
+        };*/
 
         friend class ProfileManagerTemplate<PhysicsProfile>;
         friend class ProfileManagerTemplate<NodeProfile>;

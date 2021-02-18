@@ -5,7 +5,7 @@ namespace CBP
     class SimObject;
     struct nodeRefEntry_t;
 
-    typedef stl::map<Game::ObjectHandle, SimObject> simActorList_t;
+    typedef vectormap<Game::ObjectHandle, SimObject> simActorList_t;
 
     struct raceCacheEntry_t
     {
@@ -147,7 +147,7 @@ namespace CBP
             return lastException;
         }
 
-        static void UpdateNodeReferenceData(const Actor* a_actor);
+        static void UpdateNodeReferenceData(Actor* a_actor);
 
         [[nodiscard]] SKMP_FORCEINLINE static const auto& GetNodeReferenceData() {
             return nodeRefData;

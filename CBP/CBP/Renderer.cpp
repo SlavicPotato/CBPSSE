@@ -2,6 +2,24 @@
 
 namespace CBP
 {
+    const D3D11_INPUT_ELEMENT_DESC VertexPositionColorAV::InputElements[] =
+    {
+        { "SV_Position", 0, DXGI_FORMAT_R32G32B32_FLOAT,    0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "COLOR",       0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 16, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+    };
+
+    static_assert(sizeof(VertexPositionColorAV) == 32, "Vertex struct/layout mismatch");
+
+    static const auto MOVING_NODES_COL = DirectX::XMVectorSet(1.0f, 0.0f, 0.0f, 0.85f);
+    static const auto MOVING_NODES_COG_COL = DirectX::XMVectorSet(0.76f, 0.55f, 0.1f, 0.85f);
+    static const auto ACTOR_MARKER_COL = DirectX::XMVectorSet(0.921f, 0.596f, 0.203f, 0.85f);
+
+    static const auto CONSTRAINT_BOX_COL = DirectX::XMVectorSet(0.2f, 0.9f, 0.5f, 0.85f);
+    static const auto VIRTUAL_POS_COL = DirectX::XMVectorSet(0.3f, 0.7f, 0.7f, 0.85f);
+
+    static const auto CONTACT_NORMAL_COL = DirectX::XMVectorSet(0.0f, 0.749f, 1.0f, 1.0f);
+
+
     Renderer::Renderer(
         ID3D11Device* a_pDevice,
         ID3D11DeviceContext* a_pImmediateContext)
@@ -31,6 +49,7 @@ namespace CBP
         bool a_centerOfGravity,
         Game::ObjectHandle a_markedHandle)
     {
+        Bullet::btTransformEx tf;
 
         for (const auto& e : a_actorList)
         {
@@ -57,23 +76,19 @@ namespace CBP
 
                     if (a_centerOfGravity)
                     {
-                        auto& tf = n->GetParentWorldTransform();
-                        auto& p = n->GetCenterOfGravity();
-                        auto pos = tf * NiPoint3(p.x(), p.y(), p.z());
-                        GenerateSphere(btVector3(pos.x, pos.y, pos.z), a_radius * tf.scale, MOVING_NODES_COG_COL);
+                        n->GetParentWorldTransform(tf);
+                        GenerateSphere(tf * n->GetCenterOfGravity(), a_radius * tf.getScale(), MOVING_NODES_COG_COL);
                     }
                 }
             }
 
             if (e.first == a_markedHandle)
             {
-                auto ht = e.second.GetHeadTransform();
-                if (ht) 
+                if (e.second.GetHeadTransform(tf))
                 {
-                    auto pos = *ht * NiPoint3(0.0f, 0.0f, 20.0f);
                     GenerateSphere(
-                        btVector3(pos.x, pos.y, pos.z),
-                        2.0f * ht->scale, ACTOR_MARKER_COL);
+                        tf * btVector3(0.0f, 0.0f, 20.0f),
+                        2.0f * tf.getScale(), ACTOR_MARKER_COL);
                 }
             }
         }
@@ -83,6 +98,8 @@ namespace CBP
         const simActorList_t& a_actorList,
         float a_radius)
     {
+        Bullet::btTransformEx tf;
+
         for (const auto& e : a_actorList)
         {
             if (e.second.IsSuspended())
@@ -100,18 +117,16 @@ namespace CBP
 
                 auto& conf = n->GetConfig();
 
+                n->GetParentWorldTransform(tf);
+
                 drawBox(
-                    NiPoint3(conf.fp.f32.maxOffsetN[0], conf.fp.f32.maxOffsetN[1], conf.fp.f32.maxOffsetN[2]),
-                    NiPoint3(conf.fp.f32.maxOffsetP[0], conf.fp.f32.maxOffsetP[1], conf.fp.f32.maxOffsetP[2]),
-                    n->GetParentWorldTransform(),
+                    conf.fp.vec.maxOffsetN,
+                    conf.fp.vec.maxOffsetP,
+                    tf,
                     CONSTRAINT_BOX_COL
                 );
 
-                auto& tf = n->GetParentWorldTransform();
-                auto& p = n->GetVirtualPos();
-                auto pos = tf * NiPoint3(p.x(), p.y(), p.z());
-
-                GenerateSphere(btVector3(pos.x, pos.y, pos.z), a_radius * tf.scale, VIRTUAL_POS_COL);
+                GenerateSphere(tf * n->GetVirtualPos(), a_radius * tf.getScale(), VIRTUAL_POS_COL);
             }
         }
     }
@@ -121,11 +136,14 @@ namespace CBP
         m_tris.clear();
         m_lines.clear();
     }
-
+    
     void Renderer::Release()
     {
-        m_tris.swap(decltype(m_tris)());
-        m_lines.swap(decltype(m_lines)());
+        if (!m_tris.empty())
+            m_tris.swap(decltype(m_tris)());
+
+        if (!m_lines.empty())
+            m_lines.swap(decltype(m_lines)());
     }
 
     void Renderer::Draw()
@@ -140,115 +158,103 @@ namespace CBP
 
         m_batch->Begin();
 
-        const auto& globalConfig = IConfig::GetGlobal();
-
         for (const auto& e : m_lines)
-            m_batch->DrawLine(e.pos1, e.pos2);
+            m_batch->DrawLine(e.v0, e.v1);
+
+        const auto& globalConfig = IConfig::GetGlobal();
 
         if (globalConfig.debugRenderer.wireframe)
             for (const auto& e : m_tris) {
-                m_batch->DrawLine(e.pos1, e.pos2);
-                m_batch->DrawLine(e.pos1, e.pos3);
-                m_batch->DrawLine(e.pos3, e.pos2);
+                m_batch->DrawLine(e.v0, e.v1);
+                m_batch->DrawLine(e.v0, e.v2);
+                m_batch->DrawLine(e.v2, e.v1);
             }
         else
             for (const auto& e : m_tris)
-                m_batch->DrawTriangle(e.pos1, e.pos2, e.pos3);
+                m_batch->DrawTriangle(e.v0, e.v1, e.v2);
 
         m_batch->End();
     }
 
+    static const auto s_2 = DirectX::XMVectorReplicate(2.0f);
+    static const auto s_1 = DirectX::XMVectorReplicate(1.0f);
 
-    bool Renderer::GetScreenPt(const btVector3& a_pos, const btVector3& a_col, VertexType& a_out)
+    void Renderer::FillScreenPt(VertexType& a_out, const btVector3& a_col)
     {
-        NiPoint3 tmp(a_pos.x(), a_pos.y(), a_pos.z());
+        a_out.position = DirectX::XMVectorSubtract(DirectX::XMVectorMultiply(a_out.position, s_2), s_1);
+        a_out.color = a_col.get128();
+    }
 
-        if (!WorldPtToScreenPt3_Internal(
+    void Renderer::FillScreenPt(VertexType& a_out, const DirectX::XMVECTOR& a_col)
+    {
+        a_out.position = DirectX::XMVectorSubtract(DirectX::XMVectorMultiply(a_out.position, s_2), s_1);
+        a_out.color = a_col;
+    }
+
+    bool Renderer::GetScreenPt(const btVector3& a_pos, VertexType& a_out)
+    {
+        return WorldPtToScreenPt3_Internal(
             g_worldToCamMatrix,
             g_viewPort,
-            &tmp,
-            &a_out.position.x,
-            &a_out.position.y,
-            &a_out.position.z,
-            1e-5f))
+            reinterpret_cast<NiPoint3*>(const_cast<btVector3*>(std::addressof(a_pos))),
+            &a_out.position.m128_f32[0],
+            &a_out.position.m128_f32[1],
+            &a_out.position.m128_f32[2],
+            1e-5f);
+    }
+
+    bool Renderer::IsValidPosition(const DirectX::XMVECTOR& a_pos)
+    {
+        return a_pos.m128_f32[0] > -0.05f && a_pos.m128_f32[1] > -0.05f && a_pos.m128_f32[2] > -0.05f &&
+            a_pos.m128_f32[0] < 1.05f && a_pos.m128_f32[1] < 1.05f && a_pos.m128_f32[2] < 1.05f;
+    }
+
+    template <class T>
+    bool Renderer::GetTriangle(const btVector3& v0, const btVector3& v1, const btVector3& v2, const T& a_col, ItemTri& a_out)
+    {
+        if (!GetScreenPt(v0, a_out.v0))
+            return false;
+        if (!GetScreenPt(v1, a_out.v1))
+            return false;
+        if (!GetScreenPt(v2, a_out.v2))
+            return false;
+
+        if (!IsValidPosition(a_out.v0.position) &&
+            !IsValidPosition(a_out.v1.position) &&
+            !IsValidPosition(a_out.v2.position))
         {
             return false;
         }
 
-        if (a_out.position.x < -0.05f || a_out.position.y < -0.05f || a_out.position.z < -0.05f ||
-            a_out.position.x > 1.05f || a_out.position.y > 1.05f || a_out.position.z > 1.05f)
-            return false;
-
-        a_out.position.x = (a_out.position.x * 2.0f) - 1.0f;
-        a_out.position.y = (a_out.position.y * 2.0f) - 1.0f;
-        a_out.position.z = (a_out.position.z * 2.0f) - 1.0f;
-
-        a_out.color.x = a_col.x();
-        a_out.color.y = a_col.y();
-        a_out.color.z = a_col.z();
-        a_out.color.w = 1.0f;
+        FillScreenPt(a_out.v0, a_col);
+        FillScreenPt(a_out.v1, a_col);
+        FillScreenPt(a_out.v2, a_col);
 
         return true;
     }
 
-    bool Renderer::GetScreenPt(const btVector3& a_pos, const DirectX::XMFLOAT4& a_col, VertexType& a_out)
+    template <class T>
+    bool Renderer::GetLine(const btVector3& v0, const btVector3& v1, const T& a_col, ItemLine& a_out)
     {
-        NiPoint3 tmp(a_pos.x(), a_pos.y(), a_pos.z());
+        if (!GetScreenPt(v0, a_out.v0))
+            return false;
+        if (!GetScreenPt(v1, a_out.v1))
+            return false;
 
-        if (!WorldPtToScreenPt3_Internal(
-            g_worldToCamMatrix,
-            g_viewPort,
-            &tmp,
-            &a_out.position.x,
-            &a_out.position.y,
-            &a_out.position.z,
-            1e-5f))
+        if (!IsValidPosition(a_out.v0.position) &&
+            !IsValidPosition(a_out.v1.position))
         {
             return false;
         }
 
-        if (a_out.position.x < -0.05f || a_out.position.y < -0.05f || a_out.position.z < -0.05f ||
-            a_out.position.x > 1.05f || a_out.position.y > 1.05f || a_out.position.z > 1.05f)
-            return false;
-
-        a_out.position.x = (a_out.position.x * 2.0f) - 1.0f;
-        a_out.position.y = (a_out.position.y * 2.0f) - 1.0f;
-        a_out.position.z = (a_out.position.z * 2.0f) - 1.0f;
-
-        a_out.color = a_col;
-
-        return true;
-    }
-
-    bool Renderer::GetScreenPt(const NiPoint3& a_pos, const DirectX::XMFLOAT4& a_col, VertexType& a_out)
-    {
-        if (!WorldPtToScreenPt3_Internal(
-            g_worldToCamMatrix,
-            g_viewPort,
-            const_cast<NiPoint3*>(std::addressof(a_pos)),
-            &a_out.position.x,
-            &a_out.position.y,
-            &a_out.position.z,
-            1e-5f))
-        {
-            return false;
-        }
-
-        if (a_out.position.x < -0.05f || a_out.position.y < -0.05f || a_out.position.z < -0.05f ||
-            a_out.position.x > 1.05f || a_out.position.y > 1.05f || a_out.position.z > 1.05f)
-            return false;
-
-        a_out.position.x = (a_out.position.x * 2.0f) - 1.0f;
-        a_out.position.y = (a_out.position.y * 2.0f) - 1.0f;
-        a_out.position.z = (a_out.position.z * 2.0f) - 1.0f;
-
-        a_out.color = a_col;
+        FillScreenPt(a_out.v0, a_col);
+        FillScreenPt(a_out.v1, a_col);
 
         return true;
     }
 
     // Adapted from https://github.com/DanielChappuis/reactphysics3d/blob/master/src/utils/DebugRenderer.cpp#L122
-    void Renderer::GenerateSphere(const btVector3& a_pos, float a_radius, const DirectX::XMFLOAT4& a_col)
+    void Renderer::GenerateSphere(const btVector3& a_pos, float a_radius, const DirectX::XMVECTOR& a_col)
     {
         btVector3 vertices[(NB_SECTORS_SPHERE + 1) * (NB_STACKS_SPHERE + 1) + (NB_SECTORS_SPHERE + 1)];
 
@@ -259,18 +265,27 @@ namespace CBP
         for (uint32_t i = 0; i <= NB_STACKS_SPHERE; i++) {
 
             const float stackAngle = float(MATH_PI) / 2 - i * stackStep;
-            const float radiusCosStackAngle = a_radius * std::cos(stackAngle);
-            const float z = a_radius * std::sin(stackAngle);
+
+            float s, c;
+            DirectX::XMScalarSinCos(&s, &c, stackAngle);
+
+            const float radiusCosStackAngle = a_radius * c;
+            const float z = a_radius * s;
 
             for (uint32_t j = 0; j <= NB_SECTORS_SPHERE; j++) {
 
                 const float sectorAngle = j * sectorStep;
-                const float x = radiusCosStackAngle * std::cos(sectorAngle);
-                const float y = radiusCosStackAngle * std::sin(sectorAngle);
+
+                DirectX::XMScalarSinCos(&s, &c, sectorAngle);
+
+                const float x = radiusCosStackAngle * c;
+                const float y = radiusCosStackAngle * s;
 
                 vertices[i * (NB_SECTORS_SPHERE + 1) + j] = a_pos + btVector3(x, y, z);
             }
         }
+
+        ItemTri item;
 
         // Faces
         for (uint32_t i = 0; i < NB_STACKS_SPHERE; i++) {
@@ -282,28 +297,16 @@ namespace CBP
 
                 // 2 triangles per sector except for the first and last stacks
 
-                ItemTri item;
-
                 if (i != 0)
                 {
-
-                    if (GetScreenPt(vertices[a1], a_col, item.pos1) &&
-                        GetScreenPt(vertices[a2], a_col, item.pos2) &&
-                        GetScreenPt(vertices[a1 + 1], a_col, item.pos3))
-                    {
+                    if (GetTriangle(vertices[a1], vertices[a2], vertices[a1 + 1], a_col, item))
                         m_tris.emplace_back(std::move(item));
-                    }
-
                 }
 
                 if (i != (NB_STACKS_SPHERE - 1))
                 {
-                    if (GetScreenPt(vertices[a1 + 1], a_col, item.pos1) &&
-                        GetScreenPt(vertices[a2], a_col, item.pos2) &&
-                        GetScreenPt(vertices[a2 + 1], a_col, item.pos3))
-                    {
+                    if (GetTriangle(vertices[a1 + 1], vertices[a2], vertices[a2 + 1], a_col, item))
                         m_tris.emplace_back(std::move(item));
-                    }
                 }
             }
         }
@@ -313,63 +316,52 @@ namespace CBP
     {
         ItemLine item;
 
-        if (!GetScreenPt(from, color, item.pos1))
-            return;
-        if (!GetScreenPt(to, color, item.pos2))
+        if (!GetLine(from, to, color, item))
             return;
 
         m_lines.emplace_back(std::move(item));
     }
 
-    void Renderer::drawLine(const btVector3& from, const btVector3& to, const DirectX::XMFLOAT4& color)
+    void Renderer::drawLine(const btVector3& from, const btVector3& to, const DirectX::XMVECTOR& color)
     {
         ItemLine item;
 
-        if (!GetScreenPt(from, color, item.pos1))
-            return;
-        if (!GetScreenPt(to, color, item.pos2))
+        if (!GetLine(from, to, color, item))
             return;
 
         m_lines.emplace_back(std::move(item));
     }
 
-    void Renderer::drawLine(const NiPoint3& from, const NiPoint3& to, const DirectX::XMFLOAT4& color)
+    void Renderer::drawBox(const btVector3& bbMin, const btVector3& bbMax, const Bullet::btTransformEx& trans, const DirectX::XMVECTOR& color)
     {
-        ItemLine item;
+        auto p1 = trans * btVector3(bbMin.x(), bbMin.y(), bbMin.z());
+        auto p2 = trans * btVector3(bbMax.x(), bbMin.y(), bbMin.z());
+        auto p3 = trans * btVector3(bbMax.x(), bbMax.y(), bbMin.z());
+        auto p4 = trans * btVector3(bbMin.x(), bbMax.y(), bbMin.z());
+        auto p5 = trans * btVector3(bbMin.x(), bbMin.y(), bbMax.z());
+        auto p6 = trans * btVector3(bbMax.x(), bbMin.y(), bbMax.z());
+        auto p7 = trans * btVector3(bbMax.x(), bbMax.y(), bbMax.z());
+        auto p8 = trans * btVector3(bbMin.x(), bbMax.y(), bbMax.z());
 
-        if (!GetScreenPt(from, color, item.pos1))
-            return;
-        if (!GetScreenPt(to, color, item.pos2))
-            return;
-
-        m_lines.emplace_back(std::move(item));
-    }
-
-    void Renderer::drawBox(const NiPoint3& bbMin, const NiPoint3& bbMax, const NiTransform& trans, const DirectX::XMFLOAT4& color)
-    {
-        drawLine(trans * NiPoint3(bbMin.x, bbMin.y, bbMin.z), trans * NiPoint3(bbMax.x, bbMin.y, bbMin.z), color);
-        drawLine(trans * NiPoint3(bbMax.x, bbMin.y, bbMin.z), trans * NiPoint3(bbMax.x, bbMax.y, bbMin.z), color);
-        drawLine(trans * NiPoint3(bbMax.x, bbMax.y, bbMin.z), trans * NiPoint3(bbMin.x, bbMax.y, bbMin.z), color);
-        drawLine(trans * NiPoint3(bbMin.x, bbMax.y, bbMin.z), trans * NiPoint3(bbMin.x, bbMin.y, bbMin.z), color);
-        drawLine(trans * NiPoint3(bbMin.x, bbMin.y, bbMin.z), trans * NiPoint3(bbMin.x, bbMin.y, bbMax.z), color);
-        drawLine(trans * NiPoint3(bbMax.x, bbMin.y, bbMin.z), trans * NiPoint3(bbMax.x, bbMin.y, bbMax.z), color);
-        drawLine(trans * NiPoint3(bbMax.x, bbMax.y, bbMin.z), trans * NiPoint3(bbMax.x, bbMax.y, bbMax.z), color);
-        drawLine(trans * NiPoint3(bbMin.x, bbMax.y, bbMin.z), trans * NiPoint3(bbMin.x, bbMax.y, bbMax.z), color);
-        drawLine(trans * NiPoint3(bbMin.x, bbMin.y, bbMax.z), trans * NiPoint3(bbMax.x, bbMin.y, bbMax.z), color);
-        drawLine(trans * NiPoint3(bbMax.x, bbMin.y, bbMax.z), trans * NiPoint3(bbMax.x, bbMax.y, bbMax.z), color);
-        drawLine(trans * NiPoint3(bbMax.x, bbMax.y, bbMax.z), trans * NiPoint3(bbMin.x, bbMax.y, bbMax.z), color);
-        drawLine(trans * NiPoint3(bbMin.x, bbMax.y, bbMax.z), trans * NiPoint3(bbMin.x, bbMin.y, bbMax.z), color);
+        drawLine(p1, p2, color);
+        drawLine(p2, p3, color);
+        drawLine(p3, p4, color);
+        drawLine(p4, p1, color);
+        drawLine(p1, p5, color);
+        drawLine(p2, p6, color);
+        drawLine(p3, p7, color);
+        drawLine(p4, p8, color);
+        drawLine(p5, p6, color);
+        drawLine(p6, p7, color);
+        drawLine(p7, p8, color);
+        drawLine(p8, p5, color);
     }
 
     void Renderer::drawTriangle(const btVector3& v0, const btVector3& v1, const btVector3& v2, const btVector3& color, btScalar /*alpha*/)
     {
         ItemTri item;
 
-        if (!GetScreenPt(v0, color, item.pos1))
-            return;
-        if (!GetScreenPt(v1, color, item.pos2))
-            return;
-        if (!GetScreenPt(v2, color, item.pos3))
+        if (!GetTriangle(v0, v1, v2, color, item))
             return;
 
         m_tris.emplace_back(std::move(item));
@@ -387,6 +379,7 @@ namespace CBP
 
     void Renderer::reportErrorWarning(const char* warningString)
     {
+        gLog.Warning("%s: %s", __FUNCTION__, warningString);
     }
 
     void Renderer::setDebugMode(int debugMode) {

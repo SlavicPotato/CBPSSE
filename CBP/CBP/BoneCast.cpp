@@ -27,7 +27,7 @@ namespace CBP
         if ((vflags & VertexFlags::VF_VERTEX) != VertexFlags::VF_VERTEX)
             return false;
 
-        auto triShape = DYNAMIC_CAST(geometry, BSGeometry, BSTriShape);
+        auto triShape = RTTI<BSTriShape>()(geometry);
         if (!triShape)
             return false;
 
@@ -68,9 +68,9 @@ namespace CBP
             if (a_nodeName.data != bone->m_name)
                 continue;
 
-            auto boneData = &skinData->m_pkBoneData[i];
+            auto& boneData = skinData->m_pkBoneData[i];
 
-            if (boneData->m_usVerts == 0)
+            if (boneData.m_usVerts == 0)
                 return false;
 
             //UInt32 numIndices = numTriangles * 3;
@@ -88,7 +88,7 @@ namespace CBP
 
             for (UInt16 i = 0, j = 0; i < numTriangles; i++, j += 3)
             {
-                auto tri = &tris[i];
+                auto tri = std::addressof(tris[i]);
 
                 tri->m_isBoneTri = false;
 
@@ -107,9 +107,9 @@ namespace CBP
 
             }
 
-            for (UInt16 i = 0; i < boneData->m_usVerts; i++)
+            for (UInt16 i = 0; i < boneData.m_usVerts; i++)
             {
-                auto& v = boneData->m_pkBoneVertData[i];
+                auto& v = boneData.m_pkBoneVertData[i];
 
                 if (v.m_usVert >= numVertices) {
                     m_Instance.Debug("%s: [m_pkBoneVertData] index >= numVertices", a_nodeName.c_str());
@@ -142,7 +142,7 @@ namespace CBP
                         if (!vme.m_hasVertex) {
                             auto vtx = reinterpret_cast<DirectX::XMVECTOR*>(&vertices[index * vertexSize]);
 
-                            auto p = boneData->m_kSkinToBone * NiPoint3(
+                            auto p = boneData.m_kSkinToBone * NiPoint3(
                                 vtx->m128_f32[0], vtx->m128_f32[1], vtx->m128_f32[2]);
 
                             tri.m_indices[j] = vi;
@@ -257,7 +257,7 @@ namespace CBP
 
         numIndices = indices.size();
 
-        if (!numIndices) {
+        if (numIndices < 3) {
             a_in.second.Clear();
             return false;
         }
@@ -296,13 +296,14 @@ namespace CBP
 
             a_in.second.m_numTriangles = static_cast<int>(newIndices / 3);
         }
-        else 
+        else
         {
             a_in.second.m_indices = std::move(indices);
             a_in.second.m_indices.shrink_to_fit();
 
             a_in.second.m_hullPoints = decltype(a_in.second.m_hullPoints)(numIndices);
-            for (size_t i = 0; i < numIndices; i++)
+
+            for (decltype(numIndices) i = 0; i < numIndices; i++)
                 a_in.second.m_hullPoints[i] = a_in.first.m_vertices[a_in.second.m_indices[i]];
 
             a_in.second.m_numTriangles = static_cast<int>(numIndices / 3);
@@ -357,28 +358,17 @@ namespace CBP
         return found;
     }
 
-    void BoneCastCreateTask0::Run()
+    void BoneCastCreateTask1::Run()
     {
         auto actor = m_handle.Resolve<Actor>();
         if (!actor)
             return;
 
-        CALL_MEMBER_FN(actor, QueueNiNodeUpdate)(true);
-
-        SKSE::g_taskInterface->AddTask(new BoneCastCreateTask1(m_handle, m_nodeName));
-    }
-
-    void BoneCastCreateTask1::Run()
-    {
         IScopedCriticalSection _(DCBP::GetLock());
 
         auto& nodeConfig = CBP::IConfig::GetActorNode(m_handle);
         auto itn = nodeConfig.find(m_nodeName);
         if (itn == nodeConfig.end())
-            return;
-
-        auto actor = m_handle.Resolve<Actor>();
-        if (!actor)
             return;
 
         if (!IBoneCast::Update(m_handle, m_nodeName, itn->second))
@@ -506,7 +496,7 @@ namespace CBP
         Game::ObjectHandle a_handle,
         const std::string& a_nodeName,
         bool a_read,
-        BoneCastCache::iterator& a_result) 
+        BoneCastCache::iterator& a_result)
     {
         return GetCache().Get(a_handle, a_nodeName, a_read, a_result);
     }
@@ -578,10 +568,19 @@ namespace CBP
         if (!actor)
             return false;
 
+        return Update(a_handle, actor, a_nodeName, a_nodeConfig);
+    }
+
+    bool IBoneCast::Update(
+        Game::ObjectHandle a_handle,
+        Actor* a_actor,
+        const std::string& a_nodeName,
+        const configNode_t& a_nodeConfig)
+    {
         BoneCastCache::data_t cacheEntry;
 
         if (!IBoneCast::GetGeometry(
-            actor,
+            a_actor,
             a_nodeName,
             a_nodeConfig.ex.bcShape,
             cacheEntry.first))

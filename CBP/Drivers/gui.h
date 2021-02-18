@@ -91,40 +91,6 @@ namespace CBP
             WCHAR m_k;
         };
 
-        class LockControlsTask :
-            public TaskDelegate
-        {
-        public:
-            LockControlsTask(bool a_switch) :
-                m_switch(a_switch)
-            {
-            }
-
-            virtual void Run();
-            virtual void Dispose() {
-                delete this;
-            };
-        private:
-            bool m_switch;
-        };
-
-        class FreezeTimeTask :
-            public TaskDelegate
-        {
-        public:
-            FreezeTimeTask(bool a_switch) :
-                m_switch(a_switch)
-            {
-            }
-
-            virtual void Run();
-            virtual void Dispose() {
-                delete this;
-            };
-        private:
-            bool m_switch;
-        };
-
         class EvaluateTaskStateTask :
             public TaskDelegateStatic
         {

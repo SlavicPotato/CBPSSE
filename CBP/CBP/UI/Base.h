@@ -35,7 +35,8 @@ namespace CBP
         dataFilterNode,
         frameTimer,
         timePerFrame,
-        rotation
+        rotation,
+        controllerStats
     };
 
     typedef std::pair<const std::string, configComponents_t> actorEntryPhysConf_t;
@@ -62,6 +63,7 @@ namespace CBP
 
         void HelpMarker(MiscHelpText a_id) const;
         void HelpMarker(const std::string& a_text) const;
+        void HelpMarker(const char* a_text) const;
 
         template <typename T>
         void SetGlobal(T& a_member, T const a_value) const;
@@ -77,7 +79,7 @@ namespace CBP
         virtual void OnCollapsibleStatesUpdate() const;
         virtual void OnControlValueChange() const;
 
-        static const stl::unordered_map<MiscHelpText, const char*> m_helpText;
+        static const char* GetHelpText(MiscHelpText a_code);
     };
 
     template <typename T>

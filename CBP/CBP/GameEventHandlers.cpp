@@ -9,7 +9,7 @@ namespace CBP
             auto form = evn->formId.Lookup();
             if (form && form->formType == Actor::kTypeID) {
                 DCBP::DispatchActorTask(
-                    DYNAMIC_CAST(form, TESForm, Actor),
+                    RTTI<Actor>()(form),
                     evn->loaded ?
                     ControllerInstruction::Action::AddActor :
                     ControllerInstruction::Action::RemoveActor);
@@ -27,7 +27,7 @@ namespace CBP
                 evn->reference->formType == Actor::kTypeID) 
             {
                 DCBP::DispatchActorTask(
-                    DYNAMIC_CAST(evn->reference, TESObjectREFR, Actor),
+                    RTTI<Actor>()(evn->reference),
                     ControllerInstruction::Action::AddActor);
             }
         }
@@ -45,10 +45,7 @@ namespace CBP
 
     SKMP_FORCEINLINE static void HandleEquipEvent(TESEquipEvent* evn)
     {
-        if (evn->actor->formType != Actor::kTypeID)
-            return;
-
-        auto actor = DYNAMIC_CAST(evn->actor, TESObjectREFR, Actor);
+        auto actor = RTTI<Actor>::Cast(evn->actor);
         if (!actor)
             return;
 
@@ -56,14 +53,9 @@ namespace CBP
         if (!handle.Get(actor))
             return;
 
-        auto form = evn->baseObject.Lookup();
+        auto form = evn->baseObject.Lookup<TESObjectARMO>();
         if (!form)
             return;
-
-        if (form->formType != TESObjectARMO::kTypeID)
-            return;
-
-        //gLog.Debug(">>> unequip %X, %X", evn->actor->formID, form->formID);
 
         DCBP::DispatchActorTask(
             handle, ControllerInstruction::Action::UpdateArmorOverride);
