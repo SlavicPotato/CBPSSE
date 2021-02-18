@@ -2,6 +2,14 @@
 
 namespace CBP
 {
+
+    class TaskDelegateFixed
+    {
+    public:
+        virtual void Run() = 0;
+    };
+
+
     class DTasks
     {
     public:

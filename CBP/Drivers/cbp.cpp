@@ -970,15 +970,14 @@ namespace CBP
         {
         case KeyEvent::KeyDown:
 
-            if (keyCode == m_comboKey)
+            if (m_comboKey && keyCode == m_comboKey)
             {
-                if (m_comboKey)
-                    combo_down = true;
+                combo_down = true;
             }
-            else if (keyCode == m_comboKeyDR)
+
+            if (m_comboKeyDR && keyCode == m_comboKeyDR)
             {
-                if (m_comboKeyDR)
-                    combo_downDR = true;
+                combo_downDR = true;
             }
 
             if (keyCode == m_showKey)
@@ -1008,15 +1007,14 @@ namespace CBP
             break;
         case KeyEvent::KeyUp:
 
-            if (keyCode == m_comboKey)
+            if (m_comboKey && keyCode == m_comboKey)
             {
-                if (m_comboKey)
-                    combo_down = false;
+                combo_down = false;
             }
-            else if (keyCode == m_comboKeyDR)
+
+            if (m_comboKeyDR && keyCode == m_comboKeyDR)
             {
-                if (m_comboKeyDR)
-                    combo_downDR = false;
+                combo_downDR = false;
             }
 
             break;
