@@ -122,7 +122,7 @@ namespace SKSE
     bool ResolveHandle(SKSESerializationInterface* intfc, Game::ObjectHandle a_handle, Game::ObjectHandle& a_out)
     {
         if (!a_handle.IsTemporary()) {
-            if (!intfc->ResolveHandle(a_handle, &a_out)) {
+            if (!intfc->ResolveHandle(a_handle, std::addressof(*a_out))) {
                 return false;
             }
         }
@@ -148,7 +148,7 @@ namespace SKSE
         Game::FormID tmp;
 
         if (!a_formID.IsTemporary()) {
-            if (!intfc->ResolveFormId(a_formID, &tmp)) {
+            if (!intfc->ResolveFormId(a_formID, std::addressof(*tmp))) {
                 return false;
             }
         }
