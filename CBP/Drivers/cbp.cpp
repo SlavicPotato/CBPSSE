@@ -982,27 +982,26 @@ namespace CBP
 
             if (keyCode == m_showKey)
             {
-                if (m_comboKey && !combo_down)
-                    break;
-
-                if (Game::InPausedMenu())
-                    break;
-
-                DTasks::AddTask(&m_Instance.m_taskToggle);
+                if ((!m_comboKey || combo_down) && !Game::InPausedMenu())
+                {
+                    DTasks::AddTask(&m_Instance.m_taskToggle);
+                }
             }
+
             if (keyCode == m_showKeyDR)
             {
-                if (m_comboKeyDR && !combo_downDR)
-                    break;
+                if (!m_comboKeyDR || combo_downDR)
+                {
 
-                IScopedCriticalSection _(GetLock());
+                    IScopedCriticalSection _(GetLock());
 
-                auto& globalConfig = IConfig::GetGlobal();
-                globalConfig.debugRenderer.enabled = !globalConfig.debugRenderer.enabled;
-                SetDebugRendererEnabled(globalConfig.debugRenderer.enabled);
+                    auto& globalConfig = IConfig::GetGlobal();
+                    globalConfig.debugRenderer.enabled = !globalConfig.debugRenderer.enabled;
+                    SetDebugRendererEnabled(globalConfig.debugRenderer.enabled);
 
-                MarkGlobalsForSave();
-                UpdateDebugRendererState();
+                    MarkGlobalsForSave();
+                    UpdateDebugRendererState();
+                }
             }
             break;
         case KeyEvent::KeyUp:
