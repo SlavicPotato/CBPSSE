@@ -396,6 +396,7 @@ namespace CBP
         if (m_conf.debug_renderer)
         {
             IEvents::RegisterForEvent(Event::OnD3D11PostCreate, OnD3D11PostCreate_CBP);
+            DInput::RegisterForKeyEvents(&m_drKeyPressEventHandler);
 
             DRender::AddPresentCallback(Present_Pre);
 
@@ -409,7 +410,7 @@ namespace CBP
 
             m_uiContext = std::make_unique<CBP::UIContext>();
 
-            DInput::RegisterForKeyEvents(&m_inputEventHandler);
+            DInput::RegisterForKeyEvents(&m_mainKeyPressEventHandler);
 
             GetUIRenderTask().EnableChecks(m_conf.ui_open_restrictions);
 
@@ -943,81 +944,44 @@ namespace CBP
         m_uiContext->Reset(m_loadInstance);
     }
 
-    void DCBP::KeyPressHandler::UpdateKeys()
+
+    void DCBP::UpdateKeysImpl()
     {
-        auto& globalConfig = IConfig::GetGlobal();
+        const auto& globalConfig = CBP::IConfig::GetGlobal();
         auto& driverConf = GetDriverConfig();
 
         if (driverConf.force_ini_keys) {
-            m_comboKey = driverConf.comboKey;
-            m_showKey = driverConf.showKey;
+            m_mainKeyPressEventHandler.SetComboKey(driverConf.comboKey);
+            m_mainKeyPressEventHandler.SetKey(driverConf.showKey);
         }
         else {
-            m_comboKey = globalConfig.ui.comboKey;
-            m_showKey = globalConfig.ui.showKey;
+            m_mainKeyPressEventHandler.SetComboKey(globalConfig.ui.comboKey);
+            m_mainKeyPressEventHandler.SetKey(globalConfig.ui.showKey);
         }
 
-        m_comboKeyDR = globalConfig.ui.comboKeyDR;
-        m_showKeyDR = globalConfig.ui.showKeyDR;
-
-        combo_down = false;
-        combo_downDR = false;
+        m_drKeyPressEventHandler.SetComboKey(globalConfig.ui.comboKeyDR);
+        m_drKeyPressEventHandler.SetKey(globalConfig.ui.showKeyDR);
     }
 
-    void DCBP::KeyPressHandler::ReceiveEvent(KeyEvent ev, UInt32 keyCode)
+    void DCBP::MainKeyPressHandler::OnKeyPressed()
     {
-        switch (ev)
-        {
-        case KeyEvent::KeyDown:
+        if (!Game::InPausedMenu())
+            DTasks::AddTask(&m_Instance.m_taskToggle);
+    }
 
-            if (m_comboKey && keyCode == m_comboKey)
-            {
-                combo_down = true;
-            }
+    void DCBP::DebugRendererKeyPressHandler::OnKeyPressed()
+    {
+        if (Game::InPausedMenu())
+            return;
 
-            if (m_comboKeyDR && keyCode == m_comboKeyDR)
-            {
-                combo_downDR = true;
-            }
+        IScopedCriticalSection _(GetLock());
 
-            if (keyCode == m_showKey)
-            {
-                if ((!m_comboKey || combo_down) && !Game::InPausedMenu())
-                {
-                    DTasks::AddTask(&m_Instance.m_taskToggle);
-                }
-            }
+        auto& globalConfig = CBP::IConfig::GetGlobal();
+        globalConfig.debugRenderer.enabled = !globalConfig.debugRenderer.enabled;
+        SetDebugRendererEnabled(globalConfig.debugRenderer.enabled);
 
-            if (keyCode == m_showKeyDR)
-            {
-                if (!m_comboKeyDR || combo_downDR)
-                {
-
-                    IScopedCriticalSection _(GetLock());
-
-                    auto& globalConfig = IConfig::GetGlobal();
-                    globalConfig.debugRenderer.enabled = !globalConfig.debugRenderer.enabled;
-                    SetDebugRendererEnabled(globalConfig.debugRenderer.enabled);
-
-                    MarkGlobalsForSave();
-                    UpdateDebugRendererState();
-                }
-            }
-            break;
-        case KeyEvent::KeyUp:
-
-            if (m_comboKey && keyCode == m_comboKey)
-            {
-                combo_down = false;
-            }
-
-            if (m_comboKeyDR && keyCode == m_comboKeyDR)
-            {
-                combo_downDR = false;
-            }
-
-            break;
-        }
+        MarkGlobalsForSave();
+        UpdateDebugRendererState();
     }
 
     void DCBP::ToggleUITask::Run()

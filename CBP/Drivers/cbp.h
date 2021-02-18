@@ -12,23 +12,18 @@ namespace CBP
             kDataVersion2 = 2,
         };
 
-        class KeyPressHandler :
-            public KeyEventHandler
+        class MainKeyPressHandler :
+            public ComboKeyPressHandler
         {
         public:
-            virtual void ReceiveEvent(KeyEvent, UInt32) override;
+            virtual void OnKeyPressed() override;
+        };
 
-            void UpdateKeys();
-        private:
-
-            bool combo_down = false;
-            bool combo_downDR = false;
-
-            UInt32 m_comboKey;
-            UInt32 m_showKey;
-
-            UInt32 m_comboKeyDR;
-            UInt32 m_showKeyDR;
+        class DebugRendererKeyPressHandler :
+            public ComboKeyPressHandler
+        {
+        public:
+            virtual void OnKeyPressed() override;
         };
 
         class ToggleUITask :
@@ -209,7 +204,7 @@ namespace CBP
         }
 
         SKMP_FORCEINLINE static void UpdateKeys() {
-            m_Instance.m_inputEventHandler.UpdateKeys();
+            m_Instance.UpdateKeysImpl();
         }
 
         SKMP_FORCEINLINE static void SetMarkedActor(Game::ObjectHandle a_handle) {
@@ -273,6 +268,8 @@ namespace CBP
         void EnableUI();
         void DisableUI();
 
+        void UpdateKeysImpl();
+
         UIRenderTask m_uiRenderTask;
 
         struct
@@ -319,7 +316,9 @@ namespace CBP
         uint32_t m_loadInstance;
         ToggleUITask m_taskToggle;
         UpdateActorCacheTask m_updateActorCacheTask;
-        KeyPressHandler m_inputEventHandler;
+
+        MainKeyPressHandler m_mainKeyPressEventHandler;
+        DebugRendererKeyPressHandler m_drKeyPressEventHandler;
 
         struct {
             bool show;
