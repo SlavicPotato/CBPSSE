@@ -101,14 +101,16 @@ namespace SKSE
             return false;
         }
 
-        branchTrampolineSize = Hook::InitBranchTrampoline(skse, MAX_TRAMPOLINE_BRANCH);
+        auto iface = static_cast<SKSETrampolineInterface*>(skse->QueryInterface(kInterface_Trampoline));
+
+        branchTrampolineSize = Hook::InitBranchTrampoline(skse, iface, MAX_TRAMPOLINE_BRANCH);
         if (!branchTrampolineSize)
         {
             gLog.FatalError("Could not create branch trampoline.");
             return false;
         }
         
-        localTrampolineSize = Hook::InitLocalTrampoline(skse, MAX_TRAMPOLINE_CODEGEN);
+        localTrampolineSize = Hook::InitLocalTrampoline(skse, iface, MAX_TRAMPOLINE_CODEGEN);
         if (!localTrampolineSize)
         {
             gLog.FatalError("Could not create codegen buffer.");

@@ -36,7 +36,7 @@ namespace CBP
             e.first->second.race.first = false;
 
         e.first->second.npc = npc->formID;
-        e.first->second.sex = CALL_MEMBER_FN(npc, GetSex)();
+        e.first->second.sex = npc->GetSex();
         e.first->second.baseflags = npc->flags;
         e.first->second.weight = Game::GetNPCWeight(npc);
     }
@@ -103,7 +103,7 @@ namespace CBP
         if (npc != nullptr)
         {
             a_out.base = npc->formID;
-            a_out.female = CALL_MEMBER_FN(npc, GetSex)() == 1;
+            a_out.female = npc->GetSex() == 1;
             a_out.baseflags = npc->flags;
             a_out.weight = Game::GetNPCWeight(npc);
         }

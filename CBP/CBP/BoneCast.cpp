@@ -403,7 +403,7 @@ namespace CBP
         if (it != m_data.end()) {
             m_totalSize -= it->second.m_size;
             it->second.m_data = std::forward<T>(a_data);
-            it->second.m_lastAccess = PerfCounter::Query();
+            it->second.m_lastAccess = IPerfCounter::Query();
         }
         else {
             it = m_data.try_emplace(std::move(key), std::forward<T>(a_data)).first;
@@ -470,7 +470,7 @@ namespace CBP
         auto it = m_data.find(key_t(a_handle, a_nodeName));
         if (it != m_data.end())
         {
-            it->second.m_lastAccess = PerfCounter::Query();
+            it->second.m_lastAccess = IPerfCounter::Query();
             a_result = std::move(it);
             return true;
         }

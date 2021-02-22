@@ -662,7 +662,7 @@ namespace CBP
         m_scGlobal(*this),
         m_nodeMap(*this),
         m_armorOverride(*this),
-        m_tsNoActors(PerfCounter::Query()),
+        m_tsNoActors(IPerfCounter::Query()),
         m_pePhysics("Physics profile editor"),
         m_peNodes("Node profile editor"),
         m_state({ {false, false, false, false, false, false, false, false, false, false, false, false, false} }),
@@ -2151,7 +2151,7 @@ namespace CBP
         m_lastUID(0),
         m_plotUpdateTime("Time/frame", ImVec2(0, 30.0f), false, 200),
         m_plotFramerate("Timer", ImVec2(0, 30.0f), false, 200),
-        m_lastVMIUpdate(PerfCounter::Query() - 1000000LL)
+        m_lastVMIUpdate(IPerfCounter::Query() - 1000000LL)
     {
     }
 

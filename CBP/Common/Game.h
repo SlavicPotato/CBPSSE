@@ -16,7 +16,7 @@ namespace Game
         void Notification(const char* a_message, bool a_cancelIfQueued = true, const char* a_sound = nullptr);
     }
 
-    void AIProcessVisitActors(const std::function<void(Actor*)> &a_func);
+    void AIProcessVisitActors(const std::function<void(Actor*)>& a_func);
 
     SKMP_FORCEINLINE bool InPausedMenu()
     {
@@ -27,7 +27,7 @@ namespace Game
     namespace Node
     {
 
-        SKMP_FORCEINLINE void Traverse(NiAVObject* parent, const std::function<void(NiAVObject*)> &a_func)
+        SKMP_FORCEINLINE void Traverse(NiAVObject* parent, const std::function<void(NiAVObject*)>& a_func)
         {
             a_func(parent);
 
@@ -44,7 +44,7 @@ namespace Game
         }
 
 
-        SKMP_FORCEINLINE bool Traverse2(NiAVObject* parent, const std::function<bool(NiAVObject*)> &a_func)
+        SKMP_FORCEINLINE bool Traverse2(NiAVObject* parent, const std::function<bool(NiAVObject*)>& a_func)
         {
             if (a_func(parent))
                 return true;
@@ -66,7 +66,7 @@ namespace Game
         }
 
         // skee64
-        SKMP_FORCEINLINE bool TraverseBiped(TESObjectREFR* a_ref, const std::function<bool(bool, UInt32, NiNode*, NiAVObject*)> &a_func)
+        SKMP_FORCEINLINE bool TraverseBiped(TESObjectREFR* a_ref, const std::function<bool(bool, UInt32, NiNode*, NiAVObject*)>& a_func)
         {
             for (SInt32 k = 0; k <= 1; ++k)
             {
@@ -100,7 +100,7 @@ namespace Game
 
         }
 
-        SKMP_FORCEINLINE NiAVObject* Find(NiAVObject* parent, const std::function<bool(NiAVObject*)> &a_func)
+        SKMP_FORCEINLINE NiAVObject* Find(NiAVObject* parent, const std::function<bool(NiAVObject*)>& a_func)
         {
             if (a_func(parent))
                 return parent;
@@ -204,8 +204,8 @@ namespace Game
 
     private:
 
-        MEMBER_FN_PREFIX(ProcessLists);
-        DEFINE_MEMBER_FN(_GuardsPursuing, uint32_t, 0x6D6D70, Actor* a_actor, int p2, char p3);
+        DEFINE_MEMBER_FN_LONG(ProcessLists, _GuardsPursuing, uint32_t, 40314, Actor* a_actor, int p2, char p3);
+
     };
 
     static_assert(offsetof(ProcessLists, highActorHandles) == 0x30);
@@ -246,11 +246,8 @@ namespace Game
     public:
         static Unk00* GetSingleton();
 
-        void SetGlobalTimeMultiplier(float a_scale, bool a_unk);
+        DEFINE_MEMBER_FN_LONG(Unk00, SetGlobalTimeMultiplier, void, 66988, float a_scale, bool a_unk);
 
-    private:
-        MEMBER_FN_PREFIX(Unk00);
-        DEFINE_MEMBER_FN(_SetGlobalTimeMultiplier, void, 0xC078B0, float a_scale, bool a_unk);
     };
 
 

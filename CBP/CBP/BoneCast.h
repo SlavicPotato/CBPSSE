@@ -13,7 +13,7 @@ namespace CBP
         SKMP_FORCEINLINE void Update()
         {
             m_id++;
-            m_timeStamp = PerfCounter::Query();
+            m_timeStamp = IPerfCounter::Query();
         }
 
         SKMP_FORCEINLINE bool operator==(const BoneCacheUpdateID& a_rhs) {
@@ -76,7 +76,7 @@ namespace CBP
                 const T& a_data)
                 :
                 m_data(a_data),
-                m_lastAccess(PerfCounter::Query())
+                m_lastAccess(IPerfCounter::Query())
             {
             }
 
@@ -85,7 +85,7 @@ namespace CBP
                 T&& a_data)
                 :
                 m_data(std::move(a_data)),
-                m_lastAccess(PerfCounter::Query())
+                m_lastAccess(IPerfCounter::Query())
             {
             }
 

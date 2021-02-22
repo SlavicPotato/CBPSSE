@@ -63,7 +63,7 @@ namespace CBP
 
         static void ExitGame_Hook();
 
-        static void OnLogWrite(char* a_buffer);
+        static void OnLogWrite(const char* a_buffer);
 
         stl::unordered_map<Event, stl::vector<_EventTriggerDescriptor>> m_events;
         stl::unordered_map<UInt32, LoadGameEventCallback> m_loadgame_events;

@@ -352,7 +352,7 @@ namespace CBP
         char sex;
         auto npc = RTTI<TESNPC>()(actor->baseForm);
         if (npc != nullptr) {
-            sex = CALL_MEMBER_FN(npc, GetSex)();
+            sex = npc->GetSex();
         }
         else {
             sex = 0;
@@ -556,7 +556,7 @@ namespace CBP
         if (!ActorValid(actor))
             return;
 
-        CALL_MEMBER_FN(actor, QueueNiNodeUpdate)(true);
+        actor->QueueNiNodeUpdate(true);
         DTasks::AddTask([=]()
             {
                 auto actor = a_handle.Resolve<Actor>();
@@ -569,7 +569,7 @@ namespace CBP
 
                 auto faceNode = actor->GetFaceGenNiNode();
                 if (faceNode) {
-                    CALL_MEMBER_FN(faceNode, AdjustHeadMorph)(BSFaceGenNiNode::kAdjustType_Neck, 0, 0.0f);
+                    faceNode->AdjustHeadMorph(BSFaceGenNiNode::kAdjustType_Neck, 0, 0.0f);
                     UpdateModelFace(faceNode);
                 }
 
@@ -591,7 +591,7 @@ namespace CBP
     {
         auto actor = a_handle.Resolve<Actor>();
         if (ActorValid(actor))
-            CALL_MEMBER_FN(actor, QueueNiNodeUpdate)(true);
+            actor->QueueNiNodeUpdate(true);
     }
 
     void ControllerTask::NiNodeUpdateAll()

@@ -55,7 +55,7 @@ namespace Game
 
     bool ProcessLists::GuardsPursuing(Actor* a_actor)
     {
-        return CALL_MEMBER_FN(this, _GuardsPursuing)(a_actor, 0x15, 0) != 0;
+        return _GuardsPursuing(a_actor, 0x15, 0) != 0;
     }
 
     static auto s_BSMain = IAL::Addr<BSMain**>(516943);
@@ -72,8 +72,4 @@ namespace Game
         return s_Unk00;
     }
 
-    void Unk00::SetGlobalTimeMultiplier(float a_scale, bool a_unk)
-    {
-        CALL_MEMBER_FN(this, _SetGlobalTimeMultiplier)(a_scale, a_unk);
-    }
 }
