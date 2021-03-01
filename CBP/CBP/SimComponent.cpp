@@ -757,8 +757,10 @@ namespace CBP
 
     SimComponent::~SimComponent()
     {
-        if (m_motion)
+        if (m_motion) {
             m_obj->m_localTransform = m_initialTransform;
+            m_obj->UpdateWorldData(&m_updateCtx);
+        }
     }
 
     void SimComponent::ColUpdateWeightData(
