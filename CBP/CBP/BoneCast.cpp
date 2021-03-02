@@ -45,17 +45,21 @@ namespace CBP
         if (skinData == nullptr)
             return false;
 
-        if (!skinPartition->m_uiPartitions)
+        auto numPartitions = skinPartition->m_uiPartitions;
+
+        if (!numPartitions)
             return false;
 
-        if (!skinPartition->m_pkPartitions[0].m_usTriangles)
+        //UInt16 numTriangles = triShape->triangleCount ? triShape->triangleCount : skinPartition->m_pkPartitions[0].m_usTriangles;
+        //UInt32 numVertices = triShape->numVertices ? triShape->numVertices : skinPartition->vertexCount;
+        UInt32 numVertices = skinPartition->vertexCount;
+
+        if (numVertices == 0)
             return false;
 
-        UInt16 numTriangles = triShape->triangleCount ? triShape->triangleCount : skinPartition->m_pkPartitions[0].m_usTriangles;
-        UInt32 numVertices = triShape->numVertices ? triShape->numVertices : skinPartition->vertexCount;
+        auto partition = skinPartition->m_pkPartitions;
 
-        if (numTriangles == 0 || numVertices == 0)
-            return false;
+        UInt32 vertexSize = NiSkinPartition::GetVertexSize(partition->vertexDesc);
 
         for (UInt32 i = 0; i < skinData->m_uiBones; i++)
         {
@@ -75,36 +79,49 @@ namespace CBP
 
             //UInt32 numIndices = numTriangles * 3;
 
-            UInt32 vertexSize = NiSkinPartition::GetVertexSize(geometry->vertexDesc);
-
-            UInt8* vertices = skinPartition->m_pkPartitions[0].shapeData->m_RawVertexData;
-            UInt16* trilist = skinPartition->m_pkPartitions[0].m_pusTriList;
-
-            /*PerfTimer pt;
+            /*SKMP::PerfTimer pt;
             pt.Start();*/
+
+            UInt32 numTriangles = 0;
+            for (UInt32 i = 0; i < numPartitions; i++) {
+                numTriangles += skinPartition->m_pkPartitions[i].m_usTriangles;
+            }
+
+            if (numTriangles == 0)
+                return false;
 
             auto tris = std::make_unique<Triangle[]>(numTriangles);
             auto vertmap = std::make_unique<Vertex[]>(numVertices);
 
-            for (UInt16 i = 0, j = 0; i < numTriangles; i++, j += 3)
+            for (UInt32 i = 0, itri = 0; i < numPartitions; i++)
             {
-                auto tri = std::addressof(tris[i]);
+                auto& part = skinPartition->m_pkPartitions[i];
 
-                tri->m_isBoneTri = false;
+                UInt16* trilist = part.m_pusTriList;
 
-                auto i1 = tri->m_indices[0] = trilist[j];
-                auto i2 = tri->m_indices[1] = trilist[j + 1];
-                auto i3 = tri->m_indices[2] = trilist[j + 2];
+                auto numTris = part.m_usTriangles;
 
-                if (i1 >= numVertices || i2 >= numVertices || i3 >= numVertices) {
-                    m_Instance.Debug("%s: [m_pusTriList] index >= numVertices", a_nodeName.c_str());
-                    return false;
+                for (UInt16 j = 0, k = 0; j < numTris; j++, k += 3)
+                {
+                    auto tri = std::addressof(tris[itri]);
+
+                    tri->m_isBoneTri = false;
+
+                    auto i1 = tri->m_indices[0] = trilist[k];
+                    auto i2 = tri->m_indices[1] = trilist[k + 1];
+                    auto i3 = tri->m_indices[2] = trilist[k + 2];
+
+                    if (i1 >= numVertices || i2 >= numVertices || i3 >= numVertices) {
+                        m_Instance.Debug("%s: [m_pusTriList] index >= numVertices", a_nodeName.c_str());
+                        return false;
+                    }
+
+                    vertmap[i1].m_triangles.emplace_back(tri);
+                    vertmap[i2].m_triangles.emplace_back(tri);
+                    vertmap[i3].m_triangles.emplace_back(tri);
+
+                    itri++;
                 }
-
-                vertmap[i1].m_triangles.emplace_back(tri);
-                vertmap[i2].m_triangles.emplace_back(tri);
-                vertmap[i3].m_triangles.emplace_back(tri);
-
             }
 
             for (UInt16 i = 0; i < boneData.m_usVerts; i++)
@@ -125,22 +142,23 @@ namespace CBP
 
             }
 
-            size_t c = 0;
-            uint32_t vi = 0;
+            std::size_t c = 0;
+            std::uint32_t vi = 0;
 
-            for (UInt16 i = 0; i < numTriangles; i++)
+            for (UInt32 i = 0; i < numTriangles; i++)
             {
                 auto& tri = tris[i];
 
                 if (tri.m_isBoneTri) {
 
-                    for (int j = 0; j < 3; j++) {
+                    for (int j = 0; j < 3; j++)
+                    {
                         auto index = tri.m_indices[j];
 
                         auto& vme = vertmap[index];
 
                         if (!vme.m_hasVertex) {
-                            auto vtx = reinterpret_cast<DirectX::XMVECTOR*>(&vertices[index * vertexSize]);
+                            auto vtx = reinterpret_cast<DirectX::XMVECTOR*>(&partition->shapeData->m_RawVertexData[index * vertexSize]);
 
                             auto p = boneData.m_kSkinToBone * NiPoint3(
                                 vtx->m128_f32[0], vtx->m128_f32[1], vtx->m128_f32[2]);
@@ -168,8 +186,8 @@ namespace CBP
             if (c == 0 || vi == 0)
                 return false;
 
-            size_t rnIndices = c * 3;
-            size_t rnVertices = static_cast<size_t>(vi);
+            std::size_t rnIndices = c * 3;
+            std::size_t rnVertices = static_cast<std::size_t>(vi);
 
             a_out.m_vertices.resize(rnVertices);
             a_out.m_weights.resize(rnVertices);
@@ -191,7 +209,7 @@ namespace CBP
                 }
             }
 
-            for (UInt16 i = 0, c = 0; i < numTriangles; i++)
+            for (UInt32 i = 0, c = 0; i < numTriangles; i++)
             {
                 auto& tri = tris[i];
 
