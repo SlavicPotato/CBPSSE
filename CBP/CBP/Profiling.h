@@ -7,7 +7,7 @@ namespace CBP
         struct Stats
         {
             long long avgTime;
-            uint32_t avgActorCount;
+            std::uint32_t avgActorCount;
             double avgStepRate;
             double avgStepsPerUpdate;
             double avgFrameTime;
@@ -17,7 +17,7 @@ namespace CBP
         Profiler(long long a_interval);
 
         void Begin();
-        void End(uint32_t a_actors, uint32_t a_steps, float a_time);
+        void End(std::uint32_t a_actors, std::uint32_t a_steps, float a_time);
 
         void SetInterval(long long a_interval);
         void Reset();
@@ -26,7 +26,7 @@ namespace CBP
             return m_current;
         }
 
-        SKMP_FORCEINLINE uint32_t GetUID() const {
+        SKMP_FORCEINLINE std::uint32_t GetUID() const {
             return m_uid;
         }
 
@@ -35,11 +35,11 @@ namespace CBP
 
         Stats m_current;
 
-        uint32_t m_numActorsAccum;
-        uint32_t m_numStepsAccum;
+        std::uint32_t m_numActorsAccum;
+        std::uint32_t m_numStepsAccum;
         double m_frameTimeAccum;
-        uint32_t m_runCount;
+        std::uint32_t m_runCount;
 
-        uint32_t m_uid;
+        std::uint32_t m_uid;
     };
 }

@@ -29,6 +29,10 @@ namespace CBP
     void UIRaceList<T>::ListSetCurrentItem(Game::FormID a_formid)
     {
         m_listCurrent = a_formid;
+
+        auto it = m_listData.find(a_formid);
+        if (it != m_listData.end())
+            it->second.second = GetData(a_formid);
     }
 
     template <class T>
@@ -64,7 +68,7 @@ namespace CBP
 
         if (m_listData.empty())
         {
-            _snprintf_s(m_listBuf1, _TRUNCATE, "No races");
+            _snprintf_s(m_listBuf1, _TRUNCATE, "No races found");
             ListSetCurrentItem(0);
             return;
         }
@@ -73,7 +77,7 @@ namespace CBP
 
         if (globalConfig.ui.selectCrosshairActor && !isFirstUpdate)
         {
-            auto crosshairRef = IData::GetCrosshairRef();
+            auto &crosshairRef = IData::GetCrosshairRef();
             if (crosshairRef)
             {
                 auto ac = IData::GetActorRefInfo(*crosshairRef);

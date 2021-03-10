@@ -101,9 +101,17 @@ namespace UICommon
     {
     }
 
+    bool UIControls::ColorEdit4(const char* a_label, float a_col[4], ImGuiColorEditFlags a_flags)
+    {
+        bool res = ImGui::ColorEdit4(a_label, a_col, a_flags);
+        if (res) {
+            OnControlValueChange();
+        }
+        return res;
+    }
+
     void UIControls::OnControlValueChange() const
     {
-
     }
 
     UIGenericFilter::UIGenericFilter() :
@@ -244,4 +252,64 @@ namespace UICommon
             ImGui::EndTooltip();
         }
     }
+
+    void UIPopupQueue::Run(float a_fontScale)
+    {
+        if (!m_queue.empty())
+        {
+            auto& e = m_queue.front();
+
+            ImGui::PushID(static_cast<const void*>(std::addressof(e)));
+
+            if (!e.m_open)
+            {
+                ImGui::OpenPopup(e.m_key.c_str());
+                e.m_open = true;
+            }
+
+            int res;
+
+            switch (e.m_type)
+            {
+            case UIPopupType::Confirm:
+                res = ConfirmDialog2(
+                    e.m_key.c_str(),
+                    a_fontScale,
+                    e.m_buf
+                );
+                break;
+            case UIPopupType::Input:
+                res = TextInputDialog2(
+                    e.m_key.c_str(),
+                    e.m_buf,
+                    e.m_input,
+                    sizeof(e.m_input),
+                    a_fontScale
+                );
+                break;
+            case UIPopupType::Message:
+                res = MessageDialog2(
+                    e.m_key.c_str(),
+                    a_fontScale,
+                    e.m_buf
+                );
+                break;
+            }
+
+            if (res == 1)
+            {
+                if (e.m_func)
+                    e.m_func(e);
+
+                m_queue.pop();
+            }
+            else if (res == -1)
+            {
+                m_queue.pop();
+            }
+
+            ImGui::PopID();
+        }
+    }
+
 }

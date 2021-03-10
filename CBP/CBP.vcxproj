@@ -811,7 +811,7 @@
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <DebugInformationFormat>None</DebugInformationFormat>
       <ObjectFileName>$(IntDir)%(RelativeDir)\</ObjectFileName>
-      <AdditionalOptions>/Ob3 /permissive %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/permissive %(AdditionalOptions)</AdditionalOptions>
       <FloatingPointModel>Fast</FloatingPointModel>
     </ClCompile>
     <Link>

@@ -87,7 +87,7 @@ namespace CBP
 
             for (const auto& g : cg)
             {
-                if (!m_dataFilter.Test(g.first))
+                if (!m_groupFilter.Test(g.first))
                     continue;
 
                 nodeList.clear();
@@ -188,10 +188,9 @@ namespace CBP
     {
         auto& globalConfig = IConfig::GetGlobal();
 
-        auto& propmap = globalConfig.ui.propagate[ID];
+        auto& propmap = globalConfig.ui.propagate.try_emplace(ID).first->second;
 
-        auto c = propmap.try_emplace(a_entry.first);
-        auto& d = c.first->second;
+        auto& d = propmap.try_emplace(a_entry.first).first->second;
 
         nodeConfigList_t nodeList;
 
@@ -200,7 +199,7 @@ namespace CBP
 
         for (const auto& g : cg)
         {
-            if (StrHelpers::icompare(g.first, a_entry.first) == 0)
+            if (StrHelpers::iequal(g.first, a_entry.first))
                 continue;
 
             nodeList.clear();
@@ -259,7 +258,9 @@ namespace CBP
         if (!profile)
             return false;
 
-        auto& data = profile->Data();
+        auto& gcc = GetGlobalCommonConfig();
+
+        auto& data = profile->Data()(gcc.selectedGender);
 
         auto it = data.find(a_pair.first);
         if (it == data.end())
@@ -289,7 +290,7 @@ namespace CBP
     }
 
     template <class T, UIEditorID ID>
-    void UISimComponent<T, ID>::DoOnChangePropagation(
+    void UISimComponent<T, ID>::DoSimSliderOnChangePropagation(
         configComponents_t& a_data,
         configComponents_t* a_dg,
         configComponentsValue_t& a_pair,
@@ -305,14 +306,41 @@ namespace CBP
             keys.emplace_back(std::addressof(a_desc.second.counterpart));
 
             Propagate(a_data, a_dg, a_pair,
-                [&](configComponent32_t& a_v, const configPropagate_t& a_p) {
+                [&](configComponent_t& a_v, const configPropagate_t& a_p) {
                     a_v.Set(a_desc.second.counterpart, a_p.ResolveValue(keys, a_mval));
                 });
         }
 
         Propagate(a_data, a_dg, a_pair,
-            [&](configComponent32_t& a_v, const configPropagate_t& a_p) {
+            [&](configComponent_t& a_v, const configPropagate_t& a_p) {
                 a_v.Set(a_desc.second, a_p.ResolveValue(keys, *a_val));
+            });
+    }
+
+    template <class T, UIEditorID ID>
+    void UISimComponent<T, ID>::DoColliderShapeOnChangePropagation(
+        configComponents_t& a_data,
+        configComponents_t* a_dg,
+        configComponentsValue_t& a_pair,
+        const componentValueDescMap_t::vec_value_type& a_desc) const
+    {
+        Propagate(a_data, a_dg, a_pair,
+            [&](configComponent_t& a_v, const configPropagate_t&) {
+                a_v.ex.colShape = a_pair.second.ex.colShape;
+                // a_v.ex.colMesh = a_pair.second.ex.colMesh;
+            });
+    }
+
+    template <class T, UIEditorID ID>
+    void UISimComponent<T, ID>::DoMotionConstraintOnChangePropagation(
+        configComponents_t& a_data,
+        configComponents_t* a_dg,
+        configComponentsValue_t& a_pair,
+        const componentValueDescMap_t::vec_value_type& a_desc) const
+    {
+        Propagate(a_data, a_dg, a_pair,
+            [&](configComponent_t& a_v, const configPropagate_t&) {
+                a_v.ex.motionConstraints = a_pair.second.ex.motionConstraints;
             });
     }
 
@@ -388,13 +416,13 @@ namespace CBP
         const componentValueDescMap_t::vec_value_type& a_entry,
         const nodeConfigList_t& a_nodeList)
     {
-        auto& desc = configComponent32_t::colDescMap.at(a_pair.second.ex.colShape);
+        auto& desc = configComponent_t::colDescMap.at(a_pair.second.ex.colShape);
 
         auto& pm = GlobalProfileManager::GetSingleton<ColliderProfile>();
 
         if (ImGui::BeginCombo("Collider shape", desc.name.c_str()))
         {
-            for (auto& e : configComponent32_t::colDescMap)
+            for (auto& e : configComponent_t::colDescMap)
             {
                 bool selected = a_pair.second.ex.colShape == e.first;
                 if (selected)
@@ -411,6 +439,11 @@ namespace CBP
                         if (it == pm.End())
                         {
                             auto& data = pm.Data();
+                            auto& v = data.begin()->second;
+
+                            v.Data()->m_indices[0] = 1;
+
+
                             if (!data.empty())
                                 a_pair.second.ex.colMesh = data.begin()->first;
                             else
@@ -442,7 +475,7 @@ namespace CBP
             {
                 for (const auto& e : data)
                 {
-                    bool selected = StrHelpers::icompare(a_pair.second.ex.colMesh, e.first) == 0;
+                    bool selected = StrHelpers::iequal(a_pair.second.ex.colMesh, e.first);
                     if (selected)
                         if (ImGui::IsWindowAppearing()) ImGui::SetScrollHereY();
 
@@ -476,10 +509,34 @@ namespace CBP
         }
     }
 
+
+    template <class T, UIEditorID ID>
+    void UISimComponent<T, ID>::DrawMotionConstraintSelectors(
+        T a_handle,
+        configComponents_t& a_data,
+        configComponentsValue_t& a_pair,
+        const componentValueDescMap_t::vec_value_type& a_entry)
+    {
+        ImGui::TextWrapped("Constraint shapes: ");
+        ImGui::SameLine();
+
+        if (ImGui::CheckboxFlags("Box", Enum::Underlying(&a_pair.second.ex.motionConstraints), Enum::Underlying(MotionConstraints::Box))) {
+            OnMotionConstraintChange(a_handle, a_data, a_pair, a_entry);
+        }
+
+        ImGui::SameLine();
+
+        if (ImGui::CheckboxFlags("Sphere", Enum::Underlying(&a_pair.second.ex.motionConstraints), Enum::Underlying(MotionConstraints::Sphere))) {
+            OnMotionConstraintChange(a_handle, a_data, a_pair, a_entry);
+        }
+    }
+
     template <class T, UIEditorID ID>
     UISimComponent<T, ID>::UISimComponent() :
-        UIMainItemFilter<ID>(MiscHelpText::dataFilterPhys),
-        m_eraseCurrent(false)
+        UIMainItemFilter<ID>(MiscHelpText::dataFilterPhys, true),
+        m_eraseCurrent(false),
+        m_cscStr("Collider shape"),
+        m_csStr("Constraint shapes")
     {
     }
 
@@ -491,12 +548,10 @@ namespace CBP
         const nodeConfigList_t& a_nodeList
     )
     {
-        if (CanClip())
-            return;
-
         auto aoSect = GetArmorOverrideSection(a_handle, a_pair.first);
 
         bool drawingGroup(false);
+        bool drawingFloat3(false);
         bool showCurrentGroup(false);
         bool openState(false);
 
@@ -506,10 +561,9 @@ namespace CBP
         ImGui::PushItemWidth(ImGui::GetFontSize() * -14.0f);
 
         int float3Index;
-        bool drawingFloat3 = false;
         const componentValueDesc_t* currentDesc;
 
-        auto& dm = configComponent32_t::descMap.getvec();
+        auto& dm = configComponent_t::descMap.getvec();
         auto count = dm.size();
 
         for (decltype(count) i = decltype(count)(0); i < count; i++)
@@ -522,7 +576,7 @@ namespace CBP
             if ((e.second.flags & DescUIFlags::BeginGroup) == DescUIFlags::BeginGroup)
             {
                 if (e.second.groupType == DescUIGroupType::Physics ||
-                    e.second.groupType == DescUIGroupType::PhysicsExtra)
+                    e.second.groupType == DescUIGroupType::PhysicsMotionConstraints)
                 {
                     showCurrentGroup = HasMotion(a_nodeList);
                 }
@@ -543,54 +597,91 @@ namespace CBP
                         e.second.groupName.c_str(),
                         (e.second.flags & DescUIFlags::Collapsed) != DescUIFlags::Collapsed);
 
-                    if (openState && e.second.groupType == DescUIGroupType::Collisions)
-                        DrawColliderShapeCombo(a_handle, a_data, a_pair, e, a_nodeList);
+                    if (openState)
+                    {
+                        if (e.second.groupType == DescUIGroupType::Collisions) 
+                        {
+                            if (m_sliderFilter.Test(m_cscStr)) {
+                                DrawColliderShapeCombo(a_handle, a_data, a_pair, e, a_nodeList);
+                            }
+                        }
+                        else if (e.second.groupType == DescUIGroupType::PhysicsMotionConstraints) 
+                        {
+                            if (m_sliderFilter.Test(m_csStr)) {
+                                DrawMotionConstraintSelectors(a_handle, a_data, a_pair, e);
+                            }
+                        }
+                    }
                 }
 
             }
 
-            if (groupType == DescUIGroupType::Collisions)
+            if (!m_sliderFilter.Test(e.second.descTag)) {
+                goto _end;
+            }
+
+            bool groupShown = (drawingGroup && openState && showCurrentGroup);
+
+            if (groupShown)
             {
-                auto flags = e.second.flags & UIMARKER_COL_SHAPE_FLAGS;
-
-                if (flags != DescUIFlags::None)
+                if (groupType == DescUIGroupType::Collisions)
                 {
-                    auto f(DescUIFlags::None);
+                    auto flags = e.second.flags & UIMARKER_COL_SHAPE_FLAGS;
 
-                    switch (a_pair.second.ex.colShape)
+                    if (flags != DescUIFlags::None)
                     {
-                    case ColliderShapeType::Sphere:
-                        f |= (flags & DescUIFlags::ColliderSphere);
-                        break;
-                    case ColliderShapeType::Capsule:
-                        f |= (flags & DescUIFlags::ColliderCapsule);
-                        break;
-                    case ColliderShapeType::Box:
-                        f |= (flags & DescUIFlags::ColliderBox);
-                        break;
-                    case ColliderShapeType::Cone:
-                        f |= (flags & DescUIFlags::ColliderCone);
-                        break;
-                    case ColliderShapeType::Tetrahedron:
-                        f |= (flags & DescUIFlags::ColliderTetrahedron);
-                        break;
-                    case ColliderShapeType::Cylinder:
-                        f |= (flags & DescUIFlags::ColliderCylinder);
-                        break;
-                    case ColliderShapeType::Mesh:
-                        f |= (flags & DescUIFlags::ColliderMesh);
-                        break;
-                    case ColliderShapeType::ConvexHull:
-                        f |= (flags & DescUIFlags::ColliderConvexHull);
-                        break;
+                        auto f(DescUIFlags::None);
+
+                        switch (a_pair.second.ex.colShape)
+                        {
+                        case ColliderShapeType::Sphere:
+                            f |= (flags & DescUIFlags::ColliderSphere);
+                            break;
+                        case ColliderShapeType::Capsule:
+                            f |= (flags & DescUIFlags::ColliderCapsule);
+                            break;
+                        case ColliderShapeType::Box:
+                            f |= (flags & DescUIFlags::ColliderBox);
+                            break;
+                        case ColliderShapeType::Cone:
+                            f |= (flags & DescUIFlags::ColliderCone);
+                            break;
+                        case ColliderShapeType::Tetrahedron:
+                            f |= (flags & DescUIFlags::ColliderTetrahedron);
+                            break;
+                        case ColliderShapeType::Cylinder:
+                            f |= (flags & DescUIFlags::ColliderCylinder);
+                            break;
+                        case ColliderShapeType::Mesh:
+                            f |= (flags & DescUIFlags::ColliderMesh);
+                            break;
+                        case ColliderShapeType::ConvexHull:
+                            f |= (flags & DescUIFlags::ColliderConvexHull);
+                            break;
+                        }
+
+                        if (f == DescUIFlags::None)
+                            goto _end;
+                    }
+                }
+                else if (groupType == DescUIGroupType::PhysicsMotionConstraints)
+                {
+                    auto f(MotionConstraints::None);
+
+                    if ((e.second.flags & DescUIFlags::MotionConstraintBox) == DescUIFlags::MotionConstraintBox) {
+                        f |= (a_pair.second.ex.motionConstraints & MotionConstraints::Box);
                     }
 
-                    if (f == DescUIFlags::None)
-                        continue;
+                    if ((e.second.flags & DescUIFlags::MotionConstraintSphere) == DescUIFlags::MotionConstraintSphere) {
+                        f |= (a_pair.second.ex.motionConstraints & MotionConstraints::Sphere);
+                    }
+
+                    if (f == MotionConstraints::None)
+                        goto _end;
                 }
             }
 
-            if (!drawingGroup || (drawingGroup && openState && showCurrentGroup))
+            if (!drawingGroup || groupShown)
             {
                 if (!drawingFloat3 && (e.second.flags & DescUIFlags::Float3) == DescUIFlags::Float3)
                 {
@@ -618,6 +709,7 @@ namespace CBP
                     ImGuiContext& g = *GImGui;
 
                     ImGui::PushID(float3Index);
+
                     if (float3Index > 0)
                         ImGui::SameLine(0, g.Style.ItemInnerSpacing.x);
 
@@ -637,8 +729,8 @@ namespace CBP
                     {
                         ImGui::PopID();
 
-                        const char* desc_text = currentDesc->descTag.c_str();
-                        const char* label_end = ImGui::FindRenderedTextEnd(desc_text);
+                        auto desc_text = currentDesc->descTag.c_str();
+                        auto label_end = ImGui::FindRenderedTextEnd(desc_text);
                         if (desc_text != label_end)
                         {
                             ImGui::SameLine(0, g.Style.ItemInnerSpacing.x);
@@ -664,6 +756,8 @@ namespace CBP
                     HelpMarker(e.second.helpText);
                 }
             }
+
+        _end:;
 
             if ((e.second.flags & DescUIFlags::EndGroup) == DescUIFlags::EndGroup)
             {
@@ -711,8 +805,8 @@ namespace CBP
                             continue;
 
                         DrawSliderContextMenuMirrorItem("X", a_desc, e, a_pair, propmap);
-                        DrawSliderContextMenuMirrorItem("Y", (a_desc + 1), e, a_pair, propmap);
-                        DrawSliderContextMenuMirrorItem("Z", (a_desc + 2), e, a_pair, propmap);
+                        DrawSliderContextMenuMirrorItem("Y", a_desc + 1, e, a_pair, propmap);
+                        DrawSliderContextMenuMirrorItem("Z", a_desc + 2, e, a_pair, propmap);
 
                         ImGui::EndMenu();
 

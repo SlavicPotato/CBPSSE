@@ -3,14 +3,14 @@
 namespace Serialization
 {
     template<>
-    bool Parser<CBP::configComponents_t>::Parse(const Json::Value& a_in, CBP::configComponents_t& a_outData) const;
+    bool Parser<CBP::configComponentsGenderRoot_t>::Parse(const Json::Value& a_in, CBP::configComponentsGenderRoot_t& a_outData) const;
     template<>
-    void Parser<CBP::configComponents_t>::Create(const CBP::configComponents_t& a_data, Json::Value& a_out) const;
+    void Parser<CBP::configComponentsGenderRoot_t>::Create(const CBP::configComponentsGenderRoot_t& a_data, Json::Value& a_out) const;
 
     template<>
-    bool Parser<CBP::configNodes_t>::Parse(const Json::Value& a_in, CBP::configNodes_t& a_out) const;
+    bool Parser<CBP::configNodesGenderRoot_t>::Parse(const Json::Value& a_in, CBP::configNodesGenderRoot_t& a_out) const;
     template<>
-    void Parser<CBP::configNodes_t>::Create(const CBP::configNodes_t& a_data, Json::Value& a_out) const;
+    void Parser<CBP::configNodesGenderRoot_t>::Create(const CBP::configNodesGenderRoot_t& a_data, Json::Value& a_out) const;
 
 
     template<>
@@ -19,9 +19,9 @@ namespace Serialization
     void Parser<CBP::configGroupMap_t>::Create(const CBP::configGroupMap_t& a_data, Json::Value& a_out) const;
 
     template<>
-    void Parser<CBP::configComponents_t>::GetDefault(CBP::configComponents_t& a_out) const;
+    void Parser<CBP::configComponentsGenderRoot_t>::GetDefault(CBP::configComponentsGenderRoot_t& a_out) const;
     template<>
-    void Parser<CBP::configNodes_t>::GetDefault(CBP::configNodes_t& a_out) const;
+    void Parser<CBP::configNodesGenderRoot_t>::GetDefault(CBP::configNodesGenderRoot_t& a_out) const;
     template<>
     void Parser<CBP::nodeMap_t>::GetDefault(CBP::nodeMap_t& a_out) const;
 }
@@ -30,8 +30,8 @@ namespace CBP
 {
     struct importInfo_t
     {
-        size_t numActors;
-        size_t numRaces;
+        std::size_t numActors;
+        std::size_t numRaces;
         except::descriptor except;
     };
 
@@ -40,7 +40,7 @@ namespace CBP
     {
     public:
 
-        enum class ImportFlags : uint8_t
+        enum class ImportFlags : std::uint8_t
         {
             None = 0,
             Global = 1 << 0,
@@ -48,7 +48,7 @@ namespace CBP
             Races = 1 << 2,
         };
 
-        enum Group : uint8_t
+        enum Group : std::uint8_t
         {
             kGlobals = 0,
             kCollisionGroups,
@@ -58,7 +58,7 @@ namespace CBP
         struct statsEntry_t
         {
             double time;
-            size_t num;
+            std::size_t num;
         };
 
         struct stats_t
@@ -74,17 +74,17 @@ namespace CBP
         void LoadGlobalConfig();
         bool SaveGlobalConfig();
 
-        size_t LoadActorProfiles(SKSESerializationInterface* intfc, stl::stringstream& a_data);
-        size_t SerializeActorProfiles(std::stringstream& a_out);
+        std::size_t LoadActorProfiles(SKSESerializationInterface* intfc, stl::stringstream& a_data);
+        std::size_t SerializeActorProfiles(std::stringstream& a_out);
 
-        size_t LoadGlobalProfile(SKSESerializationInterface* intfc, stl::stringstream& a_data);
-        size_t SerializeGlobalProfile(std::stringstream& a_out);
+        std::size_t LoadGlobalProfile(SKSESerializationInterface* intfc, stl::stringstream& a_data);
+        std::size_t SerializeGlobalProfile(std::stringstream& a_out);
 
         bool LoadDefaultProfile();
         bool SaveToDefaultGlobalProfile();
 
-        size_t LoadRaceProfiles(SKSESerializationInterface* intfc, stl::stringstream& a_data);
-        size_t SerializeRaceProfiles(std::stringstream& a_out);
+        std::size_t LoadRaceProfiles(SKSESerializationInterface* intfc, stl::stringstream& a_data);
+        std::size_t SerializeRaceProfiles(std::stringstream& a_out);
 
         void LoadCollisionGroups();
         bool SaveCollisionGroups();
@@ -104,8 +104,8 @@ namespace CBP
 
         bool SavePending();
 
-        size_t BinSerializeSave(boost::archive::binary_oarchive& a_out);
-        size_t BinSerializeLoad(SKSESerializationInterface* intfc, stl::stringstream& a_in);
+        std::size_t BinSerializeSave(boost::archive::binary_oarchive& a_out);
+        std::size_t BinSerializeLoad(SKSESerializationInterface* intfc, stl::stringstream& a_in);
 
         const auto& GetStats() {
             return m_stats;
@@ -123,35 +123,35 @@ namespace CBP
         template <class T>
         void MoveRaceConfig(SKSESerializationInterface* intfc, const T& a_in, T& a_out);
 
-        size_t BinSerializeGlobalPhysics(boost::archive::binary_oarchive& a_out);
-        size_t BinSerializeGlobalNode(boost::archive::binary_oarchive& a_out);
-        size_t BinSerializeRacePhysics(boost::archive::binary_oarchive& a_out);
-        size_t BinSerializeRaceNode(boost::archive::binary_oarchive& a_out);
-        size_t BinSerializeActorPhysics(boost::archive::binary_oarchive& a_out);
-        size_t BinSerializeActorNode(boost::archive::binary_oarchive& a_out);
+        std::size_t BinSerializeGlobalPhysics(boost::archive::binary_oarchive& a_out);
+        std::size_t BinSerializeGlobalNode(boost::archive::binary_oarchive& a_out);
+        std::size_t BinSerializeRacePhysics(boost::archive::binary_oarchive& a_out);
+        std::size_t BinSerializeRaceNode(boost::archive::binary_oarchive& a_out);
+        std::size_t BinSerializeActorPhysics(boost::archive::binary_oarchive& a_out);
+        std::size_t BinSerializeActorNode(boost::archive::binary_oarchive& a_out);
 
-        size_t BinSerializeGlobalPhysics(boost::archive::binary_iarchive& a_in, configComponents_t& a_out);
-        size_t BinSerializeGlobalNode(boost::archive::binary_iarchive& a_in, configNodes_t& a_out);
-        size_t BinSerializeRacePhysics(boost::archive::binary_iarchive& a_in, raceConfigComponentsHolder_t& a_out);
-        size_t BinSerializeRaceNode(boost::archive::binary_iarchive& a_in, raceConfigNodesHolder_t& a_out);
-        size_t BinSerializeActorPhysics(boost::archive::binary_iarchive& a_in, actorConfigComponentsHolder_t& a_out);
-        size_t BinSerializeActorNode(boost::archive::binary_iarchive& a_in, actorConfigNodesHolder_t& a_out);
+        std::size_t BinSerializeGlobalPhysics(boost::archive::binary_iarchive& a_in, configComponentsGenderRoot_t& a_out);
+        std::size_t BinSerializeGlobalNode(boost::archive::binary_iarchive& a_in, configNodesGenderRoot_t& a_out);
+        std::size_t BinSerializeRacePhysics(boost::archive::binary_iarchive& a_in, raceConfigComponentsHolder_t& a_out);
+        std::size_t BinSerializeRaceNode(boost::archive::binary_iarchive& a_in, raceConfigNodesHolder_t& a_out);
+        std::size_t BinSerializeActorPhysics(boost::archive::binary_iarchive& a_in, actorConfigComponentsHolder_t& a_out);
+        std::size_t BinSerializeActorNode(boost::archive::binary_iarchive& a_in, actorConfigNodesHolder_t& a_out);
 
         void ReadImportData(const fs::path& a_path, Json::Value& a_out) const;
 
-        size_t _LoadActorProfiles(
+        std::size_t _LoadActorProfiles(
             SKSESerializationInterface* intfc,
             const Json::Value& a_root,
             actorConfigComponentsHolder_t& a_actorConfigComponents,
             actorConfigNodesHolder_t& a_nodeData);
 
-        size_t _LoadRaceProfiles(
+        std::size_t _LoadRaceProfiles(
             SKSESerializationInterface* intfc,
             const Json::Value& a_root,
             raceConfigComponentsHolder_t& a_raceConfigComponents,
             raceConfigNodesHolder_t& a_nodeData);
 
-        size_t _LoadGlobalProfile(const Json::Value& a_root);
+        std::size_t _LoadGlobalProfile(const Json::Value& a_root);
 
         except::descriptor m_lastException;
 
@@ -171,8 +171,8 @@ namespace CBP
 
         bool m_pendingSave[Group::kNumGroups];
 
-        Serialization::Parser<configComponents_t> m_componentParser;
-        Serialization::Parser<configNodes_t> m_nodeParser;
+        Serialization::Parser<configComponentsGenderRoot_t> m_componentParser;
+        Serialization::Parser<configNodesGenderRoot_t> m_nodeParser;
     };
 
     DEFINE_ENUM_CLASS_BITWISE(ISerialization::ImportFlags);

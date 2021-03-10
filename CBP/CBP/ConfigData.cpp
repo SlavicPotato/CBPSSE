@@ -2,7 +2,7 @@
 
 namespace CBP
 {
-    const colliderDescMap_t configComponent32_t::colDescMap({
+    const colliderDescMap_t configComponent_t::colDescMap({
         { ColliderShapeType::Sphere, {
             "Sphere",
             "Implicit sphere shape."
@@ -38,11 +38,11 @@ namespace CBP
         }
     );
 
-    const componentValueDescMap_t configComponent32_t::descMap({
+    const componentValueDescMap_t configComponent_t::descMap({
         {"s", {
-            offsetof(configComponent32_t, fp.f32.stiffness),
+            offsetof(configComponent_t, fp.f32.stiffness),
             "",
-            0.0f, 255.0f,
+            0.0f, 500.0f,
             "Linear spring stiffness",
             "Linear stiffness",
             DescUIFlags::BeginGroup,
@@ -50,21 +50,35 @@ namespace CBP
             "Motion"
         }},
         {"sq", {
-            offsetof(configComponent32_t, fp.f32.stiffness2),
+            offsetof(configComponent_t, fp.f32.stiffness2),
             "",
-            0.0f, 255.0f,
+            0.0f, 500.0f,
             "Quadratic spring stiffness",
             "Quadratic stiffness"
         }},
+        {"ss", {
+            offsetof(configComponent_t, fp.f32.springSlackOffset),
+            "",
+            0.0f, 500.0f,
+            "Spring slack offset",
+            "Spring slack offset"
+        }},
+        {"se", {
+            offsetof(configComponent_t, fp.f32.springSlackMag),
+            "",
+            0.0f, 500.0f,
+            "Spring slack buffer",
+            "Spring slack buffer"
+        }},
         {"d", {
-            offsetof(configComponent32_t, fp.f32.damping),
+            offsetof(configComponent_t, fp.f32.damping),
             "",
             0.0f, 10.0f,
-            "Velocity removed/tick 1.0 would be all velocity removed",
+            "Velocity removed per update",
             "Velocity damping"
         }},        
         {"lx", {
-            offsetof(configComponent32_t, fp.f32.linear[0]),
+            offsetof(configComponent_t, fp.f32.linear[0]),
             "",
             0.0f, 1.0f,
             "Linear motion scale (side to side, front to back, up and down respectively)",
@@ -72,21 +86,21 @@ namespace CBP
             DescUIFlags::Float3
         }},
         {"ly", {
-            offsetof(configComponent32_t, fp.f32.linear[1]),
+            offsetof(configComponent_t, fp.f32.linear[1]),
             "",
             0.0f, 1.0f,
             "",
             "Linear motion scale"
         }},
         {"lz", {
-            offsetof(configComponent32_t, fp.f32.linear[2]),
+            offsetof(configComponent_t, fp.f32.linear[2]),
             "",
             0.0f, 1.0f,
             "",
             "Linear motion scale"
         }},
         {"rx", {
-            offsetof(configComponent32_t, fp.f32.rotational[0]),
+            offsetof(configComponent_t, fp.f32.rotational[0]),
             "",
             -10.0f, 10.0f,
             "Scale of the bones rotation around the Z, Y and X axes respectively",
@@ -94,21 +108,21 @@ namespace CBP
             DescUIFlags::Float3
         }},
         {"ry", {
-            offsetof(configComponent32_t, fp.f32.rotational[1]),
+            offsetof(configComponent_t, fp.f32.rotational[1]),
             "",
             -10.0f, 10.0f,
             "",
             "Rotational scale"
         }},
         {"rz", {
-            offsetof(configComponent32_t, fp.f32.rotational[2]),
+            offsetof(configComponent_t, fp.f32.rotational[2]),
             "",
             -10.0f, 10.0f,
             "",
             "Rotational scale"
         }},
         {"cox", {
-            offsetof(configComponent32_t, fp.f32.cogOffset[0]),
+            offsetof(configComponent_t, fp.f32.cogOffset[0]),
             "",
             -100.0f, 100.0f,
             "Center of gravity offset from the bone root, changes how rotation will impact motion",
@@ -116,56 +130,56 @@ namespace CBP
             DescUIFlags::Float3
         }},
         {"coy", {
-            offsetof(configComponent32_t, fp.f32.cogOffset[1]),
+            offsetof(configComponent_t, fp.f32.cogOffset[1]),
             "",
             -100.0f, 100.0f,
             "",
             "COG offset"
         }},
         {"coz", {
-            offsetof(configComponent32_t, fp.f32.cogOffset[2]),
+            offsetof(configComponent_t, fp.f32.cogOffset[2]),
             "",
             -100.0f, 100.0f,
             "",
             "COG offset"
         }},
         {"r", {
-            offsetof(configComponent32_t, fp.f32.resistance),
+            offsetof(configComponent_t, fp.f32.resistance),
             "",
             0.0f, 20.0f,
             "Resistance",
             "Resistance"
         }},
         {"m", {
-            offsetof(configComponent32_t, fp.f32.mass),
+            offsetof(configComponent_t, fp.f32.mass),
             "",
             1.0f, 1000.0f,
             "Object mass",
             "Mass"
         }},
         {"mv", {
-            offsetof(configComponent32_t, fp.f32.maxVelocity),
+            offsetof(configComponent_t, fp.f32.maxVelocity),
             "",
-            10.0f, 10000.0f,
-            "Maximum object velocity",
-            "Max velocity"
+            10.0f, 20000.0f,
+            "Maximum velocity of the object",
+            "Maximum velocity"
         }},
         {"gb", {
-            offsetof(configComponent32_t, fp.f32.gravityBias),
+            offsetof(configComponent_t, fp.f32.gravityBias),
             "",
-            0.0f, 1000.0f,
+            0.0f, 8000.0f,
             "This is in effect the gravity coefficient, a constant force acting down * the mass of the object",
             "Gravity bias"
         }},
         {"gc", {
-            offsetof(configComponent32_t, fp.f32.gravityCorrection),
+            offsetof(configComponent_t, fp.f32.gravityCorrection),
             "",
             -100.0f, 100.0f,
-            "Amount to offset node position along the Z axis (worldspace). Useful to counteract the neutral effect of gravity bias",
+            "Amount to offset node position along the Z axis (worldspace). Use to counteract the neutral effect of gravity bias",
             "Gravity correction"
         }},
         {"rgc", {
-            offsetof(configComponent32_t, fp.f32.rotGravityCorrection),
+            offsetof(configComponent_t, fp.f32.rotGravityCorrection),
             "",
             -100.0f, 100.0f,
             "Amount to offset rotation to counteract the neutral effect of gravity bias",
@@ -174,7 +188,7 @@ namespace CBP
             DescUIGroupType::Physics
         }},
         {"cr-", {
-            offsetof(configComponent32_t, fp.f32.colSphereRadMin),
+            offsetof(configComponent_t, fp.f32.colSphereRadMin),
             "cr+",
             0.001f, 100.0,
             "Collider object radius (weigth 0)",
@@ -184,7 +198,7 @@ namespace CBP
             "Collisions"
         }},
         {"cr+", {
-            offsetof(configComponent32_t, fp.f32.colSphereRadMax),
+            offsetof(configComponent_t, fp.f32.colSphereRadMax),
             "cr-",
             0.001f, 100.0f,
             "Collider object radius (weight 100)",
@@ -192,7 +206,7 @@ namespace CBP
             DescUIFlags::ColliderSphere | DescUIFlags::ColliderCapsule | DescUIFlags::ColliderCone | DescUIFlags::ColliderCylinder
         }},
         {"ch-", {
-            offsetof(configComponent32_t, fp.f32.colHeightMin),
+            offsetof(configComponent_t, fp.f32.colHeightMin),
             "ch+",
             0.001f, 250.0f,
             "Collider object height (weight 0)",
@@ -200,7 +214,7 @@ namespace CBP
             DescUIFlags::ColliderCapsule | DescUIFlags::ColliderCone | DescUIFlags::ColliderCylinder
         }},
         {"ch+", {
-            offsetof(configComponent32_t, fp.f32.colHeightMax),
+            offsetof(configComponent_t, fp.f32.colHeightMax),
             "ch-",
             0.001f, 250.0f,
             "Collider object height (weight 100)",
@@ -208,7 +222,7 @@ namespace CBP
             DescUIFlags::ColliderCapsule | DescUIFlags::ColliderCone | DescUIFlags::ColliderCylinder
         }},
         {"cox-", {
-            offsetof(configComponent32_t, fp.f32.colOffsetMin[0]),
+            offsetof(configComponent_t, fp.f32.colOffsetMin[0]),
             "cox+",
             -50.0f, 50.0f,
             "Collider object offset (X, Y, Z, weight 0)",
@@ -216,21 +230,21 @@ namespace CBP
             DescUIFlags::Float3 | DescUIFlags::Float3Mirror
         }},
         {"coy-", {
-            offsetof(configComponent32_t, fp.f32.colOffsetMin[1]),
+            offsetof(configComponent_t, fp.f32.colOffsetMin[1]),
             "coy+",
             -50.0f, 50.0f,
             "",
             "Offset min"
         }},
         {"coz-", {
-            offsetof(configComponent32_t, fp.f32.colOffsetMin[2]),
+            offsetof(configComponent_t, fp.f32.colOffsetMin[2]),
             "coz+",
             -50.0f, 50.0f,
             "",
             "Offset min"
         }},
         {"cox+", {
-            offsetof(configComponent32_t, fp.f32.colOffsetMax[0]),
+            offsetof(configComponent_t, fp.f32.colOffsetMax[0]),
             "cox-",
             -50.0f, 50.0f,
             "Collider body offset (X, Y, Z, weight 100)",
@@ -238,21 +252,21 @@ namespace CBP
             DescUIFlags::Float3 | DescUIFlags::Float3Mirror
         }},
         {"coy+", {
-            offsetof(configComponent32_t, fp.f32.colOffsetMax[1]),
+            offsetof(configComponent_t, fp.f32.colOffsetMax[1]),
             "coy-",
             -50.0f, 50.0f,
             "",
             "Offset max"
         }},
         {"coz+", {
-            offsetof(configComponent32_t, fp.f32.colOffsetMax[2]),
+            offsetof(configComponent_t, fp.f32.colOffsetMax[2]),
             "coz-",
             -50.0f, 50.0f,
             "",
             "Offset max"
         }},
         {"ex-", {
-            offsetof(configComponent32_t, fp.f32.colExtentMin[0]),
+            offsetof(configComponent_t, fp.f32.colExtentMin[0]),
             "ex+",
             0.0f, 50.0f,
             "Extent (X, Y, Z, weight 0)",
@@ -260,7 +274,7 @@ namespace CBP
             DescUIFlags::Float3 | DescUIFlags::ColliderBox | DescUIFlags::ColliderMesh | DescUIFlags::ColliderTetrahedron | DescUIFlags::ColliderConvexHull
         }},
         {"ey-", {
-            offsetof(configComponent32_t, fp.f32.colExtentMin[1]),
+            offsetof(configComponent_t, fp.f32.colExtentMin[1]),
             "ey+",
             0.0f, 50.0f,
             "",
@@ -268,7 +282,7 @@ namespace CBP
             DescUIFlags::ColliderBox | DescUIFlags::ColliderMesh |  DescUIFlags::ColliderTetrahedron | DescUIFlags::ColliderConvexHull
         }},
         {"ez-", {
-            offsetof(configComponent32_t, fp.f32.colExtentMin[2]),
+            offsetof(configComponent_t, fp.f32.colExtentMin[2]),
             "ez+",
             0.0f, 50.0f,
             "",
@@ -276,7 +290,7 @@ namespace CBP
             DescUIFlags::ColliderBox | DescUIFlags::ColliderMesh | DescUIFlags::ColliderTetrahedron | DescUIFlags::ColliderConvexHull
         }},
         {"ex+", {
-            offsetof(configComponent32_t, fp.f32.colExtentMax[0]),
+            offsetof(configComponent_t, fp.f32.colExtentMax[0]),
             "ex-",
             0.0f, 50.0f,
             "Extent (X, Y, Z, weight 100)",
@@ -284,7 +298,7 @@ namespace CBP
             DescUIFlags::Float3 | DescUIFlags::ColliderBox | DescUIFlags::ColliderMesh | DescUIFlags::ColliderTetrahedron | DescUIFlags::ColliderConvexHull
         }},
         {"ey+", {
-            offsetof(configComponent32_t, fp.f32.colExtentMax[1]),
+            offsetof(configComponent_t, fp.f32.colExtentMax[1]),
             "ey-",
             0.0f, 50.0f,
             "",
@@ -292,7 +306,7 @@ namespace CBP
             DescUIFlags::ColliderBox | DescUIFlags::ColliderMesh | DescUIFlags::ColliderTetrahedron | DescUIFlags::ColliderConvexHull
         }},
         {"ez+", {
-            offsetof(configComponent32_t, fp.f32.colExtentMax[2]),
+            offsetof(configComponent_t, fp.f32.colExtentMax[2]),
             "ez-",
             0.0f, 50.0f,
             "",
@@ -300,7 +314,7 @@ namespace CBP
             DescUIFlags::ColliderBox | DescUIFlags::ColliderMesh | DescUIFlags::ColliderTetrahedron | DescUIFlags::ColliderConvexHull
         }},
         {"crx", {
-            offsetof(configComponent32_t, fp.f32.colRot[0]),
+            offsetof(configComponent_t, fp.f32.colRot[0]),
             "",
             -360.0f, 360.0f,
             "Collider rotation in degrees around the X, Y and Z axes respectively.",
@@ -308,7 +322,7 @@ namespace CBP
             DescUIFlags::Float3 | DescUIFlags::Float3Mirror | DescUIFlags::ColliderCapsule | DescUIFlags::ColliderBox | DescUIFlags::ColliderMesh | DescUIFlags::ColliderCylinder | DescUIFlags::ColliderTetrahedron | DescUIFlags::ColliderConvexHull | DescUIFlags::ColliderCone
         }},
         {"cry", {
-            offsetof(configComponent32_t, fp.f32.colRot[1]),
+            offsetof(configComponent_t, fp.f32.colRot[1]),
             "",
             -360.0f, 360.0f,
             "",
@@ -316,7 +330,7 @@ namespace CBP
             DescUIFlags::ColliderCapsule | DescUIFlags::ColliderBox | DescUIFlags::ColliderMesh | DescUIFlags::ColliderCylinder | DescUIFlags::ColliderTetrahedron | DescUIFlags::ColliderConvexHull | DescUIFlags::ColliderCone
         }},
         {"crz", {
-            offsetof(configComponent32_t, fp.f32.colRot[2]),
+            offsetof(configComponent_t, fp.f32.colRot[2]),
             "",
             -360.0f, 360.0f,
             "",
@@ -324,35 +338,42 @@ namespace CBP
             DescUIFlags::ColliderCapsule | DescUIFlags::ColliderBox | DescUIFlags::ColliderMesh |DescUIFlags::ColliderCylinder | DescUIFlags::ColliderTetrahedron | DescUIFlags::ColliderConvexHull | DescUIFlags::ColliderCone
         }},
         {"cb", {
-            offsetof(configComponent32_t, fp.f32.colRestitutionCoefficient),
+            offsetof(configComponent_t, fp.f32.colRestitutionCoefficient),
             "",
             0.0f, 1.0f,
             "Ratio of final to initial relative velocity after collision (coefficient of restitution).",
             "Bounciness"
         }},
         {"cp", {
-            offsetof(configComponent32_t, fp.f32.colPenMass),
+            offsetof(configComponent_t, fp.f32.colPenMass),
             "",
             1.0f, 100.0f,
             "Determines how deep objects will penetrate when colliding.",
             "Penetration mass"
         }},
         {"ce", {
-            offsetof(configComponent32_t, fp.f32.colPenBiasFactor),
+            offsetof(configComponent_t, fp.f32.colPenBiasFactor),
             "",
             0.0f, 5.0f,
             "Penetration bias multiplier used in collision response. Higher values 'eject' the object with greater velocity when overlapping with another.",
             "Pen. bias factor"
-        }},   
+        }}, 
+        {"cfr", {
+            offsetof(configComponent_t, fp.f32.colFriction),
+            "",
+            0.0f, 1.0f,
+            "Friction coefficient",
+            "Friction"
+        }},
         {"cm", {
-            offsetof(configComponent32_t, fp.f32.colPositionScale),
+            offsetof(configComponent_t, fp.f32.colPositionScale),
             "",
             0.0f, 1.0f,
             "Collider object position scaling.",
             "Position scaling"
         }},       
         {"cr", {
-            offsetof(configComponent32_t, fp.f32.colRotationScale),
+            offsetof(configComponent_t, fp.f32.colRotationScale),
             "",
             0.0f, 1.0f,
             "Collider object rotation scaling.",
@@ -361,81 +382,115 @@ namespace CBP
             DescUIGroupType::Collisions
         }},        
         {"mox-", {
-            offsetof(configComponent32_t, fp.f32.maxOffsetN[0]),
+            offsetof(configComponent_t, fp.f32.maxOffsetN[0]),
             "mox",
             -128.0f, 0.0f,
             "Maximum amount the bone is allowed to move from target (-X, -Y, -Z)",
-            "Constraint box min",
-            DescUIFlags::Float3 | DescUIFlags::BeginGroup | DescUIFlags::Collapsed | DescUIFlags::SyncNegate,
-            DescUIGroupType::PhysicsExtra,
+            "Box min",
+            DescUIFlags::Float3 | DescUIFlags::BeginGroup | DescUIFlags::Collapsed | DescUIFlags::SyncNegate | DescUIFlags::MotionConstraintBox,
+            DescUIGroupType::PhysicsMotionConstraints,
             "Motion constraints"
         }},
         {"moy-", {
-            offsetof(configComponent32_t, fp.f32.maxOffsetN[1]),
+            offsetof(configComponent_t, fp.f32.maxOffsetN[1]),
             "moy",
             -128.0f, 0.0f,
             "",
-            "Constraint box min",
-            DescUIFlags::SyncNegate
+            "Box min",
+            DescUIFlags::SyncNegate | DescUIFlags::MotionConstraintBox
         }},
-        { "moz-", {
-            offsetof(configComponent32_t, fp.f32.maxOffsetN[2]),
+        {"moz-", {
+            offsetof(configComponent_t, fp.f32.maxOffsetN[2]),
             "moz",
             -128.0f, 0.0f,
             "",
-            "Constraint box min",
-            DescUIFlags::SyncNegate
+            "Box min",
+            DescUIFlags::SyncNegate | DescUIFlags::MotionConstraintBox
         }},
         {"mox", {
-            offsetof(configComponent32_t, fp.f32.maxOffsetP[0]),
+            offsetof(configComponent_t, fp.f32.maxOffsetP[0]),
             "mox-",
             0.0f, 128.0f,
             "Maximum amount the bone is allowed to move from target (+X, +Y, +Z)",
-            "Constraint box max",
-            DescUIFlags::Float3 | DescUIFlags::SyncNegate
+            "Box max",
+            DescUIFlags::Float3 | DescUIFlags::SyncNegate | DescUIFlags::MotionConstraintBox
         }},
         {"moy", {
-            offsetof(configComponent32_t, fp.f32.maxOffsetP[1]),
+            offsetof(configComponent_t, fp.f32.maxOffsetP[1]),
             "moy-",
             0.0f, 128.0f,
             "",
-            "Constraint box max",
-            DescUIFlags::SyncNegate
+            "Box max",
+            DescUIFlags::SyncNegate | DescUIFlags::MotionConstraintBox
         }},
         {"moz", {
-            offsetof(configComponent32_t, fp.f32.maxOffsetP[2]),
+            offsetof(configComponent_t, fp.f32.maxOffsetP[2]),
             "moz-",
             0.0f, 128.0f,
             "",
-            "Constraint box max",
-            DescUIFlags::SyncNegate
+            "Box max",
+            DescUIFlags::SyncNegate | DescUIFlags::MotionConstraintBox
+        }},
+        {"mor", {
+            offsetof(configComponent_t, fp.f32.maxOffsetSphereRadius),
+            "mor",
+            0.0f, 250.0f,
+            "Maximum amount the bone is allowed to move from target",
+            "Sphere radius",
+            DescUIFlags::MotionConstraintSphere
+        }},
+        {"mosx", {
+            offsetof(configComponent_t, fp.f32.maxOffsetSphereOffset[0]),
+            "",
+            -50.0f, 50.0f,
+            "Sphere constraint offset",
+            "Sphere offset",
+            DescUIFlags::Float3 | DescUIFlags::Float3Mirror | DescUIFlags::MotionConstraintSphere
+        }},
+        {"mosy", {
+            offsetof(configComponent_t, fp.f32.maxOffsetSphereOffset[1]),
+            "",
+            -50.0f, 50.0f,
+            "",
+            "Sphere offset",
+            DescUIFlags::MotionConstraintSphere
+        }},
+        {"mosz", {
+            offsetof(configComponent_t, fp.f32.maxOffsetSphereOffset[2]),
+            "",
+            -50.0f, 50.0f,
+            "",
+            "Sphere offset",
+            DescUIFlags::MotionConstraintSphere
         }},
         {"moc", {
-            offsetof(configComponent32_t, fp.f32.maxOffsetVelResponseScale),
+            offsetof(configComponent_t, fp.f32.maxOffsetVelResponseScale),
             "",
             0.0f, 1.0f,
             "Velocity response scale",
-            "Vel. response scale"
+            "Vel. response scale",
+            DescUIFlags::MotionConstraints
         }},
         {"mod", {
-            offsetof(configComponent32_t, fp.f32.maxOffsetMaxBiasMag),
+            offsetof(configComponent_t, fp.f32.maxOffsetMaxBiasMag),
             "",
             0.5f, 500.0f,
             "Penetration bias depth limit",
-            "Bias limit"
+            "Pen. bias limit",
+            DescUIFlags::MotionConstraints
         }},
         {"moe", {
-            offsetof(configComponent32_t, fp.f32.maxOffsetRestitutionCoefficient),
+            offsetof(configComponent_t, fp.f32.maxOffsetRestitutionCoefficient),
             "",
             0.0f, 1.0f,
             "Restitution coefficient",
             "Restitution coef.",
-            DescUIFlags::EndGroup
+            DescUIFlags::EndGroup | DescUIFlags::MotionConstraints
         }}
         }
     );
 
-    const stl::iunordered_map<std::string, std::string> configComponent32_t::oldKeyMap =
+    const stl::iunordered_map<std::string, std::string> configComponent_t::oldKeyMap =
     {
         {"stiffness", "s"},
         {"stiffness2", "sq"},

@@ -2,12 +2,12 @@
 
 namespace CBP
 {
-    enum class TRecType : uint32_t {
+    enum class TRecType : std::uint32_t {
         Physics,
         Node
     };
 
-    enum class TRecTargetType : uint32_t
+    enum class TRecTargetType : std::uint32_t
     {
         All,
         FormIDs

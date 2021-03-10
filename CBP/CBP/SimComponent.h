@@ -20,10 +20,10 @@ namespace CBP
 #endif
 
 
-    class SKMP_ALIGN(16) CollisionShape
+    class SKMP_ALIGN_AUTO CollisionShape
     {
     public:
-        BT_DECLARE_ALIGNED_ALLOCATOR();
+        SKMP_DECLARE_ALIGNED_ALLOCATOR_AUTO();
 
         virtual void UpdateShape() = 0;
 
@@ -44,7 +44,7 @@ namespace CBP
     };
 
     template <class T>
-    class SKMP_ALIGN(16) CollisionShapeBase :
+    class SKMP_ALIGN_AUTO CollisionShapeBase :
         public CollisionShape
     {
 
@@ -73,7 +73,7 @@ namespace CBP
     };
 
     template <class T>
-    class SKMP_ALIGN(16) CollisionShapeTemplRH :
+    class SKMP_ALIGN_AUTO CollisionShapeTemplRH :
         public CollisionShapeBase<T>
     {
     protected:
@@ -99,7 +99,7 @@ namespace CBP
     };
 
     template <class T>
-    class SKMP_ALIGN(16) CollisionShapeTemplExtent :
+    class SKMP_ALIGN_AUTO CollisionShapeTemplExtent :
         public CollisionShapeBase<T>
     {
     public:
@@ -117,7 +117,7 @@ namespace CBP
         btVector3 m_currentExtent;
     };
 
-    class __declspec(align(16)) CollisionShapeSphere :
+    class SKMP_ALIGN_AUTO CollisionShapeSphere :
         public CollisionShapeBase<btSphereShape>
     {
     public:
@@ -133,7 +133,7 @@ namespace CBP
     };
 
 
-    class SKMP_ALIGN(16) CollisionShapeCapsule :
+    class SKMP_ALIGN_AUTO CollisionShapeCapsule :
         public CollisionShapeTemplRH<btCapsuleShape>
     {
     public:
@@ -142,7 +142,7 @@ namespace CBP
         virtual void DoRecreateShape(btScalar a_radius, btScalar a_height);
     };
 
-    class SKMP_ALIGN(16) CollisionShapeCone :
+    class SKMP_ALIGN_AUTO CollisionShapeCone :
         public CollisionShapeTemplRH<btConeShape>
     {
     public:
@@ -151,7 +151,7 @@ namespace CBP
         virtual void DoRecreateShape(btScalar a_radius, btScalar a_height);
     };
 
-    class SKMP_ALIGN(16) CollisionShapeBox :
+    class SKMP_ALIGN_AUTO CollisionShapeBox :
         public CollisionShapeTemplExtent<btBoxShape>
     {
     public:
@@ -160,7 +160,7 @@ namespace CBP
         virtual void DoRecreateShape(const btVector3 & a_extent);
     };
 
-    class SKMP_ALIGN(16) CollisionShapeCylinder :
+    class SKMP_ALIGN_AUTO CollisionShapeCylinder :
         public CollisionShapeTemplRH<btCylinderShape>
     {
     public:
@@ -169,7 +169,7 @@ namespace CBP
         virtual void DoRecreateShape(btScalar a_radius, btScalar a_height);
     };
 
-    class SKMP_ALIGN(16) CollisionShapeTetrahedron :
+    class SKMP_ALIGN_AUTO CollisionShapeTetrahedron :
         public CollisionShapeTemplExtent<btTetrahedronShapeEx>
     {
     public:
@@ -182,7 +182,7 @@ namespace CBP
         static const btVector3 m_vertices[4];
     };
 
-    class SKMP_ALIGN(16) CollisionShapeMesh :
+    class SKMP_ALIGN_AUTO CollisionShapeMesh :
         public CollisionShapeTemplExtent<btGImpactMeshShapePart>
     {
     public:
@@ -199,14 +199,14 @@ namespace CBP
         btTriangleIndexVertexArray* m_triVertexArray;
     };
 
-    class SKMP_ALIGN(16) CollisionShapeConvexHull :
+    class SKMP_ALIGN_AUTO CollisionShapeConvexHull :
         public CollisionShapeTemplExtent<btConvexHullShape>
     {
     public:
 
         CollisionShapeConvexHull(
             btCollisionObject * a_collider,
-            const std::shared_ptr<MeshPoint[]>&a_data,
+            const MeshPoint *a_data,
             int a_numVertices,
             const btVector3 & a_extent);
 
@@ -215,11 +215,11 @@ namespace CBP
 
     private:
 
-        std::shared_ptr<MeshPoint[]> m_convexHullPoints;
+        const MeshPoint* m_convexHullPoints;
         int m_convexHullNumVertices;
     };
 
-    class SKMP_ALIGN(16) Collider :
+    class SKMP_ALIGN_AUTO Collider :
         ILog
     {
         inline static constexpr btScalar crdrmul = std::numbers::pi_v<btScalar> / 180.0f;
@@ -320,7 +320,7 @@ namespace CBP
 
         btCollisionObject* m_collider;
         CollisionShape* m_colshape;
-        std::unique_ptr<ColliderData> m_colliderData;
+        std::shared_ptr<const ColliderData> m_colliderData;
 
         ColliderShapeType m_shape;
 
@@ -346,12 +346,12 @@ namespace CBP
         SimComponent& m_parent;
     };
 
-    class SKMP_ALIGN(16) SimComponent
+    class SKMP_ALIGN_AUTO SimComponent
     {
-        struct SKMP_ALIGN(16) Force
+        struct SKMP_ALIGN_AUTO Force
         {
             Force(
-                uint32_t a_steps,
+                std::uint32_t a_steps,
                 const btVector3 & a_norm)
                 :
                 m_numImpulses(a_steps),
@@ -360,10 +360,10 @@ namespace CBP
             }
 
             btVector3 m_force;
-            uint32_t m_numImpulses;
+            std::uint32_t m_numImpulses;
         };
 
-        struct SKMP_ALIGN(16) rotationParams_t
+        struct SKMP_ALIGN_AUTO rotationParams_t
         {
             SKMP_FORCEINLINE rotationParams_t();
             SKMP_FORCEINLINE void Zero();
@@ -379,12 +379,18 @@ namespace CBP
 
         void ColUpdateWeightData(
             Actor * a_actor,
-            const configComponent16_t & a_config,
+            const configComponent_t & a_config,
             const configNode_t & a_nodeConf);
 
         SKMP_FORCEINLINE void ClampVelocity();
 
-        SKMP_FORCEINLINE void ConstrainMotion(
+        SKMP_FORCEINLINE void ConstrainMotionBox(
+            const btMatrix3x3 & a_invRot,
+            const btVector3 & a_target,
+            btScalar a_timeStep
+        );
+        
+        SKMP_FORCEINLINE void ConstrainMotionSphere(
             const btMatrix3x3 & a_invRot,
             const btVector3 & a_target,
             btScalar a_timeStep
@@ -394,7 +400,7 @@ namespace CBP
         SKMP_FORCEINLINE void SIMDFillParent();
 
     public:
-        BT_DECLARE_ALIGNED_ALLOCATOR();
+        SKMP_DECLARE_ALIGNED_ALLOCATOR_AUTO();
 
         SimComponent(
             SimObject & a_parent,
@@ -402,11 +408,11 @@ namespace CBP
             NiAVObject * a_obj,
             const std::string & a_nodeName,
             const std::string & a_configBoneName,
-            const configComponent32_t & config,
+            const configComponent_t & config,
             const configNode_t & a_nodeConf,
             uint64_t a_groupId,
             bool a_collisions,
-            bool a_movement
+            bool a_motion
         );
 
         virtual ~SimComponent() noexcept;
@@ -420,17 +426,17 @@ namespace CBP
 
         void UpdateConfig(
             Actor * a_actor,
-            const configComponent32_t * a_physConf,
+            const configComponent_t * a_physConf,
             const configNode_t & a_nodeConf,
             bool a_collisions,
             bool a_motion) noexcept;
 
         void UpdateMotion(btScalar timeStep);
-        SKMP_FORCEINLINE void UpdateVelocity();
-        void Reset();
+        SKMP_FORCEINLINE void UpdateVelocity(float a_timeStep);
+        SKMP_NOINLINE void Reset();
         //bool ValidateNodes(NiAVObject * a_obj);
 
-        void ApplyForce(uint32_t a_steps, const NiPoint3 & a_force);
+        void ApplyForce(std::uint32_t a_steps, const NiPoint3 & a_force);
 
 #ifdef _CBP_ENABLE_DEBUG
         void UpdateDebugInfo();
@@ -471,6 +477,10 @@ namespace CBP
             return m_motion;
         }
 
+        [[nodiscard]] SKMP_FORCEINLINE bool HasFriction() const {
+            return m_hasFriction;
+        }
+
         [[nodiscard]] SKMP_FORCEINLINE bool HasActiveCollider() const {
             return m_collider.IsActive();
         }
@@ -493,6 +503,10 @@ namespace CBP
         
         [[nodiscard]] SKMP_FORCEINLINE void GetParentWorldTransform(Bullet::btTransformEx &a_out) const {
             a_out = m_objParent->m_worldTransform;
+        }
+        
+        [[nodiscard]] SKMP_FORCEINLINE const auto & GetParentMatrix() const {
+            return m_itrMatParent;
         }
 
         [[nodiscard]] SKMP_FORCEINLINE const auto& GetVirtualPos() const {
@@ -531,7 +545,7 @@ namespace CBP
             return m_collider.IsCreated() && m_collider.IsBoneCast();
         }
 
-#if BT_THREADSAFE
+#if 0
         SKMP_FORCEINLINE void Lock() const {
             m_mutex.lock();
         }
@@ -580,7 +594,7 @@ namespace CBP
 
         uint64_t m_groupId;
 
-        configComponent16_t m_conf;
+        configComponent_t m_conf;
 
         bool m_collisions;
         bool m_motion;
@@ -588,6 +602,11 @@ namespace CBP
         bool m_resistanceOn;
         bool m_rotScaleOn;
         bool m_hasScaleOverride;
+        bool m_hasSpringSlack;
+        bool m_hasFriction;
+
+        //bool m_hasMotionConstraintSphere;
+        //bool m_hasMotionConstraintBox;
 
         NiPointer<NiAVObject> m_obj;
         NiPointer<NiNode> m_objParent;
@@ -605,7 +624,7 @@ namespace CBP
 
         Game::FormID m_formid;
 
-#if BT_THREADSAFE
+#if 0
         mutable btSpinMutex m_mutex;
 #endif
 
@@ -614,15 +633,16 @@ namespace CBP
         SimObject& m_parent;
     };
 
-    void SimComponent::UpdateVelocity()
+    void SimComponent::UpdateVelocity(float a_timeStep)
     {
         if (m_motion)
             return;
 
-        btVector3 pos(_mm_and_ps(_mm_loadu_ps(reinterpret_cast<const float*>(&m_obj->m_worldTransform.pos)), btvFFF0fMask));
+        btVector3 pos(_mm_and_ps(_mm_loadu_ps(m_obj->m_worldTransform.pos), btvFFF0fMask));
 
-        m_velocity = pos - m_oldWorldPos;
+        m_velocity = (pos - m_oldWorldPos) /= a_timeStep;
         m_oldWorldPos = pos;
+
     }
 
     SimComponent::rotationParams_t::rotationParams_t() {

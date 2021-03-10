@@ -9,14 +9,14 @@ namespace UIData
         UICollapsibleStates() = default;
 
         void Parse(const Json::Value& a_in);
-        void Create(Json::Value& a_out);
+        void Create(Json::Value& a_out) const;
 
-        SKMP_FORCEINLINE bool& Get(const std::string& a_key, bool a_default = true)
+        [[nodiscard]] SKMP_FORCEINLINE bool& Get(const std::string& a_key, bool a_default = true)
         {
             return m_data.try_emplace(a_key, a_default).first->second;
         }
 
-        SKMP_FORCEINLINE bool& operator[](const std::string& a_key)
+        [[nodiscard]] SKMP_FORCEINLINE bool& operator[](const std::string& a_key)
         {
             return Get(a_key);
         }

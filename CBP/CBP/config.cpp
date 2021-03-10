@@ -2,7 +2,7 @@
 
 namespace CBP
 {
-    configComponents_t IConfig::physicsGlobalConfig;
+    configComponentsGenderRoot_t IConfig::physicsGlobalConfig;
     //configComponents_t IConfig::physicsGlobalConfigDefaults;
     actorConfigComponentsHolder_t IConfig::actorConfHolder;
     raceConfigComponentsHolder_t IConfig::raceConfHolder;
@@ -14,7 +14,7 @@ namespace CBP
     collisionGroups_t IConfig::collisionGroups;
     nodeCollisionGroupMap_t IConfig::nodeCollisionGroupMap;
 
-    configNodes_t IConfig::nodeGlobalConfig;
+    configNodesGenderRoot_t IConfig::nodeGlobalConfig;
     actorConfigNodesHolder_t IConfig::actorNodeConfigHolder;
     raceConfigNodesHolder_t IConfig::raceNodeConfigHolder;
     combinedData_t IConfig::defaultProfileStorage;
@@ -25,7 +25,7 @@ namespace CBP
     configNodes_t IConfig::templateBaseNodeHolder;
     configComponents_t IConfig::templateBasePhysicsHolder;
 
-    configComponent32_t IConfig::defaultPhysicsConfig;
+    configComponent_t IConfig::defaultPhysicsConfig;
     configNode_t IConfig::defaultNodeConfig;
 
     IConfig::IConfigLog IConfig::log;
@@ -109,7 +109,8 @@ namespace CBP
         for (const auto& v : validConfGroups)
         {
             templateBasePhysicsHolder.try_emplace(v);
-            physicsGlobalConfig.try_emplace(v);
+            physicsGlobalConfig(ConfigGender::Male).try_emplace(v);
+            physicsGlobalConfig(ConfigGender::Female).try_emplace(v);
         }
     }
 
@@ -128,7 +129,8 @@ namespace CBP
         validConfGroups.emplace(a_confGroup);
         templateBaseNodeHolder.try_emplace(a_node);
         templateBasePhysicsHolder.try_emplace(a_confGroup);
-        physicsGlobalConfig.try_emplace(a_confGroup);
+        physicsGlobalConfig(ConfigGender::Male).try_emplace(a_confGroup);
+        physicsGlobalConfig(ConfigGender::Female).try_emplace(a_confGroup);
         configGroupMap[a_confGroup].emplace_back(a_node);
 
         if (a_save)
@@ -217,19 +219,29 @@ namespace CBP
         return ConfigClass::kConfigGlobal;
     }
 
-    void IConfig::SetActorPhysics(Game::ObjectHandle a_handle, const configComponents_t& a_conf)
+    void IConfig::SetActorPhysics(Game::ObjectHandle a_handle, ConfigGender a_gender, const configComponents_t& a_conf)
     {
-        actorConfHolder.insert_or_assign(a_handle, a_conf);
+        actorConfHolder[a_handle](a_gender) = a_conf;
     }
 
-    void IConfig::SetActorPhysics(Game::ObjectHandle a_handle, configComponents_t&& a_conf)
+    void IConfig::SetActorPhysics(Game::ObjectHandle a_handle, ConfigGender a_gender, configComponents_t&& a_conf)
     {
-        actorConfHolder.insert_or_assign(a_handle, std::move(a_conf));
+        actorConfHolder[a_handle](a_gender) = std::move(a_conf);
+    }
+    
+    void IConfig::SetActorPhysics(Game::ObjectHandle a_handle, const configComponentsGenderRoot_t& a_conf)
+    {
+        actorConfHolder[a_handle] = a_conf;
     }
 
-    bool IConfig::GetGlobalNode(const std::string& a_node, configNode_t& a_out)
+    void IConfig::SetActorPhysics(Game::ObjectHandle a_handle, configComponentsGenderRoot_t&& a_conf)
     {
-        auto& nodeConfig = GetGlobalNode();
+        actorConfHolder[a_handle] = std::move(a_conf);
+    }
+
+    bool IConfig::GetGlobalNode(const std::string& a_node, ConfigGender a_gender, configNode_t& a_out)
+    {
+        auto& nodeConfig = GetGlobalNode()(a_gender);
 
         auto it = nodeConfig.find(a_node);
         if (it != nodeConfig.end()) {
@@ -240,7 +252,12 @@ namespace CBP
         return false;
     }
 
-    const configNodes_t& IConfig::GetActorNode(Game::ObjectHandle a_handle)
+    const configNodes_t& IConfig::GetActorNode(Game::ObjectHandle a_handle, ConfigGender a_gender)
+    {
+        return GetActorNode(a_handle)(a_gender);
+    }
+    
+    const configNodesGenderRoot_t& IConfig::GetActorNode(Game::ObjectHandle a_handle)
     {
         auto it = actorNodeConfigHolder.find(a_handle);
         if (it != actorNodeConfigHolder.end())
@@ -263,7 +280,12 @@ namespace CBP
         return IConfig::GetGlobalNode();
     }
 
-    const configNodes_t& IConfig::GetRaceNode(Game::FormID a_formid)
+    const configNodes_t& IConfig::GetRaceNode(Game::FormID a_formid, ConfigGender a_gender)
+    {
+        return GetRaceNode(a_formid)(a_gender);
+    }
+    
+    const configNodesGenderRoot_t& IConfig::GetRaceNode(Game::FormID a_formid)
     {
         auto it = raceNodeConfigHolder.find(a_formid);
         if (it != raceNodeConfigHolder.end()) {
@@ -273,7 +295,12 @@ namespace CBP
         return IConfig::GetGlobalNode();
     }
     
-    configNodes_t& IConfig::GetOrCreateActorNode(Game::ObjectHandle a_handle)
+    configNodes_t& IConfig::GetOrCreateActorNode(Game::ObjectHandle a_handle, ConfigGender a_gender)
+    {
+        return GetOrCreateActorNode(a_handle)(a_gender);
+    }
+    
+    configNodesGenderRoot_t& IConfig::GetOrCreateActorNode(Game::ObjectHandle a_handle)
     {
         auto it = actorNodeConfigHolder.find(a_handle);
         if (it != actorNodeConfigHolder.end())
@@ -296,20 +323,25 @@ namespace CBP
         return (actorNodeConfigHolder[a_handle] = GetGlobalNode());
     }
 
-    configNodes_t& IConfig::GetOrCreateRaceNode(Game::FormID a_formid)
+    configNodes_t& IConfig::GetOrCreateRaceNode(Game::FormID a_formid, ConfigGender a_gender)
+    {
+        return GetOrCreateRaceNode(a_formid)(a_gender);
+    }
+
+    configNodesGenderRoot_t& IConfig::GetOrCreateRaceNode(Game::FormID a_formid)
     {
         auto it = raceNodeConfigHolder.find(a_formid);
         if (it != raceNodeConfigHolder.end()) {
             return it->second;
         }
 
-        return (raceNodeConfigHolder[a_formid] = IConfig::GetGlobalNode());
+        return (raceNodeConfigHolder[a_formid] = GetGlobalNode());
     }
 
 
-    bool IConfig::GetActorNode(Game::ObjectHandle a_handle, const std::string& a_node, configNode_t& a_out)
+    bool IConfig::GetActorNode(Game::ObjectHandle a_handle, const std::string& a_node, ConfigGender a_gender, configNode_t& a_out)
     {
-        auto& nodeConfig = GetActorNode(a_handle);
+        auto& nodeConfig = GetActorNode(a_handle, a_gender);
 
         auto it = nodeConfig.find(a_node);
         if (it != nodeConfig.end()) {
@@ -320,27 +352,52 @@ namespace CBP
         return false;
     }
 
-    void IConfig::SetActorNode(Game::ObjectHandle a_handle, const configNodes_t& a_conf)
+    void IConfig::SetActorNode(Game::ObjectHandle a_handle, ConfigGender a_gender, const configNodes_t& a_conf)
     {
-        actorNodeConfigHolder.insert_or_assign(a_handle, a_conf);
+        actorNodeConfigHolder[a_handle](a_gender) = a_conf;
     }
 
-    void IConfig::SetActorNode(Game::ObjectHandle a_handle, configNodes_t&& a_conf)
+    void IConfig::SetActorNode(Game::ObjectHandle a_handle, ConfigGender a_gender, configNodes_t&& a_conf)
     {
-        actorNodeConfigHolder.insert_or_assign(a_handle, std::move(a_conf));
+        actorNodeConfigHolder[a_handle](a_gender) = std::move(a_conf);
+    }
+    
+    void IConfig::SetActorNode(Game::ObjectHandle a_handle,const configNodesGenderRoot_t& a_conf)
+    {
+        actorNodeConfigHolder[a_handle] = a_conf;
     }
 
-    void IConfig::SetRaceNode(Game::FormID a_handle, const configNodes_t& a_conf)
+    void IConfig::SetActorNode(Game::ObjectHandle a_handle, configNodesGenderRoot_t&& a_conf)
     {
-        raceNodeConfigHolder.insert_or_assign(a_handle, a_conf);
+        actorNodeConfigHolder[a_handle] = std::move(a_conf);
     }
 
-    void IConfig::SetRaceNode(Game::FormID a_handle, configNodes_t&& a_conf)
+    void IConfig::SetRaceNode(Game::FormID a_handle, ConfigGender a_gender, const configNodes_t& a_conf)
     {
-        raceNodeConfigHolder.insert_or_assign(a_handle, std::move(a_conf));
+        raceNodeConfigHolder[a_handle](a_gender) = a_conf;
     }
 
-    configComponents_t& IConfig::GetOrCreateActorPhysics(Game::ObjectHandle a_handle)
+    void IConfig::SetRaceNode(Game::FormID a_handle, ConfigGender a_gender, configNodes_t&& a_conf)
+    {
+        raceNodeConfigHolder[a_handle](a_gender) = std::move(a_conf);
+    }
+    
+    void IConfig::SetRaceNode(Game::FormID a_handle, const configNodesGenderRoot_t& a_conf)
+    {
+        raceNodeConfigHolder[a_handle] = a_conf;
+    }
+
+    void IConfig::SetRaceNode(Game::FormID a_handle, configNodesGenderRoot_t&& a_conf)
+    {
+        raceNodeConfigHolder[a_handle] = std::move(a_conf);
+    }
+
+    configComponents_t& IConfig::GetOrCreateActorPhysics(Game::ObjectHandle a_handle, ConfigGender a_gender)
+    {
+        return GetOrCreateActorPhysics(a_handle)(a_gender);
+    }
+    
+    configComponentsGenderRoot_t& IConfig::GetOrCreateActorPhysics(Game::ObjectHandle a_handle)
     {
         auto ita = actorConfHolder.find(a_handle);
         if (ita != actorConfHolder.end())
@@ -364,7 +421,12 @@ namespace CBP
         return (actorConfHolder[a_handle] = physicsGlobalConfig);
     }
 
-    const configComponents_t& IConfig::GetActorPhysics(Game::ObjectHandle a_handle)
+    const configComponents_t& IConfig::GetActorPhysics(Game::ObjectHandle a_handle, ConfigGender a_gender)
+    {
+        return GetActorPhysics(a_handle)(a_gender);
+    }
+    
+    const configComponentsGenderRoot_t& IConfig::GetActorPhysics(Game::ObjectHandle a_handle)
     {
         auto ita = actorConfHolder.find(a_handle);
         if (ita != actorConfHolder.end())
@@ -387,9 +449,9 @@ namespace CBP
         return physicsGlobalConfig;
     }
 
-    const configComponents_t& IConfig::GetActorPhysicsAO(Game::ObjectHandle handle)
+    const configComponents_t& IConfig::GetActorPhysicsAO(Game::ObjectHandle handle, ConfigGender a_gender)
     {
-        auto& conf = GetActorPhysics(handle);
+        auto& conf = GetActorPhysics(handle, a_gender);
 
         auto it = armorOverrides.find(handle);
         if (it == armorOverrides.end())
@@ -419,7 +481,12 @@ namespace CBP
         return me;
     }
 
-    configComponents_t& IConfig::GetOrCreateRacePhysics(Game::FormID a_formid)
+    configComponents_t& IConfig::GetOrCreateRacePhysics(Game::FormID a_formid, ConfigGender a_gender)
+    {
+        return GetOrCreateRacePhysics(a_formid)(a_gender);
+    }
+    
+    configComponentsGenderRoot_t& IConfig::GetOrCreateRacePhysics(Game::FormID a_formid)
     {
         auto it = raceConfHolder.find(a_formid);
         if (it != raceConfHolder.end()) {
@@ -429,7 +496,12 @@ namespace CBP
         return (raceConfHolder[a_formid] = physicsGlobalConfig);
     }
 
-    const configComponents_t& IConfig::GetRacePhysics(Game::FormID a_formid)
+    const configComponents_t& IConfig::GetRacePhysics(Game::FormID a_formid, ConfigGender a_gender)
+    {
+        return GetRacePhysics(a_formid)(a_gender);
+    }
+    
+    const configComponentsGenderRoot_t& IConfig::GetRacePhysics(Game::FormID a_formid)
     {
         auto it = raceConfHolder.find(a_formid);
         if (it != raceConfHolder.end())
@@ -438,14 +510,24 @@ namespace CBP
         return physicsGlobalConfig;
     }
 
-    void IConfig::SetRacePhysics(Game::FormID a_handle, const configComponents_t& a_conf)
+    void IConfig::SetRacePhysics(Game::FormID a_handle, ConfigGender a_gender, const configComponents_t& a_conf)
     {
-        raceConfHolder.insert_or_assign(a_handle, a_conf);
+        raceConfHolder[a_handle](a_gender) = a_conf;
     }
 
-    void IConfig::SetRacePhysics(Game::FormID a_handle, configComponents_t&& a_conf)
+    void IConfig::SetRacePhysics(Game::FormID a_handle, ConfigGender a_gender, configComponents_t&& a_conf)
     {
-        raceConfHolder.insert_or_assign(a_handle, std::move(a_conf));
+        raceConfHolder[a_handle](a_gender) = std::move(a_conf);
+    }
+    
+    void IConfig::SetRacePhysics(Game::FormID a_handle, const configComponentsGenderRoot_t& a_conf)
+    {
+        raceConfHolder[a_handle] = a_conf;
+    }
+
+    void IConfig::SetRacePhysics(Game::FormID a_handle, configComponentsGenderRoot_t&& a_conf)
+    {
+        raceConfHolder[a_handle] = std::move(a_conf);
     }
 
     /*void IConfig::Copy(const configComponents_t& a_lhs, configComponents_t& a_rhs)
@@ -512,9 +594,9 @@ namespace CBP
         return false;
     }
 
-    static size_t PruneComponent(const configNodes_t& nodeConf, configComponents_t& e)
+    static std::size_t PruneComponent(const configNodes_t& nodeConf, configComponents_t& e)
     {
-        size_t n(0);
+        std::size_t n(0);
 
         auto& cgmap = IConfig::GetConfigGroupMap();
 
@@ -539,23 +621,26 @@ namespace CBP
         return n;
     }
 
-    size_t IConfig::PruneAll()
+    std::size_t IConfig::PruneAll()
     {
-        size_t n;
+        std::size_t n;
 
         n = PruneInactivePhysics();
         n += PruneInactiveRace();
-        n += PruneComponent(GetGlobalNode(), GetGlobalPhysics());
+        n += PruneComponent(GetGlobalNode()(ConfigGender::Male), GetGlobalPhysics()(ConfigGender::Male));
+        n += PruneComponent(GetGlobalNode()(ConfigGender::Female), GetGlobalPhysics()(ConfigGender::Female));
 
         return n;
     }
 
-    size_t IConfig::PruneActorPhysics(Game::ObjectHandle a_handle)
+    std::size_t IConfig::PruneActorPhysics(Game::ObjectHandle a_handle)
     {
-        size_t n(0);
+        std::size_t n(0);
 
-        if (a_handle == Game::ObjectHandle(0))
-            n += PruneComponent(GetGlobalNode(), GetGlobalPhysics());
+        if (a_handle == Game::ObjectHandle(0)) {
+            n += PruneComponent(GetGlobalNode()(ConfigGender::Male), GetGlobalPhysics()(ConfigGender::Male));
+            n += PruneComponent(GetGlobalNode()(ConfigGender::Female), GetGlobalPhysics()(ConfigGender::Female));
+        }
         else
         {
             auto& data = GetActorPhysicsHolder();
@@ -563,39 +648,39 @@ namespace CBP
             auto it = data.find(a_handle);
             if (it != data.end())
             {
-                auto& nodeConf = GetActorNode(a_handle);
-                n += PruneComponent(nodeConf, it->second);
+                n += PruneComponent(GetActorNode(a_handle, ConfigGender::Male), it->second(ConfigGender::Male));
+                n += PruneComponent(GetActorNode(a_handle, ConfigGender::Female), it->second(ConfigGender::Female));
             }
         }
 
         return n;
     }
 
-    size_t IConfig::PruneInactivePhysics()
+    std::size_t IConfig::PruneInactivePhysics()
     {
-        size_t n(0);
+        std::size_t n(0);
 
         auto& data = GetActorPhysicsHolder();
 
         for (auto& e : data)
         {
-            auto& nodeConf = GetActorNode(e.first);
-            n += PruneComponent(nodeConf, e.second);
+            n += PruneComponent(GetActorNode(e.first, ConfigGender::Male), e.second(ConfigGender::Male));
+            n += PruneComponent(GetActorNode(e.first, ConfigGender::Female), e.second(ConfigGender::Female));
         }
 
         return n;
     }
 
-    size_t IConfig::PruneInactiveRace()
+    std::size_t IConfig::PruneInactiveRace()
     {
-        size_t n(0);
+        std::size_t n(0);
 
         auto& data = GetRacePhysicsHolder();
 
         for (auto& e : data)
         {
-            auto& nodeConf = GetRaceNode(e.first);
-            n += PruneComponent(nodeConf, e.second);
+            n += PruneComponent(GetRaceNode(e.first, ConfigGender::Male), e.second(ConfigGender::Male));
+            n += PruneComponent(GetRaceNode(e.first, ConfigGender::Female), e.second(ConfigGender::Female));
         }
 
         return n;

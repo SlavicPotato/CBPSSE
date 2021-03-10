@@ -117,10 +117,11 @@ namespace CBP
         TriggerEvent(Event::OnRevert, static_cast<void*>(intfc));
     }
 
-    void IEvents::OnLogWrite(const char* a_buffer)
+    void IEvents::OnLogWrite(const LoggerMessageEvent& a_event)
     {
-        m_Instance.m_backLog.Add(a_buffer);
-        TriggerEvent(Event::OnLogMessage, const_cast<char*>(a_buffer));
+        m_Instance.m_backLog.Add(a_event);
+        TriggerEvent(Event::OnLogMessage, 
+            static_cast<void*>(const_cast<LoggerMessageEvent*>(std::addressof(a_event))));
     }
 }
 

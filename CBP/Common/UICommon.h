@@ -89,7 +89,7 @@ namespace UICommon
             float* a_value,
             float a_min,
             float a_max,
-            Args&& ...a_args) const;
+            Args ...a_args) const;
 
         template <typename... Args>
         bool SliderFloat3(
@@ -97,7 +97,7 @@ namespace UICommon
             float* a_value,
             float a_min,
             float a_max,
-            Args&& ...a_args) const;
+            Args ...a_args) const;
 
         template <typename... Args>
         bool SliderInt(
@@ -105,10 +105,12 @@ namespace UICommon
             int* a_value,
             int a_min,
             int a_max,
-            Args&& ...a_args) const;
+            Args ...a_args) const;
 
         template <typename... Args>
-        bool Checkbox(Args&& ...a_args) const;
+        bool Checkbox(Args... a_args) const;
+
+        bool ColorEdit4(const char* a_label, float a_col[4], ImGuiColorEditFlags a_flags = 0);
 
     private:
         virtual void OnControlValueChange() const;
@@ -120,7 +122,7 @@ namespace UICommon
         float* a_value,
         float a_min,
         float a_max,
-        Args&& ...a_args) const
+        Args ...a_args) const
     {
         bool res = ImGui::SliderFloat(
             a_label, a_value, a_min, a_max, std::forward<Args>(a_args)...);
@@ -141,14 +143,14 @@ namespace UICommon
         float* a_value,
         float a_min,
         float a_max,
-        Args&& ... a_args) const
+        Args ... a_args) const
     {
         bool res = ImGui::SliderFloat3(
             a_label, a_value, a_min, a_max, std::forward<Args>(a_args)...);
 
         if (res)
         {
-            for (uint32_t i = 0; i < 3; i++)
+            for (std::uint32_t i = 0; i < 3; i++)
                 a_value[i] = std::clamp(a_value[i], a_min, a_max);
 
             OnControlValueChange();
@@ -164,7 +166,7 @@ namespace UICommon
         int* a_value,
         int a_min,
         int a_max,
-        Args&& ...a_args) const
+        Args ...a_args) const
     {
         bool res = ImGui::SliderInt(
             a_label, a_value, a_min, a_max, std::forward<Args>(a_args)...);
@@ -180,7 +182,7 @@ namespace UICommon
     }
 
     template <typename... Args>
-    bool UIControls::Checkbox(Args&& ...a_args) const
+    bool UIControls::Checkbox(Args... a_args) const
     {
         bool res = ImGui::Checkbox(std::forward<Args>(a_args)...);
 
@@ -347,125 +349,18 @@ namespace UICommon
         SelectedItem<except::descriptor> m_lastException;
     };
 
-    enum class UIPopupType : uint32_t
+    enum class UIPopupType : std::uint32_t
     {
         Confirm,
         Input,
         Message
     };
 
-    template <class T> class UIPopupAction;
-
-    template <class T>
-    class UIPopupQueue
-    {
-    public:
-
-        typedef typename UIPopupAction<T> action_type;
-
-        void Run(float a_fontScale);
-
-        template <class... Args>
-        SKMP_FORCEINLINE decltype(auto) push(Args&&... a_v) {
-            return m_queue.emplace(std::forward<Args>(a_v)...);
-        }
-
-    private:
-        std::queue<action_type, std::deque<action_type, mem::aligned_allocator<action_type, 32>>> m_queue;
-    };
-
-    template <class T>
-    void UIPopupQueue<T>::Run(float a_fontScale)
-    {
-        if (!m_queue.empty())
-        {
-            auto& e = m_queue.front();
-
-            ImGui::PushID(static_cast<const void*>(std::addressof(e)));
-
-            if (!e.m_open)
-            {
-                ImGui::OpenPopup(e.m_key.c_str());
-                e.m_open = true;
-            }
-
-            int res;
-
-            switch (e.m_type)
-            {
-            case UIPopupType::Confirm:
-                res = ConfirmDialog2(
-                    e.m_key.c_str(),
-                    a_fontScale,
-                    e.m_buf
-                );
-                break;
-            case UIPopupType::Input:
-                res = TextInputDialog2(
-                    e.m_key.c_str(),
-                    e.m_buf,
-                    e.m_input,
-                    sizeof(e.m_input),
-                    a_fontScale
-                );
-                break;
-            case UIPopupType::Message:
-                res = MessageDialog2(
-                    e.m_key.c_str(),
-                    a_fontScale,
-                    e.m_buf
-                );
-                break;
-            }
-
-            if (res == 1)
-            {
-                if (e.m_func)
-                    e.m_func(e, e.m_data);
-
-                m_queue.pop();
-            }
-            else if (res == -1)
-            {
-                m_queue.pop();
-            }
-
-            ImGui::PopID();
-        }
-    }
-
-    class UIPopupData
-    {
-        using storage_type = typename stl::vector<boost::any>;
-
-    public:
-
-        UIPopupData(const UIPopupData& a_rhs) = default;
-        UIPopupData(UIPopupData&& a_rhs) = default;
-
-        template <typename... Args>
-        UIPopupData(Args&&... a_args) :
-            m_data{ std::forward<Args>(a_args)... }
-        {
-        }
-
-        template <typename T>
-        SKMP_FORCEINLINE T get(storage_type::size_type a_index) const
-        {
-            return boost::any_cast<T>(m_data[a_index]);
-        }
-
-    private:
-
-        storage_type m_data;
-    };
-
-    template <class T>
     class UIPopupAction
     {
-        friend class UIPopupQueue<T>;
+        friend class UIPopupQueue;
 
-        using func_type = std::function<void(const UIPopupAction<T>&, const T&)>;
+        using func_type = std::function<void(const UIPopupAction&)>;
 
     public:
         template<typename... Args>
@@ -476,23 +371,6 @@ namespace UICommon
             Args&&... a_args)
             :
             m_type(a_type),
-            m_key(a_key),
-            m_open(false),
-            m_input{ 0x0 }
-        {
-            _snprintf_s(m_buf, _TRUNCATE, a_fmt, std::forward<Args>(a_args)...);
-        }
-
-        template<typename... Args>
-        UIPopupAction(
-            UIPopupType a_type,
-            T&& a_data,
-            const char* a_key,
-            const char* a_fmt,
-            Args&&... a_args)
-            :
-            m_type(a_type),
-            m_data(std::move(a_data)),
             m_key(a_key),
             m_open(false),
             m_input{ 0x0 }
@@ -514,17 +392,38 @@ namespace UICommon
 
     private:
 
-        T m_data;
-
         bool m_open;
         std::string m_key;
 
-        char m_buf[256];
+        char m_buf[512];
         char m_input[512];
 
         UIPopupType m_type;
         func_type m_func;
 
+    };
+
+    class UIPopupQueue
+    {
+    public:
+
+        UIPopupQueue() = default;
+
+        UIPopupQueue(const UIPopupQueue&) = delete;
+        UIPopupQueue(UIPopupQueue&&) = delete;
+
+        UIPopupQueue& operator=(const UIPopupQueue&) = delete;
+        UIPopupQueue& operator=(UIPopupQueue&&) = delete;
+
+        void Run(float a_fontScale);
+
+        template <class... Args>
+        SKMP_FORCEINLINE decltype(auto) push(Args&&... a_v) {
+            return m_queue.emplace(std::forward<Args>(a_v)...);
+        }
+
+    private:
+        stl::queue<UIPopupAction> m_queue;
     };
 
     template <class T, class C>
@@ -1099,7 +998,7 @@ namespace UICommon
     }
 
     template<typename... Args>
-    bool TextInputDialog(const char* a_name, const char* a_text, char* a_buf, size_t a_size, float a_scale, Args... args)
+    bool TextInputDialog(const char* a_name, const char* a_text, char* a_buf, std::size_t a_size, float a_scale, Args... args)
     {
         bool ret = false;
 
@@ -1145,7 +1044,7 @@ namespace UICommon
     }
 
     template<typename... Args>
-    bool TextInputDialog2(const char* a_name, const char* a_text, char* a_buf, size_t a_size, float a_scale, Args... args)
+    bool TextInputDialog2(const char* a_name, const char* a_text, char* a_buf, std::size_t a_size, float a_scale, Args... args)
     {
         int ret(0);
 
@@ -1191,5 +1090,7 @@ namespace UICommon
 
         return ret;
     }
+
+
 
 }

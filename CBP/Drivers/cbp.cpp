@@ -98,7 +98,7 @@ namespace CBP
         if (!dr)
             return;
 
-        GetRenderer()->Release();
+        GetRenderer()->ReleaseGeometry();
 
         const auto& globalConf = CBP::IConfig::GetGlobal();
         SetDebugRendererEnabled(globalConf.debugRenderer.enabled);
@@ -151,7 +151,7 @@ namespace CBP
                 if (!actor)
                     return;
 
-                CALL_MEMBER_FN(actor, QueueNiNodeUpdate)(true);
+                actor->QueueNiNodeUpdate(true);
 
                 DTasks::AddTask([=, n = std::move(n)]
                     {
@@ -159,9 +159,11 @@ namespace CBP
                         if (!actor)
                             return;
 
-                        IScopedCriticalSection _(DCBP::GetLock());
+                        IScopedLock _(GetLock());
 
-                        auto& nodeConfig = CBP::IConfig::GetActorNode(a_handle);
+                        auto& nodeConfig = CBP::IConfig::GetActorNode(a_handle,
+                            Game::GetActorSex(actor) == 0 ? CBP::ConfigGender::Male : CBP::ConfigGender::Female);
+
                         auto itn = nodeConfig.find(n);
                         if (itn == nodeConfig.end())
                             return;
@@ -169,7 +171,7 @@ namespace CBP
                         if (!CBP::IBoneCast::Update(a_handle, actor, n, itn->second))
                             return;
 
-                        DCBP::GetController()->UpdateConfig(a_handle, actor);
+                        GetController()->UpdateConfig(a_handle, actor);
                     });
             });
     }
@@ -182,7 +184,7 @@ namespace CBP
                 if (!actor)
                     return;
 
-                IScopedCriticalSection _(GetLock());
+                IScopedLock _(GetLock());
 
                 CBP::IData::UpdateNodeReferenceData(actor);
             });
@@ -326,9 +328,9 @@ namespace CBP
 
         auto controller = GetController();
 
-        IScopedCriticalSection _(GetLock());
+        IScopedLock _(GetLock());
 
-        if (CBP::IConfig::GetGlobal().debugRenderer.enabled)
+        if (IConfig::GetGlobal().debugRenderer.enabled)
             controller->UpdateDebugRenderer();
 
         controller->PhysicsTick(a_main, *Game::frameTimerSlow);
@@ -342,8 +344,8 @@ namespace CBP
 
         m_Instance.mainLoopUpdateFunc_o(a_main);
 
-        if (CBP::IConfig::GetGlobal().debugRenderer.enabled) {
-            IScopedCriticalSection _(GetLock());
+        if (IConfig::GetGlobal().debugRenderer.enabled) {
+            IScopedLock _(GetLock());
             controller->UpdateDebugRenderer();
         }
     }
@@ -522,7 +524,7 @@ namespace CBP
     {
         auto info = static_cast<D3D11CreateEventPost*>(data);
 
-        IScopedCriticalSection _(GetLock());
+        IScopedLock _(GetLock());
 
         if (m_Instance.m_conf.debug_renderer)
         {
@@ -543,7 +545,7 @@ namespace CBP
         if (Game::InPausedMenu())
             return;
 
-        IScopedCriticalSection _(GetLock());
+        IScopedLock _(GetLock());
 
         auto& globalConf = CBP::IConfig::GetGlobal();
 
@@ -568,7 +570,7 @@ namespace CBP
     {
         m_Instance.Debug("Shutting down");
 
-        IScopedCriticalSection _(GetLock());
+        IScopedLock _(GetLock());
 
         SavePending();
 
@@ -659,7 +661,7 @@ namespace CBP
         break;
         case SKSEMessagingInterface::kMessage_NewGame:
         {
-            IScopedCriticalSection _(GetLock());
+            IScopedLock _(GetLock());
             GetController()->ResetInstructionQueue();
         }
         ResetActors();
@@ -682,7 +684,7 @@ namespace CBP
             m_Instance.Debug("%s [%.4s]: RacePhysics: %zu record(s), %fs", __FUNCTION__, &a_type, a_stats.racePhysics.num, a_stats.racePhysics.time);
 
         if (a_stats.raceNode.num > 0)
-            m_Instance.Debug("%s [%.4s]: RacePhysics: %zu record(s), %fs", __FUNCTION__, &a_type, a_stats.raceNode.num, a_stats.raceNode.time);
+            m_Instance.Debug("%s [%.4s]: RaceNode: %zu record(s), %fs", __FUNCTION__, &a_type, a_stats.raceNode.num, a_stats.raceNode.time);
     }
 
     template <typename T>
@@ -761,42 +763,40 @@ namespace CBP
         return true;
     }
 
-    void DCBP::LoadGameHandler(SKSESerializationInterface* intfc, UInt32, UInt32, UInt32 version)
+    void DCBP::LoadGameHandler(SKSESerializationInterface* a_intfc, UInt32, UInt32, UInt32 a_version)
     {
         PerfTimer pt;
         pt.Start();
 
         UInt32 type, length, currentVersion;
 
-        Lock();
-
-        if (version == kDataVersion2)
         {
-            while (intfc->GetNextRecordInfo(&type, &currentVersion, &length))
-            {
-                if (!length)
-                    continue;
+            IScopedLock _(GetLock());
 
-                switch (type) {
-                case 'EPBC':
-                    LoadRecord(intfc, type, true, &CBP::ISerialization::BinSerializeLoad);
-                    break;
-                default:
-                    m_Instance.Warning("Unknown record '%.4s'", &type);
-                    break;
+            if (a_version == kDataVersion2)
+            {
+                if (a_intfc->GetNextRecordInfo(&type, &currentVersion, &length))
+                {
+                    if (length)
+                    {
+                        if (type == 'EPBC') {
+                            m_Instance.LoadRecord(a_intfc, type, true, &CBP::ISerialization::BinSerializeLoad);
+                        }
+                        else {
+                            m_Instance.Warning("Unknown record '%.4s'", &type);
+                        }
+                    }
                 }
             }
+            else {
+                m_Instance.Error("Unrecognized data version: %u", a_version);
+            }
+
+            GetProfiler().Reset();
+            QueueUIReset();
+
+            GetController()->ResetInstructionQueue();
         }
-        else {
-            m_Instance.Error("Unrecognized data version: %u", version);
-        }
-
-        GetProfiler().Reset();
-        QueueUIReset();
-
-        GetController()->ResetInstructionQueue();
-
-        Unlock();
 
         m_Instance.Debug("%s: %f", __FUNCTION__, pt.Stop());
 
@@ -881,7 +881,7 @@ namespace CBP
         auto intfc = static_cast<SKSESerializationInterface*>(args);
         auto& iface = GetSerializationInterface();
 
-        IScopedCriticalSection _(GetLock());
+        IScopedLock _(GetLock());
 
         SavePending();
 
@@ -894,7 +894,7 @@ namespace CBP
     {
         m_Instance.Debug("Reverting..");
 
-        IScopedCriticalSection _(GetLock());
+        IScopedLock _(GetLock());
 
         GetController()->ClearActors(false, true);
 
@@ -923,8 +923,9 @@ namespace CBP
         }
 
         auto dr = GetRenderer();
-        if (dr)
-            dr->Release();
+        if (dr) {
+            dr->ReleaseGeometry();
+        }
 
         QueueUIReset();
 
@@ -933,7 +934,7 @@ namespace CBP
 
     bool DCBP::ProcessUICallbackImpl()
     {
-        IScopedCriticalSection _(GetLock());
+        IScopedLock _(GetLock());
 
         auto& io = ImGui::GetIO();
 
@@ -1018,7 +1019,7 @@ namespace CBP
         if (Game::InPausedMenu())
             return;
 
-        IScopedCriticalSection _(GetLock());
+        IScopedLock _(GetLock());
 
         auto& globalConfig = CBP::IConfig::GetGlobal();
         globalConfig.debugRenderer.enabled = !globalConfig.debugRenderer.enabled;
@@ -1044,7 +1045,7 @@ namespace CBP
     auto DCBP::ToggleUITask::Toggle() ->
         ToggleResult
     {
-        IScopedCriticalSection _(DCBP::GetLock());
+        IScopedLock _(DCBP::GetLock());
 
         if (m_Instance.m_uiState.show) {
             m_Instance.m_uiState.show = false;
@@ -1064,7 +1065,7 @@ namespace CBP
 
     void DCBP::UpdateActorCacheTask::Run()
     {
-        IScopedCriticalSection _(GetLock());
+        IScopedLock _(GetLock());
         CBP::IData::UpdateActorCache(GetSimActorList());
     }
 

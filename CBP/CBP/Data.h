@@ -5,7 +5,7 @@ namespace CBP
     class SimObject;
     struct nodeRefEntry_t;
 
-    typedef vectormap<Game::ObjectHandle, SimObject> simActorList_t;
+    typedef stl::vectormap<Game::ObjectHandle, SimObject> simActorList_t;
 
     struct raceCacheEntry_t
     {
@@ -121,7 +121,7 @@ namespace CBP
             return actorCacheUpdateId;
         }
 
-        [[nodiscard]] SKMP_FORCEINLINE static auto GetCrosshairRef() {
+        [[nodiscard]] SKMP_FORCEINLINE static auto &GetCrosshairRef() {
             return crosshairRef;
         }
 

@@ -6,7 +6,7 @@ namespace CBP
     template <class T, UIEditorID ID>
     class UISimComponent :
         virtual protected UIBase,
-        protected UINodeConfGroupMenu<T, ID>,
+        public UINodeConfGroupMenu<T, ID>,
         UIMainItemFilter<ID>
     {
     public:
@@ -34,6 +34,13 @@ namespace CBP
         ) = 0;
 
         virtual void OnColliderShapeChange(
+            T a_handle,
+            configComponents_t& a_data,
+            configComponentsValue_t& a_pair,
+            const componentValueDescMap_t::vec_value_type& a_desc
+        ) = 0;
+        
+        virtual void OnMotionConstraintChange(
             T a_handle,
             configComponents_t& a_data,
             configComponentsValue_t& a_pair,
@@ -86,7 +93,7 @@ namespace CBP
             m_eraseCurrent = true;
         }
 
-        void DoOnChangePropagation(
+        void DoSimSliderOnChangePropagation(
             configComponents_t& a_data,
             configComponents_t* a_dg,
             configComponentsValue_t& a_pair,
@@ -94,6 +101,18 @@ namespace CBP
             float* a_val,
             bool a_sync,
             float a_mval = 0.0f) const;
+        
+        void DoColliderShapeOnChangePropagation(
+            configComponents_t& a_data,
+            configComponents_t* a_dg,
+            configComponentsValue_t& a_pair,
+            const componentValueDescMap_t::vec_value_type& a_desc) const;
+        
+        void DoMotionConstraintOnChangePropagation(
+            configComponents_t& a_data,
+            configComponents_t* a_dg,
+            configComponentsValue_t& a_pair,
+            const componentValueDescMap_t::vec_value_type& a_desc) const;
 
     private:
 
@@ -163,15 +182,25 @@ namespace CBP
             const armorCacheEntry_t::mapped_type* a_cacheEntry,
             bool a_scalar);
 
-        SKMP_FORCEINLINE void DrawColliderShapeCombo(
+        void DrawColliderShapeCombo(
             T a_handle,
             configComponents_t& a_data,
             configComponentsValue_t& a_pair,
             const componentValueDescMap_t::vec_value_type& a_entry,
             const nodeConfigList_t& a_nodeList);
+        
+        void DrawMotionConstraintSelectors(
+            T a_handle,
+            configComponents_t& a_data,
+            configComponentsValue_t& a_pair,
+            const componentValueDescMap_t::vec_value_type& a_entry);
 
         char m_scBuffer1[64 + std::numeric_limits<float>::digits];
         bool m_eraseCurrent;
+
+        std::string m_cscStr;
+        std::string m_csStr;
+
     };
 
 }

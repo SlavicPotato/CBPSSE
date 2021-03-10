@@ -12,13 +12,17 @@
 
 namespace CBP
 {
+    class UIContext;
+
     class UIProfileEditorPhysics :
         public UICommon::UIProfileEditorBase<PhysicsProfile>,
         UISimComponent<int, UIEditorID::kProfileEditorPhys>
     {
     public:
-        UIProfileEditorPhysics(const char* a_name) :
-            UICommon::UIProfileEditorBase<PhysicsProfile>(a_name) {}
+        UIProfileEditorPhysics(UIContext &a_parent, const char* a_name) :
+            UICommon::UIProfileEditorBase<PhysicsProfile>(a_name),
+            m_ctxParent(a_parent)
+        {}
     private:
 
         virtual ProfileManager<PhysicsProfile>& GetProfileManager() const;
@@ -28,52 +32,61 @@ namespace CBP
 
         void DrawGroupOptions(
             int,
-            PhysicsProfile::base_type& a_data,
+            PhysicsProfile::base_type::config_type& a_data,
             PhysicsProfile::base_type::value_type& a_pair,
             nodeConfigList_t& a_nodeConfig);
 
         virtual void OnSimSliderChange(
             int,
-            PhysicsProfile::base_type& a_data,
+            PhysicsProfile::base_type::config_type& a_data,
             PhysicsProfile::base_type::value_type& a_pair,
             const componentValueDescMap_t::vec_value_type& a_desc,
-            float* a_val);
+            float* a_val) override;
 
         virtual void OnColliderShapeChange(
-            int a_handle,
-            PhysicsProfile::base_type& a_data,
+            int,
+            PhysicsProfile::base_type::config_type& a_data,
             PhysicsProfile::base_type::value_type& a_pair,
             const componentValueDescMap_t::vec_value_type& a_desc
-        );
+        ) override;
+
+        virtual void OnMotionConstraintChange(
+            int,
+            PhysicsProfile::base_type::config_type&,
+            PhysicsProfile::base_type::value_type&,
+            const componentValueDescMap_t::vec_value_type&) override;
 
         virtual void OnComponentUpdate(
-            int a_handle,
-            PhysicsProfile::base_type& a_data,
-            PhysicsProfile::base_type::value_type& a_pair);
+            int,
+            PhysicsProfile::base_type::config_type& a_data,
+            PhysicsProfile::base_type::value_type& a_pair) override;
 
         virtual bool GetNodeConfig(
             const configNodes_t& a_nodeConf,
             const configGroupMap_t::value_type& cg_data,
-            nodeConfigList_t& a_out) const;
+            nodeConfigList_t& a_out) const override;
 
-        virtual const configNodes_t& GetNodeData(
-            int a_handle) const;
+        virtual const configNodes_t& GetNodeData(int) const override;
 
         virtual bool ShouldDrawComponent(
-            int a_handle,
-            PhysicsProfile::base_type& a_data,
+            int,
+            PhysicsProfile::base_type::config_type& a_data,
             const configGroupMap_t::value_type& a_cgdata,
-            const nodeConfigList_t& a_nodeConfig) const;
+            const nodeConfigList_t& a_nodeConfig) const override;
 
         virtual void UpdateNodeData(
-            int a_handle,
+            int,
             const std::string& a_node,
             const configNode_t& a_data,
-            bool a_reset);
+            bool a_reset) override;
 
-        virtual configGlobalSimComponent_t& GetSimComponentConfig() const;
+        virtual configGlobalSimComponent_t& GetSimComponentConfig() const override;
+        virtual configGlobalCommon_t& GetGlobalCommonConfig() const override;
+        virtual UICommon::UIPopupQueue& GetPopupQueue() const override;
 
         //UISelectedItem<std::string> m_selectedConfGroup;
+
+        UIContext& m_ctxParent;
     };
 
     class UIProfileEditorNode :
@@ -81,8 +94,11 @@ namespace CBP
         UINode<int, UIEditorID::kProfileEditorNode>
     {
     public:
-        UIProfileEditorNode(const char* a_name) :
-            UICommon::UIProfileEditorBase<NodeProfile>(a_name) {}
+        UIProfileEditorNode(UIContext& a_parent, const char* a_name) :
+            UICommon::UIProfileEditorBase<NodeProfile>(a_name),
+            m_ctxParent(a_parent)
+        {}
+
     private:
 
         virtual ProfileManager<NodeProfile>& GetProfileManager() const;
@@ -93,6 +109,14 @@ namespace CBP
             const std::string& a_node,
             const NodeProfile::base_type::mapped_type& a_data,
             bool a_reset);
+
+
+        virtual void DrawOptions(NodeProfile& a_profile) override;
+
+        virtual configGlobalCommon_t& GetGlobalCommonConfig() const override;
+        virtual UICommon::UIPopupQueue& GetPopupQueue() const override;
+
+        UIContext& m_ctxParent;
     };
 
     class UIOptions :
@@ -126,7 +150,7 @@ namespace CBP
         UINode<Game::ObjectHandle, UIEditorID::kNodeEditor>
     {
     public:
-        UIActorEditorNode() noexcept;
+        UIActorEditorNode(UIContext& a_parent) noexcept;
 
         void Draw(bool* a_active);
         void Reset();
@@ -143,7 +167,7 @@ namespace CBP
             const configNode_t& a_data,
             bool a_reset);
 
-        virtual void DrawBoneCastSample(
+        virtual void DrawBoneCastButtons(
             Game::ObjectHandle a_handle,
             const std::string& a_nodeName,
             configNode_t& a_conf);
@@ -151,15 +175,22 @@ namespace CBP
         [[nodiscard]] virtual ConfigClass GetActorClass(Game::ObjectHandle a_handle) const;
         [[nodiscard]] virtual configGlobalActor_t& GetActorConfig() const;
         [[nodiscard]] virtual bool HasArmorOverride(Game::ObjectHandle a_handle) const;
+
+        virtual configGlobalCommon_t& GetGlobalCommonConfig() const override;
+        virtual UICommon::UIPopupQueue& GetPopupQueue() const override;
+
+        void OnListChangeCurrentItem(const SelectedItem<Game::ObjectHandle>& a_oldHandle, Game::ObjectHandle a_newHandle) override;
+
+        UIContext& m_ctxParent;
     };
 
     
     class UIRaceEditorNode :
         public UIRaceEditorBase<raceListNodeConf_t, NodeProfile>,
-        UINode<Game::FormID, UIEditorID::kRaceNodeEditor>
+        public UINode<Game::FormID, UIEditorID::kRaceNodeEditor>
     {
     public:
-        UIRaceEditorNode() noexcept;
+        UIRaceEditorNode(UIContext &a_parent) noexcept;
 
         void Draw(bool* a_active);
 
@@ -178,79 +209,96 @@ namespace CBP
             const std::string& a_node,
             const configNode_t& a_data,
             bool a_reset);
+
+        virtual configGlobalCommon_t& GetGlobalCommonConfig() const override;
+
+        virtual UICommon::UIPopupQueue& GetPopupQueue() const override;
+
+        UIContext& m_ctxParent;
     };
 
     class UIRaceEditorPhysics :
         public UIRaceEditorBase<raceListPhysConf_t, PhysicsProfile>,
-        UISimComponent<Game::FormID, UIEditorID::kRacePhysicsEditor>
+        public UISimComponent<Game::FormID, UIEditorID::kRacePhysicsEditor>
     {
     public:
-        UIRaceEditorPhysics() noexcept;
+        UIRaceEditorPhysics(UIContext &a_parent) noexcept;
 
         void Draw(bool* a_active);
     private:
 
         virtual void ApplyProfile(listValue_t* a_data, const PhysicsProfile& a_profile);
-        [[nodiscard]] virtual const entryValue_t& GetData(Game::FormID a_formid);
-        [[nodiscard]] virtual const entryValue_t& GetData(const listValue_t* a_entry);
+        [[nodiscard]] virtual const entryValue_t& GetData(Game::FormID a_formid) override;
+        [[nodiscard]] virtual const entryValue_t& GetData(const listValue_t* a_entry) override;
 
-        [[nodiscard]] virtual configGlobalRace_t& GetRaceConfig() const;
+        [[nodiscard]] virtual configGlobalRace_t& GetRaceConfig() const override;
 
         virtual void ListResetAllValues(Game::FormID a_formid);
 
         virtual void DrawConfGroupNodeMenu(
             Game::FormID a_handle,
             nodeConfigList_t& a_nodeList
-        );
+        ) override;
 
         virtual void OnSimSliderChange(
             Game::FormID a_formid,
             configComponents_t& a_data,
             configComponentsValue_t& a_pair,
             const componentValueDescMap_t::vec_value_type& a_desc,
-            float* a_val);
+            float* a_val) override;
 
         virtual void OnColliderShapeChange(
             Game::FormID a_formid,
             configComponents_t& a_data,
             configComponentsValue_t& a_pair,
-            const componentValueDescMap_t::vec_value_type& a_desc);
+            const componentValueDescMap_t::vec_value_type& a_desc) override;
+
+        virtual void OnMotionConstraintChange(
+            Game::FormID a_handle,
+            configComponents_t& a_data,
+            configComponentsValue_t& a_pair,
+            const componentValueDescMap_t::vec_value_type& a_desc
+        ) override;
 
         virtual void OnComponentUpdate(
             Game::FormID a_formid,
             configComponents_t& a_data,
-            configComponentsValue_t& a_pair);
+            configComponentsValue_t& a_pair) override;
 
         virtual bool GetNodeConfig(
             const configNodes_t& a_nodeConf,
             const configGroupMap_t::value_type& cg_data,
-            nodeConfigList_t& a_out) const;
+            nodeConfigList_t& a_out) const override;
 
         virtual const configNodes_t& GetNodeData(
-            Game::FormID a_handle) const;
+            Game::FormID a_handle) const override;
 
         virtual void UpdateNodeData(
             Game::FormID a_handle,
             const std::string& a_node,
             const configNode_t& a_data,
-            bool a_reset);
+            bool a_reset) override;
 
         virtual bool ShouldDrawComponent(
             Game::FormID a_handle,
             configComponents_t& a_data,
             const configGroupMap_t::value_type& a_cgdata,
-            const nodeConfigList_t& a_nodeConfig) const;
+            const nodeConfigList_t& a_nodeConfig) const override;
 
         virtual bool HasMotion(
-            const nodeConfigList_t& a_nodeConfig) const;
+            const nodeConfigList_t& a_nodeConfig) const override;
 
         virtual bool HasCollisions(
-            const nodeConfigList_t& a_nodeConfig) const;
+            const nodeConfigList_t& a_nodeConfig) const override;
 
-        virtual configGlobalSimComponent_t& GetSimComponentConfig() const;
+        virtual configGlobalSimComponent_t& GetSimComponentConfig() const override;
+        virtual configGlobalCommon_t& GetGlobalCommonConfig() const override;
 
-        virtual const PhysicsProfile* GetSelectedProfile() const;
+        virtual const PhysicsProfile* GetSelectedProfile() const override;
 
+        virtual UICommon::UIPopupQueue& GetPopupQueue() const override;
+
+        UIContext& m_ctxParent;
     };
 
     class UIPlot
@@ -260,7 +308,7 @@ namespace CBP
             const char* a_label,
             const ImVec2& a_size,
             bool a_avg,
-            uint32_t a_res);
+            int a_res);
 
         void Update(float a_value);
         void Draw();
@@ -289,25 +337,6 @@ namespace CBP
         UIBase
     {
 
-        /*struct VMemInfo
-        {
-            VMemInfo() : m_has(false) {}
-
-            SKMP_FORCEINLINE bool Has() const {
-                return m_has;
-            }
-
-            SKMP_FORCEINLINE const auto& Get() const {
-                return m_data;
-            }
-
-            void Query();
-
-        private:
-            DXGI_QUERY_VIDEO_MEMORY_INFO m_data;
-            bool m_has;
-        };*/
-
     public:
         UIProfiling();
 
@@ -315,14 +344,12 @@ namespace CBP
 
         void Draw(bool* a_active);
     private:
-        uint32_t m_lastUID;
+        std::uint32_t m_lastUID;
 
         UIPlot m_plotUpdateTime;
         UIPlot m_plotFramerate;
 
         long long m_lastVMIUpdate;
-
-        //VMemInfo m_vMemInfo;
     };
 
 #ifdef _CBP_ENABLE_DEBUG
@@ -424,7 +451,7 @@ namespace CBP
 
     private:
         bool m_doScrollBottom;
-        int8_t m_initialScroll;
+        std::int8_t m_initialScroll;
     };
 
     class UINodeMap :
@@ -449,18 +476,18 @@ namespace CBP
         void AddNodeNew();
         void RemoveNode(const std::string& a_node);
 
-        virtual ConfigClass GetActorClass(Game::ObjectHandle a_handle) const;
-        virtual configGlobalActor_t& GetActorConfig() const;
-        virtual bool HasArmorOverride(Game::ObjectHandle a_handle) const;
+        virtual ConfigClass GetActorClass(Game::ObjectHandle a_handle) const override;
+        virtual configGlobalActor_t& GetActorConfig() const override;
+        virtual bool HasArmorOverride(Game::ObjectHandle a_handle) const override;
 
-        [[nodiscard]] virtual const entryValue_t& GetData(Game::ObjectHandle a_handle);
-        [[nodiscard]] virtual const entryValue_t& GetData(const listValue_t* a_data);
+        [[nodiscard]] virtual const entryValue_t& GetData(Game::ObjectHandle a_handle) override;
+        [[nodiscard]] virtual const entryValue_t& GetData(const listValue_t* a_data) override;
 
-        virtual void ListResetAllValues(Game::ObjectHandle a_handle);
+        virtual void ListResetAllValues(Game::ObjectHandle a_handle) override;
 
-        virtual void ListUpdate();
-        virtual listValue_t* ListGetSelected();
-        virtual void ListSetCurrentItem(Game::ObjectHandle a_handle);
+        virtual void ListUpdate() override;
+        virtual listValue_t* ListGetSelected() override;
+        virtual void ListSetCurrentItem(Game::ObjectHandle a_handle) override;
 
         [[nodiscard]] SKMP_FORCEINLINE std::string GetCSID(
             const std::string& a_name) const
@@ -507,12 +534,12 @@ namespace CBP
         void RemoveGroup(const std::string& a_path, const std::string& a_group);
         void DoSave(const entry_type& a_entry);
 
-        static const char* OverrideModeToDesc(uint32_t a_mode);
+        static const char* OverrideModeToDesc(std::uint32_t a_mode);
 
         SelectedItem<armorOverrideResults_t> m_currentOverrides;
         SelectedItem<entry_type> m_currentEntry;
 
-        UICommon::UIPopupQueue<UICommon::UIPopupData> m_popupPostGroup;
+        UICommon::UIPopupQueue m_popupPostGroup;
 
         UIContext& m_parent;
     };
@@ -530,72 +557,80 @@ namespace CBP
         public:
             UISimComponentActor(UIContext& a_parent);
 
+            virtual configGlobalCommon_t& GetGlobalCommonConfig() const override;
         private:
             virtual void DrawConfGroupNodeMenu(
                 Game::ObjectHandle a_handle,
                 nodeConfigList_t& a_nodeList
-            );
+            ) override;
 
             virtual void OnSimSliderChange(
                 Game::ObjectHandle a_handle,
                 configComponents_t& a_data,
                 configComponentsValue_t& a_pair,
                 const componentValueDescMap_t::vec_value_type& a_desc,
-                float* a_val);
+                float* a_val) override;
 
             virtual void OnColliderShapeChange(
                 Game::ObjectHandle a_handle,
                 configComponents_t& a_data,
                 configComponentsValue_t& a_pair,
                 const componentValueDescMap_t::vec_value_type& a_desc
-            );
+            ) override;
+
+            virtual void OnMotionConstraintChange(
+                Game::ObjectHandle a_handle,
+                configComponents_t& a_data,
+                configComponentsValue_t& a_pair,
+                const componentValueDescMap_t::vec_value_type& a_desc) override;
 
             virtual void OnComponentUpdate(
                 Game::ObjectHandle a_handle,
                 configComponents_t& a_data,
-                configComponentsValue_t& a_pair);
+                configComponentsValue_t& a_pair) override;
 
             virtual bool ShouldDrawComponent(
                 Game::ObjectHandle a_handle,
                 configComponents_t& a_data,
                 const configGroupMap_t::value_type& a_cgdata,
-                const nodeConfigList_t& a_nodeConfig) const;
+                const nodeConfigList_t& a_nodeConfig) const override;
 
             virtual bool HasMotion(
-                const nodeConfigList_t& a_nodeConfig) const;
+                const nodeConfigList_t& a_nodeConfig) const override;
 
             virtual bool HasCollisions(
-                const nodeConfigList_t& a_nodeConfig) const;
+                const nodeConfigList_t& a_nodeConfig) const override;
             
             virtual bool HasBoneCast(
-                const nodeConfigList_t& a_nodeConfig) const;
+                const nodeConfigList_t& a_nodeConfig) const override;
 
             virtual const armorCacheEntry_t::mapped_type* GetArmorOverrideSection(
                 Game::ObjectHandle a_handle,
-                const std::string& a_comp) const;
+                const std::string& a_comp) const override;
 
             virtual bool GetNodeConfig(
                 const configNodes_t& a_nodeConf,
                 const configGroupMap_t::value_type& cg_data,
-                nodeConfigList_t& a_out) const;
+                nodeConfigList_t& a_out) const override;
 
             virtual const configNodes_t& GetNodeData(
-                Game::ObjectHandle a_handle) const;
+                Game::ObjectHandle a_handle) const override;
 
             virtual void UpdateNodeData(
                 Game::ObjectHandle a_handle,
                 const std::string& a_node,
                 const configNode_t& a_data,
-                bool a_reset);
+                bool a_reset) override;
 
-            virtual void DrawBoneCastSample(
+            virtual void DrawBoneCastButtons(
                 Game::ObjectHandle a_handle,
                 const std::string& a_nodeName,
-                configNode_t& a_conf);
+                configNode_t& a_conf) override;
 
-            virtual configGlobalSimComponent_t& GetSimComponentConfig() const;
+            virtual configGlobalSimComponent_t& GetSimComponentConfig() const override;
 
-            virtual const PhysicsProfile* GetSelectedProfile() const;
+            virtual const PhysicsProfile* GetSelectedProfile() const override;
+            virtual UICommon::UIPopupQueue& GetPopupQueue() const override;
 
             UIContext& m_ctxParent;
         };
@@ -606,78 +641,87 @@ namespace CBP
         public:
             UISimComponentGlobal(UIContext& a_parent);
 
+            virtual configGlobalCommon_t& GetGlobalCommonConfig() const override;
+
         private:
             virtual void DrawConfGroupNodeMenu(
                 Game::ObjectHandle a_handle,
                 nodeConfigList_t& a_nodeList
-            );
+            ) override;
 
             virtual void OnSimSliderChange(
                 Game::ObjectHandle a_handle,
                 configComponents_t& a_data,
                 configComponentsValue_t& a_pair,
                 const componentValueDescMap_t::vec_value_type& a_desc,
-                float* a_val);
+                float* a_val) override;
 
             virtual void OnColliderShapeChange(
                 Game::ObjectHandle a_handle,
                 configComponents_t& a_data,
                 configComponentsValue_t& a_pair,
                 const componentValueDescMap_t::vec_value_type& a_desc
-            );
+            ) override;
+
+            virtual void OnMotionConstraintChange(
+                Game::ObjectHandle a_handle,
+                configComponents_t& a_data,
+                configComponentsValue_t& a_pair,
+                const componentValueDescMap_t::vec_value_type& a_desc) override;
 
             virtual void OnComponentUpdate(
                 Game::ObjectHandle a_handle,
                 configComponents_t& a_data,
-                configComponentsValue_t& a_pair);
+                configComponentsValue_t& a_pair) override;
 
             virtual bool ShouldDrawComponent(
                 Game::ObjectHandle a_handle,
                 configComponents_t& a_data,
                 const configGroupMap_t::value_type& a_cgdata,
-                const nodeConfigList_t& a_nodeConfig) const;
+                const nodeConfigList_t& a_nodeConfig) const override;
 
             virtual bool HasMotion(
-                const nodeConfigList_t& a_nodeConfig) const;
+                const nodeConfigList_t& a_nodeConfig) const override;
 
             virtual bool HasCollisions(
-                const nodeConfigList_t& a_nodeConfig) const;
+                const nodeConfigList_t& a_nodeConfig) const override;
 
             virtual bool GetNodeConfig(
                 const configNodes_t& a_nodeConf,
                 const configGroupMap_t::value_type& cg_data,
-                nodeConfigList_t& a_out) const;
+                nodeConfigList_t& a_out) const override;
 
             virtual const configNodes_t& GetNodeData(
-                Game::ObjectHandle a_handle) const;
+                Game::ObjectHandle a_handle) const override;
 
             virtual void UpdateNodeData(
                 Game::ObjectHandle a_handle,
                 const std::string& a_node,
                 const configNode_t& a_data,
-                bool a_reset);
+                bool a_reset) override;
 
-            virtual configGlobalSimComponent_t& GetSimComponentConfig() const;
+            virtual configGlobalSimComponent_t& GetSimComponentConfig() const override;
 
-            virtual const PhysicsProfile* GetSelectedProfile() const;
+            virtual const PhysicsProfile* GetSelectedProfile() const override;
+            virtual UICommon::UIPopupQueue& GetPopupQueue() const override;
 
             UIContext& m_ctxParent;
         };
 
     public:
-        SKMP_DECLARE_ALIGNED_ALLOCATOR(32);
+        SKMP_DECLARE_ALIGNED_ALLOCATOR_AUTO();
 
         UIContext() noexcept;
         virtual ~UIContext() noexcept = default;
 
         void Initialize();
 
-        void Reset(uint32_t a_loadInstance);
+        void Reset(std::uint32_t a_loadInstance);
         void Draw(bool* a_active);
 
         void QueueListUpdateAll();
 
-        [[nodiscard]] SKMP_FORCEINLINE uint32_t GetLoadInstance() const noexcept {
+        [[nodiscard]] SKMP_FORCEINLINE std::uint32_t GetLoadInstance() const noexcept {
             return m_activeLoadInstance;
         }
 
@@ -693,24 +737,26 @@ namespace CBP
 
         void DrawMenuBar(bool* a_active, const listValue_t * a_entry);
 
-        virtual void ApplyProfile(listValue_t * a_data, const PhysicsProfile & m_peComponents);
+        virtual void ApplyProfile(listValue_t * a_data, const PhysicsProfile & m_peComponents) override;
 
         virtual void ApplyForce(
             listValue_t * a_data,
-            uint32_t a_steps,
+            std::uint32_t a_steps,
             const std::string & a_component,
-            const NiPoint3 & a_force) const;
+            const NiPoint3 & a_force) const override;
 
-        virtual void ListResetAllValues(Game::ObjectHandle a_handle);
+        virtual void ListResetAllValues(Game::ObjectHandle a_handle) override;
 
-        [[nodiscard]] virtual const entryValue_t& GetData(Game::ObjectHandle a_handle);
-        [[nodiscard]] virtual const entryValue_t& GetData(const listValue_t * a_data);
+        [[nodiscard]] virtual const entryValue_t& GetData(Game::ObjectHandle a_handle) override;
+        [[nodiscard]] virtual const entryValue_t& GetData(const listValue_t * a_data) override;
 
-        [[nodiscard]] virtual ConfigClass GetActorClass(Game::ObjectHandle a_handle) const;
-        [[nodiscard]] virtual configGlobalActor_t& GetActorConfig() const;
-        [[nodiscard]] virtual bool HasArmorOverride(Game::ObjectHandle a_handle) const;
+        [[nodiscard]] virtual ConfigClass GetActorClass(Game::ObjectHandle a_handle) const override;
+        [[nodiscard]] virtual configGlobalActor_t& GetActorConfig() const override;
+        [[nodiscard]] virtual bool HasArmorOverride(Game::ObjectHandle a_handle) const override;
 
-        uint32_t m_activeLoadInstance;
+        void OnListChangeCurrentItem(const SelectedItem<Game::ObjectHandle> &a_oldHandle, Game::ObjectHandle a_newHandle) override;
+
+        std::uint32_t m_activeLoadInstance;
         long long m_tsNoActors;
 
         struct {
@@ -721,7 +767,7 @@ namespace CBP
                 bool race;
                 bool raceNode;
                 bool collisionGroups;
-                bool nodeConf;
+                bool actorNode;
                 bool profiling;
                 bool debug;
                 bool log;
@@ -738,7 +784,7 @@ namespace CBP
             except::descriptor lastException;
         } m_state;
 
-        UICommon::UIPopupQueue<UICommon::UIPopupData> m_popup;
+        UICommon::UIPopupQueue m_popup;
 
         UIProfileEditorPhysics m_pePhysics;
         UIProfileEditorNode m_peNodes;

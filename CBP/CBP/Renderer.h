@@ -33,19 +33,18 @@ namespace CBP
         static const D3D11_INPUT_ELEMENT_DESC InputElements[InputElementCount];
     };
 
-
     class SKMP_ALIGN(32) Renderer : 
         public btIDebugDraw
     {
         using VertexType = VertexPositionColorAV;
 
-        struct SKMP_ALIGN(32) ItemLine
+        struct SKMP_ALIGN_AUTO ItemLine
         {
             VertexType v0;
             VertexType v1;
         };
 
-        struct SKMP_ALIGN(32) ItemTri
+        struct SKMP_ALIGN_AUTO ItemTri
         {
             VertexType v0;
             VertexType v1;
@@ -55,7 +54,7 @@ namespace CBP
         int m_debugMode;
 
     public:
-        SKMP_DECLARE_ALIGNED_ALLOCATOR(32)
+        SKMP_DECLARE_ALIGNED_ALLOCATOR_AUTO()
 
         Renderer(
             ID3D11Device* a_pDevice,
@@ -65,10 +64,10 @@ namespace CBP
 
         void Draw();
         void GenerateMovingNodes(const simActorList_t& a_actorList, float a_radius, bool a_moving, bool a_centerOfGravity, Game::ObjectHandle a_markedHandle);
-        void GenerateMovementConstraints(const simActorList_t& a_actorList, float a_radius);
+        void GenerateMotionConstraints(const simActorList_t& a_actorList, float a_radius);
 
         void Clear();
-        void Release();
+        void ReleaseGeometry();
 
         SKMP_FORCEINLINE void SetContactPointSphereRadius(btScalar a_val) {
             m_contactPointSphereRadius = a_val;
@@ -79,8 +78,8 @@ namespace CBP
         }
         
     private:
-        static constexpr int NB_SECTORS_SPHERE = 9;
-        static constexpr int NB_STACKS_SPHERE = 5;
+        static inline constexpr int NB_SECTORS_SPHERE = 9;
+        static inline constexpr int NB_STACKS_SPHERE = 5;
 
         std::unique_ptr<DirectX::BasicEffect> m_effect;
         std::unique_ptr<DirectX::CommonStates> m_states;
@@ -99,8 +98,8 @@ namespace CBP
 
         void GenerateSphere(const btVector3& a_pos, float a_radius, const DirectX::XMVECTOR& a_col);
 
-        SKMP_NOINLINE void FillScreenPt(VertexType& a_out, const btVector3& a_col);
-        SKMP_NOINLINE void FillScreenPt(VertexType& a_out, const DirectX::XMVECTOR& a_col);
+        SKMP_FORCEINLINE void FillScreenPt(VertexType& a_out, const btVector3& a_col);
+        SKMP_FORCEINLINE void FillScreenPt(VertexType& a_out, const DirectX::XMVECTOR& a_col);
 
         SKMP_FORCEINLINE bool GetScreenPt(const btVector3& a_pos, VertexType& a_out);
 
@@ -114,11 +113,14 @@ namespace CBP
         virtual void drawLine(const btVector3& from, const btVector3& to, const btVector3& color) override;
         virtual void drawTriangle(const btVector3& v0, const btVector3& v1, const btVector3& v2, const btVector3& color, btScalar /*alpha*/) override;
         virtual void drawContactPoint(const btVector3& PointOnB, const btVector3& normalOnB, btScalar distance, int lifeTime, const btVector3& color) override;
+        virtual void drawContactExtra(btPersistentManifold* manifold, const btManifoldPoint& contactPoint) override;
         virtual void draw3dText(const btVector3& location, const char* textString) override;
         virtual void reportErrorWarning(const char* warningString) override;
 
-        void drawLine(const btVector3& from, const btVector3& to, const DirectX::XMVECTOR& color);
-        void drawBox(const btVector3& bbMin, const btVector3& bbMax, const Bullet::btTransformEx& trans, const DirectX::XMVECTOR& color);
+        SKMP_FORCEINLINE void drawLine(const btVector3& from, const btVector3& to, const DirectX::XMVECTOR& color);
+        SKMP_FORCEINLINE void drawBox(const btVector3& bbMin, const btVector3& bbMax, const Bullet::btTransformEx& trans, const DirectX::XMVECTOR& color);
+
+        virtual DefaultColors getDefaultColors() const override;
 
     public:
         virtual void setDebugMode(int debugMode) override;

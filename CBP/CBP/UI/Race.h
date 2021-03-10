@@ -2,10 +2,10 @@
 
 namespace CBP
 {
-    typedef std::pair<const std::string, configComponents_t> raceEntryPhysConf_t;
+    typedef std::pair<const std::string, configComponentsGenderRoot_t> raceEntryPhysConf_t;
     typedef stl::map<Game::FormID, raceEntryPhysConf_t> raceListPhysConf_t;
 
-    typedef std::pair<const std::string, configNodes_t> raceEntryNodeConf_t;
+    typedef std::pair<const std::string, configNodesGenderRoot_t> raceEntryNodeConf_t;
     typedef stl::map<Game::FormID, raceEntryNodeConf_t> raceListNodeConf_t;
 
     template <class T, class N>

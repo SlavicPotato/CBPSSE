@@ -10,7 +10,7 @@ namespace Game
     {
         typedef void(*notification_t)(const char*, const char*, bool);
 
-        static RelocAddr<notification_t> NotificationImpl(0x8DA3D0);
+        static auto NotificationImpl = IAL::Addr<notification_t>(52050);
 
         void Notification(const char* a_message, bool a_cancelIfQueued, const char* a_sound)
         {
@@ -39,7 +39,7 @@ namespace Game
             if (ref->formType != Actor::kTypeID)
                 continue;
 
-            auto actor = DYNAMIC_CAST(ref, TESObjectREFR, Actor);
+            auto actor = RTTI<Actor>()(ref);
 
             if (actor)
                 a_func(actor);

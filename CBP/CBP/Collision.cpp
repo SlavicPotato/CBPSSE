@@ -1,14 +1,82 @@
 #include "pch.h"
 
+
 namespace CBP
 {
     ICollision ICollision::m_Instance;
 
-    bool ColliderProfile::Save(const ColliderData& a_data, bool a_store)
+    bool ColliderProfile::Save(const std::shared_ptr<const ColliderData>& a_data, bool a_store)
     {
         try
         {
-            throw std::exception("Not implemented");
+            if (m_path.empty())
+                throw std::exception("Bad path");
+
+            aiScene scene;
+
+            scene.mMaterials = new aiMaterial * [1];
+            scene.mMaterials[0] = nullptr;
+            scene.mNumMaterials = 1;
+
+            scene.mMaterials[0] = new aiMaterial();
+
+            scene.mMeshes = new aiMesh * [1];;
+            scene.mNumMeshes = 1;
+
+            scene.mMeshes[0] = new aiMesh();
+
+            scene.mRootNode = new aiNode();
+            scene.mRootNode->mMeshes = new unsigned int[1];
+            scene.mRootNode->mMeshes[0] = 0;
+            scene.mRootNode->mNumMeshes = 1;
+
+            auto mesh = scene.mMeshes[0];
+
+            auto numVertices = a_data->m_numVertices;
+            mesh->mVertices = new aiVector3D[numVertices];
+            mesh->mNumVertices = numVertices;
+
+            for (int i = 0; i < numVertices; i++)
+            {
+                auto& v = a_data->m_vertices[i];
+                auto& z = mesh->mVertices[i];
+
+                z.x = v.v[0];
+                z.y = v.v[1];
+                z.z = v.v[2];
+            }
+
+            auto numFaces = a_data->m_numIndices / 3;
+            mesh->mFaces = new aiFace[numFaces];
+            mesh->mNumFaces = numFaces;
+
+            auto& indices = a_data->m_indices;
+
+            for (int i = 0, j = 0; i < numFaces; i++, j += 3)
+            {
+                auto& face = mesh->mFaces[i];
+
+                face.mIndices = new unsigned int[3];
+                face.mNumIndices = 3;
+
+                face.mIndices[0] = indices[j];
+                face.mIndices[1] = indices[j + 1];
+                face.mIndices[2] = indices[j + 2];
+            }
+
+            if (m_desc) {
+                mesh->mName = *m_desc;
+            }
+
+            Assimp::Exporter exporter;
+
+            if (exporter.Export(std::addressof(scene), "obj", m_pathStr) != aiReturn::aiReturn_SUCCESS) {
+                throw std::exception("Export failed");
+            }
+
+            if (a_store) {
+                m_data = a_data;
+            }
 
             return true;
         }
@@ -52,18 +120,19 @@ namespace CBP
             if (numFaces < 1)
                 throw std::exception("No faces");
 
-            ColliderData tmp;
+            std::shared_ptr<ColliderData> tmp(new ColliderData());
 
-            tmp.m_vertices = std::make_shared<MeshPoint[]>(size_t(numVertices));
+            tmp->m_vertices = std::make_unique<MeshPoint[]>(std::size_t(numVertices));
 
             for (unsigned int i = 0; i < mesh->mNumVertices; i++)
             {
                 auto& e = mesh->mVertices[i];
-                auto& f = tmp.m_vertices[i];
+                auto& f = tmp->m_vertices[i];
 
-                f.x = e.x;
-                f.y = e.y;
-                f.z = e.z;
+                f.v[0] = e.x;
+                f.v[1] = e.y;
+                f.v[2] = e.z;
+                f.v[3] = 0.0f;
             }
 
             int numIndices(0);
@@ -81,8 +150,8 @@ namespace CBP
             if (numIndices < 1)
                 throw std::exception("No indices");
 
-            tmp.m_indices = std::make_shared<int[]>(size_t(numIndices));
-            tmp.m_hullPoints = std::make_shared<MeshPoint[]>(size_t(numIndices));
+            tmp->m_indices = std::make_unique<int[]>(std::size_t(numIndices));
+            tmp->m_hullPoints = std::make_unique<MeshPoint[]>(std::size_t(numIndices));
 
             for (unsigned int i = 0, n = 0; i < mesh->mNumFaces; i++)
             {
@@ -92,21 +161,21 @@ namespace CBP
                 {
                     int index = static_cast<int>(e.mIndices[j]);
 
-                    tmp.m_indices[n] = index;
-                    tmp.m_hullPoints[n] = tmp.m_vertices[index];
+                    tmp->m_indices[n] = index;
+                    tmp->m_hullPoints[n] = tmp->m_vertices[index];
                 }
             }
 
-            tmp.m_triVertexArray = new btTriangleIndexVertexArray(
-                mesh->mNumFaces, tmp.m_indices.get(), sizeof(int) * 3,
-                numVertices, reinterpret_cast<btScalar*>(tmp.m_vertices.get()),
-                sizeof(MeshPoint));
+            tmp->m_triVertexArray = std::make_unique<btTriangleIndexVertexArray>(
+                mesh->mNumFaces, tmp->m_indices.get(), sizeof(int) * 3,
+                numVertices, tmp->m_vertices.get()->v,
+                sizeof(decltype(tmp->m_vertices)::element_type::v));
 
-            tmp.m_numVertices = numVertices;
-            tmp.m_numTriangles = numFaces;
-            tmp.m_numIndices = numIndices;
+            tmp->m_numVertices = numVertices;
+            tmp->m_numTriangles = numFaces;
+            tmp->m_numIndices = numIndices;
 
-            m_data = std::move(tmp);
+            m_data = tmp;
 
             SetDescription(mesh->mName.C_Str());
 
@@ -153,7 +222,7 @@ namespace CBP
     {
         auto& ptrs = m_Instance.m_ptrs;
 
-        auto conf = btDefaultCollisionConstructionInfo();
+        btDefaultCollisionConstructionInfo conf;
 
         conf.m_useEpaPenetrationAlgorithm = a_useEPA;
         conf.m_defaultMaxPersistentManifoldPoolSize = a_maxPersistentManifoldPoolSize;
@@ -165,8 +234,9 @@ namespace CBP
         if (a_useThreading)
         {
             auto ts = btCreateDefaultTaskScheduler();
-            //ts->setNumThreads(6);
             btSetTaskScheduler(ts);
+
+            ASSERT(ts->getNumThreads() > 0);
 
             m_Instance.m_numThreads = ts->getNumThreads();
 
@@ -251,6 +321,177 @@ namespace CBP
         m_Instance.m_mutex.unlock();
 #endif
     }
+
+    SKMP_FORCEINLINE static btScalar GetFrictionImpulse(
+        const btVector3& a_vi,
+        const btVector3& a_n,
+        btVector3& a_rn)
+    {
+        auto l2 = a_vi.length2();
+        if (l2 < _EPSILON * _EPSILON) {
+            return 0.0f;
+        }
+
+        auto vn = a_vi / std::sqrtf(l2);
+
+        btVector3 p1, p2;
+        btPlaneSpace1(vn, p1, p2);
+
+        a_rn = (p2 + p1).cross(a_n);
+
+        l2 = a_rn.length2();
+        if (l2 < _EPSILON * _EPSILON) {
+            return 0.0f;
+        }
+
+        a_rn /= std::sqrtf(l2);
+
+        return a_vi.dot(a_rn);
+    }
+
+    void ICollision::PerformCollisionResponse(
+        int a_low,
+        int a_high,
+        float a_timeStep)
+    {
+        const auto dispatcher = GetDispatcher();
+
+        for (int i = a_low; i < a_high; i++)
+        {
+            const auto contactManifold = dispatcher->getManifoldByIndexInternal(i);
+
+            auto numContacts = contactManifold->getNumContacts();
+
+            if (!numContacts) {
+                continue;
+            }
+
+            const auto ob1 = contactManifold->getBody0();
+            const auto ob2 = contactManifold->getBody1();
+
+            auto sc1 = static_cast<SimComponent*>(ob1->getUserPointer());
+            auto sc2 = static_cast<SimComponent*>(ob2->getUserPointer());
+
+            auto& conf1 = sc1->GetConfig();
+            auto& conf2 = sc2->GetConfig();
+
+            bool mova = sc1->HasMotion();
+            bool movb = sc2->HasMotion();
+
+            float mia = sc1->GetMassInverse();
+            float mib = sc2->GetMassInverse();
+            float miab = mia + mib;
+
+            float pbf = std::max(conf1.fp.f32.colPenBiasFactor, conf2.fp.f32.colPenBiasFactor);
+            float pmi = (1.0f / std::max(conf1.fp.f32.colPenMass, conf2.fp.f32.colPenMass));
+
+            float fc;
+            bool friction = sc1->HasFriction() || sc2->HasFriction();
+
+            if (friction) {
+                fc = conf1.fp.f32.colFriction * conf2.fp.f32.colFriction;
+            }
+#if 0
+            sc1->Lock();
+            sc2->Lock();
+#endif
+
+            for (decltype(numContacts) j = 0; j < numContacts; j++)
+            {
+                const auto& contactPoint = contactManifold->getContactPoint(j);
+
+                float depth = contactPoint.getDistance();
+                if (depth >= 0.0f) {
+                    continue;
+                }
+
+                depth = -depth;
+
+                auto& v1 = sc1->GetVelocity();
+                auto& v2 = sc2->GetVelocity();
+
+                auto& n = contactPoint.m_normalWorldOnB;
+
+                auto deltaV(v2 - v1);
+
+                float impulse = deltaV.dot(n);
+
+                if (depth > 0.01f) {
+                    impulse += (a_timeStep * (2880.0f * pbf)) * std::max(depth - 0.01f, 0.0f);
+                }
+
+                if (impulse > 0.0f)
+                {
+                    impulse /= miab;
+
+                    if (mova)
+                    {
+                        float Jm = (1.0f + conf1.fp.f32.colRestitutionCoefficient) * impulse;
+                        sc1->AddVelocity(n * (Jm * mia * pmi));
+                    }
+
+                    if (movb)
+                    {
+                        float Jm = (1.0f + conf2.fp.f32.colRestitutionCoefficient) * impulse;
+                        sc2->SubVelocity(n * (Jm * mib * pmi));
+                    }
+                }
+
+                if (friction)
+                {
+                    btVector3 n1;
+                    btVector3 n2;
+
+                    auto impulse1 = GetFrictionImpulse(v1, n, n1);
+                    auto impulse2 = GetFrictionImpulse(v2, n, n2);
+
+                    if (impulse1 > 0.0f)
+                    {
+                        impulse1 /= miab;
+
+                        if (mova)
+                        {
+                            auto Jm = impulse1 * fc;
+                            sc1->SubVelocity(n1 * (Jm * mia));
+                        }
+
+                        if (movb)
+                        {
+                            auto Jm = impulse1 * fc;
+                            sc2->AddVelocity(n1* (Jm* mib));
+
+                        }
+                    }
+
+                    if (impulse2 > 0.0f)
+                    {
+                        impulse2 /= miab;
+
+                        if (mova)
+                        {
+                            auto Jm = impulse2 * fc;
+                            sc1->AddVelocity(n2 * (Jm * mia));
+                        }
+
+                        if (movb)
+                        {
+                            auto Jm = impulse2 * fc;
+                            sc2->SubVelocity(n2 * (Jm * mib));
+                        }
+                    }
+                }
+
+            }
+
+
+#if 0
+            sc2->Unlock();
+            sc1->Unlock();
+#endif
+
+        }
+    }
+
 
 }
 

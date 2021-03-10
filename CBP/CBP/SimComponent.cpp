@@ -2,7 +2,9 @@
 
 namespace CBP
 {
-    static btVector3 s_vecZero = _mm_set_ps1(0.0f);
+    static btVector3 s_vecZero(_mm_set_ps1(0.0f));
+    static btVector3 s_vecOne(_mm_and_ps(_mm_set_ps1(1.0f), btvFFF0fMask));
+    static btVector3 s_vec10(_mm_and_ps(_mm_set_ps1(10.0f), btvFFF0fMask));
 
     SKMP_FORCEINLINE static btScalar mmg(btScalar a_val, btScalar a_min, btScalar a_max) {
         return a_min + (a_max - a_min) * a_val;
@@ -17,12 +19,19 @@ namespace CBP
         btScalar s;
         btScalar c;
 
-        DirectX::XMScalarSinCos(&s, &c, a_angle * btScalar(0.5));
+        DirectX::XMScalarSinCos(&s, &c, a_angle * 0.5f);
 
         s /= a_axisLength;
 
         return btQuaternion(a_axis.x() * s, a_axis.y() * s, a_axis.z() * s, c);
     }
+
+
+    SKMP_FORCEINLINE void btVectorClamp(btVector3& a_vec, const btVector3& a_min, const btVector3& a_max)
+    {
+        a_vec.set128(_mm_max_ps(a_min.get128(), _mm_min_ps(a_vec.get128(), a_max.get128())));
+    }
+
 
     void CollisionShape::SetRadius(btScalar a_radius)
     {
@@ -80,7 +89,7 @@ namespace CBP
     void CollisionShapeBase<T>::PostUpdateShape()
     {
         m_collider->setCollisionShape(m_shape);
-        
+
         ICollision::CleanProxyFromPairs(m_collider);
     }
 
@@ -312,11 +321,11 @@ namespace CBP
 
     CollisionShapeConvexHull::CollisionShapeConvexHull(
         btCollisionObject* a_collider,
-        const std::shared_ptr<MeshPoint[]>& a_data,
+        const MeshPoint* a_data,
         int a_numVertices,
         const btVector3& a_extent)
         :
-        CollisionShapeTemplExtent<btConvexHullShape>(a_collider, reinterpret_cast<const btScalar*>(a_data.get()), a_numVertices, sizeof(MeshPoint)),
+        CollisionShapeTemplExtent<btConvexHullShape>(a_collider, reinterpret_cast<const btScalar*>(a_data), a_numVertices, sizeof(MeshPoint)),
         m_convexHullPoints(a_data),
         m_convexHullNumVertices(a_numVertices)
     {
@@ -327,7 +336,7 @@ namespace CBP
 
     void CollisionShapeConvexHull::DoRecreateShape(const btVector3& a_extent)
     {
-        RecreateShape(reinterpret_cast<const btScalar*>(m_convexHullPoints.get()), m_convexHullNumVertices, sizeof(MeshPoint));
+        RecreateShape(reinterpret_cast<const btScalar*>(m_convexHullPoints), m_convexHullNumVertices, sizeof(MeshPoint));
     }
 
     void CollisionShapeConvexHull::SetShapeProperties(const btVector3& a_extent)
@@ -382,11 +391,11 @@ namespace CBP
                                 false,
                                 result);
 
-                            if (r && result->second.m_data.second == a_nodeConf && result->second.m_updateID == m_bcUpdateID)
+                            if (r && result->second.m_data == a_nodeConf && result->second.m_updateID == m_bcUpdateID)
                                 return true;
                         }
                         else {
-                            if (StrHelpers::icompare(m_parent.m_conf.ex.colMesh, m_meshShape) == 0)
+                            if (StrHelpers::iequal(m_parent.m_conf.ex.colMesh, m_meshShape))
                                 return true;
                         }
                     }
@@ -451,8 +460,7 @@ namespace CBP
                 }
 
                 m_bcUpdateID = res.updateID;
-
-                m_colliderData = std::move(res.data);
+                m_colliderData = res.data;
             }
             else
             {
@@ -476,19 +484,18 @@ namespace CBP
 
                 m_meshShape = m_parent.m_conf.ex.colMesh;
 
-                m_colliderData = std::make_unique<ColliderData>(it->second.Data());
+                m_colliderData = it->second.Data();
             }
 
             if (a_shape == ColliderShapeType::Mesh)
             {
                 m_colshape = new CollisionShapeMesh(
-                    collider, m_colliderData->m_triVertexArray, m_parent.m_colExtent);
+                    collider, m_colliderData->m_triVertexArray.get(), m_parent.m_colExtent);
             }
             else
             {
                 m_colshape = new CollisionShapeConvexHull(
-                    collider, m_colliderData->m_hullPoints, m_colliderData->m_numIndices, m_parent.m_colExtent);
-
+                    collider, m_colliderData->m_hullPoints.get(), m_colliderData->m_numIndices, m_parent.m_colExtent);
             }
         }
         break;
@@ -517,11 +524,12 @@ namespace CBP
 
         if (!m_rotation)
         {
-            auto& b = m_collider->getWorldTransform().getBasis();
+            auto& b = collider->getWorldTransform().getBasis();
             b.setEulerZYX(90.0f * crdrmul, 0.0f, 0.0f);
         }
-        else
-            SetColliderRotation(0.0f, 0.0f, 0.0f);
+        else {
+            SetColliderRotation(s_vecZero);
+        }
 
         UpdateWorldData(false);
 
@@ -540,6 +548,7 @@ namespace CBP
 
         delete m_collider;
         delete m_colshape;
+
         m_colliderData.reset();
 
         m_meshShape.clear();
@@ -648,7 +657,7 @@ namespace CBP
         }
         else
         {
-            btVector3 objpos(_mm_and_ps(_mm_loadu_ps(reinterpret_cast<const float*>(&m_parent.m_obj->m_worldTransform.pos)), btvFFF0fMask));
+            btVector3 objpos(_mm_and_ps(_mm_loadu_ps(m_parent.m_obj->m_worldTransform.pos), btvFFF0fMask));
 
             if (m_offsetParent)
             {
@@ -666,7 +675,7 @@ namespace CBP
 
         if (m_rotation)
         {
-            transform.getBasis() = objmat * m_colRot;
+            transform.setBasis(objmat * m_colRot);
         }
 
         if (nodeScale != m_nodeScale)
@@ -691,7 +700,7 @@ namespace CBP
         }
 
         transform.setOrigin(btVector3(
-            _mm_and_ps(_mm_loadu_ps(reinterpret_cast<const float*>(&obj->m_worldTransform.pos)), btvFFF0fMask)
+            _mm_and_ps(_mm_loadu_ps(obj->m_worldTransform.pos), btvFFF0fMask)
         ));
     }
 
@@ -701,11 +710,11 @@ namespace CBP
         NiAVObject* a_obj,
         const std::string& a_nodeName,
         const std::string& a_configGroupName,
-        const configComponent32_t& a_config,
+        const configComponent_t& a_config,
         const configNode_t& a_nodeConf,
         uint64_t a_groupId,
         bool a_collisions,
-        bool a_movement)
+        bool a_motion)
         :
         m_parent(a_parent),
         m_nodeName(a_nodeName),
@@ -724,7 +733,7 @@ namespace CBP
         m_updateCtx({ 0.0f, 0 }),
         m_formid(a_actor->formID),
         m_conf(a_config),
-        m_motion(a_movement),
+        m_motion(a_motion),
         m_velocity(s_vecZero),
         m_virtld(s_vecZero),
         m_colRad(1.0f),
@@ -752,7 +761,7 @@ namespace CBP
 
         m_itrInitialMat.getRotation(m_itrInitialRot);
 
-        UpdateConfig(a_actor, nullptr, a_nodeConf, a_collisions, a_movement);
+        UpdateConfig(a_actor, nullptr, a_nodeConf, a_collisions, a_motion);
     }
 
     SimComponent::~SimComponent()
@@ -765,7 +774,7 @@ namespace CBP
 
     void SimComponent::ColUpdateWeightData(
         Actor* a_actor,
-        const configComponent16_t& a_config,
+        const configComponent_t& a_config,
         const configNode_t& a_nodeConf)
     {
         btScalar weight = std::clamp(Game::GetActorWeight(a_actor), 0.0f, 100.0f);
@@ -791,7 +800,7 @@ namespace CBP
 
     void SimComponent::UpdateConfig(
         Actor* a_actor,
-        const configComponent32_t* a_physConf,
+        const configComponent_t* a_physConf,
         const configNode_t& a_nodeConf,
         bool a_collisions,
         bool a_motion) noexcept
@@ -862,10 +871,10 @@ namespace CBP
             m_resistanceOn = false;
         }
 
-        bool rot =
-            m_conf.fp.f32.rotational[0] != 0.0f ||
-            m_conf.fp.f32.rotational[1] != 0.0f ||
-            m_conf.fp.f32.rotational[2] != 0.0f;
+        btVectorClamp(m_conf.fp.vec.linear, s_vecZero, s_vec10);
+        btVectorClamp(m_conf.fp.vec.rotational, -s_vec10, s_vec10);
+
+        bool rot = m_conf.fp.vec.rotational != s_vecZero;
 
         if (rot != m_rotScaleOn) {
             m_rotScaleOn = rot;
@@ -873,19 +882,31 @@ namespace CBP
         }
 
         m_conf.fp.f32.mass = std::clamp(m_conf.fp.f32.mass, 1.0f, 10000.0f);
-        m_conf.fp.f32.colPenMass = std::clamp(m_conf.fp.f32.colPenMass, 1.0f, 100.0f);
+        m_conf.fp.f32.colPenMass = a_motion ? std::clamp(m_conf.fp.f32.colPenMass, 1.0f, 100.0f) : 1.0f;
         m_conf.fp.f32.maxOffsetVelResponseScale = std::clamp(m_conf.fp.f32.maxOffsetVelResponseScale, 0.0f, 1.0f);
-        m_conf.fp.f32.maxVelocity = std::clamp(m_conf.fp.f32.maxVelocity, 4.0f, 10000.0f);
+        m_conf.fp.f32.maxVelocity = std::clamp(m_conf.fp.f32.maxVelocity, 4.0f, 20000.0f);
         m_maxVelocity2 = m_conf.fp.f32.maxVelocity * m_conf.fp.f32.maxVelocity;
         m_conf.fp.f32.maxOffsetRestitutionCoefficient = std::clamp(m_conf.fp.f32.maxOffsetRestitutionCoefficient, 0.0f, 4.0f);
         m_conf.fp.f32.maxOffsetMaxBiasMag = std::max(m_conf.fp.f32.maxOffsetMaxBiasMag, 0.0f);
 
         m_conf.fp.vec.maxOffsetP.setMax(s_vecZero);
         m_conf.fp.vec.maxOffsetN.setMin(-s_vecZero);
+        m_conf.fp.f32.maxOffsetSphereRadius = std::max(m_conf.fp.f32.maxOffsetSphereRadius, 0.0f);
 
         m_invMass = a_motion ? 1.0f / m_conf.fp.f32.mass : 0.0f;
 
+        m_conf.fp.f32.gravityBias = std::clamp(m_conf.fp.f32.gravityBias, 0.0f, 20000.0f);
         m_gravForce = m_conf.fp.f32.gravityBias * m_conf.fp.f32.mass;
+
+        m_conf.fp.f32.springSlackOffset = std::max(m_conf.fp.f32.springSlackOffset, 0.0f);
+        m_conf.fp.f32.springSlackMag = std::max(m_conf.fp.f32.springSlackMag, 0.0f);
+
+        m_hasSpringSlack = m_conf.fp.f32.springSlackOffset > 0.0f || m_conf.fp.f32.springSlackMag > 0.0f;
+
+        m_conf.fp.f32.springSlackMag += m_conf.fp.f32.springSlackOffset;
+
+        m_conf.fp.f32.colFriction = std::clamp(m_conf.fp.f32.colFriction, 0.0f, 1.0f);
+        m_hasFriction = m_conf.fp.f32.colFriction > 0.0f;
 
         if (a_nodeConf.bl.b.overrideScale)
         {
@@ -909,9 +930,7 @@ namespace CBP
         }
 
         m_obj->UpdateWorldData(&m_updateCtx);
-
         SIMDFillParent();
-
         m_collider.Update();
     }
 
@@ -951,71 +970,105 @@ namespace CBP
         m_velocity *= m_conf.fp.f32.maxVelocity;
     }
 
-    void SimComponent::ConstrainMotion(
+    void SimComponent::ConstrainMotionBox(
         const btMatrix3x3& a_invRot,
         const btVector3& a_target,
         btScalar a_timeStep
     )
     {
-        btVector3 diff(s_vecZero);
         btVector3 depth(s_vecZero);
         bool skip(true);
 
         btScalar v(m_virtld.x());
 
-        if (v > m_conf.fp.f32.maxOffsetP[0])
+        if (v > m_conf.fp.vec.maxOffsetP.x())
         {
-            diff.setX(v);
-            depth.setX(v - m_conf.fp.f32.maxOffsetP[0]);
+            depth.setX(v - m_conf.fp.vec.maxOffsetP.x());
             skip = false;
         }
-        else if (v < m_conf.fp.f32.maxOffsetN[0])
+        else if (v < m_conf.fp.vec.maxOffsetN.x())
         {
-            diff.setX(v);
-            depth.setX(v - m_conf.fp.f32.maxOffsetN[0]);
+            depth.setX(v - m_conf.fp.vec.maxOffsetN.x());
             skip = false;
         }
 
         v = m_virtld.y();
 
-        if (v > m_conf.fp.f32.maxOffsetP[1])
+        if (v > m_conf.fp.vec.maxOffsetP.y())
         {
-            diff.setY(v);
-            depth.setY(v - m_conf.fp.f32.maxOffsetP[1]);
+            depth.setY(v - m_conf.fp.vec.maxOffsetP.y());
             skip = false;
         }
-        else if (v < m_conf.fp.f32.maxOffsetN[1])
+        else if (v < m_conf.fp.vec.maxOffsetN.y())
         {
-            diff.setY(v);
-            depth.setY(v - m_conf.fp.f32.maxOffsetN[1]);
+            depth.setY(v - m_conf.fp.vec.maxOffsetN.y());
             skip = false;
         }
 
         v = m_virtld.z();
 
-        if (v > m_conf.fp.f32.maxOffsetP[2])
+        if (v > m_conf.fp.vec.maxOffsetP.z())
         {
-            diff.setZ(v);
-            depth.setZ(v - m_conf.fp.f32.maxOffsetP[2]);
+            depth.setZ(v - m_conf.fp.vec.maxOffsetP.z());
             skip = false;
         }
-        else if (v < m_conf.fp.f32.maxOffsetN[2])
+        else if (v < m_conf.fp.vec.maxOffsetN.z())
         {
-            diff.setZ(v);
-            depth.setZ(v - m_conf.fp.f32.maxOffsetN[2]);
+            depth.setZ(v - m_conf.fp.vec.maxOffsetN.z());
             skip = false;
         }
 
         if (skip)
             return;
 
-        auto n = m_itrMatParent * diff;
+        auto n = m_itrMatParent * depth;
 
-        n.safeNormalize();
-        //n.set128(DirectX::XMVector3Normalize(n.get128()));
+        auto l2 = n.length2();
+        if (l2 < _EPSILON * _EPSILON)
+            return;
+
+        n /= std::sqrtf(l2);
 
         btScalar impulse = m_velocity.dot(n);
         btScalar mag = depth.length();
+
+        if (mag > 0.01f)
+            impulse += (a_timeStep * 2880.0f) * std::clamp(mag - 0.01f, 0.0f, m_conf.fp.f32.maxOffsetMaxBiasMag);
+
+        if (impulse <= 0.0f)
+            return;
+
+        btScalar J = (1.0f + m_conf.fp.f32.maxOffsetRestitutionCoefficient) * impulse;
+
+        m_velocity -= n * (J * m_conf.fp.f32.maxOffsetVelResponseScale);
+
+        m_virtld = a_invRot * ((m_oldWorldPos + (m_velocity * a_timeStep)) -= a_target);
+    }
+
+    void SimComponent::ConstrainMotionSphere(
+        const btMatrix3x3& a_invRot,
+        const btVector3& a_target,
+        btScalar a_timeStep
+    )
+    {
+        auto diff(m_virtld - m_conf.fp.vec.maxOffsetSphereOffset);
+
+        auto difflen = diff.length();
+
+        btScalar radius(m_conf.fp.f32.maxOffsetSphereRadius);
+        if (difflen <= radius)
+            return;
+
+        auto n = m_itrMatParent * diff;
+
+        auto l2 = n.length2();
+        if (l2 < _EPSILON * _EPSILON)
+            return;
+
+        n /= std::sqrtf(l2);
+
+        btScalar impulse = m_velocity.dot(n);
+        btScalar mag = difflen - radius;
 
         if (mag > 0.01f)
             impulse += (a_timeStep * 2880.0f) * std::clamp(mag - 0.01f, 0.0f, m_conf.fp.f32.maxOffsetMaxBiasMag);
@@ -1037,13 +1090,11 @@ namespace CBP
         m_itrMatParent[0].set128(_mm_and_ps(_mm_loadu_ps(obj->m_worldTransform.rot.data[0]), btvFFF0fMask));
         m_itrMatParent[1].set128(_mm_and_ps(_mm_loadu_ps(obj->m_worldTransform.rot.data[1]), btvFFF0fMask));
         m_itrMatParent[2].set128(_mm_and_ps(_mm_loadu_ps(obj->m_worldTransform.rot.data[2]), btvFFF0fMask));
-        m_itrPosParent.set128(_mm_and_ps(_mm_loadu_ps(reinterpret_cast<const float*>(&obj->m_worldTransform.pos)), btvFFF0fMask));
+        m_itrPosParent.set128(_mm_and_ps(_mm_loadu_ps(obj->m_worldTransform.pos), btvFFF0fMask));
     }
 
     void SimComponent::UpdateMotion(btScalar a_timeStep)
     {
-        //m_objParent->UpdateWorldData(&m_updateCtx);
-
         SIMDFillParent();
 
         if (m_motion)
@@ -1062,6 +1113,13 @@ namespace CBP
 
             auto force = diff * m_conf.fp.f32.stiffness;
             force += (diff *= adiff) *= m_conf.fp.f32.stiffness2;
+
+            if (m_hasSpringSlack)
+            {
+                auto m = Math::NormalizeClamp(m_virtld.length(), m_conf.fp.f32.springSlackOffset, m_conf.fp.f32.springSlackMag);
+
+                force *= m * m;
+            }
 
             force.setZ(force.z() - m_gravForce);
 
@@ -1088,7 +1146,13 @@ namespace CBP
             auto invRot = m_itrMatParent.transpose();
             m_virtld = invRot * ((m_oldWorldPos + (m_velocity * a_timeStep)) -= target);
 
-            ConstrainMotion(invRot, target, a_timeStep);
+            if ((m_conf.ex.motionConstraints & MotionConstraints::Sphere) == MotionConstraints::Sphere) {
+                ConstrainMotionSphere(invRot, target, a_timeStep);
+            }
+
+            if ((m_conf.ex.motionConstraints & MotionConstraints::Box) == MotionConstraints::Box) {
+                ConstrainMotionBox(invRot, target, a_timeStep);
+            }
 
             m_oldWorldPos = (m_itrMatParent * m_virtld) += target;
 
@@ -1100,7 +1164,6 @@ namespace CBP
             obj->m_localTransform.pos.x = m_initialTransform.pos.x + m_ld.x();
             obj->m_localTransform.pos.y = m_initialTransform.pos.y + m_ld.y();
             obj->m_localTransform.pos.z = m_initialTransform.pos.z + m_ld.z();
-
 
             if (m_rotScaleOn)
             {
@@ -1122,15 +1185,11 @@ namespace CBP
 
                 btMatrix3x3 m(m_itrInitialRot + mkQuat(m_rotParams.m_axis, m_rotParams.m_axisLength, m_rotParams.m_angle));
 
-                //auto px = obj->m_localTransform.pos.x;
-
                 m[2].setW(obj->m_localTransform.pos.x);
 
                 _mm_storeu_ps(obj->m_localTransform.rot.data[0], m[0].get128());
                 _mm_storeu_ps(obj->m_localTransform.rot.data[1], m[1].get128());
                 _mm_storeu_ps(obj->m_localTransform.rot.data[2], m[2].get128());
-
-                //obj->m_localTransform.pos.x = px;
 
             }
 
@@ -1140,7 +1199,7 @@ namespace CBP
         m_collider.Update();
     }
 
-    void SimComponent::ApplyForce(uint32_t a_steps, const NiPoint3& a_force)
+    void SimComponent::ApplyForce(std::uint32_t a_steps, const NiPoint3& a_force)
     {
         if (!a_steps || !m_motion)
             return;

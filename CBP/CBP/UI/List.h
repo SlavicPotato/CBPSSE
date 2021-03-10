@@ -39,6 +39,8 @@ namespace CBP
         [[nodiscard]] virtual const entryValue_t& GetData(P a_formid) = 0;
         [[nodiscard]] virtual const entryValue_t& GetData(const listValue_t* a_data) = 0;
 
+        virtual void OnListChangeCurrentItem(const SelectedItem<P> &a_oldHandle, P a_newHandle);
+
         bool m_listFirstUpdate;
         bool m_listNextUpdateCurrent;
         bool m_listNextUpdate;

@@ -70,14 +70,14 @@ namespace CBP
                     if (!value.isNumeric())
                         throw std::exception("Value not numeric");
 
-                    uint32_t m = type.asUInt();
+                    std::uint32_t m = type.asUInt();
 
                     if (m > 1)
                         throw std::exception("Value type out of range");
 
                     std::string valName(it2.key().asString());
 
-                    if (!configComponent32_t::descMap.contains(valName)) {
+                    if (!configComponent_t::descMap.contains(valName)) {
                         gLog.Warning("%s: Unknown value name: %s", __FUNCTION__, valName.c_str());
                         continue;
                     }

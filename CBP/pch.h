@@ -1,5 +1,4 @@
-#ifndef PCH_H
-#define PCH_H
+#pragma once
 
 #include <ext/ICommon.h>
 #include <ext/IHook.h>
@@ -103,6 +102,7 @@
 #include <misc/cpp/imgui_stdlib.h>
 
 #include <assimp/Importer.hpp>
+#include <assimp/Exporter.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 
@@ -135,7 +135,7 @@ namespace fs = std::filesystem;
 #include "Common/BulletExtensions.h"
 #include "cbp/Data.h"
 #include "cbp/ArmorCache.h"
-#include "CBP/ColliderData.h"
+#include "cbp/ColliderData.h"
 #include "cbp/Config.h"
 #include "cbp/Serialization.h"
 #include "cbp/Template.h"
@@ -153,4 +153,3 @@ namespace fs = std::filesystem;
 #include "cbp/Profile.h"
 #include "drivers/cbp.h"
 
-#endif //PCH_H

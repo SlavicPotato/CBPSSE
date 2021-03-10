@@ -96,7 +96,7 @@ namespace CBP
 
                     auto& e2 = e1[templ];
 
-                    auto type = static_cast<uint32_t>(t.asUInt());
+                    auto type = static_cast<std::uint32_t>(t.asUInt());
 
                     switch (type)
                     {
@@ -167,7 +167,7 @@ namespace CBP
 
         DTasks::AddTask([name = a_profile.Name()]()
         {
-            IScopedCriticalSection _(DCBP::GetLock());
+            IScopedLock _(DCBP::GetLock());
 
             auto& tif = ITemplate::GetSingleton();
             tif.AddProfileRecords<T>(name.c_str());

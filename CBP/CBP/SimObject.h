@@ -10,7 +10,7 @@ namespace CBP
             const std::string& a_confGroup,
             bool a_collisions,
             bool a_movement,
-            const configComponent32_t& a_physConf,
+            const configComponent_t& a_physConf,
             const configNode_t& a_nodeConf)
             :
             nodeName(a_nodeName),
@@ -28,7 +28,7 @@ namespace CBP
         const std::string& confGroup;
         bool collisions;
         bool movement;
-        const configComponent32_t& physConf;
+        const configComponent_t& physConf;
         const configNode_t& nodeConf;
     };
 
@@ -37,7 +37,7 @@ namespace CBP
     class SimObject
     {
         //typedef stl::imap<std::string, SimComponent> thingMap_t;
-        typedef btAlignedObjectArray<SimComponent*> thingList_t;
+        typedef stl::vector<SimComponent*> thingList_t;
 
         /*using iterator = typename thingMap_t::iterator;
         using const_iterator = typename stl::vector<SimComponent*>::const_iterator;*/
@@ -58,13 +58,13 @@ namespace CBP
         SimObject& operator=(SimObject&&) = delete;
 
         SKMP_FORCEINLINE void UpdateMotion(float a_timeStep);
-        SKMP_FORCEINLINE void UpdateVelocity();
+        SKMP_FORCEINLINE void UpdateVelocity(float a_timeStep);
 
         void UpdateConfig(Actor* a_actor, bool a_collisions, const configComponents_t& a_config);
         void Reset();
         //bool ValidateNodes(Actor* a_actor);
 
-        void ApplyForce(uint32_t a_steps, const std::string& a_component, const NiPoint3& a_force);
+        void ApplyForce(std::uint32_t a_steps, const std::string& a_component, const NiPoint3& a_force);
 
 #ifdef _CBP_ENABLE_DEBUG
         void UpdateDebugInfo();
@@ -133,6 +133,13 @@ namespace CBP
             return m_task;
         }
 #endif
+        /*[[nodiscard]] SKMP_FORCEINLINE auto GetActor() const {
+            return m_actor.get();
+        }
+
+        [[nodiscard]] SKMP_FORCEINLINE auto GetActor() {
+            return m_actor.get();
+        }*/
 
     private:
 
@@ -142,6 +149,8 @@ namespace CBP
 
         NiPointer<NiNode> m_node;
         NiPointer<NiAVObject> m_objHead;
+
+        //NiPointer<Actor> m_actor;
 
         char m_sex;
 
@@ -191,14 +200,14 @@ namespace CBP
             m_objList[i]->UpdateMotion(a_timeStep);
     }
 
-    void SimObject::UpdateVelocity()
+    void SimObject::UpdateVelocity(float a_timeStep)
     {
         if (m_suspended)
             return;
 
         auto count = m_objList.size();
         for (decltype(count) i = 0; i < count; i++)
-            m_objList[i]->UpdateVelocity();
+            m_objList[i]->UpdateVelocity(a_timeStep);
     }
 
 }

@@ -24,6 +24,7 @@ namespace CBP
         virtual ConfigClass GetActorClass(Game::ObjectHandle a_handle) const = 0;
         virtual configGlobalActor_t& GetActorConfig() const = 0;
         virtual bool HasArmorOverride(Game::ObjectHandle a_handle) const = 0;
+
     private:
         virtual void ListUpdate();
         virtual void ListFilterSelected(listValue_t*& a_entry, const char*& a_curSelName);

@@ -5,7 +5,7 @@ namespace CBP
     template <class T>
     class UIApplyForce :
         virtual protected UIBase,
-        UICommon::UIDataBase<T, configComponents_t>
+        UICommon::UIDataBase<T, configComponentsGenderRoot_t>
     {
         static constexpr float FORCE_MIN = -1000.0f;
         static constexpr float FORCE_MAX = 1000.0f;
@@ -17,7 +17,7 @@ namespace CBP
 
         virtual void ApplyForce(
             T* a_data,
-            uint32_t a_steps,
+            std::uint32_t a_steps,
             const std::string& a_component,
             const NiPoint3& a_force) const = 0;
 

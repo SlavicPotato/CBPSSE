@@ -10,16 +10,6 @@ namespace CBP
 
     static_assert(sizeof(VertexPositionColorAV) == 32, "Vertex struct/layout mismatch");
 
-    static const auto MOVING_NODES_COL = DirectX::XMVectorSet(1.0f, 0.0f, 0.0f, 0.85f);
-    static const auto MOVING_NODES_COG_COL = DirectX::XMVectorSet(0.76f, 0.55f, 0.1f, 0.85f);
-    static const auto ACTOR_MARKER_COL = DirectX::XMVectorSet(0.921f, 0.596f, 0.203f, 0.85f);
-
-    static const auto CONSTRAINT_BOX_COL = DirectX::XMVectorSet(0.2f, 0.9f, 0.5f, 0.85f);
-    static const auto VIRTUAL_POS_COL = DirectX::XMVectorSet(0.3f, 0.7f, 0.7f, 0.85f);
-
-    static const auto CONTACT_NORMAL_COL = DirectX::XMVectorSet(0.0f, 0.749f, 1.0f, 1.0f);
-
-
     Renderer::Renderer(
         ID3D11Device* a_pDevice,
         ID3D11DeviceContext* a_pImmediateContext)
@@ -49,6 +39,8 @@ namespace CBP
         bool a_centerOfGravity,
         Game::ObjectHandle a_markedHandle)
     {
+        auto& globalConfig = IConfig::GetGlobal();
+
         Bullet::btTransformEx tf;
 
         for (const auto& e : a_actorList)
@@ -71,13 +63,13 @@ namespace CBP
                     if (a_moving)
                     {
                         auto& tf = n->GetWorldTransform();
-                        GenerateSphere(btVector3(tf.pos.x, tf.pos.y, tf.pos.z), a_radius * tf.scale, MOVING_NODES_COL);
+                        GenerateSphere(btVector3(tf.pos.x, tf.pos.y, tf.pos.z), a_radius * tf.scale, globalConfig.debugRenderer.colors.movingNodes);
                     }
 
                     if (a_centerOfGravity)
                     {
                         n->GetParentWorldTransform(tf);
-                        GenerateSphere(tf * n->GetCenterOfGravity(), a_radius * tf.getScale(), MOVING_NODES_COG_COL);
+                        GenerateSphere(tf * n->GetCenterOfGravity(), a_radius * tf.getScale(), globalConfig.debugRenderer.colors.movingNodesCOG);
                     }
                 }
             }
@@ -88,16 +80,18 @@ namespace CBP
                 {
                     GenerateSphere(
                         tf * btVector3(0.0f, 0.0f, 20.0f),
-                        2.0f * tf.getScale(), ACTOR_MARKER_COL);
+                        2.0f * tf.getScale(), globalConfig.debugRenderer.colors.actorMarker);
                 }
             }
         }
     }
 
-    void Renderer::GenerateMovementConstraints(
+    void Renderer::GenerateMotionConstraints(
         const simActorList_t& a_actorList,
         float a_radius)
     {
+        auto& globalConfig = IConfig::GetGlobal();
+
         Bullet::btTransformEx tf;
 
         for (const auto& e : a_actorList)
@@ -116,17 +110,34 @@ namespace CBP
                     continue;
 
                 auto& conf = n->GetConfig();
+                auto mc = conf.ex.motionConstraints;
 
                 n->GetParentWorldTransform(tf);
 
-                drawBox(
-                    conf.fp.vec.maxOffsetN,
-                    conf.fp.vec.maxOffsetP,
-                    tf,
-                    CONSTRAINT_BOX_COL
-                );
+                if ((mc & MotionConstraints::Box) == MotionConstraints::Box)
+                {
+                    drawBox(
+                        conf.fp.vec.maxOffsetN,
+                        conf.fp.vec.maxOffsetP,
+                        tf,
+                        globalConfig.debugRenderer.colors.constraintBox
+                    );
 
-                GenerateSphere(tf * n->GetVirtualPos(), a_radius * tf.getScale(), VIRTUAL_POS_COL);
+                }
+
+                GenerateSphere(tf * n->GetVirtualPos(), a_radius * tf.getScale(), globalConfig.debugRenderer.colors.virtualPosition);
+
+                if ((mc & MotionConstraints::Sphere) == MotionConstraints::Sphere)
+                {
+                    tf.getOrigin() = tf * conf.fp.vec.maxOffsetSphereOffset;
+
+                    drawSphere(
+                        conf.fp.f32.maxOffsetSphereRadius * tf.getScale(),
+                        tf,
+                        globalConfig.debugRenderer.colors.constraintSphere
+                    );
+                }
+
             }
         }
     }
@@ -137,7 +148,7 @@ namespace CBP
         m_lines.clear();
     }
     
-    void Renderer::Release()
+    void Renderer::ReleaseGeometry()
     {
         if (!m_tris.empty())
             m_tris.swap(decltype(m_tris)());
@@ -148,8 +159,8 @@ namespace CBP
 
     void Renderer::Draw()
     {
-        m_pImmediateContext->OMSetBlendState(m_states->AlphaBlend(), nullptr, 0xFFFFFFFF);
-        m_pImmediateContext->OMSetDepthStencilState(m_states->DepthNone(), 0);
+        m_pImmediateContext->OMSetBlendState(m_states->NonPremultiplied(), nullptr, 0xFFFFFFFF);
+        m_pImmediateContext->OMSetDepthStencilState(m_states->DepthDefault(), 0);
         m_pImmediateContext->RSSetState(m_states->CullCounterClockwise());
 
         m_effect->Apply(m_pImmediateContext);
@@ -163,15 +174,17 @@ namespace CBP
 
         const auto& globalConfig = IConfig::GetGlobal();
 
-        if (globalConfig.debugRenderer.wireframe)
+        if (globalConfig.debugRenderer.wireframe) {
             for (const auto& e : m_tris) {
                 m_batch->DrawLine(e.v0, e.v1);
                 m_batch->DrawLine(e.v0, e.v2);
                 m_batch->DrawLine(e.v2, e.v1);
             }
-        else
+        }
+        else {
             for (const auto& e : m_tris)
                 m_batch->DrawTriangle(e.v0, e.v1, e.v2);
+        }
 
         m_batch->End();
     }
@@ -262,7 +275,7 @@ namespace CBP
         const float sectorStep = 2 * float(MATH_PI) / NB_SECTORS_SPHERE;
         const float stackStep = float(MATH_PI) / NB_STACKS_SPHERE;
 
-        for (uint32_t i = 0; i <= NB_STACKS_SPHERE; i++) {
+        for (std::uint32_t i = 0; i <= NB_STACKS_SPHERE; i++) {
 
             const float stackAngle = float(MATH_PI) / 2 - i * stackStep;
 
@@ -272,7 +285,7 @@ namespace CBP
             const float radiusCosStackAngle = a_radius * c;
             const float z = a_radius * s;
 
-            for (uint32_t j = 0; j <= NB_SECTORS_SPHERE; j++) {
+            for (std::uint32_t j = 0; j <= NB_SECTORS_SPHERE; j++) {
 
                 const float sectorAngle = j * sectorStep;
 
@@ -288,12 +301,12 @@ namespace CBP
         ItemTri item;
 
         // Faces
-        for (uint32_t i = 0; i < NB_STACKS_SPHERE; i++) {
+        for (std::uint32_t i = 0; i < NB_STACKS_SPHERE; i++) {
 
-            uint32_t a1 = i * (NB_SECTORS_SPHERE + 1);
-            uint32_t a2 = a1 + NB_SECTORS_SPHERE + 1;
+            std::uint32_t a1 = i * (NB_SECTORS_SPHERE + 1);
+            std::uint32_t a2 = a1 + NB_SECTORS_SPHERE + 1;
 
-            for (uint32_t j = 0; j < NB_SECTORS_SPHERE; j++, a1++, a2++) {
+            for (std::uint32_t j = 0; j < NB_SECTORS_SPHERE; j++, a1++, a2++) {
 
                 // 2 triangles per sector except for the first and last stacks
 
@@ -365,12 +378,33 @@ namespace CBP
             return;
 
         m_tris.emplace_back(std::move(item));
+
     }
 
     void Renderer::drawContactPoint(const btVector3& PointOnB, const btVector3& normalOnB, btScalar distance, int lifeTime, const btVector3& color)
     {
         drawSphere(PointOnB, m_contactPointSphereRadius, color);
-        drawLine(PointOnB, PointOnB + normalOnB * m_contactNormalLength, CONTACT_NORMAL_COL);
+        drawLine(PointOnB, PointOnB + normalOnB * m_contactNormalLength, IConfig::GetGlobal().debugRenderer.colors.contactNormal);
+    }
+
+    void Renderer::drawContactExtra(btPersistentManifold* manifold, const btManifoldPoint& contactPoint)
+    {
+
+        /*auto ob2 = manifold->getBody1();
+
+        auto sc2 = static_cast<SimComponent*>(ob2->getUserPointer());
+
+        btVector3 p = sc2->GetVelocity();
+        p.safeNormalize();
+
+        btVector3 p1, p2;
+
+        btPlaneSpace1(p, p1, p2);
+
+        auto e = (p1 + p2).cross(contactPoint.m_normalWorldOnB);
+        e.safeNormalize();
+
+        drawLine(contactPoint.getPositionWorldOnB(), contactPoint.getPositionWorldOnB() + e * 30.0f, IConfig::GetGlobal().debugRenderer.colors.constraintSphere);*/
     }
 
     void Renderer::draw3dText(const btVector3& location, const char* textString)
@@ -388,6 +422,11 @@ namespace CBP
 
     int Renderer::getDebugMode() const {
         return m_debugMode;
+    }
+
+    auto Renderer::getDefaultColors() const -> DefaultColors
+    {
+        return IConfig::GetGlobal().debugRenderer.btColors;
     }
 
 }

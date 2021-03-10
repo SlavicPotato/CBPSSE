@@ -4,11 +4,9 @@
 
 namespace CBP
 {
-
-
     struct ControllerInstruction
     {
-        enum class Action : uint32_t
+        enum class Action : std::uint32_t
         {
             AddActor,
             RemoveActor,
@@ -30,7 +28,7 @@ namespace CBP
         Game::ObjectHandle m_handle;
     };
 
-    class SKMP_ALIGN(32) ControllerTask :
+    class SKMP_ALIGN_AUTO ControllerTask :
         public TaskDelegateFixed,
         public TaskQueueBase<ControllerInstruction>,
         protected ILog
@@ -38,7 +36,7 @@ namespace CBP
         using handleSet_t = stl::unordered_set<Game::ObjectHandle>;
 
     public:
-        SKMP_DECLARE_ALIGNED_ALLOCATOR(32);
+        SKMP_DECLARE_ALIGNED_ALLOCATOR_AUTO();
 
         ControllerTask();
 
@@ -51,36 +49,38 @@ namespace CBP
 
         volatile bool m_ranFrame;
         float m_lastFrameTime;
+        float m_lastFrameTimeNS;
 
         //PerfTimerInt m_pt{ 1000000 };
 
     private:
 
-        SKMP_FORCEINLINE void UpdatePhase1();
+        SKMP_FORCEINLINE void UpdatePhase1(float a_timeStep);
         SKMP_FORCEINLINE void UpdateActorsPhase2(float a_timeStep);
 
-        SKMP_FORCEINLINE uint32_t UpdatePhysics(Game::BSMain * a_main, float a_interval);
+        SKMP_FORCEINLINE std::uint32_t UpdatePhysics(Game::BSMain * a_main, float a_interval);
 
 #ifdef _CBP_ENABLE_DEBUG
         SKMP_FORCEINLINE void UpdatePhase3();
 #endif
 
-        SKMP_FORCEINLINE uint32_t UpdatePhase2(
+        SKMP_FORCEINLINE std::uint32_t UpdatePhase2(
             float a_timeStep,
             float a_timeTick,
             float a_maxTime);
 
-        SKMP_FORCEINLINE uint32_t UpdatePhase2Collisions(
+        SKMP_FORCEINLINE std::uint32_t UpdatePhase2Collisions(
             float a_timeStep,
             float a_timeTick,
             float a_maxTime);
 
         void AddActor(Game::ObjectHandle a_handle);
         void RemoveActor(Game::ObjectHandle a_handle);
+        simActorList_t::iterator RemoveActor(simActorList_t::iterator a_iterator);
         //bool ValidateActor(simActorList_t::value_type &a_entry);
         void UpdateConfigOnAllActors();
         //void UpdateGroupInfoOnAllActors();
-        void Reset();
+        void Reset(Game::ObjectHandle a_handle);
         void PhysicsReset();
         void NiNodeUpdate(Game::ObjectHandle a_handle);
         void WeightUpdate(Game::ObjectHandle a_handle);
@@ -99,7 +99,7 @@ namespace CBP
 
         void ApplyForce(
             Game::ObjectHandle a_handle,
-            uint32_t a_steps,
+            std::uint32_t a_steps,
             const std::string & a_component,
             const NiPoint3 & a_force);
 
@@ -154,7 +154,7 @@ namespace CBP
             SimObject & a_obj);
 
         SKMP_FORCEINLINE const char* GetActorName(Actor * a_actor) {
-            return a_actor ? a_actor->GetDisplayName() : "nullptr";
+            return a_actor ? a_actor->GetReferenceName() : "nullptr";
         }
 
         template <typename... Args>

@@ -6,7 +6,6 @@ namespace CBP
 
     static UInt32 PP_GetVersion(StaticFunctionTag*)
     {
-
         return MAKE_PLUGIN_VERSION(
             PLUGIN_VERSION_MAJOR,
             PLUGIN_VERSION_MINOR,
@@ -18,9 +17,9 @@ namespace CBP
         DCBP::UpdateConfigOnAllActors();
     }
 
-    static bool PP_SetGlobalConfig(StaticFunctionTag*, BSFixedString sect, BSFixedString key, float val)
+    static bool PP_SetGlobalConfig(StaticFunctionTag*, BSFixedString sect, BSFixedString key, bool isFemale, float val)
     {
-        auto cmd = ConfigUpdateTask::Create(sect, key, val);
+        auto cmd = ConfigUpdateTask::Create(isFemale ? CBP::ConfigGender::Female : CBP::ConfigGender::Male, sect, key, val);
         if (cmd) {
             DTasks::AddTask(cmd);
             return true;
@@ -28,7 +27,7 @@ namespace CBP
         return false;
     }
 
-    static bool PP_SetActorConfig(StaticFunctionTag*, Actor* actor, BSFixedString sect, BSFixedString key, float val)
+    static bool PP_SetActorConfig(StaticFunctionTag*, Actor* actor, BSFixedString sect, BSFixedString key, bool isFemale, float val)
     {
         if (!actor)
             return false;
@@ -37,7 +36,7 @@ namespace CBP
         if (!handle.Get(actor))
             return false;
 
-        auto cmd = ConfigUpdateTask::Create(handle, sect, key, val);
+        auto cmd = ConfigUpdateTask::Create(handle, isFemale ? CBP::ConfigGender::Female : CBP::ConfigGender::Male, sect, key, val);
         if (cmd) {
             DTasks::AddTask(cmd);
             return true;
@@ -60,9 +59,9 @@ namespace CBP
         registry->RegisterFunction(
             new NativeFunction0<StaticFunctionTag, void>("ResetAllActors", "CBP", PP_ResetAllActors, registry));
         registry->RegisterFunction(
-            new NativeFunction3<StaticFunctionTag, bool, BSFixedString, BSFixedString, float>("SetGlobalConfig", "CBP", PP_SetGlobalConfig, registry));
+            new NativeFunction4<StaticFunctionTag, bool, BSFixedString, BSFixedString, bool, float>("SetGlobalConfig", "CBP", PP_SetGlobalConfig, registry));
         registry->RegisterFunction(
-            new NativeFunction4<StaticFunctionTag, bool, Actor*, BSFixedString, BSFixedString, float>("SetActorConfig", "CBP", PP_SetActorConfig, registry));
+            new NativeFunction5<StaticFunctionTag, bool, Actor*, BSFixedString, BSFixedString, bool, float>("SetActorConfig", "CBP", PP_SetActorConfig, registry));
 
         return true;
     }
@@ -73,6 +72,7 @@ namespace CBP
     }
 
     ConfigUpdateTask* ConfigUpdateTask::Create(
+        ConfigGender a_gender,
         const BSFixedString& a_sect,
         const BSFixedString& a_key,
         float a_val)
@@ -94,6 +94,7 @@ namespace CBP
             cmd->m_sect = std::move(sect);
             cmd->m_key = std::move(key);
             cmd->m_val = a_val;
+            cmd->m_gender = a_gender;
         }
 
         return cmd;
@@ -101,20 +102,22 @@ namespace CBP
 
     ConfigUpdateTask* ConfigUpdateTask::Create(
         Game::ObjectHandle a_handle,
+        ConfigGender a_gender,
         const BSFixedString& a_sect,
         const BSFixedString& a_key,
         float a_val)
     {
-        auto cmd = Create(a_sect, a_key, a_val);
-        if (cmd)
+        auto cmd = Create(a_gender, a_sect, a_key, a_val);
+        if (cmd) {
             cmd->m_handle = a_handle;
+        }
 
         return cmd;
     }
 
     void ConfigUpdateTask::Run()
     {
-        IScopedCriticalSection m(DCBP::GetLock());
+        IScopedLock _(DCBP::GetLock());
 
         if (m_handle)
         {
@@ -124,8 +127,8 @@ namespace CBP
             if (ith == ach.end())
                 return;
 
-            auto itt = ith->second.find(m_sect);
-            if (itt == ith->second.end())
+            auto itt = ith->second(m_gender).find(m_sect);
+            if (itt == ith->second(m_gender).end())
                 return;
 
             if (itt->second.Set(m_key, m_val))
@@ -133,7 +136,7 @@ namespace CBP
                     m_handle, ControllerInstruction::Action::UpdateConfig);
         }
         else {
-            auto& globalConfig = IConfig::GetGlobalPhysics();
+            auto& globalConfig = IConfig::GetGlobalPhysics()(m_gender);
 
             auto it = globalConfig.find(m_sect);
             if (it == globalConfig.end())

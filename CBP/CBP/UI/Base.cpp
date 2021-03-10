@@ -35,4 +35,53 @@ namespace CBP
         UICommon::HelpMarker(a_text, globalConfig.ui.fontScale);
     }
 
+    void UIEditorBase::DrawGenderSelector()
+    {
+        auto& gcc = GetGlobalCommonConfig();
+        
+        if (ImGui::RadioButton("Female", gcc.selectedGender == ConfigGender::Female)) {
+            SetGlobal(gcc.selectedGender, ConfigGender::Female);
+        }
+
+        ImGui::SameLine();
+
+        if (ImGui::RadioButton("Male", gcc.selectedGender == ConfigGender::Male)) {
+            SetGlobal(gcc.selectedGender, ConfigGender::Male);
+        }
+    }
+
+    void UIEditorBase::AutoSelectGender(Game::ObjectHandle a_handle)
+    {
+        if (a_handle == Game::ObjectHandle(0))
+            return;
+
+        auto& actorCache = IData::GetActorCache();
+
+        auto it = actorCache.find(a_handle);
+        if (it == actorCache.end())
+            return;
+
+        auto& gcc = GetGlobalCommonConfig();
+
+        auto cgender = it->second.female ? ConfigGender::Female : ConfigGender::Male;
+        if (cgender != gcc.selectedGender) {
+            SetGlobal(gcc.selectedGender, cgender);
+        }
+    }
+
+    const char* TranslateConfigClass(ConfigClass a_class)
+    {
+        switch (a_class)
+        {
+        case ConfigClass::kConfigActor:
+            return "Actor";
+        case ConfigClass::kConfigRace:
+            return "Race";
+        case ConfigClass::kConfigTemplate:
+            return "Template";
+        default:
+            return "Global";
+        }
+    }
+
 }

@@ -1,6 +1,6 @@
 #pragma once
 
-template <class T>
+template <class T, bool _Const = false>
 class ProfileBase
 {
 public:
@@ -24,8 +24,13 @@ public:
     virtual bool Save(const T& a_data, bool a_store) = 0;
     virtual void SetDefaults() noexcept = 0;
 
+    virtual bool Save() {
+        return Save(m_data, false);
+    }
+
     SKMP_FORCEINLINE void SetPath(const fs::path& a_path) noexcept {
         m_path = a_path;
+        m_pathStr = a_path.string();
         m_name = a_path.stem().string();
     }
 
@@ -36,7 +41,7 @@ public:
     SKMP_FORCEINLINE void SetDescription(std::string&& a_text) noexcept {
         m_desc = std::move(a_text);
     }
-
+    
     SKMP_FORCEINLINE void ClearDescription() noexcept {
         m_desc.Clear();
     }
@@ -57,6 +62,7 @@ public:
         return m_pathStr;
     }
 
+    template <class = std::enable_if_t<_Const == false, void>>
     [[nodiscard]] SKMP_FORCEINLINE T& Data() noexcept {
         return m_data;
     }
@@ -69,11 +75,11 @@ public:
         return m_lastExcept;
     }
 
-    [[nodiscard]] SKMP_FORCEINLINE uint64_t GetID() const noexcept {
+    [[nodiscard]] SKMP_FORCEINLINE std::uint64_t GetID() const noexcept {
         return m_id;
     }
 
-    SKMP_FORCEINLINE void SetID(uint64_t a_id) noexcept {
+    SKMP_FORCEINLINE void SetID(std::uint64_t a_id) noexcept {
         m_id = a_id;
     }
 
@@ -82,7 +88,7 @@ protected:
     std::string m_pathStr;
     std::string m_name;
 
-    uint64_t m_id;
+    std::uint64_t m_id;
     SelectedItem<std::string> m_desc;
 
     T m_data;
@@ -98,25 +104,18 @@ class Profile :
 {
 public:
 
+    using ProfileBase<T>::ProfileBase;
+    using ProfileBase<T>::Save;
+
     Profile(const Profile&) = default;
     Profile(Profile&&) = default;
 
-    template <typename... Args>
-    Profile(Args&&... a_args) :
-        ProfileBase<T>(std::forward<Args>(a_args)...)
-    {
-    }
-
     virtual ~Profile() noexcept = default;
 
-    virtual bool Load();
-    virtual bool Save(const T& a_data, bool a_store);
-    virtual void SetDefaults() noexcept;
+    virtual bool Load() override;
+    virtual bool Save(const T& a_data, bool a_store) override;
 
-    SKMP_FORCEINLINE bool Save() {
-        return Save(m_data, false);
-    }
-
+    virtual void SetDefaults() noexcept override;
 };
 
 
@@ -205,10 +204,10 @@ class ProfileManager
     : ILog
 {
     //using profile_type = ProfileBase<T>;
-    using profileStorage_t = stl::imap<std::string, T>;
+    using storage_type = stl::imap<std::string, T>;
 
 public:
-    static constexpr size_t MAX_FILENAME_LENGTH = 64;
+    inline static constexpr std::size_t MAX_FILENAME_LENGTH = 64;
 
     ProfileManager(const std::string& a_fc, const fs::path& a_ext = ".json");
 
@@ -230,18 +229,18 @@ public:
     [[nodiscard]] bool DeleteProfile(const std::string& a_name);
     [[nodiscard]] bool RenameProfile(const std::string& a_oldName, const std::string& a_newName);
 
-    [[nodiscard]] SKMP_FORCEINLINE profileStorage_t& Data() noexcept { return m_storage; }
-    [[nodiscard]] SKMP_FORCEINLINE const profileStorage_t& Data() const noexcept { return m_storage; }
+    [[nodiscard]] SKMP_FORCEINLINE storage_type& Data() noexcept { return m_storage; }
+    [[nodiscard]] SKMP_FORCEINLINE const storage_type& Data() const noexcept { return m_storage; }
     [[nodiscard]] SKMP_FORCEINLINE T& Get(const std::string& a_key) { return m_storage.at(a_key); };
-    [[nodiscard]] SKMP_FORCEINLINE typename profileStorage_t::const_iterator Find(const std::string& a_key) const { return m_storage.find(a_key); };
-    [[nodiscard]] SKMP_FORCEINLINE typename profileStorage_t::iterator Find(const std::string& a_key) { return m_storage.find(a_key); };
-    [[nodiscard]] SKMP_FORCEINLINE typename profileStorage_t::const_iterator End() const { return m_storage.end(); };
-    [[nodiscard]] SKMP_FORCEINLINE typename profileStorage_t::iterator End() { return m_storage.end(); };
+    [[nodiscard]] SKMP_FORCEINLINE typename storage_type::const_iterator Find(const std::string& a_key) const { return m_storage.find(a_key); };
+    [[nodiscard]] SKMP_FORCEINLINE typename storage_type::iterator Find(const std::string& a_key) { return m_storage.find(a_key); };
+    [[nodiscard]] SKMP_FORCEINLINE typename storage_type::const_iterator End() const { return m_storage.end(); };
+    [[nodiscard]] SKMP_FORCEINLINE typename storage_type::iterator End() { return m_storage.end(); };
     [[nodiscard]] SKMP_FORCEINLINE const T& Get(const std::string& a_key) const { return m_storage.at(a_key); };
     [[nodiscard]] SKMP_FORCEINLINE bool Contains(const std::string& a_key) const { return m_storage.contains(a_key); };
     [[nodiscard]] SKMP_FORCEINLINE const auto& GetLastException() const noexcept { return m_lastExcept; }
     [[nodiscard]] SKMP_FORCEINLINE bool IsInitialized() const noexcept { return m_isInitialized; }
-    [[nodiscard]] SKMP_FORCEINLINE typename profileStorage_t::size_type Size() const noexcept { return m_storage.size(); }
+    [[nodiscard]] SKMP_FORCEINLINE typename storage_type::size_type Size() const noexcept { return m_storage.size(); }
     [[nodiscard]] SKMP_FORCEINLINE bool Empty() const noexcept { return m_storage.empty(); }
 
     FN_NAMEPROC("ProfileManager")
@@ -253,7 +252,7 @@ private:
     virtual void OnProfileDelete(T& a_profile);
     virtual void OnProfileRename(T& a_profile, const std::string &a_oldName);
 
-    profileStorage_t m_storage;
+    storage_type m_storage;
     fs::path m_root;
     fs::path m_ext;
     std::regex m_rFileCheck;
@@ -289,7 +288,6 @@ bool ProfileManager<T>::Load(const fs::path& a_path)
         m_storage.clear();
 
         m_root = a_path;
-        m_isInitialized = true;
 
         for (const auto& entry : fs::directory_iterator(a_path))
         {
@@ -316,6 +314,7 @@ bool ProfileManager<T>::Load(const fs::path& a_path)
             }
 
             T profile(path);
+
             if (!profile.Load()) {
                 Warning("Failed loading profile '%s': %s",
                     filename.c_str(), profile.GetLastException().what());
@@ -328,13 +327,19 @@ bool ProfileManager<T>::Load(const fs::path& a_path)
             m_storage.emplace(profile.Name(), std::move(profile));
         }
 
+        m_isInitialized = true;
+
         Debug("Loaded %zu profile(s)", m_storage.size());
 
         return true;
     }
-    catch (const std::exception& e) {
+    catch (const std::exception& e) 
+    {
+        m_storage.clear();
+
         Error("%s: %s", __FUNCTION__, e.what());
         m_lastExcept = e;
+
         return false;
     }
 }
@@ -362,7 +367,10 @@ bool ProfileManager<T>::Unload()
 }
 
 template <class T>
-bool ProfileManager<T>::CreateProfile(const std::string& a_name, T& a_out, bool a_save)
+bool ProfileManager<T>::CreateProfile(
+    const std::string& a_name, 
+    T& a_out, 
+    bool a_save)
 {
     try
     {
@@ -378,7 +386,7 @@ bool ProfileManager<T>::CreateProfile(const std::string& a_name, T& a_out, bool 
         fs::path path(m_root);
 
         path /= a_name;
-        path += ".json";
+        path += m_ext;
 
         auto filename = path.filename().string();
         if (filename.length() > MAX_FILENAME_LENGTH)
@@ -522,7 +530,7 @@ bool ProfileManager<T>::RenameProfile(
             throw std::exception("Invalid characters in profile name");
 
         fs::path newFilename(a_newName);
-        newFilename += ".json";
+        newFilename += m_ext;
 
         if (newFilename.string().length() > MAX_FILENAME_LENGTH)
             throw std::exception("Profile name too long");

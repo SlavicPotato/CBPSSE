@@ -116,10 +116,10 @@ namespace CBP
         }
 
         SKMP_FORCEINLINE static void MarkGlobalsForSave() {
-            m_Instance.m_serialization.MarkForSave(CBP::ISerialization::Group::kGlobals);
+            m_Instance.m_serialization.MarkForSave(ISerialization::Group::kGlobals);
         }
 
-        SKMP_FORCEINLINE static void MarkForSave(CBP::ISerialization::Group a_grp) {
+        SKMP_FORCEINLINE static void MarkForSave(ISerialization::Group a_grp) {
             m_Instance.m_serialization.MarkForSave(a_grp);
         }
 
@@ -161,21 +161,21 @@ namespace CBP
 
         SKMP_FORCEINLINE static void Lock()
         {
-            m_Instance.m_lock.Enter();
+            m_Instance.m_lock.lock();
         }
 
         SKMP_FORCEINLINE static bool TryLock()
         {
-            return m_Instance.m_lock.TryEnter();
+            return m_Instance.m_lock.try_lock();
         }
 
         SKMP_FORCEINLINE static void Unlock()
         {
-            m_Instance.m_lock.Leave();
+            m_Instance.m_lock.unlock();
         }
 
-        SKMP_FORCEINLINE static auto GetLock() {
-            return std::addressof(m_Instance.m_lock);
+        SKMP_FORCEINLINE static auto &GetLock() {
+            return m_Instance.m_lock;
         }
 
         [[nodiscard]] SKMP_FORCEINLINE static const auto& GetDriverConfig()
@@ -320,13 +320,13 @@ namespace CBP
 
         CBP::ISerialization m_serialization;
 
-        ICriticalSection m_lock;
+        WCriticalSection m_lock;
 
         mainLoopUpdateFunc_t mainLoopUpdateFunc_o;
         mainInitHook_t mainInitHook_o;
 
         bool m_resetUI;
-        volatile bool m_drEnabled;
+        std::atomic<bool> m_drEnabled;
 
         static DCBP m_Instance;
     };

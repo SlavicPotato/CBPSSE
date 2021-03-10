@@ -128,7 +128,7 @@ namespace Game
     // skee64
     SKMP_FORCEINLINE TESObjectARMO* GetActorSkin(Actor* a_actor)
     {
-        auto npc = DYNAMIC_CAST(a_actor->baseForm, TESForm, TESNPC);
+        auto npc = RTTI<TESNPC>()(a_actor->baseForm);
         if (npc) {
             if (npc->skinForm.skin)
                 return npc->skinForm.skin;
@@ -161,12 +161,23 @@ namespace Game
 
     SKMP_FORCEINLINE float GetActorWeight(Actor* a_actor)
     {
-        auto npc = DYNAMIC_CAST(a_actor->baseForm, TESForm, TESNPC);
-
+        auto npc = RTTI<TESNPC>()(a_actor->baseForm);
         if (npc)
             return GetNPCWeight(npc);
 
-        return CALL_MEMBER_FN(a_actor, GetWeight)();
+        return a_actor->GetWeight();
+    }
+
+    SKMP_FORCEINLINE char GetActorSex(Actor* a_actor)
+    {
+        auto npc = RTTI<TESNPC>()(a_actor->baseForm);
+        if (npc != nullptr) {
+            return npc->GetSex();
+        }
+        else {
+            return 0;
+        }
+
     }
 
     // https://github.com/Ryan-rsm-McKenzie/CommonLibSSE/blob/master/include/RE/AI/ProcessLists.h
@@ -181,7 +192,7 @@ namespace Game
         bool                                    runDetection;                                  // 001
         bool                                    showDetectionStats;                            // 002
         uint8_t                                 pad003;                                        // 003
-        ActorHandle                             statdetect;                                    // 004
+        ObjectRefHandle                         statdetect;                                    // 004
         bool                                    processHigh;                                   // 008
         bool                                    processLow;                                    // 009
         bool                                    processMHigh;                                  // 00A
@@ -196,11 +207,11 @@ namespace Game
         uint64_t                                movementSyncSema;                              // 020
         uint32_t                                unk028;                                        // 028
         uint32_t                                pad02C;                                        // 02C
-        tArray<ActorHandle>                     highActorHandles;                              // 030
-        tArray<ActorHandle>                     lowActorHandles;                               // 048
-        tArray<ActorHandle>                     middleHighActorHandles;                        // 060
-        tArray<ActorHandle>                     middleLowActorHandles;                         // 078
-        tArray<ActorHandle>* allProcesses[4];                                                  // 090
+        tArray<ObjectRefHandle>                 highActorHandles;                              // 030
+        tArray<ObjectRefHandle>                 lowActorHandles;                               // 048
+        tArray<ObjectRefHandle>                 middleHighActorHandles;                        // 060
+        tArray<ObjectRefHandle>                 middleLowActorHandles;                         // 078
+        tArray<ObjectRefHandle>* allProcesses[4];                                              // 090
 
     private:
 

@@ -2,9 +2,10 @@
 
 namespace CBP
 {
+    using namespace UICommon;
 
     template <class T>
-    void UINodeCommon<T>::DrawBoneCastSampleImpl(
+    void UINodeCommon<T>::DrawBoneCastButtonsImpl(
         Game::ObjectHandle a_handle,
         const std::string& a_nodeName,
         configNode_t& a_conf)
@@ -12,25 +13,36 @@ namespace CBP
         if (a_handle == Game::ObjectHandle(0))
             return;
 
-        const float width = ImGui::GetWindowContentRegionMax().x;
+        const float width = ImGui::GetWindowContentRegionMax().x - 4.0f;
 
-        ImGui::SameLine(width - GetNextTextOffset("Sample", true) - 4.0f);
+        ImGui::SameLine(width - GetNextTextOffset("Sample", true));
         if (ButtonRight("Sample")) {
-            if (!a_conf.ex.bcShape.empty()) 
+            if (!a_conf.ex.bcShape.empty())
                 DCBP::BoneCastSample(a_handle, a_nodeName);
         }
 
         BoneCastCache::const_iterator it;
         if (IBoneCast::Get(a_handle, a_nodeName, false, it))
         {
+            ImGui::SameLine(width - GetNextTextOffset("Save"));
+            if (ButtonRight("Save")) {
+                ImGui::OpenPopup("__save_geom_popup");
+            }
+
+            if (ImGui::BeginPopup("__save_geom_popup"))
+            {
+                DrawSaveGeometryContextMenu(a_handle, a_nodeName, a_conf);
+                ImGui::EndPopup();
+            }
+
             auto& data1 = it->second.m_data.first;
             auto& data2 = it->second.m_data.second;
 
-            ImGui::TextWrapped("Vertices: %zu, Indices: %zu / %zu, Mem: %zu kb",
-                data1.m_vertices.size(),
-                data2.m_indices.size(),
+            ImGui::TextWrapped("Vertices: %u, Indices: %d / %zu, Mem: %zu kb",
+                data1.m_numVertices,
+                data2->m_numIndices,
                 data1.m_indices.size(),
-                it->second.m_size / size_t(1024));
+                it->second.m_size / std::size_t(1024));
 
         }
         else {
@@ -42,7 +54,155 @@ namespace CBP
     }
 
     template <class T>
-    void UINodeCommon<T>::DrawBoneCastSample(
+    void UINodeCommon<T>::SaveGeometry(
+        Game::ObjectHandle a_handle,
+        const std::string& a_nodeName,
+        const std::shared_ptr<const ColliderData>& a_data,
+        const std::string& a_name)
+    {
+        try
+        {
+            auto& pmc = CBP::GlobalProfileManager::GetSingleton<ColliderProfile>();
+
+            auto itc = pmc.Find(a_name);
+            if (itc == pmc.End())
+            {
+                ColliderProfile profile;
+
+                if (!pmc.CreateProfile(a_name, profile, false)) {
+                    throw std::exception(pmc.GetLastException().what());
+                }
+
+                profile.SetDescription(a_name);
+
+                const auto tmp = std::make_shared<const ColliderData>(*a_data.get());
+
+                if (!profile.Save(tmp, true)) {
+                    throw std::exception(profile.GetLastException().what());
+                }
+
+                if (!pmc.AddProfile(std::move(profile))) {
+                    throw std::exception(pmc.GetLastException().what());
+                }
+            }
+            else
+            {
+                itc->second.SetDescription(a_name);
+
+                const auto tmp = std::make_shared<const ColliderData>(*a_data.get());
+
+                if (!itc->second.Save(tmp, true)) {
+                    throw std::exception(itc->second.GetLastException().what());
+                }
+
+                DCBP::ResetActors();
+            }
+        }
+        catch (const std::exception& e)
+        {
+            auto& queue = GetPopupQueue();
+
+            queue.push(
+                UIPopupType::Message,
+                "Error saving geometry",
+                "Error occured while saving geometry:\n\n%s",
+                e.what()
+            );
+        }
+    }
+
+    template <class T>
+    void UINodeCommon<T>::DrawSaveGeometryContextMenu(
+        Game::ObjectHandle a_handle,
+        const std::string& a_nodeName,
+        configNode_t& a_conf)
+    {
+        if (ImGui::MenuItem("New"))
+        {
+            BoneResult result;
+            if (IBoneCast::Get(a_handle, a_nodeName, a_conf, result)) 
+            {
+                auto& queue = GetPopupQueue();
+
+                queue.push(
+                    UIPopupType::Input,
+                    "Create collision geometry",
+                    "Enter the filename:"
+                ).call(
+                    [this, nodeName = a_nodeName, data = result.data, a_handle](auto& a_p)
+                    {
+                        auto& in = a_p.GetInput();
+
+                        if (!strlen(in))
+                            return;
+
+                        std::string name(in);
+
+                        auto& pmc = CBP::GlobalProfileManager::GetSingleton<ColliderProfile>();
+                        if (pmc.Find(name) != pmc.End())
+                        {
+                            auto& queue = GetPopupQueue();
+                            queue.push(
+                                UIPopupType::Confirm,
+                                "Create collision geometry",
+                                "'%s' already exists, overwrite?",
+                                name.c_str()
+                            ).call([this, nodeName, data, a_handle, name](...)
+                                {
+                                    SaveGeometry(a_handle, nodeName, data, name);
+                                }
+                            );
+                        }
+                        else
+                        {
+                            SaveGeometry(a_handle, nodeName, data, name);
+                        }
+                    }
+                );               
+            }
+            else {
+                GetPopupQueue().push(UIPopupType::Message, "Error", "Nothing to save");
+            }
+        }
+
+        auto& pmc = CBP::GlobalProfileManager::GetSingleton<ColliderProfile>();
+
+        if (pmc.Empty())
+            return;
+
+        ImGui::Separator();
+
+        auto& data = pmc.Data();
+
+        for (auto& e : data)
+        {
+            if (ImGui::MenuItem(e.first.c_str()))
+            {
+                BoneResult result;
+                if (IBoneCast::Get(a_handle, a_nodeName, a_conf, result))
+                {
+                    auto& queue = GetPopupQueue();
+
+                    queue.push(
+                        UIPopupType::Confirm,
+                        "Create collision geometry",
+                        "Are you sure you want to overwrite '%s' ?",
+                        e.first.c_str()
+                    ).call([this, nodeName = a_nodeName, data = result.data, a_handle, name = e.first](...)
+                    {
+                        SaveGeometry(a_handle, nodeName, data, name);
+                    }
+                    );
+                }
+                else {
+                    GetPopupQueue().push(UIPopupType::Message, "Error", "Nothing to save");
+                }
+            }
+        }
+    }
+
+    template <class T>
+    void UINodeCommon<T>::DrawBoneCastButtons(
         T a_handle,
         const std::string& a_nodeName,
         configNode_t& a_conf
@@ -66,7 +226,7 @@ namespace CBP
 
         if (a_conf.bl.b.boneCast)
         {
-            DrawBoneCastSample(a_handle, a_nodeName, a_conf);
+            DrawBoneCastButtons(a_handle, a_nodeName, a_conf);
 
             ImGui::PushItemWidth(ImGui::GetFontSize() * -14.0f);
 
@@ -86,6 +246,12 @@ namespace CBP
     }
 
     template <class T>
+    UINodeCommon<T>::UINodeCommon() :
+        m_nodeConfigChanged(false)
+    {
+    }
+
+    template <class T>
     void UINodeCommon<T>::DrawNodeItem(
         T a_handle,
         const std::string& a_nodeName,
@@ -94,32 +260,12 @@ namespace CBP
     {
         bool changed(false);
 
-        ImGui::Columns(2, nullptr, false);
-
-        ImGui::Text("Female");
-
-        ImGui::PushID(1);
-
         ImGui::Spacing();
 
-        changed |= ImGui::Checkbox("Movement", &a_conf.bl.b.motion.female);
-        changed |= ImGui::Checkbox("Collisions", &a_conf.bl.b.collisions.female);
-
-        ImGui::PopID();
-
-        ImGui::NextColumn();
-
-        ImGui::Text("Male");
-
-        ImGui::PushID(2);
+        changed |= ImGui::Checkbox("Motion", &a_conf.bl.b.motion);
+        changed |= ImGui::Checkbox("Collisions", &a_conf.bl.b.collisions);
 
         ImGui::Spacing();
-        changed |= ImGui::Checkbox("Movement", &a_conf.bl.b.motion.male);
-        changed |= ImGui::Checkbox("Collisions", &a_conf.bl.b.collisions.male);
-
-        ImGui::PopID();
-
-        ImGui::Columns(1);
 
         bool changed2(false);
 
@@ -144,8 +290,10 @@ namespace CBP
 
         changed2 |= DrawBoneCast(a_handle, a_nodeName, a_conf);
 
-        if (changed || changed2)
+        if (changed || changed2) {
+            MarkNodeChanged();
             UpdateNodeData(a_handle, a_nodeName, a_conf, changed);
+        }
     }
 
 
@@ -169,6 +317,8 @@ namespace CBP
         if (ImGui::TreeNodeEx("Nodes",
             ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_DefaultOpen))
         {
+            DrawConfGroupNodeClass(a_handle);
+
             for (auto& e : a_nodeList)
             {
                 if (ImGui::TreeNodeEx(e.first.c_str(),
@@ -183,6 +333,21 @@ namespace CBP
             }
 
             ImGui::TreePop();
+        }
+    }
+
+    template <class T, UIEditorID ID>
+    void UINodeConfGroupMenu<T, ID>::DrawConfGroupNodeClass(
+        T a_handle
+    )
+    {
+        if constexpr(std::is_same_v<T, Game::ObjectHandle>) 
+        {
+            auto confClass = IConfig::GetActorNodeClass(a_handle);
+
+            ImGui::Spacing();
+            ImGui::TextWrapped("Config in use: %s", TranslateConfigClass(confClass));
+            ImGui::Spacing();
         }
     }
 
@@ -211,7 +376,7 @@ namespace CBP
 
             for (const auto& e : nodeMap)
             {
-                if (!m_dataFilter.Test(e.first))
+                if (!m_groupFilter.Test(e.first))
                     continue;
 
                 ImGui::PushID(static_cast<const void*>(std::addressof(e)));

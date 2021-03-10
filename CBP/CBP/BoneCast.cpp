@@ -15,6 +15,9 @@ namespace CBP
         NiAVObject* a_armorNode,
         ColliderDataStorage& a_out)
     {
+        static_assert(sizeof(btVector3) == sizeof(DirectX::XMVECTOR));
+        static_assert(std::is_same_v<__m128, DirectX::XMVECTOR>);
+
         auto geometry = a_armorNode->GetAsBSGeometry();
         if (!geometry)
             return false;
@@ -31,11 +34,12 @@ namespace CBP
         if (!triShape)
             return false;
 
-        auto& skinInstance = geometry->m_spSkinInstance;
-        if (skinInstance == nullptr)
+        if (geometry->m_spSkinInstance == nullptr)
             return false;
 
-        IScopedCriticalSectionEx _(&skinInstance->lock);
+        auto& skinInstance = geometry->m_spSkinInstance;
+
+        IScopedCriticalSectionEx _(std::addressof(skinInstance->lock));
 
         auto& skinPartition = skinInstance->m_spSkinPartition;
         if (skinPartition == nullptr)
@@ -50,7 +54,6 @@ namespace CBP
         if (!numPartitions)
             return false;
 
-        //UInt16 numTriangles = triShape->triangleCount ? triShape->triangleCount : skinPartition->m_pkPartitions[0].m_usTriangles;
         //UInt32 numVertices = triShape->numVertices ? triShape->numVertices : skinPartition->vertexCount;
         UInt32 numVertices = skinPartition->vertexCount;
 
@@ -77,11 +80,6 @@ namespace CBP
             if (boneData.m_usVerts == 0)
                 return false;
 
-            //UInt32 numIndices = numTriangles * 3;
-
-            /*SKMP::PerfTimer pt;
-            pt.Start();*/
-
             UInt32 numTriangles = 0;
             for (UInt32 i = 0; i < numPartitions; i++) {
                 numTriangles += skinPartition->m_pkPartitions[i].m_usTriangles;
@@ -90,29 +88,32 @@ namespace CBP
             if (numTriangles == 0)
                 return false;
 
+            Bullet::btTransformEx tnsf(boneData.m_kSkinToBone);
+
             auto tris = std::make_unique<Triangle[]>(numTriangles);
             auto vertmap = std::make_unique<Vertex[]>(numVertices);
 
-            for (UInt32 i = 0, itri = 0; i < numPartitions; i++)
+            for (decltype(numPartitions) i = 0, itri = 0; i < numPartitions; i++)
             {
                 auto& part = skinPartition->m_pkPartitions[i];
 
-                UInt16* trilist = part.m_pusTriList;
-
+                auto trilist = part.m_pusTriList;
                 auto numTris = part.m_usTriangles;
 
-                for (UInt16 j = 0, k = 0; j < numTris; j++, k += 3)
+                for (decltype(numTris) j = 0; j < numTris; j++)
                 {
                     auto tri = std::addressof(tris[itri]);
 
                     tri->m_isBoneTri = false;
+
+                    std::uint32_t k = j * 3;
 
                     auto i1 = tri->m_indices[0] = trilist[k];
                     auto i2 = tri->m_indices[1] = trilist[k + 1];
                     auto i3 = tri->m_indices[2] = trilist[k + 2];
 
                     if (i1 >= numVertices || i2 >= numVertices || i3 >= numVertices) {
-                        m_Instance.Debug("%s: [m_pusTriList] index >= numVertices", a_nodeName.c_str());
+                        m_Instance.Warning("%s: [m_pusTriList] index >= numVertices", a_nodeName.c_str());
                         return false;
                     }
 
@@ -129,7 +130,7 @@ namespace CBP
                 auto& v = boneData.m_pkBoneVertData[i];
 
                 if (v.m_usVert >= numVertices) {
-                    m_Instance.Debug("%s: [m_pkBoneVertData] index >= numVertices", a_nodeName.c_str());
+                    m_Instance.Warning("%s: [m_pkBoneVertData] index >= numVertices", a_nodeName.c_str());
                     return false;
                 }
 
@@ -145,7 +146,7 @@ namespace CBP
             std::size_t c = 0;
             std::uint32_t vi = 0;
 
-            for (UInt32 i = 0; i < numTriangles; i++)
+            for (decltype(numTriangles) i = 0; i < numTriangles; i++)
             {
                 auto& tri = tris[i];
 
@@ -157,17 +158,15 @@ namespace CBP
 
                         auto& vme = vertmap[index];
 
-                        if (!vme.m_hasVertex) {
-                            auto vtx = reinterpret_cast<DirectX::XMVECTOR*>(&partition->shapeData->m_RawVertexData[index * vertexSize]);
+                        if (!vme.m_hasVertex)
+                        {
+                            btVector3 vtx(*reinterpret_cast<DirectX::XMVECTOR*>(&partition->shapeData->m_RawVertexData[index * vertexSize]));
 
-                            auto p = boneData.m_kSkinToBone * NiPoint3(
-                                vtx->m128_f32[0], vtx->m128_f32[1], vtx->m128_f32[2]);
+                            vme.m_vertex.v = tnsf * vtx;
+                            vme.m_hasVertex = true;
+                            vme.m_index = vi;
 
                             tri.m_indices[j] = vi;
-
-                            vme.m_vertex = MeshPoint{ p.x, p.y, p.z };
-                            vme.m_index = vi;
-                            vme.m_hasVertex = true;
 
                             vi++;
                         }
@@ -186,14 +185,14 @@ namespace CBP
             if (c == 0 || vi == 0)
                 return false;
 
-            std::size_t rnIndices = c * 3;
-            std::size_t rnVertices = static_cast<std::size_t>(vi);
+            auto rnIndices = c * 3;
+            auto rnVertices = static_cast<std::size_t>(vi);
 
-            a_out.m_vertices.resize(rnVertices);
+            auto outVertices = new MeshPoint[rnVertices];
             a_out.m_weights.resize(rnVertices);
             a_out.m_indices.resize(rnIndices);
 
-            for (UInt32 i = 0; i < numVertices; i++) {
+            for (decltype(numVertices) i = 0; i < numVertices; i++) {
 
                 auto& vme = vertmap[i];
 
@@ -201,15 +200,15 @@ namespace CBP
                 {
                     auto index = vme.m_index;
 
-                    a_out.m_vertices[index].x = vme.m_vertex.x;
-                    a_out.m_vertices[index].y = vme.m_vertex.y;
-                    a_out.m_vertices[index].z = vme.m_vertex.z;
-
+                    outVertices[index].v = vme.m_vertex.v;
                     a_out.m_weights[index] = vme.m_weight;
                 }
             }
 
-            for (UInt32 i = 0, c = 0; i < numTriangles; i++)
+            a_out.m_vertices = std::unique_ptr<MeshPoint[]>(outVertices);
+            a_out.m_numVertices = static_cast<unsigned int>(rnVertices);
+
+            for (decltype(numTriangles) i = 0, c = 0; i < numTriangles; i++)
             {
                 auto& tri = tris[i];
 
@@ -235,97 +234,108 @@ namespace CBP
         return false;
     }
 
+    void IBoneCast::FillColliderData(
+        const ColliderDataStorage& a_cds,
+        const unsigned int* a_indices,
+        std::size_t a_numIndices,
+        ColliderData* a_out)
+    {
+        a_out->m_indices = std::make_unique<int[]>(a_numIndices);
+        a_out->m_hullPoints = std::make_unique<MeshPoint[]>(a_numIndices);
+        a_out->m_vertices = a_cds.m_vertices;
+
+        for (std::size_t i = 0; i < a_numIndices; i++)
+        {
+            auto index = a_indices[i];
+
+            a_out->m_indices[i] = static_cast<int>(index);
+            a_out->m_hullPoints[i] = a_cds.m_vertices[index];
+        }
+
+        a_out->m_numTriangles = static_cast<int>(a_numIndices / 3);
+        a_out->m_numIndices = static_cast<int>(a_numIndices);
+        a_out->m_numVertices = static_cast<int>(a_cds.m_numVertices);
+
+        a_out->GenerateTriVertexArray();
+
+    }
+
     bool IBoneCast::UpdateGeometry(
-        BoneCastCache::CacheEntry::data_t& a_in,
+        ColliderDataStoragePair& a_in,
         float a_weightThreshold,
         float a_simplifyTarget,
         float a_simplifyTargetError)
     {
-        auto numIndices = a_in.first.m_indices.size();
+        if (!a_in.first.m_numVertices)
+            return false;
 
-        auto indices = decltype(a_in.second.m_indices)();
+        auto numIndices = a_in.first.m_indices.size();
+        if (numIndices < 3)
+            return false;
+
+        auto indices = decltype(a_in.first.m_indices)();
 
         indices.reserve(numIndices);
 
-        for (size_t i = 0; i < numIndices; i += 3)
+        for (decltype(numIndices) i = 0; i < numIndices; i += 3)
         {
-            bool skip(false);
+            decltype(numIndices) m = i + 3;
 
-            size_t m = i + 3;
-
-            for (size_t j = i; j < m; j++)
+            for (decltype(numIndices) j = i; j < m; j++)
             {
-                int index = a_in.first.m_indices[j];
+                auto index = a_in.first.m_indices[j];
 
                 if (a_in.first.m_weights[index] < a_weightThreshold)
                 {
-                    skip = true;
-                    break;
+                    goto _continue;
                 }
             }
 
-            if (skip)
-                continue;
-
-            for (size_t j = i; j < m; j++)
+            for (decltype(numIndices) j = i; j < m; j++)
             {
                 indices.emplace_back(a_in.first.m_indices[j]);
             }
+
+        _continue:;
         }
 
         numIndices = indices.size();
-
         if (numIndices < 3) {
-            a_in.second.Clear();
             return false;
         }
 
-        auto targetIndices = std::clamp<size_t>(static_cast<size_t>(static_cast<double>(numIndices) * a_simplifyTarget), 3, numIndices);
+        auto data = std::make_unique<ColliderData>();
+
+        auto targetIndices = static_cast<std::size_t>(static_cast<double>(numIndices) * static_cast<double>(a_simplifyTarget));
 
         if (targetIndices < numIndices)
         {
+            targetIndices = std::clamp<std::size_t>(targetIndices - targetIndices % 3, 3, numIndices);
+
             auto tmp = std::make_unique<unsigned int[]>(numIndices);
 
-            auto newIndices = meshopt_simplify(
+            numIndices = meshopt_simplify(
                 tmp.get(),
-                reinterpret_cast<unsigned int*>(indices.data()),
+                indices.data(),
                 numIndices,
-                reinterpret_cast<const float*>(a_in.first.m_vertices.data()),
-                a_in.first.m_vertices.size(),
-                sizeof(MeshPoint),
+                a_in.first.m_vertices.get()->v,
+                a_in.first.m_numVertices,
+                sizeof(decltype(a_in.first.m_vertices)::element_type::v),
                 targetIndices,
                 a_simplifyTargetError);
 
-            if (newIndices % 3 != 0) {
-                a_in.second.Clear();
+            if (numIndices % 3 != 0) {
                 return false;
             }
 
-            a_in.second.m_indices = decltype(a_in.second.m_indices)(newIndices);
-            a_in.second.m_hullPoints = decltype(a_in.second.m_hullPoints)(newIndices);
-
-            for (decltype(newIndices) i = 0; i < newIndices; i++)
-            {
-                auto index = static_cast<int>(tmp[i]);
-
-                a_in.second.m_indices[i] = index;
-                a_in.second.m_hullPoints[i] = a_in.first.m_vertices[index];
-            }
-
-            a_in.second.m_numTriangles = static_cast<int>(newIndices / 3);
+            FillColliderData(a_in.first, tmp.get(), numIndices, data.get());
         }
         else
         {
-            a_in.second.m_indices = std::move(indices);
-            a_in.second.m_indices.shrink_to_fit();
-
-            a_in.second.m_hullPoints = decltype(a_in.second.m_hullPoints)(numIndices);
-
-            for (decltype(numIndices) i = 0; i < numIndices; i++)
-                a_in.second.m_hullPoints[i] = a_in.first.m_vertices[a_in.second.m_indices[i]];
-
-            a_in.second.m_numTriangles = static_cast<int>(numIndices / 3);
+            FillColliderData(a_in.first, indices.data(), numIndices, data.get());
         }
+
+        a_in.second = std::move(data);
 
         return true;
 
@@ -337,30 +347,39 @@ namespace CBP
         const std::string& a_shape,
         ColliderDataStorage& a_result)
     {
-        if (a_shape.empty() || a_nodeName.empty())
+        if (a_nodeName.empty())
             return false;
 
-        BSFixedString shape(a_shape.c_str());
         BSFixedString nodeName(a_nodeName.c_str());
 
         //_DMESSAGE(">>> %s", a_shape.c_str());
 
-        bool found = IArmor::VisitEquippedNodes(a_actor, [&](TESObjectARMO*, TESObjectARMA*, NiAVObject* a_object, bool a_firstPerson)
-            {
-                //_DMESSAGE("%s: equip (%hhu): %s", a_nodeName.c_str(), a_firstPerson, a_object->m_name);
+        bool found(false);
 
-                /*if (a_firstPerson)
-                    return false;*/
+        if (!a_shape.empty())
+        {
+            BSFixedString shape(a_shape.c_str());
 
-                if (a_object->m_name != shape.data)
-                    return false;
+            found = IArmor::VisitEquippedNodes(a_actor,
+                [&](TESObjectARMO*, TESObjectARMA*, NiAVObject* a_object, bool a_firstPerson)
+                {
+                    //_DMESSAGE("%s: equip (%hhu): %s", a_nodeName.c_str(), a_firstPerson, a_object->m_name);
 
-                return ExtractGeometry(a_actor, nodeName, a_object, a_result);
-            });
+                    /*if (a_firstPerson)
+                        return false;*/
 
-        if (!found) {
+                    if (a_object->m_name != shape.data)
+                        return false;
+
+                    return ExtractGeometry(a_actor, nodeName, a_object, a_result);
+                });
+        }
+
+        if (!found)
+        {
             auto skin = Game::GetActorSkin(a_actor);
-            if (skin) {
+            if (skin)
+            {
                 found = IArmor::VisitArmor(a_actor, skin, false,
                     [&](TESObjectARMO*, TESObjectARMA*, NiAVObject* a_object, bool a_firstPerson)
                     {
@@ -376,29 +395,9 @@ namespace CBP
         return found;
     }
 
-    void BoneCastCreateTask1::Run()
-    {
-        auto actor = m_handle.Resolve<Actor>();
-        if (!actor)
-            return;
-
-        IScopedCriticalSection _(DCBP::GetLock());
-
-        auto& nodeConfig = CBP::IConfig::GetActorNode(m_handle);
-        auto itn = nodeConfig.find(m_nodeName);
-        if (itn == nodeConfig.end())
-            return;
-
-        if (!IBoneCast::Update(m_handle, m_nodeName, itn->second))
-            return;
-
-        DCBP::DispatchActorTask(
-            m_handle, ControllerInstruction::Action::UpdateConfig);
-    }
-
     BoneCastCache::BoneCastCache(
         IBoneCastIO& a_iio,
-        size_t a_maxSize)
+        std::size_t a_maxSize)
         :
         m_maxSize(a_maxSize),
         m_totalSize(0),
@@ -414,7 +413,7 @@ namespace CBP
     {
         EvictOverflow();
 
-        key_t key(a_handle, a_nodeName);
+        auto key = std::make_pair(a_handle, a_nodeName);
 
         iterator it = m_data.find(key);
 
@@ -427,7 +426,7 @@ namespace CBP
             it = m_data.try_emplace(std::move(key), std::forward<T>(a_data)).first;
         }
 
-        it->second.m_size = it->second.m_data.GetSize();
+        it->second.m_size = it->second.m_data.UpdateSize();
 
         m_totalSize += it->second.m_size;
 
@@ -437,8 +436,7 @@ namespace CBP
     void BoneCastCache::UpdateSize(CacheEntry& a_in)
     {
         m_totalSize -= a_in.m_size;
-        a_in.m_data.UpdateSize();
-        a_in.m_size = a_in.m_data.GetSize();
+        a_in.m_size = a_in.m_data.UpdateSize();
         m_totalSize += a_in.m_size;
     }
 
@@ -459,9 +457,8 @@ namespace CBP
     void BoneCastCache::Remove(
         const T& a_it)
     {
-        size_t size = a_it->second.m_size;
+        std::size_t size = a_it->second.m_size;
         m_data.erase(a_it);
-
         m_totalSize -= size;
     }
 
@@ -485,7 +482,7 @@ namespace CBP
         bool a_read,
         T& a_result)
     {
-        auto it = m_data.find(key_t(a_handle, a_nodeName));
+        auto it = m_data.find(std::make_pair(a_handle, a_nodeName));
         if (it != m_data.end())
         {
             it->second.m_lastAccess = IPerfCounter::Query();
@@ -496,16 +493,11 @@ namespace CBP
         if (!a_read)
             return false;
 
-        data_t tmp;
-        //{
-            //IScopedCriticalSection _(m_iio.GetLock());
-        if (!m_iio.Read(a_handle, a_nodeName, tmp))
+        ColliderDataStoragePair cacheEntry;
+        if (!m_iio.Read(a_handle, a_nodeName, cacheEntry))
             return false;
-        //}
 
-        tmp.UpdateSize();
-
-        a_result = Add(a_handle, a_nodeName, std::move(tmp));
+        a_result = Add(a_handle, a_nodeName, std::move(cacheEntry));
 
         return true;
     }
@@ -541,40 +533,49 @@ namespace CBP
         if (!cache.Get(a_handle, a_nodeName, true, result))
             return false;
 
-        bool evict(false);
+        return ProcessResult(result, a_nodeConfig, a_out);
+    }
 
-        if (result->second.m_data.second != a_nodeConfig) {
+    bool IBoneCast::ProcessResult(
+        const BoneCastCache::iterator& a_result,
+        const configNode_t& a_nodeConfig,
+        BoneResult& a_out)
+    {
+        auto& cache = GetCache();
+
+        bool updated(false);
+
+        if (a_result->second.m_data != a_nodeConfig) {
 
             bool res = UpdateGeometry(
-                result->second.m_data,
+                a_result->second.m_data,
                 a_nodeConfig.fp.f32.bcWeightThreshold,
                 a_nodeConfig.fp.f32.bcSimplifyTarget,
                 a_nodeConfig.fp.f32.bcSimplifyTargetError);
 
-            cache.UpdateSize(result->second);
+            cache.UpdateSize(a_result->second);
 
             if (!res)
                 return false;
 
-            evict = true;
+            updated = true;
 
-            result->second.m_updateID.Update(); // not necessary atm
-            result->second.m_data.second = a_nodeConfig;
+            a_result->second.m_updateID.Update(); // not necessary atm
+            a_result->second.m_data = a_nodeConfig;
         }
 
-        if (result->second.m_data.second.m_indices.empty())
+        if (!a_result->second.m_data.second->m_numIndices)
             return false;
 
-        a_out.data = std::make_unique<ColliderData>(result->second.m_data);
-        a_out.updateID = result->second.m_updateID;
+        a_out.data = a_result->second.m_data.second;
+        a_out.updateID = a_result->second.m_updateID;
 
         //_DMESSAGE("cache usage: %zu", cache.GetSize());
 
-        if (evict)
+        if (updated)
             cache.EvictOverflow();
 
         return true;
-
     }
 
     bool IBoneCast::Update(
@@ -595,7 +596,7 @@ namespace CBP
         const std::string& a_nodeName,
         const configNode_t& a_nodeConfig)
     {
-        BoneCastCache::data_t cacheEntry;
+        ColliderDataStoragePair cacheEntry;
 
         if (!IBoneCast::GetGeometry(
             a_actor,
@@ -605,8 +606,6 @@ namespace CBP
         {
             return false;
         }
-
-        cacheEntry.UpdateSize();
 
         auto& cache = GetCache();
         auto r = cache.Add(a_handle, a_nodeName, std::move(cacheEntry));
@@ -628,13 +627,16 @@ namespace CBP
     bool IBoneCastIO::Read(
         Game::ObjectHandle a_handle,
         const std::string& a_nodeName,
-        BoneCastCache::data_t& a_out)
+        ColliderDataStoragePair& a_out)
     {
         try
         {
             auto& driverConf = DCBP::GetDriverConfig();
 
-            auto path = driverConf.paths.boneCastData / MakeKey(a_handle, a_nodeName);
+            std::string key;
+            MakeKey(a_handle, a_nodeName, key);
+
+            auto path = driverConf.paths.boneCastData / key;
 
             std::ifstream ifs;
 
@@ -646,7 +648,7 @@ namespace CBP
             using namespace boost::archive;
 
             filtering_streambuf<input> in;
-            in.push(gzip_decompressor(zlib::default_window_bits, 1024 * 512));
+            in.push(gzip_decompressor(zlib::default_window_bits, 1024 * 256));
             in.push(ifs);
 
             binary_iarchive ia(in);
@@ -665,13 +667,16 @@ namespace CBP
     bool IBoneCastIO::Write(
         Game::ObjectHandle a_handle,
         const std::string& a_nodeName,
-        const BoneCastCache::data_t& a_in)
+        const ColliderDataStoragePair& a_in)
     {
         try
         {
             auto& driverConf = DCBP::GetDriverConfig();
 
-            auto path = driverConf.paths.boneCastData / MakeKey(a_handle, a_nodeName);
+            std::string key;
+            MakeKey(a_handle, a_nodeName, key);
+
+            auto path = driverConf.paths.boneCastData / key;
 
             Serialization::CreateRootPath(path);
 
@@ -682,7 +687,13 @@ namespace CBP
             {
                 {
                     std::ofstream ofs;
-                    ofs.open(tmpPath, std::ofstream::out | std::ofstream::binary | std::ofstream::trunc);
+
+                    ofs.open(
+                        tmpPath,
+                        std::ofstream::out |
+                        std::ofstream::binary |
+                        std::ofstream::trunc,
+                        _SH_DENYWR);
 
                     if (!ofs.is_open())
                         throw std::system_error(errno, std::system_category(), tmpPath.string());
@@ -691,7 +702,7 @@ namespace CBP
                     using namespace boost::archive;
 
                     filtering_streambuf<output> out;
-                    out.push(gzip_compressor(gzip_params(zlib::best_speed), 1024 * 512));
+                    out.push(gzip_compressor(gzip_params(zlib::best_speed), 1024 * 256));
                     out.push(ofs);
 
                     binary_oarchive oa(out);
@@ -717,55 +728,49 @@ namespace CBP
     }
 
     const pluginInfo_t* IBoneCastIO::GetPluginInfo(
-        Game::FormID a_formid)
+        Game::FormID a_formid) const
     {
         if (DData::HasPluginList())
         {
             UInt32 modID;
             if (a_formid.GetPluginPartialIndex(modID))
             {
-                auto& modData = DData::GetPluginData();
-                return modData.Lookup(modID);
+                return DData::GetPluginData().Lookup(modID);
             }
         }
 
         return nullptr;
     }
 
-    std::string IBoneCastIO::MakeKey(
+    void IBoneCastIO::MakeKey(
         Game::ObjectHandle a_handle,
-        const std::string& a_nodeName)
+        const std::string& a_nodeName,
+        std::string& a_out) const
     {
         auto formID = a_handle.GetFormID();
 
-        std::ostringstream ss;
+        std::string s;
+        s.reserve(128);
 
         auto modInfo = GetPluginInfo(formID);
-        if (modInfo) {
-            std::string mn(modInfo->name);
-            std::transform(mn.begin(), mn.end(), mn.begin(), ::tolower);
-            ss << modInfo->GetFormIDLower(formID) << "." << mn;
+        if (modInfo) 
+        {
+            std::string n(modInfo->name);
+            std::transform(n.begin(), n.end(), n.begin(), ::tolower);
+
+            s.append(std::to_string(modInfo->GetFormIDLower(formID)));
+            s.append(".");
+            s.append(n);
+            
         }
         else {
-            ss << formID;
+            s.append(std::to_string(formID));
         }
 
-        ss << "." << a_nodeName;
+        s.append(".");
+        s.append(a_nodeName);
 
-        return Crypto::SHA1(ss.str());
+        Crypto::SHA1(s, a_out);
     }
-
-    /*void IBoneCastIO::TaskObjectWriter::Run()
-    {
-        bool res;
-        {
-            IScopedCriticalSection _(m_parent.GetLock());
-            res = m_parent.Write(m_handle, m_nodeName, m_data);
-        }
-
-        if (!res) {
-            m_parent.Error("[%X] write failed [%s]: %s", m_handle, m_nodeName.c_str(), m_parent.m_lastException.what());
-        }
-    }*/
 
 }

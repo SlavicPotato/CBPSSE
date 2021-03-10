@@ -18,33 +18,21 @@ namespace CBP
         Game::FormID a_formid,
         const std::string& a_node,
         const configNode_t& a_data,
+        ConfigGender a_gender,
         bool a_reset)
     {
         if (!a_formid)
             return;
 
-        auto& nodeConfig = IConfig::GetOrCreateRaceNode(a_formid);
+        const auto& globalConfig = IConfig::GetGlobal();
+
+        auto& nodeConfig = IConfig::GetOrCreateRaceNode(a_formid, a_gender);
         nodeConfig.insert_or_assign(a_node, a_data);
 
         if (a_reset)
             DCBP::ResetActors();
         else
             DCBP::UpdateConfigOnAllActors();
-    }
-
-    SKMP_FORCEINLINE static const char* TranslateConfigClass(ConfigClass a_class)
-    {
-        switch (a_class)
-        {
-        case ConfigClass::kConfigActor:
-            return "Actor";
-        case ConfigClass::kConfigRace:
-            return "Race";
-        case ConfigClass::kConfigTemplate:
-            return "Template";
-        default:
-            return "Global";
-        }
     }
 
     static ImVec4 s_colorWarning(1.0f, 0.66f, 0.13f, 1.0f);
@@ -56,7 +44,8 @@ namespace CBP
     }
 
     void UIProfileEditorPhysics::DrawItem(PhysicsProfile& a_profile) {
-        DrawSimComponents(0, a_profile.Data());
+        const auto& globalConfig = IConfig::GetGlobal();
+        DrawSimComponents(0, a_profile.Data()(globalConfig.ui.commonSettings.physics.profile.selectedGender));
     }
 
     void UIProfileEditorPhysics::DrawOptions(PhysicsProfile& a_profile)
@@ -75,7 +64,11 @@ namespace CBP
 
         ImGui::Spacing();
 
-        auto& data = a_profile.Data();
+        DrawGenderSelector();
+
+        ImGui::Spacing();
+
+        auto& data = a_profile.Data()(globalConfig.ui.commonSettings.physics.profile.selectedGender);
         auto& cgm = IConfig::GetConfigGroupMap();
 
         if (ImGui::Button("Add group"))
@@ -99,7 +92,7 @@ namespace CBP
         {
             ImGui::SetWindowFontScale(globalConfig.ui.fontScale);
 
-            size_t delta(0);
+            std::size_t delta(0);
 
             for (auto& e : cgm)
             {
@@ -132,7 +125,7 @@ namespace CBP
 
     void UIProfileEditorPhysics::DrawGroupOptions(
         int,
-        PhysicsProfile::base_type& a_data,
+        PhysicsProfile::base_type::config_type& a_data,
         PhysicsProfile::base_type::value_type& a_pair,
         nodeConfigList_t& a_nodeConfig)
     {
@@ -151,7 +144,7 @@ namespace CBP
 
     void UIProfileEditorPhysics::OnSimSliderChange(
         int,
-        PhysicsProfile::base_type& a_data,
+        PhysicsProfile::base_type::config_type& a_data,
         PhysicsProfile::base_type::value_type& a_pair,
         const componentValueDescMap_t::vec_value_type& a_desc,
         float* a_val)
@@ -172,24 +165,34 @@ namespace CBP
             a_pair.second.Set(a_desc.second.counterpart, mval);
         }
 
-        DoOnChangePropagation(a_data, nullptr, a_pair, a_desc, a_val, sync, mval);
+        DoSimSliderOnChangePropagation(a_data, nullptr, a_pair, a_desc, a_val, sync, mval);
     }
 
     void UIProfileEditorPhysics::OnColliderShapeChange(
         int,
-        PhysicsProfile::base_type&,
-        PhysicsProfile::base_type::value_type&,
-        const componentValueDescMap_t::vec_value_type&)
+        PhysicsProfile::base_type::config_type& a_data,
+        PhysicsProfile::base_type::value_type& a_pair,
+        const componentValueDescMap_t::vec_value_type& a_desc)
     {
+        DoColliderShapeOnChangePropagation(a_data, nullptr, a_pair, a_desc);
+    }
+
+    void UIProfileEditorPhysics::OnMotionConstraintChange(
+        int,
+        PhysicsProfile::base_type::config_type& a_data,
+        PhysicsProfile::base_type::value_type& a_pair,
+        const componentValueDescMap_t::vec_value_type& a_desc)
+    {
+        DoMotionConstraintOnChangePropagation(a_data, nullptr, a_pair, a_desc);
     }
 
     void UIProfileEditorPhysics::OnComponentUpdate(
         int,
-        PhysicsProfile::base_type& a_data,
+        PhysicsProfile::base_type::config_type& a_data,
         PhysicsProfile::base_type::value_type& a_pair)
     {
         /*Propagate(a_data, nullptr, a_pair,
-            [&](configComponent32_t& a_v, const configPropagate_t& a_p) {
+            [&](configComponent_t& a_v, const configPropagate_t& a_p) {
                 a_v = a_pair.second;
             });*/
     }
@@ -205,12 +208,13 @@ namespace CBP
     const configNodes_t& UIProfileEditorPhysics::GetNodeData(
         int) const
     {
-        return IConfig::GetGlobalNode();
+        const auto& globalConfig = IConfig::GetGlobal();
+        return IConfig::GetGlobalNode()(globalConfig.ui.commonSettings.physics.profile.selectedGender);
     }
 
     bool UIProfileEditorPhysics::ShouldDrawComponent(
         int a_handle,
-        PhysicsProfile::base_type& a_data,
+        PhysicsProfile::base_type::config_type& a_data,
         const configGroupMap_t::value_type& a_cgdata,
         const nodeConfigList_t& a_nodeConfig) const
     {
@@ -230,6 +234,16 @@ namespace CBP
         return IConfig::GetGlobal().ui.profile;
     }
 
+    configGlobalCommon_t& UIProfileEditorPhysics::GetGlobalCommonConfig() const
+    {
+        return IConfig::GetGlobal().ui.commonSettings.physics.profile;
+    }
+
+    UICommon::UIPopupQueue& UIProfileEditorPhysics::GetPopupQueue() const
+    {
+        return m_ctxParent.GetPopupQueue();
+    }
+
     ProfileManager<NodeProfile>& UIProfileEditorNode::GetProfileManager() const
     {
         return GlobalProfileManager::GetSingleton<NodeProfile>();
@@ -237,7 +251,8 @@ namespace CBP
 
     void UIProfileEditorNode::DrawItem(NodeProfile& a_profile)
     {
-        DrawNodes(0, a_profile.Data());
+        const auto& globalConfig = IConfig::GetGlobal();
+        DrawNodes(0, a_profile.Data()(globalConfig.ui.commonSettings.node.profile.selectedGender));
     }
 
     void UIProfileEditorNode::UpdateNodeData(
@@ -248,8 +263,28 @@ namespace CBP
     {
     }
 
-    UIRaceEditorNode::UIRaceEditorNode() noexcept :
-        UIRaceEditorBase<raceListNodeConf_t, NodeProfile>()
+    void UIProfileEditorNode::DrawOptions(NodeProfile& a_profile)
+    {
+        ImGui::Spacing();
+
+        DrawGenderSelector();
+
+        ImGui::Spacing();
+    }
+
+    configGlobalCommon_t& UIProfileEditorNode::GetGlobalCommonConfig() const
+    {
+        return IConfig::GetGlobal().ui.commonSettings.node.profile;
+    }
+
+    UICommon::UIPopupQueue& UIProfileEditorNode::GetPopupQueue() const
+    {
+        return m_ctxParent.GetPopupQueue();
+    }
+
+    UIRaceEditorNode::UIRaceEditorNode(UIContext& a_parent) noexcept :
+        UIRaceEditorBase<raceListNodeConf_t, NodeProfile>(),
+        m_ctxParent(a_parent)
     {
     }
 
@@ -304,8 +339,19 @@ namespace CBP
         const configNode_t& a_data,
         bool a_reset)
     {
-        UpdateRaceNodeData(a_formid, a_node, a_data, a_reset);
+        const auto& globalConfig = IConfig::GetGlobal();
+        UpdateRaceNodeData(a_formid, a_node, a_data, globalConfig.ui.commonSettings.node.race.selectedGender, a_reset);
         MarkChanged();
+    }
+
+    configGlobalCommon_t& UIRaceEditorNode::GetGlobalCommonConfig() const
+    {
+        return IConfig::GetGlobal().ui.commonSettings.node.race;
+    }
+
+    UICommon::UIPopupQueue& UIRaceEditorNode::GetPopupQueue() const
+    {
+        return m_ctxParent.GetPopupQueue();
     }
 
     void UIRaceEditorNode::Draw(bool* a_active)
@@ -362,11 +408,15 @@ namespace CBP
 
                 ImGui::Spacing();
 
+                DrawGenderSelector();
+
+                ImGui::Spacing();
+
                 DrawProfileSelector(entry, globalConfig.ui.fontScale);
 
                 ImGui::Separator();
 
-                DrawNodes(m_listCurrent, entry->second.second);
+                DrawNodes(m_listCurrent, entry->second.second(globalConfig.ui.commonSettings.node.race.selectedGender));
 
                 ImGui::PopItemWidth();
             }
@@ -377,8 +427,9 @@ namespace CBP
         ImGui::PopID();
     }
 
-    UIRaceEditorPhysics::UIRaceEditorPhysics() noexcept :
-        UIRaceEditorBase<raceListPhysConf_t, PhysicsProfile>()
+    UIRaceEditorPhysics::UIRaceEditorPhysics(UIContext& a_parent) noexcept :
+        UIRaceEditorBase<raceListPhysConf_t, PhysicsProfile>(),
+        m_ctxParent(a_parent)
     {
     }
 
@@ -447,11 +498,15 @@ namespace CBP
 
                 ImGui::Spacing();
 
+                DrawGenderSelector();
+
+                ImGui::Spacing();
+
                 DrawProfileSelector(entry, globalConfig.ui.fontScale);
 
                 ImGui::Separator();
 
-                DrawSimComponents(m_listCurrent, entry->second.second);
+                DrawSimComponents(m_listCurrent, entry->second.second(globalConfig.ui.commonSettings.physics.race.selectedGender));
 
                 ImGui::PopItemWidth();
             }
@@ -524,7 +579,7 @@ namespace CBP
         if (globalConfig.ui.race.clampValues)
             *a_val = std::clamp(*a_val, a_desc.second.min, a_desc.second.max);
 
-        auto& raceConf = IConfig::GetOrCreateRacePhysics(a_formid);
+        auto& raceConf = IConfig::GetOrCreateRacePhysics(a_formid, globalConfig.ui.commonSettings.physics.race.selectedGender);
         auto& entry = raceConf[a_pair.first];
 
         entry.Set(a_desc.second, a_val);
@@ -541,7 +596,7 @@ namespace CBP
             entry.Set(a_desc.second.counterpart, mval);
         }
 
-        DoOnChangePropagation(a_data, std::addressof(raceConf), a_pair, a_desc, a_val, sync, mval);
+        DoSimSliderOnChangePropagation(a_data, std::addressof(raceConf), a_pair, a_desc, a_val, sync, mval);
 
         MarkChanged();
         DCBP::UpdateConfigOnAllActors();
@@ -553,11 +608,32 @@ namespace CBP
         configComponentsValue_t& a_pair,
         const componentValueDescMap_t::vec_value_type& a_desc)
     {
-        auto& raceConf = IConfig::GetOrCreateRacePhysics(a_formid);
+        const auto& globalConfig = IConfig::GetGlobal();
+        auto& raceConf = IConfig::GetOrCreateRacePhysics(a_formid, globalConfig.ui.commonSettings.physics.race.selectedGender);
         auto& entry = raceConf[a_pair.first];
 
         entry.ex.colShape = a_pair.second.ex.colShape;
         entry.ex.colMesh = a_pair.second.ex.colMesh;
+
+        DoColliderShapeOnChangePropagation(a_data, std::addressof(raceConf), a_pair, a_desc);
+
+        MarkChanged();
+        DCBP::UpdateConfigOnAllActors();
+    }
+
+    void UIRaceEditorPhysics::OnMotionConstraintChange(
+        Game::FormID a_formid,
+        configComponents_t& a_data,
+        configComponentsValue_t& a_pair,
+        const componentValueDescMap_t::vec_value_type& a_desc)
+    {
+        const auto& globalConfig = IConfig::GetGlobal();
+        auto& raceConf = IConfig::GetOrCreateRacePhysics(a_formid, globalConfig.ui.commonSettings.physics.race.selectedGender);
+        auto& entry = raceConf[a_pair.first];
+
+        entry.ex.motionConstraints = a_pair.second.ex.motionConstraints;
+
+        DoMotionConstraintOnChangePropagation(a_data, std::addressof(raceConf), a_pair, a_desc);
 
         MarkChanged();
         DCBP::UpdateConfigOnAllActors();
@@ -568,11 +644,12 @@ namespace CBP
         configComponents_t& a_data,
         configComponentsValue_t& a_pair)
     {
-        auto& raceConf = IConfig::GetOrCreateRacePhysics(a_formid);
+        const auto& globalConfig = IConfig::GetGlobal();
+        auto& raceConf = IConfig::GetOrCreateRacePhysics(a_formid, globalConfig.ui.commonSettings.physics.race.selectedGender);
         raceConf[a_pair.first] = a_pair.second;
 
         /*Propagate(a_data, std::addressof(raceConf), a_pair,
-            [&](configComponent32_t& a_v, const configPropagate_t& a_p) {
+            [&](configComponent_t& a_v, const configPropagate_t& a_p) {
                 a_v = a_pair.second;
             });*/
 
@@ -600,7 +677,8 @@ namespace CBP
     const configNodes_t& UIRaceEditorPhysics::GetNodeData(
         Game::FormID a_handle) const
     {
-        return IConfig::GetRaceNode(a_handle);
+        const auto& globalConfig = IConfig::GetGlobal();
+        return IConfig::GetRaceNode(a_handle, globalConfig.ui.commonSettings.physics.race.selectedGender);
     }
 
     void UIRaceEditorPhysics::UpdateNodeData(
@@ -609,7 +687,8 @@ namespace CBP
         const configNode_t& a_data,
         bool a_reset)
     {
-        UpdateRaceNodeData(a_formid, a_node, a_data, a_reset);
+        const auto& globalConfig = IConfig::GetGlobal();
+        UpdateRaceNodeData(a_formid, a_node, a_data, globalConfig.ui.commonSettings.physics.race.selectedGender, a_reset);
         MarkChanged();
     }
 
@@ -651,9 +730,19 @@ namespace CBP
         return IConfig::GetGlobal().ui.race;
     }
 
+    configGlobalCommon_t& UIRaceEditorPhysics::GetGlobalCommonConfig() const
+    {
+        return IConfig::GetGlobal().ui.commonSettings.physics.race;
+    }
+
     const PhysicsProfile* UIRaceEditorPhysics::GetSelectedProfile() const
     {
         return GetCurrentProfile();
+    }
+
+    UICommon::UIPopupQueue& UIRaceEditorPhysics::GetPopupQueue() const
+    {
+        return m_ctxParent.GetPopupQueue();
     }
 
     UIContext::UIContext() noexcept :
@@ -663,8 +752,11 @@ namespace CBP
         m_nodeMap(*this),
         m_armorOverride(*this),
         m_tsNoActors(IPerfCounter::Query()),
-        m_pePhysics("Physics profile editor"),
-        m_peNodes("Node profile editor"),
+        m_pePhysics(*this, "Physics profile editor"),
+        m_peNodes(*this, "Node profile editor"),
+        m_racePhysicsEditor(*this),
+        m_raceNodeEditor(*this),
+        m_actorNodeEditor(*this),
         m_state({ {false, false, false, false, false, false, false, false, false, false, false, false, false} }),
         UIActorList<actorListPhysConf_t>(true)
     {
@@ -675,7 +767,7 @@ namespace CBP
         m_profiling.Initialize();
     }
 
-    void UIContext::Reset(uint32_t a_loadInstance)
+    void UIContext::Reset(std::uint32_t a_loadInstance)
     {
         ListReset();
         m_activeLoadInstance = a_loadInstance;
@@ -748,7 +840,7 @@ namespace CBP
 
             if (ImGui::BeginMenu("Tools"))
             {
-                ImGui::MenuItem("Actor nodes", nullptr, &ws.nodeConf);
+                ImGui::MenuItem("Actor nodes", nullptr, &ws.actorNode);
                 ImGui::MenuItem("Node collision groups", nullptr, &ws.collisionGroups);
                 ImGui::MenuItem("Node map", nullptr, &ws.nodeMap);
 
@@ -834,14 +926,11 @@ namespace CBP
                             {
                                 m_popup.push(
                                     UIPopupType::Confirm,
-                                    UIPopupData(a_entry->first),
                                     "Clear Key",
                                     "This will remove inactive physics component records for '%s'. Are you sure?",
                                     a_entry->second.first.c_str()
-                                ).call([&](auto&, auto& a_d)
+                                ).call([&, handle = a_entry->first](...)
                                     {
-                                        auto handle = a_d.get<Game::ObjectHandle>(0);
-
                                         auto num = IConfig::PruneActorPhysics(handle);
                                         Debug("%zu pruned", num);
 
@@ -858,6 +947,12 @@ namespace CBP
 
                             ImGui::EndMenu();
                         }
+                    }
+
+                    ImGui::Separator();
+
+                    if (ImGui::MenuItem("Clear bonecast cache")) {
+                        IBoneCast::Release();
                     }
 
                     ImGui::EndMenu();
@@ -903,7 +998,7 @@ namespace CBP
             ActorListTick();
 
             /*if (m_listData.size() == 1) {
-                auto t = PerfCounter::Query();
+                auto t = IPerfCounter::Query();
                 if (PerfCounter::delta_us(m_tsNoActors, t) >= 2500000LL) {
                     DCBP::QueueActorCacheUpdate();
                     m_tsNoActors = t;
@@ -911,6 +1006,8 @@ namespace CBP
             }*/
 
             auto entry = ListGetSelected();
+
+            ASSERT(entry != nullptr);
 
             ImGui::SetWindowFontScale(globalConfig.ui.fontScale);
 
@@ -926,7 +1023,7 @@ namespace CBP
 
             auto wcm = ImGui::GetWindowContentRegionMax();
 
-            if (m_listCurrent)
+            if (m_listCurrent != Game::ObjectHandle(0))
             {
                 auto confClass = IConfig::GetActorPhysicsClass(m_listCurrent);
 
@@ -948,6 +1045,8 @@ namespace CBP
                         m_state.windows.armorOverride = true;
                     }
                 }
+
+                auto &gcc = m_scActor.GetGlobalCommonConfig();
 
             }
 
@@ -986,6 +1085,15 @@ namespace CBP
 
             ImGui::Spacing();
 
+            if (m_listCurrent != Game::ObjectHandle(0)) {
+                m_scActor.DrawGenderSelector();
+            }
+            else {
+                m_scGlobal.DrawGenderSelector();
+            }
+
+            ImGui::Spacing();
+
             DrawProfileSelector(entry, globalConfig.ui.fontScale);
 
             ImGui::Spacing();
@@ -995,10 +1103,10 @@ namespace CBP
             ImGui::Separator();
 
             if (m_listCurrent != Game::ObjectHandle(0)) {
-                m_scActor.DrawSimComponents(m_listCurrent, entry->second.second);
+                m_scActor.DrawSimComponents(m_listCurrent, entry->second.second(globalConfig.ui.commonSettings.physics.actor.selectedGender));
             }
             else {
-                m_scGlobal.DrawSimComponents(m_listCurrent, entry->second.second);
+                m_scGlobal.DrawSimComponents(m_listCurrent, entry->second.second(globalConfig.ui.commonSettings.physics.global.selectedGender));
             }
 
             ImGui::PopItemWidth();
@@ -1023,7 +1131,17 @@ namespace CBP
                 QueueListUpdateCurrent();
         }
 
-        if (m_state.windows.raceNode) {
+        bool nodeChanged = 
+            m_scActor.GetNodeChanged() || 
+            m_scGlobal.GetNodeChanged() ||
+            m_racePhysicsEditor.GetNodeChanged();
+
+        if (m_state.windows.raceNode) 
+        {
+            if (nodeChanged) {
+                m_raceNodeEditor.QueueListUpdateCurrent();
+            }
+
             m_raceNodeEditor.Draw(&m_state.windows.raceNode);
             if (m_raceNodeEditor.GetChanged()) {
                 QueueListUpdateCurrent();
@@ -1031,11 +1149,17 @@ namespace CBP
             }
         }
 
+        if (m_state.windows.actorNode) 
+        {
+            if (nodeChanged) {
+                m_actorNodeEditor.QueueListUpdateCurrent();
+            }
+
+            m_actorNodeEditor.Draw(&m_state.windows.actorNode);
+        }
+
         if (m_state.windows.collisionGroups)
             m_colGroups.Draw(&m_state.windows.collisionGroups);
-
-        if (m_state.windows.nodeConf)
-            m_actorNodeEditor.Draw(&m_state.windows.nodeConf);
 
         if (m_state.windows.profiling)
             m_profiling.Draw(&m_state.windows.profiling);
@@ -1053,6 +1177,7 @@ namespace CBP
         if (m_state.windows.debug)
             m_debug.Draw(&m_state.windows.debug);
 #endif
+
         if (m_state.menu.openExportDialog)
             m_exportDialog.Open();
 
@@ -1074,7 +1199,6 @@ namespace CBP
 
     void UIOptions::Draw(bool* a_active)
     {
-        auto& io = ImGui::GetIO();
         auto& globalConfig = IConfig::GetGlobal();
 
         SetWindowDimensions(0.0f, 400, 800.0f, true);
@@ -1112,6 +1236,8 @@ namespace CBP
             if (Tree("Options#UI", "UI", true, true))
             {
                 ImGui::Spacing();
+
+                Checkbox("Auto select gender", &globalConfig.ui.autoSelectGender);
 
                 SliderFloat("Font scale", &globalConfig.ui.fontScale, 0.5f, 3.0f);
 
@@ -1220,7 +1346,7 @@ namespace CBP
 
                     Checkbox("Draw moving nodes", &globalConfig.debugRenderer.enableMovingNodes);
                     Checkbox("Draw moving nodes center of gravity", &globalConfig.debugRenderer.movingNodesCenterOfGravity);
-                    Checkbox("Draw movement constraints", &globalConfig.debugRenderer.enableMovementConstraints);
+                    Checkbox("Draw motion constraints", &globalConfig.debugRenderer.enableMotionConstraints);
 
                     SliderFloat("Moving nodes sphere radius", &globalConfig.debugRenderer.movingNodesRadius, 0.1f, 10.0f, "%.2f");
 
@@ -1229,9 +1355,39 @@ namespace CBP
                     if (Checkbox("Draw AABB", &globalConfig.debugRenderer.drawAABB))
                         DCBP::UpdateDebugRendererSettings();
 
+                    ImGui::Spacing();
+
+                    if (Tree("Options#DebugRenderer#Colors", "Colors", true, false))
+                    {
+                        ImGui::Spacing();
+
+                        ColorEdit4("Moving nodes", globalConfig.debugRenderer.colors.movingNodes.m128_f32);
+                        ColorEdit4("Moving nodes COG", globalConfig.debugRenderer.colors.movingNodesCOG.m128_f32);
+                        ColorEdit4("Box motion constraint", globalConfig.debugRenderer.colors.constraintBox.m128_f32);
+                        ColorEdit4("Sphere motion constraint", globalConfig.debugRenderer.colors.constraintSphere.m128_f32);
+                        ColorEdit4("Virtual position", globalConfig.debugRenderer.colors.virtualPosition.m128_f32);
+
+                        ImGui::Spacing();
+
+                        ColorEdit4("Collider", globalConfig.debugRenderer.btColors.m_activeObject);
+                        ColorEdit4("Contact point", globalConfig.debugRenderer.btColors.m_contactPoint);
+                        ColorEdit4("Contact normal", globalConfig.debugRenderer.colors.contactNormal.m128_f32);
+                        ColorEdit4("AABB", globalConfig.debugRenderer.btColors.m_aabb);
+
+                        ImGui::Spacing();
+
+                        ColorEdit4("Actor marker", globalConfig.debugRenderer.colors.actorMarker.m128_f32);
+
+                        ImGui::TreePop();
+
+                    }
+
                     ImGui::TreePop();
+
                 }
             }
+
+            ImGui::Spacing();
 
             ImGui::PopItemWidth();
         }
@@ -1436,8 +1592,9 @@ namespace CBP
         ImGui::PopID();
     }
 
-    UIActorEditorNode::UIActorEditorNode() noexcept :
-        UIActorList<actorListNodeConf_t>(false)
+    UIActorEditorNode::UIActorEditorNode(UIContext& a_parent) noexcept :
+        UIActorList<actorListNodeConf_t>(false),
+        m_ctxParent(a_parent)
     {
     }
 
@@ -1448,7 +1605,7 @@ namespace CBP
 
     void UIActorEditorNode::Draw(bool* a_active)
     {
-        auto& globalConfig = IConfig::GetGlobal();;
+        auto& globalConfig = IConfig::GetGlobal();
 
         SetWindowDimensions(450.0f);
 
@@ -1473,7 +1630,7 @@ namespace CBP
             {
                 auto confClass = IConfig::GetActorNodeClass(m_listCurrent);
 
-                ImGui::Text("Config in use: %s", TranslateConfigClass(confClass));
+                ImGui::TextWrapped("Config in use: %s", TranslateConfigClass(confClass));
             }
 
             ImGui::Spacing();
@@ -1504,6 +1661,10 @@ namespace CBP
 
             ImGui::Spacing();
 
+            DrawGenderSelector();
+
+            ImGui::Spacing();
+
             ImGui::PushItemWidth(ImGui::GetFontSize() * -14.0f);
 
             DrawProfileSelector(entry, globalConfig.ui.fontScale);
@@ -1515,9 +1676,9 @@ namespace CBP
             ImGui::Separator();
 
             if (entry)
-                DrawNodes(entry->first, entry->second.second);
+                DrawNodes(entry->first, entry->second.second(globalConfig.ui.commonSettings.node.actor.selectedGender));
             else
-                DrawNodes(0, IConfig::GetGlobalNode());
+                DrawNodes(0, IConfig::GetGlobalNode()(globalConfig.ui.commonSettings.node.actor.selectedGender));
 
             ImGui::PopItemWidth();
         }
@@ -1577,8 +1738,12 @@ namespace CBP
         const configNode_t& a_data,
         bool a_reset)
     {
-        if (a_handle) {
-            auto& nodeConfig = IConfig::GetOrCreateActorNode(a_handle);
+
+        const auto& globalConfig = IConfig::GetGlobal();
+
+        if (a_handle)
+        {
+            auto& nodeConfig = IConfig::GetOrCreateActorNode(a_handle, globalConfig.ui.commonSettings.node.actor.selectedGender);
             nodeConfig.insert_or_assign(a_node, a_data);
 
             if (a_reset)
@@ -1589,7 +1754,7 @@ namespace CBP
         }
         else
         {
-            auto& nodeConfig = IConfig::GetGlobalNode();
+            auto& nodeConfig = IConfig::GetGlobalNode()(globalConfig.ui.commonSettings.node.actor.selectedGender);
             nodeConfig.insert_or_assign(a_node, a_data);
 
             if (a_reset)
@@ -1599,13 +1764,13 @@ namespace CBP
         }
     }
 
-    void UIActorEditorNode::DrawBoneCastSample(
+    void UIActorEditorNode::DrawBoneCastButtons(
         Game::ObjectHandle a_handle,
         const std::string& a_nodeName,
         configNode_t& a_conf
     )
     {
-        return DrawBoneCastSampleImpl(a_handle, a_nodeName, a_conf);
+        return DrawBoneCastButtonsImpl(a_handle, a_nodeName, a_conf);
     }
 
     ConfigClass UIActorEditorNode::GetActorClass(Game::ObjectHandle a_handle) const
@@ -1621,6 +1786,26 @@ namespace CBP
     bool UIActorEditorNode::HasArmorOverride(Game::ObjectHandle a_handle) const
     {
         return false;
+    }
+
+    configGlobalCommon_t& UIActorEditorNode::GetGlobalCommonConfig() const
+    {
+        return IConfig::GetGlobal().ui.commonSettings.node.actor;
+    }
+
+    UICommon::UIPopupQueue& UIActorEditorNode::GetPopupQueue() const
+    {
+        return m_ctxParent.GetPopupQueue();
+    }
+
+    void UIActorEditorNode::OnListChangeCurrentItem(
+        const SelectedItem<Game::ObjectHandle>& a_oldHandle,
+        Game::ObjectHandle a_newHandle)
+    {
+        auto& globalConfig = IConfig::GetGlobal();
+        if (globalConfig.ui.autoSelectGender) {
+            AutoSelectGender(a_newHandle);
+        }
     }
 
     UIContext::UISimComponentActor::UISimComponentActor(UIContext& a_parent) :
@@ -1649,7 +1834,7 @@ namespace CBP
         if (globalConfig.ui.actor.clampValues)
             *a_val = std::clamp(*a_val, a_desc.second.min, a_desc.second.max);
 
-        auto& actorConf = IConfig::GetOrCreateActorPhysics(a_handle);
+        auto& actorConf = IConfig::GetOrCreateActorPhysics(a_handle, globalConfig.ui.commonSettings.physics.actor.selectedGender);
         auto& entry = actorConf[a_pair.first];
 
         entry.Set(a_desc.second, a_val);
@@ -1666,7 +1851,7 @@ namespace CBP
             entry.Set(a_desc.second.counterpart, mval);
         }
 
-        DoOnChangePropagation(a_data, std::addressof(actorConf), a_pair, a_desc, a_val, sync, mval);
+        DoSimSliderOnChangePropagation(a_data, std::addressof(actorConf), a_pair, a_desc, a_val, sync, mval);
 
         DCBP::DispatchActorTask(
             a_handle, ControllerInstruction::Action::UpdateConfig);
@@ -1678,11 +1863,34 @@ namespace CBP
         configComponentsValue_t& a_pair,
         const componentValueDescMap_t::vec_value_type& a_desc)
     {
-        auto& actorConf = IConfig::GetOrCreateActorPhysics(a_handle);
+        const auto& globalConfig = IConfig::GetGlobal();
+
+        auto& actorConf = IConfig::GetOrCreateActorPhysics(a_handle, globalConfig.ui.commonSettings.physics.actor.selectedGender);
         auto& entry = actorConf[a_pair.first];
 
         entry.ex.colShape = a_pair.second.ex.colShape;
         entry.ex.colMesh = a_pair.second.ex.colMesh;
+
+        DoColliderShapeOnChangePropagation(a_data, std::addressof(actorConf), a_pair, a_desc);
+
+        DCBP::DispatchActorTask(
+            a_handle, ControllerInstruction::Action::UpdateConfig);
+    }
+
+    void UIContext::UISimComponentActor::OnMotionConstraintChange(
+        Game::ObjectHandle a_handle,
+        configComponents_t& a_data,
+        configComponentsValue_t& a_pair,
+        const componentValueDescMap_t::vec_value_type& a_desc)
+    {
+        const auto& globalConfig = IConfig::GetGlobal();
+
+        auto& actorConf = IConfig::GetOrCreateActorPhysics(a_handle, globalConfig.ui.commonSettings.physics.actor.selectedGender);
+        auto& entry = actorConf[a_pair.first];
+
+        entry.ex.motionConstraints = a_pair.second.ex.motionConstraints;
+
+        DoMotionConstraintOnChangePropagation(a_data, std::addressof(actorConf), a_pair, a_desc);
 
         DCBP::DispatchActorTask(
             a_handle, ControllerInstruction::Action::UpdateConfig);
@@ -1693,11 +1901,13 @@ namespace CBP
         configComponents_t& a_data,
         configComponentsValue_t& a_pair)
     {
-        auto& actorConf = IConfig::GetOrCreateActorPhysics(a_handle);
+        const auto& globalConfig = IConfig::GetGlobal();
+
+        auto& actorConf = IConfig::GetOrCreateActorPhysics(a_handle, globalConfig.ui.commonSettings.physics.actor.selectedGender);
         actorConf[a_pair.first] = a_pair.second;
 
         /*Propagate(a_data, std::addressof(actorConf), a_pair,
-            [&](configComponent32_t& a_v, const configPropagate_t& a_p) {
+            [&](configComponent_t& a_v, const configPropagate_t& a_p) {
                 a_v = a_pair.second;
             });*/
 
@@ -1725,7 +1935,8 @@ namespace CBP
     const configNodes_t& UIContext::UISimComponentActor::GetNodeData(
         Game::ObjectHandle a_handle) const
     {
-        return IConfig::GetActorNode(a_handle);
+        const auto& globalConfig = IConfig::GetGlobal();
+        return IConfig::GetActorNode(a_handle, globalConfig.ui.commonSettings.physics.actor.selectedGender);
     }
 
     void UIContext::UISimComponentActor::UpdateNodeData(
@@ -1734,9 +1945,11 @@ namespace CBP
         const configNode_t& a_data,
         bool a_reset)
     {
-        if (a_handle)
+        if (a_handle != Game::ObjectHandle(0))
         {
-            auto& nodeConfig = IConfig::GetOrCreateActorNode(a_handle);
+            const auto& globalConfig = IConfig::GetGlobal();
+
+            auto& nodeConfig = IConfig::GetOrCreateActorNode(a_handle, globalConfig.ui.commonSettings.physics.actor.selectedGender);
             nodeConfig.insert_or_assign(a_node, a_data);
 
             if (a_reset)
@@ -1748,13 +1961,13 @@ namespace CBP
     }
 
 
-    void UIContext::UISimComponentActor::DrawBoneCastSample(
+    void UIContext::UISimComponentActor::DrawBoneCastButtons(
         Game::ObjectHandle a_handle,
         const std::string& a_nodeName,
         configNode_t& a_conf
     )
     {
-        return DrawBoneCastSampleImpl(a_handle, a_nodeName, a_conf);
+        return DrawBoneCastButtonsImpl(a_handle, a_nodeName, a_conf);
     }
 
     configGlobalSimComponent_t& UIContext::UISimComponentActor::GetSimComponentConfig() const
@@ -1765,6 +1978,16 @@ namespace CBP
     const PhysicsProfile* UIContext::UISimComponentActor::GetSelectedProfile() const
     {
         return m_ctxParent.GetCurrentProfile();
+    }
+
+    configGlobalCommon_t& UIContext::UISimComponentActor::GetGlobalCommonConfig() const
+    {
+        return IConfig::GetGlobal().ui.commonSettings.physics.actor;
+    }
+
+    UICommon::UIPopupQueue& UIContext::UISimComponentActor::GetPopupQueue() const
+    {
+        return m_ctxParent.GetPopupQueue();
     }
 
     bool UIContext::UISimComponentActor::ShouldDrawComponent(
@@ -1843,7 +2066,7 @@ namespace CBP
         if (globalConfig.ui.actor.clampValues)
             *a_val = std::clamp(*a_val, a_desc.second.min, a_desc.second.max);
 
-        auto& conf = IConfig::GetGlobalPhysics();
+        auto& conf = IConfig::GetGlobalPhysics()(globalConfig.ui.commonSettings.physics.global.selectedGender);
         auto& entry = conf[a_pair.first];
 
         entry.Set(a_desc.second, a_val);
@@ -1860,7 +2083,7 @@ namespace CBP
             entry.Set(a_desc.second.counterpart, mval);
         }
 
-        DoOnChangePropagation(a_data, std::addressof(conf), a_pair, a_desc, a_val, sync, mval);
+        DoSimSliderOnChangePropagation(a_data, std::addressof(conf), a_pair, a_desc, a_val, sync, mval);
 
         DCBP::UpdateConfigOnAllActors();
     }
@@ -1869,13 +2092,35 @@ namespace CBP
         Game::ObjectHandle,
         configComponents_t& a_data,
         configComponentsValue_t& a_pair,
-        const componentValueDescMap_t::vec_value_type&)
+        const componentValueDescMap_t::vec_value_type& a_desc)
     {
-        auto& conf = IConfig::GetGlobalPhysics();
+        const auto& globalConfig = IConfig::GetGlobal();
+
+        auto& conf = IConfig::GetGlobalPhysics()(globalConfig.ui.commonSettings.physics.global.selectedGender);
         auto& entry = conf[a_pair.first];
 
         entry.ex.colShape = a_pair.second.ex.colShape;
         entry.ex.colMesh = a_pair.second.ex.colMesh;
+
+        DoColliderShapeOnChangePropagation(a_data, std::addressof(conf), a_pair, a_desc);
+
+        DCBP::UpdateConfigOnAllActors();
+    }
+
+    void UIContext::UISimComponentGlobal::OnMotionConstraintChange(
+        Game::ObjectHandle a_handle,
+        configComponents_t& a_data,
+        configComponentsValue_t& a_pair,
+        const componentValueDescMap_t::vec_value_type& a_desc)
+    {
+        const auto& globalConfig = IConfig::GetGlobal();
+
+        auto& conf = IConfig::GetGlobalPhysics()(globalConfig.ui.commonSettings.physics.global.selectedGender);
+        auto& entry = conf[a_pair.first];
+
+        entry.ex.motionConstraints = a_pair.second.ex.motionConstraints;
+
+        DoMotionConstraintOnChangePropagation(a_data, std::addressof(conf), a_pair, a_desc);
 
         DCBP::UpdateConfigOnAllActors();
     }
@@ -1885,11 +2130,13 @@ namespace CBP
         configComponents_t& a_data,
         configComponentsValue_t& a_pair)
     {
-        auto& conf = IConfig::GetGlobalPhysics();
+        const auto& globalConfig = IConfig::GetGlobal();
+
+        auto& conf = IConfig::GetGlobalPhysics()(globalConfig.ui.commonSettings.physics.global.selectedGender);
         conf[a_pair.first] = a_pair.second;
 
         /*Propagate(a_data, std::addressof(conf), a_pair,
-            [&](configComponent32_t& a_v, const configPropagate_t& a_p) {
+            [&](configComponent_t& a_v, const configPropagate_t& a_p) {
                 a_v = a_pair.second;
             });*/
 
@@ -1916,7 +2163,8 @@ namespace CBP
     const configNodes_t& UIContext::UISimComponentGlobal::GetNodeData(
         Game::ObjectHandle) const
     {
-        return IConfig::GetGlobalNode();
+        const auto& globalConfig = IConfig::GetGlobal();
+        return IConfig::GetGlobalNode()(globalConfig.ui.commonSettings.physics.global.selectedGender);
     }
 
     void UIContext::UISimComponentGlobal::UpdateNodeData(
@@ -1927,7 +2175,9 @@ namespace CBP
     {
         if (!a_handle)
         {
-            auto& nodeConfig = IConfig::GetGlobalNode();
+            const auto& globalConfig = IConfig::GetGlobal();
+
+            auto& nodeConfig = IConfig::GetGlobalNode()(globalConfig.ui.commonSettings.physics.global.selectedGender);
             nodeConfig.insert_or_assign(a_node, a_data);
 
             if (a_reset)
@@ -1980,6 +2230,16 @@ namespace CBP
         return m_ctxParent.GetCurrentProfile();
     }
 
+    configGlobalCommon_t& UIContext::UISimComponentGlobal::GetGlobalCommonConfig() const
+    {
+        return IConfig::GetGlobal().ui.commonSettings.physics.global;
+    }
+
+    UICommon::UIPopupQueue& UIContext::UISimComponentGlobal::GetPopupQueue() const
+    {
+        return m_ctxParent.GetPopupQueue();
+    }
+
     void UIContext::ApplyProfile(listValue_t* a_data, const PhysicsProfile& a_profile)
     {
         auto& profileData = a_profile.Data();
@@ -2004,6 +2264,8 @@ namespace CBP
     auto UIContext::GetData(Game::ObjectHandle a_handle) ->
         const entryValue_t&
     {
+        const auto& globalConfig = IConfig::GetGlobal();
+
         return a_handle == Game::ObjectHandle(0) ?
             IConfig::GetGlobalPhysics() :
             IConfig::GetActorPhysics(a_handle);
@@ -2055,9 +2317,19 @@ namespace CBP
         return IConfig::HasArmorOverride(a_handle);
     }
 
+    void UIContext::OnListChangeCurrentItem(
+        const SelectedItem<Game::ObjectHandle>& a_oldHandle,
+        Game::ObjectHandle a_newHandle)
+    {
+        auto& globalConfig = IConfig::GetGlobal();
+        if (globalConfig.ui.autoSelectGender) {
+            m_scActor.AutoSelectGender(a_newHandle);
+        }
+    }
+
     void UIContext::ApplyForce(
         listValue_t* a_data,
-        uint32_t a_steps,
+        std::uint32_t a_steps,
         const std::string& a_component,
         const NiPoint3& a_force) const
     {
@@ -2071,7 +2343,7 @@ namespace CBP
         const char* a_label,
         const ImVec2& a_size,
         bool a_avg,
-        uint32_t a_res)
+        int a_res)
         :
         m_plotScaleMin(0.0f),
         m_plotScaleMax(1.0f),
@@ -2122,7 +2394,7 @@ namespace CBP
         ImGui::PlotLines(
             m_label,
             m_values.data(),
-            m_values.size(),
+            static_cast<int>(m_values.size()),
             0,
             m_avg ? m_strBuf1 : nullptr,
             m_plotScaleMin,
@@ -2169,44 +2441,6 @@ namespace CBP
         m_plotFramerate.SetShowAvg(globalConfig.profiling.showAvg);
     }
 
-    /*void UIProfiling::VMemInfo::Query()
-    {
-        auto rm = BSRenderManager::GetSingleton();
-        if (!rm) {
-            m_has = false;
-            return;
-        }
-
-        IScopedCriticalSectionEx(std::addressof(rm->lock));
-
-        try
-        {
-            using namespace Microsoft::WRL;
-
-            ComPtr<IDXGIDevice> pDXGIDevice;
-            DirectX::ThrowIfFailed(rm->forwarder->QueryInterface(IID_PPV_ARGS(pDXGIDevice.GetAddressOf())));
-
-            ComPtr<IDXGIAdapter> pDXGIAdapter;
-            DirectX::ThrowIfFailed(pDXGIDevice->GetAdapter(pDXGIAdapter.GetAddressOf()));
-
-            ComPtr<IDXGIAdapter3> adapter;
-            DirectX::ThrowIfFailed(pDXGIAdapter.As(&adapter));
-
-            DirectX::ThrowIfFailed(adapter->QueryVideoMemoryInfo(0, DXGI_MEMORY_SEGMENT_GROUP_LOCAL, std::addressof(m_data)));
-
-            m_data.Budget /= 1024 * 1024;
-            m_data.CurrentUsage /= 1024 * 1024;
-            m_data.AvailableForReservation /= 1024 * 1024;
-            m_data.CurrentReservation /= 1024 * 1024;
-
-            m_has = true;
-        }
-        catch (const DirectX::com_exception&)
-        {
-            m_has = false;
-        }
-    }*/
-
     void UIProfiling::Draw(bool* a_active)
     {
         auto& io = ImGui::GetIO();
@@ -2225,14 +2459,6 @@ namespace CBP
                 auto& profiler = DCBP::GetProfiler();
                 auto& stats = profiler.Current();
 
-                /*auto t = PerfCounter::Query();
-                if (PerfCounter::delta_us(m_lastVMIUpdate, t) >= 1000000)
-                {
-                    m_lastVMIUpdate = t;
-
-                    m_vMemInfo.Query();
-                }*/
-
                 ImGui::Columns(2, nullptr, false);
 
                 ImGui::TextWrapped("Time/frame:");
@@ -2246,16 +2472,6 @@ namespace CBP
                 ImGui::TextWrapped("UI:");
                 ImGui::TextWrapped("BoneCast cache:");
                 ImGui::Spacing();
-                /*if (m_vMemInfo.Has())
-                {
-                    ImGui::TextWrapped("VRAM");
-                    ImGui::Indent();
-                    ImGui::TextWrapped("Usage:");
-                    ImGui::TextWrapped("Budget:");
-                    ImGui::TextWrapped("Reserved:");
-                    ImGui::TextWrapped("Available:");
-                    ImGui::Unindent();
-                }*/
 
 #if defined(SKMP_MEMDBG)
                 ImGui::TextWrapped("Mem:");
@@ -2279,18 +2495,8 @@ namespace CBP
                 ImGui::TextWrapped("%.4f", stats.avgFrameTime);
                 ImGui::TextWrapped("%u", stats.avgActorCount);
                 ImGui::TextWrapped("%lld \xC2\xB5s", DUI::GetPerf());
-                ImGui::TextWrapped("%zu kb", IBoneCast::GetCacheSize() / size_t(1024));
+                ImGui::TextWrapped("%zu kb", IBoneCast::GetCacheSize() / std::size_t(1024));
                 ImGui::Spacing();
-                /*if (m_vMemInfo.Has())
-                {
-                    auto& data = m_vMemInfo.Get();
-
-                    ImGui::TextWrapped("");
-                    ImGui::TextWrapped("%llu mb", data.CurrentUsage);
-                    ImGui::TextWrapped("%llu mb", data.Budget);
-                    ImGui::TextWrapped("%llu mb", data.CurrentReservation);
-                    ImGui::TextWrapped("%llu mb", data.AvailableForReservation);
-                }*/
 
 #if defined(SKMP_MEMDBG)
                 ImGui::TextWrapped("%llu ", mem::g_allocatedSize.load());
@@ -2474,14 +2680,14 @@ namespace CBP
 
                     if (!m_sized)
                         m_sized = true;
-                }
             }
         }
+    }
 
         ImGui::End();
 
         ImGui::PopID();
-    }
+}
 #endif
 
     UIFileSelector::SelectedFile::SelectedFile() :
@@ -2650,7 +2856,7 @@ namespace CBP
 
             ImGui::Separator();
 
-            uint8_t importFlags(0);
+            std::uint8_t importFlags(0);
 
             Checkbox("Global", &globalConfig.ui.import.global);
             ImGui::SameLine();
@@ -2829,7 +3035,7 @@ namespace CBP
 
             auto& backlog = IEvents::GetBackLog();
             {
-                IScopedCriticalSection _(std::addressof(backlog.GetLock()));
+                IScopedLock _(backlog.GetLock());
 
                 for (auto& e : backlog)
                     ImGui::TextWrapped("%s", e.c_str());
@@ -3038,17 +3244,14 @@ namespace CBP
 
                     popup.push(
                         UIPopupType::Input,
-                        UIPopupData(e.first),
                         "Add node",
                         "Enter node name:"
-                    ).call([&](auto& a_p, auto& a_d)
+                    ).call([&, cgroup = e.first](auto &a_p)
                         {
                             auto& in = a_p.GetInput();
 
                             if (!strlen(in))
                                 return;
-
-                            auto& cgroup = a_d.get<const std::string&>(0);
 
                             AddNode(in, cgroup);
                         }
@@ -3082,13 +3285,12 @@ namespace CBP
 
                             popup.push(
                                 UIPopupType::Confirm,
-                                UIPopupData(f),
-                                "Add node",
+                                "Remove node",
                                 "Remove node '%s'?",
                                 f.c_str()
-                            ).call([&](auto&, auto& a_d)
+                            ).call([&, nodeName = f](...)
                                 {
-                                    RemoveNode(a_d.get<const std::string&>(0));
+                                    RemoveNode(nodeName);
                                 }
                             );
                         }
@@ -3181,20 +3383,17 @@ namespace CBP
 
         popup.push(
             UIPopupType::Input,
-            UIPopupData(a_node),
             "Add node",
             "Enter the config group name to add node '%s' to:",
             a_node.c_str()
-        ).call([&](auto& a_p, auto& a_d)
+        ).call([&, nodeName = a_node](auto& a_p)
             {
                 auto& in = a_p.GetInput();
 
                 if (!strlen(in))
                     return;
 
-                auto& node = a_d.get<const std::string&>(0);
-
-                AddNode(node, in);
+                AddNode(nodeName, in);
             }
         );
     }
@@ -3207,7 +3406,7 @@ namespace CBP
             UIPopupType::Input,
             "Add node",
             "Enter the node name:"
-        ).call([&](auto& a_p, auto& a_d)
+        ).call([&](auto& a_p)
             {
                 auto& in = a_p.GetInput();
 
@@ -3290,8 +3489,8 @@ namespace CBP
 
         for (auto& e : actorCache)
         {
-            if (!e.second.active)
-                continue;
+            /*if (!e.second.active)
+                continue;*/
 
             m_listData.try_emplace(e.first, e.second.name, e.second);
         }
@@ -3414,18 +3613,15 @@ namespace CBP
 
             popup.push(
                 UIPopupType::Confirm,
-                UIPopupData(a_entry.first),
                 "Reload",
                 "Reload data from '%s'?",
                 a_entry.first.c_str()
-            ).call([&](auto&, auto& a_d)
+            ).call([&, path = a_entry.first](...)
                 {
                     if (!m_currentEntry)
                         return;
 
-                    auto& path = a_d.get<const std::string&>(0);
-
-                    if (StrHelpers::icompare(path, m_currentEntry->first) != 0)
+                    if (!StrHelpers::iequal(path, m_currentEntry->first))
                         return;
 
                     SetCurrentEntry(path, true);
@@ -3443,21 +3639,16 @@ namespace CBP
 
         popup.push(
             UIPopupType::Confirm,
-            UIPopupData(a_path, a_group),
             "Confirm",
             "Delete group '%s'?",
             a_group.c_str()
-        ).call([&](auto&, auto& a_d)
+        ).call([&, path = a_path, group = a_group](...)
             {
                 if (!m_currentEntry)
                     return;
 
-                auto& path = a_d.get<const std::string&>(0);
-
-                if (StrHelpers::icompare(m_currentEntry->first, path) != 0)
+                if (!StrHelpers::iequal(m_currentEntry->first, path))
                     return;
-
-                auto& group = a_d.get<const std::string&>(1);
 
                 m_currentEntry->second.erase(group);
             }
@@ -3511,8 +3702,8 @@ namespace CBP
                 }
                 else
                 {
-                    auto dit = configComponent32_t::descMap.find(e.first);
-                    if (dit != configComponent32_t::descMap.map_end())
+                    auto dit = configComponent_t::descMap.find(e.first);
+                    if (dit != configComponent_t::descMap.map_end())
                     {
                         ImGui::PushID(static_cast<const void*>(std::addressof(e.second)));
 
@@ -3550,9 +3741,9 @@ namespace CBP
     void UIArmorOverrideEditor::DrawAddSliderContextMenu(
         entry_type::second_type::value_type& a_e)
     {
-        ImGui::PushID(static_cast<const void*>(std::addressof(configComponent32_t::descMap)));
+        ImGui::PushID(static_cast<const void*>(std::addressof(configComponent_t::descMap)));
 
-        for (auto& e : configComponent32_t::descMap)
+        for (auto& e : configComponent_t::descMap)
         {
             if (a_e.second.contains(e.first))
                 continue;
@@ -3592,13 +3783,13 @@ namespace CBP
         ImGui::PopID();
     }
 
-    const char* UIArmorOverrideEditor::OverrideModeToDesc(uint32_t a_mode)
+    const char* UIArmorOverrideEditor::OverrideModeToDesc(std::uint32_t a_mode)
     {
         switch (a_mode)
         {
-        case uint32_t(0):
+        case std::uint32_t(0):
             return "Absolute";
-        case uint32_t(1):
+        case std::uint32_t(1):
             return "Modifier";
         default:
             return nullptr;
@@ -3614,7 +3805,7 @@ namespace CBP
 
         if (ImGui::BeginCombo("", curSelName))
         {
-            for (uint32_t i = 0; i < 2; i++)
+            for (std::uint32_t i = 0; i < 2; i++)
             {
                 bool selected = a_entry.second.first == i;
 
@@ -3648,7 +3839,7 @@ namespace CBP
             {
                 ImGui::PushID(static_cast<const void*>(std::addressof(e)));
 
-                bool selected = StrHelpers::icompare(m_currentEntry->first, e) == 0;
+                bool selected = StrHelpers::iequal(m_currentEntry->first, e);
 
                 if (selected)
                     if (ImGui::IsWindowAppearing()) ImGui::SetScrollHereY();
@@ -3731,14 +3922,11 @@ namespace CBP
 
         popup.push(
             UIPopupType::Confirm,
-            UIPopupData(a_entry),
             "Save",
             "Save data to '%s'?",
             a_entry.first.c_str()
-        ).call([&](auto&, auto& a_d)
+        ).call([&, entry = a_entry](...)
             {
-                auto& entry = a_d.get<const entry_type&>(0);
-
                 armorCacheEntry_t tmp;
                 IArmorCache::Copy(entry.second, tmp);
 

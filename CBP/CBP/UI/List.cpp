@@ -71,6 +71,13 @@ namespace CBP
     }
 
     template <class T, class P>
+    void UIListBase<T, P>::OnListChangeCurrentItem(
+        const SelectedItem<P>& a_oldHandle,
+        P a_newHandle)
+    {
+    }
+
+    template <class T, class P>
     void UIListBase<T, P>::ListReset()
     {
         m_listNextUpdateCurrent = false;

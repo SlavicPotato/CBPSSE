@@ -2,7 +2,23 @@
 
 namespace CBP
 {
-    constexpr const char* NODE_HEAD = "NPC Head [Head]";
+    static constexpr auto NODE_HEAD = "NPC Head [Head]";
+
+    /*template <class T>
+    [[nodiscard]] static auto GetGlobalConfAny(T& a_in, const std::string& a_q) ->
+        const typename T::mapped_type&
+    {
+        auto it = a_in.find(a_q);
+        if (it != a_in.end())
+            return it->second;
+
+        if constexpr (std::is_same_v<T, configNodes_t>) {
+            return IConfig::GetDefaultNode();
+        }
+        else if constexpr (std::is_same_v<T, configComponents_t>) {
+            return IConfig::GetDefaultPhysics();
+        }
+    }*/
 
     auto SimObject::CreateNodeDescriptorList(
         Game::ObjectHandle a_handle,
@@ -14,7 +30,9 @@ namespace CBP
         nodeDescList_t& a_out)
         -> nodeDescList_t::size_type
     {
-        auto& nodeConfig = IConfig::GetActorNode(a_handle);
+        auto gender = a_sex == 0 ? ConfigGender::Male : ConfigGender::Female;
+
+        auto& nodeConfig = IConfig::GetActorNode(a_handle, gender);
 
         for (auto& b : a_nodeMap)
         {
@@ -36,21 +54,20 @@ namespace CBP
 
             auto& nodeConf = itn->second;
 
-            bool collisions, movement;
-            nodeConf.Get(a_sex, collisions, movement);
-
-            if (!collisions && !movement)
+            if (!nodeConf.bl.b.collisions && !nodeConf.bl.b.motion)
                 continue;
 
             auto it = a_config.find(b.second);
+
+            auto& physConf = it != a_config.end() ? it->second : IConfig::GetDefaultPhysics();
 
             a_out.emplace_back(
                 b.first,
                 object,
                 b.second,
-                a_collisions && collisions,
-                movement,
-                it != a_config.end() ? it->second : IConfig::GetDefaultPhysics(),
+                a_collisions && nodeConf.bl.b.collisions,
+                nodeConf.bl.b.motion,
+                physConf,
                 nodeConf
             );
         }
@@ -92,12 +109,7 @@ namespace CBP
         m_actorName = a_actor->GetDisplayName();
 #endif
 
-        stl::vector<SimComponent*> tmp;
-
-        auto numObjects(a_desc.size());
-
-        tmp.reserve(numObjects);
-        m_objList.reserve(static_cast<int>(numObjects));
+        m_objList.reserve(a_desc.size());
 
         for (auto& e : a_desc)
         {
@@ -114,9 +126,9 @@ namespace CBP
                 e.movement
             );
 
-            auto it = tmp.begin();
+            auto it = m_objList.begin();
 
-            while (it != tmp.end())
+            while (it != m_objList.end())
             {
                 auto p = (*it)->GetNode()->m_parent;
 
@@ -126,15 +138,13 @@ namespace CBP
                 ++it;
             }
 
-            tmp.emplace(it, obj);
+            m_objList.emplace(it, obj);
         }
-
-        for (auto& e : tmp)
-            m_objList.push_back(e);
 
         BSFixedString n(NODE_HEAD);
         m_objHead = a_actor->loadedState->node->GetObjectByName(&n.data);
 
+        //m_actor = a_actor;
     }
 
     SimObject::~SimObject() noexcept
@@ -156,7 +166,9 @@ namespace CBP
         bool a_collisions,
         const configComponents_t& a_config)
     {
-        auto& nodeConfig = IConfig::GetActorNode(m_handle);
+        auto gender = m_sex == 0 ? ConfigGender::Male : ConfigGender::Female;
+
+        auto& nodeConfig = IConfig::GetActorNode(m_handle, gender);
 
         auto count = m_objList.size();
         for (decltype(count) i = 0; i < count; i++)
@@ -171,24 +183,23 @@ namespace CBP
             auto itn = nodeConfig.find(p->GetNodeName());
             auto& nodeConf = itn != nodeConfig.end() ? itn->second : IConfig::GetDefaultNode();
 
-            bool collisions, movement;
-            nodeConf.Get(m_sex, collisions, movement);
-
             auto itc = a_config.find(confGroup);
             auto& physConf = itc != a_config.end() ? itc->second : IConfig::GetDefaultPhysics();
+
+            //_DMESSAGE("%s: %u %s [%s]", a_actor->GetReferenceName(), Enum::Underlying(physConf.ex.colShape), physConf.ex.colMesh.c_str(), confGroup.c_str());
 
             p->UpdateConfig(
                 a_actor,
                 std::addressof(physConf),
                 nodeConf,
-                a_collisions && collisions,
-                movement
+                a_collisions && nodeConf.bl.b.collisions,
+                nodeConf.bl.b.motion
             );
         }
     }
 
     void SimObject::ApplyForce(
-        uint32_t a_steps,
+        std::uint32_t a_steps,
         const std::string& a_component,
         const NiPoint3& a_force)
     {
@@ -197,7 +208,7 @@ namespace CBP
         {
             auto p = m_objList[i];
 
-            if (StrHelpers::icompare(p->GetConfigGroupName(), a_component) == 0)
+            if (StrHelpers::iequal(p->GetConfigGroupName(), a_component))
                 p->ApplyForce(a_steps, a_force);
         }
     }

@@ -90,7 +90,7 @@ namespace CBP
 
         ss << "[" << std::uppercase << std::setfill('0') <<
             std::setw(8) << std::hex << a_actor->formID << "] " <<
-            a_actor->GetDisplayName();
+            a_actor->GetReferenceName();
 
         a_out.name = ss.str();
 
@@ -119,7 +119,7 @@ namespace CBP
     void IData::AddExtraActorEntry(
         Game::ObjectHandle a_handle)
     {
-        if (actorCache.find(a_handle) != actorCache.end())
+        if (actorCache.contains(a_handle))
             return;
 
         auto& e = actorCache.try_emplace(a_handle);
@@ -158,10 +158,17 @@ namespace CBP
         for (const auto& e : IConfig::GetActorNodeHolder())
             AddExtraActorEntry(e.first);
 
+        Game::AIProcessVisitActors([](Actor* a_actor)
+            {
+                Game::ObjectHandle handle;
+                if (handle.Get(a_actor))
+                    AddExtraActorEntry(handle);                
+            });
+
         auto refHolder = CrosshairRefHandleHolder::GetSingleton();
         if (refHolder)
         {
-            auto &handle = refHolder->CrosshairRefHandle();
+            auto handle = refHolder->CrosshairRefHandle();
 
             NiPointer<TESObjectREFR> ref;
 

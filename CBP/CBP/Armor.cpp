@@ -6,13 +6,14 @@ namespace CBP
     {
         if (!a_entryData || !a_entryData->type || a_entryData->countDelta < 1)
             return true;
-        
+
         auto extendDataList = a_entryData->extendDataList;
         if (!extendDataList)
             return true;
 
-        auto armor = RTTI<TESObjectARMO>()(a_entryData->type);
-        if (!armor)
+        auto form = a_entryData->type;
+
+        if (form->formType != TESObjectARMO::kTypeID)
             return true;
 
         /*auto bipedObject = RTTI<BGSBipedObjectForm>::Cast(a_entryData->type);
@@ -27,7 +28,10 @@ namespace CBP
             if (extraDataList->HasType(kExtraData_Worn) ||
                 extraDataList->HasType(kExtraData_WornLeft))
             {
-                m_results.emplace(armor);
+                auto armor = RTTI<TESObjectARMO>()(form);
+                if (armor)
+                    m_results.emplace(armor);
+
                 break;
             }
 
@@ -90,7 +94,7 @@ namespace CBP
     }
 
     bool IArmor::FindOverrides(
-        Actor* a_actor, 
+        Actor* a_actor,
         armorOverrideResults_t& a_out)
     {
         EquippedArmorCollector pieces;
@@ -108,8 +112,8 @@ namespace CBP
     }
 
     bool IArmor::FindOverrides(
-        Actor* a_actor, 
-        TESObjectARMO* a_armor, 
+        Actor* a_actor,
+        TESObjectARMO* a_armor,
         armorOverrideResults_t& a_out)
     {
         for (UInt32 i = 0; i < a_armor->armorAddons.count; i++)
@@ -130,11 +134,11 @@ namespace CBP
 
 
     bool IArmor::VisitArmorAddon(
-        Actor* a_actor, 
-        TESObjectARMO* a_armor, 
-        TESObjectARMA* a_arma, 
-        bool a_noTraverse, 
-        const std::function<bool(bool, NiNode*, NiAVObject*)> &a_func)
+        Actor* a_actor,
+        TESObjectARMO* a_armor,
+        TESObjectARMA* a_arma,
+        bool a_noTraverse,
+        const std::function<bool(bool, NiNode*, NiAVObject*)>& a_func)
     {
         char buf[MAX_PATH];
         a_arma->GetNodeName(buf, a_actor, a_armor, -1.0f);
@@ -201,33 +205,21 @@ namespace CBP
     }
 
     bool IArmor::VisitEquippedNodes(
-        Actor* a_actor, 
-        const std::function<bool(TESObjectARMO*, TESObjectARMA*, NiAVObject*, bool)> &a_func)
+        Actor* a_actor,
+        const std::function<bool(TESObjectARMO*, TESObjectARMA*, NiAVObject*, bool)>& a_func)
     {
         EquippedArmorCollector pieces;
         GetEquippedArmor(a_actor, pieces);
 
         auto skin = Game::GetActorSkin(a_actor);
-        if (skin)
+        if (skin) {
             pieces.m_results.emplace(skin);
+        }
 
         for (auto& armor : pieces.m_results) {
 
-            for (UInt32 i = 0; i < armor->armorAddons.count; i++)
-            {
-                TESObjectARMA* arma(nullptr);
-                if (!armor->armorAddons.GetNthItem(i, arma))
-                    continue;
-
-                if (!arma || !arma->isValidRace(a_actor->race))
-                    continue;
-
-                if (VisitArmorAddon(a_actor, armor, arma, false, [&](bool a_firstPerson, NiNode*, NiAVObject* a_object) {
-                    return a_func(armor, arma, a_object, a_firstPerson);
-                    }))
-                {
-                    return true;
-                }
+            if (VisitArmor(a_actor, armor, false, a_func)) {
+                return true;
             }
         }
 
@@ -235,10 +227,10 @@ namespace CBP
     }
 
     bool IArmor::VisitArmor(
-        Actor* a_actor, 
-        TESObjectARMO* a_armor, 
-        bool a_noTraverse, 
-        const std::function<bool(TESObjectARMO*, TESObjectARMA*, NiAVObject*, bool)> &a_func)
+        Actor* a_actor,
+        TESObjectARMO* a_armor,
+        bool a_noTraverse,
+        const std::function<bool(TESObjectARMO*, TESObjectARMA*, NiAVObject*, bool)>& a_func)
     {
         for (UInt32 i = 0; i < a_armor->armorAddons.count; i++)
         {
@@ -246,11 +238,13 @@ namespace CBP
             if (!a_armor->armorAddons.GetNthItem(i, arma))
                 continue;
 
-            if (!arma || !arma->isValidRace(a_actor->race))
+            if (!arma || (!a_actor->race || !arma->isValidRace(a_actor->race)))
                 continue;
 
-            if (VisitArmorAddon(a_actor, a_armor, arma, a_noTraverse, [&](bool a_firstPerson, NiNode*, NiAVObject* a_object) {
-                return a_func(a_armor, arma, a_object, a_firstPerson);
+            if (VisitArmorAddon(a_actor, a_armor, arma, a_noTraverse,
+                [&](bool a_firstPerson, NiNode*, NiAVObject* a_object)
+                {
+                    return a_func(a_armor, arma, a_object, a_firstPerson);
                 }))
             {
                 return true;
@@ -262,8 +256,8 @@ namespace CBP
 
     void IArmor::FindOverrides(
         Actor* a_actor,
-        TESObjectARMO* a_armor, 
-        TESObjectARMA* a_arma, 
+        TESObjectARMO* a_armor,
+        TESObjectARMA* a_arma,
         armorOverrideResults_t& a_out)
     {
         char buf[MAX_PATH];

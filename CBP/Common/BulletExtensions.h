@@ -47,7 +47,7 @@ namespace Bullet
             b[1].set128(_mm_and_ps(_mm_loadu_ps(a_tf.rot.data[1]), btvFFF0fMask));
             b[2].set128(_mm_and_ps(_mm_loadu_ps(a_tf.rot.data[2]), btvFFF0fMask));
 
-            getOrigin().set128(_mm_and_ps(_mm_loadu_ps(reinterpret_cast<const float*>(std::addressof(a_tf.pos))), btvFFF0fMask));
+            getOrigin().set128(_mm_and_ps(_mm_loadu_ps(a_tf.pos), btvFFF0fMask));
 
             m_scale = a_tf.scale;
         }

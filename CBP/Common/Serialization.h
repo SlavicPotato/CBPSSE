@@ -13,8 +13,7 @@ namespace Serialization
         void GetDefault(T& a_out) const;
 
     private:
-        bool ParseFloatArray(const Json::Value& a_in, float* a_out, size_t a_size) const;
-        bool ParseVersion(const Json::Value& a_in, const char* a_key, uint32_t& a_out) const;
+        bool ParseVersion(const Json::Value& a_in, const char* a_key, std::uint32_t& a_out) const;
     };
 
     template <class T>
@@ -36,15 +35,36 @@ namespace Serialization
     }
 
     template <class T>
-    bool Parser<T>::ParseFloatArray(const Json::Value& a_in, float* a_out, size_t a_size) const
+    bool Parser<T>::ParseVersion(const Json::Value& a_in, const char* a_key, std::uint32_t& a_out) const
+    {
+        if (a_in.isMember(a_key))
+        {
+            auto& v = a_in[a_key];
+
+            if (!v.isNumeric())
+                return false;
+
+            a_out = static_cast<std::uint32_t>(v.asUInt());
+        }
+        else
+            a_out = 0;
+
+        return true;
+    }
+
+    bool ParseFloatArray(const Json::Value& a_in, float* a_out, std::size_t a_size);
+    void CreateFloatArray(const float* a_in, Json::Value& a_out, std::size_t a_size);
+
+    template <std::size_t _Size>
+    bool ParseFloatArray(const Json::Value& a_in, float (&a_out)[_Size])
     {
         if (!a_in.isArray())
             return false;
 
-        if (a_in.size() != a_size)
+        if (a_in.size() != _Size)
             return false;
 
-        for (uint32_t i = 0; i < a_size; i++)
+        for (std::uint32_t i = 0; i < _Size; i++)
         {
             auto& v = a_in[i];
 
@@ -57,22 +77,12 @@ namespace Serialization
         return true;
     }
 
-    template <class T>
-    bool Parser<T>::ParseVersion(const Json::Value& a_in, const char* a_key, uint32_t& a_out) const
+    template <std::size_t _Size>
+    void CreateFloatArray(const float(&a_in)[_Size], Json::Value& a_out)
     {
-        if (a_in.isMember(a_key))
-        {
-            auto& v = a_in[a_key];
-
-            if (!v.isNumeric())
-                return false;
-
-            a_out = static_cast<uint32_t>(v.asUInt());
+        for (auto &e : a_in) {
+            a_out.append(e);
         }
-        else
-            a_out = 0;
-
-        return true;
     }
 
     SKMP_FORCEINLINE static void SafeCleanup(const fs::path& a_path) noexcept
@@ -122,7 +132,10 @@ namespace Serialization
         {
             {
                 std::ofstream ofs;
-                ofs.open(tmpPath, std::ofstream::out | std::ofstream::binary | std::ofstream::trunc);
+                ofs.open(
+                    tmpPath, 
+                    std::ofstream::out | std::ofstream::binary | std::ofstream::trunc,
+                    _SH_DENYWR);
 
                 if (!ofs.is_open())
                     throw std::system_error(errno, std::system_category(), tmpPath.string());

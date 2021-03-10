@@ -49,9 +49,9 @@ namespace CBP
 
             auto& actorList = GetSimActorList();
 
-            if (globalConf.debugRenderer.enableMovementConstraints)
+            if (globalConf.debugRenderer.enableMotionConstraints)
             {
-                renderer->GenerateMovementConstraints(
+                renderer->GenerateMotionConstraints(
                     actorList,
                     globalConf.debugRenderer.movingNodesRadius);
             }
@@ -63,19 +63,20 @@ namespace CBP
                 globalConf.debugRenderer.movingNodesCenterOfGravity,
                 m_markedActor);
 
-            auto world = ICollision::GetWorld();
-            world->debugDrawWorld();
+            ICollision::GetWorld()->debugDrawWorld();
         }
         catch (const std::exception&) {}
     }
 
-    void ControllerTask::UpdatePhase1()
+    void ControllerTask::UpdatePhase1(float a_timeStep)
     {
         auto data = m_actors.getdata();
         auto size = m_actors.vecsize();
 
-        for (size_t i = 0; i < size; i++)
-            data[i]->UpdateVelocity();
+        for (std::size_t i = 0; i < size; i++)
+        {
+            data[i]->UpdateVelocity(a_timeStep);
+        }
     }
 
     void ControllerTask::UpdateActorsPhase2(float a_timeStep)
@@ -83,13 +84,13 @@ namespace CBP
         auto data = m_actors.getdata();
         auto size = m_actors.vecsize();
 
-#if BT_THREADSAFE
+#if 0
 
         if (DCBP::GetDriverConfig().multiThreadedMotionUpdates)
         {
             concurrency::structured_task_group task_group;
 
-            for (size_t i = 0; i < size; i++)
+            for (std::size_t i = 0; i < size; i++)
             {
                 auto p = data[i];
                 p->SetTimeStep(a_timeStep);
@@ -102,24 +103,27 @@ namespace CBP
         else
         {
 #endif
-            for (size_t i = 0; i < size; i++)
+            for (std::size_t i = 0; i < size; i++)
             {
                 data[i]->UpdateMotion(a_timeStep);
             }
 
-#if BT_THREADSAFE
+#if 0
         }
 
 #endif
-        /*concurrency::parallel_for(size_t(0), size, [&](size_t a_index) {
+        /*concurrency::parallel_for(std::size_t(0), size, [&](std::size_t a_index) {
             data[a_index]->UpdateMotion(a_timeStep);
         });*/
 
     }
 
-    uint32_t ControllerTask::UpdatePhase2(float a_timeStep, float a_timeTick, float a_maxTime)
+    std::uint32_t ControllerTask::UpdatePhase2(
+        float a_timeStep, 
+        float a_timeTick, 
+        float a_maxTime)
     {
-        uint32_t c(1);
+        std::uint32_t c(1);
 
         while (a_timeStep >= a_maxTime)
         {
@@ -134,9 +138,12 @@ namespace CBP
         return c;
     }
 
-    uint32_t ControllerTask::UpdatePhase2Collisions(float a_timeStep, float a_timeTick, float a_maxTime)
+    std::uint32_t ControllerTask::UpdatePhase2Collisions(
+        float a_timeStep, 
+        float a_timeTick, 
+        float a_maxTime)
     {
-        uint32_t c(1);
+        std::uint32_t c(1);
 
         while (a_timeStep >= a_maxTime)
         {
@@ -161,7 +168,9 @@ namespace CBP
     }
 #endif
 
-    uint32_t ControllerTask::UpdatePhysics(Game::BSMain* a_main, float a_interval)
+    std::uint32_t ControllerTask::UpdatePhysics(
+        Game::BSMain* a_main, 
+        float a_interval)
     {
         if (a_main->freezeTime ||
             Game::InPausedMenu() ||
@@ -183,7 +192,9 @@ namespace CBP
 
         m_timeAccum += a_interval;
 
-        uint32_t steps;
+        UpdatePhase1(m_averageInterval);
+
+        std::uint32_t steps;
 
         if (m_timeAccum > timeTick * 0.25f)
         {
@@ -192,12 +203,12 @@ namespace CBP
 
             float maxTime = timeTick * 1.25f;
 
-            UpdatePhase1();
-
-            if (globalConfig.phys.collisions)
+            if (globalConfig.phys.collisions) {
                 steps = UpdatePhase2Collisions(timeStep, timeTick, maxTime);
-            else
+            }
+            else {
                 steps = UpdatePhase2(timeStep, timeTick, maxTime);
+            }
 
 #ifdef _CBP_ENABLE_DEBUG
             UpdatePhase3();
@@ -228,7 +239,7 @@ namespace CBP
         auto steps = UpdatePhysics(a_main, a_interval);
 
         if (profiling)
-            m_profiler.End(static_cast<uint32_t>(m_actors.size()), steps, a_interval);
+            m_profiler.End(static_cast<std::uint32_t>(m_actors.size()), steps, a_interval);
     }
 
     void ControllerTask::Run()
@@ -237,7 +248,7 @@ namespace CBP
 
         //_DMESSAGE("%lu : %d", GetCurrentThreadId(), cc);
 
-        IScopedCriticalSection _(DCBP::GetLock());
+        IScopedLock _(DCBP::GetLock());
 
         CullActors();
 
@@ -254,9 +265,9 @@ namespace CBP
     {
         //m_pt.Begin();
 
-        IScopedCriticalSection _(DCBP::GetLock());
+        IScopedLock _(DCBP::GetLock());
 
-        if (m_ranFrame)
+        if (m_ranFrame) // this should never happen, but just in case
             return;
 
         m_ranFrame = true;
@@ -283,11 +294,12 @@ namespace CBP
         auto data = m_actors.getdata();
         auto size = m_actors.vecsize();
 
-        for (size_t i = 0; i < size; i++)
+        for (std::size_t i = 0; i < size; i++)
         {
             auto e = data[i];
 
             auto actor = static_cast<Actor*>(policy->Resolve(Actor::kTypeID, e->GetActorHandle()));
+            //auto actor = e->GetActor();
 
             if (!ActorValid(actor))
             {
@@ -305,7 +317,7 @@ namespace CBP
                 {
                     e->SetSuspended(true);
 
-                    PrintStats("Suspended [%.8X] [%s]", actor->formID, actor->GetDisplayName());
+                    PrintStats("Suspended [%.8X] [%s]", actor->formID, actor->GetReferenceName());
                 }
             }
             else
@@ -314,7 +326,7 @@ namespace CBP
                 {
                     e->SetSuspended(false);
 
-                    PrintStats("Unsuspended [%.8X] [%s]", actor->formID, actor->GetDisplayName());
+                    PrintStats("Unsuspended [%.8X] [%s]", actor->formID, actor->GetReferenceName());
                 }
             }
         }
@@ -327,12 +339,9 @@ namespace CBP
         {
             if (it->second.IsMarkedForDelete())
             {
-                PrintStats("Removing [%.8X] (no longer valid)", it->first.GetFormID());
+                //PrintStats("No longer valid [%.8X]", it->first.GetFormID());
 
-                IConfig::RemoveArmorOverride(it->first);
-                IConfig::ClearMergedCacheThreshold();
-
-                it = m_actors.erase(it);
+                it = RemoveActor(it);
             }
             else {
                 ++it;
@@ -342,6 +351,20 @@ namespace CBP
 
     void ControllerTask::AddActor(Game::ObjectHandle a_handle)
     {
+        /*auto it = m_actors.find(a_handle);
+        if (it != m_actors.end()) 
+        {
+            Debug("%.8X: Actor already present, re-adding", a_handle.GetFormID());
+            RemoveActor(it);
+        }*/
+
+        PerfTimer pt;
+
+        const auto& globalConfig = IConfig::GetGlobal();
+
+        if (globalConfig.general.controllerStats) 
+            pt.Start();        
+
         if (m_actors.contains(a_handle))
             return;
 
@@ -349,16 +372,7 @@ namespace CBP
         if (!ActorValid(actor))
             return;
 
-        char sex;
-        auto npc = RTTI<TESNPC>()(actor->baseForm);
-        if (npc != nullptr) {
-            sex = npc->GetSex();
-        }
-        else {
-            sex = 0;
-        }
-
-        const auto& globalConfig = IConfig::GetGlobal();
+        char sex = Game::GetActorSex(actor);
 
         if (sex == 0 && globalConfig.general.femaleOnly)
             return;
@@ -381,7 +395,7 @@ namespace CBP
 
         IData::UpdateActorMaps(a_handle, actor);
 
-        auto& conf = IConfig::GetActorPhysicsAO(a_handle);
+        auto& conf = IConfig::GetActorPhysicsAO(a_handle, sex == 0 ? ConfigGender::Male : ConfigGender::Female);
         auto& nodeMap = IConfig::GetNodeMap();
 
         nodeDescList_t descList;
@@ -397,9 +411,16 @@ namespace CBP
             return;
         }
 
-        PrintStats("Adding [%.8X] [%s]", actor->formID, actor->GetDisplayName());
-
         m_actors.try_emplace(a_handle, a_handle, actor, sex, descList);
+
+        if (globalConfig.general.controllerStats) 
+        {
+            auto rt = pt.Stop() * 1000.0;
+
+            Debug("Registered [%.8X] [%.3f ms] [%s]", 
+                actor->formID, rt, actor->GetReferenceName());
+        }
+
     }
 
     void ControllerTask::RemoveActor(Game::ObjectHandle a_handle)
@@ -408,12 +429,18 @@ namespace CBP
         if (it == m_actors.end())
             return;
 
-        PrintStats("Removing [%.8X]", a_handle.GetFormID());
+        RemoveActor(it);
+    }
 
-        m_actors.erase(it);
+    simActorList_t::iterator ControllerTask::RemoveActor(
+        simActorList_t::iterator a_iterator)
+    {
+        PrintStats("Removing [%.8X]", a_iterator->first.GetFormID());
 
-        IConfig::RemoveArmorOverride(a_handle);
+        IConfig::RemoveArmorOverride(a_iterator->first);
         IConfig::ClearMergedCacheThreshold();
+
+        return m_actors.erase(a_iterator);
     }
 
     /*bool ControllerTask::ValidateActor(simActorList_t::value_type& a_entry)
@@ -472,15 +499,17 @@ namespace CBP
 
     void ControllerTask::DoConfigUpdate(Game::ObjectHandle a_handle, Actor* a_actor, SimObject& a_obj)
     {
+        char sex = Game::GetActorSex(a_actor);
+
         a_obj.UpdateConfig(
             a_actor,
             IConfig::GetGlobal().phys.collisions,
-            IConfig::GetActorPhysicsAO(a_handle));
+            IConfig::GetActorPhysicsAO(a_handle, sex == 0 ? ConfigGender::Male : ConfigGender::Female));
     }
 
     void ControllerTask::ApplyForce(
         Game::ObjectHandle a_handle,
-        uint32_t a_steps,
+        std::uint32_t a_steps,
         const std::string& a_component,
         const NiPoint3& a_force)
     {
@@ -505,8 +534,7 @@ namespace CBP
         {
             for (const auto& e : m_actors)
             {
-                auto actor = e.first.Resolve<Actor>();
-                Debug("Removing [%.8X] [%s] (CLR)", e.first.GetFormID(), GetActorName(actor));
+                Debug("Removing (CLR) [%.8X]", e.first.GetFormID());
             }
         }
 
@@ -524,22 +552,32 @@ namespace CBP
         m_queue.swap(decltype(m_queue)());
     }
 
-    void ControllerTask::Reset()
+    void ControllerTask::Reset(Game::ObjectHandle a_handle)
     {
-        const auto& globalConfig = IConfig::GetGlobal();
+        if (a_handle != Game::ObjectHandle(0))
+        {
+            RemoveActor(a_handle);
+            AddActor(a_handle);
+        }
+        else
+        {
 
-        PrintStats("Resetting");
+            const auto& globalConfig = IConfig::GetGlobal();
 
-        handleSet_t handles;
+            PrintStats("Resetting");
 
-        /*for (const auto& e : m_actors)
-            handles.emplace(e.first);*/
+            handleSet_t handles;
 
-        GatherActors(handles);
+            /*for (const auto& e : m_actors)
+                handles.emplace(e.first);*/
 
-        ClearActors(false, true);
-        for (const auto e : handles)
-            AddActor(e);
+            GatherActors(handles);
+
+            ClearActors(false, true);
+            for (const auto &e : handles)
+                AddActor(e);
+
+        }
 
         IData::UpdateActorCache(m_actors);
     }
@@ -561,6 +599,9 @@ namespace CBP
             {
                 auto actor = a_handle.Resolve<Actor>();
                 if (!ActorValid(actor))
+                    return;
+
+                if (!actor->baseForm)
                     return;
 
                 auto npc = RTTI<TESNPC>()(actor->baseForm);
@@ -757,12 +798,19 @@ namespace CBP
 
     void ControllerTask::ProcessTasks()
     {
-        while (!TaskQueueEmpty())
+        for (;;)
         {
-            m_lock.Enter();
+            m_lock.lock();
+            if (m_queue.empty())
+            {
+                m_lock.unlock();
+                break;
+            }
+
             ControllerInstruction instr = m_queue.front();
             m_queue.pop();
-            m_lock.Leave();
+
+            m_lock.unlock();
 
             switch (instr.m_action)
             {
@@ -779,7 +827,7 @@ namespace CBP
                 UpdateConfigOnAllActors();
                 break;
             case ControllerInstruction::Action::Reset:
-                Reset();
+                Reset(instr.m_handle);
                 break;
             case ControllerInstruction::Action::PhysicsReset:
                 PhysicsReset();

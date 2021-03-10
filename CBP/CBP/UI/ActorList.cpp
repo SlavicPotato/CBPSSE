@@ -56,7 +56,7 @@ namespace CBP
         _snprintf_s(m_listBuf1, _TRUNCATE, "%zu actors", m_listData.size() - minEntries);
 
         if (globalConfig.ui.selectCrosshairActor && !isFirstUpdate) {
-            auto crosshairRef = IData::GetCrosshairRef();
+            auto &crosshairRef = IData::GetCrosshairRef();
             if (crosshairRef) {
                 if (m_listData.find(*crosshairRef) != m_listData.end()) {
                     ListSetCurrentItem(*crosshairRef);
@@ -104,6 +104,8 @@ namespace CBP
     {
         auto& globalConfig = IConfig::GetGlobal();
         auto& actorConf = GetActorConfig();
+
+        OnListChangeCurrentItem(m_listCurrent, a_handle);
 
         m_listCurrent = a_handle;
 

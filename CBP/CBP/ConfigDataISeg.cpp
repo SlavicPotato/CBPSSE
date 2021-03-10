@@ -7,6 +7,7 @@ namespace CBP
 {
     defaultPhysicsDataHolder_t::defaultPhysicsDataHolder_t()
     {
+        vec.maxOffsetSphereOffset.setZero();
         vec.maxOffsetN.setValue(-20.0f, -20.0f, -20.0f);
         vec.maxOffsetP = vec.maxOffsetN.absolute();
         vec.cogOffset.setValue(0.0f, 5.0f, 0.0f);
@@ -20,7 +21,10 @@ namespace CBP
 
         f32.stiffness = 10.0f;
         f32.stiffness2 = 10.0f;
+        f32.springSlackOffset = 0.0f;
+        f32.springSlackMag = 0.0f;
         f32.damping = 0.95f;
+        f32.maxOffsetSphereRadius = 20.0f;
         f32.maxOffsetVelResponseScale = 0.1f;
         f32.maxOffsetMaxBiasMag = 5.0f;
         f32.maxOffsetRestitutionCoefficient = 0.0f;
@@ -39,6 +43,7 @@ namespace CBP
         f32.colPenMass = 1.0f;
         f32.colPositionScale = 1.0f;
         f32.colRotationScale = 1.0f;
+        f32.colFriction = 0.0f;
     }
 
     const defaultPhysicsDataHolder_t g_defaultPhysicsData;
@@ -49,7 +54,7 @@ namespace CBP
         vec.colOffsetMax.setZero();
         vec.colRot.setZero();
 
-        f32.nodeScale = 0.0f;
+        f32.nodeScale = 1.0f;
         f32.bcWeightThreshold = 0.0f;
         f32.bcSimplifyTarget = 1.0f;
         f32.bcSimplifyTargetError = 0.02f;

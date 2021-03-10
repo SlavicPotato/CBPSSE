@@ -2,336 +2,394 @@
 
 namespace Serialization
 {
-
     static const std::string s_keyMaxOffset("maxoffset");
 
+    template <class T>
+    struct parserDesc_t {
+        const char* member;
+        T& data;
+    };
+
     template<>
-    bool Parser<CBP::configComponents_t>::Parse(const Json::Value& a_in, CBP::configComponents_t& a_outData) const
+    bool Parser<CBP::configComponentsGenderRoot_t>::Parse(const Json::Value& a_in, CBP::configComponentsGenderRoot_t& a_outData) const
     {
-        uint32_t version;
+        std::uint32_t version;
+
         if (!ParseVersion(a_in, "data_version", version)) {
             Error("Bad version data");
             return false;
         }
 
-        if (!a_in.isMember("data"))
-            return false;
-
-        auto& data = a_in["data"];
-
-        if (data.empty())
-            return true;
-
-        if (!data.isObject()) {
-            Error("Expected an object");
-            return false;
-        }
-
-        for (auto it1 = data.begin(); it1 != data.end(); ++it1)
+        parserDesc_t<CBP::configComponents_t> desc[2] = 
         {
-            std::string configGroup(it1.key().asString());
+            { "data", a_outData(CBP::ConfigGender::Female)},
+            { "data_male", a_outData(CBP::ConfigGender::Male)}
+        };
 
-            if (configGroup.empty()) {
-                Error("Empty config group name");
+        int nfound = 0;
+
+        for (auto& ds : desc)
+        {
+            if (!a_in.isMember(ds.member))
+                continue;
+
+            auto& data = a_in[ds.member];
+
+            nfound++;
+
+            if (data.empty())
+                continue;
+
+            if (!data.isObject()) {
+                Error("Expected an object");
                 return false;
             }
 
-            auto& e = a_outData.try_emplace(configGroup).first->second;
-
-            if (!it1->isNull())
+            for (auto it1 = data.begin(); it1 != data.end(); ++it1)
             {
-                if (!it1->isObject()) {
-                    Error("Bad sim component data, expected object");
+                std::string configGroup(it1.key().asString());
+
+                if (configGroup.empty()) {
+                    Error("Empty config group name");
                     return false;
                 }
 
-                const Json::Value* physData;
-                if (version == 0) {
-                    physData = std::addressof(*it1);
-                }
-                else
-                {
-                    auto& v = (*it1)["phys"];
+                auto& e = ds.data.try_emplace(configGroup).first->second;
 
-                    if (v.empty()) {
-                        Error("%s: Missing physics data", configGroup.c_str());
+                if (!it1->isNull())
+                {
+                    if (!it1->isObject()) {
+                        Error("Bad sim component data, expected object");
                         return false;
                     }
 
-                    if (!v.isObject()) {
-                        Error("%s: Invalid physics data", configGroup.c_str());
-                        return false;
+                    const Json::Value* physData;
+                    if (version == 0) {
+                        physData = std::addressof(*it1);
                     }
-
-                    physData = std::addressof(v);
-                }
-
-                if (version < 3)
-                {
-                    for (auto it2 = physData->begin(); it2 != physData->end(); ++it2)
+                    else
                     {
-                        if (!it2->isNumeric()) {
-                            Error("(%s) Bad value type, expected number: %d", configGroup.c_str(), Enum::Underlying(it2->type()));
+                        auto& v = (*it1)["phys"];
+
+                        if (v.empty()) {
+                            Error("%s: Missing physics data", configGroup.c_str());
                             return false;
                         }
 
-                        std::string valName(it2.key().asString());
-
-                        if (version < 2 && StrHelpers::icompare(valName, s_keyMaxOffset) == 0)
-                        {
-                            float v = it2->asFloat();
-                            float tv[3]{ v, v, v };
-                            e.Set("mox", tv, 3);
+                        if (!v.isObject()) {
+                            Error("%s: Invalid physics data", configGroup.c_str());
+                            return false;
                         }
-                        else
+
+                        physData = std::addressof(v);
+                    }
+
+                    if (version < 3)
+                    {
+                        for (auto it2 = physData->begin(); it2 != physData->end(); ++it2)
                         {
-                            auto ik = CBP::configComponent32_t::oldKeyMap.find(valName);
-                            if (ik == CBP::configComponent32_t::oldKeyMap.end()) {
-                                //Warning("(%s) Unknown value: %s", configGroup.c_str(), valName.c_str());
+                            if (!it2->isNumeric()) {
+                                Error("(%s) Bad value type, expected number: %d", configGroup.c_str(), Enum::Underlying(it2->type()));
+                                return false;
+                            }
+
+                            std::string valName(it2.key().asString());
+
+                            if (version < 2 && StrHelpers::iequal(valName, s_keyMaxOffset))
+                            {
+                                float v = it2->asFloat();
+                                float tv[3]{ v, v, v };
+                                e.Set("mox", tv, 3);
+                            }
+                            else
+                            {
+                                auto ik = CBP::configComponent_t::oldKeyMap.find(valName);
+                                if (ik == CBP::configComponent_t::oldKeyMap.end()) {
+                                    //Warning("(%s) Unknown value: %s", configGroup.c_str(), valName.c_str());
+                                    continue;
+                                }
+
+                                ASSERT(e.Set(ik->second, it2->asFloat()));
+                            }
+                        }
+                    }
+                    else
+                    {
+                        for (auto& desc : CBP::configComponent_t::descMap)
+                        {
+                            auto& v = (*physData)[desc.first];
+
+                            if (!v.isNumeric()) {
+                                if (!v.isNull()) {
+                                    Warning("(%s) (%s) Bad value type, expected number: %d",
+                                        configGroup.c_str(), desc.first.c_str(), Enum::Underlying(v.type()));
+                                }
                                 continue;
                             }
 
-                            ASSERT(e.Set(ik->second, it2->asFloat()));
+                            e.Set(desc.second, v.asFloat());
                         }
                     }
-                }
-                else
-                {
-                    for (auto& desc : CBP::configComponent32_t::descMap)
-                    {
-                        auto& v = (*physData)[desc.first];
 
-                        if (!v.isNumeric()) {
-                            if (!v.isNull()) {
-                                Warning("(%s) (%s) Bad value type, expected number: %d",
-                                    configGroup.c_str(), desc.first.c_str(), Enum::Underlying(v.type()));
-                            }
-                            continue;
+                    auto& ex = (*it1)["ex"];
+
+                    if (!ex.empty())
+                    {
+                        auto s = static_cast<std::uint32_t>(ex.get("cs", 0).asUInt());
+
+                        switch (s)
+                        {
+                        case Enum::Underlying(CBP::ColliderShapeType::Sphere):
+                        case Enum::Underlying(CBP::ColliderShapeType::Capsule):
+                        case Enum::Underlying(CBP::ColliderShapeType::Box):
+                        case Enum::Underlying(CBP::ColliderShapeType::Cone):
+                        case Enum::Underlying(CBP::ColliderShapeType::Tetrahedron):
+                        case Enum::Underlying(CBP::ColliderShapeType::Cylinder):
+                        case Enum::Underlying(CBP::ColliderShapeType::Mesh):
+                        case Enum::Underlying(CBP::ColliderShapeType::ConvexHull):
+                            e.SetColShape(static_cast<CBP::ColliderShapeType>(s));
+                            break;
+                        default:
+                            Warning("(%s) Unknown collision shape specifier: %u", configGroup.c_str(), s);
                         }
 
-                        e.Set(desc.second, v.asFloat());
+                        e.ex.motionConstraints = static_cast<CBP::MotionConstraints>(ex.get("mc", Enum::Underlying(CBP::MotionConstraints::None)).asUInt());
+
+                        e.ex.colMesh = ex.get("cm", "").asString();
+
                     }
-                }
-
-                auto& ex = (*it1)["ex"];
-
-                if (!ex.empty())
-                {
-                    auto s = static_cast<uint32_t>(ex.get("cs", 0).asUInt());
-
-                    switch (s)
-                    {
-                    case Enum::Underlying(CBP::ColliderShapeType::Sphere):
-                    case Enum::Underlying(CBP::ColliderShapeType::Capsule):
-                    case Enum::Underlying(CBP::ColliderShapeType::Box):
-                    case Enum::Underlying(CBP::ColliderShapeType::Cone):
-                    case Enum::Underlying(CBP::ColliderShapeType::Tetrahedron):
-                    case Enum::Underlying(CBP::ColliderShapeType::Cylinder):
-                    case Enum::Underlying(CBP::ColliderShapeType::Mesh):
-                    case Enum::Underlying(CBP::ColliderShapeType::ConvexHull):
-                        e.SetColShape(static_cast<CBP::ColliderShapeType>(s));
-                        break;
-                    default:
-                        Warning("(%s) Unknown collision shape specifier: %u", configGroup.c_str(), s);
-                    }
-
-                    e.ex.colMesh = ex.get("cm", "").asString();
                 }
             }
+        }
+
+        if (nfound == 0) {
+            return false;
         }
 
         return true;
     }
 
     template<>
-    void Parser<CBP::configComponents_t>::Create(const CBP::configComponents_t& a_data, Json::Value& a_out) const
+    void Parser<CBP::configComponentsGenderRoot_t>::Create(const CBP::configComponentsGenderRoot_t& a_data, Json::Value& a_out) const
     {
-        auto& data = a_out["data"];
 
-        for (const auto& v : a_data) {
-            auto& simComponent = data[v.first];
+        parserDesc_t<const CBP::configComponents_t> desc[2] =
+        {
+            { "data", a_data(CBP::ConfigGender::Female)},
+            { "data_male", a_data(CBP::ConfigGender::Male)}
+        };
 
-            auto& phys = simComponent["phys"];
+        for (auto& ds : desc)
+        {
+            auto& data = a_out[ds.member];
 
-            auto baseaddr = reinterpret_cast<uintptr_t>(std::addressof(v.second));
+            for (const auto& v : ds.data) {
+                auto& simComponent = data[v.first];
 
-            for (const auto& e : v.second.descMap)
-                phys[e.first] = *reinterpret_cast<float*>(baseaddr + e.second.offset);
+                auto& phys = simComponent["phys"];
 
-            auto& ex = simComponent["ex"];
+                auto baseaddr = reinterpret_cast<uintptr_t>(std::addressof(v.second));
 
-            ex["cs"] = Enum::Underlying(v.second.ex.colShape);
-            ex["cm"] = v.second.ex.colMesh;
+                for (const auto& e : v.second.descMap)
+                    phys[e.first] = *reinterpret_cast<float*>(baseaddr + e.second.offset);
+
+                auto& ex = simComponent["ex"];
+
+                ex["cs"] = Enum::Underlying(v.second.ex.colShape);
+                ex["mc"] = Enum::Underlying(v.second.ex.motionConstraints);
+                ex["cm"] = v.second.ex.colMesh;
+            }
         }
 
-        a_out["data_version"] = Json::Value::UInt(3);
+        a_out["data_version"] = Json::Value::UInt(4);
     }
 
     template<>
-    bool Parser<CBP::configNodes_t>::Parse(const Json::Value& a_in, CBP::configNodes_t& a_out) const
+    bool Parser<CBP::configNodesGenderRoot_t>::Parse(const Json::Value& a_in, CBP::configNodesGenderRoot_t& a_out) const
     {
-        uint32_t version;
+        std::uint32_t version;
 
         if (!ParseVersion(a_in, "nodes_version", version)) {
             Error("Bad version data");
             return false;
         }
 
-        if (!a_in.isMember("nodes"))
-            return false;
-
-        auto& data = a_in["nodes"];
-
-        if (data.empty())
-            return true;
-
-        if (!data.isObject()) {
-            Error("root: expected an object");
-            return false;
-        }
-
-        for (auto it = data.begin(); it != data.end(); ++it)
+        parserDesc_t<CBP::configNodes_t> desc[2] =
         {
-            if (it->empty())
+            { "nodes", a_out(CBP::ConfigGender::Female)},
+            { "nodes_male", a_out(CBP::ConfigGender::Male)}
+        };
+
+        int nfound = 0;
+
+        for (auto& ds : desc)
+        {
+            if (!a_in.isMember(ds.member))
                 continue;
 
-            if (!it->isObject())
-            {
-                Error("Node entry not an object");
+            nfound++;
+
+            auto& data = a_in[ds.member];
+
+            if (data.empty())
                 continue;
-            }
 
-            std::string k(it.key().asString());
-
-            if (k.empty())
-            {
-                Error("Zero length node name");
+            if (!data.isObject()) {
+                Error("root: expected an object");
                 return false;
             }
 
-            auto& nc = a_out.try_emplace(k).first->second;
-
-            if (version < 1)
+            for (auto it = data.begin(); it != data.end(); ++it)
             {
-                nc.bl.b.motion.female = it->get("femaleMovement", false).asBool();
-                nc.bl.b.collisions.female = it->get("femaleCollisions", false).asBool();
-                nc.bl.b.motion.male = it->get("maleMovement", false).asBool();
-                nc.bl.b.collisions.male = it->get("maleCollisions", false).asBool();
+                if (it->empty())
+                    continue;
 
-                auto& offsetMin = (*it)["offsetMin"];
-
-                if (!offsetMin.empty()) {
-                    if (!ParseFloatArray(offsetMin, nc.fp.f32.colOffsetMin, 3)) {
-                        Error("Couldn't parse offsetMin");
-                        return false;
-                    }
+                if (!it->isObject())
+                {
+                    Error("Node entry not an object");
+                    continue;
                 }
 
-                auto& offsetMax = (*it)["offsetMax"];
+                std::string k(it.key().asString());
 
-                if (!offsetMax.empty()) {
-                    if (!ParseFloatArray(offsetMax, nc.fp.f32.colOffsetMax, 3)) {
-                        Error("Couldn't parse offsetMax");
-                        return false;
-                    }
-                }
-            }
-            else
-            {
-                nc.bl.b.motion.female = it->get("fm", false).asBool();
-                nc.bl.b.collisions.female = it->get("fc", false).asBool();
-                nc.bl.b.motion.male = it->get("mm", false).asBool();
-                nc.bl.b.collisions.male = it->get("mc", false).asBool();
-
-                auto& offsetMin = (*it)["o-"];
-
-                if (!offsetMin.empty()) {
-                    if (!ParseFloatArray(offsetMin, nc.fp.f32.colOffsetMin, 3)) {
-                        Error("Couldn't parse offsetMin");
-                        return false;
-                    }
+                if (k.empty())
+                {
+                    Error("Zero length node name");
+                    return false;
                 }
 
-                auto& offsetMax = (*it)["o+"];
+                auto& nc = ds.data.try_emplace(k).first->second;
 
-                if (!offsetMax.empty()) {
-                    if (!ParseFloatArray(offsetMax, nc.fp.f32.colOffsetMax, 3)) {
-                        Error("Couldn't parse offsetMax");
-                        return false;
-                    }
-                }
+                if (version < 1)
+                {
+                    nc.bl.b.motion = it->get("femaleMovement", false).asBool();
+                    nc.bl.b.collisions = it->get("femaleCollisions", false).asBool();
 
-                if (version >= 2) {
-                    auto& rot = (*it)["r"];
+                    auto& offsetMin = (*it)["offsetMin"];
 
-                    if (!rot.empty()) {
-                        if (!ParseFloatArray(rot, nc.fp.f32.colRot, 3)) {
-                            Error("Couldn't parse colRot");
+                    if (!offsetMin.empty()) {
+                        if (!ParseFloatArray(offsetMin, nc.fp.f32.colOffsetMin, 3)) {
+                            Error("Couldn't parse offsetMin");
                             return false;
                         }
                     }
 
-                    if (version >= 3)
-                    {
-                        nc.bl.b.boneCast = it->get("b", false).asBool();
-                        nc.fp.f32.bcSimplifyTarget = it->get("bt", 1.0f).asFloat();
-                        nc.fp.f32.bcSimplifyTargetError = it->get("be", 0.02f).asFloat();
-                        nc.fp.f32.bcWeightThreshold = it->get("bw", 0.0f).asFloat();
-                        nc.ex.bcShape = it->get("bs", "").asString();
+                    auto& offsetMax = (*it)["offsetMax"];
+
+                    if (!offsetMax.empty()) {
+                        if (!ParseFloatArray(offsetMax, nc.fp.f32.colOffsetMax, 3)) {
+                            Error("Couldn't parse offsetMax");
+                            return false;
+                        }
                     }
                 }
+                else
+                {
+                    nc.bl.b.motion = it->get("fm", false).asBool();
+                    nc.bl.b.collisions = it->get("fc", false).asBool();
 
-                nc.fp.f32.nodeScale = std::clamp(it->get("s", 1.0f).asFloat(), 0.0f, 20.0f);
-                nc.bl.b.overrideScale = it->get("o", false).asBool();
+                    auto& offsetMin = (*it)["o-"];
+
+                    if (!offsetMin.empty()) {
+                        if (!ParseFloatArray(offsetMin, nc.fp.f32.colOffsetMin, 3)) {
+                            Error("Couldn't parse offsetMin");
+                            return false;
+                        }
+                    }
+
+                    auto& offsetMax = (*it)["o+"];
+
+                    if (!offsetMax.empty()) {
+                        if (!ParseFloatArray(offsetMax, nc.fp.f32.colOffsetMax, 3)) {
+                            Error("Couldn't parse offsetMax");
+                            return false;
+                        }
+                    }
+
+                    if (version >= 2) {
+                        auto& rot = (*it)["r"];
+
+                        if (!rot.empty()) {
+                            if (!ParseFloatArray(rot, nc.fp.f32.colRot, 3)) {
+                                Error("Couldn't parse colRot");
+                                return false;
+                            }
+                        }
+
+                        if (version >= 3)
+                        {
+                            nc.bl.b.boneCast = it->get("b", false).asBool();
+                            nc.fp.f32.bcSimplifyTarget = it->get("bt", 1.0f).asFloat();
+                            nc.fp.f32.bcSimplifyTargetError = it->get("be", 0.02f).asFloat();
+                            nc.fp.f32.bcWeightThreshold = it->get("bw", 0.0f).asFloat();
+                            nc.ex.bcShape = it->get("bs", "").asString();
+                        }
+                    }
+
+                    nc.fp.f32.nodeScale = std::clamp(it->get("s", 1.0f).asFloat(), 0.0f, 20.0f);
+                    nc.bl.b.overrideScale = it->get("o", false).asBool();
+                }
             }
+        }
+
+
+        if (nfound == 0) {
+            return false;
         }
 
         return true;
     }
 
     template<>
-    void Parser<CBP::configNodes_t>::Create(const CBP::configNodes_t& a_data, Json::Value& a_out) const
+    void Parser<CBP::configNodesGenderRoot_t>::Create(const CBP::configNodesGenderRoot_t& a_data, Json::Value& a_out) const
     {
-        auto& data = a_out["nodes"];
-
-        for (const auto& e : a_data)
+        parserDesc_t<const CBP::configNodes_t> desc[2] =
         {
-            auto& n = data[e.first];
+            { "nodes", a_data(CBP::ConfigGender::Female)},
+            { "nodes_male", a_data(CBP::ConfigGender::Male)}
+        };
 
-            n["fm"] = e.second.bl.b.motion.female;
-            n["fc"] = e.second.bl.b.collisions.female;
-            n["mm"] = e.second.bl.b.motion.male;
-            n["mc"] = e.second.bl.b.collisions.male;
+        for (auto& ds : desc)
+        {
+            auto& data = a_out[ds.member];
 
-            auto& offmin = n["o-"];
+            for (const auto& e : ds.data)
+            {
+                auto& n = data[e.first];
 
-            offmin[0] = e.second.fp.f32.colOffsetMin[0];
-            offmin[1] = e.second.fp.f32.colOffsetMin[1];
-            offmin[2] = e.second.fp.f32.colOffsetMin[2];
+                n["fm"] = e.second.bl.b.motion;
+                n["fc"] = e.second.bl.b.collisions;
 
-            auto& offmax = n["o+"];
+                auto& offmin = n["o-"];
 
-            offmax[0] = e.second.fp.f32.colOffsetMax[0];
-            offmax[1] = e.second.fp.f32.colOffsetMax[1];
-            offmax[2] = e.second.fp.f32.colOffsetMax[2];
+                offmin[0] = e.second.fp.f32.colOffsetMin[0];
+                offmin[1] = e.second.fp.f32.colOffsetMin[1];
+                offmin[2] = e.second.fp.f32.colOffsetMin[2];
 
-            auto& rot = n["r"];
+                auto& offmax = n["o+"];
 
-            rot[0] = e.second.fp.f32.colRot[0];
-            rot[1] = e.second.fp.f32.colRot[1];
-            rot[2] = e.second.fp.f32.colRot[2];
+                offmax[0] = e.second.fp.f32.colOffsetMax[0];
+                offmax[1] = e.second.fp.f32.colOffsetMax[1];
+                offmax[2] = e.second.fp.f32.colOffsetMax[2];
 
-            n["s"] = e.second.fp.f32.nodeScale;
-            n["o"] = e.second.bl.b.overrideScale;
+                auto& rot = n["r"];
 
-            n["b"] = e.second.bl.b.boneCast;
-            n["bt"] = e.second.fp.f32.bcSimplifyTarget;
-            n["be"] = e.second.fp.f32.bcSimplifyTargetError;
-            n["bw"] = e.second.fp.f32.bcWeightThreshold;
-            n["bs"] = e.second.ex.bcShape;
+                rot[0] = e.second.fp.f32.colRot[0];
+                rot[1] = e.second.fp.f32.colRot[1];
+                rot[2] = e.second.fp.f32.colRot[2];
+
+                n["s"] = e.second.fp.f32.nodeScale;
+                n["o"] = e.second.bl.b.overrideScale;
+
+                n["b"] = e.second.bl.b.boneCast;
+                n["bt"] = e.second.fp.f32.bcSimplifyTarget;
+                n["be"] = e.second.fp.f32.bcSimplifyTargetError;
+                n["bw"] = e.second.fp.f32.bcWeightThreshold;
+                n["bs"] = e.second.ex.bcShape;
+            }
         }
 
-        a_out["nodes_version"] = Json::Value::UInt(3);
+        a_out["nodes_version"] = Json::Value::UInt(4);
     }
 
 
@@ -402,16 +460,46 @@ namespace Serialization
     }
 
     template<>
-    void Parser<CBP::configComponents_t>::GetDefault(CBP::configComponents_t& a_out) const
+    void Parser<CBP::configComponentsGenderRoot_t>::GetDefault(CBP::configComponentsGenderRoot_t& a_out) const
     {
-        a_out = CBP::configComponents_t();
+        a_out = CBP::configComponentsGenderRoot_t();
     }
 
     template<>
-    void Parser<CBP::configNodes_t>::GetDefault(CBP::configNodes_t& a_out) const
+    void Parser<CBP::configNodesGenderRoot_t>::GetDefault(CBP::configNodesGenderRoot_t& a_out) const
     {
-        a_out = CBP::configNodes_t();
+        a_out = CBP::configNodesGenderRoot_t();
     }
+
+    bool ParseFloatArray(const Json::Value& a_in, float* a_out, std::size_t a_size)
+    {
+        if (!a_in.isArray())
+            return false;
+
+        if (a_in.size() != a_size)
+            return false;
+
+        for (std::uint32_t i = 0; i < a_size; i++)
+        {
+            auto& v = a_in[i];
+
+            if (!v.isNumeric())
+                return false;
+
+            a_out[i] = v.asFloat();
+        }
+
+        return true;
+    }
+
+    void CreateFloatArray(const float* a_in, Json::Value& a_out, std::size_t a_size)
+    {
+        for (std::uint32_t i = 0; i < a_size; i++) {
+            a_out[i] = a_in[i];
+        }
+    }
+
+
 }
 
 namespace CBP
@@ -422,7 +510,7 @@ namespace CBP
     {
         try
         {
-            configGlobal_t globalConfig;
+            configGlobal_t data;
 
             auto& driverConf = DCBP::GetDriverConfig();
 
@@ -439,65 +527,76 @@ namespace CBP
             {
                 const auto& general = root["general"];
 
-                globalConfig.general.femaleOnly = general.get("femaleOnly", true).asBool();
-                globalConfig.general.controllerStats = general.get("controllerStats", false).asBool();
-                globalConfig.profiling.enableProfiling = general.get("enableProfiling", false).asBool();
-                globalConfig.profiling.profilingInterval = general.get("profilingInterval", 1000).asInt();
-                globalConfig.profiling.enablePlot = general.get("enablePlot", true).asBool();
-                globalConfig.profiling.showAvg = general.get("showAvg", false).asBool();
-                globalConfig.profiling.animatePlot = general.get("animatePlot", true).asBool();
-                globalConfig.profiling.plotValues = general.get("plotValues", 200).asInt();
-                globalConfig.profiling.plotHeight = general.get("plotHeight", 30.0f).asFloat();
+                data.general.femaleOnly = general.get("femaleOnly", true).asBool();
+                data.general.controllerStats = general.get("controllerStats", false).asBool();
+                data.profiling.enableProfiling = general.get("enableProfiling", false).asBool();
+                data.profiling.profilingInterval = general.get("profilingInterval", 1000).asInt();
+                data.profiling.enablePlot = general.get("enablePlot", true).asBool();
+                data.profiling.showAvg = general.get("showAvg", false).asBool();
+                data.profiling.animatePlot = general.get("animatePlot", true).asBool();
+                data.profiling.plotValues = general.get("plotValues", 200).asInt();
+                data.profiling.plotHeight = general.get("plotHeight", 30.0f).asFloat();
             }
 
             if (root.isMember("physics"))
             {
                 const auto& phys = root["physics"];
 
-                globalConfig.phys.timeTick = std::clamp(phys.get("timeTick", 1.0f / 60.0f).asFloat(), 1.0f / 300.0f, 1.0f);
-                globalConfig.phys.maxSubSteps = std::max(phys.get("maxSubSteps", 5.0f).asFloat(), 1.0f);
-                globalConfig.phys.maxDiff = std::clamp(phys.get("maxDiff", 355.0f).asFloat(), 200.0f, 2000.0f);
-                globalConfig.phys.collisions = phys.get("collisions", true).asBool();
+                data.phys.timeTick = std::clamp(phys.get("timeTick", 1.0f / 60.0f).asFloat(), 1.0f / 300.0f, 1.0f);
+                data.phys.maxSubSteps = std::max(phys.get("maxSubSteps", 5.0f).asFloat(), 1.0f);
+                data.phys.maxDiff = std::clamp(phys.get("maxDiff", 355.0f).asFloat(), 200.0f, 2000.0f);
+                data.phys.collisions = phys.get("collisions", true).asBool();
             }
 
             if (root.isMember("ui"))
             {
                 const auto& ui = root["ui"];
 
-                globalConfig.ui.lockControls = ui.get("lockControls", true).asBool();
-                globalConfig.ui.freezeTime = ui.get("freezeTime", false).asBool();
-                globalConfig.ui.actorPhysics.showAll = ui.get("showAllActors", false).asBool();
-                globalConfig.ui.actorNode.showAll = ui.get("nodeShowAllActors", false).asBool();
-                globalConfig.ui.actor.clampValues = ui.get("clampValuesMain", true).asBool();
-                globalConfig.ui.race.clampValues = ui.get("clampValuesRace", true).asBool();
-                globalConfig.ui.profile.clampValues = ui.get("clampValuesProfile", true).asBool();
-                globalConfig.ui.racePhysics.playableOnly = ui.get("rlPlayableOnly", true).asBool();
-                globalConfig.ui.racePhysics.showEditorIDs = ui.get("rlShowEditorIDs", true).asBool();
-                globalConfig.ui.raceNode.playableOnly = ui.get("rlNodePlayableOnly", true).asBool();
-                globalConfig.ui.raceNode.showEditorIDs = ui.get("rlNodeShowEditorIDs", true).asBool();
-                globalConfig.ui.actor.syncWeightSliders = ui.get("syncWeightSlidersMain", false).asBool();
-                globalConfig.ui.race.syncWeightSliders = ui.get("syncWeightSlidersRace", false).asBool();
-                globalConfig.ui.profile.syncWeightSliders = ui.get("syncWeightSlidersProfile", false).asBool();
-                globalConfig.ui.actor.showNodes = ui.get("showNodesMain", false).asBool();
-                globalConfig.ui.race.showNodes = ui.get("showNodesRace", false).asBool();
-                globalConfig.ui.selectCrosshairActor = ui.get("selectCrosshairActor", false).asBool();
-                globalConfig.ui.comboKey = static_cast<UInt32>(ui.get("comboKey", DIK_LSHIFT).asUInt());
-                globalConfig.ui.showKey = static_cast<UInt32>(ui.get("showKey", DIK_END).asUInt());
-                globalConfig.ui.comboKeyDR = static_cast<UInt32>(ui.get("comboKeyDR", DIK_LSHIFT).asUInt());
-                globalConfig.ui.showKeyDR = static_cast<UInt32>(ui.get("showKeyDR", DIK_PGDN).asUInt());
-                globalConfig.ui.actorPhysics.lastActor = static_cast<Game::ObjectHandle>(ui.get("lastActor", 0ULL).asUInt64());
-                globalConfig.ui.actorNode.lastActor = static_cast<Game::ObjectHandle>(ui.get("nodeLastActor", 0ULL).asUInt64());
-                globalConfig.ui.actorNodeMap.lastActor = static_cast<Game::ObjectHandle>(ui.get("nodeMapLastActor", 0ULL).asUInt64());
-                globalConfig.ui.fontScale = ui.get("fontScale", 1.0f).asFloat();
-                globalConfig.ui.backlogLimit = ui.get("backlogLimit", 2000).asInt();
+                data.ui.lockControls = ui.get("lockControls", true).asBool();
+                data.ui.freezeTime = ui.get("freezeTime", false).asBool();
+                data.ui.autoSelectGender = ui.get("autoSelectGender", true).asBool();
+                data.ui.actorPhysics.showAll = ui.get("showAllActors", false).asBool();
+                data.ui.actorNode.showAll = ui.get("nodeShowAllActors", false).asBool();
+                data.ui.actor.clampValues = ui.get("clampValuesMain", true).asBool();
+                data.ui.race.clampValues = ui.get("clampValuesRace", true).asBool();
+                data.ui.profile.clampValues = ui.get("clampValuesProfile", true).asBool();
+                data.ui.racePhysics.playableOnly = ui.get("rlPlayableOnly", true).asBool();
+                data.ui.racePhysics.showEditorIDs = ui.get("rlShowEditorIDs", true).asBool();
+                data.ui.raceNode.playableOnly = ui.get("rlNodePlayableOnly", true).asBool();
+                data.ui.raceNode.showEditorIDs = ui.get("rlNodeShowEditorIDs", true).asBool();
+                data.ui.actor.syncWeightSliders = ui.get("syncWeightSlidersMain", false).asBool();
+                data.ui.race.syncWeightSliders = ui.get("syncWeightSlidersRace", false).asBool();
+                data.ui.profile.syncWeightSliders = ui.get("syncWeightSlidersProfile", false).asBool();
+                data.ui.actor.showNodes = ui.get("showNodesMain", false).asBool();
+                data.ui.race.showNodes = ui.get("showNodesRace", false).asBool();
+                data.ui.selectCrosshairActor = ui.get("selectCrosshairActor", false).asBool();
+                data.ui.comboKey = static_cast<UInt32>(ui.get("comboKey", DIK_LSHIFT).asUInt());
+                data.ui.showKey = static_cast<UInt32>(ui.get("showKey", DIK_END).asUInt());
+                data.ui.comboKeyDR = static_cast<UInt32>(ui.get("comboKeyDR", DIK_LSHIFT).asUInt());
+                data.ui.showKeyDR = static_cast<UInt32>(ui.get("showKeyDR", DIK_PGDN).asUInt());
+                data.ui.actorPhysics.lastActor = static_cast<Game::ObjectHandle>(ui.get("lastActor", 0ULL).asUInt64());
+                data.ui.actorNode.lastActor = static_cast<Game::ObjectHandle>(ui.get("nodeLastActor", 0ULL).asUInt64());
+                data.ui.actorNodeMap.lastActor = static_cast<Game::ObjectHandle>(ui.get("nodeMapLastActor", 0ULL).asUInt64());
+                data.ui.fontScale = ui.get("fontScale", 1.0f).asFloat();
+                data.ui.backlogLimit = ui.get("backlogLimit", 2000).asInt();
+
+                data.ui.commonSettings.physics.actor.selectedGender = static_cast<ConfigGender>(ui.get("physicsActorSelectedGender", Enum::Underlying(ConfigGender::Female)).asInt());
+                data.ui.commonSettings.physics.global.selectedGender = static_cast<ConfigGender>(ui.get("physicsGlobalSelectedGender", Enum::Underlying(ConfigGender::Female)).asInt());
+                data.ui.commonSettings.physics.profile.selectedGender = static_cast<ConfigGender>(ui.get("physicsProfileSelectedGender", Enum::Underlying(ConfigGender::Female)).asInt());
+                data.ui.commonSettings.physics.race.selectedGender = static_cast<ConfigGender>(ui.get("physicsRaceSelectedGender", Enum::Underlying(ConfigGender::Female)).asInt());
+                
+                data.ui.commonSettings.node.actor.selectedGender = static_cast<ConfigGender>(ui.get("nodeActorSelectedGender", Enum::Underlying(ConfigGender::Female)).asInt());
+                data.ui.commonSettings.node.global.selectedGender = static_cast<ConfigGender>(ui.get("nodeGlobalSelectedGender", Enum::Underlying(ConfigGender::Female)).asInt());
+                data.ui.commonSettings.node.profile.selectedGender = static_cast<ConfigGender>(ui.get("nodeProfileSelectedGender", Enum::Underlying(ConfigGender::Female)).asInt());
+                data.ui.commonSettings.node.race.selectedGender = static_cast<ConfigGender>(ui.get("nodeRaceSelectedGender", Enum::Underlying(ConfigGender::Female)).asInt());
 
                 if (ui.isMember("import"))
                 {
                     const auto& imp = ui["import"];
 
-                    globalConfig.ui.import.global = imp.get("global", true).asBool();
-                    globalConfig.ui.import.actors = imp.get("actors", true).asBool();
-                    globalConfig.ui.import.races = imp.get("races", true).asBool();
+                    data.ui.import.global = imp.get("global", true).asBool();
+                    data.ui.import.actors = imp.get("actors", true).asBool();
+                    data.ui.import.races = imp.get("races", true).asBool();
                 }
 
                 if (ui.isMember("force")) {
@@ -516,7 +615,7 @@ namespace CBP
                             if (!IConfig::IsValidGroup(key))
                                 continue;
 
-                            auto& e = globalConfig.ui.forceActor[key];
+                            auto& e = data.ui.forceActor[key];
 
                             e.force.x = it->get("x", 0.0f).asFloat();
                             e.force.y = it->get("y", 0.0f).asFloat();
@@ -531,10 +630,7 @@ namespace CBP
                     auto& forceSelected = ui["forceSelected"];
                     if (forceSelected.isString())
                     {
-                        std::string v(ui.get("forceSelected", "").asString());
-                        //transform(v.begin(), v.end(), v.begin(), ::tolower);
-
-                        globalConfig.ui.forceActorSelected = std::move(v);
+                        data.ui.forceActorSelected = ui.get("forceSelected", "").asString();
                     }
                 }
 
@@ -558,7 +654,7 @@ namespace CBP
                                 continue;
                             }
 
-                            auto& mm = globalConfig.ui.propagate[ki];
+                            auto& mm = data.ui.propagate[ki];
 
                             for (auto it2 = it1->begin(); it2 != it1->end(); ++it2)
                             {
@@ -598,27 +694,45 @@ namespace CBP
                     }
                 }
 
-                globalConfig.ui.colStates.Parse(ui["colStates"]);
+                data.ui.colStates.Parse(ui["colStates"]);
             }
 
-            if (root.isMember("debugRenderer")) {
+            if (root.isMember("debugRenderer")) 
+            {
                 auto& debugRenderer = root["debugRenderer"];
+
                 if (debugRenderer.isObject())
                 {
-                    globalConfig.debugRenderer.enabled = debugRenderer.get("enabled", false).asBool();
-                    globalConfig.debugRenderer.wireframe = debugRenderer.get("wireframe", true).asBool();
-                    globalConfig.debugRenderer.contactPointSphereRadius = debugRenderer.get("contactPointSphereRadius", 0.5f).asFloat();
-                    globalConfig.debugRenderer.contactNormalLength = debugRenderer.get("contactNormalLength", 2.0f).asFloat();
-                    globalConfig.debugRenderer.enableMovingNodes = debugRenderer.get("enableMovingNodes", false).asBool();
-                    globalConfig.debugRenderer.enableMovementConstraints = debugRenderer.get("enableMovementConstraints", false).asBool();
-                    globalConfig.debugRenderer.movingNodesRadius = debugRenderer.get("movingNodesRadius", 0.75f).asFloat();
-                    globalConfig.debugRenderer.movingNodesCenterOfGravity = debugRenderer.get("movingNodesCenterOfMass", false).asBool();
-                    globalConfig.debugRenderer.drawAABB = debugRenderer.get("drawAABB", false).asBool();
-                    //globalConfig.debugRenderer.drawBroadphaseAABB = debugRenderer.get("drawBroadphaseAABB", false).asBool();
+                    data.debugRenderer.enabled = debugRenderer.get("enabled", false).asBool();
+                    data.debugRenderer.wireframe = debugRenderer.get("wireframe", true).asBool();
+                    data.debugRenderer.contactPointSphereRadius = debugRenderer.get("contactPointSphereRadius", 0.5f).asFloat();
+                    data.debugRenderer.contactNormalLength = debugRenderer.get("contactNormalLength", 2.0f).asFloat();
+                    data.debugRenderer.enableMovingNodes = debugRenderer.get("enableMovingNodes", false).asBool();
+                    data.debugRenderer.enableMotionConstraints = debugRenderer.get("enableMovementConstraints", false).asBool();
+                    data.debugRenderer.movingNodesRadius = debugRenderer.get("movingNodesRadius", 0.75f).asFloat();
+                    data.debugRenderer.movingNodesCenterOfGravity = debugRenderer.get("movingNodesCenterOfMass", false).asBool();
+                    data.debugRenderer.drawAABB = debugRenderer.get("drawAABB", false).asBool();
+                    
+                    auto& drColors = debugRenderer["colors"];
+                    if (drColors.isObject())
+                    {
+                        ParseFloatArray(drColors["movingNodes"], data.debugRenderer.colors.movingNodes.m128_f32);
+                        ParseFloatArray(drColors["movingNodesCOG"], data.debugRenderer.colors.movingNodesCOG.m128_f32);
+                        ParseFloatArray(drColors["constraintBox"], data.debugRenderer.colors.constraintBox.m128_f32);
+                        ParseFloatArray(drColors["constraintSphere"], data.debugRenderer.colors.constraintSphere.m128_f32);
+                        ParseFloatArray(drColors["actorMarker"], data.debugRenderer.colors.actorMarker.m128_f32);
+                        ParseFloatArray(drColors["virtualPosition"], data.debugRenderer.colors.virtualPosition.m128_f32);
+                        ParseFloatArray(drColors["contactNormal"], data.debugRenderer.colors.contactNormal.m128_f32);
+
+                        ParseFloatArray(drColors["collider"], data.debugRenderer.btColors.m_activeObject.mVec128.m128_f32);
+                        ParseFloatArray(drColors["contactPoint"], data.debugRenderer.btColors.m_contactPoint.mVec128.m128_f32);
+                        ParseFloatArray(drColors["AABB"], data.debugRenderer.btColors.m_aabb.mVec128.m128_f32);
+                    }
+
                 }
             }
 
-            IConfig::SetGlobal(std::move(globalConfig));
+            IConfig::SetGlobal(std::move(data));
         }
         catch (const std::exception& e)
         {
@@ -631,67 +745,79 @@ namespace CBP
     {
         try
         {
-            auto& globalConfig = IConfig::GetGlobal();
+            const auto& data = IConfig::GetGlobal();
 
             Json::Value root;
 
             auto& general = root["general"];
 
-            general["femaleOnly"] = globalConfig.general.femaleOnly;
-            general["controllerStats"] = globalConfig.general.controllerStats;
-            general["enableProfiling"] = globalConfig.profiling.enableProfiling;
-            general["profilingInterval"] = globalConfig.profiling.profilingInterval;
-            general["enablePlot"] = globalConfig.profiling.enablePlot;
-            general["showAvg"] = globalConfig.profiling.showAvg;
-            general["animatePlot"] = globalConfig.profiling.animatePlot;
-            general["plotValues"] = globalConfig.profiling.plotValues;
-            general["plotHeight"] = globalConfig.profiling.plotHeight;
+            general["femaleOnly"] = data.general.femaleOnly;
+            general["controllerStats"] = data.general.controllerStats;
+            general["enableProfiling"] = data.profiling.enableProfiling;
+            general["profilingInterval"] = data.profiling.profilingInterval;
+            general["enablePlot"] = data.profiling.enablePlot;
+            general["showAvg"] = data.profiling.showAvg;
+            general["animatePlot"] = data.profiling.animatePlot;
+            general["plotValues"] = data.profiling.plotValues;
+            general["plotHeight"] = data.profiling.plotHeight;
 
             auto& phys = root["physics"];
 
-            phys["timeTick"] = globalConfig.phys.timeTick;
-            phys["maxSubSteps"] = globalConfig.phys.maxSubSteps;
-            phys["maxDiff"] = globalConfig.phys.maxDiff;
-            phys["collisions"] = globalConfig.phys.collisions;
+            phys["timeTick"] = data.phys.timeTick;
+            phys["maxSubSteps"] = data.phys.maxSubSteps;
+            phys["maxDiff"] = data.phys.maxDiff;
+            phys["collisions"] = data.phys.collisions;
 
             auto& ui = root["ui"];
 
-            ui["lockControls"] = globalConfig.ui.lockControls;
-            ui["freezeTime"] = globalConfig.ui.freezeTime;
-            ui["showAllActors"] = globalConfig.ui.actorPhysics.showAll;
-            ui["nodeShowAllActors"] = globalConfig.ui.actorNode.showAll;
-            ui["clampValuesMain"] = globalConfig.ui.actor.clampValues;
-            ui["clampValuesRace"] = globalConfig.ui.race.clampValues;
-            ui["clampValuesProfile"] = globalConfig.ui.profile.clampValues;
-            ui["rlPlayableOnly"] = globalConfig.ui.racePhysics.playableOnly;
-            ui["rlShowEditorIDs"] = globalConfig.ui.racePhysics.showEditorIDs;
-            ui["rlNodePlayableOnly"] = globalConfig.ui.raceNode.playableOnly;
-            ui["rlNodeShowEditorIDs"] = globalConfig.ui.raceNode.showEditorIDs;
-            ui["syncWeightSlidersMain"] = globalConfig.ui.actor.syncWeightSliders;
-            ui["syncWeightSlidersRace"] = globalConfig.ui.race.syncWeightSliders;
-            ui["syncWeightSlidersProfile"] = globalConfig.ui.profile.syncWeightSliders;
-            ui["showNodesMain"] = globalConfig.ui.actor.showNodes;
-            ui["showNodesRace"] = globalConfig.ui.race.showNodes;
-            ui["selectCrosshairActor"] = globalConfig.ui.selectCrosshairActor;
-            ui["comboKey"] = static_cast<uint32_t>(globalConfig.ui.comboKey);
-            ui["showKey"] = static_cast<uint32_t>(globalConfig.ui.showKey);
-            ui["comboKeyDR"] = static_cast<uint32_t>(globalConfig.ui.comboKeyDR);
-            ui["showKeyDR"] = static_cast<uint32_t>(globalConfig.ui.showKeyDR);
-            ui["lastActor"] = static_cast<uint64_t>(globalConfig.ui.actorPhysics.lastActor);
-            ui["nodeLastActor"] = static_cast<uint64_t>(globalConfig.ui.actorNode.lastActor);
-            ui["nodeMapLastActor"] = static_cast<uint64_t>(globalConfig.ui.actorNodeMap.lastActor);
-            ui["fontScale"] = globalConfig.ui.fontScale;
-            ui["backlogLimit"] = globalConfig.ui.backlogLimit;
+            ui["lockControls"] = data.ui.lockControls;
+            ui["freezeTime"] = data.ui.freezeTime;
+            ui["autoSelectGender"] = data.ui.autoSelectGender;
+            ui["showAllActors"] = data.ui.actorPhysics.showAll;
+            ui["nodeShowAllActors"] = data.ui.actorNode.showAll;
+            ui["clampValuesMain"] = data.ui.actor.clampValues;
+            ui["clampValuesRace"] = data.ui.race.clampValues;
+            ui["clampValuesProfile"] = data.ui.profile.clampValues;
+            ui["rlPlayableOnly"] = data.ui.racePhysics.playableOnly;
+            ui["rlShowEditorIDs"] = data.ui.racePhysics.showEditorIDs;
+            ui["rlNodePlayableOnly"] = data.ui.raceNode.playableOnly;
+            ui["rlNodeShowEditorIDs"] = data.ui.raceNode.showEditorIDs;
+            ui["syncWeightSlidersMain"] = data.ui.actor.syncWeightSliders;
+            ui["syncWeightSlidersRace"] = data.ui.race.syncWeightSliders;
+            ui["syncWeightSlidersProfile"] = data.ui.profile.syncWeightSliders;
+            ui["showNodesMain"] = data.ui.actor.showNodes;
+            ui["showNodesRace"] = data.ui.race.showNodes;
+            ui["selectCrosshairActor"] = data.ui.selectCrosshairActor;
+            ui["comboKey"] = static_cast<std::uint32_t>(data.ui.comboKey);
+            ui["showKey"] = static_cast<std::uint32_t>(data.ui.showKey);
+            ui["comboKeyDR"] = static_cast<std::uint32_t>(data.ui.comboKeyDR);
+            ui["showKeyDR"] = static_cast<std::uint32_t>(data.ui.showKeyDR);
+            ui["lastActor"] = static_cast<std::uint64_t>(data.ui.actorPhysics.lastActor);
+            ui["nodeLastActor"] = static_cast<std::uint64_t>(data.ui.actorNode.lastActor);
+            ui["nodeMapLastActor"] = static_cast<std::uint64_t>(data.ui.actorNodeMap.lastActor);
+            ui["fontScale"] = data.ui.fontScale;
+            ui["backlogLimit"] = data.ui.backlogLimit;
+
+            ui["physicsActorSelectedGender"] = Enum::Underlying(data.ui.commonSettings.physics.actor.selectedGender);
+            ui["physicsGlobalSelectedGender"] = Enum::Underlying(data.ui.commonSettings.physics.global.selectedGender);
+            ui["physicsProfileSelectedGender"] = Enum::Underlying(data.ui.commonSettings.physics.profile.selectedGender);
+            ui["physicsRaceSelectedGender"] = Enum::Underlying(data.ui.commonSettings.physics.race.selectedGender);
+            
+            ui["nodeActorSelectedGender"] = Enum::Underlying(data.ui.commonSettings.node.actor.selectedGender);
+            ui["nodeGlobalSelectedGender"] = Enum::Underlying(data.ui.commonSettings.node.global.selectedGender);
+            ui["nodeProfileSelectedGender"] = Enum::Underlying(data.ui.commonSettings.node.profile.selectedGender);
+            ui["nodeRaceSelectedGender"] = Enum::Underlying(data.ui.commonSettings.node.race.selectedGender);
+                        
 
             auto& imp = ui["import"];
 
-            imp["global"] = globalConfig.ui.import.global;
-            imp["actors"] = globalConfig.ui.import.actors;
-            imp["races"] = globalConfig.ui.import.races;
+            imp["global"] = data.ui.import.global;
+            imp["actors"] = data.ui.import.actors;
+            imp["races"] = data.ui.import.races;
 
             auto& force = ui["force"];
 
-            for (const auto& e : globalConfig.ui.forceActor)
+            for (const auto& e : data.ui.forceActor)
             {
                 auto& fe = force[e.first];
 
@@ -701,10 +827,10 @@ namespace CBP
                 fe["steps"] = std::max(e.second.steps, 0);
             }
 
-            ui["forceSelected"] = globalConfig.ui.forceActorSelected;
+            ui["forceSelected"] = data.ui.forceActorSelected;
 
             auto& propagate = ui["propagate"];
-            for (const auto& e : globalConfig.ui.propagate)
+            for (const auto& e : data.ui.propagate)
             {
                 auto& je = propagate[std::to_string(Enum::Underlying(e.first))];
 
@@ -728,19 +854,33 @@ namespace CBP
                 }
             }
 
-            globalConfig.ui.colStates.Create(ui["colStates"]);
+            data.ui.colStates.Create(ui["colStates"]);
 
             auto& debugRenderer = root["debugRenderer"];
 
-            debugRenderer["enabled"] = globalConfig.debugRenderer.enabled;
-            debugRenderer["wireframe"] = globalConfig.debugRenderer.wireframe;
-            debugRenderer["contactPointSphereRadius"] = globalConfig.debugRenderer.contactPointSphereRadius;
-            debugRenderer["contactNormalLength"] = globalConfig.debugRenderer.contactNormalLength;
-            debugRenderer["enableMovingNodes"] = globalConfig.debugRenderer.enableMovingNodes;
-            debugRenderer["enableMovementConstraints"] = globalConfig.debugRenderer.enableMovementConstraints;
-            debugRenderer["movingNodesCenterOfMass"] = globalConfig.debugRenderer.movingNodesCenterOfGravity;
-            debugRenderer["movingNodesRadius"] = globalConfig.debugRenderer.movingNodesRadius;
-            debugRenderer["drawAABB"] = globalConfig.debugRenderer.drawAABB;
+            debugRenderer["enabled"] = data.debugRenderer.enabled;
+            debugRenderer["wireframe"] = data.debugRenderer.wireframe;
+            debugRenderer["contactPointSphereRadius"] = data.debugRenderer.contactPointSphereRadius;
+            debugRenderer["contactNormalLength"] = data.debugRenderer.contactNormalLength;
+            debugRenderer["enableMovingNodes"] = data.debugRenderer.enableMovingNodes;
+            debugRenderer["enableMovementConstraints"] = data.debugRenderer.enableMotionConstraints;
+            debugRenderer["movingNodesCenterOfMass"] = data.debugRenderer.movingNodesCenterOfGravity;
+            debugRenderer["movingNodesRadius"] = data.debugRenderer.movingNodesRadius;
+            debugRenderer["drawAABB"] = data.debugRenderer.drawAABB;
+
+            auto& drColors = debugRenderer["colors"];
+
+            CreateFloatArray(data.debugRenderer.colors.movingNodes.m128_f32, drColors["movingNodes"]);
+            CreateFloatArray(data.debugRenderer.colors.movingNodesCOG.m128_f32, drColors["movingNodesCOG"]);
+            CreateFloatArray(data.debugRenderer.colors.constraintBox.m128_f32, drColors["constraintBox"]);
+            CreateFloatArray(data.debugRenderer.colors.constraintSphere.m128_f32, drColors["constraintSphere"]);
+            CreateFloatArray(data.debugRenderer.colors.actorMarker.m128_f32, drColors["actorMarker"]);
+            CreateFloatArray(data.debugRenderer.colors.virtualPosition.m128_f32, drColors["virtualPosition"]);
+            CreateFloatArray(data.debugRenderer.colors.contactNormal.m128_f32, drColors["contactNormal"]);
+            CreateFloatArray(data.debugRenderer.btColors.m_activeObject.mVec128.m128_f32, drColors["collider"]);
+            CreateFloatArray(data.debugRenderer.btColors.m_contactPoint.mVec128.m128_f32, drColors["contactPoint"]);
+            CreateFloatArray(data.debugRenderer.btColors.m_aabb.mVec128.m128_f32, drColors["AABB"]);
+
             //debugRenderer["drawBroadphaseAABB"] = globalConfig.debugRenderer.drawBroadphaseAABB;
 
             auto& driverConf = DCBP::GetDriverConfig();
@@ -857,7 +997,7 @@ namespace CBP
         }
     }
 
-    size_t ISerialization::_LoadGlobalProfile(const Json::Value& a_root)
+    std::size_t ISerialization::_LoadGlobalProfile(const Json::Value& a_root)
     {
         if (a_root.empty())
             return 0;
@@ -867,7 +1007,7 @@ namespace CBP
 
         try
         {
-            configComponents_t componentData;
+            configComponentsGenderRoot_t componentData;
 
             if (m_componentParser.Parse(a_root, componentData))
                 IConfig::SetGlobalPhysics(std::move(componentData));
@@ -880,7 +1020,7 @@ namespace CBP
 
         try
         {
-            configNodes_t nodeData;
+            configNodesGenderRoot_t nodeData;
 
             if (m_nodeParser.Parse(a_root, nodeData))
                 IConfig::SetGlobalNode(std::move(nodeData));
@@ -894,7 +1034,7 @@ namespace CBP
         return 1;
     }
 
-    size_t ISerialization::LoadGlobalProfile(SKSESerializationInterface* intfc, stl::stringstream& a_data)
+    std::size_t ISerialization::LoadGlobalProfile(SKSESerializationInterface* intfc, stl::stringstream& a_data)
     {
         try
         {
@@ -932,7 +1072,7 @@ namespace CBP
         }
     }
 
-    size_t ISerialization::_LoadActorProfiles(
+    std::size_t ISerialization::_LoadActorProfiles(
         SKSESerializationInterface* intfc,
         const Json::Value& a_root,
         actorConfigComponentsHolder_t& a_actorConfigComponents,
@@ -945,7 +1085,7 @@ namespace CBP
         if (!a_root.isObject())
             throw std::exception("Expected an object");
 
-        size_t c = 0;
+        std::size_t c = 0;
 
         for (auto it = a_root.begin(); it != a_root.end(); ++it)
         {
@@ -988,14 +1128,14 @@ namespace CBP
                     newHandle = handle;
             }
 
-            configComponents_t componentData;
+            configComponentsGenderRoot_t componentData;
 
             if (m_componentParser.Parse(*it, componentData)) {
                 a_actorConfigComponents.emplace(newHandle, std::move(componentData));
                 IData::UpdateActorMaps(newHandle);
             }
 
-            configNodes_t nodeData;
+            configNodesGenderRoot_t nodeData;
 
             if (m_nodeParser.Parse(*it, nodeData))
                 a_nodeData.emplace(newHandle, std::move(nodeData));
@@ -1006,7 +1146,7 @@ namespace CBP
         return c;
     }
 
-    size_t ISerialization::_LoadRaceProfiles(
+    std::size_t ISerialization::_LoadRaceProfiles(
         SKSESerializationInterface* intfc,
         const Json::Value& a_root,
         raceConfigComponentsHolder_t& a_raceConfigComponents,
@@ -1018,7 +1158,7 @@ namespace CBP
         if (!a_root.isObject())
             throw std::exception("Expected an object");
 
-        size_t c = 0;
+        std::size_t c = 0;
 
         for (auto it = a_root.begin(); it != a_root.end(); ++it)
         {
@@ -1066,12 +1206,12 @@ namespace CBP
                 continue;
             }
 
-            configComponents_t componentData;
+            configComponentsGenderRoot_t componentData;
 
             if (m_componentParser.Parse(*it, componentData))
                 a_raceConfigComponents.emplace(newFormID, std::move(componentData));
 
-            configNodes_t nodeData;
+            configNodesGenderRoot_t nodeData;
 
             if (m_nodeParser.Parse(*it, nodeData))
                 a_nodeData.emplace(newFormID, std::move(nodeData));
@@ -1083,7 +1223,7 @@ namespace CBP
         return c;
     }
 
-    size_t ISerialization::LoadActorProfiles(SKSESerializationInterface* intfc, stl::stringstream& a_data)
+    std::size_t ISerialization::LoadActorProfiles(SKSESerializationInterface* intfc, stl::stringstream& a_data)
     {
         try
         {
@@ -1094,7 +1234,7 @@ namespace CBP
             actorConfigComponentsHolder_t actorConfigComponents;
             actorConfigNodesHolder_t actorConfigNodes;
 
-            size_t res = _LoadActorProfiles(intfc, root, actorConfigComponents, actorConfigNodes);
+            std::size_t res = _LoadActorProfiles(intfc, root, actorConfigComponents, actorConfigNodes);
 
             IConfig::SetActorPhysicsConfigHolder(std::move(actorConfigComponents));
             IConfig::SetActorNodeHolder(std::move(actorConfigNodes));
@@ -1132,8 +1272,8 @@ namespace CBP
 
             ReadImportData(a_path, root);
 
-            a_out.numActors = static_cast<size_t>(root["actors"].size());
-            a_out.numRaces = static_cast<size_t>(root["races"].size());
+            a_out.numActors = static_cast<std::size_t>(root["actors"].size());
+            a_out.numRaces = static_cast<std::size_t>(root["races"].size());
 
             return true;
         }
@@ -1157,8 +1297,8 @@ namespace CBP
             raceConfigComponentsHolder_t raceConfigComponents;
             raceConfigNodesHolder_t raceConfigNodes;
 
-            configComponents_t globalComponentData;
-            configNodes_t globalNodeData;
+            configComponentsGenderRoot_t globalComponentData;
+            configNodesGenderRoot_t globalNodeData;
 
             if ((a_flags & ImportFlags::Actors) == ImportFlags::Actors)
                 _LoadActorProfiles(intfc, root["actors"], actorConfigComponents, actorConfigNodes);
@@ -1270,7 +1410,7 @@ namespace CBP
             return;
 
         a_out["plugin"] = modInfo->name;
-        a_out["form"] = static_cast<uint32_t>(modInfo->GetFormIDLower(a_formid));
+        a_out["form"] = static_cast<std::uint32_t>(modInfo->GetFormIDLower(a_formid));
     }
 
     bool ISerialization::ResolvePluginFormID(const Json::Value& a_root, Game::FormID a_in, Game::FormID& a_out)
@@ -1308,7 +1448,7 @@ namespace CBP
         return true;
     }
 
-    size_t ISerialization::LoadRaceProfiles(SKSESerializationInterface* intfc, stl::stringstream& a_data)
+    std::size_t ISerialization::LoadRaceProfiles(SKSESerializationInterface* intfc, stl::stringstream& a_data)
     {
         try
         {
@@ -1319,7 +1459,7 @@ namespace CBP
             raceConfigComponentsHolder_t raceConfigComponents;
             raceConfigNodesHolder_t raceConfigNodes;
 
-            size_t res = _LoadRaceProfiles(intfc, root, raceConfigComponents, raceConfigNodes);
+            std::size_t res = _LoadRaceProfiles(intfc, root, raceConfigComponents, raceConfigNodes);
 
             IConfig::SetRacePhysicsHolder(std::move(raceConfigComponents));
             IConfig::SetRaceNodeHolder(std::move(raceConfigNodes));
@@ -1334,7 +1474,7 @@ namespace CBP
         }
     }
 
-    size_t ISerialization::SerializeActorProfiles(std::stringstream& a_out)
+    std::size_t ISerialization::SerializeActorProfiles(std::stringstream& a_out)
     {
         try
         {
@@ -1352,7 +1492,7 @@ namespace CBP
 
             a_out << root;
 
-            return static_cast<size_t>(root.size());
+            return static_cast<std::size_t>(root.size());
         }
         catch (const std::exception& e)
         {
@@ -1362,7 +1502,7 @@ namespace CBP
         }
     }
 
-    size_t ISerialization::SerializeRaceProfiles(std::stringstream& a_out)
+    std::size_t ISerialization::SerializeRaceProfiles(std::stringstream& a_out)
     {
         try
         {
@@ -1380,7 +1520,7 @@ namespace CBP
 
             a_out << root;
 
-            return static_cast<size_t>(root.size());
+            return static_cast<std::size_t>(root.size());
         }
         catch (const std::exception& e)
         {
@@ -1390,7 +1530,7 @@ namespace CBP
         }
     }
 
-    size_t ISerialization::SerializeGlobalProfile(std::stringstream& a_out)
+    std::size_t ISerialization::SerializeGlobalProfile(std::stringstream& a_out)
     {
         try
         {
@@ -1401,7 +1541,7 @@ namespace CBP
 
             a_out << root;
 
-            return size_t(2);
+            return std::size_t(2);
         }
         catch (const std::exception& e)
         {
@@ -1445,7 +1585,7 @@ namespace CBP
         return !failed;
     }
 
-    size_t ISerialization::BinSerializeGlobalPhysics(
+    std::size_t ISerialization::BinSerializeGlobalPhysics(
         boost::archive::binary_oarchive& a_out)
     {
         try
@@ -1457,7 +1597,7 @@ namespace CBP
 
             m_stats.globalPhysics.time = pt.Stop();
 
-            return size_t(1);
+            return std::size_t(1);
         }
         catch (const std::exception& e)
         {
@@ -1466,7 +1606,7 @@ namespace CBP
         }
     }
 
-    size_t ISerialization::BinSerializeGlobalNode(
+    std::size_t ISerialization::BinSerializeGlobalNode(
         boost::archive::binary_oarchive& a_out)
     {
         try
@@ -1478,7 +1618,7 @@ namespace CBP
 
             m_stats.globalNode.time = pt.Stop();
 
-            return size_t(1);
+            return std::size_t(1);
         }
         catch (const std::exception& e)
         {
@@ -1487,7 +1627,7 @@ namespace CBP
         }
     }
 
-    size_t ISerialization::BinSerializeRacePhysics(
+    std::size_t ISerialization::BinSerializeRacePhysics(
         boost::archive::binary_oarchive& a_out)
     {
         try
@@ -1513,7 +1653,7 @@ namespace CBP
         }
     }
 
-    size_t ISerialization::BinSerializeRaceNode(
+    std::size_t ISerialization::BinSerializeRaceNode(
         boost::archive::binary_oarchive& a_out)
     {
         try
@@ -1539,7 +1679,7 @@ namespace CBP
         }
     }
 
-    size_t ISerialization::BinSerializeActorPhysics(
+    std::size_t ISerialization::BinSerializeActorPhysics(
         boost::archive::binary_oarchive& a_out)
     {
         try
@@ -1565,7 +1705,7 @@ namespace CBP
         }
     }
 
-    size_t ISerialization::BinSerializeActorNode(
+    std::size_t ISerialization::BinSerializeActorNode(
         boost::archive::binary_oarchive& a_out)
     {
         try
@@ -1591,7 +1731,7 @@ namespace CBP
         }
     }
 
-    size_t ISerialization::BinSerializeGlobalPhysics(boost::archive::binary_iarchive& a_in, configComponents_t& a_out)
+    std::size_t ISerialization::BinSerializeGlobalPhysics(boost::archive::binary_iarchive& a_in, configComponentsGenderRoot_t& a_out)
     {
         try
         {
@@ -1602,7 +1742,7 @@ namespace CBP
 
             m_stats.globalPhysics.time = pt.Stop();
 
-            return size_t(1);
+            return std::size_t(1);
         }
         catch (const std::exception& e)
         {
@@ -1611,7 +1751,7 @@ namespace CBP
         }
     }
 
-    size_t ISerialization::BinSerializeGlobalNode(boost::archive::binary_iarchive& a_in, configNodes_t& a_out)
+    std::size_t ISerialization::BinSerializeGlobalNode(boost::archive::binary_iarchive& a_in, configNodesGenderRoot_t& a_out)
     {
         try
         {
@@ -1622,7 +1762,7 @@ namespace CBP
 
             m_stats.globalNode.time = pt.Stop();
 
-            return size_t(1);
+            return std::size_t(1);
         }
         catch (const std::exception& e)
         {
@@ -1631,7 +1771,7 @@ namespace CBP
         }
     }
 
-    size_t ISerialization::BinSerializeRacePhysics(boost::archive::binary_iarchive& a_in, raceConfigComponentsHolder_t& a_out)
+    std::size_t ISerialization::BinSerializeRacePhysics(boost::archive::binary_iarchive& a_in, raceConfigComponentsHolder_t& a_out)
     {
         try
         {
@@ -1654,7 +1794,7 @@ namespace CBP
         }
     }
 
-    size_t ISerialization::BinSerializeRaceNode(boost::archive::binary_iarchive& a_in, raceConfigNodesHolder_t& a_out)
+    std::size_t ISerialization::BinSerializeRaceNode(boost::archive::binary_iarchive& a_in, raceConfigNodesHolder_t& a_out)
     {
         try
         {
@@ -1678,7 +1818,7 @@ namespace CBP
     }
 
 
-    size_t ISerialization::BinSerializeActorPhysics(boost::archive::binary_iarchive& a_in, actorConfigComponentsHolder_t& a_out)
+    std::size_t ISerialization::BinSerializeActorPhysics(boost::archive::binary_iarchive& a_in, actorConfigComponentsHolder_t& a_out)
     {
         try
         {
@@ -1701,7 +1841,7 @@ namespace CBP
         }
     }
 
-    size_t ISerialization::BinSerializeActorNode(boost::archive::binary_iarchive& a_in, actorConfigNodesHolder_t& a_out)
+    std::size_t ISerialization::BinSerializeActorNode(boost::archive::binary_iarchive& a_in, actorConfigNodesHolder_t& a_out)
     {
         try
         {
@@ -1724,11 +1864,11 @@ namespace CBP
         }
     }
 
-    size_t ISerialization::BinSerializeSave(boost::archive::binary_oarchive& a_out)
+    std::size_t ISerialization::BinSerializeSave(boost::archive::binary_oarchive& a_out)
     {
         try
         {
-            size_t num(0);
+            std::size_t num(0);
 
             num += BinSerializeGlobalPhysics(a_out);
             num += BinSerializeGlobalNode(a_out);
@@ -1747,14 +1887,14 @@ namespace CBP
         }
     }
 
-    size_t ISerialization::BinSerializeLoad(SKSESerializationInterface* intfc, stl::stringstream& a_in)
+    std::size_t ISerialization::BinSerializeLoad(SKSESerializationInterface* intfc, stl::stringstream& a_in)
     {
         try
         {
             boost::archive::binary_iarchive ia(a_in);
 
-            configComponents_t globalComponentData;
-            configNodes_t globalNodeData;
+            configComponentsGenderRoot_t globalComponentData;
+            configNodesGenderRoot_t globalNodeData;
 
             actorConfigComponentsHolder_t actorConfigComponents;
             actorConfigNodesHolder_t actorConfigNodes;
@@ -1762,7 +1902,7 @@ namespace CBP
             raceConfigComponentsHolder_t raceConfigComponents;
             raceConfigNodesHolder_t raceConfigNodes;
 
-            size_t num(0);
+            std::size_t num(0);
 
             num += BinSerializeGlobalPhysics(ia, globalComponentData);
             num += BinSerializeGlobalNode(ia, globalNodeData);

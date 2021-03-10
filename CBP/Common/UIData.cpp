@@ -16,7 +16,7 @@ namespace UIData
         }
     }
 
-    void UICollapsibleStates::Create(Json::Value& a_out)
+    void UICollapsibleStates::Create(Json::Value& a_out) const
     {
         for (const auto& e : m_data)
             a_out[e.first] = e.second;
