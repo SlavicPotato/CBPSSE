@@ -439,10 +439,6 @@ namespace CBP
                         if (it == pm.End())
                         {
                             auto& data = pm.Data();
-                            auto& v = data.begin()->second;
-
-                            v.Data()->m_indices[0] = 1;
-
 
                             if (!data.empty())
                                 a_pair.second.ex.colMesh = data.begin()->first;
