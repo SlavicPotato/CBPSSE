@@ -416,8 +416,12 @@ namespace UICommon
         void Run(float a_fontScale);
 
         template <class... Args>
-        SKMP_FORCEINLINE decltype(auto) push(Args&&... a_v) {
+        SKMP_FORCEINLINE auto push(Args&&... a_v) {
             return m_queue.emplace(std::forward<Args>(a_v)...);
+        }
+
+        SKMP_FORCEINLINE void clear() {
+            m_queue.swap(decltype(m_queue)());
         }
 
     private:

@@ -259,7 +259,7 @@ namespace UICommon
         {
             auto& e = m_queue.front();
 
-            ImGui::PushID(static_cast<const void*>(std::addressof(e)));
+            ImGui::PushID(static_cast<const void*>(std::addressof(m_queue)));
 
             if (!ImGui::IsPopupOpen(e.m_key.c_str()))
             {
