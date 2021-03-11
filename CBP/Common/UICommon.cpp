@@ -261,10 +261,9 @@ namespace UICommon
 
             ImGui::PushID(static_cast<const void*>(std::addressof(e)));
 
-            if (!e.m_open)
+            if (!ImGui::IsPopupOpen(e.m_key.c_str()))
             {
                 ImGui::OpenPopup(e.m_key.c_str());
-                e.m_open = true;
             }
 
             int res;

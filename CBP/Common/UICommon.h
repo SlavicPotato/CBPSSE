@@ -372,7 +372,6 @@ namespace UICommon
             :
             m_type(a_type),
             m_key(a_key),
-            m_open(false),
             m_input{ 0x0 }
         {
             _snprintf_s(m_buf, _TRUNCATE, a_fmt, std::forward<Args>(a_args)...);
@@ -392,7 +391,6 @@ namespace UICommon
 
     private:
 
-        bool m_open;
         std::string m_key;
 
         char m_buf[512];
