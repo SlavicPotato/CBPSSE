@@ -936,32 +936,26 @@ namespace CBP
     {
         IScopedLock _(GetLock());
 
+        if (m_resetUI)
+        {
+            m_resetUI = false;
+            m_uiContext->Reset(m_loadInstance);
+        }
+
+        m_uiContext->Draw(&m_uiState.show);
+
         auto& io = ImGui::GetIO();
 
         if (m_loadInstance != m_uiContext->GetLoadInstance() ||
-            io.KeysDown[VK_ESCAPE])
+            io.KeysDown[VK_ESCAPE] ||
+            Game::InPausedMenu())
         {
             m_uiState.show = false;
         }
-        else
-        {
-            if (Game::InPausedMenu()) {
-                m_uiState.show = false;
-            }
-            else
-            {
-                if (m_resetUI)
-                {
-                    m_resetUI = false;
-                    m_uiContext->Reset(m_loadInstance);
-                }
 
-                m_uiContext->Draw(&m_uiState.show);
-            }
+        if (!m_uiState.show) {
+            OnUIClose();
         }
-
-        if (!m_uiState.show)
-            DisableUI();
 
         return m_uiState.show;
     }
@@ -971,7 +965,7 @@ namespace CBP
         return m_Instance.ProcessUICallbackImpl();
     }
 
-    void DCBP::EnableUI()
+    void DCBP::OnUIOpen()
     {
         if (!m_uiContext.get())
             return;
@@ -981,14 +975,13 @@ namespace CBP
         m_uiContext->Reset(m_loadInstance);
     }
 
-    void DCBP::DisableUI()
+    void DCBP::OnUIClose()
     {
         if (!m_uiContext.get())
             return;
 
         m_uiContext->Reset(m_loadInstance);
     }
-
 
     void DCBP::UpdateKeysImpl()
     {
@@ -1049,13 +1042,13 @@ namespace CBP
 
         if (m_Instance.m_uiState.show) {
             m_Instance.m_uiState.show = false;
-            m_Instance.DisableUI();
+            m_Instance.OnUIClose();
             return ToggleResult::kResultDisabled;
         }
         else {
             if (GetUIRenderTask().RunEnableChecks()) {
                 m_Instance.m_uiState.show = true;
-                m_Instance.EnableUI();
+                m_Instance.OnUIOpen();
                 return ToggleResult::kResultEnabled;
             }
         }

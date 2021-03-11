@@ -250,8 +250,8 @@ namespace CBP
 
         static uint32_t ConfigGetComboKey(int32_t param);
 
-        void EnableUI();
-        void DisableUI();
+        void OnUIOpen();
+        void OnUIClose();
 
         void UpdateKeysImpl();
 
