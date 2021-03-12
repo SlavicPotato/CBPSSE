@@ -178,7 +178,7 @@ namespace CBP
 
     void DCBP::UpdateNodeReferenceData(Game::ObjectHandle a_handle)
     {
-        DTasks::AddTask([=]() mutable
+        DTasks::AddTask([=]()
             {
                 auto actor = a_handle.Resolve<Actor>();
                 if (!actor)

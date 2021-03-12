@@ -7,7 +7,7 @@ Modified version of [CBP Physics for Skyrim SE](https://github.com/cbpphysics/CB
 * Track actors via events, no polling (cell/process lists scanning)
 * Version independent (requires [Address Library for SKSE Plugins](https://www.nexusmods.com/skyrimspecialedition/mods/32444))
 * Simulate any valid node
-* Per actor/race physics and node configuration via [in-game UI](https://i.imgur.com/Vf1kF8L.jpg) (ImGUI)
+* Per actor/race physics and node configuration via [in-game UI](https://imgur.com/a/Uwxsbil) (ImGUI)
 * Collisions (implements sphere, capsule, box, cone, cylinder, custom convex hull and concave collider shapes)
 * Renderer to aid in configuring collision bodies
 * Physics configuration overrides for individual armors
