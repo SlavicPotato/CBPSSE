@@ -136,7 +136,7 @@ namespace CBP
         virtual bool HasMotion(
             const nodeConfigList_t& a_nodeConfig) const;
 
-        virtual bool HasCollisions(
+        virtual bool HasCollision(
             const nodeConfigList_t& a_nodeConfig) const;
 
         virtual bool HasBoneCast(

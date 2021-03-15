@@ -475,7 +475,9 @@ namespace CBP
                 auto it = pm.Find(m_parent.m_conf.ex.colMesh);
                 if (it == pm.End())
                 {
-                    Warning("%s: couldn't find mesh",
+                    Warning("[%.8X] [%s] Couldn't find mesh '%s'",
+                        m_parent.m_formid.get(),
+                        m_parent.m_nodeName.c_str(),
                         m_parent.m_conf.ex.colMesh.c_str());
 
                     delete collider;

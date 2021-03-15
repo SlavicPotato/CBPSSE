@@ -147,7 +147,7 @@ namespace CBP
         m_tris.clear();
         m_lines.clear();
     }
-    
+
     void Renderer::ReleaseGeometry()
     {
         if (!m_tris.empty())
@@ -157,10 +157,15 @@ namespace CBP
             m_lines.swap(decltype(m_lines)());
     }
 
+    using namespace DirectX;
+    using namespace DirectX::SimpleMath;
+
     void Renderer::Draw()
     {
+        D3D11StateBackup _(m_pImmediateContext);
+
         m_pImmediateContext->OMSetBlendState(m_states->NonPremultiplied(), nullptr, 0xFFFFFFFF);
-        m_pImmediateContext->OMSetDepthStencilState(m_states->DepthDefault(), 0);
+        m_pImmediateContext->OMSetDepthStencilState(m_states->DepthNone(), 0);
         m_pImmediateContext->RSSetState(m_states->CullCounterClockwise());
 
         m_effect->Apply(m_pImmediateContext);
@@ -187,6 +192,8 @@ namespace CBP
         }
 
         m_batch->End();
+
+
     }
 
     static const auto s_2 = DirectX::XMVectorReplicate(2.0f);

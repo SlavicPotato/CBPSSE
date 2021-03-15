@@ -12,7 +12,7 @@ namespace CBP
     class UIRaceEditorBase :
         virtual protected UIBase,
         public UIRaceList<T>,
-        protected UIProfileSelector<typename T::value_type, N>
+        public UIProfileSelector<typename T::value_type, N>
     {
     public:
 

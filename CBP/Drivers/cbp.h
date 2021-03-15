@@ -301,8 +301,6 @@ namespace CBP
             std::string imguiIni;
         } m_conf;
 
-        DUI* m_uiDriver;
-
         std::unique_ptr <CBP::UIContext> m_uiContext;
         std::unique_ptr<CBP::Renderer> m_renderer;
         std::unique_ptr<CBP::ControllerTask> m_controller;

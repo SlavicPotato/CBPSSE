@@ -10,6 +10,8 @@
 #include "UI/Profile.cpp"
 #include "UI/Force.cpp"
 
+
+
 namespace CBP
 {
     using namespace UICommon;
@@ -37,6 +39,13 @@ namespace CBP
 
     static ImVec4 s_colorWarning(1.0f, 0.66f, 0.13f, 1.0f);
 
+    UIProfileEditorPhysics::UIProfileEditorPhysics(
+        UIContext& a_parent, const char* a_name)
+        :
+        UICommon::UIProfileEditorBase<PhysicsProfile>(a_name),
+        m_ctxParent(a_parent)
+    {
+    }
 
     ProfileManager<PhysicsProfile>& UIProfileEditorPhysics::GetProfileManager() const
     {
@@ -242,6 +251,14 @@ namespace CBP
     UICommon::UIPopupQueue& UIProfileEditorPhysics::GetPopupQueue() const
     {
         return m_ctxParent.GetPopupQueue();
+    }
+
+    UIProfileEditorNode::UIProfileEditorNode(
+        UIContext& a_parent, const char* a_name)
+        :
+        UICommon::UIProfileEditorBase<NodeProfile>(a_name),
+        m_ctxParent(a_parent)
+    {
     }
 
     ProfileManager<NodeProfile>& UIProfileEditorNode::GetProfileManager() const
@@ -715,11 +732,11 @@ namespace CBP
         return false;
     }
 
-    bool UIRaceEditorPhysics::HasCollisions(
+    bool UIRaceEditorPhysics::HasCollision(
         const nodeConfigList_t& a_nodeConfig) const
     {
         for (const auto& e : a_nodeConfig)
-            if (e.second && e.second->HasCollisions())
+            if (e.second && e.second->HasCollision())
                 return true;
 
         return false;
@@ -757,14 +774,34 @@ namespace CBP
         m_racePhysicsEditor(*this),
         m_raceNodeEditor(*this),
         m_actorNodeEditor(*this),
-        m_state({ {false, false, false, false, false, false, false, false, false, false, false, false, false} }),
+        m_ieDialog(*this),
+        m_options(*this),
+        m_geometryManager(*this, "Collider geometry manager"),
+        m_state({ {false, false, false, false, false, false, false, false, false, false, false, false, false, false} }),
         UIActorList<actorListPhysConf_t>(true)
     {
     }
 
     void UIContext::Initialize()
     {
+        UpdateStyle();
         m_profiling.Initialize();
+
+        m_racePhysicsEditor.InitializeProfileBase();
+        m_actorNodeEditor.InitializeProfileBase();
+        m_raceNodeEditor.InitializeProfileBase();
+        m_pePhysics.InitializeProfileBase();
+        m_peNodes.InitializeProfileBase();
+        m_geometryManager.InitializeProfileBase();
+        InitializeProfileBase();
+
+    }
+
+    void UIContext::UpdateStyle()
+    {
+        const auto& globalConfig = IConfig::GetGlobal();
+
+        ImGui::GetStyle().Colors[ImGuiCol_WindowBg].w = std::clamp(globalConfig.ui.backgroundAlpha, 0.2f, 1.0f);
     }
 
     void UIContext::Reset(std::uint32_t a_loadInstance)
@@ -776,6 +813,16 @@ namespace CBP
         m_actorNodeEditor.Reset();
         m_raceNodeEditor.Reset();
         m_nodeMap.Reset();
+    }
+
+    void UIContext::OnOpen()
+    {
+        m_geometryManager.OnOpen();
+    }
+
+    void UIContext::OnClose()
+    {
+        m_geometryManager.OnClose();
     }
 
     void UIContext::QueueListUpdateAll()
@@ -806,7 +853,7 @@ namespace CBP
                             UIPopupType::Confirm,
                             "Store default profile",
                             "Are you sure you want to save current global physics and node configuration as the default?"
-                        ).call([&](...)
+                        ).call([&](const auto&)
                             {
                                 if (!DCBP::SaveToDefaultGlobalProfile())
                                 {
@@ -827,8 +874,7 @@ namespace CBP
 
                 ImGui::Separator();
 
-                m_state.menu.openImportDialog = ImGui::MenuItem("Import", nullptr, &ws.importDialog);
-                m_state.menu.openExportDialog = ImGui::MenuItem("Export");
+                m_state.menu.openIEDialog = ImGui::MenuItem("Import / Export", nullptr, &ws.importExportDialog);
 
                 ImGui::Separator();
 
@@ -867,6 +913,11 @@ namespace CBP
                 }
 
                 ImGui::Separator();
+
+                ImGui::MenuItem("Geometry Manager", nullptr, &ws.geometryManager);
+
+                ImGui::Separator();
+
                 ImGui::MenuItem("Options", nullptr, &ws.options);
                 ImGui::MenuItem("Stats", nullptr, &ws.profiling);
 
@@ -902,7 +953,7 @@ namespace CBP
                             UIPopupType::Confirm,
                             "Clear Key",
                             "This will remove ALL inactive physics component records. Are you sure?"
-                        ).call([&](...)
+                        ).call([&](const auto&)
                             {
                                 auto num = IConfig::PruneAll();
                                 Debug("%zu pruned", num);
@@ -929,18 +980,18 @@ namespace CBP
                                     "Clear Key",
                                     "This will remove inactive physics component records for '%s'. Are you sure?",
                                     a_entry->second.first.c_str()
-                                ).call([&, handle = a_entry->first](...)
-                                    {
-                                        auto num = IConfig::PruneActorPhysics(handle);
-                                        Debug("%zu pruned", num);
+                                ).call([&, handle = a_entry->first](const auto&)
+                                {
+                                    auto num = IConfig::PruneActorPhysics(handle);
+                                    Debug("%zu pruned", num);
 
-                                        if (num > 0)
-                                        {
-                                            QueueListUpdate();
-                                            DCBP::DispatchActorTask(
-                                                handle, ControllerInstruction::Action::UpdateConfig);
-                                        }
+                                    if (num > 0)
+                                    {
+                                        QueueListUpdate();
+                                        DCBP::DispatchActorTask(
+                                            handle, ControllerInstruction::Action::UpdateConfig);
                                     }
+                                }
                                 );
 
                             }
@@ -984,10 +1035,11 @@ namespace CBP
 
     void UIContext::Draw(bool* a_active)
     {
+        m_preDraw.ProcessTasks();
+
         auto& globalConfig = IConfig::GetGlobal();
 
-        m_state.menu.openImportDialog = false;
-        m_state.menu.openExportDialog = false;
+        m_state.menu.openIEDialog = false;
 
         ImGui::PushID(static_cast<const void*>(this));
 
@@ -999,7 +1051,7 @@ namespace CBP
 
             /*if (m_listData.size() == 1) {
                 auto t = IPerfCounter::Query();
-                if (PerfCounter::delta_us(m_tsNoActors, t) >= 2500000LL) {
+                if (IPerfCounter::delta_us(m_tsNoActors, t) >= 2500000LL) {
                     DCBP::QueueActorCacheUpdate();
                     m_tsNoActors = t;
                 }
@@ -1045,9 +1097,6 @@ namespace CBP
                         m_state.windows.armorOverride = true;
                     }
                 }
-
-                auto &gcc = m_scActor.GetGlobalCommonConfig();
-
             }
 
             ImGui::Spacing();
@@ -1131,12 +1180,12 @@ namespace CBP
                 QueueListUpdateCurrent();
         }
 
-        bool nodeChanged = 
-            m_scActor.GetNodeChanged() || 
+        bool nodeChanged =
+            m_scActor.GetNodeChanged() ||
             m_scGlobal.GetNodeChanged() ||
             m_racePhysicsEditor.GetNodeChanged();
 
-        if (m_state.windows.raceNode) 
+        if (m_state.windows.raceNode)
         {
             if (nodeChanged) {
                 m_raceNodeEditor.QueueListUpdateCurrent();
@@ -1149,7 +1198,7 @@ namespace CBP
             }
         }
 
-        if (m_state.windows.actorNode) 
+        if (m_state.windows.actorNode)
         {
             if (nodeChanged) {
                 m_actorNodeEditor.QueueListUpdateCurrent();
@@ -1178,24 +1227,25 @@ namespace CBP
             m_debug.Draw(&m_state.windows.debug);
 #endif
 
-        if (m_state.menu.openExportDialog)
-            m_exportDialog.Open();
-
-        bool exportRes = m_exportDialog.Draw();
-
-        if (m_state.windows.importDialog)
+        if (m_state.windows.importExportDialog)
         {
-            if (m_state.menu.openImportDialog)
-                m_importDialog.OnOpen();
-            else if (exportRes)
-                m_importDialog.UpdateFileList();
+            if (m_state.menu.openIEDialog) {
+                m_ieDialog.OnOpen();
+            }
 
-            if (m_importDialog.Draw(&m_state.windows.importDialog))
-                Reset(m_activeLoadInstance);
+            m_ieDialog.Draw(&m_state.windows.importExportDialog);
+        }
+
+        if (m_state.windows.geometryManager) {
+            m_geometryManager.Draw(&m_state.windows.geometryManager, globalConfig.ui.fontScale);
         }
 
         m_popup.Run(globalConfig.ui.fontScale);
     }
+
+    UIOptions::UIOptions(UIContext& a_parent) :
+        m_parent(a_parent)
+    {}
 
     void UIOptions::Draw(bool* a_active)
     {
@@ -1240,6 +1290,9 @@ namespace CBP
                 Checkbox("Auto select gender", &globalConfig.ui.autoSelectGender);
 
                 SliderFloat("Font scale", &globalConfig.ui.fontScale, 0.5f, 3.0f);
+
+                if (SliderFloat("Background alpha", &globalConfig.ui.backgroundAlpha, 0.2f, 1.0f))
+                    m_parent.UpdateStyle();
 
                 if (SliderInt("Backlog limit", &globalConfig.ui.backlogLimit, 1, 20000))
                     IEvents::GetBackLog().SetLimit(globalConfig.ui.backlogLimit);
@@ -1288,7 +1341,7 @@ namespace CBP
                 if (Checkbox("Female actors only", &globalConfig.general.femaleOnly))
                     DCBP::ResetActors();
 
-                if (Checkbox("Enable collisions", &globalConfig.phys.collisions))
+                if (Checkbox("Enable collisions", &globalConfig.phys.collision))
                     DCBP::ResetActors();
 
                 ImGui::Spacing();
@@ -2013,11 +2066,11 @@ namespace CBP
         return false;
     }
 
-    bool UIContext::UISimComponentActor::HasCollisions(
+    bool UIContext::UISimComponentActor::HasCollision(
         const nodeConfigList_t& a_nodeConfig) const
     {
         for (const auto& e : a_nodeConfig)
-            if (e.second && e.second->HasCollisions())
+            if (e.second && e.second->HasCollision())
                 return true;
 
         return false;
@@ -2210,11 +2263,11 @@ namespace CBP
         return false;
     }
 
-    bool UIContext::UISimComponentGlobal::HasCollisions(
+    bool UIContext::UISimComponentGlobal::HasCollision(
         const nodeConfigList_t& a_nodeConfig) const
     {
         for (const auto& e : a_nodeConfig)
-            if (e.second && e.second->HasCollisions())
+            if (e.second && e.second->HasCollision())
                 return true;
 
         return false;
@@ -2680,14 +2733,14 @@ namespace CBP
 
                     if (!m_sized)
                         m_sized = true;
+                }
             }
         }
-    }
 
         ImGui::End();
 
         ImGui::PopID();
-}
+    }
 #endif
 
     UIFileSelector::SelectedFile::SelectedFile() :
@@ -2764,6 +2817,9 @@ namespace CBP
                 m_files.emplace_back(entry.path());
             }
 
+            std::sort(m_files.begin(), m_files.end(), [](auto& a_lhs, auto& a_rhs) {
+                return StrHelpers::icompare(a_lhs.string(), a_rhs.string()) < 0; });
+
             if (!m_files.empty()) {
                 m_selected = *m_files.begin();
                 m_selected->UpdateInfo();
@@ -2797,7 +2853,14 @@ namespace CBP
         }
     }
 
-    bool UIDialogImport::Draw(bool* a_active)
+    UIDialogImportExport::UIDialogImportExport(UIContext& a_parent) :
+        m_parent(a_parent),
+        m_rFileCheck("^[a-zA-Z0-9_\\- ]+$",
+            std::regex_constants::ECMAScript)
+    {
+    }
+
+    void UIDialogImportExport::Draw(bool* a_active)
     {
         auto& io = ImGui::GetIO();
         auto& globalConfig = IConfig::GetGlobal();;
@@ -2805,16 +2868,14 @@ namespace CBP
         ImVec2 center(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f);
         ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
 
-        bool res(false);
-
         ImGui::PushID(static_cast<const void*>(this));
 
-        if (ImGui::Begin("Import##CBP", a_active))
+        if (ImGui::Begin("Import / Export##CBP", a_active))
         {
             ImGui::SetWindowFontScale(globalConfig.ui.fontScale);
 
             DrawFileSelector();
-            HelpMarker(MiscHelpText::importDialog);
+            HelpMarker(MiscHelpText::importData);
 
             auto& selected = GetSelected();
 
@@ -2837,26 +2898,35 @@ namespace CBP
                         selected->m_info.numActors,
                         selected->m_info.numRaces);
                 }
-                else
+                else {
                     ImGui::TextWrapped("Error: %s", selected->m_info.except.what());
+                }
 
                 if (UICommon::ConfirmDialog(
                     "Confirm delete",
                     "Are you sure you wish to delete '%s'?\n",
                     selected->m_filenameStr.c_str()))
                 {
-                    if (DeleteExport(selected->m_path))
+                    if (DeleteExport(selected->m_path)) {
                         UpdateFileList();
+                    }
                     else
-                        ImGui::OpenPopup("Delete failed");
+                    {
+                        auto& queue = m_parent.GetPopupQueue();
+
+                        queue.push(
+                            UIPopupType::Message,
+                            "Delete failed",
+                            "Error occured while attempting to delete export\nThe last exception was:\n\n%s",
+                            GetLastException().what()
+                        );
+                    }
                 }
             }
 
             ImGui::PopTextWrapPos();
 
             ImGui::Separator();
-
-            std::uint8_t importFlags(0);
 
             Checkbox("Global", &globalConfig.ui.import.global);
             ImGui::SameLine();
@@ -2866,153 +2936,186 @@ namespace CBP
 
             ImGui::Separator();
 
-            if (ImGui::Button("Import", ImVec2(120, 0)))
+            if (selected && selected->m_infoResult)
             {
-                if (selected && selected->m_infoResult)
+                if (ImGui::Button("Import", ImVec2(120, 0)))
                 {
-                    ISerialization::ImportFlags flags(ISerialization::ImportFlags::None);
+                    auto& queue = m_parent.GetPopupQueue();
 
-                    if (globalConfig.ui.import.global)
-                        flags |= ISerialization::ImportFlags::Global;
-                    if (globalConfig.ui.import.actors)
-                        flags |= ISerialization::ImportFlags::Actors;
-                    if (globalConfig.ui.import.races)
-                        flags |= ISerialization::ImportFlags::Races;
+                    queue.push(
+                        UIPopupType::Confirm,
+                        "Import",
+                        "Import and apply data from '%s' ?",
+                        selected->m_filenameStr.c_str()
+                    ).call([this, path = selected->m_path](const auto&) {
+                        DoImport(path);
+                    });
 
-                    if (DCBP::ImportData(selected->m_path, flags)) {
-                        *a_active = false;
-                        res = true;
-                    }
-                    else
-                        ImGui::OpenPopup("Import failed");
                 }
             }
 
+            ImGui::SameLine();
+            if (ImGui::Button("Export", ImVec2(120, 0))) {
+                ImGui::OpenPopup("__export_ctx");
+            }
+
+            DrawExportContextMenu();
+
             ImGui::SetItemDefaultFocus();
             ImGui::SameLine();
-            if (ImGui::Button("Cancel", ImVec2(120, 0)))
+            if (ImGui::Button("Cancel", ImVec2(120, 0))) {
                 *a_active = false;
+            }
 
-            UICommon::MessageDialog(
-                "Import failed",
-                "Something went wrong during the import\nThe last exception was:\n\n%s",
-                DCBP::GetLastSerializationException().what());
-
-            UICommon::MessageDialog(
-                "Load failed",
-                "Failed to load exports\nThe last exception was:\n\n%s",
-                GetLastException().what());
-
-            UICommon::MessageDialog(
-                "Delete failed",
-                "Error occured while attempting to delete export\nThe last exception was:\n\n%s",
-                GetLastException().what());
         }
 
         ImGui::End();
 
         ImGui::PopID();
 
-        return res;
     }
 
-    void UIDialogImport::OnOpen()
+    void UIDialogImportExport::DrawExportContextMenu()
     {
-        ImGui::PushID(static_cast<const void*>(this));
+        if (ImGui::BeginPopup("__export_ctx"))
+        {
+            if (ImGui::MenuItem("New"))
+            {
+                auto& queue = m_parent.GetPopupQueue();
 
+                queue.push(
+                    UIPopupType::Input,
+                    "Export to file",
+                    "Enter filename without extension"
+                ).call([this](const auto& a_p) {
+
+                    auto& in = a_p.GetInput();
+
+                    if (!strlen(in))
+                        return;
+
+                    std::string file(in);
+
+                    if (!std::regex_match(file, m_rFileCheck))
+                    {
+                        auto& queue = m_parent.GetPopupQueue();
+
+                        queue.push(
+                            UIPopupType::Message,
+                            "Export failed",
+                            "Illegal filename"
+                        );
+                    }
+                    else
+                    {
+                        auto& driverConf = DCBP::GetDriverConfig();
+
+                        auto path = driverConf.paths.exports;
+                        path /= file;
+                        path += ".json";
+
+                        DoExport(path);
+                    }
+                    });
+            }
+
+            auto& selected = GetSelected();
+            if (selected)
+            {
+                ImGui::Separator();
+
+                if (ImGui::MenuItem("Overwrite selected")) {
+
+                    auto& queue = m_parent.GetPopupQueue();
+
+                    queue.push(
+                        UIPopupType::Confirm,
+                        "Export to file",
+                        "Overwrite '%s'?",
+                        selected->m_filenameStr.c_str()
+                    ).call([this, path = selected->m_path](const auto&) {
+                        DoExport(path);
+                    });
+                }
+            }
+
+            ImGui::EndPopup();
+        }
+    }
+
+
+    void UIDialogImportExport::DoImport(const fs::path& a_path)
+    {
+        auto flags = GetFlags();
+
+        if (DCBP::ImportData(a_path, flags))
+        {
+            m_parent.Reset(m_parent.GetLoadInstance());
+            m_parent.GetWindowStates().importExportDialog = false;
+        }
+        else
+        {
+            auto& queue = m_parent.GetPopupQueue();
+
+            queue.push(
+                UIPopupType::Message,
+                "Import failed",
+                "Something went wrong during the import\nThe last exception was:\n\n%s",
+                DCBP::GetLastSerializationException().what()
+            );
+
+        }
+    }
+
+    void UIDialogImportExport::DoExport(const fs::path& a_path)
+    {
+        if (!DCBP::ExportData(a_path))
+        {
+            auto& queue = m_parent.GetPopupQueue();
+
+            queue.push(
+                UIPopupType::Message,
+                "Export failed",
+                "Exporting to file '%s' failed\nThe last exception was:\n\n%s",
+                a_path.string().c_str(),
+                DCBP::GetLastSerializationException().what()
+            );
+        }
+        else
+        {
+            OnOpen();
+        }
+
+    }
+
+    ISerialization::ImportFlags UIDialogImportExport::GetFlags() const
+    {
+        const auto& globalConfig = IConfig::GetGlobal();
+
+        ISerialization::ImportFlags flags(ISerialization::ImportFlags::None);
+
+        if (globalConfig.ui.import.global)
+            flags |= ISerialization::ImportFlags::Global;
+        if (globalConfig.ui.import.actors)
+            flags |= ISerialization::ImportFlags::Actors;
+        if (globalConfig.ui.import.races)
+            flags |= ISerialization::ImportFlags::Races;
+
+        return flags;
+    }
+
+    void UIDialogImportExport::OnOpen()
+    {
         if (!UpdateFileList())
-            ImGui::OpenPopup("Load failed");
-
-        ImGui::PopID();
-    }
-
-    UIDialogExport::UIDialogExport() :
-        m_rFileCheck("^[a-zA-Z0-9_\\- ]+$",
-            std::regex_constants::ECMAScript)
-    {
-        m_buf[0] = 0x0;
-    }
-
-    bool UIDialogExport::OnFileInput()
-    {
-        if (!std::regex_match(m_buf, m_rFileCheck))
         {
-            m_buf[0] = 0x0;
-            ImGui::OpenPopup("Illegal filename");
-            return false;
+            auto& queue = m_parent.GetPopupQueue();
+            queue.push(
+                UIPopupType::Message,
+                "Load failed",
+                "Failed to load exports\nThe last exception was:\n\n%s",
+                GetLastException().what()
+            );
         }
-
-        auto& driverConf = DCBP::GetDriverConfig();
-
-        m_lastTargetPath = driverConf.paths.exports;
-        m_lastTargetPath /= m_buf;
-        m_lastTargetPath += ".json";
-
-        m_buf[0] = 0x0;
-
-        if (fs::exists(m_lastTargetPath))
-        {
-            if (!fs::is_regular_file(m_lastTargetPath))
-                ImGui::OpenPopup("Operation failed");
-            else
-                ImGui::OpenPopup("Overwrite");
-
-            return false;
-        }
-
-        if (!DCBP::ExportData(m_lastTargetPath)) {
-            ImGui::OpenPopup("Export failed");
-            return false;
-        }
-
-        return true;
-    }
-
-    bool UIDialogExport::Draw()
-    {
-        const auto& globalConfig = IConfig::GetGlobal();;
-
-        bool res(false);
-
-        ImGui::PushID(static_cast<const void*>(this));
-
-        if (UICommon::TextInputDialog("Export to file", "Enter filename", m_buf, sizeof(m_buf), globalConfig.ui.fontScale))
-            res = OnFileInput();
-
-        if (UICommon::ConfirmDialog(
-            "Overwrite",
-            "File already exists, do you want to overwrite?\n"))
-        {
-            res = DCBP::ExportData(m_lastTargetPath);
-            if (!res)
-                ImGui::OpenPopup("Export failed");
-        }
-
-        UICommon::MessageDialog(
-            "Illegal filename",
-            "Filename contains illegal characters");
-
-        UICommon::MessageDialog(
-            "Operation failed",
-            "Path exists and is not a regular file");
-
-        UICommon::MessageDialog(
-            "Export failed",
-            "\nThe last exception was:\n\n%s",
-            DCBP::GetLastSerializationException().what());
-
-        ImGui::PopID();
-
-        return res;
-    }
-
-    void UIDialogExport::Open()
-    {
-        ImGui::PushID(static_cast<const void*>(this));
-
-        ImGui::OpenPopup("Export to file");
-
-        ImGui::PopID();
     }
 
     UILog::UILog() :
@@ -3246,15 +3349,15 @@ namespace CBP
                         UIPopupType::Input,
                         "Add node",
                         "Enter node name:"
-                    ).call([&, cgroup = e.first](auto &a_p)
-                        {
-                            auto& in = a_p.GetInput();
+                    ).call([&, cgroup = e.first](const auto& a_p)
+                    {
+                        auto& in = a_p.GetInput();
 
-                            if (!strlen(in))
-                                return;
+                        if (!strlen(in))
+                            return;
 
-                            AddNode(in, cgroup);
-                        }
+                        AddNode(in, cgroup);
+                    }
                     );
                 }
 
@@ -3288,7 +3391,7 @@ namespace CBP
                                 "Remove node",
                                 "Remove node '%s'?",
                                 f.c_str()
-                            ).call([&, nodeName = f](...)
+                            ).call([&, nodeName = f](const auto&)
                                 {
                                     RemoveNode(nodeName);
                                 }
@@ -3386,7 +3489,7 @@ namespace CBP
             "Add node",
             "Enter the config group name to add node '%s' to:",
             a_node.c_str()
-        ).call([&, nodeName = a_node](auto& a_p)
+        ).call([&, nodeName = a_node](const auto& a_p)
             {
                 auto& in = a_p.GetInput();
 
@@ -3406,7 +3509,7 @@ namespace CBP
             UIPopupType::Input,
             "Add node",
             "Enter the node name:"
-        ).call([&](auto& a_p)
+        ).call([&](const auto& a_p)
             {
                 auto& in = a_p.GetInput();
 
@@ -3555,6 +3658,8 @@ namespace CBP
 
         if (ImGui::Begin("Armor Override Editor##CBP", a_active))
         {
+            ImGui::SetWindowFontScale(globalConfig.ui.fontScale);
+
             DrawOverrideList();
 
             if (m_currentEntry)
@@ -3616,16 +3721,16 @@ namespace CBP
                 "Reload",
                 "Reload data from '%s'?",
                 a_entry.first.c_str()
-            ).call([&, path = a_entry.first](...)
-                {
-                    if (!m_currentEntry)
-                        return;
+            ).call([&, path = a_entry.first](const auto&)
+            {
+                if (!m_currentEntry)
+                    return;
 
-                    if (!StrHelpers::iequal(path, m_currentEntry->first))
-                        return;
+                if (!StrHelpers::iequal(path, m_currentEntry->first))
+                    return;
 
-                    SetCurrentEntry(path, true);
-                }
+                SetCurrentEntry(path, true);
+            }
             );
 
         }
@@ -3642,7 +3747,7 @@ namespace CBP
             "Confirm",
             "Delete group '%s'?",
             a_group.c_str()
-        ).call([&, path = a_path, group = a_group](...)
+        ).call([&, path = a_path, group = a_group](const auto&)
             {
                 if (!m_currentEntry)
                     return;
@@ -3917,7 +4022,6 @@ namespace CBP
     void UIArmorOverrideEditor::DoSave(
         const entry_type& a_entry)
     {
-
         auto& popup = m_parent.GetPopupQueue();
 
         popup.push(
@@ -3925,7 +4029,7 @@ namespace CBP
             "Save",
             "Save data to '%s'?",
             a_entry.first.c_str()
-        ).call([&, entry = a_entry](...)
+        ).call([&, entry = a_entry](const auto&)
             {
                 armorCacheEntry_t tmp;
                 IArmorCache::Copy(entry.second, tmp);
@@ -3947,7 +4051,853 @@ namespace CBP
                 }
             }
         );
+    }
 
+    UICollisionGeometryManager::UICollisionGeometryManager(
+        UIContext& a_parent, const char* a_name)
+        :
+        UICommon::UIProfileEditorBase<ColliderProfile>(a_name),
+        m_parent(a_parent),
+        m_zoom(DEFAULT_ZOOM),
+        m_dragRotate(0, [this](const ImVec2& a_delta) { m_model->Rotate(a_delta); }),
+        m_dragPan(1, [this](const ImVec2& a_delta) { m_model->Pan(a_delta); }),
+        m_resList{
+            {"512", 512.0f},
+            {"1024", 1024.0f},
+            {"2048", 2048.0f},
+            {"4096", 4096.0f}
+    }
+    {
+    }
 
+    void UICollisionGeometryManager::DrawModel()
+    {
+        if (m_model.get()) {
+            m_model->Draw();
+        }
+    }
+
+    void UICollisionGeometryManager::OnOpen()
+    {
+        m_model.reset();
+        if (m_state.selected) {
+            Load(*m_state.selected);
+        }
+    }
+
+    void UICollisionGeometryManager::OnClose()
+    {
+        m_model.reset();
+    }
+
+    ProfileManager<ColliderProfile>& UICollisionGeometryManager::GetProfileManager() const
+    {
+        return GlobalProfileManager::GetSingleton<ColliderProfile>();
+    }
+
+    template <class T>
+    void UICollisionGeometryManager::Shape<T>::Initialize(
+        const ColliderData* a_data,
+        ID3D11Device* a_device,
+        ID3D11DeviceContext* a_context)
+    {
+        std::vector<vertexType_t> vertices;
+        std::vector<std::uint32_t> indices;
+
+        std::size_t numVertices = a_data->m_numVertices;
+        std::size_t numIndices = a_data->m_numIndices;
+
+        vertices.resize(numVertices);
+        indices.resize(numIndices);
+
+        CreateGeometry(a_data, vertices, indices);
+
+        auto vsize = UINT(vertices.size() * sizeof(vertexType_t));
+        auto isize = UINT(indices.size() * sizeof(std::uint32_t));
+
+        auto vdesc = CD3D11_BUFFER_DESC(vsize, D3D11_BIND_VERTEX_BUFFER);
+        auto idesc = CD3D11_BUFFER_DESC(isize, D3D11_BIND_INDEX_BUFFER);
+
+        D3D11_SUBRESOURCE_DATA initData = { vertices.data(), vsize, 0 };
+        DirectX::ThrowIfFailed(a_device->CreateBuffer(&vdesc, &initData,
+            m_vertexBuffer.ReleaseAndGetAddressOf()));
+
+        initData = { indices.data(), isize, 0 };
+        DirectX::ThrowIfFailed(a_device->CreateBuffer(&idesc, &initData,
+            m_indexBuffer.ReleaseAndGetAddressOf()));
+
+        m_effect = std::make_unique<DirectX::BasicEffect>(a_device);
+
+        //m_effect->SetVertexColorEnabled(false);
+        m_effect->SetTextureEnabled(false);
+
+        ApplyEffectSettings(m_effect.get());
+
+        /*void const* shaderByteCode;
+        size_t byteCodeLength;
+
+        m_effect->GetVertexShaderBytecode(&shaderByteCode, &byteCodeLength);
+
+        DirectX::ThrowIfFailed(a_device->CreateInputLayout(
+            vertexType_t::InputElements, vertexType_t::InputElementCount,
+            shaderByteCode, byteCodeLength, m_inputLayout.ReleaseAndGetAddressOf()));*/
+
+        DirectX::ThrowIfFailed(
+            DirectX::CreateInputLayoutFromEffect<vertexType_t>(
+                a_device, m_effect.get(), m_inputLayout.ReleaseAndGetAddressOf()));
+
+        m_indexCount = UINT(indices.size());
+
+        m_numVertices = vertices.size();
+        m_numIndices = indices.size();
+
+        m_context = a_context;
+
+    }
+
+    template <class T>
+    void UICollisionGeometryManager::Shape<T>::ApplyEffectSettings(
+        DirectX::BasicEffect* a_effect)
+    {
+    }
+
+    template <class T>
+    void UICollisionGeometryManager::Shape<T>::Draw(
+        DirectX::FXMMATRIX a_world,
+        DirectX::CXMMATRIX a_view,
+        DirectX::CXMMATRIX a_projection,
+        DirectX::FXMVECTOR a_color,
+        setStateFunc_t a_setCustomState) const
+    {
+        m_effect->SetMatrices(a_world, a_view, a_projection);
+        m_effect->SetColorAndAlpha(a_color);
+
+        m_effect->Apply(m_context);
+        m_context->IASetInputLayout(m_inputLayout.Get());
+
+        auto vb = m_vertexBuffer.Get();
+        UINT vertexStride = sizeof(vertexType_t);
+        UINT vertexOffset = 0;
+
+        m_context->IASetVertexBuffers(0, 1, &vb, &vertexStride, &vertexOffset);
+        m_context->IASetIndexBuffer(m_indexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
+
+        a_setCustomState();
+
+        m_context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+        m_context->DrawIndexed(m_indexCount, 0, 0);
+
+    }
+
+    template <class T>
+    void __vectorcall UICollisionGeometryManager::Shape<T>::SetLightColor(
+        Light a_which,
+        int a_index,
+        DirectX::XMVECTOR a_color)
+    {
+        switch (a_which)
+        {
+        case Light::kAmbient:
+            m_effect->SetAmbientLightColor(a_color);
+            break;
+        case Light::kDiffuse:
+            m_effect->SetLightDiffuseColor(a_index, a_color);
+            break;
+        case Light::kSpecular:
+            m_effect->SetLightSpecularColor(a_index, a_color);
+            break;
+        }
+    }
+
+    void UICollisionGeometryManager::ShapeColor::CreateGeometry(
+        const ColliderData* a_data,
+        std::vector<DirectX::VertexPosition>& a_vertices,
+        std::vector<std::uint32_t>& a_indices) const
+    {
+        auto numVertices = static_cast<std::size_t>(a_data->m_numVertices);
+        auto numIndices = static_cast<std::size_t>(a_data->m_numIndices);
+
+        for (std::size_t i = 0; i < numVertices; i++)
+        {
+            auto& vertex = a_data->m_vertices[i];
+            a_vertices[i].position =
+                DirectX::XMFLOAT3(vertex.v.x(), vertex.v.y(), vertex.v.z());
+        }
+
+        for (std::size_t i = 0; i < numIndices; i++)
+        {
+            auto index = a_data->m_indices[i];
+
+            a_indices[i] = static_cast<std::uint32_t>(index);
+        }
+
+    }
+
+    void UICollisionGeometryManager::ShapeNormal::ApplyEffectSettings(
+        DirectX::BasicEffect* a_effect)
+    {
+        a_effect->EnableDefaultLighting();
+    }
+
+    void UICollisionGeometryManager::ShapeNormal::CreateGeometry(
+        const ColliderData* a_data,
+        std::vector<DirectX::VertexPositionNormal>& a_vertices,
+        std::vector<std::uint32_t>& a_indices) const
+    {
+        auto numVertices = static_cast<std::size_t>(a_data->m_numVertices);
+        auto numIndices = static_cast<std::size_t>(a_data->m_numIndices);
+
+        stl::vector<std::pair<btVector3, btVector3>> tmpVertices;
+
+        tmpVertices.resize(numVertices);
+
+        for (std::size_t i = 0; i < numVertices; i++)
+        {
+            tmpVertices[i] = std::make_pair(a_data->m_vertices[i].v, btVector3(0.0f, 0.0f, 0.0f));
+        }
+
+        for (std::size_t i = 0; i < numIndices; i += 3)
+        {
+            auto i1 = a_data->m_indices[i];
+            auto i2 = a_data->m_indices[i + 1];
+            auto i3 = a_data->m_indices[i + 2];
+
+            a_indices[i] = static_cast<std::uint32_t>(i1);
+            a_indices[i + 1] = static_cast<std::uint32_t>(i2);
+            a_indices[i + 2] = static_cast<std::uint32_t>(i3);
+
+            auto& v1 = a_data->m_vertices[i1];
+            auto& v2 = a_data->m_vertices[i2];
+            auto& v3 = a_data->m_vertices[i3];
+
+            auto p1 = (v2.v - v1.v);
+            auto p2 = (v3.v - v1.v);
+
+            auto p = p1.cross(p2);
+
+            tmpVertices[i1].second += p;
+            tmpVertices[i2].second += p;
+            tmpVertices[i3].second += p;
+        }
+
+        for (std::size_t i = 0; i < numVertices; i++)
+        {
+            auto& e = tmpVertices[i];
+
+            DirectX::XMFLOAT3 f;
+            DirectX::XMStoreFloat3(&f, DirectX::XMVector3Normalize(e.second.mVec128));
+
+            a_vertices[i] = { DirectX::XMFLOAT3(e.first.x(), e.first.y(), e.first.z()), f };
+        }
+
+    }
+
+    void UICollisionGeometryManager::ShapeColor::ApplyEffectSettings(
+        DirectX::BasicEffect* a_effect)
+    {
+    }
+
+    UICollisionGeometryManager::Model::Model(
+        const ColliderData* a_data,
+        ID3D11Device* a_device,
+        ID3D11DeviceContext* a_context,
+        const DirectX::XMFLOAT3& a_bufferSize,
+        float a_textureResolution)
+        :
+        m_device(a_device),
+        m_context(a_context),
+        m_bufferSize(a_bufferSize),
+        m_textureResolution(a_textureResolution),
+        m_eyePos(DirectX::SimpleMath::Vector3(0.0f, DEFAULT_ZOOM, 0.0f)),
+        m_targetPos(DirectX::SimpleMath::Vector3::Zero),
+        m_world(DirectX::SimpleMath::Matrix::Identity)
+    {
+        m_proj = DirectX::SimpleMath::Matrix::CreatePerspectiveFieldOfView(
+            DirectX::XM_PI / 4.0f, a_bufferSize.z, 0.1f, 1000.f);
+
+        UpdateViewMatrix();
+
+        m_states = std::make_unique<DirectX::CommonStates>(a_device);
+
+        m_shape = std::unique_ptr<ShapeBase>(new ShapeNormal());
+        m_shape->Initialize(a_data, a_device, a_context);
+
+        CD3D11_TEXTURE2D_DESC depthBufferDesc(
+            DXGI_FORMAT_D24_UNORM_S8_UINT,
+            a_textureResolution,
+            a_textureResolution,
+            1,
+            1,
+            D3D11_BIND_DEPTH_STENCIL,
+            D3D11_USAGE_DEFAULT,
+            0,
+            1,
+            0,
+            0
+        );
+
+        DirectX::ThrowIfFailed(a_device->CreateTexture2D(&depthBufferDesc, nullptr, m_depthStencilBuffer.ReleaseAndGetAddressOf()));
+
+        CD3D11_TEXTURE2D_DESC textureDesc(
+            DXGI_FORMAT_R8G8B8A8_UNORM,
+            a_textureResolution,
+            a_textureResolution,
+            1,
+            1,
+            D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE,
+            D3D11_USAGE_DEFAULT,
+            0,
+            1,
+            0,
+            0
+        );
+
+        DirectX::ThrowIfFailed(a_device->CreateTexture2D(&textureDesc, nullptr, m_renderTargetViewTexture.ReleaseAndGetAddressOf()));
+
+        CD3D11_RENDER_TARGET_VIEW_DESC renderTargetViewDesc(
+            D3D11_RTV_DIMENSION_TEXTURE2D,
+            DXGI_FORMAT_R8G8B8A8_UNORM,
+            0
+        );
+
+        DirectX::ThrowIfFailed(a_device->CreateRenderTargetView(m_renderTargetViewTexture.Get(), &renderTargetViewDesc, m_renderTargetView.ReleaseAndGetAddressOf()));
+
+        CD3D11_SHADER_RESOURCE_VIEW_DESC shaderResourceViewDesc(
+            D3D11_SRV_DIMENSION_TEXTURE2D,
+            DXGI_FORMAT_R8G8B8A8_UNORM,
+            0,
+            1
+        );
+
+        DirectX::ThrowIfFailed(a_device->CreateShaderResourceView(m_renderTargetViewTexture.Get(), &shaderResourceViewDesc, m_shaderResourceView.ReleaseAndGetAddressOf()));
+
+        CD3D11_DEPTH_STENCIL_VIEW_DESC depthStencilViewDesc(
+            D3D11_DSV_DIMENSION_TEXTURE2D,
+            DXGI_FORMAT_D24_UNORM_S8_UINT
+        );
+
+        DirectX::ThrowIfFailed(a_device->CreateDepthStencilView(m_depthStencilBuffer.Get(), &depthStencilViewDesc, m_depthStencilView.ReleaseAndGetAddressOf()));
+
+    }
+
+    void UICollisionGeometryManager::Model::Draw() const
+    {
+        D3D11StateBackup _(m_context.Get(), true);
+
+        CD3D11_VIEWPORT viewPort(0.0f, 0.0f, m_textureResolution, m_textureResolution);
+        m_context->RSSetViewports(1, &viewPort);
+
+        ID3D11RenderTargetView* rtViews[]{ m_renderTargetView.Get() };
+        m_context->OMSetRenderTargets(1, rtViews, m_depthStencilView.Get());
+
+        const auto& globalConfig = IConfig::GetGlobal();
+
+        m_shape->Draw(m_world, m_view, m_proj, globalConfig.ui.geometry.color , [this]
+            {
+                m_context->OMSetBlendState(m_states->Opaque(), nullptr, 0xFFFFFFFF);
+                m_context->OMSetDepthStencilState(m_states->DepthDefault(), 0);
+
+                const auto& globalConfig = IConfig::GetGlobal();
+
+                m_context->RSSetState(
+                    globalConfig.ui.geometry.wireframe ?
+                    m_states->Wireframe() :
+                    m_states->CullNone());
+
+                /*ID3D11SamplerState* samplerState = m_states->AnisotropicWrap();
+                m_context->PSSetSamplers(0, 1, &samplerState);*/
+
+                auto& wcol = ImGui::GetStyle().Colors[ImGuiCol_WindowBg];
+                const float col[4]{ wcol.x, wcol.y, wcol.z, 0.0f };
+
+                m_context->ClearRenderTargetView(m_renderTargetView.Get(), col);
+                m_context->ClearDepthStencilView(m_depthStencilView.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
+
+            });
+    }
+
+    void UICollisionGeometryManager::Model::SetViewData(
+        DirectX::SimpleMath::Matrix& a_world,
+        DirectX::SimpleMath::Vector3 a_eyePos,
+        DirectX::SimpleMath::Vector3 a_targetPos)
+    {
+        m_world = a_world;
+        m_eyePos = a_eyePos;
+        m_targetPos = a_targetPos;
+        UpdateViewMatrix();
+    }
+
+    void UICollisionGeometryManager::Model::ResetPos()
+    {
+        m_eyePos = DirectX::SimpleMath::Vector3(0.0f, DEFAULT_ZOOM, 0.0f);
+        m_targetPos = DirectX::SimpleMath::Vector3::Zero;
+        m_world = DirectX::SimpleMath::Matrix::Identity;
+
+        UpdateViewMatrix();
+    }
+
+    void UICollisionGeometryManager::Model::SetZoom(float a_val)
+    {
+        m_eyePos.y = a_val;
+
+        UpdateViewMatrix();
+    }
+
+    void UICollisionGeometryManager::Model::Pan(const ImVec2& a_delta)
+    {
+        m_eyePos.x += a_delta.x * 0.1f;
+        m_eyePos.z += a_delta.y * 0.1f;
+
+        m_targetPos.x = m_eyePos.x;
+        m_targetPos.z = m_eyePos.z;
+
+        UpdateViewMatrix();
+    }
+
+    void UICollisionGeometryManager::Model::Rotate(const ImVec2& a_delta)
+    {
+        using namespace DirectX::SimpleMath;
+
+        auto rot = Quaternion::CreateFromYawPitchRoll(
+            0.0f,
+            -DirectX::XMConvertToRadians(a_delta.y),
+            DirectX::XMConvertToRadians(a_delta.x));
+
+        m_world = Matrix::Transform(m_world, rot);
+    }
+
+    void UICollisionGeometryManager::Model::UpdateViewMatrix()
+    {
+        m_view = DirectX::SimpleMath::Matrix::CreateLookAt(
+            m_eyePos,
+            m_targetPos,
+            DirectX::SimpleMath::Vector3::UnitZ);
+    }
+
+    UICollisionGeometryManager::DragController::DragController(int a_key, func_t a_onDrag) :
+        m_dragging(false),
+        m_key(a_key),
+        m_func(std::move(a_onDrag))
+    {
+    }
+
+    void UICollisionGeometryManager::DragController::Update(bool a_isHovered)
+    {
+        auto& io = ImGui::GetIO();
+
+        if (a_isHovered)
+        {
+            if (!m_dragging)
+            {
+                if (io.MouseDown[m_key])
+                {
+                    m_dragging = true;
+                    m_lastMousePos = io.MousePos;
+                    m_avgMouseDir.x = 0.0f;
+                    m_avgMouseDir.y = 0.0f;
+                }
+            }
+        }
+
+        if (m_dragging)
+        {
+            if (!io.MouseDown[m_key])
+            {
+                m_dragging = false;
+            }
+            else
+            {
+                if (io.MousePos.x != m_lastMousePos.x ||
+                    io.MousePos.y != m_lastMousePos.y)
+                {
+                    ImVec2 dir;
+
+                    dir.x = io.MousePos.x - m_lastMousePos.x;
+                    dir.y = io.MousePos.y - m_lastMousePos.y;
+
+                    m_lastMousePos = io.MousePos;
+
+                    if (io.KeyShift)
+                    {
+                        m_avgMouseDir.x = m_avgMouseDir.x * 0.75f + dir.x * 0.25f;
+                        m_avgMouseDir.y = m_avgMouseDir.y * 0.75f + dir.y * 0.25f;
+
+                        if (std::fabsf(m_avgMouseDir.x) > std::fabsf(m_avgMouseDir.y))
+                        {
+                            dir.y = 0.0f;
+                        }
+                        else if (m_avgMouseDir.x == m_avgMouseDir.y) {
+                            return;
+                        }
+                        else {
+                            dir.x = 0.0f;
+                        }
+                    }
+
+                    m_func(dir);
+
+                }
+            }
+        }
+    }
+
+    UICollisionGeometryManager::ReleaseModelTask::ReleaseModelTask(
+        std::shared_ptr<Model>&& a_model)
+        :
+        m_ref(std::move(a_model))
+    {
+    }
+
+    void UICollisionGeometryManager::GetWindowDimensions(
+        float& a_offset,
+        float& a_width,
+        float& a_height,
+        bool& a_centered) const
+    {
+        a_offset = 0.0f;
+        a_width = 1000.0f;
+        a_height = 600.0f;
+        a_centered = true;
+    }
+
+    void UICollisionGeometryManager::DrawCallback(
+        const ImDrawList* parent_list,
+        const ImDrawCmd* cmd)
+    {
+        auto gm = static_cast<UICollisionGeometryManager*>(cmd->UserCallbackData);
+        gm->DrawModel();
+    }
+
+    void UICollisionGeometryManager::DrawItem(ColliderProfile& a_profile)
+    {
+        ImGui::Spacing();
+
+        if (ImGui::BeginChild("__render_area", ImVec2(0, 0), true))
+        {
+            if (m_state.selected)
+            {
+                if (m_model.get())
+                {
+                    auto& io = ImGui::GetIO();
+
+                    bool hovered = ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows);
+
+                    if (hovered)
+                    {
+                        if (io.MouseWheel != 0.0f) {
+                            m_zoom = std::max(m_zoom - io.MouseWheel * 0.2f, 0.1f);
+                            m_model->SetZoom(m_zoom);
+                        }
+                    }
+
+                    m_dragRotate.Update(hovered);
+                    m_dragPan.Update(hovered);
+
+                    auto pos = ImGui::GetWindowPos();
+                    auto windowSize = ImGui::GetWindowSize();
+                    auto& bufferSize = m_model->GetBufferSize();
+
+                    pos.x += (windowSize.x - bufferSize.x) / 2.0f;
+                    pos.y += (windowSize.y - bufferSize.y) / 2.0f;
+
+                    ImVec2 bottom(pos.x + bufferSize.x, pos.y + bufferSize.y);
+
+                    auto drawList = ImGui::GetWindowDrawList();
+
+                    drawList->AddCallback(DrawCallback, this);
+                    drawList->AddImage(static_cast<void*>(m_model->GetTexture()), pos, bottom);
+                }
+            }
+            else
+            {
+                if (m_model.get()) {
+                    QueueModelRelease();
+                }
+            }
+        }
+
+        ImGui::EndChild();
+
+    }
+
+    void UICollisionGeometryManager::DrawOptions(ColliderProfile& a_profile)
+    {
+        auto& globalConfig = IConfig::GetGlobal();
+
+        ImGui::Spacing();
+
+        ImGui::PushItemWidth(125.0f);
+        DrawResolutionCombo();
+        ImGui::PopItemWidth();
+
+        ImGui::SameLine();
+        ImGui::SeparatorEx(ImGuiSeparatorFlags_Vertical);
+
+        ImGui::SameLine();
+        Checkbox("Wireframe", &globalConfig.ui.geometry.wireframe);
+
+        bool hasModel = (m_model.get() != nullptr);
+
+        ImGui::SameLine();
+        if (Checkbox("Lighting", &globalConfig.ui.geometry.lighting)) {
+            if (hasModel) {
+                m_model->EnableLighting(globalConfig.ui.geometry.lighting);
+            }
+        }
+
+        auto width = ImGui::GetWindowContentRegionMax().x;
+
+        if (hasModel)
+        {
+            ImGui::SameLine(width - ImGui::CalcTextSize(m_infoStrings.m_vertices.c_str()).x - 5.0f);
+            ImGui::TextWrapped(m_infoStrings.m_vertices.c_str());
+        }
+
+        ImGui::PushItemWidth(250.0f);
+
+        ColorEdit4("Model", globalConfig.ui.geometry.color.m128_f32, ImGuiColorEditFlags_NoInputs);
+
+        ImGui::SameLine();
+        if (ColorEdit4("Ambient", globalConfig.ui.geometry.ambientLightColor.m128_f32, ImGuiColorEditFlags_NoInputs))
+        {
+            if (hasModel) {
+                m_model->SetLightColor(ShapeBase::Light::kAmbient, 0, globalConfig.ui.geometry.ambientLightColor);
+            }
+        }
+
+        /*ImGui::SameLine();
+        if (ColorEdit4("Diffuse", globalConfig.ui.geometry.diffuseLightColor.m128_f32, ImGuiColorEditFlags_NoInputs)) {
+            if (hasModel) {
+                m_model->SetLightColor(ShapeBase::Light::kDiffuse, globalConfig.ui.geometry.diffuseLightColor);
+            }
+        }
+
+        ImGui::SameLine();
+        if (ColorEdit4("Specular", globalConfig.ui.geometry.specularLightColor.m128_f32, ImGuiColorEditFlags_NoInputs)) {
+            if (hasModel) {
+                m_model->SetLightColor(ShapeBase::Light::kSpecular, globalConfig.ui.geometry.specularLightColor);
+            }
+        }*/
+
+        ImGui::PopItemWidth();
+
+        if (hasModel)
+        {
+            ImGui::SameLine();
+            ImGui::SeparatorEx(ImGuiSeparatorFlags_Vertical);
+
+            ImGui::SameLine();
+            if (ImGui::Button("Reset"))
+            {
+                m_zoom = DEFAULT_ZOOM;
+                m_model->ResetPos();
+            }
+
+            ImGui::SameLine(width - ImGui::CalcTextSize(m_infoStrings.m_indices.c_str()).x - 5.0f);
+            ImGui::TextWrapped(m_infoStrings.m_indices.c_str());
+        }
+    }
+
+    void UICollisionGeometryManager::SetResolution(
+        const resolutionDesc_t& a_res)
+    {
+        auto& globalConfig = IConfig::GetGlobal();
+
+        m_resolution = a_res;
+        SetGlobal(globalConfig.ui.geometry.resolution, a_res.second);
+
+        if (m_state.selected) {
+            Load(*m_state.selected);
+        }
+    }
+
+    void UICollisionGeometryManager::AutoSelectResolution(
+        const char*& a_curSelName)
+    {
+        const auto& globalConfig = IConfig::GetGlobal();
+
+        for (auto& e : m_resList)
+        {
+            if (globalConfig.ui.geometry.resolution == e.second) {
+                m_resolution = e;
+                a_curSelName = e.first.c_str();
+                return;
+            }
+        }
+
+        auto it = m_resList.begin();
+        SetResolution(*it);
+        a_curSelName = it->first.c_str();
+    }
+
+    void UICollisionGeometryManager::DrawResolutionCombo()
+    {
+        //auto& globalConfig = IConfig::GetGlobal();
+
+        const char* curSelName;
+        if (m_resolution) {
+            curSelName = m_resolution->first.c_str();
+        }
+        else {
+            AutoSelectResolution(curSelName);
+        }
+
+        if (ImGui::BeginCombo("Resolution", curSelName))
+        {
+            for (auto& e : m_resList)
+            {
+                bool selected = e == m_resolution;
+                if (selected)
+                    if (ImGui::IsWindowAppearing()) ImGui::SetScrollHereY();
+
+                if (ImGui::Selectable(e.first.c_str(), selected))
+                {
+                    SetResolution(e);
+                }
+            }
+
+            ImGui::EndCombo();
+        }
+    }
+
+    void UICollisionGeometryManager::CreateInfoStrings()
+    {
+        m_infoStrings.m_vertices = "Vertices: ";
+        m_infoStrings.m_vertices += std::to_string(m_model->GetNumVertices());
+
+        m_infoStrings.m_indices = "Indices: ";
+        m_infoStrings.m_indices += std::to_string(m_model->GetNumIndices());
+    }
+
+    bool UICollisionGeometryManager::InitializeProfile(ColliderProfile& a_profile)
+    {
+        return false;
+    }
+
+    bool UICollisionGeometryManager::AllowCreateNew() const
+    {
+        return false;
+    }
+
+    bool UICollisionGeometryManager::AllowSave() const
+    {
+        return false;
+    }
+
+    void UICollisionGeometryManager::OnItemSelected(
+        const std::string& a_item)
+    {
+        Load(a_item);
+    }
+
+    void UICollisionGeometryManager::Load(
+        const std::string& a_item)
+    {
+        auto& pm = GetProfileManager();
+
+        auto it = pm.Find(a_item);
+        if (it != pm.End()) {
+            Load(it->second);
+        }
+    }
+
+    void UICollisionGeometryManager::Load(
+        const ColliderProfile& a_profile)
+    {
+        DirectX::SimpleMath::Matrix world;
+        DirectX::SimpleMath::Vector3 eyePos;
+        DirectX::SimpleMath::Vector3 targetPos;
+
+        bool hadModel = m_model.get() != nullptr;
+        if (hadModel)
+        {
+            world = m_model->GetWorldMatrix();
+            eyePos = m_model->GetEyePos();
+            targetPos = m_model->GetTargetPos();
+        }
+
+        QueueModelRelease();
+
+        try
+        {
+            auto rd = DRender::GetSingleton();
+
+            const auto& globalConfig = IConfig::GetGlobal();
+
+            m_model = std::make_unique<Model>(
+                a_profile.Data().get(),
+                rd->GetDevice(),
+                rd->GetContext(),
+                rd->GetBufferSize(),
+                globalConfig.ui.geometry.resolution);
+
+            m_model->EnableLighting(globalConfig.ui.geometry.lighting);
+            m_model->SetLightColor(ShapeBase::Light::kAmbient, 0, globalConfig.ui.geometry.ambientLightColor);
+            //m_model->SetZoom(m_zoom);
+
+            if (hadModel)
+            {
+                eyePos.y = m_zoom;
+                m_model->SetViewData(world, eyePos, targetPos);
+            }
+            else
+            {
+                m_model->SetZoom(m_zoom);
+            }
+
+            CreateInfoStrings();
+        }
+        catch (const std::exception& e)
+        {
+            m_model.reset();
+
+            auto& queue = m_parent.GetPopupQueue();
+
+            queue.push(
+                UIPopupType::Message,
+                "Error",
+                "Exception occured while creating model:\n\n%s",
+                e.what()
+            );
+        }
+
+    }
+
+    void UICollisionGeometryManager::QueueModelRelease()
+    {
+        if (!m_model.get())
+            return;
+
+        auto& queue = m_parent.GetPreTaskQueue();
+
+        queue.AddTask<ReleaseModelTask>(std::move(m_model));
+    }
+
+    void UICollisionGeometryManager::OnReload(
+        const ColliderProfile& a_profile)
+    {
+        Load(a_profile);
+    }
+
+    void UICollisionGeometryManager::OnProfileSave(
+        const std::string& a_item)
+    {
+        if (m_state.selected && StrHelpers::iequal(a_item, *m_state.selected)) {
+            Load(a_item);
+        }
+    }
+
+    bool UICollisionGeometryManager::OnDeleteWarningOverride(
+        const std::string& a_key,
+        std::string& a_msg)
+    {
+        if (!IConfig::CountRefsToGeometry(a_key)) {
+            return false;
+        }
+
+        a_msg = "'%s' is referenced by collision configuration.\n\nDelete anyway?";
+
+        return true;
     }
 }

@@ -23,7 +23,7 @@ namespace CBP
         showEDIDs,
         playableOnly,
         colGroupEditor,
-        importDialog,
+        importData,
         exportDialog,
         simRate,
         armorOverrides,

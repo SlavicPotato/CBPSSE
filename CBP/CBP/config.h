@@ -15,8 +15,7 @@ namespace CBP
     enum class ConfigGender : char
     {
         Male = 0,
-        Female,
-        Max
+        Female
     };
 
     struct configForce_t
@@ -33,46 +32,13 @@ namespace CBP
         bool enabled = false;
         stl::iunordered_set<std::string> mirror;
 
-        [[nodiscard]] SKMP_FORCEINLINE float ResolveValue(
+        [[nodiscard]] float ResolveValue(
             const std::string& a_key,
-            const float a_value) const
-        {
-            if (mirror.contains(a_key))
-            {
-                if (a_value == 0.0f)
-                    return a_value;
+            const float a_value) const;
 
-                return -a_value;
-            }
-            else {
-                return a_value;
-            }
-        }
-
-        [[nodiscard]] SKMP_FORCEINLINE float ResolveValue(
+        [[nodiscard]] float ResolveValue(
             const configPropagate_t::keyList_t& a_keys,
-            const float a_value) const
-        {
-            bool has(false);
-
-            for (auto& e : a_keys) {
-                if (mirror.contains(*e)) {
-                    has = true;
-                    break;
-                }
-            }
-
-            if (has)
-            {
-                if (a_value == 0.0f)
-                    return a_value;
-
-                return -a_value;
-            }
-            else {
-                return a_value;
-            }
-        }
+            const float a_value) const;
     };
 
     typedef stl::imap<std::string, configPropagate_t> configPropagateEntry_t;
@@ -104,8 +70,24 @@ namespace CBP
         ConfigGender selectedGender = ConfigGender::Female;
     };
 
+    class IConfig;
+
     struct SKMP_ALIGN(16) configGlobal_t
     {
+        friend class IConfig;
+
+        configGlobal_t() = default;
+    private:
+
+        configGlobal_t(const configGlobal_t&) = default;
+        configGlobal_t(configGlobal_t&&) = default;
+        configGlobal_t& operator=(const configGlobal_t&) = default;
+        configGlobal_t& operator=(configGlobal_t&&) = default;
+
+        SKMP_NOINLINE void Reset();
+
+    public:
+
         struct
         {
             bool femaleOnly = true;
@@ -129,10 +111,10 @@ namespace CBP
             float timeTick = 1.0f / 60.0f;
             float maxSubSteps = 10.0f;
             float maxDiff = 360.0f;
-            bool collisions = true;
+            bool collision = true;
         } phys;
 
-        struct
+        struct SKMP_ALIGN(16)
         {
             bool lockControls = true;
             bool freezeTime = false;
@@ -167,6 +149,7 @@ namespace CBP
             bool selectCrosshairActor = false;
 
             float fontScale = 1.0f;
+            float backgroundAlpha = 0.9f;
 
             UInt32 comboKey = DIK_LSHIFT;
             UInt32 showKey = DIK_END;
@@ -187,11 +170,21 @@ namespace CBP
             } import;
 
             std::int32_t backlogLimit = 2000;
+
+            struct SKMP_ALIGN(16)
+            {
+                bool wireframe = false;
+                bool lighting = true;
+                float resolution = 2048.0f;
+                DirectX::XMVECTOR color = DirectX::XMVectorSet(0.2f, 1.0f, 0.2f, 1.0f);
+                DirectX::XMVECTOR ambientLightColor = DirectX::XMVectorSet(0.05333332f, 0.09882354f, 0.1819608f, 0.0f);
+                //DirectX::XMVECTOR specularLightColor = DirectX::XMVectorSet(1.0f, 1.0f, 1.0f, 1.0f);
+                //DirectX::XMVECTOR diffuseLightColor = DirectX::XMVectorSet(1.0f, 1.0f, 1.0f, 1.0f);
+            } geometry;
         } ui;
 
         struct SKMP_ALIGN(16) gcdr_t
         {
-
             gcdr_t()
             {
                 btColors.m_activeObject.setW(1.0f);
@@ -298,7 +291,7 @@ namespace CBP
 
     DEFINE_ENUM_CLASS_BITWISE(MotionConstraints);
 
-    struct SKMP_ALIGN_AUTO componentValueDesc_t
+    struct componentValueDesc_t
     {
         ptrdiff_t offset;
         std::string counterpart;
@@ -309,23 +302,9 @@ namespace CBP
         DescUIFlags flags = DescUIFlags::None;
         DescUIGroupType groupType = DescUIGroupType::None;
         std::string groupName;
-        std::vector<std::string> slider3Members;
+        stl::vector<std::string> slider3Members;
 
-        [[nodiscard]] SKMP_FORCEINLINE float GetCounterpartValue(const float* a_pvalue) const
-        {
-            if ((flags & DescUIFlags::SyncNegate) == DescUIFlags::SyncNegate)
-            {
-                float v(*a_pvalue);
-
-                if (v == 0.0f)
-                    return v;
-
-                return -v;
-            }
-            else {
-                return *a_pvalue;
-            }
-        }
+        [[nodiscard]] float GetCounterpartValue(const float* a_pvalue) const;
     };
 
     struct colliderDesc_t
@@ -589,7 +568,7 @@ namespace CBP
 #else
             mm128 = g_defaultPhysicsData.mm128;
 #endif
-    }
+        }
 
         SKMP_FORCEINLINE physicsData_t(const physicsData_t& a_rhs) noexcept
         {
@@ -622,7 +601,7 @@ namespace CBP
 #else
             mm128 = a_rhs.mm128;
 #endif
-}
+        }
 
     };
 
@@ -696,9 +675,7 @@ namespace CBP
             if (it == descMap.map_end())
                 return false;
 
-            auto addr = reinterpret_cast<uintptr_t>(this) + it->second.offset;
-
-            a_out = *reinterpret_cast<float*>(addr);
+            a_out = *GetAddress(it->second);
 
             return true;
         }
@@ -709,9 +686,7 @@ namespace CBP
             if (it == descMap.map_end())
                 return nullptr;
 
-            auto addr = reinterpret_cast<uintptr_t>(this) + it->second.offset;
-
-            return reinterpret_cast<float*>(addr);
+            return GetAddress(it->second);
         }
 
         [[nodiscard]] SKMP_FORCEINLINE auto Contains(const std::string& a_key) const
@@ -725,25 +700,19 @@ namespace CBP
             if (it == descMap.map_end())
                 return false;
 
-            auto addr = reinterpret_cast<uintptr_t>(this) + it->second.offset;
-
-            *reinterpret_cast<float*>(addr) = a_value;
+            *GetAddress(it->second) = a_value;
 
             return true;
         }
 
         SKMP_FORCEINLINE void Set(const componentValueDesc_t& a_desc, float a_value)
         {
-            auto addr = reinterpret_cast<uintptr_t>(this) + a_desc.offset;
-
-            *reinterpret_cast<float*>(addr) = a_value;
+            *GetAddress(a_desc) = a_value;
         }
 
         SKMP_FORCEINLINE void Set(const componentValueDesc_t& a_desc, const float* a_pvalue)
         {
-            auto addr = reinterpret_cast<uintptr_t>(this) + a_desc.offset;
-
-            *reinterpret_cast<float*>(addr) = *a_pvalue;
+            *GetAddress(a_desc) = *a_pvalue;
         }
 
         SKMP_FORCEINLINE bool Set(const std::string& a_key, float* a_value, std::size_t a_size)
@@ -752,20 +721,17 @@ namespace CBP
             if (it == descMap.map_end())
                 return false;
 
-            auto addr = reinterpret_cast<uintptr_t>(this) + it->second.offset;
-
-            for (std::size_t i = 0; i < a_size; i++)
-                reinterpret_cast<float*>(addr)[i] = a_value[i];
+            Set(it->second, a_value, a_size);
 
             return true;
         }
 
         SKMP_FORCEINLINE void Set(const componentValueDesc_t& a_desc, float* a_value, std::size_t a_size)
         {
-            auto addr = reinterpret_cast<uintptr_t>(this) + a_desc.offset;
+            auto addr = GetAddress(a_desc);
 
             for (std::size_t i = 0; i < a_size; i++)
-                reinterpret_cast<float*>(addr)[i] = a_value[i];
+                addr[i] = a_value[i];
         }
 
         SKMP_FORCEINLINE bool Mul(const std::string& a_key, float a_multiplier)
@@ -774,29 +740,23 @@ namespace CBP
             if (it == descMap.map_end())
                 return false;
 
-            auto addr = reinterpret_cast<uintptr_t>(this) + it->second.offset;
-
-            *reinterpret_cast<float*>(addr) *= a_multiplier;
+            *GetAddress(it->second) *= a_multiplier;
 
             return true;
         }
 
         [[nodiscard]] SKMP_FORCEINLINE float& operator[](const std::string& a_key) const
         {
-            auto addr = reinterpret_cast<uintptr_t>(this) +
-                descMap.at(a_key).offset;
-
-            return *reinterpret_cast<float*>(addr);
+            return *GetAddress(descMap.at(a_key));
         }
 
         SKMP_FORCEINLINE void SetColShape(ColliderShapeType a_shape) {
             ex.colShape = a_shape;
         }
 
-        [[nodiscard]] SKMP_FORCEINLINE float* GetAddress(const componentValueDesc_t& a_desc)
+        [[nodiscard]] SKMP_FORCEINLINE float* GetAddress(const componentValueDesc_t& a_desc) const
         {
-            auto addr = reinterpret_cast<uintptr_t>(this) + a_desc.offset;
-            return reinterpret_cast<float*>(addr);
+            return GetAddress(a_desc.offset);
         }
 
         configComponent_t() = default;
@@ -809,6 +769,10 @@ namespace CBP
         static const stl::iunordered_map<std::string, std::string> oldKeyMap;
 
     private:
+
+        [[nodiscard]] SKMP_FORCEINLINE float* GetAddress(std::ptrdiff_t a_offset) const {
+            return reinterpret_cast<float*>(reinterpret_cast<uintptr_t>(this) + a_offset);
+        }
 
         template<class Archive>
         void save(Archive& ar, const unsigned int version) const
@@ -959,34 +923,34 @@ namespace CBP
         configGenderRoot_t() = default;
 
         SKMP_FORCEINLINE auto& operator()() noexcept {
-            return configs;
+            return m_configs;
         }
 
         SKMP_FORCEINLINE const auto& operator()() const noexcept {
-            return configs;
+            return m_configs;
         }
 
         SKMP_FORCEINLINE auto& operator()(ConfigGender a_gender) noexcept {
-            return configs[Enum::Underlying(a_gender)];
+            return m_configs[Enum::Underlying(a_gender)];
         }
 
         SKMP_FORCEINLINE const auto& operator()(ConfigGender a_gender) const noexcept {
-            return configs[Enum::Underlying(a_gender)];
+            return m_configs[Enum::Underlying(a_gender)];
         }
 
         SKMP_FORCEINLINE void clear() {
-            for (auto& e : configs) {
+            for (auto& e : m_configs) {
                 e.clear();
             }
         }
 
     private:
-        T configs[Enum::Underlying(ConfigGender::Max)];
+        T m_configs[2];
 
         template<class Archive>
         void serialize(Archive& ar, const unsigned int version)
         {
-            for (auto& e : configs) {
+            for (auto& e : m_configs) {
                 ar& e;
             }
         }
@@ -1168,7 +1132,7 @@ namespace CBP
 #else
             mm128 = g_defaultNodeData.mm128;
 #endif
-    }
+        }
 
         SKMP_FORCEINLINE nodeData_t(const nodeData_t& a_rhs) noexcept
         {
@@ -1217,7 +1181,7 @@ namespace CBP
             struct __declspec(align(8))
             {
                 bool motion;
-                bool collisions;
+                bool collision;
                 bool overrideScale;
                 bool offsetParent;
                 bool boneCast;
@@ -1242,7 +1206,6 @@ namespace CBP
 
     struct nodeExtra_t
     {
-
         std::string bcShape;
     };
 
@@ -1273,8 +1236,8 @@ namespace CBP
             return bl.b.motion;
         }
 
-        [[nodiscard]] SKMP_FORCEINLINE bool HasCollisions() const noexcept {
-            return bl.b.collisions;
+        [[nodiscard]] SKMP_FORCEINLINE bool HasCollision() const noexcept {
+            return bl.b.collision;
         }
 
     private:
@@ -1283,7 +1246,7 @@ namespace CBP
         void save(Archive& ar, const unsigned int version) const
         {
             ar& bl.b.motion;
-            ar& bl.b.collisions;
+            ar& bl.b.collision;
             ar& fp.f32.colOffsetMin;
             ar& fp.f32.colOffsetMax;
             ar& bl.b.overrideScale;
@@ -1301,7 +1264,7 @@ namespace CBP
         void load(Archive& ar, const unsigned int version)
         {
             ar& bl.b.motion;
-            ar& bl.b.collisions;
+            ar& bl.b.collision;
             ar& fp.f32.colOffsetMin;
             ar& fp.f32.colOffsetMax;
             ar& bl.b.overrideScale;
@@ -1380,7 +1343,7 @@ namespace CBP
         static void SetActorPhysics(Game::ObjectHandle a_handle, configComponentsGenderRoot_t&& a_conf);
 
         SKMP_FORCEINLINE static decltype(auto) EraseActorPhysics(Game::ObjectHandle handle) noexcept {
-            return actorConfHolder.erase(handle);
+            return actorPhysicsConfigHolder.erase(handle);
         }
 
         // Not guaranteed to be actual race conf storage
@@ -1394,7 +1357,7 @@ namespace CBP
         static void SetRacePhysics(Game::FormID a_formid, const configComponentsGenderRoot_t& a_conf);
         static void SetRacePhysics(Game::FormID a_formid, configComponentsGenderRoot_t&& a_conf);
         SKMP_FORCEINLINE static decltype(auto) EraseRacePhysics(Game::FormID handle) noexcept {
-            return raceConfHolder.erase(handle);
+            return racePhysicsConfigHolder.erase(handle);
         }
 
         [[nodiscard]] SKMP_FORCEINLINE static auto& GetGlobalPhysics() noexcept {
@@ -1418,19 +1381,19 @@ namespace CBP
         }
 
         [[nodiscard]] SKMP_FORCEINLINE static auto& GetActorPhysicsHolder() noexcept {
-            return actorConfHolder;
+            return actorPhysicsConfigHolder;
         }
 
         SKMP_FORCEINLINE static void SetActorPhysicsConfigHolder(actorConfigComponentsHolder_t&& a_rhs) noexcept {
-            actorConfHolder = std::move(a_rhs);
+            actorPhysicsConfigHolder = std::move(a_rhs);
         }
 
         [[nodiscard]] SKMP_FORCEINLINE static auto& GetRacePhysicsHolder() noexcept {
-            return raceConfHolder;
+            return racePhysicsConfigHolder;
         }
 
         SKMP_FORCEINLINE static void SetRacePhysicsHolder(raceConfigComponentsHolder_t&& a_rhs) noexcept {
-            raceConfHolder = std::move(a_rhs);
+            racePhysicsConfigHolder = std::move(a_rhs);
         }
 
         SKMP_FORCEINLINE static void SetRaceNodeHolder(raceConfigNodesHolder_t&& a_rhs) noexcept {
@@ -1438,19 +1401,19 @@ namespace CBP
         }
 
         SKMP_FORCEINLINE static void ClearActorPhysicsHolder() noexcept {
-            actorConfHolder.clear();
+            actorPhysicsConfigHolder.clear();
         }
 
         SKMP_FORCEINLINE static void ReleaseActorPhysicsHolder() noexcept {
-            actorConfHolder.swap(decltype(actorConfHolder)());
+            actorPhysicsConfigHolder.swap(decltype(actorPhysicsConfigHolder)());
         }
 
         SKMP_FORCEINLINE static void ClearRacePhysicsHolder() noexcept {
-            raceConfHolder.clear();
+            racePhysicsConfigHolder.clear();
         }
 
         SKMP_FORCEINLINE static void ReleaseRacePhysicsHolder() noexcept {
-            raceConfHolder.swap(decltype(raceConfHolder)());
+            racePhysicsConfigHolder.swap(decltype(racePhysicsConfigHolder)());
         }
 
         [[nodiscard]] SKMP_FORCEINLINE static auto& GetGlobal() noexcept {
@@ -1466,7 +1429,7 @@ namespace CBP
         }
 
         SKMP_FORCEINLINE static void ResetGlobal() noexcept {
-            globalConfig = configGlobal_t();
+            globalConfig.Reset();
         }
 
         SKMP_FORCEINLINE static void ClearGlobalPhysics() noexcept {
@@ -1517,7 +1480,7 @@ namespace CBP
             nodeCollisionGroupMap = std::move(a_rhs);
         }
 
-        [[nodiscard]] SKMP_FORCEINLINE static uint64_t GetNodeCollisionGroupId(const std::string& a_node)
+        [[nodiscard]] SKMP_FORCEINLINE static std::uint64_t GetNodeCollisionGroupId(const std::string& a_node)
         {
             auto it = nodeCollisionGroupMap.find(a_node);
             if (it != nodeCollisionGroupMap.end())
@@ -1633,12 +1596,12 @@ namespace CBP
 
         [[nodiscard]] static const armorCacheEntry_t::mapped_type* GetArmorOverrideSection(Game::ObjectHandle a_handle, const std::string& a_sk);
 
-        static void SetArmorOverride(Game::ObjectHandle a_handle, const armorOverrideDescriptor_t& a_entry)
+        SKMP_FORCEINLINE static void SetArmorOverride(Game::ObjectHandle a_handle, const armorOverrideDescriptor_t& a_entry)
         {
             armorOverrides.insert_or_assign(a_handle, a_entry);
         }
 
-        static void SetArmorOverride(Game::ObjectHandle a_handle, armorOverrideDescriptor_t&& a_entry)
+        SKMP_FORCEINLINE static void SetArmorOverride(Game::ObjectHandle a_handle, armorOverrideDescriptor_t&& a_entry)
         {
             armorOverrides.insert_or_assign(a_handle, std::move(a_entry));
         }
@@ -1687,15 +1650,12 @@ namespace CBP
         /*static void Copy(const configComponents_t& a_lhs, configComponents_t& a_rhs);
         static void Copy(const configNodes_t& a_lhs, configNodes_t& a_rhs);*/
 
-        static void Copy(const configComponents_t& a_lhs, configComponents_t& a_rhs);
-        static void Copy(const configNodes_t& a_lhs, configNodes_t& a_rhs);
-
-        static void Copy(const configComponentsGenderRoot_t& a_lhs, configComponentsGenderRoot_t& a_rhs)
+        SKMP_FORCEINLINE static void Copy(const configComponentsGenderRoot_t& a_lhs, configComponentsGenderRoot_t& a_rhs)
         {
             a_rhs = a_lhs;
         }
 
-        static void Copy(const configNodesGenderRoot_t& a_lhs, configNodesGenderRoot_t& a_rhs)
+        SKMP_FORCEINLINE static void Copy(const configNodesGenderRoot_t& a_lhs, configNodesGenderRoot_t& a_rhs)
         {
             a_rhs = a_lhs;
         }
@@ -1715,8 +1675,55 @@ namespace CBP
 
         static std::size_t PruneAll();
         static std::size_t PruneActorPhysics(Game::ObjectHandle a_handle);
-        static std::size_t PruneInactivePhysics();
-        static std::size_t PruneInactiveRace();
+        static std::size_t PruneInactiveActorPhysics();
+        static std::size_t PruneInactiveRacePhysics();
+
+
+        static std::size_t PruneNode(configNodesGenderRoot_t& a_data);
+
+        template <class T>
+        static std::size_t PruneInactiveNode(T& a_data)
+        {
+            std::size_t n(0);
+
+            auto it = a_data.begin();
+            while (it != a_data.end())
+            {
+                n += PruneNode(it->second);
+
+                if (it->second(ConfigGender::Male).empty() && it->second(ConfigGender::Female).empty()) {
+                    it = a_data.erase(it);
+                }
+                else {
+                    ++it;
+                }
+
+            }
+
+            return n;
+        }
+
+        static std::size_t CountRefsToGeometry(
+            const std::string& a_name);
+
+        template <class T>
+        static std::size_t CountRefsToGeometry(
+            const T& a_data,
+            const std::string& a_name)
+        {
+            std::size_t n(0);
+
+            for (auto& e : a_data) {
+                n += CountRefsToGeometry(e.second, a_name);
+            }
+
+            return n;
+        }
+
+        static std::size_t CountRefsToGeometry(
+            const configComponentsGenderRoot_t& a_data,
+            const std::string& a_name);
+
 
         SKMP_FORCEINLINE static const auto& GetDefaultPhysics() {
             return defaultPhysicsConfig;
@@ -1738,12 +1745,9 @@ namespace CBP
         [[nodiscard]] static bool LoadNodeMap(nodeMap_t& a_out);
         [[nodiscard]] static bool SaveNodeMap(const configGroupMap_t& a_in);
 
-        template <typename T>
-        SKMP_FORCEINLINE static void CopyImpl(const T& a_lhs, T& a_rhs);
-
         static configComponentsGenderRoot_t physicsGlobalConfig;
-        static actorConfigComponentsHolder_t actorConfHolder;
-        static raceConfigComponentsHolder_t raceConfHolder;
+        static actorConfigComponentsHolder_t actorPhysicsConfigHolder;
+        static raceConfigComponentsHolder_t racePhysicsConfigHolder;
         static configGlobal_t globalConfig;
         static vKey_t validConfGroups;
 

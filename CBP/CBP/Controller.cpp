@@ -203,7 +203,7 @@ namespace CBP
 
             float maxTime = timeTick * 1.25f;
 
-            if (globalConfig.phys.collisions) {
+            if (globalConfig.phys.collision) {
                 steps = UpdatePhase2Collisions(timeStep, timeTick, maxTime);
             }
             else {
@@ -405,7 +405,7 @@ namespace CBP
             sex,
             conf,
             nodeMap,
-            globalConfig.phys.collisions,
+            globalConfig.phys.collision,
             descList) == nodeDescList_t::size_type(0))
         {
             return;
@@ -503,7 +503,7 @@ namespace CBP
 
         a_obj.UpdateConfig(
             a_actor,
-            IConfig::GetGlobal().phys.collisions,
+            IConfig::GetGlobal().phys.collision,
             IConfig::GetActorPhysicsAO(a_handle, sex == 0 ? ConfigGender::Male : ConfigGender::Female));
     }
 

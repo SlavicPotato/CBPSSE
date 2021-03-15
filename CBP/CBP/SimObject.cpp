@@ -54,7 +54,7 @@ namespace CBP
 
             auto& nodeConf = itn->second;
 
-            if (!nodeConf.bl.b.collisions && !nodeConf.bl.b.motion)
+            if (!nodeConf.bl.b.collision && !nodeConf.bl.b.motion)
                 continue;
 
             auto it = a_config.find(b.second);
@@ -65,7 +65,7 @@ namespace CBP
                 b.first,
                 object,
                 b.second,
-                a_collisions && nodeConf.bl.b.collisions,
+                a_collisions && nodeConf.bl.b.collision,
                 nodeConf.bl.b.motion,
                 physConf,
                 nodeConf
@@ -122,7 +122,7 @@ namespace CBP
                 e.physConf,
                 e.nodeConf,
                 IConfig::GetNodeCollisionGroupId(e.nodeName),
-                e.collisions,
+                e.collision,
                 e.movement
             );
 
@@ -192,7 +192,7 @@ namespace CBP
                 a_actor,
                 std::addressof(physConf),
                 nodeConf,
-                a_collisions && nodeConf.bl.b.collisions,
+                a_collisions && nodeConf.bl.b.collision,
                 nodeConf.bl.b.motion
             );
         }

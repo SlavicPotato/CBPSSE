@@ -120,7 +120,7 @@ namespace CBP
             if (numFaces < 1)
                 throw std::exception("No faces");
 
-            std::shared_ptr<ColliderData> tmp(new ColliderData());
+            auto tmp = std::make_unique<ColliderData>();
 
             tmp->m_vertices = std::make_unique<MeshPoint[]>(std::size_t(numVertices));
 
@@ -175,7 +175,7 @@ namespace CBP
             tmp->m_numTriangles = numFaces;
             tmp->m_numIndices = numIndices;
 
-            m_data = tmp;
+            m_data = std::move(tmp);
 
             SetDescription(mesh->mName.C_Str());
 

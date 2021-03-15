@@ -19,7 +19,7 @@ namespace CBP
         case MiscHelpText::showEDIDs: return "Show editor ID's instead of names.";
         case MiscHelpText::playableOnly: return "Show playable races only.";
         case MiscHelpText::colGroupEditor: return "Nodes assigned to the same group will not collide with eachother. This applies only to nodes on the same actor.";
-        case MiscHelpText::importDialog: return "Import and apply actor, race and global settings from the selected file.";
+        case MiscHelpText::importData: return "Import and apply actor, race and global settings from the selected file.";
         case MiscHelpText::exportDialog: return "Export actor, race and global settings.";
         case MiscHelpText::simRate: return "If this value isn't equal to framerate the simulation speed is affected. Increase max. sub steps or adjust timeTick to get proper results.";
         case MiscHelpText::armorOverrides: return "";

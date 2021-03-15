@@ -1010,8 +1010,10 @@
     <ClInclude Include="CBP\UI\Race.h" />
     <ClInclude Include="CBP\UI\RaceList.h" />
     <ClInclude Include="CBP\UI\SimComponent.h" />
+    <ClInclude Include="Common\BulletExtensions.h" />
     <ClInclude Include="Common\Crypto.h" />
     <ClInclude Include="Common\Data.h" />
+    <ClInclude Include="Common\EventCommon.h" />
     <ClInclude Include="Common\Game.h" />
     <ClInclude Include="Common\Misc.h" />
     <ClInclude Include="Common\ProfileManager.h" />

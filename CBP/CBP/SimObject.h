@@ -16,7 +16,7 @@ namespace CBP
             nodeName(a_nodeName),
             object(a_node),
             confGroup(a_confGroup),
-            collisions(a_collisions),
+            collision(a_collisions),
             movement(a_movement),
             physConf(a_physConf),
             nodeConf(a_nodeConf)
@@ -26,7 +26,7 @@ namespace CBP
         const std::string& nodeName;
         NiAVObject* object;
         const std::string& confGroup;
-        bool collisions;
+        bool collision;
         bool movement;
         const configComponent_t& physConf;
         const configNode_t& nodeConf;

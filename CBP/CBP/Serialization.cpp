@@ -20,7 +20,7 @@ namespace Serialization
             return false;
         }
 
-        parserDesc_t<CBP::configComponents_t> desc[2] = 
+        parserDesc_t<CBP::configComponents_t> desc[2] =
         {
             { "data", a_outData(CBP::ConfigGender::Female)},
             { "data_male", a_outData(CBP::ConfigGender::Male)}
@@ -183,7 +183,8 @@ namespace Serialization
         {
             auto& data = a_out[ds.member];
 
-            for (const auto& v : ds.data) {
+            for (const auto& v : ds.data) 
+            {
                 auto& simComponent = data[v.first];
 
                 auto& phys = simComponent["phys"];
@@ -263,7 +264,7 @@ namespace Serialization
                 if (version < 1)
                 {
                     nc.bl.b.motion = it->get("femaleMovement", false).asBool();
-                    nc.bl.b.collisions = it->get("femaleCollisions", false).asBool();
+                    nc.bl.b.collision = it->get("femaleCollisions", false).asBool();
 
                     auto& offsetMin = (*it)["offsetMin"];
 
@@ -286,7 +287,7 @@ namespace Serialization
                 else
                 {
                     nc.bl.b.motion = it->get("fm", false).asBool();
-                    nc.bl.b.collisions = it->get("fc", false).asBool();
+                    nc.bl.b.collision = it->get("fc", false).asBool();
 
                     auto& offsetMin = (*it)["o-"];
 
@@ -358,7 +359,7 @@ namespace Serialization
                 auto& n = data[e.first];
 
                 n["fm"] = e.second.bl.b.motion;
-                n["fc"] = e.second.bl.b.collisions;
+                n["fc"] = e.second.bl.b.collision;
 
                 auto& offmin = n["o-"];
 
@@ -545,7 +546,7 @@ namespace CBP
                 data.phys.timeTick = std::clamp(phys.get("timeTick", 1.0f / 60.0f).asFloat(), 1.0f / 300.0f, 1.0f);
                 data.phys.maxSubSteps = std::max(phys.get("maxSubSteps", 5.0f).asFloat(), 1.0f);
                 data.phys.maxDiff = std::clamp(phys.get("maxDiff", 355.0f).asFloat(), 200.0f, 2000.0f);
-                data.phys.collisions = phys.get("collisions", true).asBool();
+                data.phys.collision = phys.get("collisions", true).asBool();
             }
 
             if (root.isMember("ui"))
@@ -578,17 +579,24 @@ namespace CBP
                 data.ui.actorNode.lastActor = static_cast<Game::ObjectHandle>(ui.get("nodeLastActor", 0ULL).asUInt64());
                 data.ui.actorNodeMap.lastActor = static_cast<Game::ObjectHandle>(ui.get("nodeMapLastActor", 0ULL).asUInt64());
                 data.ui.fontScale = ui.get("fontScale", 1.0f).asFloat();
+                data.ui.backgroundAlpha = ui.get("backgroundAlpha", 0.9).asFloat();
                 data.ui.backlogLimit = ui.get("backlogLimit", 2000).asInt();
 
                 data.ui.commonSettings.physics.actor.selectedGender = static_cast<ConfigGender>(ui.get("physicsActorSelectedGender", Enum::Underlying(ConfigGender::Female)).asInt());
                 data.ui.commonSettings.physics.global.selectedGender = static_cast<ConfigGender>(ui.get("physicsGlobalSelectedGender", Enum::Underlying(ConfigGender::Female)).asInt());
                 data.ui.commonSettings.physics.profile.selectedGender = static_cast<ConfigGender>(ui.get("physicsProfileSelectedGender", Enum::Underlying(ConfigGender::Female)).asInt());
                 data.ui.commonSettings.physics.race.selectedGender = static_cast<ConfigGender>(ui.get("physicsRaceSelectedGender", Enum::Underlying(ConfigGender::Female)).asInt());
-                
+
                 data.ui.commonSettings.node.actor.selectedGender = static_cast<ConfigGender>(ui.get("nodeActorSelectedGender", Enum::Underlying(ConfigGender::Female)).asInt());
                 data.ui.commonSettings.node.global.selectedGender = static_cast<ConfigGender>(ui.get("nodeGlobalSelectedGender", Enum::Underlying(ConfigGender::Female)).asInt());
                 data.ui.commonSettings.node.profile.selectedGender = static_cast<ConfigGender>(ui.get("nodeProfileSelectedGender", Enum::Underlying(ConfigGender::Female)).asInt());
                 data.ui.commonSettings.node.race.selectedGender = static_cast<ConfigGender>(ui.get("nodeRaceSelectedGender", Enum::Underlying(ConfigGender::Female)).asInt());
+
+                data.ui.geometry.wireframe = ui.get("geWireframe", false).asBool();
+                data.ui.geometry.lighting = ui.get("geLighting", false).asBool();
+                data.ui.geometry.resolution = ui.get("geResolution", 1024.0f).asFloat();
+                ParseFloatArray(ui["geColor"], data.ui.geometry.color.m128_f32);
+                ParseFloatArray(ui["geAmbientLightColor"], data.ui.geometry.ambientLightColor.m128_f32);
 
                 if (ui.isMember("import"))
                 {
@@ -697,7 +705,7 @@ namespace CBP
                 data.ui.colStates.Parse(ui["colStates"]);
             }
 
-            if (root.isMember("debugRenderer")) 
+            if (root.isMember("debugRenderer"))
             {
                 auto& debugRenderer = root["debugRenderer"];
 
@@ -712,7 +720,7 @@ namespace CBP
                     data.debugRenderer.movingNodesRadius = debugRenderer.get("movingNodesRadius", 0.75f).asFloat();
                     data.debugRenderer.movingNodesCenterOfGravity = debugRenderer.get("movingNodesCenterOfMass", false).asBool();
                     data.debugRenderer.drawAABB = debugRenderer.get("drawAABB", false).asBool();
-                    
+
                     auto& drColors = debugRenderer["colors"];
                     if (drColors.isObject())
                     {
@@ -766,7 +774,7 @@ namespace CBP
             phys["timeTick"] = data.phys.timeTick;
             phys["maxSubSteps"] = data.phys.maxSubSteps;
             phys["maxDiff"] = data.phys.maxDiff;
-            phys["collisions"] = data.phys.collisions;
+            phys["collisions"] = data.phys.collision;
 
             auto& ui = root["ui"];
 
@@ -796,18 +804,24 @@ namespace CBP
             ui["nodeLastActor"] = static_cast<std::uint64_t>(data.ui.actorNode.lastActor);
             ui["nodeMapLastActor"] = static_cast<std::uint64_t>(data.ui.actorNodeMap.lastActor);
             ui["fontScale"] = data.ui.fontScale;
+            ui["backgroundAlpha"] = data.ui.backgroundAlpha;
             ui["backlogLimit"] = data.ui.backlogLimit;
 
             ui["physicsActorSelectedGender"] = Enum::Underlying(data.ui.commonSettings.physics.actor.selectedGender);
             ui["physicsGlobalSelectedGender"] = Enum::Underlying(data.ui.commonSettings.physics.global.selectedGender);
             ui["physicsProfileSelectedGender"] = Enum::Underlying(data.ui.commonSettings.physics.profile.selectedGender);
             ui["physicsRaceSelectedGender"] = Enum::Underlying(data.ui.commonSettings.physics.race.selectedGender);
-            
+
             ui["nodeActorSelectedGender"] = Enum::Underlying(data.ui.commonSettings.node.actor.selectedGender);
             ui["nodeGlobalSelectedGender"] = Enum::Underlying(data.ui.commonSettings.node.global.selectedGender);
             ui["nodeProfileSelectedGender"] = Enum::Underlying(data.ui.commonSettings.node.profile.selectedGender);
             ui["nodeRaceSelectedGender"] = Enum::Underlying(data.ui.commonSettings.node.race.selectedGender);
-                        
+
+            ui["geWireframe"] = data.ui.geometry.wireframe;
+            ui["geLighting"] = data.ui.geometry.lighting;
+            ui["geResolution"] = data.ui.geometry.resolution;
+            CreateFloatArray(data.ui.geometry.color.m128_f32, ui["geColor"]);
+            CreateFloatArray(data.ui.geometry.ambientLightColor.m128_f32, ui["geAmbientLightColor"]);
 
             auto& imp = ui["import"];
 
@@ -817,7 +831,7 @@ namespace CBP
 
             auto& force = ui["force"];
 
-            for (const auto& e : data.ui.forceActor)
+            for (auto& e : data.ui.forceActor)
             {
                 auto& fe = force[e.first];
 
@@ -830,15 +844,15 @@ namespace CBP
             ui["forceSelected"] = data.ui.forceActorSelected;
 
             auto& propagate = ui["propagate"];
-            for (const auto& e : data.ui.propagate)
+            for (auto& e : data.ui.propagate)
             {
                 auto& je = propagate[std::to_string(Enum::Underlying(e.first))];
 
-                for (const auto& k : e.second)
+                for (auto& k : e.second)
                 {
                     auto& ke = je[k.first];
 
-                    for (const auto& l : k.second) {
+                    for (auto& l : k.second) {
                         auto& v = ke[l.first];
 
                         v["e"] = l.second.enabled;

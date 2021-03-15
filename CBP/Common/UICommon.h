@@ -1,5 +1,7 @@
 #pragma once
 
+#include <imgui_internal.h>
+
 namespace UICommon
 {
     class UIAlignment
@@ -22,12 +24,39 @@ namespace UICommon
             m_posOffset = 0.0f;
         }
 
-        SKMP_FORCEINLINE bool ButtonRight(const char* a_text)
+        SKMP_FORCEINLINE bool ButtonRight(const char* a_text, bool a_disabled = false)
         {
+            if (a_disabled)
+            {
+                ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+                ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
+            }
+
             bool res = ImGui::Button(a_text);
+
+            if (a_disabled)
+            {
+                ImGui::PopItemFlag();
+                ImGui::PopStyleVar();
+            }
+
             m_ctlPositions[a_text] = ImGui::GetItemRectSize().x;
             return res;
         }
+        
+        /*template <typename ...Args>
+        SKMP_FORCEINLINE void TextWrappedRight(const char* a_text, Args... a_args)
+        {
+            ImGui::TextWrapped(a_text, a_args...);
+            m_ctlPositions[a_text] = ImGui::GetItemRectSize().x;
+        }
+        
+        SKMP_FORCEINLINE void TextWrappedRight(const char* a_text, float a_width, bool a_reset = false)
+        {
+            ImGui::SameLine(a_width - GetNextTextOffset(a_text, a_reset));
+            ImGui::TextWrapped("%s", a_text);
+            m_ctlPositions[a_text] = ImGui::GetItemRectSize().x;
+        }*/
 
         float m_posOffset = 0.0f;
         stl::unordered_map<std::string, float> m_ctlPositions;
@@ -363,25 +392,34 @@ namespace UICommon
         using func_type = std::function<void(const UIPopupAction&)>;
 
     public:
+
+        UIPopupAction() = delete;
+
+        UIPopupAction(const UIPopupAction&) = delete;
+        UIPopupAction(UIPopupAction&&) = delete;
+
+        UIPopupAction& operator=(const UIPopupAction&) = delete;
+        UIPopupAction& operator=(UIPopupAction&&) = delete;
+
         template<typename... Args>
         UIPopupAction(
             UIPopupType a_type,
             const char* a_key,
             const char* a_fmt,
-            Args&&... a_args)
+            Args... a_args) noexcept
             :
             m_type(a_type),
-            m_key(a_key),
-            m_input{ 0x0 }
+            m_key(a_key)
         {
+            m_input[0x0] = 0x0;
             _snprintf_s(m_buf, _TRUNCATE, a_fmt, std::forward<Args>(a_args)...);
         }
 
-        SKMP_FORCEINLINE void call(const func_type& a_func) {
+        /*SKMP_FORCEINLINE void call(const func_type& a_func) {
             m_func = a_func;
-        }
+        }*/
 
-        SKMP_FORCEINLINE void call(func_type&& a_func) {
+        SKMP_FORCEINLINE void call(func_type a_func) noexcept {
             m_func = std::move(a_func);
         }
 
@@ -437,21 +475,32 @@ namespace UICommon
     };
 
     template <class T>
-    class UIProfileBase
+    class UIProfileBase :
+        GenericEventSink<ProfileManagerEvent<T>>
     {
     public:
+
+        void InitializeProfileBase();
 
         const T* GetCurrentProfile() const;
 
     protected:
 
         UIProfileBase() = default;
-        virtual ~UIProfileBase() noexcept = default;
+        virtual ~UIProfileBase() noexcept;
 
         void DrawCreateNew(float a_fontScale);
 
         virtual ProfileManager<T>& GetProfileManager() const = 0;
         virtual bool InitializeProfile(T& a_profile);
+        virtual bool AllowCreateNew() const;
+        virtual bool AllowSave() const;
+        virtual void OnItemSelected(const std::string& a_item);
+        virtual void OnProfileSave(const std::string& a_item);
+
+        virtual void Receive(const ProfileManagerEvent<T>& a_evn) override;
+
+        void SetSelected(const std::string& a_item);
 
         struct {
             char new_input[60];
@@ -460,6 +509,18 @@ namespace UICommon
         } m_state;
 
     };
+
+    template <class T>
+    UIProfileBase<T>::~UIProfileBase() noexcept
+    {
+        //GetProfileManager().RemoveSink(this);
+    }
+
+    template <class T>
+    void UIProfileBase<T>::InitializeProfileBase()
+    {
+        GetProfileManager().AddSink(this);
+    }
 
     template <class T>
     const T* UIProfileBase<T>::GetCurrentProfile() const
@@ -532,6 +593,60 @@ namespace UICommon
         return true;
     }
 
+    template <class T>
+    bool UIProfileBase<T>::AllowCreateNew() const
+    {
+        return true;
+    }
+
+    template <class T>
+    bool UIProfileBase<T>::AllowSave() const
+    {
+        return true;
+    }
+
+    template <class T>
+    void UIProfileBase<T>::OnItemSelected(
+        const std::string& a_item)
+    {
+    }
+
+    template <class T>
+    void UIProfileBase<T>::OnProfileSave(
+        const std::string& a_item)
+    {
+    }
+
+    template <class T>
+    void UIProfileBase<T>::Receive(const ProfileManagerEvent<T>& a_evn)
+    {
+        switch (a_evn.m_type)
+        {
+        case ProfileManagerEvent<T>::EventType::kProfileAdd:
+
+            break;
+        case ProfileManagerEvent<T>::EventType::kProfileDelete:
+
+            break;
+        case ProfileManagerEvent<T>::EventType::kProfileSave:
+            OnProfileSave(*a_evn.m_profile);
+            break;
+        case ProfileManagerEvent<T>::EventType::kProfileRename:
+            if (m_state.selected && StrHelpers::iequal(*a_evn.m_oldProfile, *m_state.selected)) {
+                m_state.selected = *a_evn.m_profile;
+            }
+            break;
+        }
+    }
+
+    template <class T>
+    void UIProfileBase<T>::SetSelected(
+        const std::string& a_item)
+    {
+        m_state.selected = a_item;
+        OnItemSelected(a_item);
+    }
+
     template <class T, class P>
     class UIProfileSelectorBase :
         virtual protected UIAlignment,
@@ -574,7 +689,7 @@ namespace UICommon
                 ImGui::PushID(static_cast<const void*>(std::addressof(e.second)));
 
                 bool selected = m_state.selected &&
-                    e.first == *m_state.selected;
+                    StrHelpers::iequal(e.first, *m_state.selected);
 
                 if (selected)
                     if (ImGui::IsWindowAppearing())
@@ -592,7 +707,7 @@ namespace UICommon
         auto wcm = ImGui::GetWindowContentRegionMax();
 
         ImGui::SameLine(wcm.x - GetNextTextOffset("New", true));
-        if (ButtonRight("New")) {
+        if (ButtonRight("New", !AllowCreateNew())) {
             ImGui::OpenPopup("New profile");
             m_state.new_input[0] = 0;
         }
@@ -616,9 +731,12 @@ namespace UICommon
                 ApplyProfile(a_data, profile);
             }
 
-            ImGui::SameLine(wcm.x - GetNextTextOffset("Save"));
-            if (ButtonRight("Save")) {
-                ImGui::OpenPopup("Save to profile");
+            if (AllowSave())
+            {
+                ImGui::SameLine(wcm.x - GetNextTextOffset("Save"));
+                if (ButtonRight("Save")) {
+                    ImGui::OpenPopup("Save to profile");
+                }
             }
 
             if (UICommon::ConfirmDialog(
@@ -652,7 +770,7 @@ namespace UICommon
     class UIProfileEditorBase :
         virtual protected UIAlignment,
         virtual protected UIWindow,
-        UIProfileBase<T>
+        public UIProfileBase<T>
     {
     public:
         UIProfileEditorBase(const char* a_name);
@@ -663,9 +781,20 @@ namespace UICommon
         SKMP_FORCEINLINE const char* GetName() const {
             return m_name;
         }
+
     protected:
 
+        virtual void GetWindowDimensions(
+            float& a_offset, 
+            float& a_width, 
+            float& a_height, 
+            bool &a_centered) const;
+
         virtual void DrawItem(T& a_profile) = 0;
+        virtual void OnReload(const T& a_profile);
+
+        virtual bool OnDeleteWarningOverride(const std::string& a_key, std::string& a_msg);
+
     private:
 
         virtual ProfileManager<T>& GetProfileManager() const = 0;
@@ -679,6 +808,7 @@ namespace UICommon
         UICommon::UIGenericFilter m_filter;
 
         const char* m_name;
+        std::string m_currentDeleteWarningText;
     };
 
     template <class T>
@@ -690,7 +820,11 @@ namespace UICommon
     template <class T>
     void UIProfileEditorBase<T>::Draw(bool* a_active, float a_scale)
     {
-        SetWindowDimensions(400.0f);
+        float wo, ww, wh;
+        bool wc;
+
+        GetWindowDimensions(wo, ww, wh, wc);
+        SetWindowDimensions(wo, ww, wh, wc);
 
         ImGui::PushID(static_cast<const void*>(this));
 
@@ -703,7 +837,8 @@ namespace UICommon
             auto& data = GetProfileManager().Data();
 
             const char* curSelName = nullptr;
-            if (m_state.selected) {
+            if (m_state.selected)
+            {
                 if (data.find(*m_state.selected) != data.end())
                 {
                     curSelName = m_state.selected->c_str();
@@ -715,7 +850,7 @@ namespace UICommon
                             if (!m_filter.Test(e.first))
                                 continue;
 
-                            m_state.selected = e.first;
+                            SetSelected(e.first);
                             curSelName = e.first.c_str();
 
                             break;
@@ -727,8 +862,8 @@ namespace UICommon
                 }
             }
             else {
-                if (data.size()) {
-                    m_state.selected = data.begin()->first;
+                if (!data.empty()) {
+                    SetSelected(data.begin()->first);
                     curSelName = (*m_state.selected).c_str();
                 }
             }
@@ -749,7 +884,7 @@ namespace UICommon
                         if (ImGui::IsWindowAppearing()) ImGui::SetScrollHereY();
 
                     if (ImGui::Selectable(e.second.Name().c_str(), selected))
-                        m_state.selected = e.first;
+                        SetSelected(e.first);
 
                     ImGui::PopID();
                 }
@@ -760,7 +895,7 @@ namespace UICommon
             m_filter.DrawButton();
 
             ImGui::SameLine(ImGui::GetWindowContentRegionMax().x - GetNextTextOffset("New", true));
-            if (ButtonRight("New")) {
+            if (ButtonRight("New", !AllowCreateNew())) {
                 ImGui::OpenPopup("New profile");
                 m_state.new_input[0] = 0;
             }
@@ -775,16 +910,26 @@ namespace UICommon
             {
                 auto& profile = data.at(*m_state.selected);
 
-                if (ImGui::Button("Save")) {
-                    if (!profile.Save()) {
-                        ImGui::OpenPopup("Save");
-                        m_state.lastException = profile.GetLastException();
+                if (AllowSave())
+                {
+                    if (ImGui::Button("Save")) {
+                        if (!profile.Save()) {
+                            ImGui::OpenPopup("Save");
+                            m_state.lastException = profile.GetLastException();
+                        }
                     }
+
+                    ImGui::SameLine();
                 }
 
-                ImGui::SameLine();
                 if (ImGui::Button("Delete"))
+                {
+                    if (!OnDeleteWarningOverride(*m_state.selected, m_currentDeleteWarningText)) {
+                        m_currentDeleteWarningText = "Are you sure you want to delete profile '%s'?";
+                    }
+
                     ImGui::OpenPopup("Delete");
+                }
 
                 ImGui::SameLine();
                 if (ImGui::Button("Rename")) {
@@ -794,9 +939,14 @@ namespace UICommon
 
                 ImGui::SameLine();
                 if (ImGui::Button("Reload")) {
-                    if (!profile.Load()) {
+                    if (!profile.Load())
+                    {
                         ImGui::OpenPopup("Reload");
                         m_state.lastException = profile.GetLastException();
+                    }
+                    else
+                    {
+                        OnReload(profile);
                     }
                 }
 
@@ -806,7 +956,7 @@ namespace UICommon
 
                 if (UICommon::ConfirmDialog(
                     "Delete",
-                    "Are you sure you want to delete profile '%s'?\n\n", curSelName))
+                    m_currentDeleteWarningText.c_str(), curSelName))
                 {
                     auto& pm = GetProfileManager();
                     if (pm.DeleteProfile(*m_state.selected)) {
@@ -859,8 +1009,34 @@ namespace UICommon
     }
 
     template <class T>
+    void UIProfileEditorBase<T>::GetWindowDimensions(
+        float& a_offset, 
+        float& a_width, 
+        float& a_height, 
+        bool& a_centered) const
+    {
+        a_offset = 400.0f;
+        a_width = -1.0f;
+        a_height = -1.0f;
+        a_centered = false;
+    }
+
+    template <class T>
     void UIProfileEditorBase<T>::DrawOptions(T& a_profile)
     {
+    }
+
+    template <class T>
+    void UIProfileEditorBase<T>::OnReload(const T& a_profile)
+    {
+    }
+
+    template <class T>
+    bool UIProfileEditorBase<T>::OnDeleteWarningOverride(
+        const std::string& a_key,
+        std::string& a_msg)
+    {
+        return false;
     }
 
     class UITextFileEditor

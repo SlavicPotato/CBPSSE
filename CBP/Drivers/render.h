@@ -16,6 +16,27 @@ namespace CBP
             m_Instance.m_presentCallbacks.emplace_back(f);
         }
 
+        [[nodiscard]] SKMP_FORCEINLINE static auto GetSingleton() {
+            return std::addressof(m_Instance);
+        }
+
+        [[nodiscard]] SKMP_FORCEINLINE auto GetDevice() const {
+            return m_device;
+        }
+
+        [[nodiscard]] SKMP_FORCEINLINE auto GetContext() const {
+            return m_context;
+        }
+
+        [[nodiscard]] SKMP_FORCEINLINE auto GetSwapChain() const {
+            return m_swapChain;
+        }
+
+        [[nodiscard]] SKMP_FORCEINLINE const auto& GetBufferSize() const {
+            return m_bufferSize;
+        }
+
+
         FN_NAMEPROC("Render")
     private:
         DRender() = default;
@@ -30,6 +51,11 @@ namespace CBP
         static void CreateD3D11_Hook();
 
         stl::vector<presentCallback_t> m_presentCallbacks;
+
+        ID3D11Device* m_device;
+        ID3D11DeviceContext* m_context;
+        IDXGISwapChain* m_swapChain;
+        DirectX::XMFLOAT3 m_bufferSize;
 
         static DRender m_Instance;
     };

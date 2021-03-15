@@ -91,8 +91,14 @@ namespace CBP
 
                 const auto tmp = std::make_shared<const ColliderData>(*a_data.get());
 
-                if (!itc->second.Save(tmp, true)) {
+                /*if (!itc->second.Save(tmp, true)) {
                     throw std::exception(itc->second.GetLastException().what());
+                }*/
+
+                
+
+                if (!pmc.SaveProfile(a_name, tmp, true)) {
+                    throw std::exception(pmc.GetLastException().what());
                 }
 
                 DCBP::ResetActors();
@@ -129,7 +135,7 @@ namespace CBP
                     "Create collision geometry",
                     "Enter the filename:"
                 ).call(
-                    [this, nodeName = a_nodeName, data = result.data, a_handle](auto& a_p)
+                    [this, nodeName = a_nodeName, data = result.data, a_handle](const auto& a_p)
                     {
                         auto& in = a_p.GetInput();
 
@@ -147,7 +153,7 @@ namespace CBP
                                 "Create collision geometry",
                                 "'%s' already exists, overwrite?",
                                 name.c_str()
-                            ).call([this, nodeName, data, a_handle, name](...)
+                            ).call([this, nodeName, data, a_handle, name](const auto&)
                                 {
                                     SaveGeometry(a_handle, nodeName, data, name);
                                 }
@@ -188,7 +194,7 @@ namespace CBP
                         "Create collision geometry",
                         "Are you sure you want to overwrite '%s' ?",
                         e.first.c_str()
-                    ).call([this, nodeName = a_nodeName, data = result.data, a_handle, name = e.first](...)
+                    ).call([this, nodeName = a_nodeName, data = result.data, a_handle, name = e.first](const auto &)
                     {
                         SaveGeometry(a_handle, nodeName, data, name);
                     }
@@ -263,7 +269,7 @@ namespace CBP
         ImGui::Spacing();
 
         changed |= ImGui::Checkbox("Motion", &a_conf.bl.b.motion);
-        changed |= ImGui::Checkbox("Collisions", &a_conf.bl.b.collisions);
+        changed |= ImGui::Checkbox("Collisions", &a_conf.bl.b.collision);
 
         ImGui::Spacing();
 
@@ -381,7 +387,7 @@ namespace CBP
 
                 ImGui::PushID(static_cast<const void*>(std::addressof(e)));
 
-                std::string label = (e.first + " - " + e.second);
+                std::string label(e.first + " - " + e.second);
 
                 if (CollapsingHeader(GetCSID(e.first), label.c_str()))
                 {
@@ -397,6 +403,7 @@ namespace CBP
         ImGui::EndChild();
 
     }
+
     template <class T, UIEditorID ID>
     std::string UINode<T, ID>::GetGCSID(
         const std::string& a_name) const
@@ -405,5 +412,5 @@ namespace CBP
         ss << "GUIND#" << Enum::Underlying(ID) << "#" << a_name;
         return ss.str();
     }
-
+    
 }

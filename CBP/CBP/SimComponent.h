@@ -307,6 +307,8 @@ namespace CBP
             m_offsetParent = a_switch;
         }
 
+        FN_NAMEPROC("Collider");
+
     private:
 
         void Activate();

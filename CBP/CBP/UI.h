@@ -19,13 +19,14 @@ namespace CBP
         UISimComponent<int, UIEditorID::kProfileEditorPhys>
     {
     public:
-        UIProfileEditorPhysics(UIContext &a_parent, const char* a_name) :
-            UICommon::UIProfileEditorBase<PhysicsProfile>(a_name),
-            m_ctxParent(a_parent)
-        {}
+
+        UIProfileEditorPhysics(UIContext& a_parent, const char* a_name);
+
+        virtual ~UIProfileEditorPhysics() noexcept = default;
+
     private:
 
-        virtual ProfileManager<PhysicsProfile>& GetProfileManager() const;
+        virtual ProfileManager<PhysicsProfile>& GetProfileManager() const override;
 
         virtual void DrawItem(PhysicsProfile& a_profile);
         virtual void DrawOptions(PhysicsProfile& a_profile);
@@ -94,14 +95,13 @@ namespace CBP
         UINode<int, UIEditorID::kProfileEditorNode>
     {
     public:
-        UIProfileEditorNode(UIContext& a_parent, const char* a_name) :
-            UICommon::UIProfileEditorBase<NodeProfile>(a_name),
-            m_ctxParent(a_parent)
-        {}
+        UIProfileEditorNode(UIContext& a_parent, const char* a_name);
+
+        virtual ~UIProfileEditorNode() noexcept = default;
 
     private:
 
-        virtual ProfileManager<NodeProfile>& GetProfileManager() const;
+        virtual ProfileManager<NodeProfile>& GetProfileManager() const override;
 
         virtual void DrawItem(NodeProfile& a_profile);
         virtual void UpdateNodeData(
@@ -123,6 +123,8 @@ namespace CBP
         UIBase
     {
     public:
+        UIOptions(UIContext& a_parent);
+
         void Draw(bool* a_active);
 
     private:
@@ -130,6 +132,8 @@ namespace CBP
             const char* a_desc,
             const keyDesc_t& a_dmap,
             UInt32 a_key);
+
+        UIContext& m_parent;
     };
 
     class UICollisionGroups :
@@ -146,7 +150,7 @@ namespace CBP
 
     class UIActorEditorNode :
         public UIActorList<actorListNodeConf_t>,
-        UIProfileSelector<actorListNodeConf_t::value_type, NodeProfile>,
+        public UIProfileSelector<actorListNodeConf_t::value_type, NodeProfile>,
         UINode<Game::ObjectHandle, UIEditorID::kNodeEditor>
     {
     public:
@@ -184,13 +188,13 @@ namespace CBP
         UIContext& m_ctxParent;
     };
 
-    
+
     class UIRaceEditorNode :
         public UIRaceEditorBase<raceListNodeConf_t, NodeProfile>,
         public UINode<Game::FormID, UIEditorID::kRaceNodeEditor>
     {
     public:
-        UIRaceEditorNode(UIContext &a_parent) noexcept;
+        UIRaceEditorNode(UIContext& a_parent) noexcept;
 
         void Draw(bool* a_active);
 
@@ -222,7 +226,7 @@ namespace CBP
         public UISimComponent<Game::FormID, UIEditorID::kRacePhysicsEditor>
     {
     public:
-        UIRaceEditorPhysics(UIContext &a_parent) noexcept;
+        UIRaceEditorPhysics(UIContext& a_parent) noexcept;
 
         void Draw(bool* a_active);
     private:
@@ -288,7 +292,7 @@ namespace CBP
         virtual bool HasMotion(
             const nodeConfigList_t& a_nodeConfig) const override;
 
-        virtual bool HasCollisions(
+        virtual bool HasCollision(
             const nodeConfigList_t& a_nodeConfig) const override;
 
         virtual configGlobalSimComponent_t& GetSimComponentConfig() const override;
@@ -364,7 +368,7 @@ namespace CBP
 
         bool m_sized = false;
         char m_buffer[64];
-};
+    };
 #endif
 
     class UIFileSelector :
@@ -406,35 +410,26 @@ namespace CBP
         except::descriptor m_lastExcept;
     };
 
-    class UIDialogImport :
+    class UIDialogImportExport :
         public UIFileSelector
     {
     public:
-        UIDialogImport() = default;
+        UIDialogImportExport(UIContext& a_parent);
 
-        bool Draw(bool* a_active);
+        void Draw(bool* a_active);
         void OnOpen();
-
-    };
-
-    class UIDialogExport :
-        UIBase
-    {
-    public:
-        UIDialogExport();
-
-        bool Draw();
-        void Open();
 
     private:
 
-        bool OnFileInput();
+        void DrawExportContextMenu();
 
-        fs::path m_path;
-        fs::path m_lastTargetPath;
+        void DoImport(const fs::path& a_path);
+        void DoExport(const fs::path& a_path);
+
+        ISerialization::ImportFlags GetFlags() const;
+
         std::regex m_rFileCheck;
-
-        char m_buf[32];
+        UIContext& m_parent;
     };
 
     class UILog :
@@ -544,6 +539,347 @@ namespace CBP
         UIContext& m_parent;
     };
 
+    class UICollisionGeometryManager :
+        virtual private UIBase,
+        public UICommon::UIProfileEditorBase<ColliderProfile>
+    {
+        using resolutionDesc_t = std::pair<std::string, float>;
+
+        static inline constexpr float DEFAULT_ZOOM = 50.0f;
+
+        class ShapeBase
+        {
+        protected:
+
+            using setStateFunc_t = std::function<void __cdecl()>;
+
+        public:
+
+            enum class Light
+            {
+                kAmbient,
+                kDiffuse,
+                kSpecular
+            };
+
+            virtual ~ShapeBase() noexcept = default;
+
+            virtual void Initialize(
+                const ColliderData* a_data,
+                ID3D11Device* a_device,
+                ID3D11DeviceContext* a_context) = 0;
+
+            virtual void __vectorcall Draw(
+                DirectX::FXMMATRIX a_world,
+                DirectX::CXMMATRIX a_view,
+                DirectX::CXMMATRIX a_projection,
+                DirectX::FXMVECTOR a_color,
+                setStateFunc_t a_setCustomState) const = 0;
+
+            virtual void EnableLighting(bool a_switch) = 0;
+
+            virtual void __vectorcall SetLightColor(
+                Light a_which,
+                int a_index,
+                DirectX::XMVECTOR a_color) = 0;
+
+            SKMP_FORCEINLINE auto GetNumVertices() const {
+                return m_numVertices;
+            }
+
+            SKMP_FORCEINLINE auto GetNumIndices() const {
+                return m_numIndices;
+            }
+
+        protected:
+
+            std::size_t m_numVertices;
+            std::size_t m_numIndices;
+        };
+
+
+        template <class T>
+        class Shape :
+            public ShapeBase
+        {
+        protected:
+
+            using vertexType_t = T;
+
+        public:
+
+            virtual ~Shape() noexcept = default;
+
+            virtual void Initialize(
+                const ColliderData* a_data,
+                ID3D11Device* a_device,
+                ID3D11DeviceContext* a_context) override;
+
+            virtual void __vectorcall Draw(
+                DirectX::FXMMATRIX a_world,
+                DirectX::CXMMATRIX a_view,
+                DirectX::CXMMATRIX a_projection,
+                DirectX::FXMVECTOR a_color,
+                setStateFunc_t a_setCustomState) const override;
+
+            virtual void EnableLighting(bool a_switch) override
+            {
+                m_effect->SetLightingEnabled(a_switch);
+            }
+
+            virtual void __vectorcall SetLightColor(
+                Light a_which,
+                int a_index,
+                DirectX::XMVECTOR a_color);
+
+        protected:
+
+            virtual void CreateGeometry(
+                const ColliderData* a_data,
+                std::vector<vertexType_t>& a_vertices,
+                std::vector<std::uint32_t>& a_indices) const = 0;
+
+            virtual void ApplyEffectSettings(DirectX::BasicEffect* a_effect);
+
+            Microsoft::WRL::ComPtr<ID3D11InputLayout> m_inputLayout;
+
+            Microsoft::WRL::ComPtr<ID3D11Buffer> m_vertexBuffer;
+            Microsoft::WRL::ComPtr<ID3D11Buffer> m_indexBuffer;
+
+            UINT m_indexCount;
+
+            std::unique_ptr<DirectX::BasicEffect> m_effect;
+
+            ID3D11DeviceContext* m_context;
+
+        };
+
+        class ShapeColor :
+            public Shape<DirectX::VertexPosition>
+        {
+        public:
+
+            using Shape<DirectX::VertexPosition>::Shape;
+
+            virtual ~ShapeColor() noexcept = default;
+
+        private:
+            virtual void CreateGeometry(
+                const ColliderData* a_data,
+                std::vector<DirectX::VertexPosition>& a_vertices,
+                std::vector<std::uint32_t>& a_indices) const override;
+
+            virtual void ApplyEffectSettings(DirectX::BasicEffect* a_effect) override;
+        };
+
+        class ShapeNormal :
+            public Shape<DirectX::VertexPositionNormal>
+        {
+        public:
+            using Shape<DirectX::VertexPositionNormal>::Shape;
+
+            virtual ~ShapeNormal() noexcept = default;
+
+        private:
+
+            virtual void CreateGeometry(
+                const ColliderData* a_data,
+                std::vector<DirectX::VertexPositionNormal>& a_vertices,
+                std::vector<std::uint32_t>& a_indices) const override;
+
+            virtual void ApplyEffectSettings(DirectX::BasicEffect* a_effect) override;
+
+        };
+
+        class SKMP_ALIGN(16) Model
+        {
+        public:
+
+            SKMP_DECLARE_ALIGNED_ALLOCATOR(16);
+
+            Model() = delete;
+
+            Model(
+                const ColliderData * a_data,
+                ID3D11Device * a_device,
+                ID3D11DeviceContext * a_context,
+                const DirectX::XMFLOAT3 & a_bufferSize,
+                float a_textureResolution);
+
+            void Draw() const;
+
+            SKMP_FORCEINLINE auto GetTexture() {
+                return m_shaderResourceView.Get();
+            }
+
+            SKMP_FORCEINLINE const auto& GetBufferSize() const {
+                return m_bufferSize;
+            }
+
+            SKMP_FORCEINLINE auto GetNumVertices() const {
+                return m_shape->GetNumVertices();
+            }
+
+            SKMP_FORCEINLINE auto GetNumIndices() const {
+                return m_shape->GetNumIndices();
+            }
+
+            SKMP_FORCEINLINE void EnableLighting(bool a_switch) {
+                m_shape->EnableLighting(a_switch);
+            }
+
+            SKMP_FORCEINLINE void __vectorcall SetLightColor(
+                ShapeBase::Light a_which,
+                int a_index,
+                DirectX::XMVECTOR a_color)
+            {
+                m_shape->SetLightColor(a_which, a_index, a_color);
+            }
+
+            SKMP_FORCEINLINE DirectX::SimpleMath::Vector3 __vectorcall GetEyePos() const {
+                return m_eyePos;
+            }
+
+            SKMP_FORCEINLINE DirectX::SimpleMath::Vector3 __vectorcall GetTargetPos() const {
+                return m_targetPos;
+            }
+            
+            SKMP_FORCEINLINE  DirectX::SimpleMath::Matrix __vectorcall GetWorldMatrix() const {
+                return m_world;
+            }
+
+            void __vectorcall SetViewData(
+                DirectX::SimpleMath::Matrix &a_world,
+                DirectX::SimpleMath::Vector3 a_eyePos,
+                DirectX::SimpleMath::Vector3 a_targetPos);
+
+            void ResetPos();
+            void SetZoom(float a_val);
+            void Pan(const ImVec2 & a_delta);
+            void Rotate(const ImVec2 & a_delta);
+
+        private:
+
+            void UpdateViewMatrix();
+
+            DirectX::SimpleMath::Vector3 m_eyePos;
+            DirectX::SimpleMath::Vector3 m_targetPos;
+
+            DirectX::SimpleMath::Matrix m_world;
+            DirectX::SimpleMath::Matrix m_view;
+            DirectX::SimpleMath::Matrix m_proj;
+
+            std::unique_ptr<DirectX::CommonStates> m_states;
+            std::unique_ptr<ShapeBase> m_shape;
+
+            Microsoft::WRL::ComPtr<ID3D11Texture2D> m_depthStencilBuffer;
+            Microsoft::WRL::ComPtr<ID3D11Texture2D>	m_renderTargetViewTexture;
+            Microsoft::WRL::ComPtr<ID3D11RenderTargetView> m_renderTargetView;
+            Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_shaderResourceView;
+            Microsoft::WRL::ComPtr<ID3D11DepthStencilView> m_depthStencilView;
+
+            Microsoft::WRL::ComPtr<ID3D11Device> m_device;
+            Microsoft::WRL::ComPtr<ID3D11DeviceContext> m_context;
+
+            DirectX::XMFLOAT3 m_bufferSize;
+            float m_textureResolution;
+
+
+        };
+
+        class DragController
+        {
+
+            using func_t = std::function<void(const ImVec2& a_delta)>;
+
+        public:
+
+            DragController() = delete;
+            DragController(int a_key, func_t a_onDrag);
+
+            void Update(bool a_isHovered);
+
+        private:
+
+            bool m_dragging;
+            int m_key;
+            ImVec2 m_lastMousePos;
+            ImVec2 m_avgMouseDir;
+            func_t m_func;
+        };
+
+        class ReleaseModelTask :
+            public TaskDelegate
+        {
+        public:
+            ReleaseModelTask(std::shared_ptr<Model>&& a_model);
+
+            virtual void Run() {};
+            virtual void Dispose() {
+                delete this;
+            };
+
+        private:
+
+            std::shared_ptr<Model> m_ref;
+        };
+
+    public:
+        UICollisionGeometryManager(UIContext& a_parent, const char* a_name);
+        virtual ~UICollisionGeometryManager() noexcept = default;
+
+        void DrawModel();
+        void OnOpen();
+        void OnClose();
+
+    private:
+
+        static void DrawCallback(const ImDrawList* parent_list, const ImDrawCmd* cmd);
+
+        virtual ProfileManager<ColliderProfile>& GetProfileManager() const override;
+
+        virtual void GetWindowDimensions(float& a_offset, float& a_width, float& a_height, bool& a_centered) const override;
+        virtual void DrawItem(ColliderProfile& a_profile) override;
+        virtual void DrawOptions(ColliderProfile& a_profile) override;
+        virtual bool InitializeProfile(ColliderProfile& a_profile) override;
+
+        virtual bool AllowCreateNew() const override;
+        virtual bool AllowSave() const override;
+        virtual void OnItemSelected(const std::string& a_item) override;
+        virtual void OnReload(const ColliderProfile& a_profile) override;
+        virtual void OnProfileSave(const std::string& a_item) override;
+        virtual bool OnDeleteWarningOverride(const std::string& a_key, std::string& a_msg) override;
+
+        void SetResolution(const resolutionDesc_t& a_res);
+        void AutoSelectResolution(const char*& a_curSelName);
+        void DrawResolutionCombo();
+        void CreateInfoStrings();
+
+        void Load(const std::string& a_item);
+        void Load(const ColliderProfile& a_profile);
+
+        void QueueModelRelease();
+
+        std::shared_ptr<Model> m_model;
+
+        SelectedItem<resolutionDesc_t> m_resolution;
+        stl::vector<resolutionDesc_t> m_resList;
+
+        float m_zoom;
+
+        DragController m_dragRotate;
+        DragController m_dragPan;
+
+        struct
+        {
+            std::string m_vertices;
+            std::string m_indices;
+        } m_infoStrings;
+
+        UIContext& m_parent;
+    };
+
+
     class SKMP_ALIGN(32) UIContext :
         virtual UIBase,
         public UIActorList<actorListPhysConf_t>,
@@ -598,9 +934,9 @@ namespace CBP
             virtual bool HasMotion(
                 const nodeConfigList_t& a_nodeConfig) const override;
 
-            virtual bool HasCollisions(
+            virtual bool HasCollision(
                 const nodeConfigList_t& a_nodeConfig) const override;
-            
+
             virtual bool HasBoneCast(
                 const nodeConfigList_t& a_nodeConfig) const override;
 
@@ -683,7 +1019,7 @@ namespace CBP
             virtual bool HasMotion(
                 const nodeConfigList_t& a_nodeConfig) const override;
 
-            virtual bool HasCollisions(
+            virtual bool HasCollision(
                 const nodeConfigList_t& a_nodeConfig) const override;
 
             virtual bool GetNodeConfig(
@@ -717,9 +1053,12 @@ namespace CBP
         void Initialize();
 
         void Reset(std::uint32_t a_loadInstance);
+        void OnOpen();
+        void OnClose();
         void Draw(bool* a_active);
 
         void QueueListUpdateAll();
+
 
         [[nodiscard]] SKMP_FORCEINLINE std::uint32_t GetLoadInstance() const noexcept {
             return m_activeLoadInstance;
@@ -732,6 +1071,20 @@ namespace CBP
         SKMP_FORCEINLINE auto& GetPopupQueue() {
             return m_popup;
         }
+
+        SKMP_FORCEINLINE auto& GetPreTaskQueue() {
+            return m_preDraw;
+        }
+
+        SKMP_FORCEINLINE auto& GetWindowStates() {
+            return m_state.windows;
+        }
+
+        SKMP_FORCEINLINE void ClearPopupQueue() {
+            return m_popup.clear();
+        }
+
+        void UpdateStyle();
 
     private:
 
@@ -771,20 +1124,21 @@ namespace CBP
                 bool profiling;
                 bool debug;
                 bool log;
-                bool importDialog;
+                bool importExportDialog;
                 bool nodeMap;
                 bool armorOverride;
+                bool geometryManager;
             } windows;
 
             struct {
-                bool openExportDialog;
-                bool openImportDialog;
+                bool openIEDialog;
             } menu;
 
             except::descriptor lastException;
         } m_state;
 
         UICommon::UIPopupQueue m_popup;
+        TaskQueue m_preDraw;
 
         UIProfileEditorPhysics m_pePhysics;
         UIProfileEditorNode m_peNodes;
@@ -794,11 +1148,11 @@ namespace CBP
         UIOptions m_options;
         UICollisionGroups m_colGroups;
         UIProfiling m_profiling;
-        UIDialogImport m_importDialog;
-        UIDialogExport m_exportDialog;
+        UIDialogImportExport m_ieDialog;
         UILog m_log;
         UINodeMap m_nodeMap;
         UIArmorOverrideEditor m_armorOverride;
+        UICollisionGeometryManager m_geometryManager;
 
 #ifdef _CBP_ENABLE_DEBUG
         UIDebugInfo m_debug;

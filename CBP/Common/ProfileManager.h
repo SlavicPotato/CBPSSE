@@ -41,7 +41,7 @@ public:
     SKMP_FORCEINLINE void SetDescription(std::string&& a_text) noexcept {
         m_desc = std::move(a_text);
     }
-    
+
     SKMP_FORCEINLINE void ClearDescription() noexcept {
         m_desc.Clear();
     }
@@ -62,7 +62,6 @@ public:
         return m_pathStr;
     }
 
-    template <class = std::enable_if_t<_Const == false, void>>
     [[nodiscard]] SKMP_FORCEINLINE T& Data() noexcept {
         return m_data;
     }
@@ -200,10 +199,28 @@ void Profile<T>::SetDefaults() noexcept
 }
 
 template <class T>
-class ProfileManager
-    : ILog
+struct ProfileManagerEvent
 {
-    //using profile_type = ProfileBase<T>;
+    enum class EventType
+    {
+        kProfileAdd,
+        kProfileDelete,
+        kProfileRename,
+        kProfileSave
+    };
+
+    EventType m_type;
+    const std::string* m_oldProfile;
+    const std::string* m_profile;
+    T* m_data;
+};
+
+template <class T>
+class ProfileManager :
+    public GenericEventDispatcher<ProfileManagerEvent<T>>,
+    ILog
+{
+    using profile_type = T::base_type;
     using storage_type = stl::imap<std::string, T>;
 
 public:
@@ -228,6 +245,7 @@ public:
     [[nodiscard]] bool AddProfile(T&& a_in);
     [[nodiscard]] bool DeleteProfile(const std::string& a_name);
     [[nodiscard]] bool RenameProfile(const std::string& a_oldName, const std::string& a_newName);
+    [[nodiscard]] bool SaveProfile(const std::string& a_name, const profile_type& a_in, bool a_store);
 
     [[nodiscard]] SKMP_FORCEINLINE storage_type& Data() noexcept { return m_storage; }
     [[nodiscard]] SKMP_FORCEINLINE const storage_type& Data() const noexcept { return m_storage; }
@@ -250,7 +268,7 @@ private:
 
     virtual void OnProfileAdd(T& a_profile);
     virtual void OnProfileDelete(T& a_profile);
-    virtual void OnProfileRename(T& a_profile, const std::string &a_oldName);
+    virtual void OnProfileRename(T& a_profile, const std::string& a_oldName);
 
     storage_type m_storage;
     fs::path m_root;
@@ -333,7 +351,7 @@ bool ProfileManager<T>::Load(const fs::path& a_path)
 
         return true;
     }
-    catch (const std::exception& e) 
+    catch (const std::exception& e)
     {
         m_storage.clear();
 
@@ -368,8 +386,8 @@ bool ProfileManager<T>::Unload()
 
 template <class T>
 bool ProfileManager<T>::CreateProfile(
-    const std::string& a_name, 
-    T& a_out, 
+    const std::string& a_name,
+    T& a_out,
     bool a_save)
 {
     try
@@ -427,8 +445,16 @@ bool ProfileManager<T>::AddProfile(const T& a_in)
         CheckProfileKey(key);
 
         auto r = m_storage.emplace(key, a_in);
-        if (r.second)
+        if (r.second) {
             OnProfileAdd(r.first->second);
+            ProfileManagerEvent<T> evn{
+                ProfileManagerEvent<T>::EventType::kProfileAdd,
+                nullptr,
+                std::addressof(r.first->first),
+                std::addressof(r.first->second)
+            };
+            SendEvent(evn);
+        }
         else
             throw std::exception("Profile already exists");
 
@@ -454,8 +480,16 @@ bool ProfileManager<T>::AddProfile(T&& a_in)
         CheckProfileKey(key);
 
         auto r = m_storage.emplace(std::move(key), std::move(a_in));
-        if (r.second)
+        if (r.second) {
             OnProfileAdd(r.first->second);
+            ProfileManagerEvent<T> evn{
+                ProfileManagerEvent<T>::EventType::kProfileAdd,
+                nullptr,
+                std::addressof(r.first->first),
+                std::addressof(r.first->second)
+            };
+            SendEvent(evn);
+        }
         else
             throw std::exception("Profile already exists");
 
@@ -498,6 +532,14 @@ bool ProfileManager<T>::DeleteProfile(const std::string& a_name)
         }
 
         OnProfileDelete(it->second);
+        ProfileManagerEvent<T> evn{
+            ProfileManagerEvent<T>::EventType::kProfileAdd,
+            nullptr,
+            std::addressof(it->first),
+            std::addressof(it->second)
+        };
+        SendEvent(evn);
+
         m_storage.erase(it);
 
         return true;
@@ -551,9 +593,49 @@ bool ProfileManager<T>::RenameProfile(
 
         OnProfileRename(r.first->second, a_oldName);
 
+        std::string oldName(a_oldName);
+
+        ProfileManagerEvent<T> evn{
+            ProfileManagerEvent<T>::EventType::kProfileRename,
+            std::addressof(oldName),
+            std::addressof(r.first->first),
+            std::addressof(r.first->second)
+        };
+        SendEvent(evn);
+
         return true;
     }
     catch (const std::exception& e) {
+        Error("%s: %s", __FUNCTION__, e.what());
+        m_lastExcept = e;
+        return false;
+    }
+}
+
+template <class T>
+bool ProfileManager<T>::SaveProfile(const std::string& a_name, const profile_type& a_in, bool a_store)
+{
+    try
+    {
+        auto it = m_storage.find(a_name);
+        if (it == m_storage.end())
+            throw std::exception("No such profile exists");
+
+        if (!it->second.Save(a_in, true))
+            throw it->second.GetLastException();        
+
+        ProfileManagerEvent<T> evn{
+            ProfileManagerEvent<T>::EventType::kProfileSave,
+            nullptr,
+            std::addressof(it->first),
+            std::addressof(it->second)
+        };
+        SendEvent(evn);
+
+        return true;
+    }
+    catch (const std::exception& e) 
+    {
         Error("%s: %s", __FUNCTION__, e.what());
         m_lastExcept = e;
         return false;

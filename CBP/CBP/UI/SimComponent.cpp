@@ -577,7 +577,7 @@ namespace CBP
                     showCurrentGroup = HasMotion(a_nodeList);
                 }
                 else if (e.second.groupType == DescUIGroupType::Collisions) {
-                    showCurrentGroup = HasCollisions(a_nodeList);
+                    showCurrentGroup = HasCollision(a_nodeList);
                 }
                 else {
                     showCurrentGroup = false;
@@ -869,7 +869,7 @@ namespace CBP
     }
 
     template <class T, UIEditorID ID>
-    bool UISimComponent<T, ID>::HasCollisions(
+    bool UISimComponent<T, ID>::HasCollision(
         const nodeConfigList_t&) const
     {
         return true;

@@ -6,6 +6,7 @@
 #include <ext/JITASM.h>
 #include <ext/INIReader.h>
 #include <ext/StrHelpers.h>
+#include <ext/ID3D11.h>
 #include <common/IMemPool.h>
 #include <common/ICriticalSection.h>
 #include <skse64/PluginAPI.h>
@@ -126,6 +127,7 @@ namespace fs = std::filesystem;
 #include "drivers/input.h"
 #include "drivers/render.h"
 #include "drivers/gui.h"
+#include "Common/EventCommon.h"
 #include "Common/Serialization.h"
 #include "Common/ProfileManager.h"
 #include "Common/UIData.h"
