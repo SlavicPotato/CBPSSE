@@ -93,6 +93,11 @@ namespace CBP
         BoneCastCache() = delete;
         BoneCastCache(IBoneCastIO& a_iio, std::size_t a_maxSize);
 
+        BoneCastCache(const BoneCastCache&) = delete;
+        BoneCastCache(BoneCastCache&&) = delete;
+        BoneCastCache& operator=(const BoneCastCache&) = delete;
+        BoneCastCache& operator=(BoneCastCache&&) = delete;
+
         template <class T, is_iterator_type<T> = 0>
         [[nodiscard]] bool Get(
             Game::ObjectHandle a_actor,
@@ -271,11 +276,31 @@ namespace CBP
             const std::string& a_shape,
             ColliderDataStorage& a_result);
 
-        static void FillColliderData(
+        static void RemoveDuplicateVertices(
+            const MeshPoint *a_vertices,
+            unsigned int a_numVertices,
+            const unsigned int* a_indices,
+            std::size_t a_numFaces,
+            Eigen::MatrixXf &a_verticesOut,
+            Eigen::MatrixXi &a_indicesOut);
+        
+        static void RemoveUnreferencedVertices(
+            const MeshPoint* a_vertices,
+            unsigned int a_numVertices,
+            const unsigned int* a_indices,
+            std::size_t a_numIndices,
+            std::shared_ptr<MeshPoint[]> &a_verticesOut,
+            std::vector<unsigned int> &a_indicesOut,
+            unsigned int &a_newVertexCount
+        );
+
+        static bool CreateColliderData(
             const ColliderDataStorage& a_cds,
             const unsigned int* a_indices,
             std::size_t a_numIndices, 
-            ColliderData* a_out);
+            ColliderData* a_out,
+            bool &a_verticesShared,
+            bool a_removeVertices);
 
         [[nodiscard]] static bool UpdateGeometry(
             ColliderDataStoragePair& a_in,

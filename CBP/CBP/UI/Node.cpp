@@ -38,7 +38,8 @@ namespace CBP
             auto& data1 = it->second.m_data.first;
             auto& data2 = it->second.m_data.second;
 
-            ImGui::TextWrapped("Vertices: %u, Indices: %d / %zu, Mem: %zu kb",
+            ImGui::TextWrapped("Vertices: %d / %d, Indices: %d / %zu, Mem: %zu kb",
+                data2->m_numVertices,
                 data1.m_numVertices,
                 data2->m_numIndices,
                 data1.m_indices.size(),

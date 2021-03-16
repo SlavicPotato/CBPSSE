@@ -12,6 +12,9 @@ namespace CBP
             if (m_path.empty())
                 throw std::exception("Bad path");
 
+            if (!a_data->m_numIndices || !a_data->m_numVertices)
+                throw std::exception("No geometry");
+
             aiScene scene;
 
             scene.mMaterials = new aiMaterial * [1];
@@ -20,7 +23,7 @@ namespace CBP
 
             scene.mMaterials[0] = new aiMaterial();
 
-            scene.mMeshes = new aiMesh * [1];;
+            scene.mMeshes = new aiMesh * [1];
             scene.mNumMeshes = 1;
 
             scene.mMeshes[0] = new aiMesh();

@@ -110,6 +110,8 @@
 
 #include <meshoptimizer.h>
 
+#include <igl/remove_duplicate_vertices.h>
+
 #include "imgui/imgui_impl_win32.h"
 #include "imgui/imgui_impl_dx11.h"
 

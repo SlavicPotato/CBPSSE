@@ -4113,30 +4113,7 @@ namespace CBP
         ID3D11Device* a_device,
         ID3D11DeviceContext* a_context)
     {
-        vertexVector_t vertices;
-        indexVector_t indices;
-
-        auto numVertices = static_cast<std::size_t>(a_data->m_numVertices);
-        auto numIndices = static_cast<std::size_t>(a_data->m_numIndices);
-
-        vertices.resize(numVertices);
-        indices.resize(numIndices);
-
-        CreateGeometry(a_data, vertices, indices);
-
-        auto vsize = static_cast<UINT>(vertices.size() * sizeof(vertexVector_t::value_type));
-        auto isize = static_cast<UINT>(indices.size() * sizeof(indexVector_t::value_type));
-
-        CD3D11_BUFFER_DESC vdesc(vsize, D3D11_BIND_VERTEX_BUFFER);
-        CD3D11_BUFFER_DESC idesc(isize, D3D11_BIND_INDEX_BUFFER);
-
-        D3D11_SUBRESOURCE_DATA initData = { vertices.data(), vsize, 0 };
-        DirectX::ThrowIfFailed(a_device->CreateBuffer(&vdesc, &initData,
-            m_vertexBuffer.ReleaseAndGetAddressOf()));
-
-        initData = { indices.data(), isize, 0 };
-        DirectX::ThrowIfFailed(a_device->CreateBuffer(&idesc, &initData,
-            m_indexBuffer.ReleaseAndGetAddressOf()));
+        LoadGeometry(a_data, a_device);
 
         m_effect = std::make_unique<DirectX::BasicEffect>(a_device);
 
@@ -4157,12 +4134,50 @@ namespace CBP
             DirectX::CreateInputLayoutFromEffect<vertexType_t>(
                 a_device, m_effect.get(), m_inputLayout.ReleaseAndGetAddressOf()));
 
-        m_indexCount = static_cast<UINT>(indices.size());
+        m_context = a_context;
+
+    }
+
+    template <class T>
+    void UICollisionGeometryManager::Shape<T>::LoadGeometry(
+        const ColliderData* a_data,
+        ID3D11Device* a_device)
+    {
+        vertexVector_t vertices;
+        indexVector_t indices;
+
+        auto numVertices = static_cast<std::size_t>(a_data->m_numVertices);
+        auto numIndices = static_cast<std::size_t>(a_data->m_numIndices);
+
+        vertices.resize(numVertices);
+        indices.resize(numIndices);
+
+        CreateGeometry(a_data, vertices, indices);
+
+        auto vsize = static_cast<UINT>(vertices.size() * sizeof(vertexVector_t::value_type));
+        auto isize = static_cast<UINT>(indices.size() * sizeof(indexVector_t::value_type));
+
+        CD3D11_BUFFER_DESC vdesc(vsize, D3D11_BIND_VERTEX_BUFFER);
+        CD3D11_BUFFER_DESC idesc(isize, D3D11_BIND_INDEX_BUFFER);
+
+        Microsoft::WRL::ComPtr<ID3D11Buffer> vertexBuffer;
+        Microsoft::WRL::ComPtr<ID3D11Buffer> indexBuffer;
+
+        D3D11_SUBRESOURCE_DATA initData = { vertices.data(), vsize, 0 };
+        DirectX::ThrowIfFailed(a_device->CreateBuffer(&vdesc, &initData,
+            vertexBuffer.ReleaseAndGetAddressOf()));
+
+        initData = { indices.data(), isize, 0 };
+        DirectX::ThrowIfFailed(a_device->CreateBuffer(&idesc, &initData,
+            indexBuffer.ReleaseAndGetAddressOf()));
+
+        m_indexCount = static_cast<UINT>(numIndices);
 
         m_numVertices = numVertices;
         m_numIndices = numIndices;
 
-        m_context = a_context;
+        m_vertexBuffer = vertexBuffer;
+        m_indexBuffer = indexBuffer;
 
     }
 
@@ -4312,7 +4327,7 @@ namespace CBP
         const ColliderData* a_data,
         ID3D11Device* a_device,
         ID3D11DeviceContext* a_context,
-        const DirectX::XMFLOAT3 &a_bufferSize,
+        const DirectX::XMFLOAT3& a_bufferSize,
         float a_textureResolution)
         :
         m_device(a_device),
@@ -4497,9 +4512,12 @@ namespace CBP
         m_shape->GetEffect()->SetView(m_view);
     }
 
-    UICollisionGeometryManager::DragController::DragController(int a_key, func_t a_onDrag) :
+    UICollisionGeometryManager::DragController::DragController(
+        std::uint8_t a_button,
+        func_t a_onDrag)
+        :
         m_dragging(false),
-        m_key(a_key),
+        m_button(a_button),
         m_func(std::move(a_onDrag))
     {
     }
@@ -4512,7 +4530,7 @@ namespace CBP
         {
             if (!m_dragging)
             {
-                if (io.MouseDown[m_key])
+                if (io.MouseDown[m_button])
                 {
                     m_dragging = true;
                     m_lastMousePos = io.MousePos;
@@ -4524,7 +4542,7 @@ namespace CBP
 
         if (m_dragging)
         {
-            if (!io.MouseDown[m_key])
+            if (!io.MouseDown[m_button])
             {
                 m_dragging = false;
             }
@@ -4627,9 +4645,8 @@ namespace CBP
 
                     auto drawList = ImGui::GetWindowDrawList();
 
-                    drawList->AddCallback(DrawCallback, m_model.get());
+                    m_model->Draw();
                     drawList->AddImage(static_cast<void*>(m_model->GetTexture()), pos, bottom);
-
                 }
             }
             else
@@ -4736,7 +4753,7 @@ namespace CBP
         SetGlobal(globalConfig.ui.geometry.resolution, a_res.second);
 
         if (m_state.selected) {
-            Load(*m_state.selected);
+            Load(*m_state.selected, true);
         }
     }
 
@@ -4820,77 +4837,105 @@ namespace CBP
     }
 
     void UICollisionGeometryManager::Load(
-        const std::string& a_item)
+        const std::string& a_item,
+        bool a_force)
     {
         auto& pm = GetProfileManager();
 
         auto it = pm.Find(a_item);
         if (it != pm.End()) {
-            Load(it->second);
+            Load(it->second, a_force);
         }
     }
 
     void UICollisionGeometryManager::Load(
-        const ColliderProfile& a_profile)
+        const ColliderProfile& a_profile, 
+        bool a_force)
     {
-        DirectX::SimpleMath::Matrix world;
-        DirectX::SimpleMath::Vector3 eyePos;
-        DirectX::SimpleMath::Vector3 targetPos;
+        auto model = m_model.get();
 
-        bool hadModel = m_model.get() != nullptr;
-        if (hadModel)
+        if (!model || a_force)
         {
-            world = m_model->GetWorldMatrix();
-            eyePos = m_model->GetEyePos();
-            targetPos = m_model->GetTargetPos();
-        }
-
-        QueueModelRelease();
-
-        try
-        {
-            auto rd = DRender::GetSingleton();
-
-            const auto& globalConfig = IConfig::GetGlobal();
-
-            m_model = std::make_unique<Model>(
-                a_profile.Data().get(),
-                rd->GetDevice(),
-                rd->GetContext(),
-                rd->GetBufferSize(),
-                globalConfig.ui.geometry.resolution);
-
-            m_model->EnableLighting(globalConfig.ui.geometry.lighting);
-            m_model->SetLightColor(ShapeBase::Light::kAmbient, 0, globalConfig.ui.geometry.ambientLightColor);
-            m_model->SetMaterialColor(globalConfig.ui.geometry.color);
-            //m_model->SetZoom(m_zoom);
-
-            if (hadModel)
-            {
-                eyePos.y = m_zoom;
-                m_model->SetViewData(world, eyePos, targetPos);
-            }
-            else
-            {
-                m_model->SetZoom(m_zoom);
+            if (model) {
+                QueueModelRelease();
             }
 
-            CreateInfoStrings();
+            try
+            {
+                auto rd = DRender::GetSingleton();
+
+                const auto& globalConfig = IConfig::GetGlobal();
+
+                auto tmp = std::make_unique<Model>(
+                    a_profile.Data().get(),
+                    rd->GetDevice(),
+                    rd->GetContext(),
+                    rd->GetBufferSize(),
+                    globalConfig.ui.geometry.resolution);
+
+                tmp->EnableLighting(globalConfig.ui.geometry.lighting);
+                tmp->SetLightColor(ShapeBase::Light::kAmbient, 0, globalConfig.ui.geometry.ambientLightColor);
+                tmp->SetMaterialColor(globalConfig.ui.geometry.color);
+                tmp->SetZoom(m_zoom);
+
+                m_model = std::move(tmp);
+            }
+            catch (const std::exception& e)
+            {
+                m_parent.GetPopupQueue().push(
+                    UIPopupType::Message,
+                    "Error",
+                    "Exception occured while creating model:\n\n%s",
+                    e.what()
+                );
+
+                return;
+            }
+            catch (...)
+            {
+                m_parent.GetPopupQueue().push(
+                    UIPopupType::Message,
+                    "Error",
+                    "Exception occured while creating model"
+                );
+
+                return;
+            }
         }
-        catch (const std::exception& e)
+        else
         {
-            m_model.reset();
+            try
+            {
+                model->LoadGeometry(a_profile.Data().get());
+            }
+            catch (const std::exception& e)
+            {
+                QueueModelRelease();
 
-            auto& queue = m_parent.GetPopupQueue();
+                m_parent.GetPopupQueue().push(
+                    UIPopupType::Message,
+                    "Error",
+                    "Exception occured while loading geometry:\n\n%s",
+                    e.what()
+                );
 
-            queue.push(
-                UIPopupType::Message,
-                "Error",
-                "Exception occured while creating model:\n\n%s",
-                e.what()
-            );
+                return;
+            }
+            catch (...)
+            {
+                QueueModelRelease();
+
+                m_parent.GetPopupQueue().push(
+                    UIPopupType::Message,
+                    "Error",
+                    "Exception occured while loading geometry"
+                );
+
+                return;
+            }
         }
 
+        CreateInfoStrings();
     }
 
     void UICollisionGeometryManager::QueueModelRelease()
@@ -4905,15 +4950,10 @@ namespace CBP
 
     void UICollisionGeometryManager::QueueModelReload()
     {
-        auto& queue = DUI::GetPreDrawQueue(); 
+        auto& queue = DUI::GetPreDrawQueue();
 
-        queue.AddTask([this]
-            {
-                m_model.reset();
-                if (m_state.selected) {
-                    Load(*m_state.selected);
-                }
-            });
+        queue.AddTask([this] {
+            if (m_state.selected) { Load(*m_state.selected); } });
     }
 
     void UICollisionGeometryManager::OnReload(

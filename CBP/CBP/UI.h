@@ -587,6 +587,10 @@ namespace CBP
 
             virtual DirectX::BasicEffect* GetEffect() = 0;
 
+            virtual void LoadGeometry(
+                const ColliderData* a_data,
+                ID3D11Device* a_device) = 0;
+
             SKMP_FORCEINLINE auto GetNumVertices() const {
                 return m_numVertices;
             }
@@ -642,6 +646,10 @@ namespace CBP
             {
                 return m_effect.get();
             }
+
+            virtual void LoadGeometry(
+                const ColliderData* a_data,
+                ID3D11Device* a_device) override;
 
         protected:
 
@@ -708,7 +716,7 @@ namespace CBP
             SKMP_DECLARE_ALIGNED_ALLOCATOR(16);
 
             Model() = delete;
- 
+
             Model(
                 const ColliderData * a_data,
                 ID3D11Device * a_device,
@@ -763,6 +771,12 @@ namespace CBP
             SKMP_FORCEINLINE  DirectX::SimpleMath::Matrix __vectorcall GetWorldMatrix() const {
                 return m_world;
             }
+            
+            SKMP_FORCEINLINE void LoadGeometry(
+                const ColliderData* a_data) 
+            {
+                return m_shape->LoadGeometry(a_data, m_device.Get());
+            }
 
             void __vectorcall SetViewData(
                 DirectX::SimpleMath::Matrix &a_world,
@@ -811,14 +825,14 @@ namespace CBP
         public:
 
             DragController() = delete;
-            DragController(int a_key, func_t a_onDrag);
+            DragController(std::uint8_t a_button, func_t a_onDrag);
 
             void Update(bool a_isHovered);
 
         private:
 
             bool m_dragging;
-            int m_key;
+            std::uint8_t m_button;
             ImVec2 m_lastMousePos;
             ImVec2 m_avgMouseDir;
             func_t m_func;
@@ -871,8 +885,8 @@ namespace CBP
         void DrawResolutionCombo();
         void CreateInfoStrings();
 
-        void Load(const std::string& a_item);
-        void Load(const ColliderProfile& a_profile);
+        void Load(const std::string& a_item, bool a_force = false);
+        void Load(const ColliderProfile& a_profile, bool a_force = false);
 
         void QueueModelRelease();
         void QueueModelReload();
@@ -892,6 +906,8 @@ namespace CBP
             std::string m_vertices;
             std::string m_indices;
         } m_infoStrings;
+
+        //Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> tttt;
 
         UIContext& m_parent;
     };

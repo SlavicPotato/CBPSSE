@@ -16,6 +16,13 @@ namespace CBP
             DataVersion1 = 1
         };
 
+        MeshPoint() = default;
+        
+        SKMP_FORCEINLINE MeshPoint(float a_x, float a_y, float a_z) :
+            v(a_x, a_y, a_z)
+        {
+        }
+
     public:
         btVector3 v;
 
@@ -97,7 +104,7 @@ namespace CBP
         SKMP_FORCEINLINE std::size_t GetSize() const {
             return m_size;
         }
-
+        
     private:
 
         SKMP_FORCEINLINE void __move(ColliderData&& a_rhs);
@@ -269,7 +276,8 @@ namespace CBP
 
         ColliderDataStoragePair() :
             second(std::make_shared<decltype(second)::element_type>()),
-            m_size(sizeof(ColliderDataStoragePair))
+            m_size(sizeof(ColliderDataStoragePair)),
+            m_hasSharedVertices(false)
         {
         }
 
@@ -289,6 +297,7 @@ namespace CBP
         }
 
         SKMP_FORCEINLINE std::size_t UpdateSize();
+        SKMP_FORCEINLINE void SetVerticesShared(bool a_switch);
 
     private:
         template<class Archive>
@@ -297,7 +306,8 @@ namespace CBP
         }
 
         template<class Archive>
-        void load(Archive& ar, const unsigned int version) {
+        void load(Archive& ar, const unsigned int version) 
+        {
             ar& first;
 
             UpdateSize();
@@ -306,6 +316,7 @@ namespace CBP
         Meta m_meta;
 
         std::size_t m_size;
+        bool m_hasSharedVertices;
 
         BOOST_SERIALIZATION_SPLIT_MEMBER();
     };
@@ -313,13 +324,19 @@ namespace CBP
     std::size_t ColliderDataStoragePair::UpdateSize()
     {
         first.UpdateSize();
-        second->UpdateSize(true);
+        second->UpdateSize(m_hasSharedVertices);
 
         return (m_size =
             sizeof(ColliderDataStoragePair) +
             first.GetSize() +
             second->GetSize());
     }
+
+    void ColliderDataStoragePair::SetVerticesShared(bool a_switch)
+    {
+        m_hasSharedVertices = a_switch;
+    }
+
 
 }
 

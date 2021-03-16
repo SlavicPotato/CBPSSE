@@ -188,7 +188,7 @@ namespace CBP
             auto rnIndices = c * 3;
             auto rnVertices = static_cast<std::size_t>(vi);
 
-            auto outVertices = new MeshPoint[rnVertices];
+            a_out.m_vertices = std::make_unique<MeshPoint[]>(rnVertices);
             a_out.m_weights.resize(rnVertices);
             a_out.m_indices.resize(rnIndices);
 
@@ -200,12 +200,13 @@ namespace CBP
                 {
                     auto index = vme.m_index;
 
-                    outVertices[index].v = vme.m_vertex.v;
+                    ASSERT(index < rnVertices);
+
+                    a_out.m_vertices[index].v = vme.m_vertex.v;
                     a_out.m_weights[index] = vme.m_weight;
                 }
             }
 
-            a_out.m_vertices = std::unique_ptr<MeshPoint[]>(outVertices);
             a_out.m_numVertices = static_cast<unsigned int>(rnVertices);
 
             for (decltype(numTriangles) i = 0, c = 0; i < numTriangles; i++)
@@ -217,6 +218,8 @@ namespace CBP
                     for (int j = 0; j < 3; j++) {
                         auto index = tri.m_indices[j];
 
+                        ASSERT(c < rnIndices);
+
                         a_out.m_indices[c] = index;
 
                         c++;
@@ -227,6 +230,7 @@ namespace CBP
 
             a_out.m_numTriangles = static_cast<int>(rnIndices / 3);
 
+
             return true;
 
         }
@@ -234,30 +238,196 @@ namespace CBP
         return false;
     }
 
-    void IBoneCast::FillColliderData(
+    void IBoneCast::RemoveDuplicateVertices(
+        const MeshPoint* a_vertices,
+        unsigned int a_numVertices,
+        const unsigned int* a_indices,
+        std::size_t a_numFaces,
+        Eigen::MatrixXf& a_verticesOut,
+        Eigen::MatrixXi& a_indicesOut)
+    {
+        Eigen::MatrixXf OV(a_numVertices, 3);
+        Eigen::MatrixXi OF(a_numFaces, 3);
+
+        for (decltype(a_numVertices) i = 0; i < a_numVertices; i++)
+        {
+            auto& v = a_vertices[i];
+
+            OV.row(i) = Eigen::Vector3f(v.v.x(), v.v.y(), v.v.z());
+        }
+
+        for (decltype(a_numFaces) i = 0; i < a_numFaces; i++)
+        {
+            decltype(i) j = i * 3;
+
+            OF.row(i) = Eigen::Vector3i(a_indices[j], a_indices[j + 1], a_indices[j + 2]);
+        }
+
+        Eigen::MatrixXi SVI, SVJ;
+
+        igl::remove_duplicate_vertices(OV, OF, 1e-5, a_verticesOut, SVI, SVJ, a_indicesOut);
+
+    }
+
+    void IBoneCast::RemoveUnreferencedVertices(
+        const MeshPoint* a_vertices,
+        unsigned int a_numVertices,
+        const unsigned int* a_indices,
+        std::size_t a_numIndices,
+        std::shared_ptr<MeshPoint[]>& a_verticesOut,
+        std::vector<unsigned int>& a_indicesOut,
+        unsigned int& a_newVertexCount
+    )
+    {
+        std::unordered_map<unsigned int, std::pair<unsigned int, MeshPoint>> im;
+        im.reserve(a_numIndices);
+
+        a_indicesOut.reserve(a_numIndices);
+
+        unsigned int numVertices(0);
+
+        for (decltype(a_numIndices) i = 0; i < a_numIndices; i++)
+        {
+            auto ci = a_indices[i];
+
+            auto r = im.try_emplace(ci, std::make_pair(numVertices, a_vertices[ci]));
+            if (r.second)
+            {
+                a_indicesOut.emplace_back(numVertices);
+                numVertices++;
+            }
+            else
+            {
+                a_indicesOut.emplace_back(r.first->second.first);
+            }
+        }
+
+        a_verticesOut = std::make_shared<MeshPoint[]>(numVertices);
+
+        for (auto& e : im) {
+            a_verticesOut[e.second.first] = e.second.second;
+        }
+
+        a_newVertexCount = numVertices;
+    }
+
+
+    bool IBoneCast::CreateColliderData(
         const ColliderDataStorage& a_cds,
         const unsigned int* a_indices,
         std::size_t a_numIndices,
-        ColliderData* a_out)
+        ColliderData* a_out,
+        bool& a_verticesShared,
+        bool a_removeVertices)
     {
-        a_out->m_indices = std::make_unique<int[]>(a_numIndices);
-        a_out->m_hullPoints = std::make_unique<MeshPoint[]>(a_numIndices);
-        a_out->m_vertices = a_cds.m_vertices;
+        std::shared_ptr<MeshPoint[]> rVertices;
+        std::vector<unsigned int> rIndices;
+        unsigned int numVertices;
 
-        for (std::size_t i = 0; i < a_numIndices; i++)
+        if (a_removeVertices)
         {
-            auto index = a_indices[i];
+            RemoveUnreferencedVertices(
+                a_cds.m_vertices.get(), 
+                a_cds.m_numVertices, 
+                a_indices, a_numIndices,
+                rVertices, 
+                rIndices, 
+                numVertices);
 
-            a_out->m_indices[i] = static_cast<int>(index);
-            a_out->m_hullPoints[i] = a_cds.m_vertices[index];
+            a_indices = rIndices.data();
+
+            a_verticesShared = false;
+        }
+        else
+        {
+            rVertices = a_cds.m_vertices;
+            numVertices = a_cds.m_numVertices;
         }
 
-        a_out->m_numTriangles = static_cast<int>(a_numIndices / 3);
-        a_out->m_numIndices = static_cast<int>(a_numIndices);
-        a_out->m_numVertices = static_cast<int>(a_cds.m_numVertices);
+        Eigen::MatrixXf V;
+        Eigen::MatrixXi F;
+
+        RemoveDuplicateVertices(
+            rVertices.get(), 
+            numVertices, 
+            a_indices, 
+            a_numIndices / 3, 
+            V, 
+            F);
+
+        auto newVertices = V.rows();
+        auto newIndices = F.size();
+
+        if (!newVertices || newIndices < 3) {
+            return false;
+        }
+
+        if (newVertices == numVertices &&
+            newIndices == a_numIndices)
+        {
+            a_out->m_indices = std::make_unique<int[]>(a_numIndices);
+            a_out->m_hullPoints = std::make_unique<MeshPoint[]>(a_numIndices);
+            a_out->m_vertices = rVertices;
+
+            for (std::size_t i = 0; i < a_numIndices; i++)
+            {
+                auto index = a_indices[i];
+
+                a_out->m_indices[i] = static_cast<int>(index);
+                a_out->m_hullPoints[i] = rVertices[index];
+            }
+
+            a_out->m_numTriangles = static_cast<int>(a_numIndices / 3);
+            a_out->m_numIndices = static_cast<int>(a_numIndices);
+            a_out->m_numVertices = static_cast<int>(numVertices);
+        }
+        else
+        {
+
+            a_out->m_indices = std::make_unique<int[]>(newIndices);
+            a_out->m_hullPoints = std::make_unique<MeshPoint[]>(newIndices);
+            a_out->m_vertices = std::make_shared<MeshPoint[]>(newVertices);
+
+            auto numRows = V.rows();
+
+            for (decltype(numRows) i = 0; i < numRows; i++)
+            {
+                auto row = V.row(i);
+                a_out->m_vertices[i] = MeshPoint(row.x(), row.y(), row.z());
+            }
+
+            numRows = F.rows();
+
+            for (decltype(numRows) i = 0; i < numRows; i++)
+            {
+                decltype(i) j = i * 3;
+
+                const auto row = F.row(i);
+
+                auto ia = row.x();
+                auto ib = row.y();
+                auto ic = row.z();
+
+                a_out->m_indices[j] = ia;
+                a_out->m_indices[j + 1] = ib;
+                a_out->m_indices[j + 2] = ic;
+
+                a_out->m_hullPoints[j] = a_out->m_vertices[ia];
+                a_out->m_hullPoints[j + 1] = a_out->m_vertices[ib];
+                a_out->m_hullPoints[j + 2] = a_out->m_vertices[ic];
+            }
+
+            a_out->m_numTriangles = static_cast<int>(newIndices / 3);
+            a_out->m_numIndices = static_cast<int>(newIndices);
+            a_out->m_numVertices = static_cast<int>(newVertices);
+
+            a_verticesShared = false;
+
+        }
 
         a_out->GenerateTriVertexArray();
 
+        return true;
     }
 
     bool IBoneCast::UpdateGeometry(
@@ -266,12 +436,16 @@ namespace CBP
         float a_simplifyTarget,
         float a_simplifyTargetError)
     {
-        if (!a_in.first.m_numVertices)
+        if (!a_in.first.m_numVertices) {
             return false;
+        }
 
         auto numIndices = a_in.first.m_indices.size();
-        if (numIndices < 3)
+        if (numIndices < 3) {
             return false;
+        }
+
+        auto startingIndices = a_in.first.m_indices.size();
 
         auto indices = decltype(a_in.first.m_indices)();
 
@@ -279,9 +453,9 @@ namespace CBP
 
         for (decltype(numIndices) i = 0; i < numIndices; i += 3)
         {
-            decltype(numIndices) m = i + 3;
+            decltype(i) m = i + 3;
 
-            for (decltype(numIndices) j = i; j < m; j++)
+            for (decltype(i) j = i; j < m; j++)
             {
                 auto index = a_in.first.m_indices[j];
 
@@ -291,8 +465,7 @@ namespace CBP
                 }
             }
 
-            for (decltype(numIndices) j = i; j < m; j++)
-            {
+            for (decltype(i) j = i; j < m; j++) {
                 indices.emplace_back(a_in.first.m_indices[j]);
             }
 
@@ -304,17 +477,21 @@ namespace CBP
             return false;
         }
 
+        bool verticesShared(true);
+
         auto data = std::make_unique<ColliderData>();
 
-        auto targetIndices = static_cast<std::size_t>(static_cast<double>(numIndices) * static_cast<double>(a_simplifyTarget));
+        auto targetIndices = static_cast<std::size_t>(static_cast<double>(numIndices) * double(a_simplifyTarget));
+
+        bool result;
 
         if (targetIndices < numIndices)
         {
-            targetIndices = std::clamp<std::size_t>(targetIndices - targetIndices % 3, 3, numIndices);
+            targetIndices = std::clamp<std::size_t>(targetIndices - (targetIndices % 3), 3, numIndices);
 
             auto tmp = std::make_unique<unsigned int[]>(numIndices);
 
-            numIndices = meshopt_simplify(
+            numIndices = ::meshopt_simplify(
                 tmp.get(),
                 indices.data(),
                 numIndices,
@@ -328,14 +505,19 @@ namespace CBP
                 return false;
             }
 
-            FillColliderData(a_in.first, tmp.get(), numIndices, data.get());
+            result = CreateColliderData(a_in.first, tmp.get(), numIndices, data.get(), verticesShared, numIndices != startingIndices);
         }
         else
         {
-            FillColliderData(a_in.first, indices.data(), numIndices, data.get());
+            result = CreateColliderData(a_in.first, indices.data(), numIndices, data.get(), verticesShared, numIndices != startingIndices);
+        }
+
+        if (!result) {
+            return false;
         }
 
         a_in.second = std::move(data);
+        a_in.SetVerticesShared(verticesShared);
 
         return true;
 
@@ -553,10 +735,16 @@ namespace CBP
                 a_nodeConfig.fp.f32.bcSimplifyTarget,
                 a_nodeConfig.fp.f32.bcSimplifyTargetError);
 
+            if (!res) {
+                a_result->second.m_data.second = 
+                    std::make_unique<ColliderData>();
+            }
+
             cache.UpdateSize(a_result->second);
 
-            if (!res)
+            if (!res) {
                 return false;
+            }
 
             updated = true;
 
@@ -564,8 +752,9 @@ namespace CBP
             a_result->second.m_data = a_nodeConfig;
         }
 
-        if (!a_result->second.m_data.second->m_numIndices)
+        if (!a_result->second.m_data.second->m_numIndices) {
             return false;
+        }
 
         a_out.data = a_result->second.m_data.second;
         a_out.updateID = a_result->second.m_updateID;
@@ -753,7 +942,7 @@ namespace CBP
         s.reserve(128);
 
         auto modInfo = GetPluginInfo(formID);
-        if (modInfo) 
+        if (modInfo)
         {
             std::string n(modInfo->name);
             std::transform(n.begin(), n.end(), n.begin(), ::tolower);
@@ -761,7 +950,7 @@ namespace CBP
             s.append(std::to_string(modInfo->GetFormIDLower(formID)));
             s.append(".");
             s.append(n);
-            
+
         }
         else {
             s.append(std::to_string(formID));
