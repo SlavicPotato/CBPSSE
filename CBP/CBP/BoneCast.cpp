@@ -279,8 +279,14 @@ namespace CBP
         unsigned int& a_newVertexCount
     )
     {
-        std::unordered_map<unsigned int, std::pair<unsigned int, MeshPoint>> im;
-        im.reserve(a_numIndices);
+        struct iv_t
+        {
+            bool set;
+            unsigned int first;
+            unsigned int second;
+        };
+
+        auto im = std::make_unique<iv_t[]>(a_numVertices);
 
         a_indicesOut.reserve(a_numIndices);
 
@@ -288,24 +294,32 @@ namespace CBP
 
         for (decltype(a_numIndices) i = 0; i < a_numIndices; i++)
         {
-            auto ci = a_indices[i];
+            auto index = a_indices[i];
 
-            auto r = im.try_emplace(ci, std::make_pair(numVertices, a_vertices[ci]));
-            if (r.second)
+            auto& e = im[index];
+
+            if (!e.set)
             {
+                e.set = true;
+                e.first = numVertices;
+                e.second = index;
+
                 a_indicesOut.emplace_back(numVertices);
                 numVertices++;
             }
             else
             {
-                a_indicesOut.emplace_back(r.first->second.first);
+                a_indicesOut.emplace_back(e.first);
             }
         }
 
         a_verticesOut = std::make_shared<MeshPoint[]>(numVertices);
 
-        for (auto& e : im) {
-            a_verticesOut[e.second.first] = e.second.second;
+        for (decltype(a_numVertices) i = 0; i < a_numVertices; i++) {
+            auto& e = im[i];
+            if (e.set) {
+                a_verticesOut[e.first] = a_vertices[e.second];
+            }
         }
 
         a_newVertexCount = numVertices;
