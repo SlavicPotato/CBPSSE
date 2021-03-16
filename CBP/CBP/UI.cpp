@@ -1035,8 +1035,6 @@ namespace CBP
 
     void UIContext::Draw(bool* a_active)
     {
-        m_preDraw.ProcessTasks();
-
         auto& globalConfig = IConfig::GetGlobal();
 
         m_state.menu.openIEDialog = false;
@@ -2512,6 +2510,9 @@ namespace CBP
                 auto& profiler = DCBP::GetProfiler();
                 auto& stats = profiler.Current();
 
+                auto dr = DCBP::GetRenderer();
+                bool drEnabled = dr && globalConfig.debugRenderer.enabled;
+
                 ImGui::Columns(2, nullptr, false);
 
                 ImGui::TextWrapped("Time/frame:");
@@ -2523,6 +2524,13 @@ namespace CBP
                 HelpMarker(MiscHelpText::frameTimer);
                 ImGui::TextWrapped("Actors:");
                 ImGui::TextWrapped("UI:");
+
+                if (drEnabled)
+                {
+                    ImGui::TextWrapped("DR Gen:");
+                    ImGui::TextWrapped("DR Draw:");
+                }
+
                 ImGui::TextWrapped("BoneCast cache:");
                 ImGui::Spacing();
 
@@ -2548,6 +2556,13 @@ namespace CBP
                 ImGui::TextWrapped("%.4f", stats.avgFrameTime);
                 ImGui::TextWrapped("%u", stats.avgActorCount);
                 ImGui::TextWrapped("%lld \xC2\xB5s", DUI::GetPerf());
+
+                if (drEnabled)
+                {
+                    ImGui::TextWrapped("%lld \xC2\xB5s", dr->GetGenerateTime());
+                    ImGui::TextWrapped("%lld \xC2\xB5s", dr->GetDrawTime());
+                }
+
                 ImGui::TextWrapped("%zu kb", IBoneCast::GetCacheSize() / std::size_t(1024));
                 ImGui::Spacing();
 
@@ -4079,15 +4094,12 @@ namespace CBP
 
     void UICollisionGeometryManager::OnOpen()
     {
-        m_model.reset();
-        if (m_state.selected) {
-            Load(*m_state.selected);
-        }
+        QueueModelReload();
     }
 
     void UICollisionGeometryManager::OnClose()
     {
-        m_model.reset();
+        QueueModelRelease();
     }
 
     ProfileManager<ColliderProfile>& UICollisionGeometryManager::GetProfileManager() const
@@ -4101,22 +4113,22 @@ namespace CBP
         ID3D11Device* a_device,
         ID3D11DeviceContext* a_context)
     {
-        std::vector<vertexType_t> vertices;
-        std::vector<std::uint32_t> indices;
+        vertexVector_t vertices;
+        indexVector_t indices;
 
-        std::size_t numVertices = a_data->m_numVertices;
-        std::size_t numIndices = a_data->m_numIndices;
+        auto numVertices = static_cast<std::size_t>(a_data->m_numVertices);
+        auto numIndices = static_cast<std::size_t>(a_data->m_numIndices);
 
         vertices.resize(numVertices);
         indices.resize(numIndices);
 
         CreateGeometry(a_data, vertices, indices);
 
-        auto vsize = UINT(vertices.size() * sizeof(vertexType_t));
-        auto isize = UINT(indices.size() * sizeof(std::uint32_t));
+        auto vsize = static_cast<UINT>(vertices.size() * sizeof(vertexVector_t::value_type));
+        auto isize = static_cast<UINT>(indices.size() * sizeof(indexVector_t::value_type));
 
-        auto vdesc = CD3D11_BUFFER_DESC(vsize, D3D11_BIND_VERTEX_BUFFER);
-        auto idesc = CD3D11_BUFFER_DESC(isize, D3D11_BIND_INDEX_BUFFER);
+        CD3D11_BUFFER_DESC vdesc(vsize, D3D11_BIND_VERTEX_BUFFER);
+        CD3D11_BUFFER_DESC idesc(isize, D3D11_BIND_INDEX_BUFFER);
 
         D3D11_SUBRESOURCE_DATA initData = { vertices.data(), vsize, 0 };
         DirectX::ThrowIfFailed(a_device->CreateBuffer(&vdesc, &initData,
@@ -4128,7 +4140,6 @@ namespace CBP
 
         m_effect = std::make_unique<DirectX::BasicEffect>(a_device);
 
-        //m_effect->SetVertexColorEnabled(false);
         m_effect->SetTextureEnabled(false);
 
         ApplyEffectSettings(m_effect.get());
@@ -4146,10 +4157,10 @@ namespace CBP
             DirectX::CreateInputLayoutFromEffect<vertexType_t>(
                 a_device, m_effect.get(), m_inputLayout.ReleaseAndGetAddressOf()));
 
-        m_indexCount = UINT(indices.size());
+        m_indexCount = static_cast<UINT>(indices.size());
 
-        m_numVertices = vertices.size();
-        m_numIndices = indices.size();
+        m_numVertices = numVertices;
+        m_numIndices = numIndices;
 
         m_context = a_context;
 
@@ -4157,22 +4168,15 @@ namespace CBP
 
     template <class T>
     void UICollisionGeometryManager::Shape<T>::ApplyEffectSettings(
-        DirectX::BasicEffect* a_effect)
+        DirectX::BasicEffect* a_effect) const
     {
     }
 
     template <class T>
     void UICollisionGeometryManager::Shape<T>::Draw(
-        DirectX::FXMMATRIX a_world,
-        DirectX::CXMMATRIX a_view,
-        DirectX::CXMMATRIX a_projection,
-        DirectX::FXMVECTOR a_color,
         setStateFunc_t a_setCustomState) const
     {
-        m_effect->SetMatrices(a_world, a_view, a_projection);
-        m_effect->SetColorAndAlpha(a_color);
-
-        m_effect->Apply(m_context);
+        m_effect->Apply(m_context.Get());
         m_context->IASetInputLayout(m_inputLayout.Get());
 
         auto vb = m_vertexBuffer.Get();
@@ -4191,7 +4195,7 @@ namespace CBP
     }
 
     template <class T>
-    void __vectorcall UICollisionGeometryManager::Shape<T>::SetLightColor(
+    void UICollisionGeometryManager::Shape<T>::SetLightColor(
         Light a_which,
         int a_index,
         DirectX::XMVECTOR a_color)
@@ -4210,10 +4214,17 @@ namespace CBP
         }
     }
 
-    void UICollisionGeometryManager::ShapeColor::CreateGeometry(
+    template <class T>
+    void UICollisionGeometryManager::Shape<T>::SetMaterialColor(
+        DirectX::XMVECTOR a_color)
+    {
+        m_effect->SetColorAndAlpha(a_color);
+    }
+
+    void UICollisionGeometryManager::ShapePosition::CreateGeometry(
         const ColliderData* a_data,
-        std::vector<DirectX::VertexPosition>& a_vertices,
-        std::vector<std::uint32_t>& a_indices) const
+        vertexVector_t& a_vertices,
+        indexVector_t& a_indices) const
     {
         auto numVertices = static_cast<std::size_t>(a_data->m_numVertices);
         auto numIndices = static_cast<std::size_t>(a_data->m_numIndices);
@@ -4235,26 +4246,26 @@ namespace CBP
     }
 
     void UICollisionGeometryManager::ShapeNormal::ApplyEffectSettings(
-        DirectX::BasicEffect* a_effect)
+        DirectX::BasicEffect* a_effect) const
     {
         a_effect->EnableDefaultLighting();
     }
 
     void UICollisionGeometryManager::ShapeNormal::CreateGeometry(
         const ColliderData* a_data,
-        std::vector<DirectX::VertexPositionNormal>& a_vertices,
-        std::vector<std::uint32_t>& a_indices) const
+        vertexVector_t& a_vertices,
+        indexVector_t& a_indices) const
     {
         auto numVertices = static_cast<std::size_t>(a_data->m_numVertices);
         auto numIndices = static_cast<std::size_t>(a_data->m_numIndices);
 
-        stl::vector<std::pair<btVector3, btVector3>> tmpVertices;
+        stl::vector<DirectX::XMVECTOR> normals;
 
-        tmpVertices.resize(numVertices);
+        normals.resize(numVertices);
 
         for (std::size_t i = 0; i < numVertices; i++)
         {
-            tmpVertices[i] = std::make_pair(a_data->m_vertices[i].v, btVector3(0.0f, 0.0f, 0.0f));
+            normals[i] = DirectX::g_XMZero;
         }
 
         for (std::size_t i = 0; i < numIndices; i += 3)
@@ -4276,25 +4287,24 @@ namespace CBP
 
             auto p = p1.cross(p2);
 
-            tmpVertices[i1].second += p;
-            tmpVertices[i2].second += p;
-            tmpVertices[i3].second += p;
+            normals[i1] = DirectX::XMVectorAdd(normals[i1], p.mVec128);
+            normals[i2] = DirectX::XMVectorAdd(normals[i2], p.mVec128);
+            normals[i3] = DirectX::XMVectorAdd(normals[i3], p.mVec128);
         }
 
         for (std::size_t i = 0; i < numVertices; i++)
         {
-            auto& e = tmpVertices[i];
+            auto& f = a_vertices[i];
 
-            DirectX::XMFLOAT3 f;
-            DirectX::XMStoreFloat3(&f, DirectX::XMVector3Normalize(e.second.mVec128));
+            DirectX::XMStoreFloat3(&f.position, a_data->m_vertices[i].v.mVec128);
+            DirectX::XMStoreFloat3(&f.normal, DirectX::XMVector3Normalize(normals[i]));
 
-            a_vertices[i] = { DirectX::XMFLOAT3(e.first.x(), e.first.y(), e.first.z()), f };
         }
 
     }
 
-    void UICollisionGeometryManager::ShapeColor::ApplyEffectSettings(
-        DirectX::BasicEffect* a_effect)
+    void UICollisionGeometryManager::ShapePosition::ApplyEffectSettings(
+        DirectX::BasicEffect* a_effect) const
     {
     }
 
@@ -4302,7 +4312,7 @@ namespace CBP
         const ColliderData* a_data,
         ID3D11Device* a_device,
         ID3D11DeviceContext* a_context,
-        const DirectX::XMFLOAT3& a_bufferSize,
+        const DirectX::XMFLOAT3 &a_bufferSize,
         float a_textureResolution)
         :
         m_device(a_device),
@@ -4314,14 +4324,19 @@ namespace CBP
         m_world(DirectX::SimpleMath::Matrix::Identity)
     {
         m_proj = DirectX::SimpleMath::Matrix::CreatePerspectiveFieldOfView(
-            DirectX::XM_PI / 4.0f, a_bufferSize.z, 0.1f, 1000.f);
+            DirectX::XMConvertToRadians(DEFAULT_FOV), a_bufferSize.z, DEFAULT_NEAR_PLANE, DEFAULT_FAR_PLANE);
 
-        UpdateViewMatrix();
+        m_view = DirectX::SimpleMath::Matrix::CreateLookAt(
+            m_eyePos,
+            m_targetPos,
+            DirectX::SimpleMath::Vector3::UnitZ);
 
         m_states = std::make_unique<DirectX::CommonStates>(a_device);
 
         m_shape = std::unique_ptr<ShapeBase>(new ShapeNormal());
         m_shape->Initialize(a_data, a_device, a_context);
+
+        m_shape->GetEffect()->SetMatrices(m_world, m_view, m_proj);
 
         CD3D11_TEXTURE2D_DESC depthBufferDesc(
             DXGI_FORMAT_D24_UNORM_S8_UINT,
@@ -4383,7 +4398,7 @@ namespace CBP
 
     void UICollisionGeometryManager::Model::Draw() const
     {
-        D3D11StateBackup _(m_context.Get(), true);
+        D3D11StateBackup _(std::addressof(m_backup), m_context.Get(), true);
 
         CD3D11_VIEWPORT viewPort(0.0f, 0.0f, m_textureResolution, m_textureResolution);
         m_context->RSSetViewports(1, &viewPort);
@@ -4393,7 +4408,7 @@ namespace CBP
 
         const auto& globalConfig = IConfig::GetGlobal();
 
-        m_shape->Draw(m_world, m_view, m_proj, globalConfig.ui.geometry.color , [this]
+        m_shape->Draw([this]
             {
                 m_context->OMSetBlendState(m_states->Opaque(), nullptr, 0xFFFFFFFF);
                 m_context->OMSetDepthStencilState(m_states->DepthDefault(), 0);
@@ -4425,7 +4440,9 @@ namespace CBP
         m_world = a_world;
         m_eyePos = a_eyePos;
         m_targetPos = a_targetPos;
+
         UpdateViewMatrix();
+        m_shape->GetEffect()->SetWorld(m_world);
     }
 
     void UICollisionGeometryManager::Model::ResetPos()
@@ -4435,6 +4452,7 @@ namespace CBP
         m_world = DirectX::SimpleMath::Matrix::Identity;
 
         UpdateViewMatrix();
+        m_shape->GetEffect()->SetWorld(m_world);
     }
 
     void UICollisionGeometryManager::Model::SetZoom(float a_val)
@@ -4465,6 +4483,8 @@ namespace CBP
             DirectX::XMConvertToRadians(a_delta.x));
 
         m_world = Matrix::Transform(m_world, rot);
+
+        m_shape->GetEffect()->SetWorld(m_world);
     }
 
     void UICollisionGeometryManager::Model::UpdateViewMatrix()
@@ -4473,6 +4493,8 @@ namespace CBP
             m_eyePos,
             m_targetPos,
             DirectX::SimpleMath::Vector3::UnitZ);
+
+        m_shape->GetEffect()->SetView(m_view);
     }
 
     UICollisionGeometryManager::DragController::DragController(int a_key, func_t a_onDrag) :
@@ -4543,7 +4565,7 @@ namespace CBP
     }
 
     UICollisionGeometryManager::ReleaseModelTask::ReleaseModelTask(
-        std::shared_ptr<Model>&& a_model)
+        std::unique_ptr<Model>&& a_model)
         :
         m_ref(std::move(a_model))
     {
@@ -4557,7 +4579,7 @@ namespace CBP
     {
         a_offset = 0.0f;
         a_width = 1000.0f;
-        a_height = 600.0f;
+        a_height = 667.0f;
         a_centered = true;
     }
 
@@ -4565,8 +4587,8 @@ namespace CBP
         const ImDrawList* parent_list,
         const ImDrawCmd* cmd)
     {
-        auto gm = static_cast<UICollisionGeometryManager*>(cmd->UserCallbackData);
-        gm->DrawModel();
+        auto gm = static_cast<UICollisionGeometryManager::Model*>(cmd->UserCallbackData);
+        gm->Draw();
     }
 
     void UICollisionGeometryManager::DrawItem(ColliderProfile& a_profile)
@@ -4605,8 +4627,9 @@ namespace CBP
 
                     auto drawList = ImGui::GetWindowDrawList();
 
-                    drawList->AddCallback(DrawCallback, this);
+                    drawList->AddCallback(DrawCallback, m_model.get());
                     drawList->AddImage(static_cast<void*>(m_model->GetTexture()), pos, bottom);
+
                 }
             }
             else
@@ -4656,7 +4679,12 @@ namespace CBP
 
         ImGui::PushItemWidth(250.0f);
 
-        ColorEdit4("Model", globalConfig.ui.geometry.color.m128_f32, ImGuiColorEditFlags_NoInputs);
+        if (ColorEdit4("Model", globalConfig.ui.geometry.color.m128_f32, ImGuiColorEditFlags_NoInputs))
+        {
+            if (hasModel) {
+                m_model->SetMaterialColor(globalConfig.ui.geometry.color);
+            }
+        }
 
         ImGui::SameLine();
         if (ColorEdit4("Ambient", globalConfig.ui.geometry.ambientLightColor.m128_f32, ImGuiColorEditFlags_NoInputs))
@@ -4834,6 +4862,7 @@ namespace CBP
 
             m_model->EnableLighting(globalConfig.ui.geometry.lighting);
             m_model->SetLightColor(ShapeBase::Light::kAmbient, 0, globalConfig.ui.geometry.ambientLightColor);
+            m_model->SetMaterialColor(globalConfig.ui.geometry.color);
             //m_model->SetZoom(m_zoom);
 
             if (hadModel)
@@ -4869,9 +4898,22 @@ namespace CBP
         if (!m_model.get())
             return;
 
-        auto& queue = m_parent.GetPreTaskQueue();
+        auto& queue = DUI::GetPreRunQueue();
 
         queue.AddTask<ReleaseModelTask>(std::move(m_model));
+    }
+
+    void UICollisionGeometryManager::QueueModelReload()
+    {
+        auto& queue = DUI::GetPreDrawQueue(); 
+
+        queue.AddTask([this]
+            {
+                m_model.reset();
+                if (m_state.selected) {
+                    Load(*m_state.selected);
+                }
+            });
     }
 
     void UICollisionGeometryManager::OnReload(

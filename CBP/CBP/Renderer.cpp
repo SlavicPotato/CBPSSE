@@ -17,7 +17,9 @@ namespace CBP
         m_pDevice(a_pDevice),
         m_pImmediateContext(a_pImmediateContext),
         m_contactPointSphereRadius(1.5f),
-        m_contactNormalLength(3.0f)
+        m_contactNormalLength(3.0f),
+        m_perfTimerGenerate(1000000),
+        m_perfTimerDraw(1000000)
     {
         m_states = std::make_unique<DirectX::CommonStates>(a_pDevice);
         m_effect = std::make_unique<DirectX::BasicEffect>(a_pDevice);
@@ -39,18 +41,19 @@ namespace CBP
         bool a_centerOfGravity,
         Game::ObjectHandle a_markedHandle)
     {
-        auto& globalConfig = IConfig::GetGlobal();
+        const auto& globalConfig = IConfig::GetGlobal();
 
         Bullet::btTransformEx tf;
 
-        for (const auto& e : a_actorList)
+        auto& v = a_actorList.getvec();
+        for (const auto& e : v)
         {
-            if (e.second.IsSuspended())
+            if (e->IsSuspended())
                 continue;
 
             if (a_moving || a_centerOfGravity)
             {
-                auto& nl = e.second.GetNodeList();
+                auto& nl = e->GetNodeList();
 
                 int count = nl.size();
                 for (int i = 0; i < count; i++)
@@ -74,9 +77,9 @@ namespace CBP
                 }
             }
 
-            if (e.first == a_markedHandle)
+            if (e->GetActorHandle() == a_markedHandle)
             {
-                if (e.second.GetHeadTransform(tf))
+                if (e->GetHeadTransform(tf))
                 {
                     GenerateSphere(
                         tf * btVector3(0.0f, 0.0f, 20.0f),
@@ -94,12 +97,13 @@ namespace CBP
 
         Bullet::btTransformEx tf;
 
-        for (const auto& e : a_actorList)
+        auto& v = a_actorList.getvec();
+        for (const auto& e : v)
         {
-            if (e.second.IsSuspended())
+            if (e->IsSuspended())
                 continue;
 
-            auto& nl = e.second.GetNodeList();
+            auto& nl = e->GetNodeList();
 
             int count = nl.size();
             for (int i = 0; i < count; i++)
@@ -129,7 +133,7 @@ namespace CBP
 
                 if ((mc & MotionConstraints::Sphere) == MotionConstraints::Sphere)
                 {
-                    tf.getOrigin() = tf * conf.fp.vec.maxOffsetSphereOffset;
+                    tf.setOrigin(tf * conf.fp.vec.maxOffsetSphereOffset);
 
                     drawSphere(
                         conf.fp.f32.maxOffsetSphereRadius * tf.getScale(),
@@ -162,13 +166,15 @@ namespace CBP
 
     void Renderer::Draw()
     {
-        D3D11StateBackup _(m_pImmediateContext);
+        m_perfTimerDraw.Begin();
+
+        D3D11StateBackup _(std::addressof(m_backup), m_pImmediateContext.Get());
 
         m_pImmediateContext->OMSetBlendState(m_states->NonPremultiplied(), nullptr, 0xFFFFFFFF);
         m_pImmediateContext->OMSetDepthStencilState(m_states->DepthNone(), 0);
         m_pImmediateContext->RSSetState(m_states->CullCounterClockwise());
 
-        m_effect->Apply(m_pImmediateContext);
+        m_effect->Apply(m_pImmediateContext.Get());
 
         m_pImmediateContext->IASetInputLayout(m_inputLayout.Get());
 
@@ -182,8 +188,8 @@ namespace CBP
         if (globalConfig.debugRenderer.wireframe) {
             for (const auto& e : m_tris) {
                 m_batch->DrawLine(e.v0, e.v1);
-                m_batch->DrawLine(e.v0, e.v2);
-                m_batch->DrawLine(e.v2, e.v1);
+                m_batch->DrawLine(e.v1, e.v2);
+                m_batch->DrawLine(e.v2, e.v0);
             }
         }
         else {
@@ -193,7 +199,7 @@ namespace CBP
 
         m_batch->End();
 
-
+        m_perfTimerDraw.End();
     }
 
     static const auto s_2 = DirectX::XMVectorReplicate(2.0f);
@@ -431,9 +437,26 @@ namespace CBP
         return m_debugMode;
     }
 
-    auto Renderer::getDefaultColors() const -> DefaultColors
+    auto Renderer::getDefaultColors() const 
+        -> DefaultColors
     {
         return IConfig::GetGlobal().debugRenderer.btColors;
+    }
+
+    long long Renderer::GetDrawTime() const {
+        return m_perfTimerDraw.GetTime();
+    }
+
+    long long Renderer::GetGenerateTime() const {
+        return m_perfTimerGenerate.GetTime();
+    }
+
+    void Renderer::PerfBeginGenerate() {
+        m_perfTimerGenerate.Begin();
+    }
+
+    void Renderer::PerfEndGenerate() {
+        m_perfTimerGenerate.End();
     }
 
 }

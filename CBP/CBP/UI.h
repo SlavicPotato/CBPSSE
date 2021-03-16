@@ -546,6 +546,9 @@ namespace CBP
         using resolutionDesc_t = std::pair<std::string, float>;
 
         static inline constexpr float DEFAULT_ZOOM = 50.0f;
+        static inline constexpr float DEFAULT_FOV = 90.0f;
+        static inline constexpr float DEFAULT_NEAR_PLANE = 0.1f;
+        static inline constexpr float DEFAULT_FAR_PLANE = 1000.0f;
 
         class ShapeBase
         {
@@ -570,10 +573,6 @@ namespace CBP
                 ID3D11DeviceContext* a_context) = 0;
 
             virtual void __vectorcall Draw(
-                DirectX::FXMMATRIX a_world,
-                DirectX::CXMMATRIX a_view,
-                DirectX::CXMMATRIX a_projection,
-                DirectX::FXMVECTOR a_color,
                 setStateFunc_t a_setCustomState) const = 0;
 
             virtual void EnableLighting(bool a_switch) = 0;
@@ -582,6 +581,11 @@ namespace CBP
                 Light a_which,
                 int a_index,
                 DirectX::XMVECTOR a_color) = 0;
+            
+            virtual void __vectorcall SetMaterialColor(
+                DirectX::XMVECTOR a_color) = 0;
+
+            virtual DirectX::BasicEffect* GetEffect() = 0;
 
             SKMP_FORCEINLINE auto GetNumVertices() const {
                 return m_numVertices;
@@ -605,9 +609,12 @@ namespace CBP
         protected:
 
             using vertexType_t = T;
+            using vertexVector_t = stl::vector<vertexType_t>;
+            using indexVector_t = stl::vector<std::uint32_t>;
 
         public:
 
+            Shape() noexcept = default;
             virtual ~Shape() noexcept = default;
 
             virtual void Initialize(
@@ -616,10 +623,6 @@ namespace CBP
                 ID3D11DeviceContext* a_context) override;
 
             virtual void __vectorcall Draw(
-                DirectX::FXMMATRIX a_world,
-                DirectX::CXMMATRIX a_view,
-                DirectX::CXMMATRIX a_projection,
-                DirectX::FXMVECTOR a_color,
                 setStateFunc_t a_setCustomState) const override;
 
             virtual void EnableLighting(bool a_switch) override
@@ -632,14 +635,22 @@ namespace CBP
                 int a_index,
                 DirectX::XMVECTOR a_color);
 
+            virtual void __vectorcall SetMaterialColor(
+                DirectX::XMVECTOR a_color) override;
+
+            virtual DirectX::BasicEffect* GetEffect() override 
+            {
+                return m_effect.get();
+            }
+
         protected:
 
             virtual void CreateGeometry(
                 const ColliderData* a_data,
-                std::vector<vertexType_t>& a_vertices,
-                std::vector<std::uint32_t>& a_indices) const = 0;
+                vertexVector_t& a_vertices,
+                indexVector_t& a_indices) const = 0;
 
-            virtual void ApplyEffectSettings(DirectX::BasicEffect* a_effect);
+            virtual void ApplyEffectSettings(DirectX::BasicEffect* a_effect) const;
 
             Microsoft::WRL::ComPtr<ID3D11InputLayout> m_inputLayout;
 
@@ -650,26 +661,25 @@ namespace CBP
 
             std::unique_ptr<DirectX::BasicEffect> m_effect;
 
-            ID3D11DeviceContext* m_context;
-
+            Microsoft::WRL::ComPtr<ID3D11DeviceContext> m_context;
         };
 
-        class ShapeColor :
+        class ShapePosition :
             public Shape<DirectX::VertexPosition>
         {
         public:
 
             using Shape<DirectX::VertexPosition>::Shape;
 
-            virtual ~ShapeColor() noexcept = default;
+            virtual ~ShapePosition() noexcept = default;
 
         private:
             virtual void CreateGeometry(
                 const ColliderData* a_data,
-                std::vector<DirectX::VertexPosition>& a_vertices,
-                std::vector<std::uint32_t>& a_indices) const override;
+                vertexVector_t& a_vertices,
+                indexVector_t& a_indices) const override;
 
-            virtual void ApplyEffectSettings(DirectX::BasicEffect* a_effect) override;
+            virtual void ApplyEffectSettings(DirectX::BasicEffect* a_effect) const override;
         };
 
         class ShapeNormal :
@@ -684,10 +694,10 @@ namespace CBP
 
             virtual void CreateGeometry(
                 const ColliderData* a_data,
-                std::vector<DirectX::VertexPositionNormal>& a_vertices,
-                std::vector<std::uint32_t>& a_indices) const override;
+                vertexVector_t& a_vertices,
+                indexVector_t& a_indices) const override;
 
-            virtual void ApplyEffectSettings(DirectX::BasicEffect* a_effect) override;
+            virtual void ApplyEffectSettings(DirectX::BasicEffect* a_effect) const override;
 
         };
 
@@ -698,12 +708,12 @@ namespace CBP
             SKMP_DECLARE_ALIGNED_ALLOCATOR(16);
 
             Model() = delete;
-
+ 
             Model(
                 const ColliderData * a_data,
                 ID3D11Device * a_device,
                 ID3D11DeviceContext * a_context,
-                const DirectX::XMFLOAT3 & a_bufferSize,
+                const DirectX::XMFLOAT3 &a_bufferSize,
                 float a_textureResolution);
 
             void Draw() const;
@@ -734,6 +744,12 @@ namespace CBP
                 DirectX::XMVECTOR a_color)
             {
                 m_shape->SetLightColor(a_which, a_index, a_color);
+            }
+            
+            SKMP_FORCEINLINE void __vectorcall SetMaterialColor(
+                DirectX::XMVECTOR a_color)
+            {
+                m_shape->SetMaterialColor(a_color);
             }
 
             SKMP_FORCEINLINE DirectX::SimpleMath::Vector3 __vectorcall GetEyePos() const {
@@ -784,7 +800,7 @@ namespace CBP
             DirectX::XMFLOAT3 m_bufferSize;
             float m_textureResolution;
 
-
+            mutable D3D11StateBackupImpl m_backup;
         };
 
         class DragController
@@ -812,7 +828,7 @@ namespace CBP
             public TaskDelegate
         {
         public:
-            ReleaseModelTask(std::shared_ptr<Model>&& a_model);
+            ReleaseModelTask(std::unique_ptr<Model>&& a_model);
 
             virtual void Run() {};
             virtual void Dispose() {
@@ -821,7 +837,7 @@ namespace CBP
 
         private:
 
-            std::shared_ptr<Model> m_ref;
+            std::unique_ptr<Model> m_ref;
         };
 
     public:
@@ -859,11 +875,12 @@ namespace CBP
         void Load(const ColliderProfile& a_profile);
 
         void QueueModelRelease();
+        void QueueModelReload();
 
-        std::shared_ptr<Model> m_model;
+        std::unique_ptr<Model> m_model;
 
         SelectedItem<resolutionDesc_t> m_resolution;
-        stl::vector<resolutionDesc_t> m_resList;
+        const stl::vector<resolutionDesc_t> m_resList;
 
         float m_zoom;
 
@@ -1072,10 +1089,6 @@ namespace CBP
             return m_popup;
         }
 
-        SKMP_FORCEINLINE auto& GetPreTaskQueue() {
-            return m_preDraw;
-        }
-
         SKMP_FORCEINLINE auto& GetWindowStates() {
             return m_state.windows;
         }
@@ -1138,7 +1151,6 @@ namespace CBP
         } m_state;
 
         UICommon::UIPopupQueue m_popup;
-        TaskQueue m_preDraw;
 
         UIProfileEditorPhysics m_pePhysics;
         UIProfileEditorNode m_peNodes;

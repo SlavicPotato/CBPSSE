@@ -251,7 +251,6 @@ namespace CBP
         static uint32_t ConfigGetComboKey(int32_t param);
 
         void OnUIOpen();
-        void OnUIClose();
 
         void UpdateKeysImpl();
 

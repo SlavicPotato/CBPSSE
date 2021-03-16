@@ -954,7 +954,8 @@ namespace CBP
         }
 
         if (!m_uiState.show) {
-            OnUIClose();
+            m_uiContext->Reset(m_loadInstance);
+            m_uiContext->OnClose();
         }
 
         return m_uiState.show;
@@ -973,14 +974,7 @@ namespace CBP
         CBP::IData::UpdateActorCache(GetSimActorList());
 
         m_uiContext->Reset(m_loadInstance);
-    }
-
-    void DCBP::OnUIClose()
-    {
-        if (!m_uiContext.get())
-            return;
-
-        m_uiContext->Reset(m_loadInstance);
+        m_uiContext->OnOpen();
     }
 
     void DCBP::UpdateKeysImpl()
@@ -1029,9 +1023,6 @@ namespace CBP
         case ToggleResult::kResultEnabled:
             DUI::AddTask(1, std::addressof(GetUIRenderTask()));
             break;
-        case ToggleResult::kResultDisabled:
-            DUI::RemoveTask(1);
-            break;
         }
     }
 
@@ -1042,7 +1033,6 @@ namespace CBP
 
         if (m_Instance.m_uiState.show) {
             m_Instance.m_uiState.show = false;
-            m_Instance.OnUIClose();
             return ToggleResult::kResultDisabled;
         }
         else {

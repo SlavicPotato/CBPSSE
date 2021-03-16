@@ -19,6 +19,7 @@ namespace CBP
 
         IEvents::RegisterForEvent(Event::OnD3D11PostCreate, OnD3D11PostCreate_DUI);
         IEvents::RegisterForEvent(Event::OnExit, OnExit_DUI);
+
         DRender::AddPresentCallback(Present_Pre);
 
         return true;
@@ -32,6 +33,8 @@ namespace CBP
 
     void DUI::Present_Pre_Impl()
     {
+        m_preRun.ProcessTasks();
+
         if (m_suspended)
             return;
 
@@ -44,7 +47,7 @@ namespace CBP
             ResetImGuiIO();
         }
 
-        m_keyEvents.ProcessTasks();
+        m_preDraw.ProcessTasks();
 
         ::ImGui_ImplDX11_NewFrame();
         ::ImGui_ImplWin32_NewFrame();
@@ -462,7 +465,7 @@ namespace CBP
         io.KeyShift = false;
         io.KeyAlt = false;
 
-        m_keyEvents.ClearTasks();
+        m_preDraw.ClearTasks();
     }
 
     void DUI::Suspend()

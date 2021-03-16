@@ -45,6 +45,8 @@ namespace CBP
 
         try
         {
+            renderer->PerfBeginGenerate();
+
             renderer->Clear();
 
             auto& actorList = GetSimActorList();
@@ -64,6 +66,8 @@ namespace CBP
                 m_markedActor);
 
             ICollision::GetWorld()->debugDrawWorld();
+
+            renderer->PerfEndGenerate();
         }
         catch (const std::exception&) {}
     }

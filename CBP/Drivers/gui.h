@@ -144,6 +144,14 @@ namespace CBP
             return m_Instance.m_uiRenderPerf.current;
         }
 
+        SKMP_FORCEINLINE static auto& GetPreRunQueue() {
+            return m_Instance.m_preRun;
+        }
+                
+        SKMP_FORCEINLINE static auto& GetPreDrawQueue() {
+            return m_Instance.m_preDraw;
+        }
+
         static void EvaluateTaskState();
 
         FN_NAMEPROC("UI")
@@ -173,7 +181,7 @@ namespace CBP
         void OnTaskRemove(UIRenderTaskBase* a_task);
 
         SKMP_FORCEINLINE static auto& GetKeyPressQueue() {
-            return m_Instance.m_keyEvents;
+            return m_Instance.m_preDraw;
         }
 
         WNDPROC pfnWndProc;
@@ -213,7 +221,8 @@ namespace CBP
         HWND m_WindowHandle;
 
         IOUserData m_ioUserData;
-        TaskQueue m_keyEvents;
+        TaskQueue m_preDraw;
+        TaskQueue m_preRun;
 
         std::atomic<bool> m_nextResetIO;
 

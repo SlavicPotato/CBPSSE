@@ -87,8 +87,10 @@ namespace CBP
 
         Microsoft::WRL::ComPtr<ID3D11InputLayout> m_inputLayout;
 
-        ID3D11Device* m_pDevice;
-        ID3D11DeviceContext* m_pImmediateContext;
+        Microsoft::WRL::ComPtr<ID3D11Device> m_pDevice;
+        Microsoft::WRL::ComPtr<ID3D11DeviceContext> m_pImmediateContext;
+
+        D3D11StateBackupImpl m_backup;
 
         stl::vector<ItemLine> m_lines;
         stl::vector<ItemTri> m_tris;
@@ -122,8 +124,17 @@ namespace CBP
 
         virtual DefaultColors getDefaultColors() const override;
 
+        PerfTimerInt m_perfTimerGenerate;
+        PerfTimerInt m_perfTimerDraw;
+
     public:
         virtual void setDebugMode(int debugMode) override;
         virtual int getDebugMode() const override;
+
+        long long GetDrawTime() const;
+        long long GetGenerateTime() const;
+        void PerfBeginGenerate();
+        void PerfEndGenerate();
+
     };
 }

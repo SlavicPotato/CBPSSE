@@ -1,7 +1,5 @@
 #pragma once
 
-#include <imgui_internal.h>
-
 namespace UICommon
 {
     class UIAlignment
