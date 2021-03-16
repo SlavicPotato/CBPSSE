@@ -48,6 +48,7 @@ namespace CBP
         }
 
         m_preDraw.ProcessTasks();
+        m_keyPressQueue.ProcessTasks();
 
         ::ImGui_ImplDX11_NewFrame();
         ::ImGui_ImplWin32_NewFrame();
@@ -465,7 +466,7 @@ namespace CBP
         io.KeyShift = false;
         io.KeyAlt = false;
 
-        m_preDraw.ClearTasks();
+        m_keyPressQueue.ClearTasks();
     }
 
     void DUI::Suspend()

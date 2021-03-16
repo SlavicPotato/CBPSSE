@@ -181,7 +181,7 @@ namespace CBP
         void OnTaskRemove(UIRenderTaskBase* a_task);
 
         SKMP_FORCEINLINE static auto& GetKeyPressQueue() {
-            return m_Instance.m_preDraw;
+            return m_Instance.m_keyPressQueue;
         }
 
         WNDPROC pfnWndProc;
@@ -221,6 +221,8 @@ namespace CBP
         HWND m_WindowHandle;
 
         IOUserData m_ioUserData;
+
+        TaskQueue m_keyPressQueue;
         TaskQueue m_preDraw;
         TaskQueue m_preRun;
 
