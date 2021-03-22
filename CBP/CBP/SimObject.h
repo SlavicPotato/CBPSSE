@@ -1,7 +1,12 @@
 #pragma once
 
+#include "Config.h"
+#include "Common/BulletExtensions.h"
+
 namespace CBP
 {
+    class SimComponent;
+
     struct nodeDesc_t
     {
         nodeDesc_t(
@@ -57,8 +62,8 @@ namespace CBP
         SimObject& operator=(const SimObject&) = delete;
         SimObject& operator=(SimObject&&) = delete;
 
-        SKMP_FORCEINLINE void UpdateMotion(float a_timeStep);
-        SKMP_FORCEINLINE void UpdateVelocity(float a_timeStep);
+        void UpdateMotion(float a_timeStep);
+        void UpdateVelocity(float a_timeStep);
 
         void UpdateConfig(Actor* a_actor, bool a_collisions, const configComponents_t& a_config);
         void Reset();
@@ -190,24 +195,5 @@ namespace CBP
 #endif
     };
 
-    void SimObject::UpdateMotion(float a_timeStep)
-    {
-        if (m_suspended)
-            return;
-
-        auto count = m_objList.size();
-        for (decltype(count) i = 0; i < count; i++)
-            m_objList[i]->UpdateMotion(a_timeStep);
-    }
-
-    void SimObject::UpdateVelocity(float a_timeStep)
-    {
-        if (m_suspended)
-            return;
-
-        auto count = m_objList.size();
-        for (decltype(count) i = 0; i < count; i++)
-            m_objList[i]->UpdateVelocity(a_timeStep);
-    }
 
 }

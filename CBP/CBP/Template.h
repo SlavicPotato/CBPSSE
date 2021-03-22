@@ -1,5 +1,15 @@
 #pragma once
 
+#include "Data.h"
+#include "Config.h"
+
+#include "Profile/Manager.h"
+
+namespace CBP
+{
+    struct pluginInfo_t;
+}
+
 namespace CBP
 {
     enum class TRecType : std::uint32_t {
@@ -265,6 +275,7 @@ namespace CBP
 
         static ITemplate m_Instance;
     };
+
 
     template <typename T>
     const T* ITemplate::GetProfileImpl(

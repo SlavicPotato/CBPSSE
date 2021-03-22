@@ -2,35 +2,24 @@
 
 //#define _CBP_MEASURE_PERF
 
+#include "Data.h"
+#include "Config.h"
+#include "Armor.h"
+#include "Profiling.h"
+#include "ControllerInstruction.h"
+#include "SimObject.h"
+
+#include "Tasks/Tasks.h"
+
+#include "Common/Data.h"
+#include "Common/Game.h"
+
 namespace CBP
 {
-    struct ControllerInstruction
-    {
-        enum class Action : std::uint32_t
-        {
-            AddActor,
-            RemoveActor,
-            UpdateConfig,
-            UpdateConfigAll,
-            Reset,
-            PhysicsReset,
-            NiNodeUpdate,
-            NiNodeUpdateAll,
-            WeightUpdate,
-            WeightUpdateAll,
-            AddArmorOverride,
-            UpdateArmorOverride,
-            UpdateArmorOverridesAll,
-            ClearArmorOverrides
-        };
-
-        Action m_action;
-        Game::ObjectHandle m_handle;
-    };
 
     class SKMP_ALIGN_AUTO ControllerTask :
-        public TaskDelegateFixed,
-        public TaskQueueBase<ControllerInstruction>,
+        public CBP::TaskDelegateFixed,
+        public CBP::TaskQueueBase<ControllerInstruction>,
         protected ILog
     {
         using handleSet_t = stl::unordered_set<Game::ObjectHandle>;
@@ -49,7 +38,6 @@ namespace CBP
 
         volatile bool m_ranFrame;
         float m_lastFrameTime;
-        float m_lastFrameTimeNS;
 
         //PerfTimerInt m_pt{ 1000000 };
 

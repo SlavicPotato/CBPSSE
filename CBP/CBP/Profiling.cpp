@@ -1,5 +1,7 @@
 #include "pch.h"
 
+#include "Profiling.h"
+
 namespace CBP
 {
     Profiler::Profiler(

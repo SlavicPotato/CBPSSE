@@ -1,5 +1,12 @@
 #include "pch.h"
 
+#include "SimComponent.h"
+#include "SimObject.h"
+#include "Collision.h"
+#include "Profile.h"
+
+#include "Common/Game.h"
+
 namespace CBP
 {
     static btVector3 s_vecZero(_mm_set_ps1(0.0f));
@@ -959,7 +966,9 @@ namespace CBP
 
         m_collider.Update();
 
-        m_applyForceQueue.swap(decltype(m_applyForceQueue)());
+        if (!m_applyForceQueue.empty()) {
+            m_applyForceQueue.swap(decltype(m_applyForceQueue)());
+        }
     }
 
     void SimComponent::ClampVelocity()

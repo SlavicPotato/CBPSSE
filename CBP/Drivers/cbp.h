@@ -1,12 +1,34 @@
 #pragma once
 
+#include "CBP/Data.h"
+#include "CBP/Serialization.h"
+#include "CBP/ControllerInstruction.h"
+
+#include "GUI/Tasks.h"
+#include "Tasks/Tasks.h"
+#include "Input/Handlers.h"
+#include "Events/Events.h"
+#include "Common/Data.h"
+ 
+#include "../config.h"
+
+namespace Game
+{
+    class BSMain;
+}
+
 namespace CBP
 {
+    class UIContext;
+    class ControllerTask;
+    class Profiler;
+    class Renderer;
+
     class DCBP :
         ILog,
         IConfigINI
     {
-        
+
         enum SerializationVersion : UInt32 {
             kDataVersion1 = 1,
             kDataVersion2 = 2,
@@ -26,19 +48,39 @@ namespace CBP
             virtual void OnKeyPressed() override;
         };
 
+        enum class UIOpenResult
+        {
+            kResultNone,
+            kResultEnabled,
+            kResultDisabled
+        };
+
         class ToggleUITask :
             public TaskDelegateStatic
         {
-            enum class ToggleResult
-            {
-                kResultNone,
-                kResultEnabled,
-                kResultDisabled
-            };
+
         public:
             virtual void Run();
         private:
-            ToggleResult Toggle();
+            UIOpenResult Toggle();
+        };
+
+        class OpenUITask :
+            public TaskDelegate
+        {
+        public:
+            OpenUITask(bool a_open)
+                :m_open(a_open)
+            {}
+
+            virtual void Run() override;
+            virtual void Dispose() override {
+                delete this;
+            }
+        private:
+            UIOpenResult Open();
+
+            bool m_open;
         };
 
         class UpdateActorCacheTask :
@@ -79,12 +121,10 @@ namespace CBP
 
         static void MainInit_Hook();
 
-        SKMP_FORCEINLINE static void DispatchActorTask(Actor* a_actor, CBP::ControllerInstruction::Action a_action);
-        SKMP_FORCEINLINE static void DispatchActorTask(Game::ObjectHandle handle, CBP::ControllerInstruction::Action action);
+        static void DispatchActorTask(Actor* a_actor, CBP::ControllerInstruction::Action a_action);
+        static void DispatchActorTask(Game::ObjectHandle handle, CBP::ControllerInstruction::Action action);
 
-        [[nodiscard]] SKMP_FORCEINLINE static const auto& GetSimActorList() {
-            return m_Instance.m_controller->GetSimActorList();
-        }
+        [[nodiscard]] static const auto& GetSimActorList();
 
         [[nodiscard]] SKMP_FORCEINLINE static auto& GetSerializationInterface() {
             return m_Instance.m_serialization;
@@ -144,9 +184,7 @@ namespace CBP
             return m_Instance.m_serialization.GetLastException();
         }
 
-        SKMP_FORCEINLINE static void QueueActorCacheUpdate() {
-            DTasks::AddTask(&m_Instance.m_updateActorCacheTask);
-        }
+        static void QueueActorCacheUpdate();
 
         [[nodiscard]] SKMP_FORCEINLINE static auto GetController() {
             return m_Instance.m_controller.get();
@@ -155,9 +193,7 @@ namespace CBP
         static void ResetProfiler();
         static void SetProfilerInterval(long long a_interval);
 
-        [[nodiscard]] SKMP_FORCEINLINE static auto& GetProfiler() {
-            return m_Instance.m_controller->GetProfiler();
-        }
+        [[nodiscard]] static Profiler& GetProfiler();
 
         SKMP_FORCEINLINE static void Lock()
         {
@@ -174,7 +210,7 @@ namespace CBP
             m_Instance.m_lock.unlock();
         }
 
-        SKMP_FORCEINLINE static auto &GetLock() {
+        SKMP_FORCEINLINE static auto& GetLock() {
             return m_Instance.m_lock;
         }
 
@@ -191,9 +227,7 @@ namespace CBP
             m_Instance.UpdateKeysImpl();
         }
 
-        SKMP_FORCEINLINE static void SetMarkedActor(Game::ObjectHandle a_handle) {
-            m_Instance.m_controller->SetMarkedActor(a_handle);
-        }
+        static void SetMarkedActor(Game::ObjectHandle a_handle);
 
         SKMP_FORCEINLINE static void QueueUIReset() {
             m_Instance.m_resetUI = true;
@@ -207,13 +241,11 @@ namespace CBP
             return m_Instance.m_uiRenderTask;
         }
 
-        [[nodiscard]] SKMP_FORCEINLINE static bool IsUIActive() {
-            return m_Instance.m_uiState.show;
-        }
-
         SKMP_FORCEINLINE static void SetDebugRendererEnabled(bool a_switch) {
             m_Instance.m_drEnabled = a_switch;
         }
+
+        static void OpenUI(bool a_open);
 
         FN_NAMEPROC("CBP")
     private:
@@ -311,10 +343,6 @@ namespace CBP
         UIKeyPressHandler m_uiKeyPressEventHandler;
         DebugRendererKeyPressHandler m_drKeyPressEventHandler;
 
-        struct {
-            bool show;
-        } m_uiState;
-
         CBP::ISerialization m_serialization;
 
         WCriticalSection m_lock;
@@ -328,21 +356,4 @@ namespace CBP
         static DCBP m_Instance;
     };
 
-    void DCBP::DispatchActorTask(
-        Actor* a_actor,
-        CBP::ControllerInstruction::Action a_action)
-    {
-        if (a_actor != nullptr) {
-            Game::ObjectHandle handle;
-            if (handle.Get(a_actor))
-                m_Instance.m_controller->AddTask(a_action, handle);
-        }
-    }
-
-    void DCBP::DispatchActorTask(
-        Game::ObjectHandle handle,
-        CBP::ControllerInstruction::Action action)
-    {
-        m_Instance.m_controller->AddTask(action, handle);
-    }
 }

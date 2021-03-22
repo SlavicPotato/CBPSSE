@@ -1,5 +1,8 @@
 #include "pch.h"
 
+#include "SimObject.h"
+#include "SimComponent.h"
+
 namespace CBP
 {
     static constexpr auto NODE_HEAD = "NPC Head [Head]";
@@ -106,7 +109,7 @@ namespace CBP
     {
 
 #ifdef _CBP_ENABLE_DEBUG
-        m_actorName = a_actor->GetDisplayName();
+        m_actorName = a_actor->GetReferenceName();
 #endif
 
         m_objList.reserve(a_desc.size());
@@ -232,6 +235,25 @@ namespace CBP
 
         if (!a_switch)
             Reset();
+    }
+    void SimObject::UpdateMotion(float a_timeStep)
+    {
+        if (m_suspended)
+            return;
+
+        auto count = m_objList.size();
+        for (decltype(count) i = 0; i < count; i++)
+            m_objList[i]->UpdateMotion(a_timeStep);
+    }
+
+    void SimObject::UpdateVelocity(float a_timeStep)
+    {
+        if (m_suspended)
+            return;
+
+        auto count = m_objList.size();
+        for (decltype(count) i = 0; i < count; i++)
+            m_objList[i]->UpdateVelocity(a_timeStep);
     }
 
 }

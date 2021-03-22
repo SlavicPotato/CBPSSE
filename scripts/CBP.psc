@@ -1,7 +1,7 @@
 Scriptname CBP Hidden
 
 Int Function GetScriptVersion() global
-    return 3
+    return 4
 EndFunction
 
 Int Function GetVersion() native global
@@ -14,3 +14,5 @@ Bool Function SetGlobalConfig(String section, String key, Float value) native gl
 
 ; Set and apply config value to actor
 Bool Function SetActorConfig(Actor actor, String section, String key, Float value) native global
+
+Function OpenUI(Bool bOpen) native global

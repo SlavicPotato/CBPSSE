@@ -1,5 +1,11 @@
 #pragma once
 
+#include "GUI/Tasks.h"
+#include "Input/Handlers.h"
+#include "ImGUI/MouseEventQueue.h"
+#include "Events/Events.h"
+#include "Tasks/Tasks.h"
+
 namespace CBP
 {
     struct UIRect
@@ -8,47 +14,7 @@ namespace CBP
         float height;
     };
 
-    class UIRenderTaskBase
-    {
-        friend class DUI;
-
-    public:
-        virtual bool Run() = 0;
-
-        virtual bool RunEnableChecks();
-
-        SKMP_FORCEINLINE void SetLock(bool a_switch) {
-            m_options.lock = a_switch;
-        }
-
-        SKMP_FORCEINLINE void SetFreeze(bool a_switch) {
-            m_options.freeze = a_switch;
-        }
-
-        SKMP_FORCEINLINE void EnableChecks(bool a_switch) {
-            m_options.enableChecks = a_switch;
-        }
-
-        SKMP_FORCEINLINE bool GetFreeze() {
-            return m_options.freeze;
-        }
-
-    private:
-        struct
-        {
-            bool lock = true;
-            bool freeze = false;
-
-            bool enableChecks = true;
-        } m_options;
-
-        struct
-        {
-            bool holdsLock;
-            bool holdsFreeze;
-        } m_state;
-    };
-
+    
     class DUI :
         ILog
     {
@@ -184,6 +150,10 @@ namespace CBP
             return m_Instance.m_keyPressQueue;
         }
 
+        SKMP_FORCEINLINE static auto& GetMouseEventQueue() {
+            return m_Instance.m_mouseEventQueue;
+        }
+
         WNDPROC pfnWndProc;
 
         struct {
@@ -223,6 +193,7 @@ namespace CBP
         IOUserData m_ioUserData;
 
         TaskQueue m_keyPressQueue;
+        ImGuiMouseEventQueue m_mouseEventQueue;
         TaskQueue m_preDraw;
         TaskQueue m_preRun;
 

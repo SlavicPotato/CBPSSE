@@ -1,7 +1,10 @@
 #pragma once
 
+#include "Config.h"
+
 namespace CBP
 {
+
     class ConfigUpdateTask :
         public TaskDelegate
     {

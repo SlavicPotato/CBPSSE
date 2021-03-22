@@ -1,5 +1,7 @@
 #include "pch.h"
 
+#include "Profile.h"
+
 namespace CBP
 {
     GlobalProfileManager::ProfileManagerPhysics GlobalProfileManager::m_Instance1("^[a-zA-Z0-9_\\- ]+$");

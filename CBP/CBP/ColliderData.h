@@ -17,7 +17,7 @@ namespace CBP
         };
 
         MeshPoint() = default;
-        
+
         SKMP_FORCEINLINE MeshPoint(float a_x, float a_y, float a_z) :
             v(a_x, a_y, a_z)
         {
@@ -25,6 +25,14 @@ namespace CBP
 
     public:
         btVector3 v;
+
+        SKMP_FORCEINLINE operator float* () { 
+            return v.mVec128.m128_f32; 
+        }
+
+        SKMP_FORCEINLINE operator const float* () const {
+            return v.mVec128.m128_f32; 
+        }
 
     private:
 
@@ -104,7 +112,7 @@ namespace CBP
         SKMP_FORCEINLINE std::size_t GetSize() const {
             return m_size;
         }
-        
+
     private:
 
         SKMP_FORCEINLINE void __move(ColliderData&& a_rhs);
@@ -130,9 +138,9 @@ namespace CBP
 
     void ColliderData::__copy(const ColliderData& a_rhs)
     {
-        auto tmp = std::make_unique<MeshPoint[]>(a_rhs.m_numVertices);
-        m_hullPoints = std::make_unique<MeshPoint[]>(a_rhs.m_numIndices);
-        m_indices = std::make_unique<int[]>(a_rhs.m_numIndices);
+        auto tmp = std::make_unique_for_overwrite<MeshPoint[]>(a_rhs.m_numVertices);
+        m_hullPoints = std::make_unique_for_overwrite<MeshPoint[]>(a_rhs.m_numIndices);
+        m_indices = std::make_unique_for_overwrite<int[]>(a_rhs.m_numIndices);
 
         std::memcpy(tmp.get(), a_rhs.m_vertices.get(), sizeof(decltype(m_vertices)::element_type) * a_rhs.m_numVertices);
         std::memcpy(m_hullPoints.get(), a_rhs.m_hullPoints.get(), sizeof(decltype(m_hullPoints)::element_type) * a_rhs.m_numIndices);
@@ -205,10 +213,10 @@ namespace CBP
     private:
 
         template<class Archive>
-        void save(Archive& ar, const unsigned int version) const 
+        void save(Archive& ar, const unsigned int version) const
         {
             ar& m_numVertices;
-            for (unsigned int i = 0; i < m_numVertices; i++) {
+            for (decltype(m_numVertices) i = 0; i < m_numVertices; i++) {
                 ar& m_vertices[i];
             }
 
@@ -220,14 +228,20 @@ namespace CBP
         }
 
         template<class Archive>
-        void load(Archive& ar, const unsigned int version) 
+        void load(Archive& ar, const unsigned int version)
         {
-            ar& m_numVertices;
-            auto tmp = new MeshPoint[m_numVertices];
-            for (unsigned int i = 0; i < m_numVertices; i++) {
+            decltype(m_numVertices) numVertices;
+
+            ar& numVertices;
+
+            auto tmp = std::make_unique_for_overwrite<MeshPoint[]>(numVertices);
+
+            for (decltype(numVertices) i = 0; i < numVertices; i++) {
                 ar& tmp[i];
             }
-            m_vertices = std::shared_ptr<MeshPoint[]>(tmp);
+
+            m_numVertices = numVertices;
+            m_vertices = std::move(tmp);
 
             ar& m_weights;
             ar& m_indices;
@@ -306,7 +320,7 @@ namespace CBP
         }
 
         template<class Archive>
-        void load(Archive& ar, const unsigned int version) 
+        void load(Archive& ar, const unsigned int version)
         {
             ar& first;
 

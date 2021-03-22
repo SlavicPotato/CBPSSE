@@ -1,5 +1,13 @@
 #include "pch.h"
 
+#include "gui.h"
+#include "render.h"
+#include "input.h"
+#include "events.h"
+#include "tasks.h"
+
+#include "Common/Game.h"
+
 namespace CBP
 {
     DUI DUI::m_Instance;
@@ -49,6 +57,7 @@ namespace CBP
 
         m_preDraw.ProcessTasks();
         m_keyPressQueue.ProcessTasks();
+        m_mouseEventQueue.ProcessEvents();
 
         ::ImGui_ImplDX11_NewFrame();
         ::ImGui_ImplWin32_NewFrame();
@@ -176,24 +185,22 @@ namespace CBP
         if (m_Instance.m_suspended)
             return;
 
-        auto& queue = GetKeyPressQueue();
-
         switch (keyCode)
         {
         case InputMap::kMacro_MouseButtonOffset:
-            queue.AddTask<KeyEventTask>(ev, KeyEventType::MouseButton, 0U);
+            GetMouseEventQueue().AddMouseButtonEvent(0, (ev == KeyEvent::KeyDown ? true : false));
             break;
         case InputMap::kMacro_MouseButtonOffset + 1:
-            queue.AddTask<KeyEventTask>(ev, KeyEventType::MouseButton, 1U);
+            GetMouseEventQueue().AddMouseButtonEvent(1, (ev == KeyEvent::KeyDown ? true : false));
             break;
         case InputMap::kMacro_MouseButtonOffset + 2:
-            queue.AddTask<KeyEventTask>(ev, KeyEventType::MouseButton, 2U);
+            GetMouseEventQueue().AddMouseButtonEvent(2, (ev == KeyEvent::KeyDown ? true : false));
             break;
         case InputMap::kMacro_MouseWheelOffset:
-            queue.AddTask<KeyEventTask>(ev, KeyEventType::MouseWheel, 1.0f);
+            GetMouseEventQueue().AddMouseWheelEvent(1.0f);
             break;
         case InputMap::kMacro_MouseWheelOffset + 1:
-            queue.AddTask<KeyEventTask>(ev, KeyEventType::MouseWheel, -1.0f);
+            GetMouseEventQueue().AddMouseWheelEvent(-1.0f);
             break;
         default:
             if (keyCode < InputMap::kMacro_NumKeyboardKeys)
@@ -235,7 +242,7 @@ namespace CBP
                     }
                 }
 
-                queue.AddTask<KeyEventTask>(ev, KeyEventType::Keyboard, vkCode, Char);
+                GetKeyPressQueue().AddTask<KeyEventTask>(ev, KeyEventType::Keyboard, vkCode, Char);
             }
 
             break;
@@ -271,14 +278,6 @@ namespace CBP
         auto& io = ImGui::GetIO();
 
         switch (m_eventType) {
-        case KeyEventType::MouseButton:
-            io.MouseDown[b.m_uval] = (m_event == KeyEvent::KeyDown ? true : false);
-            /*if (!ImGui::IsAnyMouseDown() && ::GetCapture() == m_Instance.m_WindowHandle)
-                ::ReleaseCapture();*/
-            break;
-        case KeyEventType::MouseWheel:
-            io.MouseWheel += b.m_fval;
-            break;
         case KeyEventType::Keyboard:
             if (m_event == KeyEvent::KeyDown)
             {
@@ -486,47 +485,4 @@ namespace CBP
         m_suspended = true;
     }
 
-    bool UIRenderTaskBase::RunEnableChecks()
-    {
-        if (Game::InPausedMenu()) {
-            Game::Debug::Notification("UI unavailable while in menu");
-            return false;
-        }
-
-        if (!m_options.enableChecks)
-            return true;
-
-        auto player = *g_thePlayer;
-        if (!player)
-            return false;
-
-        if (player->IsInCombat()) {
-            Game::Debug::Notification("UI unavailable while in combat");
-            return false;
-        }
-
-        auto pl = Game::ProcessLists::GetSingleton();
-        if (pl && pl->GuardsPursuing(player)) {
-            Game::Debug::Notification("UI unavailable while pursued by guards");
-            return false;
-        }
-
-        auto tm = MenuTopicManager::GetSingleton();
-        if (tm && tm->GetDialogueTarget() != nullptr) {
-            Game::Debug::Notification("UI unavailable while in a conversation");
-            return false;
-        }
-
-        if (player->unkBDA & PlayerCharacter::FlagBDA::kAIDriven) {
-            Game::Debug::Notification("UI unavailable while player is AI driven");
-            return false;
-        }
-
-        if (player->byCharGenFlag & PlayerCharacter::ByCharGenFlag::kHandsBound) {
-            Game::Debug::Notification("UI unavailable while player hands are bound");
-            return false;
-        }
-
-        return true;
-    }
 }

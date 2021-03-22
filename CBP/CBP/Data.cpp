@@ -1,5 +1,12 @@
 #include "pch.h"
 
+#include "Data.h"
+#include "Config.h"
+#include "SimObject.h"
+
+#include "Common/Data.h"
+#include "Common/Game.h"
+
 namespace CBP
 {
     IData::raceList_t IData::raceList;

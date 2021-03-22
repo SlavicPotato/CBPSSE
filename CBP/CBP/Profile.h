@@ -1,5 +1,9 @@
 #pragma once
 
+#include "Config.h"
+#include "Collision.h"
+#include "Profile/Manager.h"
+
 namespace CBP
 {
     class GlobalProfileManager

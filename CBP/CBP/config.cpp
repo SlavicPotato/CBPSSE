@@ -1,5 +1,10 @@
 #include "pch.h"
 
+#include "Config.h"
+#include "CBP/Template.h"
+
+#include "Drivers/cbp.h"
+
 namespace CBP
 {
     configComponentsGenderRoot_t IConfig::physicsGlobalConfig;

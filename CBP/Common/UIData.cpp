@@ -1,5 +1,7 @@
 #include "pch.h"
 
+#include "UIData.h"
+
 namespace UIData
 {
     void UICollapsibleStates::Parse(const Json::Value& a_in)

@@ -1,5 +1,25 @@
 #include "pch.h"
 
+#include "cbp.h"
+
+#include "CBP/GameEventHandlers.h"
+#include "CBP/Controller.h"
+#include "CBP/Profiling.h"
+#include "CBP/Renderer.h"
+#include "CBP/Papyrus.h"
+#include "CBP/Template.h"
+#include "CBP/BoneCast.h"
+#include "CBP/UI/UI.h"
+
+#include "gui.h"
+#include "render.h"
+#include "input.h"
+#include "data.h"
+#include "events.h"
+#include "tasks.h"
+
+#include "Common/Game.h"
+
 namespace CBP
 {
     namespace fs = std::filesystem;
@@ -31,7 +51,6 @@ namespace CBP
 
     DCBP::DCBP() :
         m_loadInstance(0),
-        m_uiState({ false }),
         m_resetUI(false),
         m_drEnabled(false)
     {
@@ -102,6 +121,36 @@ namespace CBP
 
         const auto& globalConf = CBP::IConfig::GetGlobal();
         SetDebugRendererEnabled(globalConf.debugRenderer.enabled);
+    }
+
+    const auto& DCBP::GetSimActorList() {
+        return m_Instance.m_controller->GetSimActorList();
+    }
+
+    void DCBP::DispatchActorTask(
+        Actor* a_actor,
+        CBP::ControllerInstruction::Action a_action)
+    {
+        if (a_actor != nullptr) {
+            Game::ObjectHandle handle;
+            if (handle.Get(a_actor))
+                m_Instance.m_controller->AddTask(a_action, handle);
+        }
+    }
+
+    Profiler& DCBP::GetProfiler() {
+        return m_Instance.m_controller->GetProfiler();
+    }
+
+    void DCBP::DispatchActorTask(
+        Game::ObjectHandle handle,
+        CBP::ControllerInstruction::Action action)
+    {
+        m_Instance.m_controller->AddTask(action, handle);
+    }
+
+    void DCBP::SetMarkedActor(Game::ObjectHandle a_handle) {
+        m_Instance.m_controller->SetMarkedActor(a_handle);
     }
 
     void DCBP::UpdateDebugRendererSettings()
@@ -213,6 +262,10 @@ namespace CBP
         return iface.GetImportInfo(a_path, a_out);
     }
 
+    void DCBP::QueueActorCacheUpdate() {
+        DTasks::AddTask(&m_Instance.m_updateActorCacheTask);
+    }
+
 
     void DCBP::ResetProfiler()
     {
@@ -252,26 +305,26 @@ namespace CBP
 
     void DCBP::LoadConfig()
     {
-        m_conf.ui_enabled = GetConfigValue(SECTION_CBP, CKEY_UIENABLED, true);
-        m_conf.debug_renderer = GetConfigValue(SECTION_CBP, CKEY_DEBUGRENDERER, false);
-        m_conf.force_ini_keys = GetConfigValue(SECTION_CBP, CKEY_FORCEINIKEYS, false);
-        m_conf.compression_level = std::clamp(GetConfigValue(SECTION_CBP, CKEY_COMPLEVEL, 1), 0, 9);
-        m_conf.imguiIni = GetConfigValue(SECTION_CBP, CKEY_IMGUIINI, PLUGIN_IMGUI_INI_FILE);
-        m_conf.ui_open_restrictions = GetConfigValue(SECTION_CBP, CKEY_UIOPENRESTRICTIONS, true);
-        m_conf.taskpool_offload = GetConfigValue(SECTION_CBP, CKEY_TPOFFLOAD, false);
+        m_conf.ui_enabled = GetConfigValue(CKEY_UIENABLED, true);
+        m_conf.debug_renderer = GetConfigValue(CKEY_DEBUGRENDERER, false);
+        m_conf.force_ini_keys = GetConfigValue(CKEY_FORCEINIKEYS, false);
+        m_conf.compression_level = std::clamp(GetConfigValue(CKEY_COMPLEVEL, 1), 0, 9);
+        m_conf.imguiIni = GetConfigValue(CKEY_IMGUIINI, PLUGIN_IMGUI_INI_FILE);
+        m_conf.ui_open_restrictions = GetConfigValue(CKEY_UIOPENRESTRICTIONS, true);
+        m_conf.taskpool_offload = GetConfigValue(CKEY_TPOFFLOAD, false);
 
 #if BT_THREADSAFE
-        m_conf.multiThreadedCollisionDetection = GetConfigValue(SECTION_CBP, CKEY_MTDISPATCHER, false);
-        m_conf.multiThreadedMotionUpdates = GetConfigValue(SECTION_CBP, CKEY_MTMOTION, false);
+        m_conf.multiThreadedCollisionDetection = GetConfigValue(CKEY_MTDISPATCHER, false);
+        m_conf.multiThreadedMotionUpdates = GetConfigValue(CKEY_MTMOTION, false);
 #endif
 
-        m_conf.use_epa = GetConfigValue(SECTION_CBP, CKEY_BTEPA, true);
-        m_conf.useRelativeContactBreakingThreshold = GetConfigValue(SECTION_CBP, CKEY_RELCBTHRESH, true);
-        m_conf.maxPersistentManifoldPoolSize = GetConfigValue(SECTION_CBP, CKEY_BTMANIFOLDPOOLSIZE, 4096);
-        m_conf.maxCollisionAlgorithmPoolSize = GetConfigValue(SECTION_CBP, CKEY_BTALGOPOOLSIZE, 4096);
+        m_conf.use_epa = GetConfigValue(CKEY_BTEPA, true);
+        m_conf.useRelativeContactBreakingThreshold = GetConfigValue(CKEY_RELCBTHRESH, true);
+        m_conf.maxPersistentManifoldPoolSize = GetConfigValue(CKEY_BTMANIFOLDPOOLSIZE, 4096);
+        m_conf.maxCollisionAlgorithmPoolSize = GetConfigValue(CKEY_BTALGOPOOLSIZE, 4096);
 
-        m_conf.comboKey = ConfigGetComboKey(GetConfigValue(SECTION_CBP, CKEY_COMBOKEY, 1));
-        m_conf.showKey = std::clamp<UInt32>(GetConfigValue<UInt32>(SECTION_CBP, CKEY_SHOWKEY, DIK_END),
+        m_conf.comboKey = ConfigGetComboKey(GetConfigValue(CKEY_COMBOKEY, 1));
+        m_conf.showKey = std::clamp<UInt32>(GetConfigValue<UInt32>(CKEY_SHOWKEY, DIK_END),
             1, InputMap::kMacro_NumKeyboardKeys - 1);
     }
 
@@ -295,7 +348,7 @@ namespace CBP
 
         try
         {
-            paths.root = GetConfigValue(SECTION_CBP, CKEY_DATAPATH, CBP_DATA_BASE_PATH);
+            paths.root = GetConfigValue(CKEY_DATAPATH, CBP_DATA_BASE_PATH);
 
             if (paths.root.empty())
                 return false;
@@ -486,7 +539,7 @@ namespace CBP
     {
         DTasks::InstallHooks();
 
-        const auto& driverConf = GetDriverConfig();
+        auto& driverConf = GetDriverConfig();
 
         ICollision::Initialize(
 #if BT_THREADSAFE
@@ -591,7 +644,6 @@ namespace CBP
         {
         case SKSEMessagingInterface::kMessage_InputLoaded:
         {
-
             GetEventDispatcherList()->objectLoadedDispatcher.AddEventSink(EventHandler::GetSingleton());
             m_Instance.Debug("Object loaded event sink added");
         }
@@ -602,67 +654,70 @@ namespace CBP
             auto handler = EventHandler::GetSingleton();
 
             edl->initScriptDispatcher.AddEventSink(handler);
-            //edl->fastTravelEndEventDispatcher.AddEventSink(handler);
             edl->equipDispatcher.AddEventSink(handler);
 
             m_Instance.Debug("Init script event sink added");
 
-            if (IData::PopulateRaceList())
-                m_Instance.Debug("%zu TESRace forms found", IData::RaceListSize());
-
-            auto& iface = GetSerializationInterface();
-
             PerfTimer pt;
             pt.Start();
 
-            Lock();
-
-            iface.LoadGlobalConfig();
-            iface.LoadCollisionGroups();
-            if (iface.LoadDefaultProfile())
-                IConfig::StoreDefaultProfile();
-
-            if (DData::HasPluginList())
             {
-                if (!ITemplate::LoadProfiles())
-                    m_Instance.Error("%s: ITemplate::LoadProfiles failed: %s",
-                        __FUNCTION__, ITemplate::GetLastException().what());
+                IScopedLock _(GetLock());
+
+                if (IData::PopulateRaceList())
+                    m_Instance.Debug("%zu TESRace forms found", IData::RaceListSize());
+
+                auto& iface = GetSerializationInterface();
+
+                iface.LoadGlobalConfig();
+                iface.LoadCollisionGroups();
+                if (iface.LoadDefaultProfile())
+                    IConfig::StoreDefaultProfile();
+
+                if (DData::HasPluginList())
+                {
+                    if (!ITemplate::LoadProfiles()) {
+                        m_Instance.Error("%s: ITemplate::LoadProfiles failed: %s",
+                            __FUNCTION__, ITemplate::GetLastException().what());
+                    }
+                }
+                else
+                    m_Instance.Error("%s: failed to populate mod list, templates will be unavailable");
+
+                const auto& globalConf = CBP::IConfig::GetGlobal();
+
+                GetController()->UpdateTimeTick(globalConf.phys.timeTick);
+                UpdateKeys();
+
+                UpdateDebugRendererSettings();
+                UpdateDebugRendererState();
+                UpdateProfilerSettings();
+
+                auto uictx = GetUIContext();
+
+                if (uictx != nullptr)
+                {
+                    uictx->Initialize();
+
+                    auto& uirt = GetUIRenderTask();
+
+                    uirt.SetLock(globalConf.ui.lockControls);
+                    uirt.SetFreeze(globalConf.ui.freezeTime);
+                }
+
+                IEvents::GetBackLog().SetLimit(globalConf.ui.backlogLimit);
             }
-            else
-                m_Instance.Error("%s: failed to populate mod list, templates will be unavailable");
-
-            const auto& globalConf = CBP::IConfig::GetGlobal();
-
-            GetController()->UpdateTimeTick(globalConf.phys.timeTick);
-            UpdateKeys();
-
-            UpdateDebugRendererSettings();
-            UpdateDebugRendererState();
-            UpdateProfilerSettings();
-
-            auto uictx = GetUIContext();
-
-            if (uictx != nullptr)
-            {
-                uictx->Initialize();
-
-                auto& uirt = GetUIRenderTask();
-
-                uirt.SetLock(globalConf.ui.lockControls);
-                uirt.SetFreeze(globalConf.ui.freezeTime);
-            }
-
-            IEvents::GetBackLog().SetLimit(globalConf.ui.backlogLimit);
-
-            Unlock();
 
             m_Instance.Debug("%s: data loaded (%f)", __FUNCTION__, pt.Stop());
         }
         break;
         case SKSEMessagingInterface::kMessage_NewGame:
+        case SKSEMessagingInterface::kMessage_PostLoadGame:
         {
             IScopedLock _(GetLock());
             GetController()->ResetInstructionQueue();
+            GetProfiler().Reset();
+            QueueUIReset();
         }
         ResetActors();
         break;
@@ -706,7 +761,7 @@ namespace CBP
             return false;
         }
 
-        auto data = std::make_unique<char[]>(dataLength);
+        auto data = std::make_unique_for_overwrite<char[]>(dataLength);
 
         if (a_intfc->ReadRecordData(data.get(), dataLength) != dataLength) {
             m_Instance.Error("[%.4s]: Couldn't read record data", &a_type);
@@ -746,7 +801,7 @@ namespace CBP
 
         auto& iface = m_Instance.m_serialization;
 
-        size_t num = std::bind(
+        auto num = std::bind(
             a_func,
             std::addressof(iface),
             std::placeholders::_1,
@@ -792,15 +847,9 @@ namespace CBP
                 m_Instance.Error("Unrecognized data version: %u", a_version);
             }
 
-            GetProfiler().Reset();
-            QueueUIReset();
-
-            GetController()->ResetInstructionQueue();
         }
 
         m_Instance.Debug("%s: %f", __FUNCTION__, pt.Stop());
-
-        ResetActors();
     }
 
     template <typename T>
@@ -819,7 +868,7 @@ namespace CBP
 
         compressed.reserve(1024 * 512);
 
-        size_t num = std::bind(
+        auto num = std::bind(
             a_func,
             std::addressof(iface),
             std::placeholders::_1)(data);
@@ -879,7 +928,6 @@ namespace CBP
     void DCBP::SaveGameHandler(Event, void* args)
     {
         auto intfc = static_cast<SKSESerializationInterface*>(args);
-        auto& iface = GetSerializationInterface();
 
         IScopedLock _(GetLock());
 
@@ -942,7 +990,7 @@ namespace CBP
             m_uiContext->Reset(m_loadInstance);
         }
 
-        m_uiContext->Draw(&m_uiState.show);
+        m_uiContext->Draw();
 
         auto& io = ImGui::GetIO();
 
@@ -950,15 +998,15 @@ namespace CBP
             io.KeysDown[VK_ESCAPE] ||
             Game::InPausedMenu())
         {
-            m_uiState.show = false;
+            m_uiContext->SetOpenState(false);
         }
 
-        if (!m_uiState.show) {
+        if (!m_uiContext->IsWindowOpen()) {
             m_uiContext->Reset(m_loadInstance);
             m_uiContext->OnClose();
         }
 
-        return m_uiState.show;
+        return m_uiContext->IsWindowOpen();
     }
 
     bool DCBP::UIRenderTask::Run()
@@ -1020,30 +1068,66 @@ namespace CBP
     {
         switch (Toggle())
         {
-        case ToggleResult::kResultEnabled:
+        case UIOpenResult::kResultEnabled:
             DUI::AddTask(1, std::addressof(GetUIRenderTask()));
             break;
         }
     }
 
     auto DCBP::ToggleUITask::Toggle() ->
-        ToggleResult
+        UIOpenResult
     {
-        IScopedLock _(DCBP::GetLock());
+        IScopedLock _(GetLock());
 
-        if (m_Instance.m_uiState.show) {
-            m_Instance.m_uiState.show = false;
-            return ToggleResult::kResultDisabled;
+        if (m_Instance.m_uiContext->IsWindowOpen()) {
+            m_Instance.m_uiContext->SetOpenState(false);
+            return UIOpenResult::kResultDisabled;
         }
-        else {
-            if (GetUIRenderTask().RunEnableChecks()) {
-                m_Instance.m_uiState.show = true;
+        else
+        {
+            if (GetUIRenderTask().RunEnableChecks())
+            {
+                m_Instance.m_uiContext->SetOpenState(true);
                 m_Instance.OnUIOpen();
-                return ToggleResult::kResultEnabled;
+                return UIOpenResult::kResultEnabled;
             }
         }
 
-        return ToggleResult::kResultNone;
+        return UIOpenResult::kResultNone;
+    }
+
+    void DCBP::OpenUITask::Run()
+    {
+        if (Open() == UIOpenResult::kResultEnabled) {
+            DUI::AddTask(1, std::addressof(GetUIRenderTask()));
+        }
+    }
+
+    auto DCBP::OpenUITask::Open() ->
+        UIOpenResult
+    {
+        IScopedLock _(GetLock());
+
+        if (!m_open) {
+            m_Instance.m_uiContext->SetOpenState(false);
+            return UIOpenResult::kResultDisabled;
+        }
+        else if (!m_Instance.m_uiContext->IsWindowOpen())
+        {
+            if (GetUIRenderTask().RunEnableChecks())
+            {
+                m_Instance.m_uiContext->SetOpenState(true);
+                m_Instance.OnUIOpen();
+                return UIOpenResult::kResultEnabled;
+            }
+        }
+
+        return UIOpenResult::kResultNone;
+    }
+
+    void DCBP::OpenUI(bool a_open)
+    {
+        DTasks::AddTask<OpenUITask>(a_open);
     }
 
     void DCBP::UpdateActorCacheTask::Run()
@@ -1051,5 +1135,7 @@ namespace CBP
         IScopedLock _(GetLock());
         CBP::IData::UpdateActorCache(GetSimActorList());
     }
+
+
 
 }

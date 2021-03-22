@@ -1,5 +1,7 @@
 #include "pch.h"
 
+#include "Config.h"
+
 namespace CBP
 {
     const colliderDescMap_t configComponent_t::colDescMap({

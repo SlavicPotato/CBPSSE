@@ -1,5 +1,11 @@
 #pragma once
 
+#include "ArmorCache.h"
+#include "Common/UIData.h"
+#include "Profile/Profile.h"
+
+#include "Common/Data.h"
+
 namespace CBP
 {
     enum class UIEditorID : int
@@ -176,6 +182,7 @@ namespace CBP
                 bool wireframe = false;
                 bool lighting = true;
                 float resolution = 2048.0f;
+                float fov = 75.0f;
                 DirectX::XMVECTOR color = DirectX::XMVectorSet(0.2f, 1.0f, 0.2f, 1.0f);
                 DirectX::XMVECTOR ambientLightColor = DirectX::XMVectorSet(0.05333332f, 0.09882354f, 0.1819608f, 0.0f);
                 //DirectX::XMVECTOR specularLightColor = DirectX::XMVectorSet(1.0f, 1.0f, 1.0f, 1.0f);
@@ -771,7 +778,7 @@ namespace CBP
     private:
 
         [[nodiscard]] SKMP_FORCEINLINE float* GetAddress(std::ptrdiff_t a_offset) const {
-            return reinterpret_cast<float*>(reinterpret_cast<uintptr_t>(this) + a_offset);
+            return reinterpret_cast<float*>(reinterpret_cast<std::uintptr_t>(this) + a_offset);
         }
 
         template<class Archive>

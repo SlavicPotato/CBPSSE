@@ -1,7 +1,11 @@
 #pragma once
 
+#include "Profile/Profile.h"
+
 namespace CBP
 {
+    struct ColliderData;
+
     class ColliderProfile :
         public ProfileBase<std::shared_ptr<const ColliderData>, true>,
         ILog

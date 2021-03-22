@@ -1,5 +1,9 @@
 #pragma once
 
+#include "Config.h"
+#include "BoneCast.h"
+#include "Common/BulletExtensions.h"
+
 namespace CBP
 {
     class SimObject;

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Common/Data.h"
+
 namespace CBP
 {
     class SimObject;
@@ -166,7 +168,7 @@ namespace CBP
 
         static nodeReferenceMap_t nodeRefData;
 
-        static uint64_t actorCacheUpdateId;
+        static std::uint64_t actorCacheUpdateId;
 
         static stl::unordered_set<Game::FormID> ignoredRaces;
 

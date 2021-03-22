@@ -1,6 +1,7 @@
 #pragma once
 
 constexpr const char* PLUGIN_INI_FILE = PLUGIN_BASE_PATH "CBP.ini";
+constexpr const char* PLUGIN_INI_CUSTOM_FILE = PLUGIN_BASE_PATH "CBP_Custom.ini";
 constexpr const char* PLUGIN_LOG_PATH = "My Games\\Skyrim Special Edition\\SKSE\\" PLUGIN_NAME ".log";
 constexpr const char* PLUGIN_CBP_CONFIG = PLUGIN_BASE_PATH "CBPConfig.txt";
 

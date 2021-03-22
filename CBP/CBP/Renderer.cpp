@@ -1,5 +1,11 @@
 #include "pch.h"
 
+#include "Renderer.h"
+#include "Config.h"
+#include "Data.h"
+#include "SimObject.h"
+#include "SimComponent.h"
+
 namespace CBP
 {
     const D3D11_INPUT_ELEMENT_DESC VertexPositionColorAV::InputElements[] =
@@ -403,21 +409,6 @@ namespace CBP
     void Renderer::drawContactExtra(btPersistentManifold* manifold, const btManifoldPoint& contactPoint)
     {
 
-        /*auto ob2 = manifold->getBody1();
-
-        auto sc2 = static_cast<SimComponent*>(ob2->getUserPointer());
-
-        btVector3 p = sc2->GetVelocity();
-        p.safeNormalize();
-
-        btVector3 p1, p2;
-
-        btPlaneSpace1(p, p1, p2);
-
-        auto e = (p1 + p2).cross(contactPoint.m_normalWorldOnB);
-        e.safeNormalize();
-
-        drawLine(contactPoint.getPositionWorldOnB(), contactPoint.getPositionWorldOnB() + e * 30.0f, IConfig::GetGlobal().debugRenderer.colors.constraintSphere);*/
     }
 
     void Renderer::draw3dText(const btVector3& location, const char* textString)
@@ -437,7 +428,7 @@ namespace CBP
         return m_debugMode;
     }
 
-    auto Renderer::getDefaultColors() const 
+    auto Renderer::getDefaultColors() const
         -> DefaultColors
     {
         return IConfig::GetGlobal().debugRenderer.btColors;

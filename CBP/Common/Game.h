@@ -1,11 +1,5 @@
 #pragma once
 
-#include <ctime>
-
-#include <LinearMath/btVector3.h>
-
-#include <skse64/NiLight.h>
-
 namespace Game
 {
     extern float* frameTimer;

@@ -2,7 +2,7 @@
 
 #include "macro_helpers.h"
 #include "gitparams.h"
-#include "skse64_common/skse_version.h"
+#include <skse64_common/skse_version.h>
 
 #define GIT_COMMIT STR(GIT_CUR_COMMIT)
 

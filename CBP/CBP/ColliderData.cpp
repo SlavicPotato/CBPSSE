@@ -1,5 +1,8 @@
 #include "pch.h"
 
+#include "ColliderData.h"
+#include "Config.h"
+
 namespace CBP
 {
     bool ColliderDataStoragePair::operator==(const configNode_t& a_rhs) const

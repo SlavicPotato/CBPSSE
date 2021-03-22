@@ -1,5 +1,15 @@
 #include "pch.h"
 
+#include "Controller.h"
+#include "Collision.h"
+#include "Config.h"
+#include "Renderer.h"
+#include "SimObject.h"
+#include "SimComponent.h"
+
+#include "Drivers/cbp.h"
+#include "Drivers/tasks.h"
+
 namespace CBP
 {
     SKMP_FORCEINLINE static bool ActorValid(const Actor* actor)
@@ -403,14 +413,14 @@ namespace CBP
         auto& nodeMap = IConfig::GetNodeMap();
 
         nodeDescList_t descList;
-        if (SimObject::CreateNodeDescriptorList(
+        if (!SimObject::CreateNodeDescriptorList(
             a_handle,
             actor,
             sex,
             conf,
             nodeMap,
             globalConfig.phys.collision,
-            descList) == nodeDescList_t::size_type(0))
+            descList))
         {
             return;
         }
@@ -848,9 +858,6 @@ namespace CBP
             case ControllerInstruction::Action::WeightUpdateAll:
                 WeightUpdateAll();
                 break;
-                /*case ControllerInstruction::Action::AddArmorOverride:
-                    AddArmorOverride(task.m_handle, task.m_formid);
-                    break;*/
             case ControllerInstruction::Action::UpdateArmorOverride:
                 UpdateArmorOverrides(instr.m_handle);
                 break;

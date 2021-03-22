@@ -1,5 +1,7 @@
 #include "pch.h"
 
+#include "tasks.h"
+
 namespace CBP
 {
     stl::vector<TaskDelegateFixed*> DTasks::m_tasks_fixed;
@@ -25,7 +27,7 @@ namespace CBP
     {
         m_tasks.ProcessTasks();
 
-        for (auto &cmd : m_tasks_fixed)
+        for (auto& cmd : m_tasks_fixed)
             cmd->Run();
     }
 

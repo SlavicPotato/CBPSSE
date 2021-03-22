@@ -1,5 +1,11 @@
 #include "pch.h"
 
+#include "Template.h"
+
+#include "Drivers/cbp.h"
+#include "Drivers/data.h"
+#include "Drivers/tasks.h"
+
 namespace CBP
 {
     ITemplate ITemplate::m_Instance;

@@ -237,48 +237,63 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
+    <PreBuildEventUseInBuild>false</PreBuildEventUseInBuild>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
+    <PreBuildEventUseInBuild>false</PreBuildEventUseInBuild>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release MT|x64'">
     <LinkIncremental>false</LinkIncremental>
+    <PreBuildEventUseInBuild>false</PreBuildEventUseInBuild>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Dep-SSE2|x64'">
     <LinkIncremental>false</LinkIncremental>
+    <PreBuildEventUseInBuild>false</PreBuildEventUseInBuild>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='PreRelease|x64'">
     <LinkIncremental>false</LinkIncremental>
+    <PreBuildEventUseInBuild>false</PreBuildEventUseInBuild>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='PreRelease MT|x64'">
     <LinkIncremental>false</LinkIncremental>
+    <PreBuildEventUseInBuild>false</PreBuildEventUseInBuild>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='PreReleaseAVX2 MT|x64'">
     <LinkIncremental>false</LinkIncremental>
+    <PreBuildEventUseInBuild>false</PreBuildEventUseInBuild>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseAVX2|x64'">
     <LinkIncremental>false</LinkIncremental>
+    <PreBuildEventUseInBuild>false</PreBuildEventUseInBuild>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseAVX2 MT|x64'">
     <LinkIncremental>false</LinkIncremental>
+    <PreBuildEventUseInBuild>false</PreBuildEventUseInBuild>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseAVX2 MT W7|x64'">
     <LinkIncremental>false</LinkIncremental>
+    <PreBuildEventUseInBuild>false</PreBuildEventUseInBuild>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Dep-AVX|x64'">
     <LinkIncremental>false</LinkIncremental>
+    <PreBuildEventUseInBuild>false</PreBuildEventUseInBuild>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Dep-AVX2|x64'">
     <LinkIncremental>false</LinkIncremental>
+    <PreBuildEventUseInBuild>false</PreBuildEventUseInBuild>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='IntelRelAvx2MT|x64'">
     <LinkIncremental>false</LinkIncremental>
+    <PreBuildEventUseInBuild>false</PreBuildEventUseInBuild>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Dep-IntelAvx2MT|x64'">
     <LinkIncremental>false</LinkIncremental>
+    <PreBuildEventUseInBuild>false</PreBuildEventUseInBuild>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Dep-IntelSSE42MT|x64'">
     <LinkIncremental>false</LinkIncremental>
+    <PreBuildEventUseInBuild>false</PreBuildEventUseInBuild>
   </PropertyGroup>
   <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='ReleaseAVX2 MT|x64'">
     <VcpkgConfiguration>Release</VcpkgConfiguration>
@@ -343,7 +358,7 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include;$(SolutionDir)..\DirectXTK;$(SolutionDir)..\assimp\include;$(ProjectDir);$(SolutionDir)..\bullet3\src;$(SolutionDir)..\meshoptimizer\src</AdditionalIncludeDirectories>
-      <ForcedIncludeFiles>common/IPrefix.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles>common/IPrefix.h;ext/ICommon.h;</ForcedIncludeFiles>
       <UseFullPaths>false</UseFullPaths>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
@@ -379,7 +394,7 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include;$(SolutionDir)..\DirectXTK;$(SolutionDir)..\assimp\include;$(ProjectDir);$(SolutionDir)..\bullet3\src;$(SolutionDir)..\meshoptimizer\src</AdditionalIncludeDirectories>
-      <ForcedIncludeFiles>common/IPrefix.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles>common/IPrefix.h;ext/ICommon.h;</ForcedIncludeFiles>
       <UseFullPaths>false</UseFullPaths>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
@@ -419,7 +434,7 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include;$(SolutionDir)..\DirectXTK;$(SolutionDir)..\assimp\include;$(ProjectDir);$(SolutionDir)..\bullet3\src;$(SolutionDir)..\meshoptimizer\src</AdditionalIncludeDirectories>
-      <ForcedIncludeFiles>common/IPrefix.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles>common/IPrefix.h;ext/ICommon.h;</ForcedIncludeFiles>
       <UseFullPaths>false</UseFullPaths>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
@@ -459,7 +474,7 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include;$(SolutionDir)..\DirectXTK;$(SolutionDir)..\assimp\include;$(ProjectDir);$(SolutionDir)..\bullet3\src;$(SolutionDir)..\meshoptimizer\src</AdditionalIncludeDirectories>
-      <ForcedIncludeFiles>common/IPrefix.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles>common/IPrefix.h;ext/ICommon.h;</ForcedIncludeFiles>
       <UseFullPaths>false</UseFullPaths>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
@@ -502,7 +517,7 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include;$(SolutionDir)..\DirectXTK;$(SolutionDir)..\assimp\include;$(ProjectDir);$(SolutionDir)..\bullet3\src;$(SolutionDir)..\meshoptimizer\src</AdditionalIncludeDirectories>
-      <ForcedIncludeFiles>common/IPrefix.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles>common/IPrefix.h;ext/ICommon.h;</ForcedIncludeFiles>
       <UseFullPaths>false</UseFullPaths>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
@@ -542,7 +557,7 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include;$(SolutionDir)..\DirectXTK;$(SolutionDir)..\assimp\include;$(ProjectDir);$(SolutionDir)..\bullet3\src;$(SolutionDir)..\meshoptimizer\src</AdditionalIncludeDirectories>
-      <ForcedIncludeFiles>common/IPrefix.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles>common/IPrefix.h;ext/ICommon.h;</ForcedIncludeFiles>
       <UseFullPaths>false</UseFullPaths>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
@@ -586,7 +601,7 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include;$(SolutionDir)..\DirectXTK;$(SolutionDir)..\assimp\include;$(ProjectDir);$(SolutionDir)..\bullet3\src;$(SolutionDir)..\meshoptimizer\src</AdditionalIncludeDirectories>
-      <ForcedIncludeFiles>common/IPrefix.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles>common/IPrefix.h;ext/ICommon.h;</ForcedIncludeFiles>
       <UseFullPaths>false</UseFullPaths>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
@@ -630,7 +645,7 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include;$(SolutionDir)..\DirectXTK;$(SolutionDir)..\assimp\include;$(ProjectDir);$(SolutionDir)..\bullet3\src;$(SolutionDir)..\meshoptimizer\src</AdditionalIncludeDirectories>
-      <ForcedIncludeFiles>common/IPrefix.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles>common/IPrefix.h;ext/ICommon.h;</ForcedIncludeFiles>
       <UseFullPaths>false</UseFullPaths>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
@@ -670,7 +685,7 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include;$(SolutionDir)..\DirectXTK;$(SolutionDir)..\assimp\include;$(ProjectDir);$(SolutionDir)..\bullet3\src;$(SolutionDir)..\meshoptimizer\src</AdditionalIncludeDirectories>
-      <ForcedIncludeFiles>common/IPrefix.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles>common/IPrefix.h;ext/ICommon.h;</ForcedIncludeFiles>
       <UseFullPaths>false</UseFullPaths>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
@@ -713,7 +728,7 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include;$(SolutionDir)..\DirectXTK;$(SolutionDir)..\assimp\include;$(ProjectDir);$(SolutionDir)..\bullet3\src;$(SolutionDir)..\meshoptimizer\src</AdditionalIncludeDirectories>
-      <ForcedIncludeFiles>common/IPrefix.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles>common/IPrefix.h;ext/ICommon.h;</ForcedIncludeFiles>
       <UseFullPaths>false</UseFullPaths>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
@@ -755,7 +770,7 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include;$(SolutionDir)..\DirectXTK;$(SolutionDir)..\assimp\include;$(ProjectDir);$(SolutionDir)..\bullet3\src;$(SolutionDir)..\meshoptimizer\src</AdditionalIncludeDirectories>
-      <ForcedIncludeFiles>common/IPrefix.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles>common/IPrefix.h;ext/ICommon.h;</ForcedIncludeFiles>
       <UseFullPaths>false</UseFullPaths>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
@@ -799,7 +814,7 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include;$(SolutionDir)..\DirectXTK;$(SolutionDir)..\assimp\include;$(ProjectDir);$(SolutionDir)..\bullet3\src;$(SolutionDir)..\meshoptimizer\src</AdditionalIncludeDirectories>
-      <ForcedIncludeFiles>common/IPrefix.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles>common/IPrefix.h;ext/ICommon.h;</ForcedIncludeFiles>
       <UseFullPaths>false</UseFullPaths>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
@@ -843,7 +858,7 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include;$(SolutionDir)..\DirectXTK;$(SolutionDir)..\assimp\include;$(ProjectDir);$(SolutionDir)..\bullet3\src;$(SolutionDir)..\meshoptimizer\src</AdditionalIncludeDirectories>
-      <ForcedIncludeFiles>common/IPrefix.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles>common/IPrefix.h;ext/ICommon.h;</ForcedIncludeFiles>
       <UseFullPaths>false</UseFullPaths>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <StringPooling>true</StringPooling>
@@ -863,6 +878,7 @@
       <Mtune>Coffeelake</Mtune>
       <OffloadOpenMP>No</OffloadOpenMP>
       <CCppSupport>Cpp20Support</CCppSupport>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -892,7 +908,7 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include;$(SolutionDir)..\DirectXTK;$(SolutionDir)..\assimp\include;$(ProjectDir);$(SolutionDir)..\bullet3\src;$(SolutionDir)..\meshoptimizer\src</AdditionalIncludeDirectories>
-      <ForcedIncludeFiles>common/IPrefix.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles>common/IPrefix.h;ext/ICommon.h;</ForcedIncludeFiles>
       <UseFullPaths>false</UseFullPaths>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <StringPooling>true</StringPooling>
@@ -912,6 +928,7 @@
       <OffloadOpenMP>No</OffloadOpenMP>
       <CCppSupport>Cpp20Support</CCppSupport>
       <FloatingPointExpressionEvaluation>Source</FloatingPointExpressionEvaluation>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -942,7 +959,7 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include;$(SolutionDir)..\DirectXTK;$(SolutionDir)..\assimp\include;$(ProjectDir);$(SolutionDir)..\bullet3\src;$(SolutionDir)..\meshoptimizer\src</AdditionalIncludeDirectories>
-      <ForcedIncludeFiles>common/IPrefix.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles>common/IPrefix.h;ext/ICommon.h;</ForcedIncludeFiles>
       <UseFullPaths>false</UseFullPaths>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <StringPooling>true</StringPooling>
@@ -962,6 +979,7 @@
       <OffloadOpenMP>No</OffloadOpenMP>
       <CCppSupport>Cpp20Support</CCppSupport>
       <FloatingPointExpressionEvaluation>Source</FloatingPointExpressionEvaluation>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -1000,27 +1018,45 @@
     <ClInclude Include="CBP\SimObject.h" />
     <ClInclude Include="CBP\Template.h" />
     <ClInclude Include="CBP\SimComponent.h" />
-    <ClInclude Include="CBP\UI.h" />
-    <ClInclude Include="CBP\UI\ActorList.h" />
-    <ClInclude Include="CBP\UI\Base.h" />
-    <ClInclude Include="CBP\UI\Force.h" />
-    <ClInclude Include="CBP\UI\List.h" />
-    <ClInclude Include="CBP\UI\Node.h" />
-    <ClInclude Include="CBP\UI\Profile.h" />
-    <ClInclude Include="CBP\UI\Race.h" />
-    <ClInclude Include="CBP\UI\RaceList.h" />
-    <ClInclude Include="CBP\UI\SimComponent.h" />
+    <ClInclude Include="CBP\UI\Common\ActorList.h" />
+    <ClInclude Include="CBP\UI\Common\Base.h" />
+    <ClInclude Include="CBP\UI\Common\FileSelector.h" />
+    <ClInclude Include="CBP\UI\Common\Force.h" />
+    <ClInclude Include="CBP\UI\Common\List.h" />
+    <ClInclude Include="CBP\UI\Common\Node.h" />
+    <ClInclude Include="CBP\UI\Common\Plot.h" />
+    <ClInclude Include="CBP\UI\Common\Profile.h" />
+    <ClInclude Include="CBP\UI\Common\Race.h" />
+    <ClInclude Include="CBP\UI\Common\RaceList.h" />
+    <ClInclude Include="CBP\UI\Common\Render.h" />
+    <ClInclude Include="CBP\UI\Common\SimComponent.h" />
+    <ClInclude Include="CBP\UI\UI.h" />
+    <ClInclude Include="CBP\UI\UIActorEditorNode.h" />
+    <ClInclude Include="CBP\UI\UIArmorOverrideEditor.h" />
+    <ClInclude Include="CBP\UI\UICollisionGeometryManager.h" />
+    <ClInclude Include="CBP\UI\UICollisionGroups.h" />
+    <ClInclude Include="CBP\UI\UIDebugInfo.h" />
+    <ClInclude Include="CBP\UI\UIDialogImportExport.h" />
+    <ClInclude Include="CBP\UI\UILog.h" />
+    <ClInclude Include="CBP\UI\UINodeMap.h" />
+    <ClInclude Include="CBP\UI\UIOptions.h" />
+    <ClInclude Include="CBP\UI\UIProfileEditorNode.h" />
+    <ClInclude Include="CBP\UI\UIProfileEditorPhysics.h" />
+    <ClInclude Include="CBP\UI\UIProfiling.h" />
+    <ClInclude Include="CBP\UI\UIRaceEditorNode.h" />
+    <ClInclude Include="CBP\UI\UIRaceEditorPhysics.h" />
+    <ClInclude Include="CBP\UI\UISimComponentActor.h" />
+    <ClInclude Include="CBP\UI\UISimComponentGlobal.h" />
     <ClInclude Include="Common\BulletExtensions.h" />
     <ClInclude Include="Common\Crypto.h" />
     <ClInclude Include="Common\Data.h" />
-    <ClInclude Include="Common\EventCommon.h" />
     <ClInclude Include="Common\Game.h" />
     <ClInclude Include="Common\Misc.h" />
-    <ClInclude Include="Common\ProfileManager.h" />
     <ClInclude Include="Common\Serialization.h" />
     <ClInclude Include="Common\UICommon.h" />
     <ClInclude Include="Common\UIData.h" />
     <ClInclude Include="config.h" />
+    <ClInclude Include="Data\PluginInfo.h" />
     <ClInclude Include="Drivers\cbp.h" />
     <ClInclude Include="Drivers\data.h" />
     <ClInclude Include="Drivers\events.h" />
@@ -1028,15 +1064,24 @@
     <ClInclude Include="Drivers\input.h" />
     <ClInclude Include="Drivers\render.h" />
     <ClInclude Include="Drivers\tasks.h" />
+    <ClInclude Include="Events\Events.h" />
     <ClInclude Include="gitparams.h" />
+    <ClInclude Include="GUI\Tasks.h" />
     <ClInclude Include="ImGui\imgui_impl_dx11.h" />
     <ClInclude Include="ImGui\imgui_impl_win32.h" />
+    <ClInclude Include="ImGui\MouseEventQueue.h" />
+    <ClInclude Include="Input\Handlers.h" />
     <ClInclude Include="paths.h" />
     <ClInclude Include="plugin.h" />
     <ClInclude Include="macro_helpers.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="Profile\Events.h" />
+    <ClInclude Include="Profile\Manager.h" />
+    <ClInclude Include="Profile\Profile.h" />
+    <ClInclude Include="Render\Backup.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="skse.h" />
+    <ClInclude Include="Tasks\Tasks.h" />
     <ClInclude Include="version.h" />
   </ItemGroup>
   <ItemGroup>
@@ -1059,22 +1104,41 @@
     <ClCompile Include="CBP\SimObject.cpp" />
     <ClCompile Include="CBP\Template.cpp" />
     <ClCompile Include="CBP\SimComponent.cpp" />
-    <ClCompile Include="CBP\UI.cpp" />
-    <ClCompile Include="CBP\UIData.cpp" />
-    <ClCompile Include="CBP\UI\ActorList.cpp" />
-    <ClCompile Include="CBP\UI\Base.cpp" />
-    <ClCompile Include="CBP\UI\Force.cpp" />
-    <ClCompile Include="CBP\UI\List.cpp" />
-    <ClCompile Include="CBP\UI\Node.cpp" />
-    <ClCompile Include="CBP\UI\Profile.cpp" />
-    <ClCompile Include="CBP\UI\RaceList.cpp" />
-    <ClCompile Include="CBP\UI\SimComponent.cpp" />
+    <ClCompile Include="CBP\UI\Common\ActorList.cpp" />
+    <ClCompile Include="CBP\UI\Common\Base.cpp" />
+    <ClCompile Include="CBP\UI\Common\FileSelector.cpp" />
+    <ClCompile Include="CBP\UI\Common\Force.cpp" />
+    <ClCompile Include="CBP\UI\Common\List.cpp" />
+    <ClCompile Include="CBP\UI\Common\Node.cpp" />
+    <ClCompile Include="CBP\UI\Common\Plot.cpp" />
+    <ClCompile Include="CBP\UI\Common\Profile.cpp" />
+    <ClCompile Include="CBP\UI\Common\RaceList.cpp" />
+    <ClCompile Include="CBP\UI\Common\SimComponent.cpp" />
+    <ClCompile Include="CBP\UI\UI.cpp" />
+    <ClCompile Include="CBP\UI\UIActorEditorNode.cpp" />
+    <ClCompile Include="CBP\UI\UIArmorOverrideEditor.cpp" />
+    <ClCompile Include="CBP\UI\UICollisionGeometryManager.cpp" />
+    <ClCompile Include="CBP\UI\UICollisionGroups.cpp" />
+    <ClCompile Include="CBP\UI\UIData.cpp" />
+    <ClCompile Include="CBP\UI\UIDebugInfo.cpp" />
+    <ClCompile Include="CBP\UI\UIDialogImportExport.cpp" />
+    <ClCompile Include="CBP\UI\UILog.cpp" />
+    <ClCompile Include="CBP\UI\UINodeMap.cpp" />
+    <ClCompile Include="CBP\UI\UIOptions.cpp" />
+    <ClCompile Include="CBP\UI\UIProfileEditorNode.cpp" />
+    <ClCompile Include="CBP\UI\UIProfileEditorPhysics.cpp" />
+    <ClCompile Include="CBP\UI\UIProfiling.cpp" />
+    <ClCompile Include="CBP\UI\UIRaceEditorNode.cpp" />
+    <ClCompile Include="CBP\UI\UIRaceEditorPhysics.cpp" />
+    <ClCompile Include="CBP\UI\UISimComponentActor.cpp" />
+    <ClCompile Include="CBP\UI\UISimComponentGlobal.cpp" />
     <ClCompile Include="Common\Crypto.cpp" />
     <ClCompile Include="Common\Game.cpp" />
     <ClCompile Include="Common\Serialization.cpp" />
     <ClCompile Include="Common\UICommon.cpp" />
     <ClCompile Include="Common\UIData.cpp" />
     <ClCompile Include="config.cpp" />
+    <ClCompile Include="Data\PluginInfo.cpp" />
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="Drivers\cbp.cpp" />
     <ClCompile Include="Drivers\data.cpp" />
@@ -1083,8 +1147,11 @@
     <ClCompile Include="Drivers\input.cpp" />
     <ClCompile Include="Drivers\render.cpp" />
     <ClCompile Include="Drivers\tasks.cpp" />
+    <ClCompile Include="GUI\Tasks.cpp" />
     <ClCompile Include="ImGui\imgui_impl_dx11.cpp" />
     <ClCompile Include="ImGui\imgui_impl_win32.cpp" />
+    <ClCompile Include="ImGui\MouseEventQueue.cpp" />
+    <ClCompile Include="Input\Handlers.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
@@ -1103,6 +1170,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Dep-IntelSSE42MT|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="skse.cpp" />
+    <ClCompile Include="Tasks\Tasks.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\.gitignore" />

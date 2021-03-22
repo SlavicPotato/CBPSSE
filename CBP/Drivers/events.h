@@ -1,32 +1,10 @@
 #pragma once
 
+#include "Events/Events.h"
+
 namespace CBP
 {
-    enum class Event : uint32_t 
-    {
-        OnMessage,
-        OnGameSave,
-        OnGameLoad,
-        OnFormDelete,
-        OnRevert,
-        OnD3D11PostCreate,
-        OnLogMessage,
-        OnExit
-    };
-
-    typedef void (*EventCallback)(Event, void*);
-
-    template <class E, class C>
-    class EventTriggerDescriptor
-    {
-    public:
-        EventTriggerDescriptor(E m_code, C callback) :
-            m_code(m_code), m_callback(callback)
-        {}
-
-        E m_code;
-        C m_callback;
-    };
+    
 
     class IEvents :
         public ILog

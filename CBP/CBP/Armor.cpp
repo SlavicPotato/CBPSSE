@@ -1,5 +1,9 @@
 #include "pch.h"
 
+#include "Armor.h"
+
+#include "Common/Game.h"
+
 namespace CBP
 {
     bool EquippedArmorCollector::Accept(InventoryEntryData* a_entryData)

@@ -1,5 +1,8 @@
 #include "pch.h"
 
+#include "render.h"
+#include "events.h"
+
 namespace CBP
 {
     DRender DRender::m_Instance;

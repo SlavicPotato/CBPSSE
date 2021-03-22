@@ -1,20 +1,11 @@
 #pragma once
 
+#include "Tasks/Tasks.h"
+
+#include "skse.h"
+
 namespace CBP
 {
-
-    class TaskDelegateFixed
-    {
-    public:
-        virtual void Run() = 0;
-    };
-
-    class TaskDelegateStatic
-        : public TaskDelegate
-    {
-    public:
-        virtual void Dispose() override {};
-    };
 
     class DTasks
     {
@@ -56,8 +47,6 @@ namespace CBP
 
         static void TaskInterface1_Hook(BSTaskPool* taskpool);
         static void TaskInterface2_Hook(BSTaskPool* taskpool);
-
-        static void TaskInit_Hook();
 
         SKMP_FORCEINLINE static void RunTasks();
 

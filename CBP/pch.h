@@ -1,6 +1,6 @@
-#pragma once
+#ifndef PCH_H
+#define PCH_H
 
-#include <ext/ICommon.h>
 #include <ext/IHook.h>
 #include <ext/ITasks.h>
 #include <ext/JITASM.h>
@@ -10,12 +10,12 @@
 #include <common/IMemPool.h>
 #include <common/ICriticalSection.h>
 #include <skse64/PluginAPI.h>
-#include <skse64_common/skse_version.h>
 #include <skse64_common/BranchTrampoline.h>
 #include <skse64/PluginAPI.h>
 #include <skse64/NiNodes.h>
 #include <skse64/NiTypes.h>
 #include <skse64/NiObjects.h>
+#include <skse64/NiLight.h>
 #include <skse64/GameReferences.h>
 #include <skse64/GameData.h>
 #include <skse64/GameMenus.h>
@@ -28,6 +28,8 @@
 #include <skse64/NiRenderer.h>
 #include <skse64/NiExtraData.h>
 #include <skse64/NiGeometry.h>
+#include <skse64/GameInput.h>
+
 
 #include <map>
 #include <set>
@@ -45,6 +47,7 @@
 #include <functional>
 #include <numbers>
 #include <queue>
+#include <ctime>
 
 #include <ShlObj.h>
 
@@ -53,7 +56,7 @@
 
 #include <wrl/client.h>
 
-#include <ppl.h>
+//#include <ppl.h>
 
 #define DIRECTINPUT_VERSION 0x0800
 #include <dinput.h>
@@ -121,40 +124,5 @@ namespace fs = std::filesystem;
 
 #include "plugin.h"
 #include "paths.h"
-#include "Common/Data.h"
-#include "skse.h"
-#include "config.h"
-#include "drivers/tasks.h"
-#include "drivers/events.h"
-#include "drivers/data.h"
-#include "drivers/input.h"
-#include "drivers/render.h"
-#include "drivers/gui.h"
-#include "Common/EventCommon.h"
-#include "Common/Serialization.h"
-#include "Common/ProfileManager.h"
-#include "Common/UIData.h"
-#include "Common/UICommon.h"
-#include "Common/Crypto.h"
-#include "Common/Game.h"
-#include "Common/BulletExtensions.h"
-#include "cbp/Data.h"
-#include "cbp/ArmorCache.h"
-#include "cbp/ColliderData.h"
-#include "cbp/Config.h"
-#include "cbp/Serialization.h"
-#include "cbp/Template.h"
-#include "CBP/BoneCast.h"
-#include "cbp/SimComponent.h"
-#include "cbp/SimObject.h"
-#include "cbp/Collision.h"
-#include "cbp/Armor.h"
-#include "cbp/UI.h"
-#include "cbp/Papyrus.h"
-#include "cbp/Renderer.h"
-#include "cbp/Profiling.h"
-#include "cbp/Controller.h"
-#include "cbp/GameEventHandlers.h"
-#include "cbp/Profile.h"
-#include "drivers/cbp.h"
 
+#endif //PCH_H

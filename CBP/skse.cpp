@@ -1,5 +1,7 @@
 #include "pch.h"
 
+#include "skse.h"
+
 namespace SKSE
 {
     constexpr size_t MAX_TRAMPOLINE_BRANCH = 128;

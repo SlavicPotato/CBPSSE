@@ -1,5 +1,10 @@
 #include "pch.h"
 
+#include "GameEventHandlers.h"
+#include "Controller.h"
+
+#include "Drivers/cbp.h"
+
 namespace CBP
 {
     auto EventHandler::ReceiveEvent(TESObjectLoadedEvent* evn, EventDispatcher<TESObjectLoadedEvent>*)

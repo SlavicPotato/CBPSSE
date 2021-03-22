@@ -1,5 +1,11 @@
 #include "pch.h"
 
+#include "Papyrus.h"
+#include "Config.h"
+
+#include "Drivers/cbp.h"
+#include "Drivers/tasks.h"
+
 namespace CBP
 {
     static IThreadSafeBasicMemPool<ConfigUpdateTask, 30> s_configUpdateTaskPool;
@@ -49,6 +55,11 @@ namespace CBP
     {
         DCBP::ResetActors();
     }
+    
+    static void PP_OpenUI(StaticFunctionTag*, bool a_open)
+    {
+        DCBP::OpenUI(a_open);
+    }
 
     bool RegisterFuncs(VMClassRegistry* registry)
     {
@@ -62,6 +73,13 @@ namespace CBP
             new NativeFunction4<StaticFunctionTag, bool, BSFixedString, BSFixedString, bool, float>("SetGlobalConfig", "CBP", PP_SetGlobalConfig, registry));
         registry->RegisterFunction(
             new NativeFunction5<StaticFunctionTag, bool, Actor*, BSFixedString, BSFixedString, bool, float>("SetActorConfig", "CBP", PP_SetActorConfig, registry));
+        registry->RegisterFunction(
+            new NativeFunction1<StaticFunctionTag, void, bool>("OpenUI", "CBP", PP_OpenUI, registry));
+
+
+        registry->SetFunctionFlags("CBP", "OpenUI", VMClassRegistry::kFunctionFlag_NoWait);
+        registry->SetFunctionFlags("CBP", "ResetAllActors", VMClassRegistry::kFunctionFlag_NoWait);
+        registry->SetFunctionFlags("CBP", "UpdateAllActors", VMClassRegistry::kFunctionFlag_NoWait);
 
         return true;
     }

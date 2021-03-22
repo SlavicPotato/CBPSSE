@@ -1,7 +1,16 @@
 #pragma once
 
+#include "ColliderData.h"
+
 namespace CBP
 {
+    struct pluginInfo_t;
+}
+
+namespace CBP
+{
+    struct configNode_t;
+
     struct BoneCacheUpdateID
     {
         BoneCacheUpdateID() :
@@ -22,7 +31,7 @@ namespace CBP
 
     private:
 
-        uint64_t m_id;
+        std::uint64_t m_id;
         long long m_timeStamp;
     };
 
@@ -48,6 +57,7 @@ namespace CBP
             CacheEntry(
                 const T& a_data)
                 :
+                m_size(0),
                 m_data(a_data),
                 m_lastAccess(IPerfCounter::Query())
             {
@@ -57,6 +67,7 @@ namespace CBP
             CacheEntry(
                 T&& a_data)
                 :
+                m_size(0),
                 m_data(std::move(a_data)),
                 m_lastAccess(IPerfCounter::Query())
             {
@@ -197,7 +208,7 @@ namespace CBP
         {
             SKMP_DECLARE_ALIGNED_ALLOCATOR_AUTO();
 
-            Vertex() :
+            SKMP_FORCEINLINE Vertex() :
                 m_weight(-1.0f),
                 m_index(0),
                 m_hasVertex(false)
@@ -277,30 +288,35 @@ namespace CBP
             ColliderDataStorage& a_result);
 
         static void RemoveDuplicateVertices(
-            const MeshPoint *a_vertices,
-            unsigned int a_numVertices,
+            const MeshPoint* a_vertices,
+            Eigen::Index a_numVertices,
             const unsigned int* a_indices,
-            std::size_t a_numFaces,
-            Eigen::MatrixXf &a_verticesOut,
-            Eigen::MatrixXi &a_indicesOut);
-        
+            Eigen::Index a_numFaces,
+            Eigen::MatrixXf& a_verticesOut,
+            Eigen::MatrixXi& a_indicesOut);
+
         static void RemoveUnreferencedVertices(
             const MeshPoint* a_vertices,
             unsigned int a_numVertices,
             const unsigned int* a_indices,
             std::size_t a_numIndices,
-            std::shared_ptr<MeshPoint[]> &a_verticesOut,
-            std::vector<unsigned int> &a_indicesOut,
-            unsigned int &a_newVertexCount
+            std::shared_ptr<MeshPoint[]>& a_verticesOut,
+            unsigned int* a_indicesOut,
+            unsigned int& a_newVertexCount
         );
 
-        static bool CreateColliderData(
+        [[nodiscard]] static bool CreateColliderData(
             const ColliderDataStorage& a_cds,
             const unsigned int* a_indices,
-            std::size_t a_numIndices, 
+            std::size_t a_numIndices,
             ColliderData* a_out,
-            bool &a_verticesShared,
+            bool& a_verticesShared,
             bool a_removeVertices);
+
+        [[nodiscard]] static const auto& FilterIndicesByWeight(
+            ColliderDataStoragePair& a_in,
+            decltype(ColliderDataStorage::m_indices)& a_buffer,
+            float a_weightThreshold);
 
         [[nodiscard]] static bool UpdateGeometry(
             ColliderDataStoragePair& a_in,

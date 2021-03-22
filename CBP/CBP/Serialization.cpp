@@ -1,5 +1,12 @@
 #include "pch.h"
 
+#include "Serialization.h"
+#include "Data.h"
+
+#include "Drivers/cbp.h"
+#include "Drivers/data.h"
+#include "skse.h"
+
 namespace Serialization
 {
     static const std::string s_keyMaxOffset("maxoffset");
@@ -189,7 +196,7 @@ namespace Serialization
 
                 auto& phys = simComponent["phys"];
 
-                auto baseaddr = reinterpret_cast<uintptr_t>(std::addressof(v.second));
+                auto baseaddr = reinterpret_cast<std::uintptr_t>(std::addressof(v.second));
 
                 for (const auto& e : v.second.descMap)
                     phys[e.first] = *reinterpret_cast<float*>(baseaddr + e.second.offset);
@@ -595,6 +602,7 @@ namespace CBP
                 data.ui.geometry.wireframe = ui.get("geWireframe", false).asBool();
                 data.ui.geometry.lighting = ui.get("geLighting", false).asBool();
                 data.ui.geometry.resolution = ui.get("geResolution", 1024.0f).asFloat();
+                data.ui.geometry.fov = ui.get("geFOV", 90.0f).asFloat();
                 ParseFloatArray(ui["geColor"], data.ui.geometry.color.m128_f32);
                 ParseFloatArray(ui["geAmbientLightColor"], data.ui.geometry.ambientLightColor.m128_f32);
 
@@ -820,6 +828,7 @@ namespace CBP
             ui["geWireframe"] = data.ui.geometry.wireframe;
             ui["geLighting"] = data.ui.geometry.lighting;
             ui["geResolution"] = data.ui.geometry.resolution;
+            ui["geFOV"] = data.ui.geometry.fov;
             CreateFloatArray(data.ui.geometry.color.m128_f32, ui["geColor"]);
             CreateFloatArray(data.ui.geometry.ambientLightColor.m128_f32, ui["geAmbientLightColor"]);
 

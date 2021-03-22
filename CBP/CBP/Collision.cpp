@@ -1,5 +1,8 @@
 #include "pch.h"
 
+#include "Collision.h"
+#include "ColliderData.h"
+#include "SimComponent.h"
 
 namespace CBP
 {
@@ -125,7 +128,7 @@ namespace CBP
 
             auto tmp = std::make_unique<ColliderData>();
 
-            tmp->m_vertices = std::make_unique<MeshPoint[]>(std::size_t(numVertices));
+            tmp->m_vertices = std::make_unique_for_overwrite<MeshPoint[]>(std::size_t(numVertices));
 
             for (unsigned int i = 0; i < mesh->mNumVertices; i++)
             {
@@ -153,8 +156,8 @@ namespace CBP
             if (numIndices < 1)
                 throw std::exception("No indices");
 
-            tmp->m_indices = std::make_unique<int[]>(std::size_t(numIndices));
-            tmp->m_hullPoints = std::make_unique<MeshPoint[]>(std::size_t(numIndices));
+            tmp->m_indices = std::make_unique_for_overwrite<int[]>(std::size_t(numIndices));
+            tmp->m_hullPoints = std::make_unique_for_overwrite<MeshPoint[]>(std::size_t(numIndices));
 
             for (unsigned int i = 0, n = 0; i < mesh->mNumFaces; i++)
             {
@@ -330,26 +333,18 @@ namespace CBP
         const btVector3& a_n,
         btVector3& a_rn)
     {
-        auto l2 = a_vi.length2();
-        if (l2 < _EPSILON * _EPSILON) {
+        a_rn = a_vi - a_n * a_n.dot(a_vi);
+
+        auto lv = a_rn.length2();
+        if (lv < _EPSILON * _EPSILON) {
             return 0.0f;
         }
 
-        auto vn = a_vi / std::sqrtf(l2);
+        auto i = std::sqrtf(lv);
 
-        btVector3 p1, p2;
-        btPlaneSpace1(vn, p1, p2);
+        a_rn /= i;
 
-        a_rn = (p2 + p1).cross(a_n);
-
-        l2 = a_rn.length2();
-        if (l2 < _EPSILON * _EPSILON) {
-            return 0.0f;
-        }
-
-        a_rn /= std::sqrtf(l2);
-
-        return a_vi.dot(a_rn);
+        return i;
     }
 
     void ICollision::PerformCollisionResponse(
@@ -450,35 +445,31 @@ namespace CBP
 
                     if (impulse1 > 0.0f)
                     {
-                        impulse1 /= miab;
+                        auto Jm = impulse1 / miab * fc;
 
                         if (mova)
                         {
-                            auto Jm = impulse1 * fc;
                             sc1->SubVelocity(n1 * (Jm * mia));
                         }
 
                         if (movb)
                         {
-                            auto Jm = impulse1 * fc;
-                            sc2->AddVelocity(n1* (Jm* mib));
+                            sc2->AddVelocity(n1 * (Jm * mib));
 
                         }
                     }
 
                     if (impulse2 > 0.0f)
                     {
-                        impulse2 /= miab;
+                        auto Jm = impulse2 / miab * fc;
 
                         if (mova)
                         {
-                            auto Jm = impulse2 * fc;
                             sc1->AddVelocity(n2 * (Jm * mia));
                         }
 
                         if (movb)
                         {
-                            auto Jm = impulse2 * fc;
                             sc2->SubVelocity(n2 * (Jm * mib));
                         }
                     }

@@ -1,5 +1,7 @@
 #include "pch.h"
 
+#include "events.h"
+#include "skse.h"
 
 namespace CBP
 {

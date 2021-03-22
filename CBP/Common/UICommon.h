@@ -1,64 +1,45 @@
 #pragma once
 
+#include "Events/Events.h"
+#include "UIData.h"
+
+#include "Profile/Manager.h"
+
 namespace UICommon
 {
     class UIAlignment
     {
     protected:
 
-        SKMP_FORCEINLINE float GetNextTextOffset(const char* a_text, bool a_clear = false)
-        {
-            if (a_clear)
-                ClearTextOffset();
+        float GetNextTextOffset(const char* a_text, bool a_clear = false);
+        void ClearTextOffset();
+        bool ButtonRight(const char* a_text, bool a_disabled = false);
 
-            auto it = m_ctlPositions.find(a_text);
-            if (it != m_ctlPositions.end())
-                return (m_posOffset += it->second + (m_posOffset == 0.0f ? 0.0f : 5.0f));
-
-            return (m_posOffset += ImGui::CalcTextSize(a_text).x + 5.0f);
-        }
-
-        SKMP_FORCEINLINE void ClearTextOffset() {
-            m_posOffset = 0.0f;
-        }
-
-        SKMP_FORCEINLINE bool ButtonRight(const char* a_text, bool a_disabled = false)
-        {
-            if (a_disabled)
-            {
-                ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
-                ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
-            }
-
-            bool res = ImGui::Button(a_text);
-
-            if (a_disabled)
-            {
-                ImGui::PopItemFlag();
-                ImGui::PopStyleVar();
-            }
-
-            m_ctlPositions[a_text] = ImGui::GetItemRectSize().x;
-            return res;
-        }
-        
-        /*template <typename ...Args>
-        SKMP_FORCEINLINE void TextWrappedRight(const char* a_text, Args... a_args)
-        {
-            ImGui::TextWrapped(a_text, a_args...);
-            m_ctlPositions[a_text] = ImGui::GetItemRectSize().x;
-        }
-        
-        SKMP_FORCEINLINE void TextWrappedRight(const char* a_text, float a_width, bool a_reset = false)
-        {
-            ImGui::SameLine(a_width - GetNextTextOffset(a_text, a_reset));
-            ImGui::TextWrapped("%s", a_text);
-            m_ctlPositions[a_text] = ImGui::GetItemRectSize().x;
-        }*/
-
+    private:
         float m_posOffset = 0.0f;
         stl::unordered_map<std::string, float> m_ctlPositions;
 
+    };
+
+    struct SKMP_ALIGN(16) WindowLayoutData
+    {
+        SKMP_FORCEINLINE WindowLayoutData(
+            float a_offset,
+            float a_width,
+            float a_height,
+            bool a_centered)
+            :
+            m_offset(a_offset),
+            m_width(a_width),
+            m_height(a_height),
+            m_centered(a_centered)
+        {
+        }
+
+        float m_offset;
+        float m_width;
+        float m_height;
+        bool m_centered;
     };
 
     class UIWindow
@@ -69,6 +50,10 @@ namespace UICommon
             float a_sizeX = -1.0f,
             float a_sizeY = -1.0f,
             bool a_centered = false);
+
+        SKMP_FORCEINLINE void SetWindowDimensions(const WindowLayoutData& a_data) {
+            SetWindowDimensions(a_data.m_offset, a_data.m_width, a_data.m_height, a_data.m_centered);
+        }
 
         bool CanClip() const;
 
@@ -464,6 +449,36 @@ namespace UICommon
         stl::queue<UIPopupAction> m_queue;
     };
 
+    class UIWindowBase
+    {
+    public:
+
+        UIWindowBase() :
+            m_openState(false)
+        {
+        };
+
+        UIWindowBase(const UIWindowBase&) = delete;
+        UIWindowBase(UIWindowBase&&) = delete;
+        UIWindowBase& operator=(const UIWindowBase&) = delete;
+        UIWindowBase& operator=(UIWindowBase&&) = delete;
+
+        SKMP_FORCEINLINE void SetOpenState(bool a_state) {
+            m_openState = a_state;
+        }
+
+        SKMP_FORCEINLINE bool* GetOpenState() {
+            return std::addressof(m_openState);
+        }
+
+        SKMP_FORCEINLINE bool IsWindowOpen() {
+            return m_openState;
+        }
+
+    private:
+        bool m_openState;
+    };
+
     template <class T, class C>
     class UIDataBase
     {
@@ -766,6 +781,7 @@ namespace UICommon
 
     template <class T>
     class UIProfileEditorBase :
+        public UICommon::UIWindowBase,
         virtual protected UIAlignment,
         virtual protected UIWindow,
         public UIProfileBase<T>
@@ -774,7 +790,7 @@ namespace UICommon
         UIProfileEditorBase(const char* a_name);
         virtual ~UIProfileEditorBase() noexcept = default;
 
-        void Draw(bool* a_active, float a_scale);
+        void Draw(float a_scale);
 
         SKMP_FORCEINLINE const char* GetName() const {
             return m_name;
@@ -782,11 +798,7 @@ namespace UICommon
 
     protected:
 
-        virtual void GetWindowDimensions(
-            float& a_offset, 
-            float& a_width, 
-            float& a_height, 
-            bool &a_centered) const;
+        virtual WindowLayoutData GetWindowDimensions() const;
 
         virtual void DrawItem(T& a_profile) = 0;
         virtual void OnReload(const T& a_profile);
@@ -816,17 +828,13 @@ namespace UICommon
     }
 
     template <class T>
-    void UIProfileEditorBase<T>::Draw(bool* a_active, float a_scale)
+    void UIProfileEditorBase<T>::Draw(float a_scale)
     {
-        float wo, ww, wh;
-        bool wc;
-
-        GetWindowDimensions(wo, ww, wh, wc);
-        SetWindowDimensions(wo, ww, wh, wc);
+        SetWindowDimensions(GetWindowDimensions());
 
         ImGui::PushID(static_cast<const void*>(this));
 
-        if (ImGui::Begin(m_name, a_active))
+        if (ImGui::Begin(m_name, GetOpenState()))
         {
             ImGui::SetWindowFontScale(a_scale);
 
@@ -862,7 +870,7 @@ namespace UICommon
             else {
                 if (!data.empty()) {
                     SetSelected(data.begin()->first);
-                    curSelName = (*m_state.selected).c_str();
+                    curSelName = m_state.selected->c_str();
                 }
             }
 
@@ -1007,16 +1015,9 @@ namespace UICommon
     }
 
     template <class T>
-    void UIProfileEditorBase<T>::GetWindowDimensions(
-        float& a_offset, 
-        float& a_width, 
-        float& a_height, 
-        bool& a_centered) const
+    WindowLayoutData UIProfileEditorBase<T>::GetWindowDimensions() const        
     {
-        a_offset = 400.0f;
-        a_width = -1.0f;
-        a_height = -1.0f;
-        a_centered = false;
+        return WindowLayoutData(400.0f, -1.0f, -1.0f, false);
     }
 
     template <class T>

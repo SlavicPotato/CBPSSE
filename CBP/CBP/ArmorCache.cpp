@@ -1,5 +1,8 @@
 #include "pch.h"
 
+#include "ArmorCache.h"
+#include "Config.h"
+
 namespace CBP
 {
     IArmorCache IArmorCache::m_Instance;

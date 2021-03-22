@@ -1,9 +1,45 @@
 #include "pch.h"
 
-#include "imgui_internal.h"
+#include "UICommon.h"
 
 namespace UICommon
 {
+    float UIAlignment::GetNextTextOffset(const char* a_text, bool a_clear)
+    {
+        if (a_clear)
+            ClearTextOffset();
+
+        auto it = m_ctlPositions.find(a_text);
+        if (it != m_ctlPositions.end())
+            return (m_posOffset += it->second + (m_posOffset == 0.0f ? 0.0f : 5.0f));
+
+        return (m_posOffset += ImGui::CalcTextSize(a_text).x + 5.0f);
+    }
+
+    void UIAlignment::ClearTextOffset() {
+        m_posOffset = 0.0f;
+    }
+
+    bool UIAlignment::ButtonRight(const char* a_text, bool a_disabled)
+    {
+        if (a_disabled)
+        {
+            ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+            ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
+        }
+
+        bool res = ImGui::Button(a_text);
+
+        if (a_disabled)
+        {
+            ImGui::PopItemFlag();
+            ImGui::PopStyleVar();
+        }
+
+        m_ctlPositions[a_text] = ImGui::GetItemRectSize().x;
+        return res;
+    }
+
     void UIWindow::SetWindowDimensions(float a_offsetX, float a_sizeX, float a_sizeY, bool a_centered)
     {
         if (!m_sizeData.initialized)

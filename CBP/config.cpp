@@ -1,29 +1,19 @@
 #include "pch.h"
 
+#include "config.h"
+
 INIReader IConfigINI::m_confReader;
+INIReader IConfigINI::m_confReaderCustom;
 
 int IConfigINI::Load()
 {
 	m_confReader.Load(PLUGIN_INI_FILE);
+	m_confReaderCustom.Load(PLUGIN_INI_CUSTOM_FILE);
 	return m_confReader.ParseError();
 }
-	
-float IConfigINI::GetConfigValue(const char* sect, const char* key, float default) const
-{
-	return m_confReader.GetFloat(sect, key, default);
-}
 
-double IConfigINI::GetConfigValue(const char* sect, const char* key, double default) const
+void IConfigINI::Clear()
 {
-	return m_confReader.GetReal(sect, key, default);
-}
-
-bool IConfigINI::GetConfigValue(const char* sect, const char* key, bool default) const
-{
-	return m_confReader.GetBoolean(sect, key, default);
-}
-
-std::string IConfigINI::GetConfigValue(const char* sect, const char* key, const char *default) const
-{
-	return m_confReader.Get(sect, key, default);
+	m_confReader.Clear();
+	m_confReaderCustom.Clear();
 }

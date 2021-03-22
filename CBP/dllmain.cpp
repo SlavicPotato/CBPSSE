@@ -1,5 +1,14 @@
 #include "pch.h"
 
+#include "drivers/cbp.h"
+#include "drivers/render.h"
+#include "drivers/input.h"
+#include "drivers/data.h"
+#include "drivers/events.h"
+
+#include "skse.h"
+#include "config.h"
+
 static bool Initialize(const SKSEInterface* skse)
 {
     if (!IAL::IsLoaded()) {
