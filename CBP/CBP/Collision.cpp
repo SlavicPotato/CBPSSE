@@ -76,7 +76,7 @@ namespace CBP
 
             Assimp::Exporter exporter;
 
-            if (exporter.Export(std::addressof(scene), "obj", m_pathStr) != aiReturn::aiReturn_SUCCESS) {
+            if (exporter.Export(std::addressof(scene), "objnomtl", m_pathStr) != aiReturn::aiReturn_SUCCESS) {
                 throw std::exception("Export failed");
             }
 
