@@ -412,7 +412,7 @@ namespace CBP
 
                 auto deltaV(v2 - v1);
 
-                float impulse = deltaV.dot(n);
+                float impulse = n.dot(deltaV);
 
                 if (depth > 0.01f) {
                     impulse += (a_timeStep * (2880.0f * pbf)) * std::max(depth - 0.01f, 0.0f);
@@ -437,40 +437,22 @@ namespace CBP
 
                 if (friction)
                 {
-                    btVector3 n1;
-                    btVector3 n2;
+                    btVector3 in;
 
-                    auto impulse1 = GetFrictionImpulse(v1, n, n1);
-                    auto impulse2 = GetFrictionImpulse(v2, n, n2);
+                    impulse = GetFrictionImpulse(deltaV, n, in);
 
-                    if (impulse1 > 0.0f)
+                    if (impulse > 0.0f)
                     {
-                        auto Jm = impulse1 / miab * fc;
+                        auto Jm = impulse / miab * fc;
 
                         if (mova)
                         {
-                            sc1->SubVelocity(n1 * (Jm * mia));
+                            sc1->AddVelocity(in * (Jm * mia));
                         }
 
                         if (movb)
                         {
-                            sc2->AddVelocity(n1 * (Jm * mib));
-
-                        }
-                    }
-
-                    if (impulse2 > 0.0f)
-                    {
-                        auto Jm = impulse2 / miab * fc;
-
-                        if (mova)
-                        {
-                            sc1->AddVelocity(n2 * (Jm * mia));
-                        }
-
-                        if (movb)
-                        {
-                            sc2->SubVelocity(n2 * (Jm * mib));
+                            sc2->SubVelocity(in * (Jm * mib));
                         }
                     }
                 }
