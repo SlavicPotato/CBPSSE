@@ -102,7 +102,8 @@ namespace CBP
         m_sex(a_sex),
         m_node(a_actor->loadedState->node),
         m_suspended(false),
-        m_markedForDelete(false)
+        m_markedForDelete(false),
+        m_actor(a_actor)
 #if BT_THREADSAFE
         , m_task(this)
 #endif
@@ -116,7 +117,7 @@ namespace CBP
 
         for (auto& e : a_desc)
         {
-            auto obj = new SimComponent(
+            auto obj = std::make_unique<SimComponent>(
                 *this,
                 a_actor,
                 e.object,
@@ -141,7 +142,7 @@ namespace CBP
                 ++it;
             }
 
-            m_objList.emplace(it, obj);
+            m_objList.emplace(it, std::move(obj));
         }
 
         BSFixedString n(NODE_HEAD);
@@ -150,12 +151,10 @@ namespace CBP
         //m_actor = a_actor;
     }
 
-    SimObject::~SimObject() noexcept
+    /*SimObject::~SimObject() noexcept
     {
-        auto count = m_objList.size();
-        for (decltype(count) i = 0; i < count; i++)
-            delete m_objList[i];
-    }
+        
+    }*/
 
     void SimObject::Reset()
     {
@@ -176,7 +175,7 @@ namespace CBP
         auto count = m_objList.size();
         for (decltype(count) i = 0; i < count; i++)
         {
-            auto p = m_objList[i];
+            auto &p = m_objList[i];
 
             auto& confGroup = p->GetConfigGroupName();
 
@@ -209,7 +208,7 @@ namespace CBP
         auto count = m_objList.size();
         for (decltype(count) i = 0; i < count; i++)
         {
-            auto p = m_objList[i];
+            auto &p = m_objList[i];
 
             if (StrHelpers::iequal(p->GetConfigGroupName(), a_component))
                 p->ApplyForce(a_steps, a_force);

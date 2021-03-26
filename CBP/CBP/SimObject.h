@@ -2,11 +2,10 @@
 
 #include "Config.h"
 #include "Common/BulletExtensions.h"
+#include "SimComponent.h"
 
 namespace CBP
 {
-    class SimComponent;
-
     struct nodeDesc_t
     {
         nodeDesc_t(
@@ -41,11 +40,8 @@ namespace CBP
 
     class SimObject
     {
-        //typedef stl::imap<std::string, SimComponent> thingMap_t;
-        typedef stl::vector<SimComponent*> thingList_t;
+        using nodeList_t = stl::vector<std::unique_ptr<SimComponent>>;
 
-        /*using iterator = typename thingMap_t::iterator;
-        using const_iterator = typename stl::vector<SimComponent*>::const_iterator;*/
     public:
         SimObject(
             Game::ObjectHandle a_handle,
@@ -53,7 +49,7 @@ namespace CBP
             char a_sex,
             const nodeDescList_t& a_desc);
 
-        virtual ~SimObject() noexcept;
+        virtual ~SimObject() noexcept = default;
 
         SimObject() = delete;
         SimObject(const SimObject& a_rhs) = delete;
@@ -148,14 +144,13 @@ namespace CBP
 
     private:
 
-        thingList_t m_objList;
+        nodeList_t m_objList;
 
         Game::ObjectHandle m_handle;
 
+        NiPointer<Actor> m_actor;
         NiPointer<NiNode> m_node;
         NiPointer<NiAVObject> m_objHead;
-
-        //NiPointer<Actor> m_actor;
 
         char m_sex;
 

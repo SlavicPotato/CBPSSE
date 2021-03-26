@@ -206,14 +206,14 @@ namespace CBP
 
         m_timeAccum += a_interval;
 
-        UpdatePhase1(m_averageInterval);
-
         std::uint32_t steps;
 
         if (m_timeAccum > timeTick * 0.25f)
         {
             float timeStep = std::min(m_timeAccum,
                 timeTick * globalConfig.phys.maxSubSteps);
+
+            UpdatePhase1(m_timeAccum);
 
             float maxTime = timeTick * 1.25f;
 

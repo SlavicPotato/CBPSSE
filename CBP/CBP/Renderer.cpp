@@ -61,8 +61,8 @@ namespace CBP
             {
                 auto& nl = e->GetNodeList();
 
-                int count = nl.size();
-                for (int i = 0; i < count; i++)
+                auto count = nl.size();
+                for (decltype(count) i = 0; i < count; i++)
                 {
                     auto& n = nl[i];
 
@@ -111,10 +111,10 @@ namespace CBP
 
             auto& nl = e->GetNodeList();
 
-            int count = nl.size();
-            for (int i = 0; i < count; i++)
+            auto count = nl.size();
+            for (decltype(count) i = 0; i < count; i++)
             {
-                auto n = nl[i];
+                auto &n = nl[i];
 
                 if (!n->HasMotion())
                     continue;
