@@ -573,7 +573,6 @@ namespace CBP
         btMatrix3x3 m_itrInitialMat;
         btMatrix3x3 m_itrMatParent;
 
-        btQuaternion m_itrInitialRot;
         rotationParams_t m_rotParams;
 
         btVector3 m_itrInitialPos;

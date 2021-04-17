@@ -634,7 +634,7 @@ namespace CBP
         if (m_parent.m_motion && m_parent.m_rotScaleOn && m_doRotationScaling)
         {
             objmat = m_parent.m_itrMatParent *
-                btMatrix3x3(m_parent.m_itrInitialRot + mkQuat(m_parent.m_rotParams.m_axis, m_parent.m_rotParams.m_axisLength, m_parent.m_rotParams.m_angle * m_rotationScale));
+                btMatrix3x3(m_parent.m_itrInitialMat * btMatrix3x3(mkQuat(m_parent.m_rotParams.m_axis, m_parent.m_rotParams.m_axisLength, m_parent.m_rotParams.m_angle * m_rotationScale)));
         }
         else
         {
@@ -745,6 +745,7 @@ namespace CBP
         m_motion(a_motion),
         m_velocity(s_vecZero),
         m_virtld(s_vecZero),
+        m_ld(s_vecZero),
         m_colRad(1.0f),
         m_colHeight(0.001f),
         m_nodeScale(1.0f),
@@ -767,8 +768,6 @@ namespace CBP
 #ifdef _CBP_ENABLE_DEBUG
         m_debugInfo.parentNodeName = a_obj->m_parent->m_name;
 #endif
-
-        m_itrInitialMat.getRotation(m_itrInitialRot);
 
         UpdateConfig(a_actor, nullptr, a_nodeConf, a_collisions, a_motion);
     }
@@ -1194,7 +1193,7 @@ namespace CBP
                     m_rotParams.Zero();
                 }
 
-                btMatrix3x3 m(m_itrInitialRot + mkQuat(m_rotParams.m_axis, m_rotParams.m_axisLength, m_rotParams.m_angle));
+                btMatrix3x3 m(m_itrInitialMat * btMatrix3x3(mkQuat(m_rotParams.m_axis, m_rotParams.m_axisLength, m_rotParams.m_angle)));
 
                 m[2].setW(obj->m_localTransform.pos.x);
 
