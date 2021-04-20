@@ -151,10 +151,16 @@ namespace CBP
         //m_actor = a_actor;
     }
 
-    /*SimObject::~SimObject() noexcept
+
+    SimObject::~SimObject() noexcept
     {
-        
-    }*/
+        // release node refs first
+        m_objList.clear();
+        m_objHead = nullptr;
+        m_node = nullptr;
+
+        m_actor = nullptr;
+    }
 
     void SimObject::Reset()
     {

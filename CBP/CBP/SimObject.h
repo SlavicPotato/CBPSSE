@@ -49,7 +49,7 @@ namespace CBP
             char a_sex,
             const nodeDescList_t& a_desc);
 
-        virtual ~SimObject() noexcept = default;
+        virtual ~SimObject() noexcept ;
 
         SimObject() = delete;
         SimObject(const SimObject& a_rhs) = delete;
