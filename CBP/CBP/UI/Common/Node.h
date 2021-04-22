@@ -29,6 +29,10 @@ namespace CBP
             const configNode_t& a_data,
             bool a_reset) = 0;
 
+        virtual void RemoveNodeData(
+            T a_handle,
+            const std::string& a_node) = 0;
+
         void DrawNodeItem(
             T a_handle,
             const std::string& a_nodeName,
@@ -122,6 +126,15 @@ namespace CBP
         [[nodiscard]] virtual std::string GetGCSID(
             const std::string& a_name) const;
         
+    private:
+
+        void DrawNodeHeader(
+            T a_handle,
+            configNodes_t& a_data);
+        
+        void DrawNodeAddPopup(
+            configNodes_t& a_data);
+
     };
 
 

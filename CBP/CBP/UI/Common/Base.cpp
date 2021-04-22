@@ -41,6 +41,8 @@ namespace CBP
 
     void UIEditorBase::DrawGenderSelector()
     {
+        ImGui::PushID("__gender_selector");
+
         auto& gcc = GetGlobalCommonConfig();
         
         if (ImGui::RadioButton("Female", gcc.selectedGender == ConfigGender::Female)) {
@@ -52,6 +54,8 @@ namespace CBP
         if (ImGui::RadioButton("Male", gcc.selectedGender == ConfigGender::Male)) {
             SetGlobal(gcc.selectedGender, ConfigGender::Male);
         }
+
+        ImGui::PopID();
     }
 
     void UIEditorBase::AutoSelectGender(Game::ObjectHandle a_handle)

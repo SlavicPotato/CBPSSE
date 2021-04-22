@@ -10,6 +10,8 @@
 #include "Drivers/cbp.h"
 #include "Drivers/tasks.h"
 
+#include "Common/Game.h"
+
 namespace CBP
 {
     SKMP_FORCEINLINE static bool ActorValid(const Actor* actor)
@@ -89,7 +91,7 @@ namespace CBP
 
         for (std::size_t i = 0; i < size; i++)
         {
-            data[i]->UpdateVelocity(a_timeStep);
+            data[i]->ReadTransforms(a_timeStep);
         }
     }
 
@@ -133,8 +135,8 @@ namespace CBP
     }
 
     std::uint32_t ControllerTask::UpdatePhase2(
-        float a_timeStep, 
-        float a_timeTick, 
+        float a_timeStep,
+        float a_timeTick,
         float a_maxTime)
     {
         std::uint32_t c(1);
@@ -153,8 +155,8 @@ namespace CBP
     }
 
     std::uint32_t ControllerTask::UpdatePhase2Collisions(
-        float a_timeStep, 
-        float a_timeTick, 
+        float a_timeStep,
+        float a_timeTick,
         float a_maxTime)
     {
         std::uint32_t c(1);
@@ -174,6 +176,17 @@ namespace CBP
         return c;
     }
 
+    void ControllerTask::UpdatePhase3()
+    {
+        auto data = m_actors.getdata();
+        auto size = m_actors.vecsize();
+
+        for (std::size_t i = 0; i < size; i++)
+        {
+            data[i]->WriteTransforms();
+        }
+    }
+
 #ifdef _CBP_ENABLE_DEBUG
     void ControllerTask::UpdatePhase3()
     {
@@ -183,7 +196,7 @@ namespace CBP
 #endif
 
     std::uint32_t ControllerTask::UpdatePhysics(
-        Game::BSMain* a_main, 
+        Game::BSMain* a_main,
         float a_interval)
     {
         if (a_main->freezeTime ||
@@ -223,6 +236,8 @@ namespace CBP
             else {
                 steps = UpdatePhase2(timeStep, timeTick, maxTime);
             }
+
+            UpdatePhase3();
 
 #ifdef _CBP_ENABLE_DEBUG
             UpdatePhase3();
@@ -279,21 +294,33 @@ namespace CBP
     {
         //m_pt.Begin();
 
-        IScopedLock _(DCBP::GetLock());
+        try
+        {
+            IScopedLock _(DCBP::GetLock());
 
-        if (m_ranFrame) // this should never happen, but just in case
-            return;
+            if (m_ranFrame) // this should never happen, but just in case
+                return;
 
-        m_ranFrame = true;
+            m_ranFrame = true;
 
-        CullActors();
+            CullActors();
 
-        auto player = *g_thePlayer;
-        if (player && player->loadedState && player->parentCell)
-            ProcessTasks();
+            auto player = *g_thePlayer;
+            if (player && player->loadedState && player->parentCell)
+                ProcessTasks();
 
-        PhysicsTick(Game::BSMain::GetSingleton(), m_lastFrameTime);
-
+            PhysicsTick(Game::BSMain::GetSingleton(), m_lastFrameTime);
+        }
+        catch (const std::exception& e)
+        {
+            FatalError("Exception occured: %s", e.what());
+            abort();
+        }
+        catch (...)
+        {
+            FatalError("Exception occured");
+            abort();
+        }
         /*long long t;
         if (m_pt.End(t))
             Debug(">> %lld", t);*/
@@ -301,7 +328,7 @@ namespace CBP
 
     void ControllerTask::CullActors()
     {
-        auto policy = (*g_skyrimVM)->GetClassRegistry()->GetHandlePolicy();
+        //auto policy = (*g_skyrimVM)->GetClassRegistry()->GetHandlePolicy();
 
         bool notMarked(true);
 
@@ -312,8 +339,8 @@ namespace CBP
         {
             auto e = data[i];
 
-            auto actor = static_cast<Actor*>(policy->Resolve(Actor::kTypeID, e->GetActorHandle()));
-            //auto actor = e->GetActor();
+            //auto actor = static_cast<Actor*>(policy->Resolve(Actor::kTypeID, e->GetActorHandle()));
+            auto actor = e->GetActor();
 
             if (!ActorValid(actor))
             {
@@ -365,19 +392,12 @@ namespace CBP
 
     void ControllerTask::AddActor(Game::ObjectHandle a_handle)
     {
-        /*auto it = m_actors.find(a_handle);
-        if (it != m_actors.end()) 
-        {
-            Debug("%.8X: Actor already present, re-adding", a_handle.GetFormID());
-            RemoveActor(it);
-        }*/
-
         PerfTimer pt;
 
         const auto& globalConfig = IConfig::GetGlobal();
 
-        if (globalConfig.general.controllerStats) 
-            pt.Start();        
+        if (globalConfig.general.controllerStats)
+            pt.Start();
 
         if (m_actors.contains(a_handle))
             return;
@@ -386,9 +406,9 @@ namespace CBP
         if (!ActorValid(actor))
             return;
 
-        char sex = Game::GetActorSex(actor);
+        auto sex = Game::GetActorSex(actor) == 0 ? ConfigGender::Male : ConfigGender::Female;
 
-        if (sex == 0 && globalConfig.general.femaleOnly)
+        if (globalConfig.general.femaleOnly && sex == ConfigGender::Male)
             return;
 
         if (actor->race != nullptr)
@@ -409,7 +429,7 @@ namespace CBP
 
         IData::UpdateActorMaps(a_handle, actor);
 
-        auto& conf = IConfig::GetActorPhysicsAO(a_handle, sex == 0 ? ConfigGender::Male : ConfigGender::Female);
+        auto& conf = IConfig::GetActorPhysicsAO(a_handle, sex);
         auto& nodeMap = IConfig::GetNodeMap();
 
         nodeDescList_t descList;
@@ -427,11 +447,11 @@ namespace CBP
 
         m_actors.try_emplace(a_handle, a_handle, actor, sex, descList);
 
-        if (globalConfig.general.controllerStats) 
+        if (globalConfig.general.controllerStats)
         {
             auto rt = pt.Stop() * 1000.0;
 
-            Debug("Registered [%.8X] [%.3f ms] [%s]", 
+            Debug("Registered [%.8X] [%.3f ms] [%s]",
                 actor->formID, rt, actor->GetReferenceName());
         }
 
@@ -440,10 +460,8 @@ namespace CBP
     void ControllerTask::RemoveActor(Game::ObjectHandle a_handle)
     {
         auto it = m_actors.find(a_handle);
-        if (it == m_actors.end())
-            return;
-
-        RemoveActor(it);
+        if (it != m_actors.end())
+            RemoveActor(it);
     }
 
     simActorList_t::iterator ControllerTask::RemoveActor(
@@ -457,68 +475,63 @@ namespace CBP
         return m_actors.erase(a_iterator);
     }
 
-    /*bool ControllerTask::ValidateActor(simActorList_t::value_type& a_entry)
-    {
-        auto actor = Game::ResolveObject<Actor>(a_entry.first, Actor::kTypeID);
-        if (!ActorValid(actor))
-            return false;
-
-        return a_entry.second.ValidateNodes(actor);
-    }*/
-
-    /*void ControllerTask::UpdateGroupInfoOnAllActors()
-    {
-        for (auto& a : m_actors)
-            a.second.UpdateGroupInfo();
-    }*/
-
     void ControllerTask::UpdateConfigOnAllActors()
     {
-        for (auto& e : m_actors)
+        auto it = m_actors.begin();
+        while (it != m_actors.end())
         {
-            auto actor = e.first.Resolve<Actor>();
+            auto actor = it->first.Resolve<Actor>();
 
-            if (!ActorValid(actor))
-                continue;
+            if (ActorValid(actor))
+            {
+                DoConfigUpdate(it->first, actor, it->second);
 
-            DoConfigUpdate(e.first, actor, e.second);
+                if (it->second.Empty()) {
+                    it = RemoveActor(it);
+                    continue;
+                }
+            }
+
+            ++it;
         }
     }
 
-    void ControllerTask::UpdateConfig(Game::ObjectHandle a_handle)
+    void ControllerTask::UpdateConfig(Game::ObjectHandle a_handle, bool a_addIfMissing)
     {
-        auto it = m_actors.find(a_handle);
-        if (it == m_actors.end())
-            return;
-
-        auto actor = it->first.Resolve<Actor>();
-
-        if (!ActorValid(actor))
-            return;
-
-        DoConfigUpdate(a_handle, actor, it->second);
+        UpdateConfig(a_handle, a_handle.Resolve<Actor>(), a_addIfMissing);
     }
 
-    void ControllerTask::UpdateConfig(Game::ObjectHandle a_handle, Actor* a_actor)
+    void ControllerTask::UpdateConfig(Game::ObjectHandle a_handle, Actor* a_actor, bool a_addIfMissing)
     {
         if (!ActorValid(a_actor))
             return;
 
         auto it = m_actors.find(a_handle);
-        if (it == m_actors.end())
+        if (it == m_actors.end()) 
+        {
+            if (a_addIfMissing)
+                AddActor(a_handle);
+            
             return;
+        }
 
         DoConfigUpdate(a_handle, a_actor, it->second);
+
+        if (it->second.Empty())
+            RemoveActor(it);
     }
 
-    void ControllerTask::DoConfigUpdate(Game::ObjectHandle a_handle, Actor* a_actor, SimObject& a_obj)
+    void ControllerTask::DoConfigUpdate(
+        Game::ObjectHandle a_handle,
+        Actor* a_actor,
+        SimObject& a_object)
     {
-        char sex = Game::GetActorSex(a_actor);
+        auto sex = Game::GetActorSex(a_actor) == 0 ? ConfigGender::Male : ConfigGender::Female;
 
-        a_obj.UpdateConfig(
+        a_object.UpdateConfig(
             a_actor,
             IConfig::GetGlobal().phys.collision,
-            IConfig::GetActorPhysicsAO(a_handle, sex == 0 ? ConfigGender::Male : ConfigGender::Female));
+            IConfig::GetActorPhysicsAO(a_handle, sex));
     }
 
     void ControllerTask::ApplyForce(
@@ -588,7 +601,7 @@ namespace CBP
             GatherActors(handles);
 
             ClearActors(false, true);
-            for (const auto &e : handles)
+            for (const auto& e : handles)
                 AddActor(e);
 
         }
@@ -655,7 +668,7 @@ namespace CBP
             NiNodeUpdate(e.first);
     }
 
-    void ControllerTask::AddArmorOverrides(
+    /*void ControllerTask::AddArmorOverrides(
         Game::ObjectHandle a_handle,
         Game::FormID a_formid)
     {
@@ -694,7 +707,10 @@ namespace CBP
         }
 
         DoConfigUpdate(a_handle, actor, it->second);
-    }
+        
+        if (it->second.Empty())
+            RemoveActor(it);
+    }*/
 
     void ControllerTask::UpdateArmorOverrides(
         Game::ObjectHandle a_handle)
@@ -704,14 +720,19 @@ namespace CBP
             return;
 
         auto it = m_actors.find(a_handle);
-        if (it == m_actors.end())
+        if (it == m_actors.end()) {
+            AddActor(a_handle);
             return;
+        }
 
         auto actor = a_handle.Resolve<Actor>();
         if (!actor)
             return;
 
         DoUpdateArmorOverrides(*it, actor);
+
+        if (it->second.Empty())
+            RemoveActor(it);
     }
 
     void ControllerTask::DoUpdateArmorOverrides(
@@ -794,13 +815,21 @@ namespace CBP
         if (!globalConfig.general.armorOverrides)
             return;
 
-        for (auto& e : m_actors)
+        auto it = m_actors.begin();
+        while (it != m_actors.end())
         {
-            auto actor = e.first.Resolve<Actor>();
-            if (!actor)
-                continue;
+            auto actor = it->first.Resolve<Actor>();
+            if (ActorValid(actor))
+            {
+                DoUpdateArmorOverrides(*it, actor);
 
-            DoUpdateArmorOverrides(e, actor);
+                if (it->second.Empty()) {
+                    it = RemoveActor(it);
+                    continue;
+                }
+            }
+
+            ++it;
         }
     }
 
@@ -808,6 +837,30 @@ namespace CBP
     {
         IConfig::ClearArmorOverrides();
         UpdateConfigOnAllActors();
+    }
+
+    void ControllerTask::ValidateNodes(Game::ObjectHandle a_handle)
+    {
+        auto it = m_actors.find(a_handle);
+        if (it == m_actors.end())
+            return;
+
+        auto actor = it->first.Resolve<Actor>();
+        if (!ActorValid(actor))
+            return;
+
+        if (it->second.HasNewNode(actor, IConfig::GetNodeMap()))
+        {
+            RemoveActor(it);
+            AddActor(a_handle);
+        }
+        else
+        {
+            it->second.RemoveInvalidNodes(actor);
+
+            if (it->second.Empty())
+                RemoveActor(it);
+        }
     }
 
     void ControllerTask::ProcessTasks()
@@ -836,6 +889,9 @@ namespace CBP
                 break;
             case ControllerInstruction::Action::UpdateConfig:
                 UpdateConfig(instr.m_handle);
+                break;
+            case ControllerInstruction::Action::UpdateConfigOrAdd:
+                UpdateConfig(instr.m_handle, true);
                 break;
             case ControllerInstruction::Action::UpdateConfigAll:
                 UpdateConfigOnAllActors();
@@ -866,6 +922,9 @@ namespace CBP
                 break;
             case ControllerInstruction::Action::ClearArmorOverrides:
                 ClearArmorOverrides();
+                break;
+            case ControllerInstruction::Action::ValidateNodes:
+                ValidateNodes(instr.m_handle);
                 break;
             }
         }

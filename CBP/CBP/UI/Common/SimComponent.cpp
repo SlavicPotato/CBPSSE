@@ -149,6 +149,8 @@ namespace CBP
         nodeConfigList_t& a_nodeConfig
     )
     {
+        ImGui::PushID("__component_tab");
+
         if (ImGui::Button("Propagate >"))
             ImGui::OpenPopup("propagate_popup");
 
@@ -181,6 +183,8 @@ namespace CBP
 
         ImGui::PushID("group_options");
         DrawGroupOptions(a_handle, a_data, a_pair, a_nodeConfig);
+        ImGui::PopID();
+
         ImGui::PopID();
     }
 
@@ -279,15 +283,15 @@ namespace CBP
 
     template <class T, UIEditorID ID>
     float UISimComponent<T, ID>::GetActualSliderValue(
-        const armorCacheValue_t& a_cacheval,
+        const armorCacheValuePair_t& a_cacheval,
         float a_baseval) const
     {
         switch (a_cacheval.first)
         {
         case 0:
-            return a_cacheval.second;
+            return a_cacheval.second.vf;
         case 1:
-            return a_baseval * a_cacheval.second;
+            return a_baseval * a_cacheval.second.vf;
         default:
             return a_baseval;
         }
@@ -424,7 +428,7 @@ namespace CBP
 
         auto& pm = GlobalProfileManager::GetSingleton<ColliderProfile>();
 
-        if (ImGui::BeginCombo("Collider shape", desc.name.c_str()))
+        if (ImGui::BeginCombo("Collider shape##csc", desc.name.c_str()))
         {
             for (auto& e : configComponent_t::colDescMap)
             {
@@ -517,6 +521,8 @@ namespace CBP
         configComponentsValue_t& a_pair,
         const componentValueDescMap_t::vec_value_type& a_entry)
     {
+        ImGui::PushID("__mcs");
+
         ImGui::TextWrapped("Constraint shapes: ");
         ImGui::SameLine();
 
@@ -529,6 +535,8 @@ namespace CBP
         if (ImGui::CheckboxFlags("Sphere", Enum::Underlying(&a_pair.second.ex.motionConstraints), Enum::Underlying(MotionConstraints::Sphere))) {
             OnMotionConstraintChange(a_handle, a_data, a_pair, a_entry);
         }
+
+        ImGui::PopID();
     }
 
     template <class T, UIEditorID ID>
@@ -610,7 +618,8 @@ namespace CBP
                     {
                         if (e.second.groupType == DescUIGroupType::Collisions) 
                         {
-                            if (m_sliderFilter->Test(m_cscStr)) {
+                            if (m_sliderFilter->Test(m_cscStr)) 
+                            {
                                 DrawColliderShapeCombo(a_handle, a_data, a_pair, e, a_nodeList);
                             }
                         }
@@ -700,11 +709,16 @@ namespace CBP
 
                     ImGui::PushID(currentDesc->descTag.c_str());
 
-                    if ((e.second.flags & DescUIFlags::Float3Mirror) == DescUIFlags::Float3Mirror) {
+                    if ((e.second.flags & DescUIFlags::Float3Mirror) == DescUIFlags::Float3Mirror) 
+                    {
+                        ImGui::PushID(static_cast<const void*>(currentDesc));
+
                         if (ImGui::Button("+"))
-                            ImGui::OpenPopup("slider_opts");
+                            ImGui::OpenPopup("__slider_opts");
 
                         DrawSliderContextMenu(std::addressof(e), a_pair);
+
+                        ImGui::PopID();
 
                         ImGui::SameLine(0, GImGui->Style.ItemInnerSpacing.x);
                     }
@@ -724,7 +738,7 @@ namespace CBP
 
                     bool changed = aoSect ?
                         DrawSlider(e, pValue, aoSect, true) :
-                        ImGui::SliderScalar("", ImGuiDataType_Float, pValue, &e.second.min, &e.second.max, "%.3f");
+                        ImGui::SliderScalar("##float3_slider", ImGuiDataType_Float, pValue, &e.second.min, &e.second.max, "%.3f");
 
                     ImGui::PopID();
                     ImGui::PopItemWidth();
@@ -789,7 +803,7 @@ namespace CBP
         const configComponentsValue_t& a_pair) const
     {
 
-        if (ImGui::BeginPopup("slider_opts"))
+        if (ImGui::BeginPopup("__slider_opts"))
         {
             auto& globalConfig = IConfig::GetGlobal();
 
@@ -803,6 +817,8 @@ namespace CBP
                 {
                     bool has_one(false);
 
+                    ImGui::PushID(static_cast<const void*>(std::addressof(it->second)));
+
                     for (auto& e : it->second)
                     {
                         if (!e.second.enabled)
@@ -813,13 +829,19 @@ namespace CBP
                         if (!ImGui::BeginMenu(e.first.c_str()))
                             continue;
 
+                        ImGui::PushID(static_cast<const void*>(std::addressof(e)));
+
                         DrawSliderContextMenuMirrorItem("X", a_desc, e, a_pair, propmap);
                         DrawSliderContextMenuMirrorItem("Y", a_desc + 1, e, a_pair, propmap);
                         DrawSliderContextMenuMirrorItem("Z", a_desc + 2, e, a_pair, propmap);
 
+                        ImGui::PopID();
+
                         ImGui::EndMenu();
 
                     }
+
+                    ImGui::PopID();
 
                     if (!has_one) {
                         ImGui::MenuItem("Propagation disabled", nullptr, false, false);

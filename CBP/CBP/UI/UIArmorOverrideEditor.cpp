@@ -180,7 +180,7 @@ namespace CBP
                     auto dit = configComponent_t::descMap.find(e.first);
                     if (dit != configComponent_t::descMap.map_end())
                     {
-                        ImGui::PushID(static_cast<const void*>(std::addressof(e.second)));
+                        ImGui::PushID(static_cast<const void*>(std::addressof(dit->second)));
 
                         ImGui::SameLine();
 
@@ -194,7 +194,10 @@ namespace CBP
                         name.append(")");
 
                         ImGui::SameLine();
-                        ImGui::SliderFloat(name.c_str(), std::addressof(e.second.second), dit->second.min, dit->second.max);
+
+                        if (e.second.second.type == ConfigValueType::kFloat) {
+                            ImGui::SliderFloat(name.c_str(), std::addressof(e.second.second.vf), dit->second.min, dit->second.max);
+                        }
 
                         //HelpMarker(e.first);
 
@@ -231,7 +234,7 @@ namespace CBP
             name.append(")");
 
             if (ImGui::MenuItem(name.c_str()))
-                a_e.second.emplace(e.first, armorCacheValue_t(0U, 0.0f));
+                a_e.second.try_emplace(e.first, 0U, 0.0f);
 
             ImGui::PopID();
         }
@@ -379,8 +382,8 @@ namespace CBP
     {
         m_currentOverrides = a_overrides;
 
-        auto it = m_currentOverrides->begin();
-        if (it != m_currentOverrides->end())
+        auto it = m_currentOverrides->cbegin();
+        if (it != m_currentOverrides->cend())
         {
             if (SetCurrentEntry(*it))
                 return;

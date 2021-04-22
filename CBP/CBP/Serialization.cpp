@@ -22,7 +22,8 @@ namespace Serialization
     {
         std::uint32_t version;
 
-        if (!ParseVersion(a_in, "data_version", version)) {
+        if (!ParseVersion(a_in, "data_version", version))
+        {
             Error("Bad version data");
             return false;
         }
@@ -122,48 +123,32 @@ namespace Serialization
                     }
                     else
                     {
-                        for (auto& desc : CBP::configComponent_t::descMap)
+                        for (auto it2 = physData->begin(); it2 != physData->end(); ++it2)
                         {
-                            auto& v = (*physData)[desc.first];
-
-                            if (!v.isNumeric()) {
-                                if (!v.isNull()) {
-                                    Warning("(%s) (%s) Bad value type, expected number: %d",
-                                        configGroup.c_str(), desc.first.c_str(), Enum::Underlying(v.type()));
-                                }
-                                continue;
+                            std::string key(it2.key().asString());
+                            if (!e.SetValue(key, *it2)) {
+                                Warning("Failed setting value: %s : %s", configGroup.c_str(), key.c_str());
                             }
-
-                            e.Set(desc.second, v.asFloat());
                         }
-                    }
 
-                    auto& ex = (*it1)["ex"];
-
-                    if (!ex.empty())
-                    {
-                        auto s = static_cast<std::uint32_t>(ex.get("cs", 0).asUInt());
-
-                        switch (s)
+                        auto& exData = (*it1)["ex"];
+                        if (!exData.empty())
                         {
-                        case Enum::Underlying(CBP::ColliderShapeType::Sphere):
-                        case Enum::Underlying(CBP::ColliderShapeType::Capsule):
-                        case Enum::Underlying(CBP::ColliderShapeType::Box):
-                        case Enum::Underlying(CBP::ColliderShapeType::Cone):
-                        case Enum::Underlying(CBP::ColliderShapeType::Tetrahedron):
-                        case Enum::Underlying(CBP::ColliderShapeType::Cylinder):
-                        case Enum::Underlying(CBP::ColliderShapeType::Mesh):
-                        case Enum::Underlying(CBP::ColliderShapeType::ConvexHull):
-                            e.SetColShape(static_cast<CBP::ColliderShapeType>(s));
-                            break;
-                        default:
-                            Warning("(%s) Unknown collision shape specifier: %u", configGroup.c_str(), s);
+                            for (auto it2 = exData.begin(); it2 != exData.end(); ++it2)
+                            {
+                                std::string key(it2.key().asString());
+
+                                if (version < 5)
+                                {
+                                    if (StrHelpers::iequal(key.c_str(), "cm"))
+                                        key = "clm";
+                                }
+
+                                if (!e.SetValue(key, *it2)) {
+                                    Warning("Failed setting value: %s : %s", configGroup.c_str(), key.c_str());
+                                }
+                            }
                         }
-
-                        e.ex.motionConstraints = static_cast<CBP::MotionConstraints>(ex.get("mc", Enum::Underlying(CBP::MotionConstraints::None)).asUInt());
-
-                        e.ex.colMesh = ex.get("cm", "").asString();
-
                     }
                 }
             }
@@ -190,26 +175,28 @@ namespace Serialization
         {
             auto& data = a_out[ds.member];
 
-            for (const auto& v : ds.data) 
+            for (const auto& v : ds.data)
             {
                 auto& simComponent = data[v.first];
 
                 auto& phys = simComponent["phys"];
-
-                auto baseaddr = reinterpret_cast<std::uintptr_t>(std::addressof(v.second));
-
-                for (const auto& e : v.second.descMap)
-                    phys[e.first] = *reinterpret_cast<float*>(baseaddr + e.second.offset);
-
                 auto& ex = simComponent["ex"];
 
-                ex["cs"] = Enum::Underlying(v.second.ex.colShape);
-                ex["mc"] = Enum::Underlying(v.second.ex.motionConstraints);
-                ex["cm"] = v.second.ex.colMesh;
+                for (auto& e : v.second.addrInfoMap)
+                {
+                    if (e.second.section == CBP::ComponentConfigSection::kPhysics)
+                    {
+                        v.second.GetValue(e.second, phys[e.first]);
+                    }
+                    else if (e.second.section == CBP::ComponentConfigSection::kExtra)
+                    {
+                        v.second.GetValue(e.second, ex[e.first]);
+                    }
+                }
             }
         }
 
-        a_out["data_version"] = Json::Value::UInt(4);
+        a_out["data_version"] = Json::Value::UInt(5);
     }
 
     template<>
@@ -291,7 +278,7 @@ namespace Serialization
                         }
                     }
                 }
-                else
+                else if (version < 6)
                 {
                     nc.bl.b.motion = it->get("fm", false).asBool();
                     nc.bl.b.collision = it->get("fc", false).asBool();
@@ -314,7 +301,8 @@ namespace Serialization
                         }
                     }
 
-                    if (version >= 2) {
+                    if (version >= 2)
+                    {
                         auto& rot = (*it)["r"];
 
                         if (!rot.empty()) {
@@ -331,11 +319,40 @@ namespace Serialization
                             nc.fp.f32.bcSimplifyTargetError = it->get("be", 0.02f).asFloat();
                             nc.fp.f32.bcWeightThreshold = it->get("bw", 0.0f).asFloat();
                             nc.ex.bcShape = it->get("bs", "").asString();
+
+                            if (version >= 5)
+                            {
+                                auto& offset = (*it)["no"];
+
+                                if (!ParseFloatArray(offset, nc.fp.f32.nodeOffset, 3)) {
+                                    Error("Couldn't parse nodeOffset");
+                                    return false;
+                                }
+
+                                auto& rot = (*it)["nr"];
+
+                                if (!ParseFloatArray(rot, nc.fp.f32.nodeRot, 3)) {
+                                    Error("Couldn't parse nodeRot");
+                                    return false;
+                                }
+
+                                nc.ex.forceParent = it->get("fp", "").asString();
+                            }
                         }
                     }
 
                     nc.fp.f32.nodeScale = std::clamp(it->get("s", 1.0f).asFloat(), 0.0f, 20.0f);
                     nc.bl.b.overrideScale = it->get("o", false).asBool();
+                }
+                else
+                {
+                    for (auto it2 = it->begin(); it2 != it->end(); ++it2)
+                    {
+                        std::string key(it2.key().asString());
+                        if (!nc.SetValue(key, *it2)) {
+                            Warning("Failed setting value: %s : %s", k.c_str(), key.c_str());
+                        }
+                    }
                 }
             }
         }
@@ -361,43 +378,19 @@ namespace Serialization
         {
             auto& data = a_out[ds.member];
 
-            for (const auto& e : ds.data)
+            for (const auto& v : ds.data)
             {
-                auto& n = data[e.first];
+                auto& n = data[v.first];
 
-                n["fm"] = e.second.bl.b.motion;
-                n["fc"] = e.second.bl.b.collision;
+                for (auto& e : v.second.addrInfoMap)
+                {
+                    v.second.GetValue(e.second, n[e.first]);
+                }
 
-                auto& offmin = n["o-"];
-
-                offmin[0] = e.second.fp.f32.colOffsetMin[0];
-                offmin[1] = e.second.fp.f32.colOffsetMin[1];
-                offmin[2] = e.second.fp.f32.colOffsetMin[2];
-
-                auto& offmax = n["o+"];
-
-                offmax[0] = e.second.fp.f32.colOffsetMax[0];
-                offmax[1] = e.second.fp.f32.colOffsetMax[1];
-                offmax[2] = e.second.fp.f32.colOffsetMax[2];
-
-                auto& rot = n["r"];
-
-                rot[0] = e.second.fp.f32.colRot[0];
-                rot[1] = e.second.fp.f32.colRot[1];
-                rot[2] = e.second.fp.f32.colRot[2];
-
-                n["s"] = e.second.fp.f32.nodeScale;
-                n["o"] = e.second.bl.b.overrideScale;
-
-                n["b"] = e.second.bl.b.boneCast;
-                n["bt"] = e.second.fp.f32.bcSimplifyTarget;
-                n["be"] = e.second.fp.f32.bcSimplifyTargetError;
-                n["bw"] = e.second.fp.f32.bcWeightThreshold;
-                n["bs"] = e.second.ex.bcShape;
             }
         }
 
-        a_out["nodes_version"] = Json::Value::UInt(4);
+        a_out["nodes_version"] = Json::Value::UInt(6);
     }
 
 
@@ -654,7 +647,8 @@ namespace CBP
                 {
                     auto& propagate = ui["propagate"];
 
-                    if (propagate.isObject()) {
+                    if (propagate.isObject())
+                    {
 
                         for (auto it1 = propagate.begin(); it1 != propagate.end(); ++it1)
                         {
@@ -706,6 +700,33 @@ namespace CBP
                                     }
                                 }
                             }
+                        }
+                    }
+                }
+
+                if (ui.isMember("nodeEditorOptions"))
+                {
+                    auto& nodeEditorOptions = ui["nodeEditorOptions"];
+
+                    if (nodeEditorOptions.isObject())
+                    {
+                        for (auto it = nodeEditorOptions.begin(); it != nodeEditorOptions.end(); ++it)
+                        {
+                            if (!it->isObject())
+                                continue;
+
+                            UIEditorID ki;
+
+                            try {
+                                ki = static_cast<UIEditorID>(std::stoi(it.key().asString()));
+                            }
+                            catch (...) {
+                                continue;
+                            }
+
+                            auto& e = data.ui.nodeEditorOptions[ki];
+
+                            e.showAll = it->get("showAll", false).asBool();
                         }
                     }
                 }
@@ -875,6 +896,14 @@ namespace CBP
                         }
                     }
                 }
+            }
+
+            auto& nodeEditorOptions = ui["nodeEditorOptions"];
+            for (auto& e : data.ui.nodeEditorOptions)
+            {
+                auto& je = nodeEditorOptions[std::to_string(Enum::Underlying(e.first))];
+
+                je["showAll"] = e.second.showAll;
             }
 
             data.ui.colStates.Create(ui["colStates"]);

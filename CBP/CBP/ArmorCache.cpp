@@ -85,10 +85,7 @@ namespace CBP
                         continue;
                     }
 
-                    auto& r = e[valName];
-
-                    r.first = m;
-                    r.second = value.asFloat();
+                    e.insert_or_assign(valName, std::make_pair(m, value.asFloat()));
                 }
             }
 
@@ -157,7 +154,9 @@ namespace CBP
                 auto& k = j[f.first];
 
                 k.append(f.second.first);
-                k.append(f.second.second);
+                if (f.second.second.type == ConfigValueType::kFloat) {
+                    k.append(f.second.second.vf);
+                }
             }
         }
 

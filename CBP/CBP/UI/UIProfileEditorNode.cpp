@@ -37,6 +37,12 @@ namespace CBP
     {
     }
 
+    void UIProfileEditorNode::RemoveNodeData(
+        int a_handle,
+        const std::string& a_node)
+    {
+    }
+
     void UIProfileEditorNode::DrawOptions(NodeProfile& a_profile)
     {
         ImGui::Spacing();

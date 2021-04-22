@@ -72,6 +72,10 @@ namespace CBP
             const configNode_t& a_data,
             bool a_reset) override;
 
+        virtual void RemoveNodeData(
+            Game::ObjectHandle a_handle,
+            const std::string& a_node) override;
+
         virtual configGlobalSimComponent_t& GetSimComponentConfig() const override;
 
         virtual const PhysicsProfile* GetSelectedProfile() const override;

@@ -159,14 +159,37 @@ namespace CBP
             auto& nodeConfig = IConfig::GetOrCreateActorNode(a_handle, globalConfig.ui.commonSettings.physics.actor.selectedGender);
             nodeConfig.insert_or_assign(a_node, a_data);
 
-            if (a_reset)
-                DCBP::ResetActors();
-            else
+            if (a_reset) {
+                DCBP::DispatchActorTask(
+                    a_handle, ControllerInstruction::Action::UpdateConfigOrAdd);
+                DCBP::DispatchActorTask(
+                    a_handle, ControllerInstruction::Action::ValidateNodes);
+            }
+            else {
                 DCBP::DispatchActorTask(
                     a_handle, ControllerInstruction::Action::UpdateConfig);
+            }
         }
     }
 
+    void UISimComponentActor::RemoveNodeData(
+        Game::ObjectHandle a_handle,
+        const std::string& a_node)
+    {
+        if (a_handle != Game::ObjectHandle(0))
+        {
+            const auto& globalConfig = IConfig::GetGlobal();
+
+            if (IConfig::EraseEntry(
+                a_handle,
+                IConfig::GetActorNodeHolder(),
+                a_node,
+                globalConfig.ui.commonSettings.physics.actor.selectedGender))
+            {
+                DCBP::ResetActors();
+            }
+        }
+    }
 
     void UISimComponentActor::DrawBoneCastButtons(
         Game::ObjectHandle a_handle,

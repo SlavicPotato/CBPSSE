@@ -3,6 +3,7 @@
 #include "ArmorCache.h"
 #include "Common/UIData.h"
 #include "Profile/Profile.h"
+#include "ConfigValueTypes.h"
 
 #include "Common/Data.h"
 
@@ -47,6 +48,11 @@ namespace CBP
             const float a_value) const;
     };
 
+    struct configNodeEditorOptions_t
+    {
+        bool showAll = false;
+    };
+
     typedef stl::imap<std::string, configPropagate_t> configPropagateEntry_t;
     typedef stl::iunordered_map<std::string, configPropagateEntry_t> configPropagateMap_t;
     typedef stl::iunordered_map<std::string, configForce_t> configForceMap_t;
@@ -61,7 +67,7 @@ namespace CBP
     struct configGlobalActor_t
     {
         bool showAll = true;
-        Game::ObjectHandle lastActor = 0;
+        Game::ObjectHandle lastActor{ 0 };
     };
 
     struct configGlobalSimComponent_t
@@ -165,6 +171,7 @@ namespace CBP
 
             configForceMap_t forceActor;
             stl::unordered_map<UIEditorID, configPropagateMap_t> propagate;
+            stl::unordered_map<UIEditorID, configNodeEditorOptions_t> nodeEditorOptions;
             UIData::UICollapsibleStates colStates;
             std::string forceActorSelected;
 
@@ -298,9 +305,20 @@ namespace CBP
 
     DEFINE_ENUM_CLASS_BITWISE(MotionConstraints);
 
+    enum class ComponentConfigSection
+    {
+        kPhysics,
+        kExtra
+    };
+
+    enum class NodeConfigSection
+    {
+        kNone
+    };
+
     struct componentValueDesc_t
     {
-        ptrdiff_t offset;
+        std::ptrdiff_t offset;
         std::string counterpart;
         float min;
         float max;
@@ -322,6 +340,32 @@ namespace CBP
 
     typedef iKVStorage<std::string, const componentValueDesc_t> componentValueDescMap_t;
     typedef KVStorage<ColliderShapeType, const colliderDesc_t> colliderDescMap_t;
+
+    template <class T>
+    struct infoValueAddr_t
+    {
+        std::ptrdiff_t offset;
+        ConfigValueType type;
+        T section;
+    };
+
+    template <class T>
+    using addrInfoMap_t = stl::iunordered_map<std::string, infoValueAddr_t<T>>;
+
+    struct configBase_t
+    {
+
+    protected:
+
+        [[nodiscard]] SKMP_FORCEINLINE const void* GetAddressFromOffset(std::ptrdiff_t a_offset) const {
+            return reinterpret_cast<const void*>(reinterpret_cast<std::uintptr_t>(this) + a_offset);
+        }
+
+        [[nodiscard]] SKMP_FORCEINLINE void* GetAddressFromOffset(std::ptrdiff_t a_offset) {
+            return reinterpret_cast<void*>(reinterpret_cast<std::uintptr_t>(this) + a_offset);
+        }
+
+    };
 
     struct SKMP_ALIGN_AUTO physicsDataF32_t
     {
@@ -657,7 +701,8 @@ namespace CBP
         std::string colMesh;
     };
 
-    struct SKMP_ALIGN_AUTO configComponent_t
+    struct SKMP_ALIGN_AUTO configComponent_t :
+        public configBase_t
     {
         friend class boost::serialization::access;
 
@@ -676,6 +721,104 @@ namespace CBP
             DataVersion9 = 9
         };
 
+        template <class T>
+        [[nodiscard]] const T* GetValue(const std::string& a_key) const
+        {
+            const auto it = addrInfoMap.find(a_key);
+            if (it == addrInfoMap.end())
+                return nullptr;
+
+            if (!CheckValue<T>(it->second))
+                return nullptr;
+
+            return GetAddress<T>(it->second);
+        }
+
+        void GetValue(const infoValueAddr_t<ComponentConfigSection>& a_info, Json::Value& a_value) const
+        {
+            switch (a_info.type)
+            {
+            case ConfigValueType::kFloat:
+                a_value = *GetAddress<float>(a_info);
+                break;
+            case ConfigValueType::kString:
+                a_value = *GetAddress<std::string>(a_info);
+                break;
+            case ConfigValueType::kBool:
+                a_value = *GetAddress<bool>(a_info);
+                break;
+            case ConfigValueType::kColliderShape:
+                a_value = Enum::Underlying(*GetAddress<ColliderShapeType>(a_info));
+                break;
+            case ConfigValueType::kMotionConstraint:
+                a_value = Enum::Underlying(*GetAddress<MotionConstraints>(a_info));
+                break;
+            default:
+                ASSERT_STR(false, "FIXME");
+            }
+
+        }
+
+        template <class T>
+        [[nodiscard]] bool SetValue(const std::string& a_key, const T& a_value)
+        {
+            const auto it = addrInfoMap.find(a_key);
+            if (it == addrInfoMap.end())
+                return false;
+
+            return SetValue(it->second, a_value);
+        }
+
+        template <class T>
+        [[nodiscard]] bool SetValue(const infoValueAddr_t<ComponentConfigSection>& a_info, const T& a_value)
+        {
+            if constexpr (std::is_same_v<T, Json::Value>)
+            {
+                if (a_value.isNull())
+                    return false;
+
+                switch (a_info.type)
+                {
+                case ConfigValueType::kFloat:
+                    *GetAddress<float>(a_info) = a_value.asFloat();
+                    break;
+                case ConfigValueType::kString:
+                    *GetAddress<std::string>(a_info) = a_value.asString();
+                    break;
+                case ConfigValueType::kBool:
+                    *GetAddress<bool>(a_info) = a_value.asBool();
+                    break;
+                case ConfigValueType::kColliderShape:
+                {
+                    std::uint32_t t = a_value.asUInt();
+
+                    if (!IsValidColliderShape(t))
+                        return false;
+
+                    *GetAddress<ColliderShapeType>(a_info) = static_cast<ColliderShapeType>(t);
+
+                    break;
+                }
+                case ConfigValueType::kMotionConstraint:
+                    *GetAddress<MotionConstraints>(a_info) = static_cast<MotionConstraints>(a_value.asUInt());
+                    break;
+                default:
+                    ASSERT_STR(false, "FIXME");
+                }
+
+                return true;
+            }
+            else
+            {
+                if (!CheckValue<T>(a_info))
+                    return false;
+
+                *GetAddress<T>(a_info) = a_value;
+
+                return true;
+            }
+        }
+
         [[nodiscard]] SKMP_FORCEINLINE bool Get(const std::string& a_key, float& a_out) const
         {
             const auto it = descMap.find(a_key);
@@ -687,7 +830,7 @@ namespace CBP
             return true;
         }
 
-        [[nodiscard]] SKMP_FORCEINLINE float* Get(const std::string& a_key) const
+        [[nodiscard]] SKMP_FORCEINLINE const float* Get(const std::string& a_key) const
         {
             const auto it = descMap.find(a_key);
             if (it == descMap.map_end())
@@ -752,18 +895,18 @@ namespace CBP
             return true;
         }
 
-        [[nodiscard]] SKMP_FORCEINLINE float& operator[](const std::string& a_key) const
+        [[nodiscard]] SKMP_FORCEINLINE const float& operator[](const std::string& a_key) const
+        {
+            return *GetAddress(descMap.at(a_key));
+        }
+
+        [[nodiscard]] SKMP_FORCEINLINE float& operator[](const std::string& a_key)
         {
             return *GetAddress(descMap.at(a_key));
         }
 
         SKMP_FORCEINLINE void SetColShape(ColliderShapeType a_shape) {
             ex.colShape = a_shape;
-        }
-
-        [[nodiscard]] SKMP_FORCEINLINE float* GetAddress(const componentValueDesc_t& a_desc) const
-        {
-            return GetAddress(a_desc.offset);
         }
 
         configComponent_t() = default;
@@ -773,12 +916,81 @@ namespace CBP
 
         static const componentValueDescMap_t descMap;
         static const colliderDescMap_t colDescMap;
+        static const addrInfoMap_t<ComponentConfigSection> addrInfoMap;
         static const stl::iunordered_map<std::string, std::string> oldKeyMap;
 
     private:
 
-        [[nodiscard]] SKMP_FORCEINLINE float* GetAddress(std::ptrdiff_t a_offset) const {
-            return reinterpret_cast<float*>(reinterpret_cast<std::uintptr_t>(this) + a_offset);
+        [[nodiscard]] SKMP_FORCEINLINE const float* GetAddress(const componentValueDesc_t& a_desc) const
+        {
+            return static_cast<const float*>(GetAddressFromOffset(a_desc.offset));
+        }
+
+        [[nodiscard]] SKMP_FORCEINLINE float* GetAddress(const componentValueDesc_t& a_desc)
+        {
+            return static_cast<float*>(GetAddressFromOffset(a_desc.offset));
+        }
+
+        template <class T>
+        [[nodiscard]] SKMP_FORCEINLINE const T* GetAddress(const infoValueAddr_t<ComponentConfigSection>& a_info) const
+        {
+            return static_cast<const T*>(GetAddressFromOffset(a_info.offset));
+        }
+
+        template <class T>
+        [[nodiscard]] SKMP_FORCEINLINE T* GetAddress(const infoValueAddr_t<ComponentConfigSection>& a_info)
+        {
+            return static_cast<T*>(GetAddressFromOffset(a_info.offset));
+        }
+
+        template <class T>
+        [[nodiscard]] SKMP_FORCEINLINE bool CheckValue(const infoValueAddr_t<ComponentConfigSection>& a_desc) const
+        {
+            if constexpr (std::is_same_v<T, float>)
+            {
+                if (a_desc.type == ConfigValueType::kFloat)
+                    return true;
+            }
+            else if constexpr (std::is_same_v<T, std::string>)
+            {
+                if (a_desc.type == ConfigValueType::kString)
+                    return true;
+            }
+            else if constexpr (std::is_same_v<T, bool>)
+            {
+                if (a_desc.type == ConfigValueType::kBool)
+                    return true;
+            }
+            else if constexpr (std::is_same_v<T, MotionConstraints>)
+            {
+                if (a_desc.type == ConfigValueType::kMotionConstraint)
+                    return true;
+            }
+            else if constexpr (std::is_same_v<T, ColliderShapeType>)
+            {
+                if (a_desc.type == ConfigValueType::kColliderShape)
+                    return true;
+            }
+
+            return false;
+        }
+
+        [[nodiscard]] SKMP_FORCEINLINE static bool IsValidColliderShape(std::uint32_t a_type)
+        {
+            switch (a_type)
+            {
+            case Enum::Underlying(ColliderShapeType::Sphere):
+            case Enum::Underlying(ColliderShapeType::Capsule):
+            case Enum::Underlying(ColliderShapeType::Box):
+            case Enum::Underlying(ColliderShapeType::Cone):
+            case Enum::Underlying(ColliderShapeType::Tetrahedron):
+            case Enum::Underlying(ColliderShapeType::Cylinder):
+            case Enum::Underlying(ColliderShapeType::Mesh):
+            case Enum::Underlying(ColliderShapeType::ConvexHull):
+                return true;
+            }
+
+            return false;
         }
 
         template<class Archive>
@@ -929,19 +1141,19 @@ namespace CBP
 
         configGenderRoot_t() = default;
 
-        SKMP_FORCEINLINE auto& operator()() noexcept {
+        [[nodiscard]] SKMP_FORCEINLINE auto& operator()() noexcept {
             return m_configs;
         }
 
-        SKMP_FORCEINLINE const auto& operator()() const noexcept {
+        [[nodiscard]] SKMP_FORCEINLINE const auto& operator()() const noexcept {
             return m_configs;
         }
 
-        SKMP_FORCEINLINE auto& operator()(ConfigGender a_gender) noexcept {
+        [[nodiscard]] SKMP_FORCEINLINE auto& operator()(ConfigGender a_gender) noexcept {
             return m_configs[Enum::Underlying(a_gender)];
         }
 
-        SKMP_FORCEINLINE const auto& operator()(ConfigGender a_gender) const noexcept {
+        [[nodiscard]] SKMP_FORCEINLINE const auto& operator()(ConfigGender a_gender) const noexcept {
             return m_configs[Enum::Underlying(a_gender)];
         }
 
@@ -985,6 +1197,8 @@ namespace CBP
         float colOffsetMin[4];
         float colOffsetMax[4];
         float colRot[4];
+        float nodeOffset[4];
+        float nodeRot[4];
         float nodeScale;
         float bcWeightThreshold;
         float bcSimplifyTarget;
@@ -996,7 +1210,9 @@ namespace CBP
         btVector3 colOffsetMin;
         btVector3 colOffsetMax;
         btVector3 colRot;
-        btVector3 v4;
+        btVector3 nodeOffset;
+        btVector3 nodeRot;
+        btVector3 v6;
     };
 
 #if defined(__AVX__) || defined(__AVX2__)
@@ -1031,11 +1247,13 @@ namespace CBP
 
         __m256 d0;
         __m256 d1;
+        __m256 d2;
 
         SKMP_FORCEINLINE void __copy(const nodeDataMM256_t& a_rhs) noexcept
         {
             d0 = a_rhs.d0;
             d1 = a_rhs.d1;
+            d2 = a_rhs.d2;
         }
 
     };
@@ -1073,14 +1291,18 @@ namespace CBP
         __m128 colOffsetMin;
         __m128 colOffsetMax;
         __m128 colRot;
-        __m128 d3;
+        __m128 nodeOffset;
+        __m128 nodeRot;
+        __m128 d5;
 
         SKMP_FORCEINLINE void __copy(const nodeDataMM128_t& a_rhs) noexcept
         {
             colOffsetMin = a_rhs.colOffsetMin;
             colOffsetMax = a_rhs.colOffsetMax;
             colRot = a_rhs.colRot;
-            d3 = a_rhs.d3;
+            nodeOffset = a_rhs.nodeOffset;
+            nodeRot = a_rhs.nodeRot;
+            d5 = a_rhs.d5;
         }
     };
 
@@ -1180,7 +1402,7 @@ namespace CBP
     {
         SKMP_FORCEINLINE nodeBools_t() noexcept
         {
-            u64.d0 = 0ULL;
+            u64.d0 = 0ui64;
         }
 
         union
@@ -1198,14 +1420,22 @@ namespace CBP
             {
                 std::uint16_t d0; // all
                 std::uint16_t d1;
-                std::uint32_t d2;
+                std::uint16_t d2;
+                std::uint16_t d3;
+            } u16;
+
+            struct
+            {
+                std::uint32_t d0;
+                std::uint32_t d1;
             } u32;
 
             struct
             {
-                uint64_t d0;
+                std::uint64_t d0;
             } u64;
 
+            static_assert(sizeof(b) == sizeof(u16));
             static_assert(sizeof(b) == sizeof(u32));
             static_assert(sizeof(b) == sizeof(u64));
         };
@@ -1214,11 +1444,13 @@ namespace CBP
     struct nodeExtra_t
     {
         std::string bcShape;
+        std::string forceParent;
     };
 
-    static_assert(offsetof(nodeBools_t, b.overrideScale) == offsetof(nodeBools_t, u32.d1));
+    static_assert(offsetof(nodeBools_t, b.overrideScale) == offsetof(nodeBools_t, u16.d1));
 
-    struct SKMP_ALIGN_AUTO configNode_t
+    struct SKMP_ALIGN_AUTO configNode_t :
+        public configBase_t
     {
         friend class boost::serialization::access;
 
@@ -1228,7 +1460,8 @@ namespace CBP
             DataVersion1 = 1,
             DataVersion2 = 2,
             DataVersion3 = 3,
-            DataVersion4 = 4
+            DataVersion4 = 4,
+            DataVersion5 = 5
         };
 
         nodeData_t fp;
@@ -1236,7 +1469,7 @@ namespace CBP
         nodeExtra_t ex;
 
         [[nodiscard]] SKMP_FORCEINLINE bool Enabled() const noexcept {
-            return bl.u32.d0 != 0ui16;
+            return bl.u16.d0 != 0ui16;
         }
 
         [[nodiscard]] SKMP_FORCEINLINE bool HasMotion() const noexcept {
@@ -1247,7 +1480,122 @@ namespace CBP
             return bl.b.collision;
         }
 
+        template <class T>
+        [[nodiscard]] const T* GetValue(const std::string& a_key) const
+        {
+            const auto it = addrInfoMap.find(a_key);
+            if (it == addrInfoMap.end())
+                return nullptr;
+
+            if (!CheckValue<T>(it->second))
+                return nullptr;
+
+            return GetAddress<T>(it->second);
+        }
+
+        void GetValue(const infoValueAddr_t<NodeConfigSection>& a_info, Json::Value& a_value) const
+        {
+            switch (a_info.type)
+            {
+            case ConfigValueType::kFloat:
+                a_value = *GetAddress<float>(a_info);
+                break;
+            case ConfigValueType::kString:
+                a_value = *GetAddress<std::string>(a_info);
+                break;
+            case ConfigValueType::kBool:
+                a_value = *GetAddress<bool>(a_info);
+                break;
+            default:
+                ASSERT_STR(false, "FIXME");
+            }
+        }
+
+        template <class T>
+        [[nodiscard]] bool SetValue(const std::string& a_key, const T& a_value)
+        {
+            const auto it = addrInfoMap.find(a_key);
+            if (it == addrInfoMap.end())
+                return false;
+
+            return SetValue(it->second, a_value);
+        }
+
+        template <class T>
+        [[nodiscard]] bool SetValue(const infoValueAddr_t<NodeConfigSection>& a_info, const T& a_value)
+        {
+            if constexpr (std::is_same_v<T, Json::Value>)
+            {
+                if (a_value.isNull())
+                    return false;
+
+                switch (a_info.type)
+                {
+                case ConfigValueType::kFloat:
+                    *GetAddress<float>(a_info) = a_value.asFloat();
+                    break;
+                case ConfigValueType::kString:
+                    *GetAddress<std::string>(a_info) = a_value.asString();
+                    break;
+                case ConfigValueType::kBool:
+                    *GetAddress<bool>(a_info) = a_value.asBool();
+                    break;
+                default:
+                    ASSERT_STR(false, "FIXME");
+                }
+
+                return true;
+            }
+            else
+            {
+                if (!CheckValue<T>(a_info))
+                    return false;
+
+                *GetAddress<T>(a_info) = a_value;
+
+                return true;
+            }
+        }
+
+        configNode_t() = default;
+
+        static const addrInfoMap_t<NodeConfigSection> addrInfoMap;
+
     private:
+
+        template <class T>
+        [[nodiscard]] SKMP_FORCEINLINE const T* GetAddress(const infoValueAddr_t<NodeConfigSection>& a_desc) const
+        {
+            return static_cast<const T*>(GetAddressFromOffset(a_desc.offset));
+        }
+
+        template <class T>
+        [[nodiscard]] SKMP_FORCEINLINE T* GetAddress(const infoValueAddr_t<NodeConfigSection>& a_desc)
+        {
+            return static_cast<T*>(GetAddressFromOffset(a_desc.offset));
+        }
+
+        template <class T>
+        [[nodiscard]] SKMP_FORCEINLINE bool CheckValue(const infoValueAddr_t<NodeConfigSection>& a_desc) const
+        {
+            if constexpr (std::is_same_v<T, float>)
+            {
+                if (a_desc.type == ConfigValueType::kFloat)
+                    return true;
+            }
+            else if constexpr (std::is_same_v<T, std::string>)
+            {
+                if (a_desc.type == ConfigValueType::kString)
+                    return true;
+            }
+            else if constexpr (std::is_same_v<T, bool>)
+            {
+                if (a_desc.type == ConfigValueType::kBool)
+                    return true;
+            }
+
+            return false;
+        }
 
         template<class Archive>
         void save(Archive& ar, const unsigned int version) const
@@ -1265,6 +1613,9 @@ namespace CBP
             ar& fp.f32.bcSimplifyTarget;
             ar& fp.f32.bcSimplifyTargetError;
             ar& ex.bcShape;
+            ar& fp.f32.nodeOffset;
+            ar& fp.f32.nodeRot;
+            ar& ex.forceParent;
         }
 
         template<class Archive>
@@ -1289,6 +1640,12 @@ namespace CBP
                         ar& fp.f32.bcSimplifyTarget;
                         ar& fp.f32.bcSimplifyTargetError;
                         ar& ex.bcShape;
+
+                        if (version >= DataVersion5) {
+                            ar& fp.f32.nodeOffset;
+                            ar& fp.f32.nodeRot;
+                            ar& ex.forceParent;
+                        }
                     }
                 }
             }
@@ -1634,10 +1991,6 @@ namespace CBP
             armorOverrides.swap(decltype(armorOverrides)());
         }
 
-        SKMP_FORCEINLINE static const auto& GetPhysicsTemplateBase() noexcept {
-            return templateBasePhysicsHolder;
-        }
-
         SKMP_FORCEINLINE static const auto& GetNodeTemplateBase() noexcept {
             return templateBaseNodeHolder;
         }
@@ -1747,6 +2100,24 @@ namespace CBP
             return lastException;
         }
 
+        template <class T, class N>
+        static bool EraseEntry(T a_handle, N& a_holder, const std::string& a_key, ConfigGender a_gender)
+        {
+            auto it = a_holder.find(a_handle);
+            if (it != a_holder.end())
+            {
+                return EraseEntryFromRoot(it->second, a_key, a_gender);
+            }
+
+            return false;
+        }
+
+        template <class T>
+        static bool EraseEntryFromRoot(T& a_root, const std::string& a_key, ConfigGender a_gender)
+        {
+            return a_root(a_gender).erase(a_key) > 0;
+        }
+
     private:
 
         [[nodiscard]] static bool LoadNodeMap(nodeMap_t& a_out);
@@ -1785,6 +2156,6 @@ namespace CBP
 }
 
 BOOST_CLASS_VERSION(CBP::configComponent_t, CBP::configComponent_t::Serialization::DataVersion9)
-BOOST_CLASS_VERSION(CBP::configNode_t, CBP::configNode_t::Serialization::DataVersion4)
+BOOST_CLASS_VERSION(CBP::configNode_t, CBP::configNode_t::Serialization::DataVersion5)
 BOOST_CLASS_VERSION(CBP::configGenderRoot_t<CBP::configComponents_t>, CBP::configGenderRoot_t< CBP::configComponents_t>::Serialization::DataVersion1)
 BOOST_CLASS_VERSION(CBP::configGenderRoot_t<CBP::configNodes_t>, CBP::configGenderRoot_t< CBP::configNodes_t>::Serialization::DataVersion1)

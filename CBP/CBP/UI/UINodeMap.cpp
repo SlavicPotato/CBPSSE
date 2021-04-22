@@ -197,7 +197,7 @@ namespace CBP
                     {
                         auto& in = a_p.GetInput();
 
-                        if (!strlen(in))
+                        if (!StrHelpers::strlen(in))
                             return;
 
                         AddNode(in, cgroup);
@@ -287,11 +287,15 @@ namespace CBP
 
                 const std::string* add_cg(nullptr);
 
+                ImGui::PushID(static_cast<const void*>(std::addressof(data)));
+
                 for (const auto& e : data)
                 {
                     if (ImGui::MenuItem(e.first.c_str()))
                         add_cg = std::addressof(e.first);
                 }
+
+                ImGui::PopID();
 
                 if (add_cg != nullptr)
                     AddNode(a_entry.m_name, *add_cg);
@@ -337,7 +341,7 @@ namespace CBP
             {
                 auto& in = a_p.GetInput();
 
-                if (!strlen(in))
+                if (!StrHelpers::strlen(in))
                     return;
 
                 AddNode(nodeName, in);
@@ -357,7 +361,7 @@ namespace CBP
             {
                 auto& in = a_p.GetInput();
 
-                if (!strlen(in))
+                if (!StrHelpers::strlen(in))
                     return;
 
                 AddNodeNewGroup(in);

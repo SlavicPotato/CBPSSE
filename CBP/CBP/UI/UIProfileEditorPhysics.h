@@ -75,6 +75,10 @@ namespace CBP
             const configNode_t& a_data,
             bool a_reset) override;
 
+        virtual void RemoveNodeData(
+            int a_handle,
+            const std::string& a_node) override;
+
         virtual configGlobalSimComponent_t& GetSimComponentConfig() const override;
         virtual configGlobalCommon_t& GetGlobalCommonConfig() const override;
         virtual UICommon::UIPopupQueue& GetPopupQueue() const override;

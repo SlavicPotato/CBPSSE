@@ -3,6 +3,42 @@
 namespace Bullet
 {
     ATTRIBUTE_ALIGNED16(class)
+        btBound
+    {
+    public:
+        btBound() = default;
+
+        SIMD_FORCE_INLINE btBound(
+            const btVector3 & a_pos,
+            btScalar a_radius)
+            :
+            m_pos(a_pos),
+            m_radius(a_radius)
+        {
+        }
+
+        SIMD_FORCE_INLINE btBound(
+            const NiPoint3 & a_pos,
+            btScalar a_radius)
+            :
+            m_pos(a_pos.x, a_pos.y, a_pos.z),
+            m_radius(a_radius)
+        {
+        }
+
+        SIMD_FORCE_INLINE btBound(
+            const NiBound & a_bound)
+            :
+            m_radius(a_bound.radius),
+            m_pos(_mm_and_ps(_mm_loadu_ps(a_bound.pos), btvFFF0fMask))
+        {
+        }
+
+        btVector3 m_pos;
+        btScalar m_radius;
+    };
+
+    ATTRIBUTE_ALIGNED16(class)
         btTransformEx : public btTransform
     {
         btScalar m_scale;
@@ -32,7 +68,7 @@ namespace Bullet
         SIMD_FORCE_INLINE btScalar getScale() const {
             return m_scale;
         }
-        
+
         SIMD_FORCE_INLINE void setScale(btScalar a_scale) {
             m_scale = a_scale;
         }

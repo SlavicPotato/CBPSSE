@@ -283,6 +283,22 @@ namespace CBP
         MarkChanged();
     }
 
+    void UIRaceEditorPhysics::RemoveNodeData(
+        Game::FormID a_handle,
+        const std::string& a_node)
+    {
+        const auto& globalConfig = IConfig::GetGlobal();
+
+        if (IConfig::EraseEntry(
+            a_handle,
+            IConfig::GetRaceNodeHolder(),
+            a_node,
+            globalConfig.ui.commonSettings.physics.race.selectedGender))
+        {
+            DCBP::ResetActors();
+        }
+    }
+
     bool UIRaceEditorPhysics::ShouldDrawComponent(
         Game::FormID,
         configComponents_t&,

@@ -21,12 +21,16 @@ namespace CBP
         virtual ProfileManager<NodeProfile>& GetProfileManager() const override;
 
         virtual void DrawItem(NodeProfile& a_profile);
+
         virtual void UpdateNodeData(
             int,
             const std::string& a_node,
             const NodeProfile::base_type::mapped_type& a_data,
-            bool a_reset);
+            bool a_reset) override;
 
+        virtual void RemoveNodeData(
+            int a_handle,
+            const std::string& a_node) override;
 
         virtual void DrawOptions(NodeProfile& a_profile) override;
 

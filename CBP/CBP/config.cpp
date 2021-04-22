@@ -531,15 +531,19 @@ namespace CBP
             if (itc == me.end())
                 continue;
 
-            for (const auto& values : components.second) {
-                switch (values.second.first)
+            for (const auto& values : components.second) 
+            {
+                if (values.second.second.type == ConfigValueType::kFloat)
                 {
-                case 0:
-                    itc->second.Set(values.first, values.second.second);
-                    break;
-                case 1:
-                    itc->second.Mul(values.first, values.second.second);
-                    break;
+                    switch (values.second.first)
+                    {
+                    case 0:
+                        itc->second.Set(values.first, values.second.second.vf);
+                        break;
+                    case 1:
+                        itc->second.Mul(values.first, values.second.second.vf);
+                        break;
+                    }
                 }
             }
         }

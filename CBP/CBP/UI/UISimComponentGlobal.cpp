@@ -148,7 +148,7 @@ namespace CBP
         const configNode_t& a_data,
         bool a_reset)
     {
-        if (!a_handle)
+        if (a_handle == Game::ObjectHandle(0))
         {
             const auto& globalConfig = IConfig::GetGlobal();
 
@@ -159,6 +159,24 @@ namespace CBP
                 DCBP::ResetActors();
             else
                 DCBP::UpdateConfigOnAllActors();
+        }
+    }
+
+    void UISimComponentGlobal::RemoveNodeData(
+        Game::ObjectHandle a_handle,
+        const std::string& a_node)
+    {
+        if (a_handle == Game::ObjectHandle(0))
+        {
+            const auto& globalConfig = IConfig::GetGlobal();
+
+            if (IConfig::EraseEntryFromRoot(
+                IConfig::GetGlobalNode(), 
+                a_node, 
+                globalConfig.ui.commonSettings.physics.global.selectedGender))
+            {
+                DCBP::ResetActors();
+            }
         }
     }
 

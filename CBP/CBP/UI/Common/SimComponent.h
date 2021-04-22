@@ -92,7 +92,7 @@ namespace CBP
             return ss.str();
         }
 
-        float GetActualSliderValue(const armorCacheValue_t& a_cacheval, float a_baseval) const;
+        float GetActualSliderValue(const armorCacheValuePair_t& a_cacheval, float a_baseval) const;
 
         SKMP_FORCEINLINE void MarkCurrentForErase() {
             m_eraseCurrent = true;

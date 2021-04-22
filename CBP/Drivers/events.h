@@ -34,7 +34,7 @@ namespace CBP
         IEvents();
 
         static void MessageHandler(SKSEMessagingInterface::Message* message);
-        //static void FormDeleteHandler(UInt64 handle);
+        static void FormDeleteHandler(UInt64 handle);
         static void SaveGameHandler(SKSESerializationInterface* intfc);
         static void LoadGameHandler(SKSESerializationInterface* intfc);
         static void RevertHandler(SKSESerializationInterface* intfc);

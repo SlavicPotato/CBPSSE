@@ -21,10 +21,8 @@ namespace CBP
             aiScene scene;
 
             scene.mMaterials = new aiMaterial * [1];
-            scene.mMaterials[0] = nullptr;
-            scene.mNumMaterials = 1;
-
             scene.mMaterials[0] = new aiMaterial();
+            scene.mNumMaterials = 1;
 
             scene.mMeshes = new aiMesh * [1];
             scene.mNumMeshes = 1;
@@ -106,8 +104,11 @@ namespace CBP
 
             auto scene = importer.ReadFile(m_pathStr, IMPORT_FLAGS);
 
-            if (!scene || (scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE) || !scene->mRootNode)
+            if (!scene || !scene->mRootNode)
                 throw std::exception("No mesh was loaded");
+
+            if (scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE)
+                throw std::exception("Incomplete scene");
 
             if (!scene->mMeshes || scene->mNumMeshes < 1)
                 throw std::exception("No data");
@@ -133,12 +134,7 @@ namespace CBP
             for (unsigned int i = 0; i < mesh->mNumVertices; i++)
             {
                 auto& e = mesh->mVertices[i];
-                auto& f = tmp->m_vertices[i];
-
-                f.v[0] = e.x;
-                f.v[1] = e.y;
-                f.v[2] = e.z;
-                f.v[3] = 0.0f;
+                tmp->m_vertices[i] = MeshPoint(e.x, e.y, e.z);
             }
 
             int numIndices(0);
@@ -172,20 +168,17 @@ namespace CBP
                 }
             }
 
-            tmp->m_triVertexArray = std::make_unique<btTriangleIndexVertexArray>(
-                mesh->mNumFaces, tmp->m_indices.get(), sizeof(int) * 3,
-                numVertices, tmp->m_vertices.get()->v,
-                sizeof(decltype(tmp->m_vertices)::element_type::v));
-
             tmp->m_numVertices = numVertices;
             tmp->m_numTriangles = numFaces;
             tmp->m_numIndices = numIndices;
+
+            tmp->GenerateTriVertexArray();
 
             m_data = std::move(tmp);
 
             SetDescription(mesh->mName.C_Str());
 
-            Debug("%s (%s): vertices: %u, indices: %u, faces: %u",
+            Debug("%s (%s): vertices: %d, indices: %d, faces: %d",
                 m_name.c_str(), m_desc->c_str(), numVertices, numIndices, numFaces);
 
             return true;
@@ -328,35 +321,16 @@ namespace CBP
 #endif
     }
 
-    SKMP_FORCEINLINE static btScalar GetFrictionImpulse(
-        const btVector3& a_vi,
-        const btVector3& a_n,
-        btVector3& a_rn)
-    {
-        a_rn = a_vi - a_n * a_n.dot(a_vi);
-
-        auto lv = a_rn.length2();
-        if (lv < _EPSILON * _EPSILON) {
-            return 0.0f;
-        }
-
-        auto i = std::sqrtf(lv);
-
-        a_rn /= i;
-
-        return i;
-    }
-
     void ICollision::PerformCollisionResponse(
         int a_low,
         int a_high,
         float a_timeStep)
     {
-        const auto dispatcher = GetDispatcher();
+        auto dispatcher = GetDispatcher();
 
         for (int i = a_low; i < a_high; i++)
         {
-            const auto contactManifold = dispatcher->getManifoldByIndexInternal(i);
+            auto contactManifold = dispatcher->getManifoldByIndexInternal(i);
 
             auto numContacts = contactManifold->getNumContacts();
 
@@ -364,31 +338,33 @@ namespace CBP
                 continue;
             }
 
-            const auto ob1 = contactManifold->getBody0();
-            const auto ob2 = contactManifold->getBody1();
+            const auto oba = contactManifold->getBody0();
+            const auto obb = contactManifold->getBody1();
 
-            auto sc1 = static_cast<SimComponent*>(ob1->getUserPointer());
-            auto sc2 = static_cast<SimComponent*>(ob2->getUserPointer());
+            auto sca = static_cast<SimComponent*>(oba->getUserPointer());
+            auto scb = static_cast<SimComponent*>(obb->getUserPointer());
 
-            auto& conf1 = sc1->GetConfig();
-            auto& conf2 = sc2->GetConfig();
+            auto& confa = sca->GetConfig();
+            auto& confb = scb->GetConfig();
 
-            bool mova = sc1->HasMotion();
-            bool movb = sc2->HasMotion();
+            auto mova = sca->HasMotion();
+            auto movb = scb->HasMotion();
 
-            float mia = sc1->GetMassInverse();
-            float mib = sc2->GetMassInverse();
-            float miab = mia + mib;
+            auto mia = sca->GetMassInverse();
+            auto mib = scb->GetMassInverse();
+            auto miab = mia + mib;
 
-            float pbf = std::max(conf1.fp.f32.colPenBiasFactor, conf2.fp.f32.colPenBiasFactor);
-            float pmi = (1.0f / std::max(conf1.fp.f32.colPenMass, conf2.fp.f32.colPenMass));
+            auto pbf = std::max(confa.fp.f32.colPenBiasFactor, confb.fp.f32.colPenBiasFactor);
+            auto pmi = 1.0f / std::max(confa.fp.f32.colPenMass, confb.fp.f32.colPenMass);
+            auto rc = 1.0f + std::max(confa.fp.f32.colRestitutionCoefficient, confb.fp.f32.colRestitutionCoefficient);
 
             float fc;
-            bool friction = sc1->HasFriction() || sc2->HasFriction();
+            auto friction = (sca->HasFriction() || scb->HasFriction());
 
             if (friction) {
-                fc = conf1.fp.f32.colFriction * conf2.fp.f32.colFriction;
+                fc = confa.fp.f32.colFriction * confb.fp.f32.colFriction;
             }
+
 #if 0
             sc1->Lock();
             sc2->Lock();
@@ -396,23 +372,20 @@ namespace CBP
 
             for (decltype(numContacts) j = 0; j < numContacts; j++)
             {
-                const auto& contactPoint = contactManifold->getContactPoint(j);
+                auto& contactPoint = contactManifold->getContactPoint(j);
 
-                float depth = contactPoint.getDistance();
+                auto depth = contactPoint.getDistance();
                 if (depth >= 0.0f) {
                     continue;
                 }
 
                 depth = -depth;
 
-                auto& v1 = sc1->GetVelocity();
-                auto& v2 = sc2->GetVelocity();
+                auto& cn = contactPoint.m_normalWorldOnB;
 
-                auto& n = contactPoint.m_normalWorldOnB;
+                auto deltaV(scb->GetVelocity() - sca->GetVelocity());
 
-                auto deltaV(v2 - v1);
-
-                float impulse = n.dot(deltaV);
+                auto impulse = cn.dot(deltaV);
 
                 if (depth > 0.01f) {
                     impulse += (a_timeStep * (2880.0f * pbf)) * std::max(depth - 0.01f, 0.0f);
@@ -420,26 +393,24 @@ namespace CBP
 
                 if (impulse > 0.0f)
                 {
-                    impulse /= miab;
+                    auto Jm = impulse / miab * rc;
 
                     if (mova)
                     {
-                        float Jm = (1.0f + conf1.fp.f32.colRestitutionCoefficient) * impulse;
-                        sc1->AddVelocity(n * (Jm * mia * pmi));
+                        sca->AddVelocity(cn * (Jm * mia * pmi));
                     }
 
                     if (movb)
                     {
-                        float Jm = (1.0f + conf2.fp.f32.colRestitutionCoefficient) * impulse;
-                        sc2->SubVelocity(n * (Jm * mib * pmi));
+                        scb->SubVelocity(cn * (Jm * mib * pmi));
                     }
                 }
 
                 if (friction)
                 {
-                    btVector3 in;
+                    btVector3 fn;
 
-                    impulse = GetFrictionImpulse(deltaV, n, in);
+                    impulse = GetFrictionImpulse(deltaV, cn, fn);
 
                     if (impulse > 0.0f)
                     {
@@ -447,18 +418,17 @@ namespace CBP
 
                         if (mova)
                         {
-                            sc1->AddVelocity(in * (Jm * mia));
+                            sca->AddVelocity(fn * (Jm * mia));
                         }
 
                         if (movb)
                         {
-                            sc2->SubVelocity(in * (Jm * mib));
+                            scb->SubVelocity(fn * (Jm * mib));
                         }
                     }
                 }
 
             }
-
 
 #if 0
             sc2->Unlock();

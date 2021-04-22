@@ -4,7 +4,6 @@
 #include "Config.h"
 #include "SimObject.h"
 
-#include "Common/Data.h"
 #include "Common/Game.h"
 
 namespace CBP
@@ -256,7 +255,7 @@ namespace CBP
 
     static void FillNodeRefData(NiAVObject* parent, nodeRefEntry_t& a_entry)
     {
-        a_entry.m_name = parent->m_name;
+        a_entry.m_name = parent->m_name ? parent->m_name : "";
 
         auto node = parent->GetAsNiNode();
         if (!node)

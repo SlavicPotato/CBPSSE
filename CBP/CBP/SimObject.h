@@ -11,6 +11,7 @@ namespace CBP
         nodeDesc_t(
             const std::string& a_nodeName,
             NiAVObject* a_node,
+            NiNode* a_parent,
             const std::string& a_confGroup,
             bool a_collisions,
             bool a_movement,
@@ -19,6 +20,7 @@ namespace CBP
             :
             nodeName(a_nodeName),
             object(a_node),
+            parent(a_parent),
             confGroup(a_confGroup),
             collision(a_collisions),
             movement(a_movement),
@@ -29,6 +31,7 @@ namespace CBP
 
         const std::string& nodeName;
         NiAVObject* object;
+        NiNode* parent;
         const std::string& confGroup;
         bool collision;
         bool movement;
@@ -41,15 +44,14 @@ namespace CBP
     class SimObject
     {
         using nodeList_t = stl::vector<std::unique_ptr<SimComponent>>;
-
     public:
         SimObject(
             Game::ObjectHandle a_handle,
             Actor* actor,
-            char a_sex,
+            ConfigGender a_sex,
             const nodeDescList_t& a_desc);
 
-        virtual ~SimObject() noexcept ;
+        virtual ~SimObject() noexcept;
 
         SimObject() = delete;
         SimObject(const SimObject& a_rhs) = delete;
@@ -59,9 +61,13 @@ namespace CBP
         SimObject& operator=(SimObject&&) = delete;
 
         void UpdateMotion(float a_timeStep);
-        void UpdateVelocity(float a_timeStep);
+        void ReadTransforms(float a_timeStep);
+        //void ReadWorldData();
+        void WriteTransforms();
 
         void UpdateConfig(Actor* a_actor, bool a_collisions, const configComponents_t& a_config);
+        bool HasNewNode(Actor* a_actor, const nodeMap_t& a_nodeMap);
+        void RemoveInvalidNodes(Actor* a_actor);
         void Reset();
         //bool ValidateNodes(Actor* a_actor);
 
@@ -71,15 +77,14 @@ namespace CBP
         void UpdateDebugInfo();
 #endif
 
-        [[nodiscard]] static auto CreateNodeDescriptorList(
+        [[nodiscard]] static nodeDescList_t::size_type CreateNodeDescriptorList(
             Game::ObjectHandle a_handle,
             Actor* a_actor,
-            char a_sex,
+            ConfigGender a_sex,
             const configComponents_t& a_config,
             const nodeMap_t& a_nodeMap,
             bool a_collisions,
-            nodeDescList_t& a_out)
-            ->nodeDescList_t::size_type;
+            nodeDescList_t& a_out);
 
 #ifdef _CBP_ENABLE_DEBUG
         [[nodiscard]] SKMP_FORCEINLINE const std::string& GetActorName() const noexcept {
@@ -89,7 +94,7 @@ namespace CBP
 
         [[nodiscard]] SKMP_FORCEINLINE const NiTransform* GetHeadTransform() const {
             return m_objHead ? std::addressof(m_objHead->m_worldTransform) : nullptr;
-        }
+    }
 
         [[nodiscard]] SKMP_FORCEINLINE bool GetHeadTransform(Bullet::btTransformEx& a_out) const {
             if (m_objHead) {
@@ -106,19 +111,23 @@ namespace CBP
         }
 
         [[nodiscard]] SKMP_FORCEINLINE const auto& GetNodeList() const {
-            return m_objList;
+            return m_nodes;
         }
 
         [[nodiscard]] SKMP_FORCEINLINE auto GetActorHandle() const {
             return m_handle;
         }
-        
+
         SKMP_FORCEINLINE void MarkForDelete() {
             m_markedForDelete = true;
         }
 
         [[nodiscard]] SKMP_FORCEINLINE auto IsMarkedForDelete() const {
             return m_markedForDelete;
+        }
+
+        [[nodiscard]] SKMP_FORCEINLINE bool Empty() const {
+            return m_nodes.empty();
         }
 
 #if BT_THREADSAFE
@@ -129,30 +138,36 @@ namespace CBP
         SKMP_FORCEINLINE float GetTimeStep() const {
             return m_currentTimeStep;
         }
-        
-        [[nodiscard]] SKMP_FORCEINLINE auto &GetTask() {
+
+        [[nodiscard]] SKMP_FORCEINLINE auto& GetTask() {
             return m_task;
         }
 #endif
-        /*[[nodiscard]] SKMP_FORCEINLINE auto GetActor() const {
+        [[nodiscard]] SKMP_FORCEINLINE auto GetActor() const {
             return m_actor.get();
         }
 
         [[nodiscard]] SKMP_FORCEINLINE auto GetActor() {
             return m_actor.get();
-        }*/
+        }
 
     private:
 
-        nodeList_t m_objList;
+        [[nodiscard]] static NiNode* GetParentNode(
+            NiAVObject* a_root, 
+            const configNode_t& a_nodeConfig);
+
+        void ClearSimComponentParent(SimComponent *a_sc);
+
+        nodeList_t m_nodes;
 
         Game::ObjectHandle m_handle;
 
         NiPointer<Actor> m_actor;
-        NiPointer<NiNode> m_node;
+        NiPointer<NiNode> m_rootNode;
         NiPointer<NiAVObject> m_objHead;
 
-        char m_sex;
+        ConfigGender m_sex;
 
         bool m_suspended;
         bool m_markedForDelete;
@@ -188,7 +203,7 @@ namespace CBP
 #ifdef _CBP_ENABLE_DEBUG
         std::string m_actorName;
 #endif
-    };
+};
 
 
 }

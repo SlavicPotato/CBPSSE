@@ -81,6 +81,11 @@ namespace CBP
         static void AddCollisionObject(btCollisionObject* a_collider);
         static void RemoveCollisionObject(btCollisionObject* a_collider);
 
+        SKMP_FORCEINLINE static btScalar GetFrictionImpulse(
+            const btVector3& a_vi,
+            const btVector3& a_n,
+            btVector3& a_rn);
+
         ICollision(const ICollision&) = delete;
         ICollision(ICollision&&) = delete;
         ICollision& operator=(const ICollision&) = delete;
@@ -97,7 +102,7 @@ namespace CBP
             btCollisionWorld* bt_collision_world;
         } m_ptrs;
 
-        SKMP_FORCEINLINE static btCollisionDispatcher* GetDispatcher() {
+        SKMP_FORCEINLINE static const btCollisionDispatcher* GetDispatcher() {
             return m_Instance.m_ptrs.bt_dispatcher;
         }
 
@@ -220,5 +225,23 @@ namespace CBP
 
     }
 
+    btScalar ICollision::GetFrictionImpulse(
+        const btVector3& a_vi,
+        const btVector3& a_n,
+        btVector3& a_rn)
+    {
+        a_rn = a_vi - a_n * a_n.dot(a_vi);
+
+        auto lv = a_rn.length2();
+        if (lv < _EPSILON * _EPSILON) {
+            return 0.0f;
+        }
+
+        auto i = std::sqrtf(lv);
+
+        a_rn /= i;
+
+        return i;
+    }
 }
 

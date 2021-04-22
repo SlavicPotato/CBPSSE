@@ -8,10 +8,7 @@
 namespace CBP
 {
     struct pluginInfo_t;
-}
 
-namespace CBP
-{
     enum class TRecType : std::uint32_t {
         Physics,
         Node

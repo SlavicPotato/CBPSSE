@@ -231,9 +231,6 @@
     <ClInclude Include="Common\Game.h">
       <Filter>Header Files\Common</Filter>
     </ClInclude>
-    <ClInclude Include="Common\Misc.h">
-      <Filter>Header Files\Common</Filter>
-    </ClInclude>
     <ClInclude Include="Common\BulletExtensions.h">
       <Filter>Header Files\Common</Filter>
     </ClInclude>

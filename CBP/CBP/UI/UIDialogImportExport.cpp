@@ -148,7 +148,7 @@ namespace CBP
 
                     auto& in = a_p.GetInput();
 
-                    if (!strlen(in))
+                    if (!StrHelpers::strlen(in))
                         return;
 
                     std::string file(in);

@@ -21,8 +21,7 @@ namespace CBP
 
         ImGui::SameLine(width - GetNextTextOffset("Sample", true));
         if (ButtonRight("Sample")) {
-            if (!a_conf.ex.bcShape.empty())
-                DCBP::BoneCastSample(a_handle, a_nodeName);
+            DCBP::BoneCastSample(a_handle, a_nodeName);
         }
 
         BoneCastCache::const_iterator it;
@@ -144,7 +143,7 @@ namespace CBP
                 {
                     auto& in = a_p.GetInput();
 
-                    if (!strlen(in))
+                    if (!StrHelpers::strlen(in))
                         return;
 
                     std::string name(in);
@@ -185,6 +184,8 @@ namespace CBP
 
         auto& data = pmc.Data();
 
+        ImGui::PushID(static_cast<const void*>(std::addressof(data)));
+
         for (auto& e : data)
         {
             if (ImGui::MenuItem(e.first.c_str()))
@@ -210,6 +211,8 @@ namespace CBP
                 }
             }
         }
+
+        ImGui::PopID();
     }
 
     template <class T>
@@ -233,11 +236,15 @@ namespace CBP
 
         bool changed(false);
 
+        ImGui::PushID("__bonecast");
+
         changed = ImGui::Checkbox("BoneCast", &a_conf.bl.b.boneCast);
 
         if (a_conf.bl.b.boneCast)
         {
+            ImGui::PushID("__buttons");
             DrawBoneCastButtons(a_handle, a_nodeName, a_conf);
+            ImGui::PopID();
 
             ImGui::PushItemWidth(ImGui::GetFontSize() * -14.0f);
 
@@ -252,6 +259,8 @@ namespace CBP
 
             ImGui::PopItemWidth();
         }
+
+        ImGui::PopID();
 
         return changed;
     }
@@ -269,41 +278,83 @@ namespace CBP
         configNode_t& a_conf
     )
     {
+        ImGui::PushID("__node_item");
+
+        bool reset(false);
         bool changed(false);
 
         ImGui::Spacing();
 
-        changed |= ImGui::Checkbox("Motion", &a_conf.bl.b.motion);
-        changed |= ImGui::Checkbox("Collisions", &a_conf.bl.b.collision);
+        if (ImGui::Checkbox("Motion", &a_conf.bl.b.motion))
+        {
+            changed = true;
+            reset = true;
+        }
+
+        ImGui::PushID(1);
+
+        if (a_conf.bl.b.motion)
+        {
+            if (ImGui::TreeNodeEx("Options", ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_SpanAvailWidth))
+            {
+                changed |= ImGui::SliderFloat3("Offset", a_conf.fp.f32.nodeOffset, -250.0f, 250.0f);
+                changed |= ImGui::SliderFloat3("Rotation", a_conf.fp.f32.nodeRot, -360.0f, 360.0f, "%.3f", ImGuiSliderFlags_AlwaysClamp);
+
+                ImGui::TreePop();
+            }
+        }
+
+        ImGui::PopID();
+
+        if (ImGui::Checkbox("Collisions", &a_conf.bl.b.collision))
+        {
+            changed = true;
+            reset = true;
+        }
+
+        ImGui::PushID(2);
+
+        if (a_conf.bl.b.collision)
+        {
+            if (ImGui::TreeNodeEx("Options", ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_SpanAvailWidth))
+            {
+                changed |= ImGui::SliderFloat3("Offset min", a_conf.fp.f32.colOffsetMin, -250.0f, 250.0f);
+                HelpMarker(MiscHelpText::offsetMin);
+
+                changed |= ImGui::SliderFloat3("Offset max", a_conf.fp.f32.colOffsetMax, -250.0f, 250.0f);
+                HelpMarker(MiscHelpText::offsetMax);
+
+                changed |= ImGui::SliderFloat3("Rotation", a_conf.fp.f32.colRot, -360.0f, 360.0f, "%.3f", ImGuiSliderFlags_AlwaysClamp);
+                HelpMarker(MiscHelpText::rotation);
+
+                changed |= ImGui::Checkbox("Use parent matrix for offset", &a_conf.bl.b.offsetParent);
+
+                ImGui::TreePop();
+            }
+        }
+
+        ImGui::PopID();
 
         ImGui::Spacing();
 
-        bool changed2(false);
-
-        changed2 |= ImGui::SliderFloat3("Offset min", a_conf.fp.f32.colOffsetMin, -250.0f, 250.0f);
-        HelpMarker(MiscHelpText::offsetMin);
-
-        changed2 |= ImGui::SliderFloat3("Offset max", a_conf.fp.f32.colOffsetMax, -250.0f, 250.0f);
-        HelpMarker(MiscHelpText::offsetMax);
-
-        changed2 |= ImGui::SliderFloat3("Rotation", a_conf.fp.f32.colRot, -360.0f, 360.0f, "%.3f", ImGuiSliderFlags_AlwaysClamp);
-        HelpMarker(MiscHelpText::rotation);
+        changed |= ImGui::InputText("Parent node", std::addressof(a_conf.ex.forceParent), ImGuiInputTextFlags_EnterReturnsTrue);
 
         if (ImGui::SliderFloat("Scale", &a_conf.fp.f32.nodeScale, 0.0f, 20.0f))
         {
             a_conf.fp.f32.nodeScale = std::clamp(a_conf.fp.f32.nodeScale, 0.0f, 20.0f);
-            changed2 = true;
+            changed = true;
         }
 
         ImGui::SameLine();
-        changed2 |= ImGui::Checkbox("On", &a_conf.bl.b.overrideScale);
-        changed2 |= ImGui::Checkbox("Use parent matrix for offset", &a_conf.bl.b.offsetParent);
+        changed |= ImGui::Checkbox("On", &a_conf.bl.b.overrideScale);
 
-        changed2 |= DrawBoneCast(a_handle, a_nodeName, a_conf);
+        changed |= DrawBoneCast(a_handle, a_nodeName, a_conf);
 
-        if (changed || changed2) {
+        ImGui::PopID();
+
+        if (changed) {
             MarkNodeChanged();
-            UpdateNodeData(a_handle, a_nodeName, a_conf, changed);
+            UpdateNodeData(a_handle, a_nodeName, a_conf, reset);
         }
     }
 
@@ -325,15 +376,21 @@ namespace CBP
         if (a_nodeList.empty())
             return;
 
-        if (ImGui::TreeNodeEx("Nodes",
-            ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_DefaultOpen))
+        constexpr auto treeFlags =
+            ImGuiTreeNodeFlags_SpanAvailWidth |
+            ImGuiTreeNodeFlags_DefaultOpen;
+
+        ImGui::PushID("__conf_group_menu");
+
+        if (ImGui::TreeNodeEx("Nodes", treeFlags))
         {
             DrawConfGroupNodeClass(a_handle);
 
+            ImGui::PushID("__node_list");
+
             for (auto& e : a_nodeList)
             {
-                if (ImGui::TreeNodeEx(e.first.c_str(),
-                    ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_DefaultOpen))
+                if (ImGui::TreeNodeEx(e.first.c_str(), treeFlags))
                 {
                     auto data = e.second ? *e.second : configNode_t();
 
@@ -343,8 +400,12 @@ namespace CBP
                 }
             }
 
+            ImGui::PopID();
+
             ImGui::TreePop();
         }
+
+        ImGui::PopID();
     }
 
     template <class T, UIEditorID ID>
@@ -369,6 +430,60 @@ namespace CBP
     }
 
     template <class T, UIEditorID ID>
+    void UINode<T, ID>::DrawNodeAddPopup(
+        configNodes_t& a_data)
+    {
+
+        const auto& nodeMap = IConfig::GetNodeMap();
+
+        if (ImGui::MenuItem("All"))
+        {
+            for (auto& e : nodeMap) {
+                a_data.try_emplace(e.first);
+            }
+        }
+
+        ImGui::Separator();
+
+        ImGui::PushID(static_cast<const void*>(std::addressof(nodeMap)));
+
+        for (auto& e : nodeMap)
+        {
+            if (!a_data.contains(e.first))
+            {
+                if (ImGui::MenuItem(e.first.c_str())) {
+                    a_data.try_emplace(e.first);
+                }
+            }
+        }
+
+        ImGui::PopID();
+
+    }
+
+    template <class T, UIEditorID ID>
+    void UINode<T, ID>::DrawNodeHeader(
+        T a_handle,
+        configNodes_t& a_data)
+    {
+        ImGui::PushID("__ncc_header");
+
+        if (ImGui::Button("Add")) {
+            ImGui::OpenPopup("__add_node_popup");
+        }
+
+        if (ImGui::BeginPopup("__add_node_popup"))
+        {
+            DrawNodeAddPopup(a_data);
+            ImGui::EndPopup();
+        }
+
+        ImGui::PopID();
+
+        ImGui::Separator();
+    }
+
+    template <class T, UIEditorID ID>
     void UINode<T, ID>::DrawNodes(
         T a_handle,
         configNodes_t& a_data)
@@ -377,26 +492,73 @@ namespace CBP
 
         ImGui::Separator();
 
-        auto& nodeMap = IConfig::GetNodeMap();
+        //auto& globalConfig = IConfig::GetGlobal();
+        //auto& options = globalConfig.ui.nodeEditorOptions[ID];
+
+        DrawNodeHeader(a_handle, a_data);
 
         const float width = ImGui::GetWindowContentRegionMax().x;
 
-        if (ImGui::BeginChild("ncc_area", ImVec2(width, 0.0f)))
+        if (ImGui::BeginChild("__ncc_area", ImVec2(width, 0.0f)))
         {
             ImGui::PushItemWidth(ImGui::GetFontSize() * -10.0f);
 
-            for (const auto& e : nodeMap)
+            auto& nodeMap = IConfig::GetNodeMap();
+
+            for (auto& e : nodeMap)
             {
                 if (!m_groupFilter->Test(e.first))
                     continue;
 
+                /*configNodes_t::iterator it;
+
+                if (options.showAll)
+                {
+                    it = a_data.try_emplace(e.first).first;
+                }
+                else
+                {
+                    it = a_data.find(e.first);
+                    if (it == a_data.end())
+                        continue;
+                }*/
+
+                auto it = a_data.find(e.first);
+                if (it == a_data.end())
+                    continue;
+
                 ImGui::PushID(static_cast<const void*>(std::addressof(e)));
 
+                ImGui::PushID(1);
+
+                if (ImGui::Button("-"))
+                {
+                    ImGui::OpenPopup("Remove node");
+                }
+
+                if (UICommon::ConfirmDialog("Remove node", "Remove node '%s'?", e.first.c_str()))
+                {
+                    a_data.erase(it);
+                    RemoveNodeData(a_handle, e.first);
+
+                    ImGui::PopID();
+                    ImGui::PopID();
+
+                    continue;
+                }
+
+                ImGui::PopID();
+
+                ImGui::SameLine();
                 std::string label(e.first + " - " + e.second);
 
                 if (CollapsingHeader(GetCSID(e.first), label.c_str()))
                 {
-                    DrawNodeItem(a_handle, e.first, a_data[e.first]);
+                    ImGui::Indent();
+
+                    DrawNodeItem(a_handle, e.first, it->second);
+
+                    ImGui::Unindent();
                 }
 
                 ImGui::PopID();

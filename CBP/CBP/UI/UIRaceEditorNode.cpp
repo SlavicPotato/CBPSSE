@@ -78,6 +78,22 @@ namespace CBP
         MarkChanged();
     }
 
+    void UIRaceEditorNode::RemoveNodeData(
+        Game::FormID a_handle,
+        const std::string& a_node)
+    {
+        const auto& globalConfig = IConfig::GetGlobal();
+
+        if (IConfig::EraseEntry(
+            a_handle,
+            IConfig::GetRaceNodeHolder(),
+            a_node,
+            globalConfig.ui.commonSettings.node.race.selectedGender))
+        {
+            DCBP::ResetActors();
+        }
+    }
+
     configGlobalCommon_t& UIRaceEditorNode::GetGlobalCommonConfig() const
     {
         return IConfig::GetGlobal().ui.commonSettings.node.race;

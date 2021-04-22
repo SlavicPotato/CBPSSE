@@ -1051,7 +1051,6 @@
     <ClInclude Include="Common\Crypto.h" />
     <ClInclude Include="Common\Data.h" />
     <ClInclude Include="Common\Game.h" />
-    <ClInclude Include="Common\Misc.h" />
     <ClInclude Include="Common\Serialization.h" />
     <ClInclude Include="Common\UICommon.h" />
     <ClInclude Include="Common\UIData.h" />

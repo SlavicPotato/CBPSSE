@@ -78,6 +78,10 @@ namespace CBP
             const configNode_t& a_data,
             bool a_reset) override;
 
+        virtual void RemoveNodeData(
+            Game::ObjectHandle a_handle,
+            const std::string& a_node) override;
+
         virtual void DrawBoneCastButtons(
             Game::ObjectHandle a_handle,
             const std::string& a_nodeName,

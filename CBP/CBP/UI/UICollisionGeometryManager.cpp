@@ -225,9 +225,11 @@ namespace CBP
 
         normals.resize(numVertices);
 
+        auto xmZero = DirectX::g_XMZero;
+
         for (std::size_t i = 0; i < numVertices; i++)
         {
-            normals[i] = DirectX::g_XMZero;
+            normals[i] = xmZero;
         }
 
         for (std::size_t i = 0; i < numIndices; i += 3)
@@ -244,8 +246,12 @@ namespace CBP
             auto& v2 = a_data->m_vertices[i2];
             auto& v3 = a_data->m_vertices[i3];
 
-            auto p1 = (v2.v - v1.v);
-            auto p2 = (v3.v - v1.v);
+            DirectX::XMStoreFloat3(std::addressof(a_vertices[i1].position), v1.v.mVec128);
+            DirectX::XMStoreFloat3(std::addressof(a_vertices[i2].position), v2.v.mVec128);
+            DirectX::XMStoreFloat3(std::addressof(a_vertices[i3].position), v3.v.mVec128);
+
+            auto p1 = v2.v - v1.v;
+            auto p2 = v3.v - v1.v;
 
             auto p = p1.cross(p2);
 
@@ -256,11 +262,7 @@ namespace CBP
 
         for (std::size_t i = 0; i < numVertices; i++)
         {
-            auto& f = a_vertices[i];
-
-            DirectX::XMStoreFloat3(&f.position, a_data->m_vertices[i].v.mVec128);
-            DirectX::XMStoreFloat3(&f.normal, DirectX::XMVector3Normalize(normals[i]));
-
+            DirectX::XMStoreFloat3(std::addressof(a_vertices[i].normal), DirectX::XMVector3Normalize(normals[i]));
         }
 
     }
@@ -314,7 +316,10 @@ namespace CBP
             0
         );
 
-        DirectX::ThrowIfFailed(a_device->CreateTexture2D(&depthBufferDesc, nullptr, m_depthStencilBuffer.ReleaseAndGetAddressOf()));
+        DirectX::ThrowIfFailed(a_device->CreateTexture2D(
+            &depthBufferDesc,
+            nullptr,
+            m_depthStencilBuffer.ReleaseAndGetAddressOf()));
 
         CD3D11_TEXTURE2D_DESC textureDesc(
             DXGI_FORMAT_R8G8B8A8_UNORM,
@@ -330,7 +335,10 @@ namespace CBP
             0
         );
 
-        DirectX::ThrowIfFailed(a_device->CreateTexture2D(&textureDesc, nullptr, m_renderTargetViewTexture.ReleaseAndGetAddressOf()));
+        DirectX::ThrowIfFailed(a_device->CreateTexture2D(
+            &textureDesc,
+            nullptr,
+            m_renderTargetViewTexture.ReleaseAndGetAddressOf()));
 
         CD3D11_RENDER_TARGET_VIEW_DESC renderTargetViewDesc(
             D3D11_RTV_DIMENSION_TEXTURE2D,
@@ -338,7 +346,10 @@ namespace CBP
             0
         );
 
-        DirectX::ThrowIfFailed(a_device->CreateRenderTargetView(m_renderTargetViewTexture.Get(), &renderTargetViewDesc, m_renderTargetView.ReleaseAndGetAddressOf()));
+        DirectX::ThrowIfFailed(a_device->CreateRenderTargetView(
+            m_renderTargetViewTexture.Get(),
+            &renderTargetViewDesc,
+            m_renderTargetView.ReleaseAndGetAddressOf()));
 
         CD3D11_SHADER_RESOURCE_VIEW_DESC shaderResourceViewDesc(
             D3D11_SRV_DIMENSION_TEXTURE2D,
@@ -347,14 +358,20 @@ namespace CBP
             1
         );
 
-        DirectX::ThrowIfFailed(a_device->CreateShaderResourceView(m_renderTargetViewTexture.Get(), &shaderResourceViewDesc, m_shaderResourceView.ReleaseAndGetAddressOf()));
+        DirectX::ThrowIfFailed(a_device->CreateShaderResourceView(
+            m_renderTargetViewTexture.Get(),
+            &shaderResourceViewDesc,
+            m_shaderResourceView.ReleaseAndGetAddressOf()));
 
         CD3D11_DEPTH_STENCIL_VIEW_DESC depthStencilViewDesc(
             D3D11_DSV_DIMENSION_TEXTURE2D,
             DXGI_FORMAT_D24_UNORM_S8_UINT
         );
 
-        DirectX::ThrowIfFailed(a_device->CreateDepthStencilView(m_depthStencilBuffer.Get(), &depthStencilViewDesc, m_depthStencilView.ReleaseAndGetAddressOf()));
+        DirectX::ThrowIfFailed(a_device->CreateDepthStencilView(
+            m_depthStencilBuffer.Get(),
+            &depthStencilViewDesc,
+            m_depthStencilView.ReleaseAndGetAddressOf()));
 
     }
 
@@ -368,8 +385,6 @@ namespace CBP
         ID3D11RenderTargetView* rtViews[]{ m_renderTargetView.Get() };
         m_context->OMSetRenderTargets(1, rtViews, m_depthStencilView.Get());
 
-        const auto& globalConfig = IConfig::GetGlobal();
-
         m_shape->Draw([this]
             {
                 m_context->OMSetBlendState(m_states->Opaque(), nullptr, 0xFFFFFFFF);
@@ -382,11 +397,8 @@ namespace CBP
                     m_states->Wireframe() :
                     m_states->CullNone());
 
-                /*ID3D11SamplerState* samplerState = m_states->AnisotropicWrap();
-                m_context->PSSetSamplers(0, 1, &samplerState);*/
-
                 auto& wcol = ImGui::GetStyle().Colors[ImGuiCol_WindowBg];
-                const float col[4]{ wcol.x, wcol.y, wcol.z, 0.0f };
+                const FLOAT col[4]{ wcol.x, wcol.y, wcol.z, 0.0f };
 
                 m_context->ClearRenderTargetView(m_renderTargetView.Get(), col);
                 m_context->ClearDepthStencilView(m_depthStencilView.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
@@ -725,6 +737,7 @@ namespace CBP
 
             ImGui::SameLine(width - ImGui::CalcTextSize(m_infoStrings.m_indices.c_str()).x - 5.0f);
             ImGui::TextWrapped(m_infoStrings.m_indices.c_str());
+
         }
     }
 

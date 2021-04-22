@@ -11,15 +11,17 @@
 
 #include "Tasks/Tasks.h"
 
-#include "Common/Data.h"
-#include "Common/Game.h"
+namespace Game
+{
+    class BSMain;
+}
 
 namespace CBP
 {
 
     class SKMP_ALIGN_AUTO ControllerTask :
-        public CBP::TaskDelegateFixed,
-        public CBP::TaskQueueBase<ControllerInstruction>,
+        public TaskDelegateFixed,
+        public TaskQueueBase<ControllerInstruction>,
         protected ILog
     {
         using handleSet_t = stl::unordered_set<Game::ObjectHandle>;
@@ -62,8 +64,9 @@ namespace CBP
             float a_timeTick,
             float a_maxTime);
 
+        SKMP_FORCEINLINE void UpdatePhase3();
+
         void AddActor(Game::ObjectHandle a_handle);
-        void RemoveActor(Game::ObjectHandle a_handle);
         simActorList_t::iterator RemoveActor(simActorList_t::iterator a_iterator);
         //bool ValidateActor(simActorList_t::value_type &a_entry);
         void UpdateConfigOnAllActors();
@@ -74,12 +77,14 @@ namespace CBP
         void WeightUpdate(Game::ObjectHandle a_handle);
         void NiNodeUpdateAll();
         void WeightUpdateAll();
-        void AddArmorOverrides(Game::ObjectHandle a_handle, Game::FormID a_formid);
+        //void AddArmorOverrides(Game::ObjectHandle a_handle, Game::FormID a_formid);
         void UpdateArmorOverrides(Game::ObjectHandle a_handle);
         void UpdateArmorOverridesAll();
         void ClearArmorOverrides();
+        void ValidateNodes(Game::ObjectHandle a_handle);
 
     public:
+        void RemoveActor(Game::ObjectHandle a_handle);
         void PhysicsTick(Game::BSMain * a_main, float a_interval);
 
         void ClearActors(bool a_noNotify = false, bool a_release = false);
@@ -91,8 +96,8 @@ namespace CBP
             const std::string & a_component,
             const NiPoint3 & a_force);
 
-        void UpdateConfig(Game::ObjectHandle a_handle);
-        void UpdateConfig(Game::ObjectHandle a_handle, Actor * a_actor);
+        void UpdateConfig(Game::ObjectHandle a_handle, bool a_addIfMissing = false);
+        void UpdateConfig(Game::ObjectHandle a_handle, Actor * a_actor, bool a_addIfMissing = false);
 
         void UpdateDebugRenderer();
 
@@ -139,7 +144,7 @@ namespace CBP
         SKMP_FORCEINLINE void DoConfigUpdate(
             Game::ObjectHandle a_handle,
             Actor * a_actor,
-            SimObject & a_obj);
+            SimObject& a_obj);
 
         SKMP_FORCEINLINE const char* GetActorName(Actor * a_actor) {
             return a_actor ? a_actor->GetReferenceName() : "nullptr";

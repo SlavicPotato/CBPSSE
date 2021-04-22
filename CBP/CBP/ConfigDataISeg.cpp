@@ -55,6 +55,8 @@ namespace CBP
         vec.colOffsetMin.setZero();
         vec.colOffsetMax.setZero();
         vec.colRot.setZero();
+        vec.nodeOffset.setZero();
+        vec.nodeRot.setZero();
 
         f32.nodeScale = 1.0f;
         f32.bcWeightThreshold = 0.0f;

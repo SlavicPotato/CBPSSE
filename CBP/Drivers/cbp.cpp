@@ -189,7 +189,12 @@ namespace CBP
         const std::string& a_component,
         const NiPoint3& a_force)
     {
-        DTasks::AddTask([=, c = a_component]() { GetController()->ApplyForce(a_handle, a_steps, c, a_force); });
+        DTasks::AddTask([=, c = a_component]()
+            {
+                IScopedLock _(GetLock());
+
+                GetController()->ApplyForce(a_handle, a_steps, c, a_force);
+            });
     }
 
     void DCBP::BoneCastSample(Game::ObjectHandle a_handle, const std::string& a_nodeName)
@@ -416,6 +421,8 @@ namespace CBP
         DCBP::DispatchActorTask(handle,
             ControllerInstruction::Action::UpdateArmorOverride);
 
+        DCBP::DispatchActorTask(handle,
+            CBP::ControllerInstruction::Action::ValidateNodes);
     }
 
     NiAVObject* DCBP::CreateArmorNode_Hook(NiAVObject* a_obj, Biped* a_info, BipedParam* a_params)
@@ -502,6 +509,7 @@ namespace CBP
         IEvents::RegisterForEvent(Event::OnGameSave, SaveGameHandler);
         IEvents::RegisterForEvent(Event::OnLogMessage, OnLogMessage);
         IEvents::RegisterForEvent(Event::OnExit, OnExit);
+        IEvents::RegisterForEvent(Event::OnFormDelete, OnFormDelete);
 
         SKSE::g_papyrus->Register(RegisterFuncs);
 
@@ -581,13 +589,22 @@ namespace CBP
 
         if (m_Instance.m_conf.debug_renderer)
         {
-            auto& r = m_Instance.m_renderer = std::make_unique<CBP::Renderer>(
-                info->m_pDevice, info->m_pImmediateContext);
+            try
+            {
+                auto& r = m_Instance.m_renderer = std::make_unique<CBP::Renderer>(
+                    info->m_pDevice, info->m_pImmediateContext);
 
-            CBP::ICollision::GetWorld()->setDebugDrawer(r.get());
+                CBP::ICollision::GetWorld()->setDebugDrawer(r.get());
+            }
+            catch (const std::exception& e)
+            {
+                m_Instance.FatalError("Failed to initialize debug renderer: %s", e.what());
+                throw e;
+            }
 
-            m_Instance.Debug("Renderer initialized");
         }
+
+        m_Instance.Debug("Renderer initialized");
     }
 
     void DCBP::Present_Pre()
@@ -634,6 +651,15 @@ namespace CBP
         m_Instance.m_uiContext.reset();
 
         CBP::ICollision::Destroy();
+    }
+
+    void DCBP::OnFormDelete(Event, void* a_data)
+    {
+        auto pHandle = static_cast<Game::ObjectHandle*>(a_data);
+
+        IScopedLock _(GetLock());
+
+        m_Instance.m_controller->RemoveActor(*pHandle);
     }
 
     void DCBP::MessageHandler(Event, void* args)

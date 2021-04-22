@@ -4,12 +4,8 @@
 
 namespace CBP
 {
-    struct pluginInfo_t;
-}
-
-namespace CBP
-{
     struct configNode_t;
+    struct pluginInfo_t;
 
     struct BoneCacheUpdateID
     {

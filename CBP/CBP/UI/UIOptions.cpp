@@ -245,6 +245,7 @@ namespace CBP
             for (auto& e : a_dmap)
             {
                 ImGui::PushID(static_cast<const void*>(std::addressof(e.second)));
+
                 bool selected = e.first == a_key;
                 if (selected)
                     if (ImGui::IsWindowAppearing()) ImGui::SetScrollHereY();

@@ -64,7 +64,8 @@ namespace CBP
             if (UICommon::TextInputDialog("New group", "Enter group name:",
                 reinterpret_cast<char*>(&m_input), sizeof(m_input), globalConfig.ui.fontScale))
             {
-                if (m_input) {
+                if (m_input) 
+                {
                     colGroups.emplace(m_input);
                     m_selected = m_input;
                     DCBP::SaveCollisionGroups();
@@ -101,14 +102,14 @@ namespace CBP
 
             ImGui::Separator();
 
-            for (const auto& e : nodeMap)
+            for (auto& e : nodeMap)
             {
                 uint64_t curSel;
 
                 auto it = nodeColGroupMap.find(e.first);
                 if (it != nodeColGroupMap.end()) {
                     curSel = it->second;
-                    curSelName = reinterpret_cast<const char*>(&curSel);
+                    curSelName = reinterpret_cast<const char*>(std::addressof(curSel));
                 }
                 else {
                     curSel = 0;
@@ -119,12 +120,18 @@ namespace CBP
 
                 if (ImGui::BeginCombo(e.first.c_str(), curSelName))
                 {
-                    if (curSel != 0) {
-                        if (ImGui::Selectable("")) {
+                    if (curSel != 0) 
+                    {
+                        ImGui::PushID("__select_erase");
+
+                        if (ImGui::Selectable("")) 
+                        {
                             nodeColGroupMap.erase(e.first);
                             DCBP::SaveCollisionGroups();
                             DCBP::ResetActors();
                         }
+
+                        ImGui::PopID();
                     }
 
                     for (const auto& j : colGroups)

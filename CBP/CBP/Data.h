@@ -168,7 +168,7 @@ namespace CBP
 
         static nodeReferenceMap_t nodeRefData;
 
-        static std::uint64_t actorCacheUpdateId;
+        static uint64_t actorCacheUpdateId;
 
         static stl::unordered_set<Game::FormID> ignoredRaces;
 

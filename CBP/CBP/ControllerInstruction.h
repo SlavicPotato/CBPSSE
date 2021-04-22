@@ -9,6 +9,7 @@ namespace CBP
             AddActor,
             RemoveActor,
             UpdateConfig,
+            UpdateConfigOrAdd,
             UpdateConfigAll,
             Reset,
             PhysicsReset,
@@ -19,7 +20,9 @@ namespace CBP
             AddArmorOverride,
             UpdateArmorOverride,
             UpdateArmorOverridesAll,
-            ClearArmorOverrides
+            ClearArmorOverrides,
+            ValidateNodes,
+            RemoveInvalidNodes
         };
 
         Action m_action;

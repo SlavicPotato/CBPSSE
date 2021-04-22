@@ -4,6 +4,7 @@
 #include "SimObject.h"
 #include "Collision.h"
 #include "Profile.h"
+#include "GeometryTools.h"
 
 #include "Common/Game.h"
 
@@ -13,15 +14,26 @@ namespace CBP
     static btVector3 s_vecOne(_mm_and_ps(_mm_set_ps1(1.0f), btvFFF0fMask));
     static btVector3 s_vec10(_mm_and_ps(_mm_set_ps1(10.0f), btvFFF0fMask));
 
-    SKMP_FORCEINLINE static btScalar mmg(btScalar a_val, btScalar a_min, btScalar a_max) {
+    SKMP_FORCEINLINE static btScalar mmg(
+        btScalar a_val,
+        btScalar a_min,
+        btScalar a_max)
+    {
         return a_min + (a_max - a_min) * a_val;
     }
 
-    SKMP_FORCEINLINE static btScalar mmw(btScalar a_val, btScalar a_min, btScalar a_max) {
+    SKMP_FORCEINLINE static btScalar mmw(
+        btScalar a_val,
+        btScalar a_min,
+        btScalar a_max)
+    {
         return mmg(a_val / 100.0f, a_min, a_max);
     }
 
-    SKMP_FORCEINLINE static btQuaternion mkQuat(const btVector3& a_axis, btScalar a_axisLength, btScalar a_angle)
+    SKMP_FORCEINLINE static btQuaternion mkQuat(
+        const btVector3& a_axis,
+        btScalar a_axisLength,
+        btScalar a_angle)
     {
         btScalar s;
         btScalar c;
@@ -33,12 +45,13 @@ namespace CBP
         return btQuaternion(a_axis.x() * s, a_axis.y() * s, a_axis.z() * s, c);
     }
 
-
-    SKMP_FORCEINLINE void btVectorClamp(btVector3& a_vec, const btVector3& a_min, const btVector3& a_max)
+    SKMP_FORCEINLINE void btVectorClamp(
+        btVector3& a_vec,
+        const btVector3& a_min,
+        const btVector3& a_max)
     {
         a_vec.set128(_mm_max_ps(a_min.get128(), _mm_min_ps(a_vec.get128(), a_max.get128())));
     }
-
 
     void CollisionShape::SetRadius(btScalar a_radius)
     {
@@ -415,37 +428,33 @@ namespace CBP
             Destroy();
         }
 
-        //Destroy();
-
-        m_nodeScale = m_parent.m_obj->m_localTransform.scale;
-
-        auto collider = new btCollisionObject();
+        auto collider = std::make_unique<btCollisionObject>();
 
         switch (a_shape)
         {
         case ColliderShapeType::Sphere:
-            m_colshape = new CollisionShapeSphere(
-                collider, m_parent.m_colRad);
+            m_colshape = std::make_unique<CollisionShapeSphere>(
+                collider.get(), m_parent.m_colRad);
             break;
         case ColliderShapeType::Capsule:
-            m_colshape = new CollisionShapeCapsule(
-                collider, m_parent.m_colRad, m_parent.m_colHeight);
+            m_colshape = std::make_unique<CollisionShapeCapsule>(
+                collider.get(), m_parent.m_colRad, m_parent.m_colHeight);
             break;
         case ColliderShapeType::Box:
-            m_colshape = new CollisionShapeBox(
-                collider, m_parent.m_colExtent);
+            m_colshape = std::make_unique<CollisionShapeBox>(
+                collider.get(), m_parent.m_colExtent);
             break;
         case ColliderShapeType::Cone:
-            m_colshape = new CollisionShapeCone(
-                collider, m_parent.m_colRad, m_parent.m_colHeight);
+            m_colshape = std::make_unique<CollisionShapeCone>(
+                collider.get(), m_parent.m_colRad, m_parent.m_colHeight);
             break;
         case ColliderShapeType::Tetrahedron:
-            m_colshape = new CollisionShapeTetrahedron(
-                collider, m_parent.m_colExtent);
+            m_colshape = std::make_unique<CollisionShapeTetrahedron>(
+                collider.get(), m_parent.m_colExtent);
             break;
         case ColliderShapeType::Cylinder:
-            m_colshape = new CollisionShapeCylinder(
-                collider, m_parent.m_colRad, m_parent.m_colHeight);
+            m_colshape = std::make_unique<CollisionShapeCylinder>(
+                collider.get(), m_parent.m_colRad, m_parent.m_colHeight);
             break;
         case ColliderShapeType::Mesh:
         case ColliderShapeType::ConvexHull:
@@ -462,18 +471,16 @@ namespace CBP
                     a_nodeConf,
                     res))
                 {
-                    delete collider;
                     return false;
                 }
 
                 m_bcUpdateID = res.updateID;
-                m_colliderData = res.data;
+                m_colliderData = std::move(res.data);
             }
             else
             {
                 if (m_parent.m_conf.ex.colMesh.empty())
                 {
-                    delete collider;
                     return false;
                 }
 
@@ -487,7 +494,6 @@ namespace CBP
                         m_parent.m_nodeName.c_str(),
                         m_parent.m_conf.ex.colMesh.c_str());
 
-                    delete collider;
                     return false;
                 }
 
@@ -498,13 +504,13 @@ namespace CBP
 
             if (a_shape == ColliderShapeType::Mesh)
             {
-                m_colshape = new CollisionShapeMesh(
-                    collider, m_colliderData->m_triVertexArray.get(), m_parent.m_colExtent);
+                m_colshape = std::make_unique<CollisionShapeMesh>(
+                    collider.get(), m_colliderData->m_triVertexArray.get(), m_parent.m_colExtent);
             }
             else
             {
-                m_colshape = new CollisionShapeConvexHull(
-                    collider, m_colliderData->m_hullPoints.get(), m_colliderData->m_numIndices, m_parent.m_colExtent);
+                m_colshape = std::make_unique<CollisionShapeConvexHull>(
+                    collider.get(), m_colliderData->m_hullPoints.get(), m_colliderData->m_numIndices, m_parent.m_colExtent);
             }
         }
         break;
@@ -512,12 +518,14 @@ namespace CBP
             ASSERT_STR(false, "Collider shape not implemented");
         }
 
+        m_nodeScale = m_parent.m_obj->m_localTransform.scale;
+
         m_colshape->SetNodeScale(m_nodeScale);
 
         collider->setUserPointer(std::addressof(m_parent));
         collider->setCollisionShape(m_colshape->GetBTShape());
 
-        m_collider = collider;
+        m_collider = std::move(collider);
 
         m_created = true;
         m_active = true;
@@ -533,8 +541,8 @@ namespace CBP
 
         if (!m_rotation)
         {
-            auto& b = collider->getWorldTransform().getBasis();
-            b.setEulerZYX(90.0f * crdrmul, 0.0f, 0.0f);
+            auto& b = m_collider->getWorldTransform().getBasis();
+            b.setEulerZYX(90.0f * dtrmul, 0.0f, 0.0f);
         }
         else {
             SetColliderRotation(s_vecZero);
@@ -555,8 +563,8 @@ namespace CBP
 
         Deactivate();
 
-        delete m_collider;
-        delete m_colshape;
+        m_collider.reset();
+        m_colshape.reset();
 
         m_colliderData.reset();
 
@@ -572,7 +580,7 @@ namespace CBP
     {
         if (!m_colliderActivated)
         {
-            ICollision::AddCollisionObject(m_collider);
+            ICollision::AddCollisionObject(m_collider.get());
 
             m_colliderActivated = true;
         }
@@ -582,7 +590,7 @@ namespace CBP
     {
         if (m_colliderActivated)
         {
-            ICollision::RemoveCollisionObject(m_collider);
+            ICollision::RemoveCollisionObject(m_collider.get());
 
             m_colliderActivated = false;
         }
@@ -629,21 +637,12 @@ namespace CBP
             }
         }
 
-        btMatrix3x3 objmat;
+        auto& parentWd = m_parent.GetParentWorldData();
 
-        if (m_parent.m_motion && m_parent.m_rotScaleOn && m_doRotationScaling)
-        {
-            objmat = m_parent.m_itrMatParent *
-                btMatrix3x3(m_parent.m_itrInitialMat * btMatrix3x3(mkQuat(m_parent.m_rotParams.m_axis, m_parent.m_rotParams.m_axisLength, m_parent.m_rotParams.m_angle * m_rotationScale)));
-        }
-        else
-        {
-            auto obj = m_parent.m_obj.get();
-
-            objmat[0].set128(_mm_and_ps(_mm_loadu_ps(obj->m_worldTransform.rot.data[0]), btvFFF0fMask));
-            objmat[1].set128(_mm_and_ps(_mm_loadu_ps(obj->m_worldTransform.rot.data[1]), btvFFF0fMask));
-            objmat[2].set128(_mm_and_ps(_mm_loadu_ps(obj->m_worldTransform.rot.data[2]), btvFFF0fMask));
-        }
+        auto& objmat =
+            (m_parent.m_motion && m_parent.m_rotScaleOn && m_doRotationScaling) ?
+            parentWd.m_rotation * (m_parent.m_nodeRotation * btMatrix3x3(mkQuat(m_parent.m_rotParams.m_axis, 1.0f, m_parent.m_rotParams.m_angle * m_rotationScale))) :
+            m_parent.m_wdObject.m_rotation;
 
         auto& transform = m_collider->getWorldTransform();
 
@@ -652,32 +651,30 @@ namespace CBP
             if (m_offsetParent)
             {
                 transform.setOrigin(
-                    ((m_parent.m_itrMatParent * (m_bodyOffsetPlusInitial + (m_parent.m_ld * m_positionScale))) *=
-                        m_parent.m_objParent->m_worldTransform.scale) += m_parent.m_itrPosParent
+                    ((parentWd.m_rotation * (m_bodyOffsetPlusInitial + (m_parent.m_ld * m_positionScale))) *=
+                        m_parent.m_objParent->m_worldTransform.scale) += parentWd.m_position
                 );
             }
             else
             {
                 transform.setOrigin(
-                    (((m_parent.m_itrMatParent * (m_parent.m_itrInitialPos + (m_parent.m_ld * m_positionScale))) *=
-                        m_parent.m_objParent->m_worldTransform.scale) += ((objmat * m_bodyOffset)) *= nodeScale) += m_parent.m_itrPosParent
+                    (((parentWd.m_rotation * (m_parent.m_nodePosition + (m_parent.m_ld * m_positionScale))) *=
+                        m_parent.m_objParent->m_worldTransform.scale) += ((objmat * m_bodyOffset)) *= nodeScale) += parentWd.m_position
                 );
             }
         }
         else
         {
-            btVector3 objpos(_mm_and_ps(_mm_loadu_ps(m_parent.m_obj->m_worldTransform.pos), btvFFF0fMask));
-
             if (m_offsetParent)
             {
                 transform.setOrigin(
-                    ((m_parent.m_itrMatParent * m_bodyOffset) *= m_parent.m_objParent->m_worldTransform.scale) += objpos
+                    ((parentWd.m_rotation * m_bodyOffset) *= m_parent.m_objParent->m_worldTransform.scale) += m_parent.m_wdObject.m_position
                 );
             }
             else
             {
                 transform.setOrigin(
-                    ((objmat * m_bodyOffset) *= nodeScale) += objpos
+                    ((objmat * m_bodyOffset) *= nodeScale) += m_parent.m_wdObject.m_position
                 );
             }
         }
@@ -717,6 +714,7 @@ namespace CBP
         SimObject& a_parent,
         Actor* a_actor,
         NiAVObject* a_obj,
+        NiNode* a_originalParentNode,
         const std::string& a_nodeName,
         const std::string& a_configGroupName,
         const configComponent_t& a_config,
@@ -734,18 +732,24 @@ namespace CBP
             a_obj->m_worldTransform.pos.z),
         m_initialTransform(a_obj->m_localTransform),
         m_hasScaleOverride(false),
+        m_hasRotationOverride(false),
+        m_hasPositionOverride(false),
         m_collider(*this),
         m_groupId(a_groupId),
         m_rotScaleOn(false),
+        //m_hasBound(false),
         m_obj(a_obj),
         m_objParent(a_obj->m_parent),
-        m_updateCtx({ 0.0f, 0 }),
+        m_objParentOriginal(a_originalParentNode),
+        m_updateCtx{ 0.0f, 0 },
         m_formid(a_actor->formID),
         m_conf(a_config),
         m_motion(a_motion),
         m_velocity(s_vecZero),
+        //m_angularVelocity(s_vecZero),
         m_virtld(s_vecZero),
         m_ld(s_vecZero),
+        //m_bound(s_vecZero, 0.0f),
         m_colRad(1.0f),
         m_colHeight(0.001f),
         m_nodeScale(1.0f),
@@ -754,7 +758,7 @@ namespace CBP
             a_obj->m_localTransform.pos.x,
             a_obj->m_localTransform.pos.y,
             a_obj->m_localTransform.pos.z),
-        m_itrInitialMat(
+        m_itrInitialRot(
             a_obj->m_localTransform.rot.arr[0],
             a_obj->m_localTransform.rot.arr[1],
             a_obj->m_localTransform.rot.arr[2],
@@ -763,21 +767,37 @@ namespace CBP
             a_obj->m_localTransform.rot.arr[5],
             a_obj->m_localTransform.rot.arr[6],
             a_obj->m_localTransform.rot.arr[7],
-            a_obj->m_localTransform.rot.arr[8])
+            a_obj->m_localTransform.rot.arr[8]),
+        m_scParent(nullptr)
     {
 #ifdef _CBP_ENABLE_DEBUG
-        m_debugInfo.parentNodeName = a_obj->m_parent->m_name;
+        m_debugInfo.parentNodeName = parent->m_name;
 #endif
+        m_nodeRotation = m_itrInitialRot;
+        m_nodePosition = m_itrInitialPos;
 
-        UpdateConfig(a_actor, nullptr, a_nodeConf, a_collisions, a_motion);
+        UpdateConfig(a_actor, a_obj->m_parent, nullptr, a_nodeConf, a_collisions, a_motion);
+
+        m_oldWorldPos.setValue(
+            a_obj->m_worldTransform.pos.x,
+            a_obj->m_worldTransform.pos.y,
+            a_obj->m_worldTransform.pos.z);
     }
 
-    SimComponent::~SimComponent()
+    SimComponent::~SimComponent() noexcept
     {
-        if (m_motion) {
+        if (m_objParentOriginal != m_objParent)
+        {
+            m_objParent->RemoveChild(m_obj);
+            m_objParentOriginal->AttachChild(m_obj, false);
+        }
+
+        if (m_motion)
+        {
             m_obj->m_localTransform = m_initialTransform;
             m_obj->UpdateWorldData(&m_updateCtx);
         }
+
     }
 
     void SimComponent::ColUpdateWeightData(
@@ -808,6 +828,7 @@ namespace CBP
 
     void SimComponent::UpdateConfig(
         Actor* a_actor,
+        NiNode* a_parentNode,
         const configComponent_t* a_physConf,
         const configNode_t& a_nodeConf,
         bool a_collisions,
@@ -816,12 +837,73 @@ namespace CBP
         if (a_physConf != nullptr)
             m_conf = *a_physConf;
 
+        bool doReset(false);
+
+        if (m_objParent != a_parentNode)
+        {
+            m_objParent = a_parentNode;
+            doReset = true;
+        }
+
+        if (a_motion != m_motion) {
+            doReset = true;
+        }
+
+        if (doReset) {
+            Reset();
+        }
+
+        m_motion = a_motion;
         m_collisions = a_collisions;
 
-        if (a_motion != m_motion)
+        if (a_motion && !a_nodeConf.fp.vec.nodeOffset.fuzzyZero())
         {
-            m_motion = a_motion;
-            m_applyForceQueue.swap(decltype(m_applyForceQueue)());
+            m_hasPositionOverride = true;
+
+            m_nodePosition = m_itrInitialPos + a_nodeConf.fp.vec.nodeOffset;
+
+            m_obj->m_localTransform.pos.x = m_nodePosition.x();
+            m_obj->m_localTransform.pos.y = m_nodePosition.y();
+            m_obj->m_localTransform.pos.z = m_nodePosition.z();
+        }
+        else
+        {
+            if (m_hasPositionOverride)
+            {
+                m_obj->m_localTransform.pos = m_initialTransform.pos;
+                m_nodePosition = m_itrInitialPos;
+                m_hasPositionOverride = false;
+            }
+        }
+
+        if (a_motion && !a_nodeConf.fp.vec.nodeRot.fuzzyZero())
+        {
+            m_hasRotationOverride = true;
+
+            btMatrix3x3 m;
+            m.setEulerZYX(
+                DirectX::XMConvertToRadians(a_nodeConf.fp.vec.nodeRot.x()),
+                DirectX::XMConvertToRadians(a_nodeConf.fp.vec.nodeRot.y()),
+                DirectX::XMConvertToRadians(a_nodeConf.fp.vec.nodeRot.z()));
+
+            m_nodeRotation = m_itrInitialRot * m;
+
+            auto x = m_obj->m_localTransform.pos.x;
+
+            _mm_storeu_ps(m_obj->m_localTransform.rot.data[0], m_nodeRotation[0].get128());
+            _mm_storeu_ps(m_obj->m_localTransform.rot.data[1], m_nodeRotation[1].get128());
+            _mm_storeu_ps(m_obj->m_localTransform.rot.data[2], m_nodeRotation[2].get128());
+
+            m_obj->m_localTransform.pos.x = x;
+        }
+        else
+        {
+            if (m_hasRotationOverride)
+            {
+                m_obj->m_localTransform.rot = m_initialTransform.rot;
+                m_nodeRotation = m_itrInitialRot;
+                m_hasRotationOverride = false;
+            }
         }
 
         if (a_collisions)
@@ -832,7 +914,7 @@ namespace CBP
             {
                 m_collider.SetOffset(
                     m_colOffset,
-                    m_itrInitialPos
+                    m_nodePosition
                 );
 
                 m_collider.SetPositionScale(
@@ -889,7 +971,7 @@ namespace CBP
             m_obj->m_localTransform.rot = m_initialTransform.rot;
         }
 
-        m_conf.fp.f32.mass = std::clamp(m_conf.fp.f32.mass, 1.0f, 10000.0f);
+        m_conf.fp.f32.mass = std::clamp(m_conf.fp.f32.mass, 0.001f, 10000.0f);
         m_conf.fp.f32.colPenMass = a_motion ? std::clamp(m_conf.fp.f32.colPenMass, 1.0f, 100.0f) : 1.0f;
         m_conf.fp.f32.maxOffsetVelResponseScale = std::clamp(m_conf.fp.f32.maxOffsetVelResponseScale, 0.0f, 1.0f);
         m_conf.fp.f32.maxVelocity = std::clamp(m_conf.fp.f32.maxVelocity, 4.0f, 20000.0f);
@@ -916,13 +998,12 @@ namespace CBP
         m_conf.fp.f32.colFriction = std::clamp(m_conf.fp.f32.colFriction, 0.0f, 1.0f);
         m_hasFriction = m_conf.fp.f32.colFriction > 0.0f;
 
+        m_conf.fp.f32.stiffness = std::clamp(m_conf.fp.f32.stiffness, 0.0f, 20000.0f);
+        m_conf.fp.f32.stiffness2 = std::clamp(m_conf.fp.f32.stiffness2, 0.0f, 20000.0f);
+
         if (a_nodeConf.bl.b.overrideScale)
         {
-            if (!m_hasScaleOverride)
-            {
-                m_initialTransform.scale = m_obj->m_localTransform.scale;
-                m_hasScaleOverride = true;
-            }
+            m_hasScaleOverride = true;
 
             m_nodeScale = std::clamp(a_nodeConf.fp.f32.nodeScale, 0.0f, 60.0f);
 
@@ -937,17 +1018,31 @@ namespace CBP
             }
         }
 
-        m_obj->UpdateWorldData(&m_updateCtx);
-        SIMDFillParent();
-        m_collider.Update();
+        /*if (!m_hasBound) {
+            m_hasBound = Geometry::FindNiBound(a_actor, m_nodeName.c_str(), m_bound);
+        }*/
+
+        //m_obj->UpdateWorldData(&m_updateCtx);
+        //ReadTransforms();
+
+        //m_collider.Update();
     }
 
     void SimComponent::Reset()
     {
         if (m_motion)
         {
-            m_obj->m_localTransform.pos = m_initialTransform.pos;
-            m_obj->m_localTransform.rot = m_initialTransform.rot;
+            m_obj->m_localTransform.pos.x = m_nodePosition.x();
+            m_obj->m_localTransform.pos.y = m_nodePosition.y();
+            m_obj->m_localTransform.pos.z = m_nodePosition.z();
+
+            auto x = m_obj->m_localTransform.pos.x;
+
+            _mm_storeu_ps(m_obj->m_localTransform.rot.data[0], m_nodeRotation[0].get128());
+            _mm_storeu_ps(m_obj->m_localTransform.rot.data[1], m_nodeRotation[1].get128());
+            _mm_storeu_ps(m_obj->m_localTransform.rot.data[2], m_nodeRotation[2].get128());
+
+            m_obj->m_localTransform.pos.x = x;
 
             m_obj->UpdateWorldData(&m_updateCtx);
         }
@@ -959,9 +1054,12 @@ namespace CBP
 
         m_virtld.setZero();
         m_velocity.setZero();
+        //m_angularVelocity.setZero();
+        m_ld.setZero();
         m_rotParams.Zero();
 
-        SIMDFillParent();
+        ReadTransforms();
+        m_ldObject = positionData_t();
 
         m_collider.Update();
 
@@ -981,6 +1079,7 @@ namespace CBP
     }
 
     void SimComponent::ConstrainMotionBox(
+        const btMatrix3x3& a_parentRot,
         const btMatrix3x3& a_invRot,
         const btVector3& a_target,
         btScalar a_timeStep
@@ -1031,7 +1130,7 @@ namespace CBP
         if (skip)
             return;
 
-        auto n = m_itrMatParent * depth;
+        auto n = a_parentRot * depth;
 
         auto l2 = n.length2();
         if (l2 < _EPSILON * _EPSILON)
@@ -1056,6 +1155,7 @@ namespace CBP
     }
 
     void SimComponent::ConstrainMotionSphere(
+        const btMatrix3x3& a_parentRot,
         const btMatrix3x3& a_invRot,
         const btVector3& a_target,
         btScalar a_timeStep
@@ -1069,7 +1169,7 @@ namespace CBP
         if (difflen <= radius)
             return;
 
-        auto n = m_itrMatParent * diff;
+        auto n = a_parentRot * diff;
 
         auto l2 = n.length2();
         if (l2 < _EPSILON * _EPSILON)
@@ -1093,23 +1193,14 @@ namespace CBP
         m_virtld = a_invRot * ((m_oldWorldPos + (m_velocity * a_timeStep)) -= a_target);
     }
 
-    void SimComponent::SIMDFillParent()
-    {
-        auto obj = m_objParent.get();
-
-        m_itrMatParent[0].set128(_mm_and_ps(_mm_loadu_ps(obj->m_worldTransform.rot.data[0]), btvFFF0fMask));
-        m_itrMatParent[1].set128(_mm_and_ps(_mm_loadu_ps(obj->m_worldTransform.rot.data[1]), btvFFF0fMask));
-        m_itrMatParent[2].set128(_mm_and_ps(_mm_loadu_ps(obj->m_worldTransform.rot.data[2]), btvFFF0fMask));
-        m_itrPosParent.set128(_mm_and_ps(_mm_loadu_ps(obj->m_worldTransform.pos), btvFFF0fMask));
-    }
-
     void SimComponent::UpdateMotion(btScalar a_timeStep)
     {
-        SIMDFillParent();
 
         if (m_motion)
         {
-            auto target(((m_itrMatParent * m_conf.fp.vec.cogOffset) *= m_objParent->m_worldTransform.scale) += m_itrPosParent);
+            auto& parentWd = GetParentWorldData();
+
+            auto target(((parentWd.m_rotation * m_conf.fp.vec.cogOffset) *= m_objParent->m_worldTransform.scale) += parentWd.m_position);
 
             auto diff = target - m_oldWorldPos;
             auto adiff = diff.absolute();
@@ -1137,7 +1228,7 @@ namespace CBP
             {
                 auto& current = m_applyForceQueue.front();
 
-                force += ((m_itrMatParent * current.m_force) *=
+                force += ((parentWd.m_rotation * current.m_force) *=
                     m_conf.fp.f32.mass) /= a_timeStep;
 
                 if (!current.m_numImpulses--)
@@ -1153,27 +1244,30 @@ namespace CBP
 
             ClampVelocity();
 
-            auto invRot = m_itrMatParent.transpose();
+            auto invRot = parentWd.m_rotation.transpose();
             m_virtld = invRot * ((m_oldWorldPos + (m_velocity * a_timeStep)) -= target);
 
             if ((m_conf.ex.motionConstraints & MotionConstraints::Sphere) == MotionConstraints::Sphere) {
-                ConstrainMotionSphere(invRot, target, a_timeStep);
+                ConstrainMotionSphere(parentWd.m_rotation, invRot, target, a_timeStep);
             }
 
             if ((m_conf.ex.motionConstraints & MotionConstraints::Box) == MotionConstraints::Box) {
-                ConstrainMotionBox(invRot, target, a_timeStep);
+                ConstrainMotionBox(parentWd.m_rotation, invRot, target, a_timeStep);
             }
 
-            m_oldWorldPos = (m_itrMatParent * m_virtld) += target;
+            m_oldWorldPos = (parentWd.m_rotation * m_virtld) += target;
 
             m_ld = m_virtld * m_conf.fp.vec.linear;
             m_ld += invRot * m_gravityCorrection;
 
-            auto obj = m_obj.get();
+            m_ldObject.m_position = m_nodePosition + m_ld;
 
-            obj->m_localTransform.pos.x = m_initialTransform.pos.x + m_ld.x();
-            obj->m_localTransform.pos.y = m_initialTransform.pos.y + m_ld.y();
-            obj->m_localTransform.pos.z = m_initialTransform.pos.z + m_ld.z();
+            if (DirectX::XMVector3IsInfinite(m_ldObject.m_position.get128()) ||
+                DirectX::XMVector3IsNaN(m_ldObject.m_position.get128()))
+            {
+                Reset();
+                return;
+            }
 
             if (m_rotScaleOn)
             {
@@ -1186,24 +1280,26 @@ namespace CBP
                 if (l2 >= _EPSILON * _EPSILON) {
                     auto l = std::sqrtf(l2);
                     m_rotParams.m_axis /= l;
-                    m_rotParams.m_axisLength = m_rotParams.m_axis.length();
-                    m_rotParams.m_angle = l * crdrmul;
+                    m_rotParams.m_angle = l * std::numbers::pi_v<btScalar> / 180.0f;
                 }
                 else {
                     m_rotParams.Zero();
                 }
 
-                btMatrix3x3 m(m_itrInitialMat * btMatrix3x3(mkQuat(m_rotParams.m_axis, m_rotParams.m_axisLength, m_rotParams.m_angle)));
-
-                m[2].setW(obj->m_localTransform.pos.x);
-
-                _mm_storeu_ps(obj->m_localTransform.rot.data[0], m[0].get128());
-                _mm_storeu_ps(obj->m_localTransform.rot.data[1], m[1].get128());
-                _mm_storeu_ps(obj->m_localTransform.rot.data[2], m[2].get128());
+                m_ldObject.m_rotation = m_nodeRotation * btMatrix3x3(mkQuat(m_rotParams.m_axis, 1.0f, m_rotParams.m_angle));
+                m_wdObject.m_rotation = parentWd.m_rotation * m_ldObject.m_rotation;
 
             }
+            else
+            {
+                if (m_hasRotationOverride)
+                {
+                    m_ldObject.m_rotation = m_nodeRotation;
+                    m_wdObject.m_rotation = parentWd.m_rotation * m_ldObject.m_rotation;
+                }
+            }
 
-            obj->UpdateWorldData(&m_updateCtx);
+            m_wdObject.m_position = ((parentWd.m_rotation * m_ldObject.m_position) *= m_objParent->m_worldTransform.scale) += parentWd.m_position;
         }
 
         m_collider.Update();
@@ -1222,7 +1318,7 @@ namespace CBP
 
         m_applyForceQueue.emplace(
             a_steps, btVector3(a_force.x, a_force.y, a_force.z));
-    }
+}
 
 #ifdef _CBP_ENABLE_DEBUG
     void SimComponent::UpdateDebugInfo()
@@ -1239,4 +1335,4 @@ namespace CBP
     static_assert(offsetof(NiTransform, rot) == 0x0);
     static_assert(offsetof(NiTransform, pos) == 0x24);
 
-}
+    }

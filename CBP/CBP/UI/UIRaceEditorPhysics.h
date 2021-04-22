@@ -71,6 +71,10 @@ namespace CBP
             const configNode_t& a_data,
             bool a_reset) override;
 
+        virtual void RemoveNodeData(
+            Game::FormID a_handle,
+            const std::string& a_node) override;
+
         virtual bool ShouldDrawComponent(
             Game::FormID a_handle,
             configComponents_t& a_data,

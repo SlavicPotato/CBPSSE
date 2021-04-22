@@ -52,7 +52,8 @@ namespace CBP
         Bullet::btTransformEx tf;
 
         auto& v = a_actorList.getvec();
-        for (const auto& e : v)
+
+        for (const auto e : v)
         {
             if (e->IsSuspended())
                 continue;
@@ -61,18 +62,22 @@ namespace CBP
             {
                 auto& nl = e->GetNodeList();
 
-                auto count = nl.size();
-                for (decltype(count) i = 0; i < count; i++)
+                for (const auto &n : nl)
                 {
-                    auto& n = nl[i];
+                    /*if (n->HasBound())
+                    {
+                        n->GetWorldTransform(tf);
+
+                        GenerateSphere(tf * n->GetBound().m_pos, n->GetBound().m_radius * tf.getScale(), globalConfig.debugRenderer.colors.movingNodesCOG);
+                    }*/
 
                     if (!n->HasMotion())
                         continue;
 
                     if (a_moving)
                     {
-                        auto& tf = n->GetWorldTransform();
-                        GenerateSphere(btVector3(tf.pos.x, tf.pos.y, tf.pos.z), a_radius * tf.scale, globalConfig.debugRenderer.colors.movingNodes);
+                        auto& wt = n->GetWorldTransform();
+                        GenerateSphere(btVector3(wt.pos.x, wt.pos.y, wt.pos.z), a_radius * wt.scale, globalConfig.debugRenderer.colors.movingNodes);
                     }
 
                     if (a_centerOfGravity)
@@ -104,18 +109,15 @@ namespace CBP
         Bullet::btTransformEx tf;
 
         auto& v = a_actorList.getvec();
-        for (const auto& e : v)
+        for (const auto e : v)
         {
             if (e->IsSuspended())
                 continue;
 
             auto& nl = e->GetNodeList();
 
-            auto count = nl.size();
-            for (decltype(count) i = 0; i < count; i++)
+            for (const auto &n : nl)
             {
-                auto &n = nl[i];
-
                 if (!n->HasMotion())
                     continue;
 
@@ -127,19 +129,19 @@ namespace CBP
                 if ((mc & MotionConstraints::Box) == MotionConstraints::Box)
                 {
                     drawBox(
-                        conf.fp.vec.maxOffsetN,
-                        conf.fp.vec.maxOffsetP,
+                        n->GetNodeLocalPos() + conf.fp.vec.maxOffsetN,
+                        n->GetNodeLocalPos() + conf.fp.vec.maxOffsetP,
                         tf,
                         globalConfig.debugRenderer.colors.constraintBox
                     );
 
                 }
 
-                GenerateSphere(tf * n->GetVirtualPos(), a_radius * tf.getScale(), globalConfig.debugRenderer.colors.virtualPosition);
+                GenerateSphere(tf * (n->GetNodeLocalPos() + n->GetVirtualPos()), a_radius * tf.getScale(), globalConfig.debugRenderer.colors.virtualPosition);
 
                 if ((mc & MotionConstraints::Sphere) == MotionConstraints::Sphere)
                 {
-                    tf.setOrigin(tf * conf.fp.vec.maxOffsetSphereOffset);
+                    tf.setOrigin(tf * (n->GetNodeLocalPos() + conf.fp.vec.maxOffsetSphereOffset));
 
                     drawSphere(
                         conf.fp.f32.maxOffsetSphereRadius * tf.getScale(),
@@ -178,7 +180,7 @@ namespace CBP
 
         m_pImmediateContext->OMSetBlendState(m_states->NonPremultiplied(), nullptr, 0xFFFFFFFF);
         m_pImmediateContext->OMSetDepthStencilState(m_states->DepthNone(), 0);
-        m_pImmediateContext->RSSetState(m_states->CullCounterClockwise());
+        m_pImmediateContext->RSSetState(m_states->CullNone());
 
         m_effect->Apply(m_pImmediateContext.Get());
 
@@ -235,14 +237,14 @@ namespace CBP
             1e-5f);
     }
 
-    bool Renderer::IsValidPosition(const DirectX::XMVECTOR& a_pos)
+    bool Renderer::IsValidPosition(const DirectX::XMVECTOR a_pos)
     {
         return a_pos.m128_f32[0] > -0.05f && a_pos.m128_f32[1] > -0.05f && a_pos.m128_f32[2] > -0.05f &&
             a_pos.m128_f32[0] < 1.05f && a_pos.m128_f32[1] < 1.05f && a_pos.m128_f32[2] < 1.05f;
     }
 
     template <class T>
-    bool Renderer::GetTriangle(const btVector3& v0, const btVector3& v1, const btVector3& v2, const T& a_col, ItemTri& a_out)
+    bool Renderer::GetTriangle(const btVector3& v0, const btVector3& v1, const btVector3& v2, const T &a_col, ItemTri& a_out)
     {
         if (!GetScreenPt(v0, a_out.v0))
             return false;
@@ -266,7 +268,7 @@ namespace CBP
     }
 
     template <class T>
-    bool Renderer::GetLine(const btVector3& v0, const btVector3& v1, const T& a_col, ItemLine& a_out)
+    bool Renderer::GetLine(const btVector3& v0, const btVector3& v1, const T &a_col, ItemLine& a_out)
     {
         if (!GetScreenPt(v0, a_out.v0))
             return false;
@@ -286,17 +288,17 @@ namespace CBP
     }
 
     // Adapted from https://github.com/DanielChappuis/reactphysics3d/blob/master/src/utils/DebugRenderer.cpp#L122
-    void Renderer::GenerateSphere(const btVector3& a_pos, float a_radius, const DirectX::XMVECTOR& a_col)
+    void Renderer::GenerateSphere(const btVector3& a_pos, float a_radius, const DirectX::XMVECTOR a_col)
     {
         btVector3 vertices[(NB_SECTORS_SPHERE + 1) * (NB_STACKS_SPHERE + 1) + (NB_SECTORS_SPHERE + 1)];
 
         // Vertices
-        const float sectorStep = 2 * float(MATH_PI) / NB_SECTORS_SPHERE;
-        const float stackStep = float(MATH_PI) / NB_STACKS_SPHERE;
+        const float sectorStep = 2 * std::numbers::pi_v<float> / NB_SECTORS_SPHERE;
+        const float stackStep = std::numbers::pi_v<float> / NB_STACKS_SPHERE;
 
         for (std::uint32_t i = 0; i <= NB_STACKS_SPHERE; i++) {
 
-            const float stackAngle = float(MATH_PI) / 2 - i * stackStep;
+            const float stackAngle = std::numbers::pi_v<float> / 2 - i * stackStep;
 
             float s, c;
             DirectX::XMScalarSinCos(&s, &c, stackAngle);
@@ -332,13 +334,13 @@ namespace CBP
                 if (i != 0)
                 {
                     if (GetTriangle(vertices[a1], vertices[a2], vertices[a1 + 1], a_col, item))
-                        m_tris.emplace_back(std::move(item));
+                        m_tris.emplace_back(item);
                 }
 
                 if (i != (NB_STACKS_SPHERE - 1))
                 {
                     if (GetTriangle(vertices[a1 + 1], vertices[a2], vertices[a2 + 1], a_col, item))
-                        m_tris.emplace_back(std::move(item));
+                        m_tris.emplace_back(item);
                 }
             }
         }
@@ -351,28 +353,28 @@ namespace CBP
         if (!GetLine(from, to, color, item))
             return;
 
-        m_lines.emplace_back(std::move(item));
+        m_lines.emplace_back(item);
     }
 
-    void Renderer::drawLine(const btVector3& from, const btVector3& to, const DirectX::XMVECTOR& color)
+    void Renderer::drawLine(const btVector3& from, const btVector3& to, const DirectX::XMVECTOR color)
     {
         ItemLine item;
 
         if (!GetLine(from, to, color, item))
             return;
 
-        m_lines.emplace_back(std::move(item));
+        m_lines.emplace_back(item);
     }
 
-    void Renderer::drawBox(const btVector3& bbMin, const btVector3& bbMax, const Bullet::btTransformEx& trans, const DirectX::XMVECTOR& color)
+    void Renderer::drawBox(const btVector3& bbMin, const btVector3& bbMax, const Bullet::btTransformEx& trans, const DirectX::XMVECTOR color)
     {
-        auto p1 = trans * btVector3(bbMin.x(), bbMin.y(), bbMin.z());
+        auto p1 = trans * bbMin;
         auto p2 = trans * btVector3(bbMax.x(), bbMin.y(), bbMin.z());
         auto p3 = trans * btVector3(bbMax.x(), bbMax.y(), bbMin.z());
         auto p4 = trans * btVector3(bbMin.x(), bbMax.y(), bbMin.z());
         auto p5 = trans * btVector3(bbMin.x(), bbMin.y(), bbMax.z());
         auto p6 = trans * btVector3(bbMax.x(), bbMin.y(), bbMax.z());
-        auto p7 = trans * btVector3(bbMax.x(), bbMax.y(), bbMax.z());
+        auto p7 = trans * bbMax;
         auto p8 = trans * btVector3(bbMin.x(), bbMax.y(), bbMax.z());
 
         drawLine(p1, p2, color);
@@ -396,7 +398,7 @@ namespace CBP
         if (!GetTriangle(v0, v1, v2, color, item))
             return;
 
-        m_tris.emplace_back(std::move(item));
+        m_tris.emplace_back(item);
 
     }
 

@@ -73,6 +73,8 @@ namespace CBP
         {
             ImGui::SetWindowFontScale(globalConfig.ui.fontScale);
 
+            ImGui::PushID(static_cast<const void*>(std::addressof(cgm)));
+
             std::size_t delta(0);
 
             for (auto& e : cgm)
@@ -85,6 +87,8 @@ namespace CBP
                 if (ImGui::MenuItem(e.first.c_str()))
                     data.try_emplace(e.first);
             }
+
+            ImGui::PopID();
 
             if (delta)
             {
@@ -100,6 +104,7 @@ namespace CBP
                 }
             }
 
+
             ImGui::EndPopup();
         }
     }
@@ -110,6 +115,8 @@ namespace CBP
         PhysicsProfile::base_type::value_type& a_pair,
         nodeConfigList_t& a_nodeConfig)
     {
+        ImGui::PushID("__group_options");
+
         ImGui::SameLine();
         if (ImGui::Button("Remove"))
             ImGui::OpenPopup("Remove group");
@@ -121,6 +128,8 @@ namespace CBP
         {
             MarkCurrentForErase();
         }
+
+        ImGui::PopID();
     }
 
     void UIProfileEditorPhysics::OnSimSliderChange(
@@ -207,6 +216,12 @@ namespace CBP
         const std::string&,
         const configNode_t&,
         bool)
+    {
+    }
+
+    void UIProfileEditorPhysics::RemoveNodeData(
+        int a_handle,
+        const std::string& a_node)
     {
     }
 

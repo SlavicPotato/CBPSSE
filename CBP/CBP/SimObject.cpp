@@ -7,67 +7,57 @@ namespace CBP
 {
     static constexpr auto NODE_HEAD = "NPC Head [Head]";
 
-    /*template <class T>
-    [[nodiscard]] static auto GetGlobalConfAny(T& a_in, const std::string& a_q) ->
-        const typename T::mapped_type&
-    {
-        auto it = a_in.find(a_q);
-        if (it != a_in.end())
-            return it->second;
-
-        if constexpr (std::is_same_v<T, configNodes_t>) {
-            return IConfig::GetDefaultNode();
-        }
-        else if constexpr (std::is_same_v<T, configComponents_t>) {
-            return IConfig::GetDefaultPhysics();
-        }
-    }*/
-
-    auto SimObject::CreateNodeDescriptorList(
+    nodeDescList_t::size_type SimObject::CreateNodeDescriptorList(
         Game::ObjectHandle a_handle,
         Actor* a_actor,
-        char a_sex,
+        ConfigGender a_sex,
         const configComponents_t& a_config,
         const nodeMap_t& a_nodeMap,
         bool a_collisions,
         nodeDescList_t& a_out)
-        -> nodeDescList_t::size_type
     {
-        auto gender = a_sex == 0 ? ConfigGender::Male : ConfigGender::Female;
+        auto& nodeConfig = IConfig::GetActorNode(a_handle, a_sex);
 
-        auto& nodeConfig = IConfig::GetActorNode(a_handle, gender);
+        a_out.reserve(nodeConfig.size());
 
-        for (auto& b : a_nodeMap)
+        for (auto& n : nodeConfig)
         {
-            BSFixedString cs(b.first.c_str());
+            auto& nodeConf = n.second;
 
-            auto object = a_actor->loadedState->node->GetObjectByName(&cs.data);
+            if (!nodeConf.Enabled())
+                continue;
+
+            auto itcg = a_nodeMap.find(n.first);
+            if (itcg == a_nodeMap.end())
+                continue;
+
+            BSFixedString cs(n.first.c_str());
+
+            auto rootNode = a_actor->loadedState->node;
+
+            auto object = rootNode->GetObjectByName(&cs.data);
             if (!object)
                 continue;
 
-            if (!object || !object->m_parent)
+            if (!object->m_parent)
                 continue;
 
-            if (!IConfig::IsValidGroup(b.second))
-                continue;
+            auto parent = GetParentNode(rootNode, nodeConf);
+            if (!parent)
+                parent = object->m_parent;
 
-            auto itn = nodeConfig.find(b.first);
-            if (itn == nodeConfig.end())
-                continue; // nc defaults to everything off
+            auto it = a_config.find(itcg->second);
 
-            auto& nodeConf = itn->second;
-
-            if (!nodeConf.bl.b.collision && !nodeConf.bl.b.motion)
-                continue;
-
-            auto it = a_config.find(b.second);
-
-            auto& physConf = it != a_config.end() ? it->second : IConfig::GetDefaultPhysics();
+            auto& physConf =
+                it != a_config.end() ?
+                it->second :
+                IConfig::GetDefaultPhysics();
 
             a_out.emplace_back(
-                b.first,
+                n.first,
                 object,
-                b.second,
+                parent,
+                itcg->second,
                 a_collisions && nodeConf.bl.b.collision,
                 nodeConf.bl.b.motion,
                 physConf,
@@ -78,7 +68,30 @@ namespace CBP
         return a_out.size();
     }
 
-    SKMP_FORCEINLINE static bool IsObjectBelow(NiAVObject* a_object, NiNode* a_other)
+    NiNode* SimObject::GetParentNode(
+        NiAVObject* a_root,
+        const configNode_t& a_nodeConfig)
+    {
+        if (!a_nodeConfig.ex.forceParent.empty())
+        {
+            BSFixedString pn(a_nodeConfig.ex.forceParent.c_str());
+
+            auto pobj = a_root->GetObjectByName(&pn.data);
+            if (pobj)
+            {
+                auto n = pobj->GetAsNiNode();
+                if (n) {
+                    return n;
+                }
+            }
+        }
+
+        return nullptr;
+    }
+
+    SKMP_FORCEINLINE static bool IsObjectBelow(
+        NiAVObject* const a_object,
+        NiNode* a_other)
     {
         while (a_other != nullptr)
         {
@@ -92,15 +105,34 @@ namespace CBP
         return false;
     }
 
+    static NiNode* AttachObjectToParent(
+        NiAVObject* const a_object,
+        NiNode* const a_newParent)
+    {
+        auto oldParent = a_object->m_parent;
+
+        if (oldParent != a_newParent)
+        {
+            a_object->IncRef();
+
+            oldParent->RemoveChild(a_object);
+            a_newParent->AttachChild(a_object, false);
+
+            a_object->DecRef();
+        }
+
+        return oldParent;
+    }
+
     SimObject::SimObject(
         Game::ObjectHandle a_handle,
         Actor* a_actor,
-        char a_sex,
+        ConfigGender a_sex,
         const nodeDescList_t& a_desc)
         :
         m_handle(a_handle),
         m_sex(a_sex),
-        m_node(a_actor->loadedState->node),
+        m_rootNode(a_actor->loadedState->node),
         m_suspended(false),
         m_markedForDelete(false),
         m_actor(a_actor)
@@ -113,7 +145,7 @@ namespace CBP
         m_actorName = a_actor->GetReferenceName();
 #endif
 
-        m_objList.reserve(a_desc.size());
+        m_nodes.reserve(a_desc.size());
 
         for (auto& e : a_desc)
         {
@@ -121,6 +153,7 @@ namespace CBP
                 *this,
                 a_actor,
                 e.object,
+                AttachObjectToParent(e.object, e.parent),
                 e.nodeName,
                 e.confGroup,
                 e.physConf,
@@ -128,11 +161,11 @@ namespace CBP
                 IConfig::GetNodeCollisionGroupId(e.nodeName),
                 e.collision,
                 e.movement
-            );
+                );
 
-            auto it = m_objList.begin();
+            auto it = m_nodes.cbegin();
 
-            while (it != m_objList.end())
+            while (it != m_nodes.cend())
             {
                 auto p = (*it)->GetNode()->m_parent;
 
@@ -142,31 +175,66 @@ namespace CBP
                 ++it;
             }
 
-            m_objList.emplace(it, std::move(obj));
+            m_nodes.emplace(it, std::move(obj));
         }
 
-        BSFixedString n(NODE_HEAD);
-        m_objHead = a_actor->loadedState->node->GetObjectByName(&n.data);
+        for (auto& e : m_nodes)
+        {
+            auto it = std::find_if(m_nodes.begin(), m_nodes.end(), [&e](const auto& a_node) {
+                return e->GetNode()->m_parent == a_node->GetNode(); });
 
-        //m_actor = a_actor;
+            if (it != m_nodes.end())
+            {
+                e->SetSimComponentParent(it->get());
+            }
+        }
+
+        /*if (m_actor->formID == 0x14)
+        {
+            _DMESSAGE(">>");
+
+            for (auto& e : m_nodes)
+            {
+                _DMESSAGE("  %s", e->GetNode()->m_name);
+            }
+
+            _DMESSAGE("<<");
+        }*/
+
+        BSFixedString nh(NODE_HEAD);
+        m_objHead = a_actor->loadedState->node->GetObjectByName(&nh.data);
+
+        auto policy = (*g_skyrimVM)->GetClassRegistry()->GetHandlePolicy();
+        policy->AddRef(a_handle);
     }
 
-
-    SimObject::~SimObject() noexcept
+    SimObject::~SimObject()
     {
+        auto policy = (*g_skyrimVM)->GetClassRegistry()->GetHandlePolicy();
+        policy->Release(m_handle);
+
         // release node refs first
-        m_objList.clear();
+        m_nodes.clear();
         m_objHead = nullptr;
-        m_node = nullptr;
+        m_rootNode = nullptr;
 
         m_actor = nullptr;
     }
 
     void SimObject::Reset()
     {
-        auto count = m_objList.size();
-        for (decltype(count) i = 0; i < count; i++)
-            m_objList[i]->Reset();
+        for (auto& e : m_nodes)
+            e->Reset();
+    }
+
+    void SimObject::ClearSimComponentParent(SimComponent* a_sc)
+    {
+        for (auto& e : m_nodes)
+        {
+            if (e->GetSimComponentParent() == a_sc) {
+                e->SetSimComponentParent(nullptr);
+            }
+        }
     }
 
     void SimObject::UpdateConfig(
@@ -174,35 +242,120 @@ namespace CBP
         bool a_collisions,
         const configComponents_t& a_config)
     {
-        auto gender = m_sex == 0 ? ConfigGender::Male : ConfigGender::Female;
+        auto& nodeConfig = IConfig::GetActorNode(m_handle, m_sex);
 
-        auto& nodeConfig = IConfig::GetActorNode(m_handle, gender);
-
-        auto count = m_objList.size();
-        for (decltype(count) i = 0; i < count; i++)
+        auto it = m_nodes.begin();
+        while (it != m_nodes.end())
         {
-            auto &p = m_objList[i];
+            auto& e = *it;
 
-            auto& confGroup = p->GetConfigGroupName();
+            auto& confGroup = e->GetConfigGroupName();
 
-            if (!IConfig::IsValidGroup(confGroup))
+            auto itn = nodeConfig.find(e->GetNodeName());
+
+            if (itn == nodeConfig.end() || !itn->second.Enabled())
+            {
+                ClearSimComponentParent(e.get());
+                it = m_nodes.erase(it);
                 continue;
-
-            auto itn = nodeConfig.find(p->GetNodeName());
-            auto& nodeConf = itn != nodeConfig.end() ? itn->second : IConfig::GetDefaultNode();
+            }
 
             auto itc = a_config.find(confGroup);
-            auto& physConf = itc != a_config.end() ? itc->second : IConfig::GetDefaultPhysics();
+            auto& physConf =
+                itc != a_config.end() ?
+                itc->second :
+                IConfig::GetDefaultPhysics();
 
-            //_DMESSAGE("%s: %u %s [%s]", a_actor->GetReferenceName(), Enum::Underlying(physConf.ex.colShape), physConf.ex.colMesh.c_str(), confGroup.c_str());
+            auto parentNode = GetParentNode(m_rootNode, itn->second);
+            if (!parentNode)
+                parentNode = e->GetOriginalParentNode();
 
-            p->UpdateConfig(
+            AttachObjectToParent(e->GetNode(), parentNode);
+
+            if (e->GetParentNode() != parentNode)
+            {
+                auto it = std::find_if(m_nodes.begin(), m_nodes.end(), [&parentNode](const auto& a_node) {
+                    return parentNode == a_node->GetNode(); });
+
+                e->SetSimComponentParent(it != m_nodes.end() ? it->get() : nullptr);
+            }
+
+            e->UpdateConfig(
                 a_actor,
+                parentNode,
                 std::addressof(physConf),
-                nodeConf,
-                a_collisions && nodeConf.bl.b.collision,
-                nodeConf.bl.b.motion
+                itn->second,
+                a_collisions && itn->second.bl.b.collision,
+                itn->second.bl.b.motion
             );
+
+            ++it;
+        }
+
+        std::sort(m_nodes.begin(), m_nodes.end(),
+            [](const auto& a_lhs, const auto& a_rhs)
+            {
+                auto n = a_lhs->GetNode();
+                return IsObjectBelow(n, n->m_parent);
+            });
+
+    }
+
+    bool SimObject::HasNewNode(Actor* a_actor, const nodeMap_t& a_nodeMap)
+    {
+        auto& nodeConfig = IConfig::GetActorNode(m_handle, m_sex);
+
+        for (auto& n : nodeConfig)
+        {
+            if (!n.second.Enabled())
+                continue;
+
+            auto itcg = a_nodeMap.find(n.first);
+            if (itcg == a_nodeMap.end())
+                continue;
+
+            BSFixedString cs(n.first.c_str());
+
+            auto rootNode = a_actor->loadedState->node;
+
+            auto object = rootNode->GetObjectByName(&cs.data);
+            if (!object)
+                continue;
+
+            if (!object->m_parent)
+                continue;
+
+            auto it = std::find_if(m_nodes.begin(), m_nodes.end(), [&object](const auto& a_node) {
+                return object == a_node->GetNode(); });
+
+            if (it == m_nodes.end())
+                return true;
+        }
+
+        return false;
+    }
+    
+    void SimObject::RemoveInvalidNodes(Actor* a_actor)
+    {
+        auto it = m_nodes.begin();
+        while (it != m_nodes.end())
+        {
+            auto& e = *it;
+
+            auto rootNode = a_actor->loadedState->node;
+
+            BSFixedString csn(e->GetNodeName().c_str());
+
+            auto object = rootNode->GetObjectByName(&csn.data);
+
+            if (!object || !object->m_parent) 
+            {
+                ClearSimComponentParent(e.get());
+                it = m_nodes.erase(it);
+                continue;
+            }
+
+            ++it;
         }
     }
 
@@ -211,32 +364,27 @@ namespace CBP
         const std::string& a_component,
         const NiPoint3& a_force)
     {
-        auto count = m_objList.size();
-        for (decltype(count) i = 0; i < count; i++)
+        for (auto& e : m_nodes)
         {
-            auto &p = m_objList[i];
-
-            if (StrHelpers::iequal(p->GetConfigGroupName(), a_component))
-                p->ApplyForce(a_steps, a_force);
+            if (StrHelpers::iequal(e->GetConfigGroupName(), a_component))
+                e->ApplyForce(a_steps, a_force);
         }
     }
 
 #ifdef _CBP_ENABLE_DEBUG
     void SimObject::UpdateDebugInfo()
     {
-        auto count = m_objList.size();
-        for (decltype(count) i = 0; i < count; i++)
-            m_objList[i]->UpdateDebugInfo();
-    }
+        for (auto& e : m_nodes)
+            e->UpdateDebugInfo();
+}
 #endif
 
     void SimObject::SetSuspended(bool a_switch)
     {
         m_suspended = a_switch;
 
-        auto count = m_objList.size();
-        for (decltype(count) i = 0; i < count; i++)
-            m_objList[i]->GetCollider().SetShouldProcess(!a_switch);
+        for (auto& e : m_nodes)
+            e->GetCollider().SetShouldProcess(!a_switch);
 
         if (!a_switch)
             Reset();
@@ -246,19 +394,38 @@ namespace CBP
         if (m_suspended)
             return;
 
-        auto count = m_objList.size();
-        for (decltype(count) i = 0; i < count; i++)
-            m_objList[i]->UpdateMotion(a_timeStep);
+        for (auto& e : m_nodes)
+            e->UpdateMotion(a_timeStep);
     }
 
-    void SimObject::UpdateVelocity(float a_timeStep)
+    void SimObject::ReadTransforms(float a_timeStep)
     {
         if (m_suspended)
             return;
 
-        auto count = m_objList.size();
-        for (decltype(count) i = 0; i < count; i++)
-            m_objList[i]->UpdateVelocity(a_timeStep);
+        for (auto& e : m_nodes) 
+        {
+            e->ReadTransforms();
+            e->UpdateVelocity(a_timeStep);
+        }
+    }
+
+    /*void SimObject::UpdateWorldData()
+    {
+        if (m_suspended)
+            return;
+
+        for (auto& e : m_nodes)
+            e->UpdateWorldData();
+    }*/
+
+    void SimObject::WriteTransforms()
+    {
+        if (m_suspended)
+            return;
+
+        for (auto& e : m_nodes)
+            e->WriteTransforms();
     }
 
 }

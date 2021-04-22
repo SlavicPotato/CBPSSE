@@ -1,10 +1,29 @@
 #pragma once
 
+#include "ConfigValueTypes.h"
+
 namespace CBP
 {
-    typedef std::pair<std::uint32_t, float> armorCacheValue_t;
-    typedef stl::iunordered_map<std::string, stl::iunordered_map<std::string, armorCacheValue_t>> armorCacheEntry_t;
-    typedef stl::imap<std::string, stl::imap<std::string, armorCacheValue_t>> armorCacheEntrySorted_t;
+    struct armorCacheValue_t
+    {
+        armorCacheValue_t(float a_value) :
+            type(ConfigValueType::kFloat),
+            vf(a_value)
+        {}
+
+        union
+        {
+            float vf;
+        };
+
+        std::string vs;
+
+        ConfigValueType type;
+    };
+
+    typedef std::pair<std::uint32_t, armorCacheValue_t> armorCacheValuePair_t;
+    typedef stl::iunordered_map<std::string, stl::iunordered_map<std::string, armorCacheValuePair_t>> armorCacheEntry_t;
+    typedef stl::imap<std::string, stl::imap<std::string, armorCacheValuePair_t>> armorCacheEntrySorted_t;
     typedef stl::iunordered_map<std::string, armorCacheEntry_t> armorCache_t;
 
     class IArmorCache

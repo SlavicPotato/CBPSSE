@@ -11,6 +11,7 @@
 #include "Drivers/data.h"
 
 #include "Common/Game.h"
+#include "Data/PluginInfo.h"
 
 namespace CBP
 {
@@ -24,27 +25,49 @@ namespace CBP
     bool IBoneCast::ExtractGeometry(
         Actor* a_actor,
         const BSFixedString& a_nodeName,
-        NiAVObject* a_armorNode,
+        NiAVObject* a_node,
         ColliderDataStorage& a_out)
     {
         static_assert(sizeof(btVector3) == sizeof(DirectX::XMVECTOR));
-        static_assert(std::is_same_v<__m128, DirectX::XMVECTOR>);
 
-        auto geometry = a_armorNode->GetAsBSGeometry();
+        auto geometry = a_node->GetAsBSGeometry();
         if (!geometry)
             return false;
 
-        if (geometry->shapeType != BSGeometry::Type::kTriShape)
-            return false;
+        BSTriShape* triShape(nullptr);
+        BSDynamicTriShape* dynamicTriShape(nullptr);
 
-        auto vflags = NiSkinPartition::GetVertexFlags(geometry->vertexDesc);
+        UInt32 numVertices;
+        UInt32 vertexSize;
 
-        if ((vflags & VertexFlags::VF_VERTEX) != VertexFlags::VF_VERTEX)
-            return false;
+        std::unique_ptr<SimpleLocker> dynamicTriShapeLocker;
 
-        auto triShape = RTTI<BSTriShape>()(geometry);
-        if (!triShape)
+        if (geometry->shapeType == BSGeometry::Type::kTriShape)
+        {
+            triShape = ni_cast(geometry, BSTriShape);
+            if (!triShape)
+                return false;
+
+            auto vflags = NiSkinPartition::GetVertexFlags(geometry->vertexDesc);
+
+            if ((vflags & VertexFlags::VF_VERTEX) != VertexFlags::VF_VERTEX)
+                return false;
+
+            numVertices = triShape->numVertices;
+        }
+        else if (geometry->shapeType == BSGeometry::Type::kDynamicTriShape)
+        {
+            dynamicTriShape = ni_cast(geometry, BSDynamicTriShape);
+            if (!dynamicTriShape)
+                return false;
+
+            dynamicTriShapeLocker = std::make_unique<SimpleLocker>(std::addressof(dynamicTriShape->lock));
+
+            numVertices = 0;
+        }
+        else {
             return false;
+        }
 
         if (geometry->m_spSkinInstance == nullptr)
             return false;
@@ -66,15 +89,18 @@ namespace CBP
         if (!numPartitions)
             return false;
 
-        //UInt32 numVertices = triShape->numVertices ? triShape->numVertices : skinPartition->vertexCount;
-        UInt32 numVertices = skinPartition->vertexCount;
+        if (numVertices == 0) {
+            numVertices = skinPartition->vertexCount;
 
-        if (numVertices == 0)
-            return false;
+            if (numVertices == 0)
+                return false;
+        }
 
         auto partition = skinPartition->m_pkPartitions;
 
-        UInt32 vertexSize = NiSkinPartition::GetVertexSize(partition->vertexDesc);
+        if (triShape) {
+            vertexSize = NiSkinPartition::GetVertexSize(partition->vertexDesc);
+        }
 
         for (UInt32 i = 0; i < skinData->m_uiBones; i++)
         {
@@ -173,7 +199,14 @@ namespace CBP
 
                         if (!vme.m_hasVertex)
                         {
-                            btVector3 vtx(*reinterpret_cast<DirectX::XMVECTOR*>(&partition->shapeData->m_RawVertexData[index * vertexSize]));
+                            btVector3 vtx;
+
+                            if (dynamicTriShape) {
+                                vtx = reinterpret_cast<DirectX::XMVECTOR*>(dynamicTriShape->pDynamicData)[index];
+                            }
+                            else {
+                                vtx = *reinterpret_cast<DirectX::XMVECTOR*>(&partition->shapeData->m_RawVertexData[index * vertexSize]);
+                            }
 
                             vme.m_vertex.v = tnsf * vtx;
                             vme.m_hasVertex = true;
@@ -228,7 +261,8 @@ namespace CBP
 
                 if (tri.m_isBoneTri) {
 
-                    for (int j = 0; j < 3; j++) {
+                    for (int j = 0; j < 3; j++) 
+                    {
                         auto index = tri.m_indices[j];
 
                         ASSERT(c < rnIndices);
@@ -242,7 +276,6 @@ namespace CBP
             }
 
             a_out.m_numTriangles = static_cast<int>(rnIndices / 3);
-
 
             return true;
 
@@ -584,24 +617,25 @@ namespace CBP
 
         bool found(false);
 
-        if (!a_shape.empty())
-        {
-            BSFixedString shape(a_shape.c_str());
+        BSFixedString shape(a_shape.c_str());
 
-            found = IArmor::VisitEquippedNodes(a_actor,
-                [&](TESObjectARMO*, TESObjectARMA*, NiAVObject* a_object, bool a_firstPerson)
+        found = IArmor::VisitEquippedNodes(a_actor,
+            [&](TESObjectARMO*, TESObjectARMA*, NiAVObject* a_object, bool a_firstPerson)
+            {
+                //_DMESSAGE("%s: equip (%hhu): %s", a_nodeName.c_str(), a_firstPerson, a_object->m_name);
+
+                /*if (a_firstPerson)
+                    return false;*/
+
+
+                if (!a_shape.empty())
                 {
-                    //_DMESSAGE("%s: equip (%hhu): %s", a_nodeName.c_str(), a_firstPerson, a_object->m_name);
-
-                    /*if (a_firstPerson)
-                        return false;*/
-
                     if (a_object->m_name != shape.data)
                         return false;
+                }
 
-                    return ExtractGeometry(a_actor, nodeName, a_object, a_result);
-                });
-        }
+                return ExtractGeometry(a_actor, nodeName, a_object, a_result);
+            });
 
         if (!found)
         {
@@ -618,7 +652,41 @@ namespace CBP
             }
         }
 
-        //_DMESSAGE(">>> %d", found);
+        if (!found)
+        {
+            auto face = a_actor->GetFaceGenNiNode();
+            if (face)
+            {
+                auto animationData = a_actor->GetFaceGenAnimationData();
+                if (animationData)
+                {
+                    FaceGen::GetSingleton()->isReset = 0;
+
+                    for (int t = BSFaceGenAnimationData::kKeyframeType_Expression2; t <= BSFaceGenAnimationData::kKeyframeType_Phoneme2; t++)
+                    {
+                        auto& keyframe = animationData->keyFrames[t];
+                        for (decltype(keyframe.count) i = 0; i < keyframe.count; i++) {
+                            keyframe.values[i] = 0.0f;
+                        }
+
+                        keyframe.isUpdated = 0;
+                    }
+
+                    UpdateModelFace(face);
+                }
+
+                found = Game::Node::Traverse2(face, [&](NiAVObject* a_object)
+                    {
+                        if (!a_shape.empty())
+                        {
+                            if (a_object->m_name != shape.data)
+                                return false;
+                        }
+
+                        return ExtractGeometry(a_actor, nodeName, a_object, a_result);
+                    });
+            }
+        }
 
         return found;
     }

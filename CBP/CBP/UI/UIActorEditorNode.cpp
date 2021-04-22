@@ -164,16 +164,21 @@ namespace CBP
 
         const auto& globalConfig = IConfig::GetGlobal();
 
-        if (a_handle)
+        if (a_handle != Game::ObjectHandle(0))
         {
             auto& nodeConfig = IConfig::GetOrCreateActorNode(a_handle, globalConfig.ui.commonSettings.node.actor.selectedGender);
             nodeConfig.insert_or_assign(a_node, a_data);
 
-            if (a_reset)
-                DCBP::ResetActors();
-            else
+            if (a_reset) {
+                DCBP::DispatchActorTask(
+                    a_handle, ControllerInstruction::Action::UpdateConfigOrAdd);
+                DCBP::DispatchActorTask(
+                    a_handle, ControllerInstruction::Action::ValidateNodes);
+            }
+            else {
                 DCBP::DispatchActorTask(
                     a_handle, ControllerInstruction::Action::UpdateConfig);
+            }
         }
         else
         {
@@ -184,6 +189,32 @@ namespace CBP
                 DCBP::ResetActors();
             else
                 DCBP::UpdateConfigOnAllActors();
+        }
+    }
+
+    void UIActorEditorNode::RemoveNodeData(
+        Game::ObjectHandle a_handle,
+        const std::string& a_node)
+    {
+        const auto& globalConfig = IConfig::GetGlobal();
+
+        if (a_handle != Game::ObjectHandle(0))
+        {
+            if (IConfig::EraseEntry(
+                a_handle,
+                IConfig::GetActorNodeHolder(), 
+                a_node,
+                globalConfig.ui.commonSettings.node.actor.selectedGender)) 
+            {
+                DCBP::ResetActors();
+            }
+        }
+        else
+        {
+            if (IConfig::EraseEntryFromRoot(IConfig::GetGlobalNode(), a_node, globalConfig.ui.commonSettings.node.actor.selectedGender))
+            {
+                DCBP::ResetActors();
+            }
         }
     }
 

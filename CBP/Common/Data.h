@@ -136,13 +136,13 @@ namespace stl
 
         using value_pointer_type = V*;
 
-        using vector_type = stl::vector<value_pointer_type>;
+        using vector_type = std::vector<value_pointer_type>;
 
         using iterator = typename map_type::iterator;
         using const_iterator = typename map_type::const_iterator;
 
         template <class... Args>
-        SKMP_FORCEINLINE std::pair<iterator, bool> try_emplace(K&& a_key, Args&&... a_args)
+        std::pair<iterator, bool> try_emplace(K&& a_key, Args&&... a_args)
         {
             const auto r = m_map.try_emplace(std::move(a_key), std::forward<Args>(a_args)...);
             if (r.second)
@@ -152,7 +152,7 @@ namespace stl
         }
 
         template <class... Args>
-        SKMP_FORCEINLINE std::pair<iterator, bool> try_emplace(const K& a_key, Args&&... a_args)
+        std::pair<iterator, bool> try_emplace(const K& a_key, Args&&... a_args)
         {
             const auto r = m_map.try_emplace(a_key, std::forward<Args>(a_args)...);
             if (r.second)
@@ -162,19 +162,19 @@ namespace stl
         }
 
         template <class I = iterator, std::enable_if_t<!std::is_same_v<I, typename const_iterator>, int> = 0>
-        SKMP_FORCEINLINE I erase(I a_it)
+        I erase(I a_it)
         {
             _erase_vec(std::addressof(a_it->second));
             return m_map.erase(a_it);
         }
 
-        SKMP_FORCEINLINE const_iterator erase(const_iterator a_it)
+        const_iterator erase(const_iterator a_it)
         {
             _erase_vec(std::addressof(a_it->second));
             return m_map.erase(a_it);
         }
 
-        SKMP_FORCEINLINE std::size_t erase(const K& a_key)
+        std::size_t erase(const K& a_key)
         {
             auto it = m_map.find(a_key);
             if (it == m_map.end())
@@ -194,41 +194,51 @@ namespace stl
             return m_map.find(a_key);
         }
 
-        [[nodiscard]] SKMP_FORCEINLINE iterator end() {
+        [[nodiscard]] SKMP_FORCEINLINE iterator end() noexcept {
             return m_map.end();
         }
 
-        [[nodiscard]] SKMP_FORCEINLINE iterator begin() {
+        [[nodiscard]] SKMP_FORCEINLINE iterator begin() noexcept {
             return m_map.begin();
         }
 
-        [[nodiscard]] SKMP_FORCEINLINE const_iterator end() const {
-            return m_map.end();
+        [[nodiscard]] SKMP_FORCEINLINE const_iterator end() const noexcept {
+            return m_map.cend();
         }
 
-        [[nodiscard]] SKMP_FORCEINLINE const_iterator begin() const {
-            return m_map.begin();
+        [[nodiscard]] SKMP_FORCEINLINE const_iterator begin() const noexcept {
+            return m_map.cbegin();
         }
 
-        [[nodiscard]] SKMP_FORCEINLINE void clear() {
+        [[nodiscard]] SKMP_FORCEINLINE const_iterator cend() const noexcept {
+            return m_map.cend();
+        }
+
+        [[nodiscard]] SKMP_FORCEINLINE const_iterator cbegin() const noexcept {
+            return m_map.cbegin();
+        }
+
+        [[nodiscard]] SKMP_FORCEINLINE void clear()
+        {
             m_vector.clear();
             m_map.clear();
         }
 
-        [[nodiscard]] SKMP_FORCEINLINE void release() {
+        [[nodiscard]] SKMP_FORCEINLINE void release()
+        {
             m_vector.swap(decltype(m_vector)());
             m_map.swap(decltype(m_map)());
         }
 
-        [[nodiscard]] SKMP_FORCEINLINE map_type::size_type size() const {
+        [[nodiscard]] SKMP_FORCEINLINE map_type::size_type size() const noexcept {
             return m_map.size();
         }
 
-        [[nodiscard]] SKMP_FORCEINLINE vector_type::size_type vecsize() const {
+        [[nodiscard]] SKMP_FORCEINLINE vector_type::size_type vecsize() const noexcept {
             return m_vector.size();
         }
 
-        [[nodiscard]] SKMP_FORCEINLINE bool empty() const {
+        [[nodiscard]] SKMP_FORCEINLINE bool empty() const noexcept {
             return m_map.empty();
         }
 
@@ -236,15 +246,15 @@ namespace stl
             return m_map.contains(a_key);
         }
 
-        [[nodiscard]] SKMP_FORCEINLINE auto getdata() {
+        [[nodiscard]] SKMP_FORCEINLINE auto getdata() noexcept {
             return m_vector.data();
         }
 
-        [[nodiscard]] SKMP_FORCEINLINE const auto getdata() const {
+        [[nodiscard]] SKMP_FORCEINLINE const auto getdata() const noexcept {
             return m_vector.data();
         }
 
-        [[nodiscard]] SKMP_FORCEINLINE const auto& getvec() const {
+        [[nodiscard]] SKMP_FORCEINLINE const auto& getvec() const noexcept {
             return m_vector;
         }
 

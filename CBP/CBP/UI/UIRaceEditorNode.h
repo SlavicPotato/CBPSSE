@@ -32,7 +32,11 @@ namespace CBP
             Game::FormID a_formid,
             const std::string& a_node,
             const configNode_t& a_data,
-            bool a_reset);
+            bool a_reset) override;
+
+        virtual void RemoveNodeData(
+            Game::FormID a_handle,
+            const std::string& a_node) override;
 
         virtual configGlobalCommon_t& GetGlobalCommonConfig() const override;
 

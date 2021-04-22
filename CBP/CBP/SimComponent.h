@@ -226,7 +226,7 @@ namespace CBP
     class SKMP_ALIGN_AUTO Collider :
         ILog
     {
-        inline static constexpr btScalar crdrmul = std::numbers::pi_v<btScalar> / 180.0f;
+        inline static constexpr btScalar dtrmul = std::numbers::pi_v<btScalar> / 180.0f;
 
     public:
         Collider(SimComponent & a_parent);
@@ -243,18 +243,18 @@ namespace CBP
         SKMP_FORCEINLINE void SetColliderRotation(btScalar a_x, btScalar a_y, btScalar a_z)
         {
             m_colRot.setEulerZYX(
-                a_x * crdrmul,
-                a_y * crdrmul,
-                a_z * crdrmul
+                a_x * dtrmul,
+                a_y * dtrmul,
+                a_z * dtrmul
             );
         }
         
         SKMP_FORCEINLINE void SetColliderRotation(const btVector3 &a_vec)
         {
             m_colRot.setEulerZYX(
-                a_vec.x() * crdrmul,
-                a_vec.y() * crdrmul,
-                a_vec.z() * crdrmul
+                a_vec.x() * dtrmul,
+                a_vec.y() * dtrmul,
+                a_vec.z() * dtrmul
             );
         }
 
@@ -324,8 +324,8 @@ namespace CBP
         btVector3 m_bodyOffset;
         btVector3 m_bodyOffsetPlusInitial;
 
-        btCollisionObject* m_collider;
-        CollisionShape* m_colshape;
+        std::unique_ptr<btCollisionObject> m_collider;
+        std::unique_ptr<CollisionShape> m_colshape;
         std::shared_ptr<const ColliderData> m_colliderData;
 
         ColliderShapeType m_shape;
@@ -356,6 +356,8 @@ namespace CBP
     {
         struct SKMP_ALIGN_AUTO Force
         {
+            SKMP_DECLARE_ALIGNED_ALLOCATOR_AUTO();
+
             Force(
                 std::uint32_t a_steps,
                 const btVector3 & a_norm)
@@ -376,8 +378,27 @@ namespace CBP
 
             btVector3 m_axis;
             btScalar m_angle;
-            btScalar m_axisLength;
-        } ;
+            //btScalar m_axisLength;
+        };
+
+        struct SKMP_ALIGN_AUTO positionData_t
+        {
+            btVector3 m_position;
+            btMatrix3x3 m_rotation;
+            
+            positionData_t()
+            {
+                m_rotation.setIdentity();
+                m_position.setValue(0, 0, 0);
+            }
+
+        };
+        
+        positionData_t m_wdObject;
+        positionData_t m_ldObject;
+        positionData_t m_wdParent;
+
+        SimComponent* m_scParent;
 
         friend class Collider;
 
@@ -391,19 +412,22 @@ namespace CBP
         SKMP_FORCEINLINE void ClampVelocity();
 
         SKMP_FORCEINLINE void ConstrainMotionBox(
+            const btMatrix3x3& a_parentRot,
             const btMatrix3x3 & a_invRot,
             const btVector3 & a_target,
             btScalar a_timeStep
         );
         
         SKMP_FORCEINLINE void ConstrainMotionSphere(
+            const btMatrix3x3& a_parentRot,
             const btMatrix3x3 & a_invRot,
             const btVector3 & a_target,
             btScalar a_timeStep
         );
 
         //SKMP_FORCEINLINE void SIMDFillObj();
-        SKMP_FORCEINLINE void SIMDFillParent();
+        //SKMP_FORCEINLINE void SIMDFillParent();
+
 
     public:
         SKMP_DECLARE_ALIGNED_ALLOCATOR_AUTO();
@@ -412,6 +436,7 @@ namespace CBP
             SimObject & a_parent,
             Actor * a_actor,
             NiAVObject * a_obj,
+            NiNode * a_originalParentNode,
             const std::string & a_nodeName,
             const std::string & a_configBoneName,
             const configComponent_t & config,
@@ -432,6 +457,7 @@ namespace CBP
 
         void UpdateConfig(
             Actor * a_actor,
+            NiNode* a_parentNode,
             const configComponent_t * a_physConf,
             const configNode_t & a_nodeConf,
             bool a_collisions,
@@ -440,7 +466,6 @@ namespace CBP
         void UpdateMotion(btScalar timeStep);
         SKMP_FORCEINLINE void UpdateVelocity(float a_timeStep);
         SKMP_NOINLINE void Reset();
-        //bool ValidateNodes(NiAVObject * a_obj);
 
         void ApplyForce(std::uint32_t a_steps, const NiPoint3 & a_force);
 
@@ -512,11 +537,15 @@ namespace CBP
         }
         
         [[nodiscard]] SKMP_FORCEINLINE const auto & GetParentMatrix() const {
-            return m_itrMatParent;
+            return GetParentWorldData().m_rotation;
         }
 
         [[nodiscard]] SKMP_FORCEINLINE const auto& GetVirtualPos() const {
             return m_virtld;
+        }
+        
+        [[nodiscard]] SKMP_FORCEINLINE const auto &GetNodeLocalPos() const {
+            return m_nodePosition;
         }
 
         [[nodiscard]] SKMP_FORCEINLINE const auto& GetCenterOfGravity() const {
@@ -542,6 +571,10 @@ namespace CBP
         [[nodiscard]] SKMP_FORCEINLINE auto GetNode() {
             return m_obj.m_pObject;
         }
+        
+        [[nodiscard]] SKMP_FORCEINLINE auto GetParentNode() {
+            return m_objParent.m_pObject;
+        }
 
         [[nodiscard]] SKMP_FORCEINLINE auto const GetNode() const {
             return m_obj.m_pObject;
@@ -550,6 +583,30 @@ namespace CBP
         [[nodiscard]] SKMP_FORCEINLINE bool HasBoneCastCollider() const {
             return m_collider.IsCreated() && m_collider.IsBoneCast();
         }
+        
+        [[nodiscard]] SKMP_FORCEINLINE auto GetOriginalParentNode() const {
+            return m_objParentOriginal.get();
+        }
+        
+        SKMP_FORCEINLINE void SetSimComponentParent(SimComponent *a_parent) {
+            m_scParent = a_parent;
+        }
+        
+        [[nodiscard]] SKMP_FORCEINLINE auto GetSimComponentParent() const {
+            return m_scParent;
+        }
+
+        SKMP_FORCEINLINE void ReadTransforms();
+        SKMP_FORCEINLINE void WriteTransforms();
+
+        
+        /*[[nodiscard]] SKMP_FORCEINLINE bool HasBound() const {
+            return m_hasBound;
+        }
+        
+        [[nodiscard]] SKMP_FORCEINLINE const auto& GetBound() const {
+            return m_bound;
+        }*/
 
 #if 0
         SKMP_FORCEINLINE void Lock() const {
@@ -568,15 +625,26 @@ namespace CBP
 #endif
 
     private:
-        inline static constexpr btScalar crdrmul = std::numbers::pi_v<float> / 180.0f;
 
-        btMatrix3x3 m_itrInitialMat;
-        btMatrix3x3 m_itrMatParent;
+        [[nodiscard]] SKMP_FORCEINLINE const positionData_t& GetParentWorldData() const 
+        {
+            if (m_scParent) {
+                return m_scParent->m_wdObject;
+            }
+            else {
+                return m_wdParent;
+            }
+        }
 
+        btMatrix3x3 m_itrInitialRot;
+        //btMatrix3x3 m_itrMatParent;
+
+        btMatrix3x3 m_nodeRotation;
+        btVector3 m_nodePosition;
         rotationParams_t m_rotParams;
 
         btVector3 m_itrInitialPos;
-        btVector3 m_itrPosParent;
+        //btVector3 m_itrPosParent;
 
         btVector3 m_gravityCorrection;
 
@@ -584,9 +652,12 @@ namespace CBP
         btVector3 m_virtld;
         btVector3 m_ld;
         btVector3 m_velocity;
+        //btVector3 m_angularVelocity;
 
         btVector3 m_colExtent;
         btVector3 m_colOffset;
+
+        //Bullet::btBound m_bound;
 
         NiTransform m_initialTransform;
 
@@ -607,14 +678,16 @@ namespace CBP
         bool m_resistanceOn;
         bool m_rotScaleOn;
         bool m_hasScaleOverride;
+        bool m_hasRotationOverride;
+        bool m_hasPositionOverride;
         bool m_hasSpringSlack;
         bool m_hasFriction;
 
-        //bool m_hasMotionConstraintSphere;
-        //bool m_hasMotionConstraintBox;
+        //bool m_hasBound;
 
         NiPointer<NiAVObject> m_obj;
         NiPointer<NiNode> m_objParent;
+        NiPointer<NiNode> m_objParentOriginal;
 
         NiAVObject::ControllerUpdateContext m_updateCtx;
 
@@ -643,11 +716,8 @@ namespace CBP
         if (m_motion)
             return;
 
-        btVector3 pos(_mm_and_ps(_mm_loadu_ps(m_obj->m_worldTransform.pos), btvFFF0fMask));
-
-        m_velocity = (pos - m_oldWorldPos) /= a_timeStep;
-        m_oldWorldPos = pos;
-
+        m_velocity = (m_wdObject.m_position - m_oldWorldPos) /= a_timeStep;
+        m_oldWorldPos = m_wdObject.m_position;
     }
 
     SimComponent::rotationParams_t::rotationParams_t() {
@@ -658,8 +728,47 @@ namespace CBP
     {
         m_axis.setValue(1.0f, 0.0f, 0.0f);
         m_angle = 0.0f;
-        m_axisLength = 1.0f;
     }
 
+    void SimComponent::ReadTransforms()
+    {
+        auto obj = m_obj.get();
+
+        m_wdObject.m_rotation[0].set128(_mm_and_ps(_mm_loadu_ps(obj->m_worldTransform.rot.data[0]), btvFFF0fMask));
+        m_wdObject.m_rotation[1].set128(_mm_and_ps(_mm_loadu_ps(obj->m_worldTransform.rot.data[1]), btvFFF0fMask));
+        m_wdObject.m_rotation[2].set128(_mm_and_ps(_mm_loadu_ps(obj->m_worldTransform.rot.data[2]), btvFFF0fMask));
+        m_wdObject.m_position.set128(_mm_and_ps(_mm_loadu_ps(obj->m_worldTransform.pos), btvFFF0fMask));
+
+        if (!m_scParent)
+        {
+            obj = m_objParent.get();
+
+            m_wdParent.m_rotation[0].set128(_mm_and_ps(_mm_loadu_ps(obj->m_worldTransform.rot.data[0]), btvFFF0fMask));
+            m_wdParent.m_rotation[1].set128(_mm_and_ps(_mm_loadu_ps(obj->m_worldTransform.rot.data[1]), btvFFF0fMask));
+            m_wdParent.m_rotation[2].set128(_mm_and_ps(_mm_loadu_ps(obj->m_worldTransform.rot.data[2]), btvFFF0fMask));
+            m_wdParent.m_position.set128(_mm_and_ps(_mm_loadu_ps(obj->m_worldTransform.pos), btvFFF0fMask));
+        }
+    }
+    
+    void SimComponent::WriteTransforms()
+    {
+        auto obj = m_obj.get();
+
+        if (m_motion)
+        {
+            if (m_rotScaleOn || m_hasRotationOverride)
+            {
+                _mm_storeu_ps(obj->m_localTransform.rot.data[0], m_ldObject.m_rotation[0].get128());
+                _mm_storeu_ps(obj->m_localTransform.rot.data[1], m_ldObject.m_rotation[1].get128());
+                _mm_storeu_ps(obj->m_localTransform.rot.data[2], m_ldObject.m_rotation[2].get128());
+            }
+
+            obj->m_localTransform.pos.x = m_ldObject.m_position.x();
+            obj->m_localTransform.pos.y = m_ldObject.m_position.y();
+            obj->m_localTransform.pos.z = m_ldObject.m_position.z();
+        }
+
+        //obj->UpdateWorldData(&m_updateCtx);
+    }
 
 }
