@@ -509,7 +509,7 @@ namespace CBP
         IEvents::RegisterForEvent(Event::OnGameSave, SaveGameHandler);
         IEvents::RegisterForEvent(Event::OnLogMessage, OnLogMessage);
         IEvents::RegisterForEvent(Event::OnExit, OnExit);
-        IEvents::RegisterForEvent(Event::OnFormDelete, OnFormDelete);
+        //IEvents::RegisterForEvent(Event::OnFormDelete, OnFormDelete);
 
         SKSE::g_papyrus->Register(RegisterFuncs);
 
@@ -653,14 +653,14 @@ namespace CBP
         CBP::ICollision::Destroy();
     }
 
-    void DCBP::OnFormDelete(Event, void* a_data)
+    /*void DCBP::OnFormDelete(Event, void* a_data)
     {
         auto pHandle = static_cast<Game::ObjectHandle*>(a_data);
 
         IScopedLock _(GetLock());
 
         m_Instance.m_controller->RemoveActor(*pHandle);
-    }
+    }*/
 
     void DCBP::MessageHandler(Event, void* args)
     {

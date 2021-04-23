@@ -278,7 +278,7 @@ namespace CBP
 
         static void OnD3D11PostCreate_CBP(Event code, void* data);
         static void OnExit(Event, void* data);
-        static void OnFormDelete(Event, void* a_data);
+        //static void OnFormDelete(Event, void* a_data);
         static void Present_Pre();
 
         static uint32_t ConfigGetComboKey(int32_t param);

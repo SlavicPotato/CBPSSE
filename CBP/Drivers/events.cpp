@@ -22,7 +22,7 @@ namespace CBP
         SKSE::g_serialization->SetRevertCallback(SKSE::g_pluginHandle, RevertHandler);
         SKSE::g_serialization->SetSaveCallback(SKSE::g_pluginHandle, SaveGameHandler);
         SKSE::g_serialization->SetLoadCallback(SKSE::g_pluginHandle, LoadGameHandler);
-        SKSE::g_serialization->SetFormDeleteCallback(SKSE::g_pluginHandle, FormDeleteHandler);
+        //SKSE::g_serialization->SetFormDeleteCallback(SKSE::g_pluginHandle, FormDeleteHandler);
 
         struct MessagePumpExitInject : JITASM::JITASM {
             MessagePumpExitInject(uintptr_t targetAddr
