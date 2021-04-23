@@ -11,6 +11,7 @@ namespace CBP
     using namespace UICommon;
 
     UIDialogImportExport::UIDialogImportExport(UIContext& a_parent) :
+        UIFileSelector(DCBP::GetDriverConfig().paths.exports),
         m_parent(a_parent),
         m_rFileCheck("^[a-zA-Z0-9_\\- ]+$",
             std::regex_constants::ECMAScript)
@@ -41,10 +42,61 @@ namespace CBP
             if (selected)
             {
                 if (ImGui::Button("Delete"))
-                    ImGui::OpenPopup("Confirm delete");
+                {
+                    auto& queue = m_parent.GetPopupQueue();
+
+                    queue.push(
+                        UIPopupType::Confirm,
+                        "Confirm delete",
+                        "Are you sure you wish to delete '%s'?\n",
+                        selected->m_key.c_str()
+                    ).call([this, item = *selected](const auto&)
+                    {
+                        if (!DeleteItem(item))
+                        {
+                            auto& queue = m_parent.GetPopupQueue();
+
+                            queue.push(
+                                UIPopupType::Message,
+                                "Delete failed",
+                                "Error occured while attempting to delete export\nThe last exception was:\n\n%s",
+                                GetLastException().what()
+                            );
+                        }
+                    });
+                }
 
                 ImGui::SameLine();
-                if (ImGui::Button("Rename")) {
+                if (ImGui::Button("Rename"))
+                {
+                    auto& queue = m_parent.GetPopupQueue();
+
+                    queue.push(
+                        UIPopupType::Input,
+                        "Rename",
+                        "Enter new profile name:\n"
+                    ).call([this, item = *selected](const auto& a_p) {
+
+                        auto& in = a_p.GetInput();
+
+                        if (!StrHelpers::strlen(in))
+                            return;
+
+                        fs::path name(in);
+                        name += ".json";
+
+                        if (!RenameItem(item, name))
+                        {
+                            auto& queue = m_parent.GetPopupQueue();
+
+                            queue.push(
+                                UIPopupType::Message,
+                                "Rename failed",
+                                "Error occured while attempting to rename export\nThe last exception was:\n\n%s",
+                                GetLastException().what()
+                            );
+                        }
+                    });
                 }
 
                 ImGui::Separator();
@@ -59,26 +111,6 @@ namespace CBP
                     ImGui::TextWrapped("Error: %s", selected->m_info.except.what());
                 }
 
-                if (UICommon::ConfirmDialog(
-                    "Confirm delete",
-                    "Are you sure you wish to delete '%s'?\n",
-                    selected->m_filenameStr.c_str()))
-                {
-                    if (DeleteExport(selected->m_path)) {
-                        UpdateFileList();
-                    }
-                    else
-                    {
-                        auto& queue = m_parent.GetPopupQueue();
-
-                        queue.push(
-                            UIPopupType::Message,
-                            "Delete failed",
-                            "Error occured while attempting to delete export\nThe last exception was:\n\n%s",
-                            GetLastException().what()
-                        );
-                    }
-                }
             }
 
             ImGui::PopTextWrapPos();
@@ -103,22 +135,23 @@ namespace CBP
                         UIPopupType::Confirm,
                         "Import",
                         "Import and apply data from '%s' ?",
-                        selected->m_filenameStr.c_str()
-                    ).call([this, path = selected->m_path](const auto&) {
+                        selected->m_key.c_str()
+                    ).call([this, path = selected->m_fullpath](const auto&) {
                         DoImport(path);
                     });
 
                 }
+
+                ImGui::SameLine();
             }
 
-            ImGui::SameLine();
             if (ImGui::Button("Export", ImVec2(120, 0))) {
                 ImGui::OpenPopup("__export_ctx");
             }
 
             DrawExportContextMenu();
 
-            ImGui::SetItemDefaultFocus();
+            //ImGui::SetItemDefaultFocus();
             ImGui::SameLine();
             if (ImGui::Button("Cancel", ImVec2(120, 0))) {
                 SetOpenState(false);
@@ -189,8 +222,8 @@ namespace CBP
                         UIPopupType::Confirm,
                         "Export to file",
                         "Overwrite '%s'?",
-                        selected->m_filenameStr.c_str()
-                    ).call([this, path = selected->m_path](const auto&) {
+                        selected->m_key.c_str()
+                    ).call([this, path = selected->m_fullpath](const auto&) {
                         DoExport(path);
                     });
                 }
@@ -240,7 +273,13 @@ namespace CBP
         }
         else
         {
-            OnOpen();
+            if (DoUpdate(false))
+            {
+                auto file = a_path.filename().stem().string();
+                if (HasFile(file)) {
+                    SelectItem(file);
+                }
+            }
         }
 
     }
@@ -263,7 +302,12 @@ namespace CBP
 
     void UIDialogImportExport::OnOpen()
     {
-        if (!UpdateFileList())
+        DoUpdate(true);
+    }
+
+    bool UIDialogImportExport::DoUpdate(bool a_select)
+    {
+        if (!UpdateFileList(a_select))
         {
             auto& queue = m_parent.GetPopupQueue();
             queue.push(
@@ -272,7 +316,11 @@ namespace CBP
                 "Failed to load exports\nThe last exception was:\n\n%s",
                 GetLastException().what()
             );
+
+            return false;
         }
+
+        return true;
     }
 
 }

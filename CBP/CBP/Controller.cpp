@@ -328,8 +328,6 @@ namespace CBP
 
     void ControllerTask::CullActors()
     {
-        //auto policy = (*g_skyrimVM)->GetClassRegistry()->GetHandlePolicy();
-
         bool notMarked(true);
 
         auto data = m_actors.getdata();
@@ -339,10 +337,9 @@ namespace CBP
         {
             auto e = data[i];
 
-            //auto actor = static_cast<Actor*>(policy->Resolve(Actor::kTypeID, e->GetActorHandle()));
             auto actor = e->GetActor();
 
-            if (!ActorValid(actor))
+            if (!ActorValid2(actor))
             {
                 notMarked = false;
 

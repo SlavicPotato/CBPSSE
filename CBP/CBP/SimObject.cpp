@@ -130,12 +130,12 @@ namespace CBP
         ConfigGender a_sex,
         const nodeDescList_t& a_desc)
         :
-        m_handle(a_handle),
         m_sex(a_sex),
         m_rootNode(a_actor->loadedState->node),
         m_suspended(false),
         m_markedForDelete(false),
-        m_actor(a_actor)
+        m_actor(a_actor),
+        m_handle(a_handle)
 #if BT_THREADSAFE
         , m_task(this)
 #endif
@@ -210,15 +210,14 @@ namespace CBP
 
     SimObject::~SimObject()
     {
-        auto policy = (*g_skyrimVM)->GetClassRegistry()->GetHandlePolicy();
-        policy->Release(m_handle);
-
         // release node refs first
         m_nodes.clear();
         m_objHead = nullptr;
         m_rootNode = nullptr;
 
         m_actor = nullptr;
+
+        m_handle.release();
     }
 
     void SimObject::Reset()
@@ -242,7 +241,7 @@ namespace CBP
         bool a_collisions,
         const configComponents_t& a_config)
     {
-        auto& nodeConfig = IConfig::GetActorNode(m_handle, m_sex);
+        auto& nodeConfig = IConfig::GetActorNode(m_handle.get(), m_sex);
 
         auto it = m_nodes.begin();
         while (it != m_nodes.end())
@@ -303,7 +302,7 @@ namespace CBP
 
     bool SimObject::HasNewNode(Actor* a_actor, const nodeMap_t& a_nodeMap)
     {
-        auto& nodeConfig = IConfig::GetActorNode(m_handle, m_sex);
+        auto& nodeConfig = IConfig::GetActorNode(m_handle.get(), m_sex);
 
         for (auto& n : nodeConfig)
         {

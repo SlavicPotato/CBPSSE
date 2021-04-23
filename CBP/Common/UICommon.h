@@ -1197,7 +1197,7 @@ namespace UICommon
             if (!ImGui::IsAnyItemActive())
                 ImGui::SetKeyboardFocusHere();
 
-            if (ImGui::InputText("", a_buf, a_size, ImGuiInputTextFlags_EnterReturnsTrue)) {
+            if (ImGui::InputText("##TextInputDialog2", a_buf, a_size, ImGuiInputTextFlags_EnterReturnsTrue)) {
                 ImGui::CloseCurrentPopup();
                 ret = true;
             }
@@ -1221,7 +1221,7 @@ namespace UICommon
     }
 
     template<typename... Args>
-    bool TextInputDialog2(const char* a_name, const char* a_text, char* a_buf, std::size_t a_size, float a_scale, Args... args)
+    int TextInputDialog2(const char* a_name, const char* a_text, char* a_buf, std::size_t a_size, float a_scale, Args... args)
     {
         int ret(0);
 
@@ -1243,7 +1243,7 @@ namespace UICommon
             if (!ImGui::IsAnyItemActive())
                 ImGui::SetKeyboardFocusHere();
 
-            if (ImGui::InputText("", a_buf, a_size, ImGuiInputTextFlags_EnterReturnsTrue)) {
+            if (ImGui::InputText("##TextInputDialog2", a_buf, a_size, ImGuiInputTextFlags_EnterReturnsTrue)) {
                 ImGui::CloseCurrentPopup();
                 ret = 1;
             }
@@ -1255,8 +1255,9 @@ namespace UICommon
                 ret = 1;
             }
 
-            ImGui::SetItemDefaultFocus();
             ImGui::SameLine();
+            ImGui::SetItemDefaultFocus();
+
             if (ImGui::Button("Cancel", ImVec2(120, 0))) {
                 ImGui::CloseCurrentPopup();
                 ret = -1;

@@ -34,7 +34,7 @@ namespace CBP
         case MiscHelpText::frameTimer: return "Skyrim's frame timer, affected by time modifier.";
         case MiscHelpText::timePerFrame: return "Amount of time the physics simulation consumes per frame (in microseconds).";
         case MiscHelpText::rotation: return "Collider rotation in degrees around the Z, Y and Y axes respectively.";
-        case MiscHelpText::controllerStats: return "Physics controller prints information to the log. Use this only for debugging.";
+        case MiscHelpText::controllerStats: return "Actor controller prints information to the log. Use this only for debugging.";
         default: return "??";
         }
     }

@@ -94,7 +94,7 @@ namespace CBP
 
         [[nodiscard]] SKMP_FORCEINLINE const NiTransform* GetHeadTransform() const {
             return m_objHead ? std::addressof(m_objHead->m_worldTransform) : nullptr;
-    }
+        }
 
         [[nodiscard]] SKMP_FORCEINLINE bool GetHeadTransform(Bullet::btTransformEx& a_out) const {
             if (m_objHead) {
@@ -115,7 +115,7 @@ namespace CBP
         }
 
         [[nodiscard]] SKMP_FORCEINLINE auto GetActorHandle() const {
-            return m_handle;
+            return m_handle.get();
         }
 
         SKMP_FORCEINLINE void MarkForDelete() {
@@ -147,21 +147,17 @@ namespace CBP
             return m_actor.get();
         }
 
-        [[nodiscard]] SKMP_FORCEINLINE auto GetActor() {
-            return m_actor.get();
-        }
-
     private:
 
         [[nodiscard]] static NiNode* GetParentNode(
-            NiAVObject* a_root, 
+            NiAVObject* a_root,
             const configNode_t& a_nodeConfig);
 
-        void ClearSimComponentParent(SimComponent *a_sc);
+        void ClearSimComponentParent(SimComponent* a_sc);
 
         nodeList_t m_nodes;
 
-        Game::ObjectHandle m_handle;
+        Game::ObjectHandleRef m_handle;
 
         NiPointer<Actor> m_actor;
         NiPointer<NiNode> m_rootNode;
@@ -203,7 +199,7 @@ namespace CBP
 #ifdef _CBP_ENABLE_DEBUG
         std::string m_actorName;
 #endif
-};
+    };
 
 
 }

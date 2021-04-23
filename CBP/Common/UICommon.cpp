@@ -302,7 +302,7 @@ namespace UICommon
                 ImGui::OpenPopup(e.m_key.c_str());
             }
 
-            int res;
+            int res(-1);
 
             switch (e.m_type)
             {
