@@ -5,7 +5,6 @@
 #include "CBP/ControllerInstruction.h"
 
 #include "GUI/Tasks.h"
-#include "Tasks/Tasks.h"
 #include "Input/Handlers.h"
 #include "Events/Events.h"
 #include "Common/Data.h"
@@ -106,14 +105,14 @@ namespace CBP
             public TaskDelegate
         {
         public:
-            UpdateNodeRefDataTask(Game::ObjectHandle a_handle);
+            UpdateNodeRefDataTask(Game::VMHandle a_handle);
 
             virtual void Run() override;
             virtual void Dispose() override {
                 delete this;
             };
         private:
-            Game::ObjectHandle m_handle;
+            Game::VMHandle m_handle;
         };
 
         bool LoadPaths();
@@ -122,7 +121,7 @@ namespace CBP
         static void MainInit_Hook();
 
         static void DispatchActorTask(Actor* a_actor, CBP::ControllerInstruction::Action a_action);
-        static void DispatchActorTask(Game::ObjectHandle handle, CBP::ControllerInstruction::Action action);
+        static void DispatchActorTask(Game::VMHandle handle, CBP::ControllerInstruction::Action action);
 
         [[nodiscard]] static const auto& GetSimActorList();
 
@@ -138,18 +137,19 @@ namespace CBP
         static void ResetActors();
         static void ResetPhysics();
         static void NiNodeUpdate();
-        static void NiNodeUpdate(Game::ObjectHandle a_handle);
+        static void NiNodeUpdate(Game::VMHandle a_handle);
         static void WeightUpdate();
-        static void WeightUpdate(Game::ObjectHandle a_handle);
+        static void WeightUpdate(Game::VMHandle a_handle);
         static void ClearArmorOverrides();
         static void UpdateArmorOverridesAll();
         static void UpdateDebugRendererState();
         static void UpdateDebugRendererSettings();
         static void UpdateProfilerSettings();
-        static void ApplyForce(Game::ObjectHandle a_handle, uint32_t a_steps, const std::string& a_component, const NiPoint3& a_force);
+        static void ApplyForce(Game::VMHandle a_handle, uint32_t a_steps, const stl::fixed_string& a_component, const btVector3& a_force);
 
-        static void BoneCastSample(Game::ObjectHandle a_handle, const std::string& a_nodeName);
-        static void UpdateNodeReferenceData(Game::ObjectHandle a_handle);
+        static void BoneCastSample(Game::VMHandle a_handle, const stl::fixed_string& a_nodeName);
+        static void BoneCastSample2(Game::VMHandle a_handle, const stl::fixed_string& a_nodeName);
+        static void UpdateNodeReferenceData(Game::VMHandle a_handle);
 
         SKMP_FORCEINLINE static bool SaveGlobals() {
             return m_Instance.m_serialization.SaveGlobalConfig();
@@ -176,9 +176,9 @@ namespace CBP
         }
 
         static bool ExportData(const std::filesystem::path& a_path);
-        static bool ImportData(const std::filesystem::path& a_path, CBP::ISerialization::ImportFlags a_flags);
+        static bool ImportData(const std::filesystem::path& a_path, ISerialization::ImportFlags a_flags);
 
-        static bool GetImportInfo(const std::filesystem::path& a_path, CBP::importInfo_t& a_out);
+        static bool GetImportInfo(const std::filesystem::path& a_path, importInfo_t& a_out);
 
         [[nodiscard]] SKMP_FORCEINLINE static const auto& GetLastSerializationException() {
             return m_Instance.m_serialization.GetLastException();
@@ -227,7 +227,7 @@ namespace CBP
             m_Instance.UpdateKeysImpl();
         }
 
-        static void SetMarkedActor(Game::ObjectHandle a_handle);
+        static void SetMarkedActor(Game::VMHandle a_handle);
 
         SKMP_FORCEINLINE static void QueueUIReset() {
             m_Instance.m_resetUI = true;
@@ -297,7 +297,6 @@ namespace CBP
             bool force_ini_keys;
             int compression_level;
             bool ui_open_restrictions;
-            bool taskpool_offload;
 
 #if BT_THREADSAFE
             bool multiThreadedCollisionDetection;
@@ -330,7 +329,7 @@ namespace CBP
                 //fs::path imguiSettings;
             } paths;
 
-            std::string imguiIni;
+            stl::fixed_string imguiIni;
         } m_conf;
 
         std::unique_ptr <CBP::UIContext> m_uiContext;

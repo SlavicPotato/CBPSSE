@@ -51,19 +51,19 @@ namespace CBP
                         "Are you sure you wish to delete '%s'?\n",
                         selected->m_key.c_str()
                     ).call([this, item = *selected](const auto&)
-                    {
-                        if (!DeleteItem(item))
                         {
-                            auto& queue = m_parent.GetPopupQueue();
+                            if (!DeleteItem(item))
+                            {
+                                auto& queue = m_parent.GetPopupQueue();
 
-                            queue.push(
-                                UIPopupType::Message,
-                                "Delete failed",
-                                "Error occured while attempting to delete export\nThe last exception was:\n\n%s",
-                                GetLastException().what()
-                            );
-                        }
-                    });
+                                queue.push(
+                                    UIPopupType::Message,
+                                    "Delete failed",
+                                    "Error occured while attempting to delete export\nThe last exception was:\n\n%s",
+                                    GetLastException().what()
+                                );
+                            }
+                        });
                 }
 
                 ImGui::SameLine();
@@ -273,7 +273,7 @@ namespace CBP
         }
         else
         {
-            if (DoUpdate(false))
+            if (DoUpdate(false)) 
             {
                 auto file = a_path.filename().stem().string();
                 if (HasFile(file)) {

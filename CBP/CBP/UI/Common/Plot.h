@@ -24,7 +24,7 @@ namespace CBP
         }
 
     private:
-        stl::vector<float> m_values;
+        std::vector<float> m_values;
 
         float m_plotScaleMin;
         float m_plotScaleMax;

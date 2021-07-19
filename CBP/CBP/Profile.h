@@ -6,6 +6,9 @@
 
 namespace CBP
 {
+    typedef Profile<configComponentsGenderRoot_t> PhysicsProfile;
+    typedef Profile<configNodesGenderRoot_t> NodeProfile;
+
     class GlobalProfileManager
     {
         class ProfileManagerPhysics :

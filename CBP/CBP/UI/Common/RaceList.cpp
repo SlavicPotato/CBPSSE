@@ -62,9 +62,9 @@ namespace CBP
                 std::setw(8) << std::hex << e.first << "] ";
 
             if (raceConf.showEditorIDs)
-                ss << e.second.edid;
+                ss << e.second.edid.get();
             else
-                ss << e.second.fullname;
+                ss << e.second.fullname.get();
 
             m_listData.try_emplace(e.first,
                 std::move(ss.str()), GetData(e.first));
@@ -147,9 +147,9 @@ namespace CBP
         if (itr != raceCache.end())
         {
             if (raceConf.showEditorIDs)
-                ss << "Name:  " << itr->second.fullname << std::endl;
+                ss << "Name:  " << itr->second.fullname.get() << std::endl;
             else
-                ss << "EDID:  " << itr->second.edid << std::endl;
+                ss << "EDID:  " << itr->second.edid.get() << std::endl;
 
             ss << "Flags: " << std::bitset<8>(itr->second.flags) << std::endl;
         }
@@ -159,7 +159,7 @@ namespace CBP
         {
             auto itm = modList.find(modIndex);
             if (itm != modList.end())
-                ss << "Mod:   " << itm->second.name << " [" <<
+                ss << "Mod:   " << itm->second.name.get() << " [" <<
                 sshex(2) << itm->second.GetPartialIndex() << "]" << std::endl;
         }
 

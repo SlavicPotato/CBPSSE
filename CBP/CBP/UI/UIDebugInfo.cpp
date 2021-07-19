@@ -68,11 +68,8 @@ namespace CBP
 
                     auto& nl = obj.second.GetNodeList();
 
-                    int count = nl.size();
-                    for (int i = 0; i < count; i++)
+                    for (auto &c : nl)
                     {
-                        auto c = nl[i];
-
                         ImGui::Columns(3);
 
                         auto& info = c->GetDebugInfo();
@@ -81,21 +78,21 @@ namespace CBP
                             ImGui::SetColumnWidth(0, ImGui::GetFontSize() * 17.0f);
 
                         std::string nodeDesc(("Node:   " + c->GetNodeName() + "\n") + "Parent: " + info.parentNodeName);
-                        ImGui::Text(nodeDesc.c_str());
+                        ImGui::TextWrapped(nodeDesc.c_str());
 
                         ImGui::NextColumn();
 
                         std::string objW((TransformToStr(info.worldTransform) + "\n") +
                             (TransformToStr(info.worldTransformParent)));
 
-                        ImGui::Text(objW.c_str());
+                        ImGui::TextWrapped(objW.c_str());
 
                         ImGui::NextColumn();
 
                         std::string objL((TransformToStr(info.localTransform) + "\n") +
                             (TransformToStr(info.localTransformParent)));
 
-                        ImGui::Text(objL.c_str());
+                        ImGui::TextWrapped(objL.c_str());
 
                         ImGui::Columns(1);
                         ImGui::Separator();

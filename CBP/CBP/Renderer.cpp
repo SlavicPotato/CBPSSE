@@ -45,7 +45,7 @@ namespace CBP
         float a_radius,
         bool a_moving,
         bool a_centerOfGravity,
-        Game::ObjectHandle a_markedHandle)
+        Game::VMHandle a_markedHandle)
     {
         const auto& globalConfig = IConfig::GetGlobal();
 

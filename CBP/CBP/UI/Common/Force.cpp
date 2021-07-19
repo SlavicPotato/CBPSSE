@@ -2,10 +2,12 @@
 
 #include "Force.h"
 
+#include "Data/StringHolder.h"
+
 namespace CBP
 {
     template<typename T>
-    const std::string UIApplyForce<T>::m_chKey("Main#Force");
+    const stl::fixed_string UIApplyForce<T>::m_chKey("Main#Force");
 
     template<typename T>
     void UIApplyForce<T>::DrawForceSelector(T* a_data, configForceMap_t& a_forceData)
@@ -75,8 +77,10 @@ namespace CBP
 
             auto wcm = ImGui::GetWindowContentRegionMax();
 
-            ImGui::SameLine(wcm.x - GetNextTextOffset("Apply", true));
-            if (ButtonRight("Apply"))
+            auto& sh = Common::StringHolder::GetSingleton();
+
+            ImGui::SameLine(wcm.x - GetNextTextOffset(sh.apply, true));
+            if (ButtonRight(sh.apply))
                 for (const auto& e : globalConfig.ui.forceActor)
                     ApplyForce(a_data, e.second.steps, e.first, e.second.force);
 
@@ -86,11 +90,12 @@ namespace CBP
 
                 ImGui::Spacing();
 
-                SliderFloat3("Force", std::addressof(e.force.x), FORCE_MIN, FORCE_MAX, "%.0f");
+                SliderFloat3("Force", e.force, FORCE_MIN, FORCE_MAX, "%.0f");
                 HelpMarker(MiscHelpText::applyForce);
 
-                ImGui::SameLine(wcm.x - GetNextTextOffset("Reset", true));
-                if (ButtonRight("Reset")) {
+
+                ImGui::SameLine(wcm.x - GetNextTextOffset(sh.reset, true));
+                if (ButtonRight(sh.reset)) {
                     e = configForce_t();
                     DCBP::MarkGlobalsForSave();
                 }

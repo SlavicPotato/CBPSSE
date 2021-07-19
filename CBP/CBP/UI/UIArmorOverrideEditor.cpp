@@ -6,6 +6,7 @@
 
 #include "Drivers/cbp.h"
 
+#include "Data/StringHolder.h"
 
 namespace CBP
 {
@@ -77,12 +78,14 @@ namespace CBP
 
         auto wcm = ImGui::GetWindowContentRegionMax();
 
-        ImGui::SameLine(wcm.x - GetNextTextOffset("Save", true));
-        if (ButtonRight("Save"))
+        auto& sh = Common::StringHolder::GetSingleton();
+
+        ImGui::SameLine(wcm.x - GetNextTextOffset(sh.save, true));
+        if (ButtonRight(sh.save))
             DoSave(a_entry);
 
-        ImGui::SameLine(wcm.x - GetNextTextOffset("Reload"));
-        if (ButtonRight("Reload"))
+        ImGui::SameLine(wcm.x - GetNextTextOffset(sh.reload));
+        if (ButtonRight(sh.reload))
         {
             auto& popup = m_parent.GetPopupQueue();
 
@@ -96,7 +99,7 @@ namespace CBP
                 if (!m_currentEntry)
                     return;
 
-                if (!StrHelpers::iequal(path, m_currentEntry->first))
+                if (path != m_currentEntry->first)
                     return;
 
                 SetCurrentEntry(path, true);
@@ -107,8 +110,8 @@ namespace CBP
     }
 
     void UIArmorOverrideEditor::RemoveGroup(
-        const std::string& a_path,
-        const std::string& a_group)
+        const stl::fixed_string& a_path,
+        const stl::fixed_string& a_group)
     {
         auto& popup = m_parent.GetPopupQueue();
 
@@ -122,7 +125,7 @@ namespace CBP
                 if (!m_currentEntry)
                     return;
 
-                if (!StrHelpers::iequal(m_currentEntry->first, path))
+                if (m_currentEntry->first != path)
                     return;
 
                 m_currentEntry->second.erase(group);
@@ -188,7 +191,7 @@ namespace CBP
                         DrawSliderOverrideModeSelector(e);
                         ImGui::PopItemWidth();
 
-                        auto name(dit->second.descTag);
+                        std::string name(dit->second.descTag);
                         name.append(" (");
                         name.append(e.first);
                         name.append(")");
@@ -228,7 +231,7 @@ namespace CBP
 
             ImGui::PushID(static_cast<const void*>(std::addressof(e)));
 
-            auto name(e.first);
+            std::string name(e.first);
             name.append(" (");
             name.append(e.second.descTag);
             name.append(")");
@@ -254,8 +257,9 @@ namespace CBP
             if (a_entry.second.contains(e.first))
                 continue;
 
-            if (ImGui::MenuItem(e.first.c_str()))
+            if (ImGui::MenuItem(e.first.c_str())) {
                 a_entry.second.try_emplace(e.first);
+            }
         }
 
         ImGui::PopID();
@@ -269,6 +273,8 @@ namespace CBP
             return "Absolute";
         case std::uint32_t(1):
             return "Modifier";
+        case std::uint32_t(2):
+            return "Additive";
         default:
             return nullptr;
         }
@@ -283,7 +289,7 @@ namespace CBP
 
         if (ImGui::BeginCombo("", curSelName))
         {
-            for (std::uint32_t i = 0; i < 2; i++)
+            for (std::uint32_t i = 0; i < 3; i++)
             {
                 bool selected = a_entry.second.first == i;
 
@@ -317,7 +323,7 @@ namespace CBP
             {
                 ImGui::PushID(static_cast<const void*>(std::addressof(e)));
 
-                bool selected = StrHelpers::iequal(m_currentEntry->first, e);
+                bool selected = m_currentEntry->first == e;
 
                 if (selected)
                     if (ImGui::IsWindowAppearing()) ImGui::SetScrollHereY();
@@ -337,7 +343,7 @@ namespace CBP
     }
 
     void UIArmorOverrideEditor::SetCurrentEntry(
-        const std::string& a_path,
+        const stl::fixed_string& a_path,
         const armorCacheEntry_t& a_entry)
     {
         auto& data = *m_currentEntry;
@@ -347,7 +353,7 @@ namespace CBP
     }
 
     bool UIArmorOverrideEditor::SetCurrentEntry(
-        const std::string& a_path,
+        const stl::fixed_string& a_path,
         bool a_fromDisk)
     {
         const armorCacheEntry_t* data(nullptr);

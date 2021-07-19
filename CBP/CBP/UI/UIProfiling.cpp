@@ -17,7 +17,8 @@ namespace CBP
         m_lastUID(0),
         m_plotUpdateTime("Time/frame", ImVec2(0, 30.0f), false, 200),
         m_plotFramerate("Timer", ImVec2(0, 30.0f), false, 200),
-        m_lastVMIUpdate(IPerfCounter::Query() - 1000000LL)
+        m_lastVMIUpdate(IPerfCounter::Query() - 1000000LL),
+        m_chKey("Stats#Settings")
     {
     }
 
@@ -152,9 +153,7 @@ namespace CBP
                 ImGui::Separator();
             }
 
-            static const std::string chKey("Stats#Settings");
-
-            if (CollapsingHeader(chKey, "Settings"))
+            if (CollapsingHeader(m_chKey, "Settings"))
             {
                 ImGui::PushItemWidth(ImGui::GetFontSize() * -8.0f);
 

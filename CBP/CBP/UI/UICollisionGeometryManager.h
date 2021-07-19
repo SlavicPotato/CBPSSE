@@ -13,7 +13,7 @@ namespace CBP
         public UICommon::UIProfileEditorBase<ColliderProfile>,
         virtual UIBase
     {
-        using resolutionDesc_t = std::pair<std::string, float>;
+        using resolutionDesc_t = std::pair<stl::fixed_string, float>;
 
         static inline constexpr float DEFAULT_ZOOM = 50.0f;
         static inline constexpr float DEFAULT_FOV = 75.0f;
@@ -105,8 +105,8 @@ namespace CBP
         protected:
 
             using vertexType_t = T;
-            using vertexVector_t = stl::vector<vertexType_t>;
-            using indexVector_t = stl::vector<std::uint32_t>;
+            using vertexVector_t = std::vector<vertexType_t>;
+            using indexVector_t = std::vector<std::uint32_t>;
 
         public:
 
@@ -374,9 +374,9 @@ namespace CBP
 
         virtual bool AllowCreateNew() const override;
         virtual bool AllowSave() const override;
-        virtual void OnItemSelected(const std::string& a_item) override;
+        virtual void OnItemSelected(const stl::fixed_string& a_item) override;
         virtual void OnReload(const ColliderProfile& a_profile) override;
-        virtual void OnProfileSave(const std::string& a_item) override;
+        virtual void OnProfileSave(const stl::fixed_string& a_name, ColliderProfile &a_profile) override;
         virtual bool OnDeleteWarningOverride(const std::string& a_key, std::string& a_msg) override;
 
         void SetResolution(const resolutionDesc_t& a_res);
@@ -384,7 +384,7 @@ namespace CBP
         void DrawResolutionCombo();
         void CreateInfoStrings();
 
-        void Load(const std::string& a_item, bool a_force = false);
+        void Load(const stl::fixed_string& a_item, bool a_force = false);
         void Load(const ColliderProfile& a_profile, bool a_force = false);
 
         void QueueModelRelease();
@@ -393,7 +393,7 @@ namespace CBP
         std::unique_ptr<Model> m_model;
 
         SelectedItem<resolutionDesc_t> m_resolution;
-        const stl::vector<resolutionDesc_t> m_resList;
+        const std::vector<resolutionDesc_t> m_resList;
 
         float m_zoom;
 

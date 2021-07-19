@@ -10,6 +10,7 @@
 #include "CBP/Template.h"
 #include "CBP/BoneCast.h"
 #include "CBP/UI/UI.h"
+#include "CBP/StringHolder.h"
 
 #include "gui.h"
 #include "render.h"
@@ -80,7 +81,7 @@ namespace CBP
             CBP::ControllerInstruction::Action::NiNodeUpdateAll);
     }
 
-    void DCBP::NiNodeUpdate(Game::ObjectHandle a_handle)
+    void DCBP::NiNodeUpdate(Game::VMHandle a_handle)
     {
         m_Instance.m_controller->AddTask(
             CBP::ControllerInstruction::Action::NiNodeUpdate, a_handle);
@@ -92,7 +93,7 @@ namespace CBP
             CBP::ControllerInstruction::Action::WeightUpdateAll);
     }
 
-    void DCBP::WeightUpdate(Game::ObjectHandle a_handle)
+    void DCBP::WeightUpdate(Game::VMHandle a_handle)
     {
         m_Instance.m_controller->AddTask(
             CBP::ControllerInstruction::Action::WeightUpdate, a_handle);
@@ -132,7 +133,7 @@ namespace CBP
         CBP::ControllerInstruction::Action a_action)
     {
         if (a_actor != nullptr) {
-            Game::ObjectHandle handle;
+            Game::VMHandle handle;
             if (handle.Get(a_actor))
                 m_Instance.m_controller->AddTask(a_action, handle);
         }
@@ -143,13 +144,13 @@ namespace CBP
     }
 
     void DCBP::DispatchActorTask(
-        Game::ObjectHandle handle,
+        Game::VMHandle handle,
         CBP::ControllerInstruction::Action action)
     {
         m_Instance.m_controller->AddTask(action, handle);
     }
 
-    void DCBP::SetMarkedActor(Game::ObjectHandle a_handle) {
+    void DCBP::SetMarkedActor(Game::VMHandle a_handle) {
         m_Instance.m_controller->SetMarkedActor(a_handle);
     }
 
@@ -184,12 +185,12 @@ namespace CBP
     }
 
     void DCBP::ApplyForce(
-        Game::ObjectHandle a_handle,
+        Game::VMHandle a_handle,
         uint32_t a_steps,
-        const std::string& a_component,
-        const NiPoint3& a_force)
+        const stl::fixed_string& a_component,
+        const btVector3& a_force)
     {
-        DTasks::AddTask([=, c = a_component]()
+        ITaskPool::AddTask([=, c = a_component]()
             {
                 IScopedLock _(GetLock());
 
@@ -197,7 +198,7 @@ namespace CBP
             });
     }
 
-    void DCBP::BoneCastSample(Game::ObjectHandle a_handle, const std::string& a_nodeName)
+    void DCBP::BoneCastSample(Game::VMHandle a_handle, const stl::fixed_string& a_nodeName)
     {
         DTasks::SKSEAddTask([=, n = a_nodeName]() mutable
             {
@@ -207,7 +208,7 @@ namespace CBP
 
                 actor->QueueNiNodeUpdate(true);
 
-                DTasks::AddTask([=, n = std::move(n)]
+                ITaskPool::AddTask([=, n = std::move(n)]
                     {
                         auto actor = a_handle.Resolve<Actor>();
                         if (!actor)
@@ -230,9 +231,37 @@ namespace CBP
             });
     }
 
-    void DCBP::UpdateNodeReferenceData(Game::ObjectHandle a_handle)
+
+    void DCBP::BoneCastSample2(
+        Game::VMHandle a_handle,
+        const stl::fixed_string& a_nodeName)
     {
-        DTasks::AddTask([=]()
+        ITaskPool::AddTask([=]()
+            {
+                auto actor = a_handle.Resolve<Actor>();
+                if (!actor)
+                    return;
+
+                IScopedLock _(GetLock());
+
+                auto& nodeConfig = CBP::IConfig::GetActorNode(a_handle,
+                    Game::GetActorSex(actor) == 0 ? CBP::ConfigGender::Male : CBP::ConfigGender::Female);
+
+                auto it = nodeConfig.find(a_nodeName);
+                if (it == nodeConfig.end())
+                    return;
+
+                if (!CBP::IBoneCast::Update(a_handle, actor, a_nodeName, it->second))
+                    return;
+
+                GetController()->UpdateConfig(a_handle, actor);
+            });
+    }
+
+
+    void DCBP::UpdateNodeReferenceData(Game::VMHandle a_handle)
+    {
+        ITaskPool::AddTask([=]()
             {
                 auto actor = a_handle.Resolve<Actor>();
                 if (!actor)
@@ -268,7 +297,7 @@ namespace CBP
     }
 
     void DCBP::QueueActorCacheUpdate() {
-        DTasks::AddTask(&m_Instance.m_updateActorCacheTask);
+        ITaskPool::AddTask(&m_Instance.m_updateActorCacheTask);
     }
 
 
@@ -316,7 +345,6 @@ namespace CBP
         m_conf.compression_level = std::clamp(GetConfigValue(CKEY_COMPLEVEL, 1), 0, 9);
         m_conf.imguiIni = GetConfigValue(CKEY_IMGUIINI, PLUGIN_IMGUI_INI_FILE);
         m_conf.ui_open_restrictions = GetConfigValue(CKEY_UIOPENRESTRICTIONS, true);
-        m_conf.taskpool_offload = GetConfigValue(CKEY_TPOFFLOAD, false);
 
 #if BT_THREADSAFE
         m_conf.multiThreadedCollisionDetection = GetConfigValue(CKEY_MTDISPATCHER, false);
@@ -329,8 +357,7 @@ namespace CBP
         m_conf.maxCollisionAlgorithmPoolSize = GetConfigValue(CKEY_BTALGOPOOLSIZE, 4096);
 
         m_conf.comboKey = ConfigGetComboKey(GetConfigValue(CKEY_COMBOKEY, 1));
-        m_conf.showKey = std::clamp<UInt32>(GetConfigValue<UInt32>(CKEY_SHOWKEY, DIK_END),
-            1, InputMap::kMacro_NumKeyboardKeys - 1);
+        m_conf.showKey = GetConfigValue<UInt32>(CKEY_SHOWKEY, DIK_END);
     }
 
     void DCBP::PostLoadConfig()
@@ -339,11 +366,8 @@ namespace CBP
         if (m_conf.multiThreadedCollisionDetection)
             m_conf.taskpool_offload = false;
 
-        Message("TP offload: %d, MT collision detection: %d, MT motion: %d",
-            m_conf.taskpool_offload, m_conf.multiThreadedCollisionDetection, m_conf.multiThreadedMotionUpdates);
-#else
-
-        Message("TP offload: %d", m_conf.taskpool_offload);
+        Message("MT collision detection: %d, MT motion: %d",
+            m_conf.multiThreadedCollisionDetection, m_conf.multiThreadedMotionUpdates);
 #endif
     }
 
@@ -410,13 +434,14 @@ namespace CBP
 
     void DCBP::OnCreateArmorNode(TESObjectREFR* a_ref, BipedParam* a_params)
     {
-        auto actor = RTTI<Actor>()(a_ref);
-        if (!actor)
+        if(a_ref->formType != Actor::kTypeID) {
             return;
+        }
 
-        Game::ObjectHandle handle;
-        if (!handle.Get(actor))
+        Game::VMHandle handle;
+        if (!handle.Get(a_ref->formType, a_ref)) {
             return;
+        }
 
         DCBP::DispatchActorTask(handle,
             ControllerInstruction::Action::UpdateArmorOverride);
@@ -427,7 +452,7 @@ namespace CBP
 
     NiAVObject* DCBP::CreateArmorNode_Hook(NiAVObject* a_obj, Biped* a_info, BipedParam* a_params)
     {
-        if (a_obj) {
+        {
             NiPointer<TESObjectREFR> ref;
 
             if (a_info->handle.LookupREFR(ref)) {
@@ -443,24 +468,21 @@ namespace CBP
         LoadConfig();
         PostLoadConfig();
 
-        auto hf =
-            m_conf.taskpool_offload ?
-            uintptr_t(MainLoopOffload_Hook) :
-            uintptr_t(MainLoop_Hook);
-
         ASSERT(Hook::Call5(
+            ISKSE::GetBranchTrampoline(),
             MainLoopAddr,
-            hf,
+            uintptr_t(MainLoop_Hook),
             mainLoopUpdateFunc_o));
 
         ASSERT(Hook::Call5(
+            ISKSE::GetBranchTrampoline(),
             MainInitHook_Target,
             uintptr_t(MainInit_Hook),
             m_Instance.mainInitHook_o));
 
         struct CreateArmorNodeInject : JITASM::JITASM {
             CreateArmorNodeInject(uintptr_t targetAddr
-            ) : JITASM()
+            ) : JITASM(ISKSE::GetLocalTrampoline())
             {
                 Xbyak::Label callLabel;
                 Xbyak::Label nullLabel;
@@ -490,18 +512,12 @@ namespace CBP
 
         {
             CreateArmorNodeInject code(CreateArmorNodePostAddr);
-            g_branchTrampoline.Write5Branch(CreateArmorNodePostAddr, code.get());
+            ISKSE::GetBranchTrampoline().Write5Branch(CreateArmorNodePostAddr, code.get());
         }
 
-        if (m_conf.taskpool_offload) {
-            m_controller = std::make_unique<CBP::ControllerTaskSim>();
-            Message("Taskpool offload enabled");
-        }
-        else {
-            m_controller = std::make_unique<CBP::ControllerTask>();
-        }
+        m_controller = std::make_unique<CBP::ControllerTask>();
 
-        DTasks::AddTaskFixed(m_controller.get());
+        ITaskPool::AddTaskFixed(m_controller.get());
 
         IEvents::RegisterForEvent(Event::OnMessage, MessageHandler);
         IEvents::RegisterForEvent(Event::OnRevert, RevertHandler);
@@ -511,7 +527,7 @@ namespace CBP
         IEvents::RegisterForEvent(Event::OnExit, OnExit);
         //IEvents::RegisterForEvent(Event::OnFormDelete, OnFormDelete);
 
-        SKSE::g_papyrus->Register(RegisterFuncs);
+        ISKSE::GetSingleton().GetInterface<SKSEPapyrusInterface>()->Register(RegisterFuncs);
 
         if (m_conf.debug_renderer)
         {
@@ -535,18 +551,11 @@ namespace CBP
             GetUIRenderTask().EnableChecks(m_conf.ui_open_restrictions);
 
             Message("UI enabled");
-
         }
-
-        IConfig::Initialize();
-
-        LoadProfiles();
     }
 
     void DCBP::MainInit_Hook()
     {
-        DTasks::InstallHooks();
-
         auto& driverConf = GetDriverConfig();
 
         ICollision::Initialize(
@@ -558,6 +567,10 @@ namespace CBP
             driverConf.maxPersistentManifoldPoolSize,
             driverConf.maxCollisionAlgorithmPoolSize
         );
+
+        IConfig::Initialize();
+
+        m_Instance.LoadProfiles();
 
         m_Instance.mainInitHook_o();
     }
@@ -617,15 +630,13 @@ namespace CBP
 
         IScopedLock _(GetLock());
 
-        auto& globalConf = CBP::IConfig::GetGlobal();
-
         try
         {
             m_Instance.m_renderer->Draw();
         }
         catch (const std::exception& e) {
             m_Instance.Error("%s: %s", __FUNCTION__, e.what());
-            globalConf.debugRenderer.enabled = false;
+            IConfig::GetGlobal().debugRenderer.enabled = false;
             UpdateDebugRendererState();
         }
     }
@@ -652,15 +663,6 @@ namespace CBP
 
         CBP::ICollision::Destroy();
     }
-
-    /*void DCBP::OnFormDelete(Event, void* a_data)
-    {
-        auto pHandle = static_cast<Game::ObjectHandle*>(a_data);
-
-        IScopedLock _(GetLock());
-
-        m_Instance.m_controller->RemoveActor(*pHandle);
-    }*/
 
     void DCBP::MessageHandler(Event, void* args)
     {
@@ -689,6 +691,8 @@ namespace CBP
 
             {
                 IScopedLock _(GetLock());
+
+                CBP::BSStringHolder::Create();
 
                 if (IData::PopulateRaceList())
                     m_Instance.Debug("%zu TESRace forms found", IData::RaceListSize());
@@ -794,7 +798,7 @@ namespace CBP
             return false;
         }
 
-        stl::stringstream out;
+        std::stringstream out;
         std::streamsize length;
 
         try
@@ -886,9 +890,9 @@ namespace CBP
 
         auto& iface = m_Instance.m_serialization;
 
-        stl::stringstream ss;
+        std::stringstream ss;
         boost::archive::binary_oarchive data(ss);
-        stl::string compressed;
+        std::string compressed;
         IStringSink out(compressed);
         UInt32 length;
 
@@ -970,7 +974,7 @@ namespace CBP
 
         IScopedLock _(GetLock());
 
-        GetController()->ClearActors(false, true);
+        GetController()->ClearActors(false, true, true);
 
         IConfig::ReleaseActorPhysicsHolder();
         IConfig::ReleaseActorNodeHolder();
@@ -1072,7 +1076,7 @@ namespace CBP
     void DCBP::UIKeyPressHandler::OnKeyPressed()
     {
         if (!Game::InPausedMenu())
-            DTasks::AddTask(&m_Instance.m_taskToggle);
+            ITaskPool::AddTask(&m_Instance.m_taskToggle);
     }
 
     void DCBP::DebugRendererKeyPressHandler::OnKeyPressed()
@@ -1153,7 +1157,7 @@ namespace CBP
 
     void DCBP::OpenUI(bool a_open)
     {
-        DTasks::AddTask<OpenUITask>(a_open);
+        ITaskPool::AddTask<OpenUITask>(a_open);
     }
 
     void DCBP::UpdateActorCacheTask::Run()

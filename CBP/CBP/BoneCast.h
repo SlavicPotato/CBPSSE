@@ -2,10 +2,23 @@
 
 #include "ColliderData.h"
 
+#include "Data/PluginInfo.h"
+
+namespace SKMP
+{
+    struct pluginInfo_t;
+}
+
+namespace CBP
+{
+    using bonecast_cache_key_t = std::pair<Game::VMHandle, stl::fixed_string>;
+}
+
+STD_SPECIALIZE_HASH(CBP::bonecast_cache_key_t);
+
 namespace CBP
 {
     struct configNode_t;
-    struct pluginInfo_t;
 
     struct BoneCacheUpdateID
     {
@@ -78,8 +91,8 @@ namespace CBP
 
     public:
 
-        using key_t = std::pair<Game::ObjectHandle, std::string>;
-        using data_storage_t = stl::iunordered_map<key_t, CacheEntry>;
+        using key_t = bonecast_cache_key_t;
+        using data_storage_t = std::unordered_map<key_t, CacheEntry>;
 
         using iterator = data_storage_t::iterator;
         using const_iterator = data_storage_t::const_iterator;
@@ -107,20 +120,20 @@ namespace CBP
 
         template <class T, is_iterator_type<T> = 0>
         [[nodiscard]] bool Get(
-            Game::ObjectHandle a_actor,
-            const std::string& a_nodeName,
+            Game::VMHandle a_actor,
+            const stl::fixed_string& a_nodeName,
             bool a_read,
             T& a_result);
 
         template <class T, is_data_type<T> = 0>
         [[nodiscard]] iterator Add(
-            Game::ObjectHandle a_actor,
-            const std::string& a_nodeName,
+            Game::VMHandle a_actor,
+            const stl::fixed_string& a_nodeName,
             T&& a_data);
 
         [[nodiscard]] bool Remove(
-            Game::ObjectHandle a_actor,
-            const std::string& a_nodeName);
+            Game::VMHandle a_actor,
+            const stl::fixed_string& a_nodeName);
 
         template <class T, is_iterator_type<T> = 0>
         void Remove(const T& a_it);
@@ -156,13 +169,13 @@ namespace CBP
     public:
 
         bool Read(
-            Game::ObjectHandle a_handle,
-            const std::string& a_nodeName,
+            Game::VMHandle a_handle,
+            const stl::fixed_string& a_nodeName,
             ColliderDataStoragePair& a_out);
 
         bool Write(
-            Game::ObjectHandle a_handle,
-            const std::string& a_nodeName,
+            Game::VMHandle a_handle,
+            const stl::fixed_string& a_nodeName,
             const ColliderDataStoragePair& a_in);
 
         /*[[nodiscard]] SKMP_FORCEINLINE auto GetLock() const {
@@ -176,8 +189,8 @@ namespace CBP
     private:
 
         [[nodiscard]] void MakeKey(
-            Game::ObjectHandle a_handle,
-            const std::string& a_nodeName,
+            Game::VMHandle a_handle,
+            const stl::fixed_string& a_nodeName,
             std::string& a_out) const;
 
         [[nodiscard]] const pluginInfo_t* GetPluginInfo(
@@ -212,7 +225,7 @@ namespace CBP
                 m_triangles.reserve(40);
             }
 
-            stl::vector<Triangle*> m_triangles;
+            std::vector<Triangle*> m_triangles;
             std::uint32_t m_index;
             bool m_hasVertex;
             MeshPoint m_vertex;
@@ -222,14 +235,20 @@ namespace CBP
     public:
 
         [[nodiscard]] static bool Get(
-            Game::ObjectHandle a_handle,
-            const std::string& a_nodeName,
+            Game::VMHandle a_handle,
+            const stl::fixed_string& a_nodeName,
             bool a_read,
             BoneCastCache::const_iterator& a_result);
 
         [[nodiscard]] static bool Get(
-            Game::ObjectHandle a_handle,
-            const std::string& a_nodeName,
+            Game::VMHandle a_handle,
+            const stl::fixed_string& a_nodeName,
+            bool a_read,
+            BoneCastCache::iterator& a_result);
+
+        [[nodiscard]] static bool Get(
+            Game::VMHandle a_handle,
+            const stl::fixed_string& a_nodeName,
             const configNode_t& a_nodeConfig,
             BoneResult& a_out);
 
@@ -239,14 +258,14 @@ namespace CBP
             BoneResult& a_out);
 
         [[nodiscard]] static bool Update(
-            Game::ObjectHandle a_handle,
-            const std::string& a_nodeName,
+            Game::VMHandle a_handle,
+            const stl::fixed_string& a_nodeName,
             const configNode_t& a_nodeConfig);
 
         [[nodiscard]] static bool Update(
-            Game::ObjectHandle a_handle,
+            Game::VMHandle a_handle,
             Actor* a_actor,
-            const std::string& a_nodeName,
+            const stl::fixed_string& a_nodeName,
             const configNode_t& a_nodeConfig);
 
         [[nodiscard]] SKMP_FORCEINLINE static auto GetCacheSize() {
@@ -271,16 +290,16 @@ namespace CBP
             return m_Instance.m_cache;
         }
 
-        [[nodiscard]] static bool Get(
-            Game::ObjectHandle a_handle,
-            const std::string& a_nodeName,
-            bool a_read,
-            BoneCastCache::iterator& a_result);
-
         [[nodiscard]] static bool GetGeometry(
             Actor* a_actor,
-            const std::string& a_nodeName,
-            const std::string& a_shape,
+            const stl::fixed_string& a_nodeName,
+            const stl::fixed_string& a_shape,
+            ColliderDataStorage& a_result);
+        
+        [[nodiscard]] static bool GetSkinGeometry(
+            Actor* a_actor,
+            const stl::fixed_string& a_nodeName,
+            const stl::fixed_string& a_shape,
             ColliderDataStorage& a_result);
 
         static void RemoveDuplicateVertices(

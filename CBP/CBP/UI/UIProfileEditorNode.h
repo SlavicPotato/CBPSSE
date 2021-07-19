@@ -24,13 +24,13 @@ namespace CBP
 
         virtual void UpdateNodeData(
             int,
-            const std::string& a_node,
+            const stl::fixed_string& a_node,
             const NodeProfile::base_type::mapped_type& a_data,
             bool a_reset) override;
 
         virtual void RemoveNodeData(
             int a_handle,
-            const std::string& a_node) override;
+            const stl::fixed_string& a_node) override;
 
         virtual void DrawOptions(NodeProfile& a_profile) override;
 

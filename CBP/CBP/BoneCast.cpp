@@ -11,7 +11,7 @@
 #include "Drivers/data.h"
 
 #include "Common/Game.h"
-#include "Data/PluginInfo.h"
+#include <ext/Model.h>
 
 namespace CBP
 {
@@ -110,7 +110,7 @@ namespace CBP
 
             //_DMESSAGE(">>>> %s", bone->m_name);
 
-            if (a_nodeName.data != bone->m_name)
+            if (a_nodeName != bone->m_name)
                 continue;
 
             auto& boneData = skinData->m_pkBoneData[i];
@@ -604,8 +604,8 @@ namespace CBP
 
     bool IBoneCast::GetGeometry(
         Actor* a_actor,
-        const std::string& a_nodeName,
-        const std::string& a_shape,
+        const stl::fixed_string& a_nodeName,
+        const stl::fixed_string& a_shape,
         ColliderDataStorage& a_result)
     {
         if (a_nodeName.empty())
@@ -630,7 +630,7 @@ namespace CBP
 
                 if (!a_shape.empty())
                 {
-                    if (a_object->m_name != shape.data)
+                    if (a_object->m_name != shape)
                         return false;
                 }
 
@@ -662,7 +662,7 @@ namespace CBP
                 {
                     FaceGen::GetSingleton()->isReset = 0;
 
-                    for (int t = BSFaceGenAnimationData::kKeyframeType_Expression2; t <= BSFaceGenAnimationData::kKeyframeType_Phoneme2; t++)
+                    for (int t = BSFaceGenAnimationData::kKeyframeType_Expression1; t <= BSFaceGenAnimationData::kKeyframeType_Phoneme2; t++)
                     {
                         auto& keyframe = animationData->keyFrames[t];
                         for (decltype(keyframe.count) i = 0; i < keyframe.count; i++) {
@@ -679,7 +679,7 @@ namespace CBP
                     {
                         if (!a_shape.empty())
                         {
-                            if (a_object->m_name != shape.data)
+                            if (a_object->m_name != shape)
                                 return false;
                         }
 
@@ -688,7 +688,112 @@ namespace CBP
             }
         }
 
+        if (!found && !a_shape.empty())
+        {
+            NiNode* roots[] =
+            {
+                a_actor->GetNiRootNode(false),
+                a_actor->GetNiRootNode(true)
+            };
+
+            if (roots[0] == roots[1]) {
+                roots[1] = nullptr;
+            }
+
+            for (auto root : roots)
+            {
+                if (!root) {
+                    continue;
+                }
+
+                auto object = root->GetObjectByName(shape);
+                if (!object) {
+                    continue;
+                }
+                
+                found = ExtractGeometry(a_actor, nodeName, object, a_result);
+
+                if (found) {
+                    break;
+                }
+            }
+        }
+
         return found;
+    }
+
+    bool IBoneCast::GetSkinGeometry(
+        Actor* a_actor,
+        const stl::fixed_string& a_nodeName,
+        const stl::fixed_string& a_shape,
+        ColliderDataStorage& a_result)
+    {
+        using namespace Util::Model;
+
+        if (a_nodeName.empty())
+            return false;
+
+        auto skin = Game::GetActorSkin(a_actor);
+        if (!skin) {
+            return false;
+        }
+
+        BSFixedString nodeName(a_nodeName.c_str());
+        BSFixedString shape(a_shape.c_str());
+
+        auto sex = Game::GetActorSex(a_actor);
+
+        Util::Model::ModelLoader modelLoader;
+
+        for (auto arma : skin->armorAddons)
+        {
+            if (!arma) {
+                continue;
+            }
+
+            auto name = arma->models[0][sex == 0 ? 0 : 1].GetModelName();
+
+            if (!name) {
+                continue;
+            }
+
+            if (!modelLoader.Load(name)) {
+                continue;
+            }
+
+            auto& stream = modelLoader.GetStream();
+
+            for (auto e : stream->m_rootObjects)
+            {
+                if (!e) {
+                    continue;
+                }
+
+                auto object = ni_cast(e, NiAVObject);
+                if (!object) {
+                    continue;
+                }
+
+                if (Game::Node::Traverse2(object,
+                    [&](NiAVObject* a_object)
+                    {
+                        if (!a_shape.empty())
+                        {
+                            if (a_object->m_name != shape)
+                                return false;
+                        }
+
+                        return ExtractGeometry(a_actor, nodeName, a_object, a_result);
+                    }
+                )) 
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+        
     }
 
     BoneCastCache::BoneCastCache(
@@ -703,8 +808,8 @@ namespace CBP
 
     template <class T, BoneCastCache::is_data_type<T>>
     auto BoneCastCache::Add(
-        Game::ObjectHandle a_handle,
-        const std::string& a_nodeName,
+        Game::VMHandle a_handle,
+        const stl::fixed_string& a_nodeName,
         T&& a_data) -> iterator
     {
         EvictOverflow();
@@ -737,10 +842,10 @@ namespace CBP
     }
 
     bool BoneCastCache::Remove(
-        Game::ObjectHandle a_handle,
-        const std::string& a_nodeName)
+        Game::VMHandle a_handle,
+        const stl::fixed_string& a_nodeName)
     {
-        auto it = m_data.find(key_t(a_handle, a_nodeName));
+        auto it = m_data.find(std::make_pair(a_handle, a_nodeName));
         if (it == m_data.end())
             return false;
 
@@ -773,8 +878,8 @@ namespace CBP
 
     template <class T, BoneCastCache::is_iterator_type<T>>
     bool BoneCastCache::Get(
-        Game::ObjectHandle a_handle,
-        const std::string& a_nodeName,
+        Game::VMHandle a_handle,
+        const stl::fixed_string& a_nodeName,
         bool a_read,
         T& a_result)
     {
@@ -790,8 +895,16 @@ namespace CBP
             return false;
 
         ColliderDataStoragePair cacheEntry;
-        if (!m_iio.Read(a_handle, a_nodeName, cacheEntry))
+        if (!m_iio.Read(a_handle, a_nodeName, cacheEntry)) 
+        {
+            m_iio.Error("%s: [%.8X] read failed [%s]: %s",
+                __FUNCTION__,
+                a_handle.GetFormID().get(),
+                a_nodeName.c_str(),
+                m_iio.GetLastException().what());
+
             return false;
+        }
 
         a_result = Add(a_handle, a_nodeName, std::move(cacheEntry));
 
@@ -799,8 +912,8 @@ namespace CBP
     }
 
     bool IBoneCast::Get(
-        Game::ObjectHandle a_handle,
-        const std::string& a_nodeName,
+        Game::VMHandle a_handle,
+        const stl::fixed_string& a_nodeName,
         bool a_read,
         BoneCastCache::iterator& a_result)
     {
@@ -808,8 +921,8 @@ namespace CBP
     }
 
     bool IBoneCast::Get(
-        Game::ObjectHandle a_handle,
-        const std::string& a_nodeName,
+        Game::VMHandle a_handle,
+        const stl::fixed_string& a_nodeName,
         bool a_read,
         BoneCastCache::const_iterator& a_result)
     {
@@ -817,8 +930,8 @@ namespace CBP
     }
 
     bool IBoneCast::Get(
-        Game::ObjectHandle a_handle,
-        const std::string& a_nodeName,
+        Game::VMHandle a_handle,
+        const stl::fixed_string& a_nodeName,
         const configNode_t& a_nodeConfig,
         BoneResult& a_out)
     {
@@ -882,8 +995,8 @@ namespace CBP
     }
 
     bool IBoneCast::Update(
-        Game::ObjectHandle a_handle,
-        const std::string& a_nodeName,
+        Game::VMHandle a_handle,
+        const stl::fixed_string& a_nodeName,
         const configNode_t& a_nodeConfig)
     {
         auto actor = a_handle.Resolve<Actor>();
@@ -894,20 +1007,34 @@ namespace CBP
     }
 
     bool IBoneCast::Update(
-        Game::ObjectHandle a_handle,
+        Game::VMHandle a_handle,
         Actor* a_actor,
-        const std::string& a_nodeName,
+        const stl::fixed_string& a_nodeName,
         const configNode_t& a_nodeConfig)
     {
         ColliderDataStoragePair cacheEntry;
 
-        if (!IBoneCast::GetGeometry(
-            a_actor,
-            a_nodeName,
-            a_nodeConfig.ex.bcShape,
-            cacheEntry.first))
+        if (a_nodeConfig.bl.b.bcSkin)
         {
-            return false;
+            if (!IBoneCast::GetSkinGeometry(
+                a_actor,
+                a_nodeName,
+                a_nodeConfig.ex.bcShape,
+                cacheEntry.first))
+            {
+                return false;
+            }
+        }
+        else
+        {
+            if (!IBoneCast::GetGeometry(
+                a_actor,
+                a_nodeName,
+                a_nodeConfig.ex.bcShape,
+                cacheEntry.first))
+            {
+                return false;
+            }
         }
 
         auto& cache = GetCache();
@@ -918,8 +1045,11 @@ namespace CBP
 
         if (!m_Instance.m_iio.Write(a_handle, a_nodeName, r->second.m_data))
         {
-            m_Instance.m_iio.Error("[%X] write failed [%s]: %s",
-                a_handle, a_nodeName.c_str(), m_Instance.m_iio.GetLastException().what());
+            m_Instance.m_iio.Error("%s: [%.8X] write failed [%s]: %s",
+                __FUNCTION__,
+                a_handle.GetFormID().get(),
+                a_nodeName.c_str(), 
+                m_Instance.m_iio.GetLastException().what());
         }
 
         //_DMESSAGE("cache usage: %zu", cache.GetSize());
@@ -928,8 +1058,8 @@ namespace CBP
     }
 
     bool IBoneCastIO::Read(
-        Game::ObjectHandle a_handle,
-        const std::string& a_nodeName,
+        Game::VMHandle a_handle,
+        const stl::fixed_string& a_nodeName,
         ColliderDataStoragePair& a_out)
     {
         try
@@ -968,8 +1098,8 @@ namespace CBP
     }
 
     bool IBoneCastIO::Write(
-        Game::ObjectHandle a_handle,
-        const std::string& a_nodeName,
+        Game::VMHandle a_handle,
+        const stl::fixed_string& a_nodeName,
         const ColliderDataStoragePair& a_in)
     {
         try
@@ -1046,8 +1176,8 @@ namespace CBP
     }
 
     void IBoneCastIO::MakeKey(
-        Game::ObjectHandle a_handle,
-        const std::string& a_nodeName,
+        Game::VMHandle a_handle,
+        const stl::fixed_string& a_nodeName,
         std::string& a_out) const
     {
         auto formID = a_handle.GetFormID();

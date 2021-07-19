@@ -7,6 +7,9 @@
 #include <ext/INIReader.h>
 #include <ext/StrHelpers.h>
 #include <ext/ID3D11.h>
+#include <ext/StringCache.h>
+#include <ext/ITaskPool.h>
+#include <ext/GameCommon.h>
 #include <common/IMemPool.h>
 #include <common/ICriticalSection.h>
 #include <skse64/PluginAPI.h>
@@ -29,6 +32,7 @@
 #include <skse64/NiExtraData.h>
 #include <skse64/NiGeometry.h>
 #include <skse64/GameInput.h>
+#include <skse64/FormTraits.h>
 
 
 #include <map>
@@ -124,5 +128,6 @@ namespace fs = std::filesystem;
 
 #include "plugin.h"
 #include "paths.h"
+#include "skse.h"
 
 #endif //PCH_H

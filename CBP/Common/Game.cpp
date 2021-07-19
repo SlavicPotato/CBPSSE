@@ -2,6 +2,8 @@
 
 #include "Game.h"
 
+#include <ext/GameCommon.h>
+
 namespace Game
 {
 
@@ -20,58 +22,149 @@ namespace Game
         }
     }
 
-    void AIProcessVisitActors(const std::function<void(Actor*)>& a_func)
+    namespace Node
     {
-        auto player = *g_thePlayer;
-
-        if (player)
-            a_func(player);
-
-        auto pl = Game::ProcessLists::GetSingleton();
-        if (pl == nullptr)
-            return;
-
-        for (UInt32 i = 0; i < pl->highActorHandles.count; i++)
+        void Traverse(NiAVObject* parent, const std::function<void(NiAVObject*)>& a_func)
         {
-            NiPointer<TESObjectREFR> ref;
+            a_func(parent);
 
-            if (!pl->highActorHandles[i].LookupREFR(ref))
-                continue;
+            auto node = parent->GetAsNiNode();
+            if (!node)
+                return;
 
-            if (ref->formType != Actor::kTypeID)
-                continue;
+            for (UInt16 i = 0; i < node->m_children.m_emptyRunStart; i++)
+            {
+                auto object = node->m_children.m_data[i];
+                if (object)
+                    Traverse(object, a_func);
+            }
+        }
 
-            auto actor = RTTI<Actor>()(ref);
 
-            if (actor)
-                a_func(actor);
+        bool Traverse2(NiAVObject* parent, const std::function<bool(NiAVObject*)>& a_func)
+        {
+            if (a_func(parent))
+                return true;
+
+            auto node = parent->GetAsNiNode();
+            if (!node)
+                return false;
+
+            for (UInt16 i = 0; i < node->m_children.m_emptyRunStart; i++)
+            {
+                auto object = node->m_children.m_data[i];
+                if (object) {
+                    if (Traverse2(object, a_func))
+                        return true;
+                }
+            }
+
+            return false;
+        }
+
+        // skee64
+        bool TraverseBiped(TESObjectREFR* a_ref, const std::function<bool(bool, UInt32, NiNode*, NiAVObject*)>& a_func)
+        {
+            for (SInt32 k = 0; k <= 1; ++k)
+            {
+                auto weightModel = a_ref->GetBiped(k);
+                if (weightModel && weightModel->bipedData)
+                {
+                    auto rootNode = a_ref->GetNiRootNode(k);
+
+                    for (int i = 0; i < 42; ++i)
+                    {
+                        NiAVObject* node = weightModel->bipedData->objects[i].object;
+                        if (node)
+                        {
+                            if (a_func(k == 1, i, rootNode, node))
+                                return true;
+                        }
+                    }
+                    for (int i = 0; i < 42; ++i)
+                    {
+                        NiAVObject* node = weightModel->bipedData->unk13C0[i].object;
+                        if (node)
+                        {
+                            if (a_func(k == 1, i, rootNode, node))
+                                return true;
+                        }
+                    }
+                }
+            }
+
+            return false;
+
+        }
+
+        NiAVObject* Find(NiAVObject* parent, const std::function<bool(NiAVObject*)>& a_func)
+        {
+            if (a_func(parent))
+                return parent;
+
+            auto node = parent->GetAsNiNode();
+            if (node)
+            {
+                for (UInt16 i = 0; i < node->m_children.m_emptyRunStart; i++)
+                {
+                    auto object = node->m_children.m_data[i];
+                    if (object) {
+                        auto res = Find(object, a_func);
+                        if (res != nullptr)
+                            return res;
+                    }
+                }
+            }
+
+            return nullptr;
         }
     }
 
-    static auto s_processLists = IAL::Addr<ProcessLists**>(514167);
-
-    ProcessLists* ProcessLists::GetSingleton()
+    TESObjectARMO* GetActorSkin(Actor* a_actor)
     {
-        return *s_processLists;
+        auto npc = a_actor->baseForm ?
+            a_actor->baseForm->As<TESNPC>() :
+            nullptr;
+
+        if (npc) {
+            if (npc->skinForm.skin)
+                return npc->skinForm.skin;
+        }
+
+        auto actorRace = a_actor->race;
+        if (actorRace)
+            return actorRace->skin.skin;
+
+        if (npc) {
+            actorRace = npc->race.race;
+            if (actorRace)
+                return actorRace->skin.skin;
+        }
+
+        return nullptr;
     }
 
-    bool ProcessLists::GuardsPursuing(Actor* a_actor)
+    float GetNPCWeight(TESNPC* a_npc)
     {
-        return _GuardsPursuing(a_actor, 0x15, 0) != 0;
+        if (a_npc->nextTemplate)
+        {
+            auto templ = a_npc->GetRootTemplate();
+            if (templ)
+                return templ->weight;
+        }
+
+        return a_npc->weight;
     }
 
-    static auto s_BSMain = IAL::Addr<BSMain**>(516943);
-
-    BSMain* BSMain::GetSingleton()
+    float GetActorWeight(Actor* a_actor)
     {
-        return *s_BSMain;
-    }
+        if (auto actorBase = a_actor->baseForm; actorBase) {
+            if (auto npc = actorBase->As<TESNPC>(); npc) {
+                return GetNPCWeight(npc);
+            }
+        }
 
-    static Unk00* s_Unk00 = IAL::Addr<Unk00*>(523657);
-
-    Unk00* Unk00::GetSingleton()
-    {
-        return s_Unk00;
+        return a_actor->GetWeight();
     }
 
 }

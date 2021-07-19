@@ -21,16 +21,7 @@ namespace CBP
         nodeConfigList_t& a_nodeConfig)
     {
     }
-
-    template <class T, UIEditorID ID>
-    std::string UISimComponent<T, ID>::GetGCSID(
-        const std::string& a_name) const
-    {
-        std::ostringstream ss;
-        ss << "GUISC#" << Enum::Underlying(ID) << "#" << a_name;
-        return ss.str();
-    }
-
+    
     template <class T, UIEditorID ID>
     void UISimComponent<T, ID>::Propagate(
         configComponents_t& a_dl,
@@ -207,7 +198,7 @@ namespace CBP
 
         for (const auto& g : cg)
         {
-            if (StrHelpers::iequal(g.first, a_entry.first))
+            if (g.first == a_entry.first)
                 continue;
 
             nodeList.clear();
@@ -292,6 +283,8 @@ namespace CBP
             return a_cacheval.second.vf;
         case 1:
             return a_baseval * a_cacheval.second.vf;
+        case 2:
+            return a_baseval + a_cacheval.second.vf;
         default:
             return a_baseval;
         }
@@ -451,7 +444,7 @@ namespace CBP
                             if (!data.empty())
                                 a_pair.second.ex.colMesh = data.begin()->first;
                             else
-                                a_pair.second.ex.colMesh.clear();
+                                a_pair.second.ex.colMesh = "";
                         }
                     }
 
@@ -479,7 +472,7 @@ namespace CBP
             {
                 for (const auto& e : data)
                 {
-                    bool selected = StrHelpers::iequal(a_pair.second.ex.colMesh, e.first);
+                    bool selected = a_pair.second.ex.colMesh == e.first;
                     if (selected)
                         if (ImGui::IsWindowAppearing()) ImGui::SetScrollHereY();
 
@@ -544,7 +537,10 @@ namespace CBP
         UIMainItemFilter<ID>(MiscHelpText::dataFilterPhys, true),
         m_eraseCurrent(false),
         m_cscStr("Collider shape"),
-        m_csStr("Constraint shapes")
+        m_csStr("Constraint shapes"),
+        m_cicUISC("UISC"),
+        m_cicGUISC("GUISC"),
+        m_cicCSSID("UISC")
     {
     }
 
@@ -553,7 +549,10 @@ namespace CBP
         UIMainItemFilter<ID>(a_filter),
         m_eraseCurrent(false),
         m_cscStr("Collider shape"),
-        m_csStr("Constraint shapes")
+        m_csStr("Constraint shapes"),
+        m_cicUISC("UISC"),
+        m_cicGUISC("GUISC"),
+        m_cicCSSID("UISC")
     {
     }
 
@@ -587,6 +586,8 @@ namespace CBP
         {
             auto& e = dm[i];
 
+            ImGui::PushID(std::addressof(e));
+
             auto addr = reinterpret_cast<std::uintptr_t>(std::addressof(a_pair.second)) + e.second.offset;
             float* pValue = reinterpret_cast<float*>(addr);
 
@@ -610,20 +611,20 @@ namespace CBP
                 if (showCurrentGroup)
                 {
                     openState = Tree(
-                        GetCSSID(a_pair.first, e.second.groupName.c_str()),
+                        GetCSSID(a_pair.first, e.second.groupName),
                         e.second.groupName.c_str(),
                         (e.second.flags & DescUIFlags::Collapsed) != DescUIFlags::Collapsed);
 
                     if (openState)
                     {
-                        if (e.second.groupType == DescUIGroupType::Collisions) 
+                        if (groupType == DescUIGroupType::Collisions)
                         {
                             if (m_sliderFilter->Test(m_cscStr)) 
                             {
                                 DrawColliderShapeCombo(a_handle, a_data, a_pair, e, a_nodeList);
                             }
                         }
-                        else if (e.second.groupType == DescUIGroupType::PhysicsMotionConstraints) 
+                        else if (groupType == DescUIGroupType::PhysicsMotionConstraints)
                         {
                             if (m_sliderFilter->Test(m_csStr)) {
                                 DrawMotionConstraintSelectors(a_handle, a_data, a_pair, e);
@@ -697,6 +698,13 @@ namespace CBP
                     if (f == MotionConstraints::None)
                         goto _end;
                 }
+
+                if ((e.second.flags & DescUIFlags::BeginSubGroup) == DescUIFlags::BeginSubGroup)
+                {
+                    ImGui::TextWrapped(e.second.subGroupName.c_str());
+                    ImGui::Indent();
+                }
+
             }
 
             if (!drawingGroup || groupShown)
@@ -707,7 +715,7 @@ namespace CBP
                     float3Index = 0;
                     drawingFloat3 = true;
 
-                    ImGui::PushID(currentDesc->descTag.c_str());
+                    ImGui::PushID(std::addressof(currentDesc->descTag));
 
                     if ((e.second.flags & DescUIFlags::Float3Mirror) == DescUIFlags::Float3Mirror) 
                     {
@@ -780,6 +788,14 @@ namespace CBP
                 }
             }
 
+            if (groupShown)
+            {
+                if ((e.second.flags & DescUIFlags::EndSubGroup) == DescUIFlags::EndSubGroup)
+                {
+                    ImGui::Unindent();
+                }
+            }
+
         _end:;
 
             if ((e.second.flags & DescUIFlags::EndGroup) == DescUIFlags::EndGroup)
@@ -791,6 +807,8 @@ namespace CBP
                 drawingGroup = false;
                 groupType = DescUIGroupType::None;
             }
+
+            ImGui::PopID();
         }
 
         ImGui::PopItemWidth();
@@ -920,7 +938,7 @@ namespace CBP
     template <class T, UIEditorID ID>
     const armorCacheEntry_t::mapped_type* UISimComponent<T, ID>::GetArmorOverrideSection(
         T m_handle,
-        const std::string& a_comp) const
+        const stl::fixed_string& a_comp) const
     {
         return nullptr;
     }

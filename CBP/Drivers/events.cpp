@@ -10,23 +10,27 @@ namespace CBP
     IEvents IEvents::m_Instance;
 
     IEvents::IEvents() :
-        m_backLog(4000)
+        m_backLog(2000)
     {
     }
 
     void IEvents::Initialize()
     {
-        SKSE::g_messaging->RegisterListener(SKSE::g_pluginHandle, "SKSE", MessageHandler);
+        auto& skse = ISKSE::GetSingleton();
 
-        SKSE::g_serialization->SetUniqueID(SKSE::g_pluginHandle, 'EWBC');
-        SKSE::g_serialization->SetRevertCallback(SKSE::g_pluginHandle, RevertHandler);
-        SKSE::g_serialization->SetSaveCallback(SKSE::g_pluginHandle, SaveGameHandler);
-        SKSE::g_serialization->SetLoadCallback(SKSE::g_pluginHandle, LoadGameHandler);
+        skse.GetInterface<SKSEMessagingInterface>()->RegisterListener(skse.GetPluginHandle(), "SKSE", MessageHandler);
+
+        auto si = skse.GetInterface<SKSESerializationInterface>();
+
+        si->SetUniqueID(skse.GetPluginHandle(), 'EWBC');
+        si->SetRevertCallback(skse.GetPluginHandle(), RevertHandler);
+        si->SetSaveCallback(skse.GetPluginHandle(), SaveGameHandler);
+        si->SetLoadCallback(skse.GetPluginHandle(), LoadGameHandler);
         //SKSE::g_serialization->SetFormDeleteCallback(SKSE::g_pluginHandle, FormDeleteHandler);
 
         struct MessagePumpExitInject : JITASM::JITASM {
             MessagePumpExitInject(uintptr_t targetAddr
-            ) : JITASM()
+            ) : JITASM(ISKSE::GetLocalTrampoline())
             {
                 Xbyak::Label callLabel;
                 Xbyak::Label retnLabel;
@@ -44,7 +48,7 @@ namespace CBP
         };
 
         MessagePumpExitInject code(ExitGameAddr);
-        g_branchTrampoline.Write6Branch(ExitGameAddr, code.get());
+        ISKSE::GetBranchTrampoline().Write6Branch(ExitGameAddr, code.get());
     }
 
     void IEvents::AttachToLogger()

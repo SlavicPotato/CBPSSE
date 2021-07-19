@@ -221,7 +221,7 @@ namespace CBP
         auto numVertices = static_cast<std::size_t>(a_data->m_numVertices);
         auto numIndices = static_cast<std::size_t>(a_data->m_numIndices);
 
-        stl::vector<DirectX::XMVECTOR> normals;
+        stl::vector_simd<DirectX::XMVECTOR> normals;
 
         normals.resize(numVertices);
 
@@ -608,8 +608,10 @@ namespace CBP
 
                     if (hovered)
                     {
-                        if (io.MouseWheel != 0.0f) {
+                        if (io.MouseWheel != 0.0f) 
+                        {
                             m_zoom = std::max(m_zoom - io.MouseWheel * 0.2f, 0.1f);
+                            //m_zoom = std::max(m_zoom - io.MouseWheel * (io.DeltaTime * 100.0f), 0.1f);
                             m_model->SetZoom(m_zoom);
                         }
                     }
@@ -826,13 +828,13 @@ namespace CBP
     }
 
     void UICollisionGeometryManager::OnItemSelected(
-        const std::string& a_item)
+        const stl::fixed_string& a_item)
     {
         Load(a_item);
     }
 
     void UICollisionGeometryManager::Load(
-        const std::string& a_item,
+        const stl::fixed_string& a_item,
         bool a_force)
     {
         auto& pm = GetProfileManager();
@@ -966,10 +968,11 @@ namespace CBP
     }
 
     void UICollisionGeometryManager::OnProfileSave(
-        const std::string& a_item)
+        const stl::fixed_string& a_name,
+        ColliderProfile &a_profile)
     {
-        if (m_state.selected && StrHelpers::iequal(a_item, *m_state.selected)) {
-            Load(a_item);
+        if (m_state.selected == a_name) {
+            Load(a_name);
         }
     }
 

@@ -27,7 +27,7 @@ namespace CBP
     {
         auto cmd = ConfigUpdateTask::Create(isFemale ? CBP::ConfigGender::Female : CBP::ConfigGender::Male, sect, key, val);
         if (cmd) {
-            DTasks::AddTask(cmd);
+            ITaskPool::AddTask(cmd);
             return true;
         }
         return false;
@@ -38,13 +38,13 @@ namespace CBP
         if (!actor)
             return false;
 
-        Game::ObjectHandle handle;
+        Game::VMHandle handle;
         if (!handle.Get(actor))
             return false;
 
         auto cmd = ConfigUpdateTask::Create(handle, isFemale ? CBP::ConfigGender::Female : CBP::ConfigGender::Male, sect, key, val);
         if (cmd) {
-            DTasks::AddTask(cmd);
+            ITaskPool::AddTask(cmd);
             return true;
         }
 
@@ -95,8 +95,8 @@ namespace CBP
         const BSFixedString& a_key,
         float a_val)
     {
-        std::string sect(a_sect.c_str());
-        std::string key(a_key.c_str());
+        stl::fixed_string sect(a_sect);
+        stl::fixed_string key(a_key);
 
         auto& tgcd = IConfig::GetTemplateBase<configComponents_t>();
 
@@ -119,7 +119,7 @@ namespace CBP
     }
 
     ConfigUpdateTask* ConfigUpdateTask::Create(
-        Game::ObjectHandle a_handle,
+        Game::VMHandle a_handle,
         ConfigGender a_gender,
         const BSFixedString& a_sect,
         const BSFixedString& a_key,

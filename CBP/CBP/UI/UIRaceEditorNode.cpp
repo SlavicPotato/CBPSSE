@@ -12,6 +12,8 @@
 
 #include "Drivers/cbp.h"
 
+#include "Data/StringHolder.h"
+
 namespace CBP
 {
     using namespace UICommon;
@@ -69,7 +71,7 @@ namespace CBP
 
     void UIRaceEditorNode::UpdateNodeData(
         Game::FormID a_formid,
-        const std::string& a_node,
+        const stl::fixed_string& a_node,
         const configNode_t& a_data,
         bool a_reset)
     {
@@ -80,7 +82,7 @@ namespace CBP
 
     void UIRaceEditorNode::RemoveNodeData(
         Game::FormID a_handle,
-        const std::string& a_node)
+        const stl::fixed_string& a_node)
     {
         const auto& globalConfig = IConfig::GetGlobal();
 
@@ -133,17 +135,21 @@ namespace CBP
                 ImGui::Text("Playable: %s", rlEntry.playable ? "yes" : "no");
 
                 ImGui::Spacing();
-                if (Checkbox("Playable only", &globalConfig.ui.raceNode.playableOnly))
+                if (Checkbox("Playable only", &globalConfig.ui.raceNode.playableOnly)) {
                     QueueListUpdate();
+                }
                 HelpMarker(MiscHelpText::playableOnly);
 
                 ImGui::Spacing();
-                if (Checkbox("Editor IDs", &globalConfig.ui.raceNode.showEditorIDs))
+                if (Checkbox("Editor IDs", &globalConfig.ui.raceNode.showEditorIDs)) {
                     QueueListUpdate();
+                }
                 HelpMarker(MiscHelpText::showEDIDs);
 
-                ImGui::SameLine(ImGui::GetWindowContentRegionMax().x - GetNextTextOffset("Reset", true));
-                if (ButtonRight("Reset"))
+                auto& sh = Common::StringHolder::GetSingleton();
+
+                ImGui::SameLine(ImGui::GetWindowContentRegionMax().x - GetNextTextOffset(sh.reset, true));
+                if (ButtonRight(sh.reset))
                     ImGui::OpenPopup("Reset");
 
                 ImGui::Spacing();

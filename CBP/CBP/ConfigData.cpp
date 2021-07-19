@@ -389,9 +389,10 @@ namespace CBP
             -128.0f, 0.0f,
             "Maximum amount the bone is allowed to move from target (-X, -Y, -Z)",
             "Box min",
-            DescUIFlags::Float3 | DescUIFlags::BeginGroup | DescUIFlags::Collapsed | DescUIFlags::SyncNegate | DescUIFlags::MotionConstraintBox,
+            DescUIFlags::Float3 | DescUIFlags::BeginGroup | DescUIFlags::Collapsed | DescUIFlags::SyncNegate | DescUIFlags::MotionConstraintBox | DescUIFlags::BeginSubGroup,
             DescUIGroupType::PhysicsMotionConstraints,
-            "Motion constraints"
+            "Motion constraints",
+            "Box"
         }},
         {"moy-", {
             offsetof(configComponent_t, fp.f32.maxOffsetN[1]),
@@ -433,13 +434,48 @@ namespace CBP
             "Box max",
             DescUIFlags::SyncNegate | DescUIFlags::MotionConstraintBox
         }},
+        {"noc", {
+            offsetof(configComponent_t, fp.f32.maxOffsetParamsBox[0]),
+            "",
+            0.0f, 1.0f,
+            "Velocity response scale",
+            "Vel. response scale",
+            DescUIFlags::MotionConstraintBox
+        }},
+        {"nod", {
+            offsetof(configComponent_t, fp.f32.maxOffsetParamsBox[1]),
+            "",
+            0.5f, 500.0f,
+            "Penetration bias depth limit",
+            "Pen. bias limit",
+            DescUIFlags::MotionConstraintBox
+        }},
+        {"noe", {
+            offsetof(configComponent_t, fp.f32.maxOffsetParamsBox[2]),
+            "",
+            0.0f, 1.0f,
+            "Restitution coefficient",
+            "Restitution coef.",
+            DescUIFlags::MotionConstraintBox
+        }},
+        {"nof", {
+            offsetof(configComponent_t, fp.f32.maxOffsetParamsBox[3]),
+            "",
+            0.0f, 20.0f,
+            "Penetration bias factor",
+            "Pen. bias factor",
+            DescUIFlags::MotionConstraintBox | DescUIFlags::EndSubGroup
+        }},
         {"mor", {
             offsetof(configComponent_t, fp.f32.maxOffsetSphereRadius),
             "mor",
             0.0f, 250.0f,
             "Maximum amount the bone is allowed to move from target",
             "Sphere radius",
-            DescUIFlags::MotionConstraintSphere
+            DescUIFlags::MotionConstraintSphere | DescUIFlags::BeginSubGroup,
+            DescUIGroupType::PhysicsMotionConstraints,
+            "Motion constraints",
+            "Sphere"
         }},
         {"mosx", {
             offsetof(configComponent_t, fp.f32.maxOffsetSphereOffset[0]),
@@ -466,33 +502,41 @@ namespace CBP
             DescUIFlags::MotionConstraintSphere
         }},
         {"moc", {
-            offsetof(configComponent_t, fp.f32.maxOffsetVelResponseScale),
+            offsetof(configComponent_t, fp.f32.maxOffsetParamsSphere[0]),
             "",
             0.0f, 1.0f,
             "Velocity response scale",
             "Vel. response scale",
-            DescUIFlags::MotionConstraints
+            DescUIFlags::MotionConstraintSphere
         }},
         {"mod", {
-            offsetof(configComponent_t, fp.f32.maxOffsetMaxBiasMag),
+            offsetof(configComponent_t, fp.f32.maxOffsetParamsSphere[1]),
             "",
             0.5f, 500.0f,
             "Penetration bias depth limit",
             "Pen. bias limit",
-            DescUIFlags::MotionConstraints
+            DescUIFlags::MotionConstraintSphere
         }},
         {"moe", {
-            offsetof(configComponent_t, fp.f32.maxOffsetRestitutionCoefficient),
+            offsetof(configComponent_t, fp.f32.maxOffsetParamsSphere[2]),
             "",
             0.0f, 1.0f,
             "Restitution coefficient",
             "Restitution coef.",
-            DescUIFlags::EndGroup | DescUIFlags::MotionConstraints
+            DescUIFlags::MotionConstraintSphere
+        }},
+        {"mof", {
+            offsetof(configComponent_t, fp.f32.maxOffsetParamsSphere[3]),
+            "",
+            0.0f, 20.0f,
+            "Penetration bias factor",
+            "Pen. bias factor",
+            DescUIFlags::EndGroup | DescUIFlags::MotionConstraintSphere | DescUIFlags::EndSubGroup
         }}
         }
     );
 
-    const stl::iunordered_map<std::string, std::string> configComponent_t::oldKeyMap =
+    const std::unordered_map<stl::fixed_string, stl::fixed_string> configComponent_t::oldKeyMap =
     {
         {"stiffness", "s"},
         {"stiffness2", "sq"},
@@ -805,17 +849,42 @@ namespace CBP
             ComponentConfigSection::kPhysics
         }},
         {"moc", {
-            offsetof(configComponent_t, fp.f32.maxOffsetVelResponseScale),
+            offsetof(configComponent_t, fp.f32.maxOffsetParamsSphere[0]),
             ConfigValueType::kFloat,
             ComponentConfigSection::kPhysics
         }},
         {"mod", {
-            offsetof(configComponent_t, fp.f32.maxOffsetMaxBiasMag),
+            offsetof(configComponent_t, fp.f32.maxOffsetParamsSphere[1]),
             ConfigValueType::kFloat,
             ComponentConfigSection::kPhysics
         }},
         {"moe", {
-            offsetof(configComponent_t, fp.f32.maxOffsetRestitutionCoefficient),
+            offsetof(configComponent_t, fp.f32.maxOffsetParamsSphere[2]),
+            ConfigValueType::kFloat,
+            ComponentConfigSection::kPhysics
+        }},
+        {"mof", {
+            offsetof(configComponent_t, fp.f32.maxOffsetParamsSphere[3]),
+            ConfigValueType::kFloat,
+            ComponentConfigSection::kPhysics
+        }},
+        {"noc", {
+            offsetof(configComponent_t, fp.f32.maxOffsetParamsBox[0]),
+            ConfigValueType::kFloat,
+            ComponentConfigSection::kPhysics
+        }},
+        {"nod", {
+            offsetof(configComponent_t, fp.f32.maxOffsetParamsBox[1]),
+            ConfigValueType::kFloat,
+            ComponentConfigSection::kPhysics
+        }},
+        {"noe", {
+            offsetof(configComponent_t, fp.f32.maxOffsetParamsBox[2]),
+            ConfigValueType::kFloat,
+            ComponentConfigSection::kPhysics
+        }},
+        {"nof", {
+            offsetof(configComponent_t, fp.f32.maxOffsetParamsBox[3]),
             ConfigValueType::kFloat,
             ComponentConfigSection::kPhysics
         }},
@@ -969,7 +1038,12 @@ namespace CBP
            ConfigValueType::kString,
            NodeConfigSection::kNone
        }},
-       }
+       {"cr", {
+           offsetof(configNode_t, bl.b.create),
+           ConfigValueType::kBool,
+           NodeConfigSection::kNone
+       }},
+        }
     );
 
 }

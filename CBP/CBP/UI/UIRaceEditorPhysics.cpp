@@ -13,6 +13,8 @@
 
 #include "Drivers/cbp.h"
 
+#include "Data/StringHolder.h"
+
 namespace CBP
 {
     using namespace UICommon;
@@ -75,8 +77,10 @@ namespace CBP
                 Checkbox("Show nodes", &globalConfig.ui.race.showNodes);
                 HelpMarker(MiscHelpText::showNodes);
 
-                ImGui::SameLine(ImGui::GetWindowContentRegionMax().x - GetNextTextOffset("Reset", true));
-                if (ButtonRight("Reset"))
+                auto& sh = Common::StringHolder::GetSingleton();
+
+                ImGui::SameLine(ImGui::GetWindowContentRegionMax().x - GetNextTextOffset(sh.reset, true));
+                if (ButtonRight(sh.reset))
                     ImGui::OpenPopup("Reset");
 
                 if (UICommon::ConfirmDialog(
@@ -274,7 +278,7 @@ namespace CBP
 
     void UIRaceEditorPhysics::UpdateNodeData(
         Game::FormID a_formid,
-        const std::string& a_node,
+        const stl::fixed_string& a_node,
         const configNode_t& a_data,
         bool a_reset)
     {
@@ -285,7 +289,7 @@ namespace CBP
 
     void UIRaceEditorPhysics::RemoveNodeData(
         Game::FormID a_handle,
-        const std::string& a_node)
+        const stl::fixed_string& a_node)
     {
         const auto& globalConfig = IConfig::GetGlobal();
 

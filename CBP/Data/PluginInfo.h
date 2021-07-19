@@ -7,7 +7,7 @@ namespace CBP
         UInt32 fileFlags;
         UInt32 modIndex;
         UInt32 lightIndex;
-        std::string name;
+        stl::fixed_string name;
 
         bool isLight;
         UInt32 partialIndex;
@@ -27,7 +27,7 @@ namespace CBP
             partialIndex = !isLight ? a_modIndex : (UInt32(0xFE000) | a_lightIndex);
         }
 
-        SKMP_FORCEINLINE bool IsFormInMod(UInt32 a_formID) const
+        [[nodiscard]] SKMP_FORCEINLINE bool IsFormInMod(UInt32 a_formID) const
         {
             UInt32 modID = (a_formID & 0xFF000000) >> 24;
 
@@ -40,25 +40,31 @@ namespace CBP
             return false;
         }
 
-        SKMP_FORCEINLINE UInt32 GetPartialIndex() const
+        [[nodiscard]] SKMP_FORCEINLINE UInt32 GetPartialIndex() const
         {
             return partialIndex;
         }
 
-        SKMP_FORCEINLINE bool IsLight() const {
+        [[nodiscard]] SKMP_FORCEINLINE bool IsLight() const {
             return isLight;
         }
 
-        SKMP_FORCEINLINE Game::FormID GetFormID(Game::FormID a_formIDLower) const
+        [[nodiscard]] SKMP_FORCEINLINE Game::FormID GetFormID(Game::FormID a_formIDLower) const
         {
             return !isLight ?
                 modIndex << 24 | (a_formIDLower & 0xFFFFFF) :
                 0xFE000000 | (lightIndex << 12) | (a_formIDLower & 0xFFF);
         }
 
-        SKMP_FORCEINLINE Game::FormID GetFormIDLower(Game::FormID a_formID) const
+        [[nodiscard]] SKMP_FORCEINLINE Game::FormID GetFormIDLower(Game::FormID a_formID) const
         {
             return isLight ? (a_formID & 0xFFF) : (a_formID & 0xFFFFFF);
+        }
+
+        template <class T>
+        [[nodiscard]] SKMP_FORCEINLINE T* LookupForm(Game::FormID a_formIDLower) const
+        {
+            return GetFormID(a_formIDLower).Lookup<T>();
         }
     };
 
@@ -82,11 +88,15 @@ namespace CBP
             return m_pluginNameMap;
         }
 
-        [[nodiscard]] const pluginInfo_t* Lookup(const std::string& a_modName) const;
+        [[nodiscard]] SKMP_FORCEINLINE bool Empty() const {
+            return m_pluginNameMap.empty();
+        }
+
+        [[nodiscard]] const pluginInfo_t* Lookup(const stl::fixed_string& a_modName) const;
         [[nodiscard]] const pluginInfo_t* Lookup(UInt32 const a_modID) const;
 
         template <class T>
-        [[nodiscard]] T* LookupForm(const std::string& a_modName, Game::FormID a_formid) const;
+        [[nodiscard]] T* LookupForm(const stl::fixed_string& a_modName, Game::FormID a_formid) const;
 
         [[nodiscard]] auto Loaded() const {
             return m_pluginIndexMap.size();
@@ -96,12 +106,12 @@ namespace CBP
 
         bool m_populated;
 
-        stl::map<UInt32, pluginInfo_t> m_pluginIndexMap;
-        stl::iunordered_map<std::string, pluginInfo_t&> m_pluginNameMap;
+        std::map<UInt32, pluginInfo_t> m_pluginIndexMap;
+        std::unordered_map<stl::fixed_string, pluginInfo_t&> m_pluginNameMap;
     };
 
     template <class T>
-    [[nodiscard]] T* IPluginInfo::LookupForm(const std::string& a_modName, Game::FormID a_formid) const
+    [[nodiscard]] T* IPluginInfo::LookupForm(const stl::fixed_string& a_modName, Game::FormID a_formid) const
     {
         auto mi = Lookup(a_modName);
         if (mi)

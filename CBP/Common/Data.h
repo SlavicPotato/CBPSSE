@@ -6,7 +6,7 @@ class KVStorageBase
 {
 protected:
     using keyMap_t = M;
-    using keyVec_t = typename stl::vector<std::pair<const K, const V>>;
+    using keyVec_t = typename std::vector<std::pair<const K, const V>>;
 
     using iterator = typename keyVec_t::iterator;
     using const_iterator = typename keyVec_t::const_iterator;
@@ -81,13 +81,13 @@ private:
     const keyVec_t m_vec;
 };
 
-template <class K, class V, typename mapType = stl::unordered_map<K, const V&>>
+template <class K, class V, typename mapType = std::unordered_map<K, const V&>>
 class KVStorage :
     public KVStorageBase<K, V, mapType>
 {
 public:
 
-    using keyVec_t = typename stl::vector<std::pair<const K, const V>>;
+    using keyVec_t = typename std::vector<std::pair<const K, const V>>;
 
     KVStorage(const keyVec_t& a_in) :
         KVStorageBase<K, V, mapType>(a_in)
@@ -128,7 +128,7 @@ namespace stl
       wraps a map, maintains a vector with pointers to values
       since map iteration is very inefficient, we iterate the vector instead and use the map for lookups
     */
-    template <class K, class V, typename M = stl::unordered_map<K, V>>
+    template <class K, class V, typename M = std::unordered_map<K, V>>
     class vectormap
     {
     public:
@@ -279,7 +279,7 @@ namespace stl
 struct IStringSink :
     public boost::iostreams::sink
 {
-    IStringSink(stl::string& a_dataHolder) :
+    IStringSink(std::string& a_dataHolder) :
         m_data(a_dataHolder)
     {}
 
@@ -291,5 +291,5 @@ struct IStringSink :
         return a_len;
     }
 
-    stl::string& m_data;
+    std::string& m_data;
 };

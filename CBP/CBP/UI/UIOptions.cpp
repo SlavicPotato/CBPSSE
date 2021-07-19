@@ -12,8 +12,19 @@ namespace CBP
 {
     using namespace UICommon;
 
-    UIOptions::UIOptions(UIContext& a_parent) :
-        m_parent(a_parent)
+    UIOptions::UIOptions(
+        UIContext& a_parent)
+        :
+        m_parent(a_parent),
+        m_strings
+    {
+        "Options#UI",
+        "Options#Controls",
+        "Options#Simulation",
+        "Options#DebugRenderer",
+        "Options#DebugRenderer#Colors",
+        "Options#General"
+    }
     {}
 
     void UIOptions::Draw()
@@ -30,7 +41,7 @@ namespace CBP
 
             ImGui::PushItemWidth(ImGui::GetFontSize() * -16.5f);
 
-            if (Tree("Options#General", "General", true, true))
+            if (Tree(m_strings.general, "General", true, true))
             {
                 ImGui::Spacing();
 
@@ -52,7 +63,7 @@ namespace CBP
                 ImGui::TreePop();
             }
 
-            if (Tree("Options#UI", "UI", true, true))
+            if (Tree(m_strings.ui, "UI", true, true))
             {
                 ImGui::Spacing();
 
@@ -71,7 +82,7 @@ namespace CBP
                 ImGui::TreePop();
             }
 
-            if (Tree("Options#Controls", "Controls", true, true))
+            if (Tree(m_strings.controls, "Controls", true, true))
             {
                 if (DCBP::GetDriverConfig().force_ini_keys)
                 {
@@ -103,7 +114,7 @@ namespace CBP
                 ImGui::TreePop();
             }
 
-            if (Tree("Options#Simulation", "Simulation", true, true))
+            if (Tree(m_strings.simulation, "Simulation", true, true))
             {
                 ImGui::Spacing();
 
@@ -138,7 +149,7 @@ namespace CBP
 
             if (DCBP::GetDriverConfig().debug_renderer)
             {
-                if (Tree("Options#DebugRenderer", "Debug Renderer", true, true))
+                if (Tree(m_strings.debug_renderer, "Debug Renderer", true, true))
                 {
                     ImGui::Spacing();
 
@@ -179,7 +190,7 @@ namespace CBP
 
                     ImGui::Spacing();
 
-                    if (Tree("Options#DebugRenderer#Colors", "Colors", true, false))
+                    if (Tree(m_strings.debug_renderer_col, "Colors", true, false))
                     {
                         ImGui::Spacing();
 
@@ -224,19 +235,19 @@ namespace CBP
         const keyDesc_t& a_dmap,
         UInt32 a_key)
     {
-        std::unique_ptr<stl::string> tmp;
+        std::unique_ptr<std::string> tmp;
         const char* curSelName;
 
         auto it = a_dmap->find(a_key);
         if (it != a_dmap->end())
             curSelName = it->second;
         else {
-            stl::ostringstream stream;
+            std::ostringstream stream;
             stream << "0x"
                 << std::uppercase
                 << std::setfill('0') << std::setw(2)
                 << std::hex << a_key;
-            tmp = std::make_unique<stl::string>(stream.str());
+            tmp = std::make_unique<std::string>(stream.str());
             curSelName = tmp->c_str();
         }
 

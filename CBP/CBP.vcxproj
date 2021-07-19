@@ -353,11 +353,11 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING;BT_USE_SSE_IN_API;B3_USE_SSE_IN_API;IMGUI_IMPL_WIN32_DISABLE_GAMEPAD;NOMINMAX;NTDDI_VERSION=NTDDI_WIN10;_DEBUG;CBP_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING;BT_USE_SSE_IN_API;B3_USE_SSE_IN_API;IMGUI_IMPL_WIN32_DISABLE_GAMEPAD;NOMINMAX;SKMP_STRING_CACHE_INITIAL_SIZE=1000;NTDDI_VERSION=NTDDI_WIN10;_DEBUG;CBP_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>false</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include;$(SolutionDir)..\DirectXTK;$(SolutionDir)..\assimp\include;$(ProjectDir);$(SolutionDir)..\bullet3\src;$(SolutionDir)..\meshoptimizer\src</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include;$(SolutionDir)..\DirectXTK;$(SolutionDir)..\assimp\include;$(ProjectDir);$(SolutionDir)..\bullet3\src;$(SolutionDir)..\meshoptimizer\src;$(SolutionDir)..\sparse-map\include</AdditionalIncludeDirectories>
       <ForcedIncludeFiles>common/IPrefix.h;ext/ICommon.h;</ForcedIncludeFiles>
       <UseFullPaths>false</UseFullPaths>
       <LanguageStandard>stdcpplatest</LanguageStandard>
@@ -389,11 +389,11 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>false</SDLCheck>
-      <PreprocessorDefinitions>_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING;BT_USE_SSE_IN_API;B3_USE_SSE_IN_API;IMGUI_IMPL_WIN32_DISABLE_GAMEPAD;NOMINMAX;NTDDI_VERSION=NTDDI_WIN10;NDEBUG;CBP_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING;BT_USE_SSE_IN_API;B3_USE_SSE_IN_API;IMGUI_IMPL_WIN32_DISABLE_GAMEPAD;NOMINMAX;SKMP_STRING_CACHE_INITIAL_SIZE=1000;NTDDI_VERSION=NTDDI_WIN10;NDEBUG;CBP_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>false</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include;$(SolutionDir)..\DirectXTK;$(SolutionDir)..\assimp\include;$(ProjectDir);$(SolutionDir)..\bullet3\src;$(SolutionDir)..\meshoptimizer\src</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include;$(SolutionDir)..\DirectXTK;$(SolutionDir)..\assimp\include;$(ProjectDir);$(SolutionDir)..\bullet3\src;$(SolutionDir)..\meshoptimizer\src;$(SolutionDir)..\sparse-map\include</AdditionalIncludeDirectories>
       <ForcedIncludeFiles>common/IPrefix.h;ext/ICommon.h;</ForcedIncludeFiles>
       <UseFullPaths>false</UseFullPaths>
       <LanguageStandard>stdcpplatest</LanguageStandard>
@@ -429,11 +429,11 @@
       <WarningLevel>Level3</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING;BT_USE_SSE_IN_API;B3_USE_SSE_IN_API;IMGUI_IMPL_WIN32_DISABLE_GAMEPAD;NOMINMAX;NTDDI_VERSION=NTDDI_WIN7;NDEBUG;CBP_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING;BT_USE_SSE_IN_API;B3_USE_SSE_IN_API;IMGUI_IMPL_WIN32_DISABLE_GAMEPAD;NOMINMAX;SKMP_STRING_CACHE_INITIAL_SIZE=1000;NTDDI_VERSION=NTDDI_WIN7;NDEBUG;CBP_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>false</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include;$(SolutionDir)..\DirectXTK;$(SolutionDir)..\assimp\include;$(ProjectDir);$(SolutionDir)..\bullet3\src;$(SolutionDir)..\meshoptimizer\src</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include;$(SolutionDir)..\DirectXTK;$(SolutionDir)..\assimp\include;$(ProjectDir);$(SolutionDir)..\bullet3\src;$(SolutionDir)..\meshoptimizer\src;$(SolutionDir)..\sparse-map\include</AdditionalIncludeDirectories>
       <ForcedIncludeFiles>common/IPrefix.h;ext/ICommon.h;</ForcedIncludeFiles>
       <UseFullPaths>false</UseFullPaths>
       <LanguageStandard>stdcpplatest</LanguageStandard>
@@ -469,11 +469,11 @@
       <WarningLevel>Level3</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING;BT_USE_SSE_IN_API;B3_USE_SSE_IN_API;IMGUI_IMPL_WIN32_DISABLE_GAMEPAD;NOMINMAX;NTDDI_VERSION=NTDDI_WIN7;NDEBUG;CBP_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING;BT_USE_SSE_IN_API;B3_USE_SSE_IN_API;IMGUI_IMPL_WIN32_DISABLE_GAMEPAD;NOMINMAX;SKMP_STRING_CACHE_INITIAL_SIZE=1000;NTDDI_VERSION=NTDDI_WIN7;NDEBUG;CBP_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>false</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include;$(SolutionDir)..\DirectXTK;$(SolutionDir)..\assimp\include;$(ProjectDir);$(SolutionDir)..\bullet3\src;$(SolutionDir)..\meshoptimizer\src</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include;$(SolutionDir)..\DirectXTK;$(SolutionDir)..\assimp\include;$(ProjectDir);$(SolutionDir)..\bullet3\src;$(SolutionDir)..\meshoptimizer\src;$(SolutionDir)..\sparse-map\include</AdditionalIncludeDirectories>
       <ForcedIncludeFiles>common/IPrefix.h;ext/ICommon.h;</ForcedIncludeFiles>
       <UseFullPaths>false</UseFullPaths>
       <LanguageStandard>stdcpplatest</LanguageStandard>
@@ -512,11 +512,11 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>false</SDLCheck>
-      <PreprocessorDefinitions>_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING;BT_USE_SSE_IN_API;B3_USE_SSE_IN_API;IMGUI_IMPL_WIN32_DISABLE_GAMEPAD;NOMINMAX;NTDDI_VERSION=NTDDI_WIN10;NDEBUG;CBP_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING;BT_USE_SSE_IN_API;B3_USE_SSE_IN_API;IMGUI_IMPL_WIN32_DISABLE_GAMEPAD;NOMINMAX;SKMP_STRING_CACHE_INITIAL_SIZE=1000;NTDDI_VERSION=NTDDI_WIN10;NDEBUG;CBP_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>false</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include;$(SolutionDir)..\DirectXTK;$(SolutionDir)..\assimp\include;$(ProjectDir);$(SolutionDir)..\bullet3\src;$(SolutionDir)..\meshoptimizer\src</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include;$(SolutionDir)..\DirectXTK;$(SolutionDir)..\assimp\include;$(ProjectDir);$(SolutionDir)..\bullet3\src;$(SolutionDir)..\meshoptimizer\src;$(SolutionDir)..\sparse-map\include</AdditionalIncludeDirectories>
       <ForcedIncludeFiles>common/IPrefix.h;ext/ICommon.h;</ForcedIncludeFiles>
       <UseFullPaths>false</UseFullPaths>
       <LanguageStandard>stdcpplatest</LanguageStandard>
@@ -552,11 +552,11 @@
       <WarningLevel>Level3</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING;BT_USE_SSE_IN_API;B3_USE_SSE_IN_API;IMGUI_IMPL_WIN32_DISABLE_GAMEPAD;NOMINMAX;NTDDI_VERSION=NTDDI_WIN10;NDEBUG;CBP_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING;BT_USE_SSE_IN_API;B3_USE_SSE_IN_API;IMGUI_IMPL_WIN32_DISABLE_GAMEPAD;NOMINMAX;SKMP_STRING_CACHE_INITIAL_SIZE=1000;NTDDI_VERSION=NTDDI_WIN10;NDEBUG;CBP_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>false</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include;$(SolutionDir)..\DirectXTK;$(SolutionDir)..\assimp\include;$(ProjectDir);$(SolutionDir)..\bullet3\src;$(SolutionDir)..\meshoptimizer\src</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include;$(SolutionDir)..\DirectXTK;$(SolutionDir)..\assimp\include;$(ProjectDir);$(SolutionDir)..\bullet3\src;$(SolutionDir)..\meshoptimizer\src;$(SolutionDir)..\sparse-map\include</AdditionalIncludeDirectories>
       <ForcedIncludeFiles>common/IPrefix.h;ext/ICommon.h;</ForcedIncludeFiles>
       <UseFullPaths>false</UseFullPaths>
       <LanguageStandard>stdcpplatest</LanguageStandard>
@@ -596,11 +596,11 @@
       <WarningLevel>Level3</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING;BT_USE_SSE_IN_API;B3_USE_SSE_IN_API;IMGUI_IMPL_WIN32_DISABLE_GAMEPAD;NOMINMAX;NTDDI_VERSION=NTDDI_WIN10;NDEBUG;CBP_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING;BT_USE_SSE_IN_API;B3_USE_SSE_IN_API;IMGUI_IMPL_WIN32_DISABLE_GAMEPAD;NOMINMAX;SKMP_STRING_CACHE_INITIAL_SIZE=1000;NTDDI_VERSION=NTDDI_WIN10;NDEBUG;CBP_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>false</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include;$(SolutionDir)..\DirectXTK;$(SolutionDir)..\assimp\include;$(ProjectDir);$(SolutionDir)..\bullet3\src;$(SolutionDir)..\meshoptimizer\src</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include;$(SolutionDir)..\DirectXTK;$(SolutionDir)..\assimp\include;$(ProjectDir);$(SolutionDir)..\bullet3\src;$(SolutionDir)..\meshoptimizer\src;$(SolutionDir)..\sparse-map\include</AdditionalIncludeDirectories>
       <ForcedIncludeFiles>common/IPrefix.h;ext/ICommon.h;</ForcedIncludeFiles>
       <UseFullPaths>false</UseFullPaths>
       <LanguageStandard>stdcpplatest</LanguageStandard>
@@ -640,11 +640,11 @@
       <WarningLevel>Level3</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING;BT_USE_SSE_IN_API;B3_USE_SSE_IN_API;IMGUI_IMPL_WIN32_DISABLE_GAMEPAD;NOMINMAX;NTDDI_VERSION=NTDDI_WIN10;NDEBUG;CBP_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING;BT_USE_SSE_IN_API;B3_USE_SSE_IN_API;IMGUI_IMPL_WIN32_DISABLE_GAMEPAD;NOMINMAX;SKMP_STRING_CACHE_INITIAL_SIZE=1000;NTDDI_VERSION=NTDDI_WIN10;NDEBUG;CBP_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>false</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include;$(SolutionDir)..\DirectXTK;$(SolutionDir)..\assimp\include;$(ProjectDir);$(SolutionDir)..\bullet3\src;$(SolutionDir)..\meshoptimizer\src</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include;$(SolutionDir)..\DirectXTK;$(SolutionDir)..\assimp\include;$(ProjectDir);$(SolutionDir)..\bullet3\src;$(SolutionDir)..\meshoptimizer\src;$(SolutionDir)..\sparse-map\include</AdditionalIncludeDirectories>
       <ForcedIncludeFiles>common/IPrefix.h;ext/ICommon.h;</ForcedIncludeFiles>
       <UseFullPaths>false</UseFullPaths>
       <LanguageStandard>stdcpplatest</LanguageStandard>
@@ -680,11 +680,11 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
-      <PreprocessorDefinitions>_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING;BT_USE_SSE_IN_API;B3_USE_SSE_IN_API;IMGUI_IMPL_WIN32_DISABLE_GAMEPAD;NOMINMAX;NTDDI_VERSION=NTDDI_WIN10;NDEBUG;CBP_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING;BT_USE_SSE_IN_API;B3_USE_SSE_IN_API;IMGUI_IMPL_WIN32_DISABLE_GAMEPAD;NOMINMAX;SKMP_STRING_CACHE_INITIAL_SIZE=1000;NTDDI_VERSION=NTDDI_WIN10;NDEBUG;CBP_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>false</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include;$(SolutionDir)..\DirectXTK;$(SolutionDir)..\assimp\include;$(ProjectDir);$(SolutionDir)..\bullet3\src;$(SolutionDir)..\meshoptimizer\src</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include;$(SolutionDir)..\DirectXTK;$(SolutionDir)..\assimp\include;$(ProjectDir);$(SolutionDir)..\bullet3\src;$(SolutionDir)..\meshoptimizer\src;$(SolutionDir)..\sparse-map\include</AdditionalIncludeDirectories>
       <ForcedIncludeFiles>common/IPrefix.h;ext/ICommon.h;</ForcedIncludeFiles>
       <UseFullPaths>false</UseFullPaths>
       <LanguageStandard>stdcpplatest</LanguageStandard>
@@ -723,11 +723,11 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
-      <PreprocessorDefinitions>_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING;BT_USE_SSE_IN_API;B3_USE_SSE_IN_API;IMGUI_IMPL_WIN32_DISABLE_GAMEPAD;NOMINMAX;NTDDI_VERSION=NTDDI_WIN7;NDEBUG;CBP_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING;BT_USE_SSE_IN_API;B3_USE_SSE_IN_API;IMGUI_IMPL_WIN32_DISABLE_GAMEPAD;NOMINMAX;SKMP_STRING_CACHE_INITIAL_SIZE=1000;NTDDI_VERSION=NTDDI_WIN7;NDEBUG;CBP_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>false</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include;$(SolutionDir)..\DirectXTK;$(SolutionDir)..\assimp\include;$(ProjectDir);$(SolutionDir)..\bullet3\src;$(SolutionDir)..\meshoptimizer\src</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include;$(SolutionDir)..\DirectXTK;$(SolutionDir)..\assimp\include;$(ProjectDir);$(SolutionDir)..\bullet3\src;$(SolutionDir)..\meshoptimizer\src;$(SolutionDir)..\sparse-map\include</AdditionalIncludeDirectories>
       <ForcedIncludeFiles>common/IPrefix.h;ext/ICommon.h;</ForcedIncludeFiles>
       <UseFullPaths>false</UseFullPaths>
       <LanguageStandard>stdcpplatest</LanguageStandard>
@@ -765,11 +765,11 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
-      <PreprocessorDefinitions>_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING;BT_USE_SSE_IN_API;B3_USE_SSE_IN_API;IMGUI_IMPL_WIN32_DISABLE_GAMEPAD;NOMINMAX;NTDDI_VERSION=NTDDI_WIN7;NDEBUG;CBP_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING;BT_USE_SSE_IN_API;B3_USE_SSE_IN_API;IMGUI_IMPL_WIN32_DISABLE_GAMEPAD;NOMINMAX;SKMP_STRING_CACHE_INITIAL_SIZE=1000;NTDDI_VERSION=NTDDI_WIN7;NDEBUG;CBP_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>false</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include;$(SolutionDir)..\DirectXTK;$(SolutionDir)..\assimp\include;$(ProjectDir);$(SolutionDir)..\bullet3\src;$(SolutionDir)..\meshoptimizer\src</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include;$(SolutionDir)..\DirectXTK;$(SolutionDir)..\assimp\include;$(ProjectDir);$(SolutionDir)..\bullet3\src;$(SolutionDir)..\meshoptimizer\src;$(SolutionDir)..\sparse-map\include</AdditionalIncludeDirectories>
       <ForcedIncludeFiles>common/IPrefix.h;ext/ICommon.h;</ForcedIncludeFiles>
       <UseFullPaths>false</UseFullPaths>
       <LanguageStandard>stdcpplatest</LanguageStandard>
@@ -809,11 +809,11 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
-      <PreprocessorDefinitions>_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING;BT_USE_SSE_IN_API;B3_USE_SSE_IN_API;IMGUI_IMPL_WIN32_DISABLE_GAMEPAD;NOMINMAX;NTDDI_VERSION=NTDDI_WIN7;NDEBUG;CBP_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING;BT_USE_SSE_IN_API;B3_USE_SSE_IN_API;IMGUI_IMPL_WIN32_DISABLE_GAMEPAD;NOMINMAX;SKMP_STRING_CACHE_INITIAL_SIZE=1000;NTDDI_VERSION=NTDDI_WIN7;NDEBUG;CBP_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>false</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include;$(SolutionDir)..\DirectXTK;$(SolutionDir)..\assimp\include;$(ProjectDir);$(SolutionDir)..\bullet3\src;$(SolutionDir)..\meshoptimizer\src</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include;$(SolutionDir)..\DirectXTK;$(SolutionDir)..\assimp\include;$(ProjectDir);$(SolutionDir)..\bullet3\src;$(SolutionDir)..\meshoptimizer\src;$(SolutionDir)..\sparse-map\include</AdditionalIncludeDirectories>
       <ForcedIncludeFiles>common/IPrefix.h;ext/ICommon.h;</ForcedIncludeFiles>
       <UseFullPaths>false</UseFullPaths>
       <LanguageStandard>stdcpplatest</LanguageStandard>
@@ -853,11 +853,11 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
-      <PreprocessorDefinitions>_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING;BT_USE_SSE_IN_API;B3_USE_SSE_IN_API;IMGUI_IMPL_WIN32_DISABLE_GAMEPAD;NOMINMAX;NTDDI_VERSION=NTDDI_WIN10;NDEBUG;CBP_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING;BT_USE_SSE_IN_API;B3_USE_SSE_IN_API;IMGUI_IMPL_WIN32_DISABLE_GAMEPAD;NOMINMAX;SKMP_STRING_CACHE_INITIAL_SIZE=1000;NTDDI_VERSION=NTDDI_WIN10;NDEBUG;CBP_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>false</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include;$(SolutionDir)..\DirectXTK;$(SolutionDir)..\assimp\include;$(ProjectDir);$(SolutionDir)..\bullet3\src;$(SolutionDir)..\meshoptimizer\src</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include;$(SolutionDir)..\DirectXTK;$(SolutionDir)..\assimp\include;$(ProjectDir);$(SolutionDir)..\bullet3\src;$(SolutionDir)..\meshoptimizer\src;$(SolutionDir)..\sparse-map\include</AdditionalIncludeDirectories>
       <ForcedIncludeFiles>common/IPrefix.h;ext/ICommon.h;</ForcedIncludeFiles>
       <UseFullPaths>false</UseFullPaths>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
@@ -903,11 +903,11 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
-      <PreprocessorDefinitions>_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING;BT_USE_SSE_IN_API;B3_USE_SSE_IN_API;IMGUI_IMPL_WIN32_DISABLE_GAMEPAD;NOMINMAX;NTDDI_VERSION=NTDDI_WIN7;NDEBUG;CBP_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING;BT_USE_SSE_IN_API;B3_USE_SSE_IN_API;IMGUI_IMPL_WIN32_DISABLE_GAMEPAD;NOMINMAX;SKMP_STRING_CACHE_INITIAL_SIZE=1000;NTDDI_VERSION=NTDDI_WIN7;NDEBUG;CBP_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>false</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include;$(SolutionDir)..\DirectXTK;$(SolutionDir)..\assimp\include;$(ProjectDir);$(SolutionDir)..\bullet3\src;$(SolutionDir)..\meshoptimizer\src</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include;$(SolutionDir)..\DirectXTK;$(SolutionDir)..\assimp\include;$(ProjectDir);$(SolutionDir)..\bullet3\src;$(SolutionDir)..\meshoptimizer\src;$(SolutionDir)..\sparse-map\include</AdditionalIncludeDirectories>
       <ForcedIncludeFiles>common/IPrefix.h;ext/ICommon.h;</ForcedIncludeFiles>
       <UseFullPaths>false</UseFullPaths>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
@@ -954,11 +954,11 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
-      <PreprocessorDefinitions>_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING;BT_USE_SSE_IN_API;B3_USE_SSE_IN_API;IMGUI_IMPL_WIN32_DISABLE_GAMEPAD;NOMINMAX;NTDDI_VERSION=NTDDI_WIN7;NDEBUG;CBP_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING;BT_USE_SSE_IN_API;B3_USE_SSE_IN_API;IMGUI_IMPL_WIN32_DISABLE_GAMEPAD;NOMINMAX;SKMP_STRING_CACHE_INITIAL_SIZE=1000;NTDDI_VERSION=NTDDI_WIN7;NDEBUG;CBP_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>false</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include;$(SolutionDir)..\DirectXTK;$(SolutionDir)..\assimp\include;$(ProjectDir);$(SolutionDir)..\bullet3\src;$(SolutionDir)..\meshoptimizer\src</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\sse-build-resources\;$(ProjectDir)..\..\sse-build-resources\skse64\;$(ProjectDir)..\..\sse-build-resources\skse64\skse64\;$(SolutionDir)..\imgui;$(SolutionDir)..\reactphysics3d\include;$(SolutionDir)..\DirectXTK;$(SolutionDir)..\assimp\include;$(ProjectDir);$(SolutionDir)..\bullet3\src;$(SolutionDir)..\meshoptimizer\src;$(SolutionDir)..\sparse-map\include</AdditionalIncludeDirectories>
       <ForcedIncludeFiles>common/IPrefix.h;ext/ICommon.h;</ForcedIncludeFiles>
       <UseFullPaths>false</UseFullPaths>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
@@ -1001,6 +1001,7 @@
     </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\sse-build-resources\ext\StringCache.h" />
     <ClInclude Include="CBP\Armor.h" />
     <ClInclude Include="CBP\ArmorCache.h" />
     <ClInclude Include="CBP\BoneCast.h" />
@@ -1016,6 +1017,7 @@
     <ClInclude Include="CBP\Renderer.h" />
     <ClInclude Include="CBP\Serialization.h" />
     <ClInclude Include="CBP\SimObject.h" />
+    <ClInclude Include="CBP\StringHolder.h" />
     <ClInclude Include="CBP\Template.h" />
     <ClInclude Include="CBP\SimComponent.h" />
     <ClInclude Include="CBP\UI\Common\ActorList.h" />
@@ -1048,6 +1050,7 @@
     <ClInclude Include="CBP\UI\UISimComponentActor.h" />
     <ClInclude Include="CBP\UI\UISimComponentGlobal.h" />
     <ClInclude Include="Common\BulletExtensions.h" />
+    <ClInclude Include="Common\Config.h" />
     <ClInclude Include="Common\Crypto.h" />
     <ClInclude Include="Common\Data.h" />
     <ClInclude Include="Common\Game.h" />
@@ -1056,6 +1059,7 @@
     <ClInclude Include="Common\UIData.h" />
     <ClInclude Include="config.h" />
     <ClInclude Include="Data\PluginInfo.h" />
+    <ClInclude Include="Data\StringHolder.h" />
     <ClInclude Include="Drivers\cbp.h" />
     <ClInclude Include="Drivers\data.h" />
     <ClInclude Include="Drivers\events.h" />
@@ -1080,10 +1084,26 @@
     <ClInclude Include="Render\Backup.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="skse.h" />
-    <ClInclude Include="Tasks\Tasks.h" />
     <ClInclude Include="version.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\sse-build-resources\ext\StringCache.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='IntelRelAvx2MT|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='PreRelease|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Dep-IntelAvx2MT|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='ReleaseAVX2|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='ReleaseAVX2 MT W7|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Dep-SSE2|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Dep-AVX2|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='PreReleaseAVX2 MT|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Dep-IntelSSE42MT|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='ReleaseAVX2 MT|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release MT|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Dep-AVX|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='PreRelease MT|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="CBP\Armor.cpp" />
     <ClCompile Include="CBP\ArmorCache.cpp" />
     <ClCompile Include="CBP\BoneCast.cpp" />
@@ -1101,6 +1121,7 @@
     <ClCompile Include="CBP\Renderer.cpp" />
     <ClCompile Include="CBP\Serialization.cpp" />
     <ClCompile Include="CBP\SimObject.cpp" />
+    <ClCompile Include="CBP\StringHolder.cpp" />
     <ClCompile Include="CBP\Template.cpp" />
     <ClCompile Include="CBP\SimComponent.cpp" />
     <ClCompile Include="CBP\UI\Common\ActorList.cpp" />
@@ -1138,6 +1159,7 @@
     <ClCompile Include="Common\UIData.cpp" />
     <ClCompile Include="config.cpp" />
     <ClCompile Include="Data\PluginInfo.cpp" />
+    <ClCompile Include="Data\StringHolder.cpp" />
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="Drivers\cbp.cpp" />
     <ClCompile Include="Drivers\data.cpp" />
@@ -1145,7 +1167,6 @@
     <ClCompile Include="Drivers\gui.cpp" />
     <ClCompile Include="Drivers\input.cpp" />
     <ClCompile Include="Drivers\render.cpp" />
-    <ClCompile Include="Drivers\tasks.cpp" />
     <ClCompile Include="GUI\Tasks.cpp" />
     <ClCompile Include="ImGui\imgui_impl_dx11.cpp" />
     <ClCompile Include="ImGui\imgui_impl_win32.cpp" />
@@ -1169,7 +1190,6 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Dep-IntelSSE42MT|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="skse.cpp" />
-    <ClCompile Include="Tasks\Tasks.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\.gitignore" />

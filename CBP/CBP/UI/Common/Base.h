@@ -8,6 +8,9 @@
 #include "CBP/ArmorCache.h"
 
 #include "Common/UICommon.h"
+#include "Common/Data.h"
+
+#include "Data/StringHolder.h"
 
 namespace CBP
 {
@@ -49,16 +52,16 @@ namespace CBP
         controllerStats
     };
 
-    typedef std::pair<const std::string, configComponentsGenderRoot_t> actorEntryPhysConf_t;
-    typedef stl::map<Game::ObjectHandle, actorEntryPhysConf_t> actorListPhysConf_t;
+    typedef std::pair<const stl::fixed_string, configComponentsGenderRoot_t> actorEntryPhysConf_t;
+    typedef std::map<Game::VMHandle, actorEntryPhysConf_t> actorListPhysConf_t;
 
-    typedef std::pair<const std::string, configNodesGenderRoot_t> actorEntryNodeConf_t;
-    typedef stl::map<Game::ObjectHandle, actorEntryNodeConf_t> actorListNodeConf_t;
+    typedef std::pair<const stl::fixed_string, configNodesGenderRoot_t> actorEntryNodeConf_t;
+    typedef std::map<Game::VMHandle, actorEntryNodeConf_t> actorListNodeConf_t;
 
-    typedef std::pair<const std::string, actorCacheEntry_t> actorEntryCache_t;
-    typedef stl::map<Game::ObjectHandle, actorEntryCache_t> actorListCache_t;
+    typedef std::pair<const stl::fixed_string, actorCacheEntry_t> actorEntryCache_t;
+    typedef std::map<Game::VMHandle, actorEntryCache_t> actorListCache_t;
 
-    typedef stl::vector<std::pair<const std::string, const configNode_t*>> nodeConfigList_t;
+    typedef std::vector<std::pair<const stl::fixed_string, const configNode_t*>> nodeConfigList_t;
 
     typedef std::function<void(configComponent_t&, const configPropagate_t&)> propagateFunc_t;
 
@@ -72,6 +75,7 @@ namespace CBP
     protected:
 
         void HelpMarker(MiscHelpText a_id) const;
+        void HelpMarker(const stl::fixed_string& a_text) const;
         void HelpMarker(const std::string& a_text) const;
         void HelpMarker(const char* a_text) const;
 
@@ -95,7 +99,7 @@ namespace CBP
     template <typename T>
     void UIBase::SetGlobal(T& a_member, T const a_value) const
     {
-        static_assert(std::is_enum_v<T> || std::is_fundamental_v<T> || std::is_same_v<T, Game::ObjectHandle> || std::is_same_v<T, Game::FormID>);
+        static_assert(std::is_enum_v<T> || std::is_fundamental_v<T> || std::is_same_v<T, Game::VMHandle> || std::is_same_v<T, Game::FormID>);
 
         a_member = a_value;
         DCBP::MarkGlobalsForSave();
@@ -114,25 +118,26 @@ namespace CBP
 
         void DrawItemFilter();
 
-        virtual std::string GetGCSID(const std::string& a_name) const = 0;
+        virtual const stl::fixed_string& GetGCSID(const stl::fixed_string& a_name) = 0;
 
         std::shared_ptr<UICommon::UIRegexFilter> m_groupFilter;
         std::shared_ptr<UICommon::UIRegexFilter> m_sliderFilter;
 
         bool m_hasSliderFilter;
+
     };
 
     template <UIEditorID ID>
     UIMainItemFilter<ID>::UIMainItemFilter(
         MiscHelpText a_helpText,
-        bool a_sliderFilter) 
+        bool a_sliderFilter)
         :
         m_groupFilter(std::make_unique<UICommon::UIRegexFilter>(true, "Regex")),
         m_sliderFilter(std::make_unique<UICommon::UIRegexFilter>(true, "Regex")),
         m_hasSliderFilter(a_sliderFilter)
     {
     }
-    
+
     template <UIEditorID ID>
     UIMainItemFilter<ID>::UIMainItemFilter(
         UIMainItemFilter<ID>& a_rhs)
@@ -150,7 +155,9 @@ namespace CBP
     {
         ImGui::PushID(static_cast<const void*>(m_groupFilter.get()));
 
-        if (Tree(GetGCSID("Filter"), "Filter", false))
+        auto& sh = Common::StringHolder::GetSingleton();
+
+        if (Tree(GetGCSID(sh.filter), sh.filter.c_str(), false))
         {
             ImGui::PushItemWidth(ImGui::GetFontSize() * -8.0f);
 
@@ -184,7 +191,7 @@ namespace CBP
     {
     public:
         void DrawGenderSelector();
-        void AutoSelectGender(Game::ObjectHandle a_handle);
+        void AutoSelectGender(Game::VMHandle a_handle);
 
         virtual configGlobalCommon_t& GetGlobalCommonConfig() const = 0;
     protected:
@@ -197,7 +204,7 @@ namespace CBP
 
     void UpdateRaceNodeData(
         Game::FormID a_formid,
-        const std::string& a_node,
+        const stl::fixed_string& a_node,
         const configNode_t& a_data,
         ConfigGender a_gender,
         bool a_reset);

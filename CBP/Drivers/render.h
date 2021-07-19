@@ -50,7 +50,7 @@ namespace CBP
         static void Present_Pre(uint32_t);
         static void CreateD3D11_Hook();
 
-        stl::vector<presentCallback_t> m_presentCallbacks;
+        std::vector<presentCallback_t> m_presentCallbacks;
 
         ID3D11Device* m_device;
         ID3D11DeviceContext* m_context;

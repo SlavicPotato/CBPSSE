@@ -6,14 +6,13 @@ namespace CBP
     {
         bool Accept(InventoryEntryData* a_entryData);
 
-        stl::set<TESObjectARMO*> m_results;
+        std::set<TESObjectARMO*> m_results;
     };
 
-    typedef stl::iset<std::string> armorOverrideResults_t;
+    typedef std::set<stl::fixed_string> armorOverrideResults_t;
 
     class IArmor
     {
-        inline static constexpr const char* NISTRING_EXTRA_DATA_NAME = "CBPA";
 
     public:
         static bool GetEquippedArmor(

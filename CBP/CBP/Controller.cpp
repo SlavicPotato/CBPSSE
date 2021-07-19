@@ -6,6 +6,7 @@
 #include "Renderer.h"
 #include "SimObject.h"
 #include "SimComponent.h"
+#include "StringHolder.h"
 
 #include "Drivers/cbp.h"
 #include "Drivers/tasks.h"
@@ -18,7 +19,6 @@ namespace CBP
     {
         if (actor == nullptr ||
             actor->loadedState == nullptr ||
-            actor->loadedState->node == nullptr ||
             (actor->flags & TESForm::kFlagIsDeleted))
         {
             return false;
@@ -29,7 +29,6 @@ namespace CBP
     SKMP_FORCEINLINE static bool ActorValid2(const Actor* actor)
     {
         if (actor->loadedState == nullptr ||
-            actor->loadedState->node == nullptr ||
             (actor->flags & TESForm::kFlagIsDeleted))
         {
             return false;
@@ -188,7 +187,7 @@ namespace CBP
     }
 
 #ifdef _CBP_ENABLE_DEBUG
-    void ControllerTask::UpdatePhase3()
+    void ControllerTask::UpdateDebugInfo()
     {
         for (auto& e : m_actors)
             e.second.UpdateDebugInfo();
@@ -240,7 +239,7 @@ namespace CBP
             UpdatePhase3();
 
 #ifdef _CBP_ENABLE_DEBUG
-            UpdatePhase3();
+            UpdateDebugInfo();
 #endif
 
             m_timeAccum = 0.0f;
@@ -355,7 +354,7 @@ namespace CBP
                 {
                     e->SetSuspended(true);
 
-                    PrintStats("Suspended [%.8X] [%s]", actor->formID, actor->GetReferenceName());
+                    PrintStats("Suspended [%.8X] [%s]", actor->formID.get(), actor->GetReferenceName());
                 }
             }
             else
@@ -364,7 +363,7 @@ namespace CBP
                 {
                     e->SetSuspended(false);
 
-                    PrintStats("Unsuspended [%.8X] [%s]", actor->formID, actor->GetReferenceName());
+                    PrintStats("Unsuspended [%.8X] [%s]", actor->formID.get(), actor->GetReferenceName());
                 }
             }
         }
@@ -387,7 +386,7 @@ namespace CBP
         }
     }
 
-    void ControllerTask::AddActor(Game::ObjectHandle a_handle)
+    void ControllerTask::AddActor(Game::VMHandle a_handle)
     {
         PerfTimer pt;
 
@@ -403,17 +402,34 @@ namespace CBP
         if (!ActorValid(actor))
             return;
 
-        auto sex = Game::GetActorSex(actor) == 0 ? ConfigGender::Male : ConfigGender::Female;
+        NiNode* npcRoot(nullptr);
+                
+        if (auto rootNode = actor->GetNiRootNode(false); rootNode) 
+        {
+            if (auto node = rootNode->GetObjectByName(
+                BSStringHolder::GetSingleton()->npcRoot); node)
+            {
+                npcRoot = node->GetAsNiNode();
+            }
+        }
+
+        if (!npcRoot) {
+            return;
+        }
+
+        auto sex = Game::GetActorSex(actor) == 0 ?
+            ConfigGender::Male :
+            ConfigGender::Female;
 
         if (globalConfig.general.femaleOnly && sex == ConfigGender::Male)
             return;
 
-        if (actor->race != nullptr)
+        if (auto race = Game::GetActorRace(actor); race)
         {
-            if (actor->race->data.raceFlags & TESRace::kRace_Child)
+            if (race->data.raceFlags & TESRace::kRace_Child)
                 return;
 
-            if (IData::IsIgnoredRace(actor->race->formID))
+            if (IData::IsIgnoredRace(race->formID))
                 return;
         }
 
@@ -426,13 +442,17 @@ namespace CBP
 
         IData::UpdateActorMaps(a_handle, actor);
 
-        auto& conf = IConfig::GetActorPhysicsAO(a_handle, sex);
+        auto& conf = globalConfig.general.armorOverrides ?
+            IConfig::GetActorPhysicsAO(a_handle, sex) :
+            IConfig::GetActorPhysics(a_handle, sex);
+
         auto& nodeMap = IConfig::GetNodeMap();
 
         nodeDescList_t descList;
         if (!SimObject::CreateNodeDescriptorList(
             a_handle,
             actor,
+            npcRoot,
             sex,
             conf,
             nodeMap,
@@ -442,19 +462,19 @@ namespace CBP
             return;
         }
 
-        m_actors.try_emplace(a_handle, a_handle, actor, sex, descList);
+        m_actors.try_emplace(a_handle, a_handle, actor, npcRoot, sex, descList);
 
         if (globalConfig.general.controllerStats)
         {
             auto rt = pt.Stop() * 1000.0;
 
             Debug("Registered [%.8X] [%.3f ms] [%s]",
-                actor->formID, rt, actor->GetReferenceName());
+                actor->formID.get(), rt, actor->GetReferenceName());
         }
 
     }
 
-    void ControllerTask::RemoveActor(Game::ObjectHandle a_handle)
+    void ControllerTask::RemoveActor(Game::VMHandle a_handle)
     {
         auto it = m_actors.find(a_handle);
         if (it != m_actors.end())
@@ -493,22 +513,22 @@ namespace CBP
         }
     }
 
-    void ControllerTask::UpdateConfig(Game::ObjectHandle a_handle, bool a_addIfMissing)
+    void ControllerTask::UpdateConfig(Game::VMHandle a_handle, bool a_addIfMissing)
     {
         UpdateConfig(a_handle, a_handle.Resolve<Actor>(), a_addIfMissing);
     }
 
-    void ControllerTask::UpdateConfig(Game::ObjectHandle a_handle, Actor* a_actor, bool a_addIfMissing)
+    void ControllerTask::UpdateConfig(Game::VMHandle a_handle, Actor* a_actor, bool a_addIfMissing)
     {
         if (!ActorValid(a_actor))
             return;
 
         auto it = m_actors.find(a_handle);
-        if (it == m_actors.end()) 
+        if (it == m_actors.end())
         {
             if (a_addIfMissing)
                 AddActor(a_handle);
-            
+
             return;
         }
 
@@ -519,25 +539,33 @@ namespace CBP
     }
 
     void ControllerTask::DoConfigUpdate(
-        Game::ObjectHandle a_handle,
+        Game::VMHandle a_handle,
         Actor* a_actor,
         SimObject& a_object)
     {
-        auto sex = Game::GetActorSex(a_actor) == 0 ? ConfigGender::Male : ConfigGender::Female;
+        auto sex = Game::GetActorSex(a_actor) == 0 ?
+            ConfigGender::Male :
+            ConfigGender::Female;
+
+        const auto& globalConfig = IConfig::GetGlobal();
+
+        auto& conf = globalConfig.general.armorOverrides ?
+            IConfig::GetActorPhysicsAO(a_handle, sex) :
+            IConfig::GetActorPhysics(a_handle, sex);
 
         a_object.UpdateConfig(
             a_actor,
-            IConfig::GetGlobal().phys.collision,
-            IConfig::GetActorPhysicsAO(a_handle, sex));
+            globalConfig.phys.collision,
+            conf);
     }
 
     void ControllerTask::ApplyForce(
-        Game::ObjectHandle a_handle,
+        Game::VMHandle a_handle,
         std::uint32_t a_steps,
-        const std::string& a_component,
-        const NiPoint3& a_force)
+        const stl::fixed_string& a_component,
+        const btVector3& a_force)
     {
-        if (a_handle != Game::ObjectHandle(0))
+        if (a_handle != Game::VMHandle(0))
         {
             auto it = m_actors.find(a_handle);
             if (it != m_actors.end())
@@ -550,7 +578,10 @@ namespace CBP
         }
     }
 
-    void ControllerTask::ClearActors(bool a_noNotify, bool a_release)
+    void ControllerTask::ClearActors(
+        bool a_noNotify, 
+        bool a_release, 
+        bool a_invalidateHandles)
     {
         const auto& globalConfig = IConfig::GetGlobal();
 
@@ -558,7 +589,14 @@ namespace CBP
         {
             for (const auto& e : m_actors)
             {
-                Debug("Removing (CLR) [%.8X]", e.first.GetFormID());
+                Debug("Removing (CLR) [%.8X]", e.first.GetFormID().get());
+            }
+        }
+
+        if (a_invalidateHandles)
+        {
+            for (auto& e : m_actors) {
+                e.second.InvalidateHandle();
             }
         }
 
@@ -576,16 +614,15 @@ namespace CBP
         m_queue.swap(decltype(m_queue)());
     }
 
-    void ControllerTask::Reset(Game::ObjectHandle a_handle)
+    void ControllerTask::Reset(Game::VMHandle a_handle)
     {
-        if (a_handle != Game::ObjectHandle(0))
+        if (a_handle != Game::VMHandle(0))
         {
             RemoveActor(a_handle);
             AddActor(a_handle);
         }
         else
         {
-
             const auto& globalConfig = IConfig::GetGlobal();
 
             PrintStats("Resetting");
@@ -612,23 +649,24 @@ namespace CBP
             e.second.Reset();
     }
 
-    void ControllerTask::WeightUpdate(Game::ObjectHandle a_handle)
+    void ControllerTask::WeightUpdate(Game::VMHandle a_handle)
     {
         auto actor = a_handle.Resolve<Actor>();
         if (!ActorValid(actor))
             return;
 
         actor->QueueNiNodeUpdate(true);
-        DTasks::AddTask([=]()
+
+        ITaskPool::AddTask([handle = a_handle]()
             {
-                auto actor = a_handle.Resolve<Actor>();
+                auto actor = handle.Resolve<Actor>();
                 if (!ActorValid(actor))
                     return;
 
                 if (!actor->baseForm)
                     return;
 
-                auto npc = RTTI<TESNPC>()(actor->baseForm);
+                auto npc = actor->baseForm->As<TESNPC>();
                 if (!npc)
                     return;
 
@@ -652,7 +690,7 @@ namespace CBP
             WeightUpdate(e.first);
     }
 
-    void ControllerTask::NiNodeUpdate(Game::ObjectHandle a_handle)
+    void ControllerTask::NiNodeUpdate(Game::VMHandle a_handle)
     {
         auto actor = a_handle.Resolve<Actor>();
         if (ActorValid(actor))
@@ -666,7 +704,7 @@ namespace CBP
     }
 
     /*void ControllerTask::AddArmorOverrides(
-        Game::ObjectHandle a_handle,
+        Game::VMHandle a_handle,
         Game::FormID a_formid)
     {
         auto& globalConfig = IConfig::GetGlobal();
@@ -704,13 +742,13 @@ namespace CBP
         }
 
         DoConfigUpdate(a_handle, actor, it->second);
-        
+
         if (it->second.Empty())
             RemoveActor(it);
     }*/
 
     void ControllerTask::UpdateArmorOverrides(
-        Game::ObjectHandle a_handle)
+        Game::VMHandle a_handle)
     {
         auto& globalConfig = IConfig::GetGlobal();
         if (!globalConfig.general.armorOverrides)
@@ -749,12 +787,12 @@ namespace CBP
     }
 
     bool ControllerTask::ApplyArmorOverrides(
-        Game::ObjectHandle a_handle,
+        Game::VMHandle a_handle,
         const armorOverrideResults_t& a_desc)
     {
         auto current = IConfig::GetArmorOverrides(a_handle);
 
-        if (current != nullptr)
+        if (current)
         {
             if (current->first.size() == a_desc.size())
             {
@@ -780,7 +818,7 @@ namespace CBP
     }
 
     bool ControllerTask::BuildArmorOverride(
-        Game::ObjectHandle a_handle,
+        Game::VMHandle a_handle,
         const armorOverrideResults_t& a_in,
         armorOverrideDescriptor_t& a_out)
     {
@@ -836,7 +874,7 @@ namespace CBP
         UpdateConfigOnAllActors();
     }
 
-    void ControllerTask::ValidateNodes(Game::ObjectHandle a_handle)
+    void ControllerTask::ValidateNodes(Game::VMHandle a_handle)
     {
         auto it = m_actors.find(a_handle);
         if (it == m_actors.end())
@@ -935,7 +973,7 @@ namespace CBP
                 if (!ActorValid2(a_actor))
                     return;
 
-                Game::ObjectHandle handle;
+                Game::VMHandle handle;
                 if (!handle.Get(a_actor))
                     return;
 

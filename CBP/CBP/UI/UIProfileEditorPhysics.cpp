@@ -213,7 +213,7 @@ namespace CBP
 
     void UIProfileEditorPhysics::UpdateNodeData(
         int,
-        const std::string&,
+        const stl::fixed_string&,
         const configNode_t&,
         bool)
     {
@@ -221,7 +221,7 @@ namespace CBP
 
     void UIProfileEditorPhysics::RemoveNodeData(
         int a_handle,
-        const std::string& a_node)
+        const stl::fixed_string& a_node)
     {
     }
 

@@ -20,8 +20,8 @@ namespace CBP
         }
 
     protected:
-        typedef typename T::value_type listValue_t;
-        typedef typename T::value_type::second_type::second_type entryValue_t;
+        using listValue_t = typename T::value_type;
+        using entryValue_t = typename T::value_type::second_type::second_type;
 
         void ListTick();
         void ListReset();

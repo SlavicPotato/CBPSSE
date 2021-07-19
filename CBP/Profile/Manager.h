@@ -11,7 +11,7 @@ class ProfileManager :
     ILog
 {
     using profile_type = T::base_type;
-    using storage_type = stl::imap<std::string, T>;
+    using storage_type = stl::map_simd<stl::fixed_string, T>;
 
 public:
     inline static constexpr std::size_t MAX_FILENAME_LENGTH = 64;
@@ -33,19 +33,19 @@ public:
 
     [[nodiscard]] bool AddProfile(const T& a_in);
     [[nodiscard]] bool AddProfile(T&& a_in);
-    [[nodiscard]] bool DeleteProfile(const std::string& a_name);
-    [[nodiscard]] bool RenameProfile(const std::string& a_oldName, const std::string& a_newName);
-    [[nodiscard]] bool SaveProfile(const std::string& a_name, const profile_type& a_in, bool a_store);
+    [[nodiscard]] bool DeleteProfile(const stl::fixed_string& a_name);
+    [[nodiscard]] bool RenameProfile(const stl::fixed_string& a_oldName, const std::string& a_newName);
+    [[nodiscard]] bool SaveProfile(const stl::fixed_string& a_name, const profile_type& a_in, bool a_store);
 
     [[nodiscard]] SKMP_FORCEINLINE storage_type& Data() noexcept { return m_storage; }
     [[nodiscard]] SKMP_FORCEINLINE const storage_type& Data() const noexcept { return m_storage; }
-    [[nodiscard]] SKMP_FORCEINLINE T& Get(const std::string& a_key) { return m_storage.at(a_key); };
-    [[nodiscard]] SKMP_FORCEINLINE typename storage_type::const_iterator Find(const std::string& a_key) const { return m_storage.find(a_key); };
-    [[nodiscard]] SKMP_FORCEINLINE typename storage_type::iterator Find(const std::string& a_key) { return m_storage.find(a_key); };
+    [[nodiscard]] SKMP_FORCEINLINE T& Get(const stl::fixed_string& a_key) { return m_storage.at(a_key); };
+    [[nodiscard]] SKMP_FORCEINLINE typename storage_type::const_iterator Find(const stl::fixed_string& a_key) const { return m_storage.find(a_key); };
+    [[nodiscard]] SKMP_FORCEINLINE typename storage_type::iterator Find(const stl::fixed_string& a_key) { return m_storage.find(a_key); };
     [[nodiscard]] SKMP_FORCEINLINE typename storage_type::const_iterator End() const { return m_storage.end(); };
     [[nodiscard]] SKMP_FORCEINLINE typename storage_type::iterator End() { return m_storage.end(); };
-    [[nodiscard]] SKMP_FORCEINLINE const T& Get(const std::string& a_key) const { return m_storage.at(a_key); };
-    [[nodiscard]] SKMP_FORCEINLINE bool Contains(const std::string& a_key) const { return m_storage.contains(a_key); };
+    [[nodiscard]] SKMP_FORCEINLINE const T& Get(const stl::fixed_string& a_key) const { return m_storage.at(a_key); };
+    [[nodiscard]] SKMP_FORCEINLINE bool Contains(const stl::fixed_string& a_key) const { return m_storage.contains(a_key); };
     [[nodiscard]] SKMP_FORCEINLINE const auto& GetLastException() const noexcept { return m_lastExcept; }
     [[nodiscard]] SKMP_FORCEINLINE bool IsInitialized() const noexcept { return m_isInitialized; }
     [[nodiscard]] SKMP_FORCEINLINE typename storage_type::size_type Size() const noexcept { return m_storage.size(); }
@@ -54,11 +54,11 @@ public:
     FN_NAMEPROC("ProfileManager")
 private:
 
-    void CheckProfileKey(const std::string& a_key) const;
+    void CheckProfileKey(const stl::fixed_string& a_key) const;
 
     virtual void OnProfileAdd(T& a_profile);
     virtual void OnProfileDelete(T& a_profile);
-    virtual void OnProfileRename(T& a_profile, const std::string& a_oldName);
+    virtual void OnProfileRename(T& a_profile, const stl::fixed_string& a_oldName);
 
     storage_type m_storage;
     fs::path m_root;
@@ -235,7 +235,8 @@ bool ProfileManager<T>::AddProfile(const T& a_in)
         CheckProfileKey(key);
 
         auto r = m_storage.emplace(key, a_in);
-        if (r.second) {
+        if (r.second) 
+        {
             OnProfileAdd(r.first->second);
             ProfileManagerEvent<T> evn{
                 ProfileManagerEvent<T>::EventType::kProfileAdd,
@@ -293,14 +294,14 @@ bool ProfileManager<T>::AddProfile(T&& a_in)
 }
 
 template <class T>
-void ProfileManager<T>::CheckProfileKey(const std::string& a_key) const
+void ProfileManager<T>::CheckProfileKey(const stl::fixed_string& a_key) const
 {
-    if (!std::regex_match(a_key, m_rFileCheck))
+    if (!std::regex_match(a_key.get(), m_rFileCheck))
         throw std::exception("Invalid characters in profile name");
 }
 
 template <class T>
-bool ProfileManager<T>::DeleteProfile(const std::string& a_name)
+bool ProfileManager<T>::DeleteProfile(const stl::fixed_string& a_name)
 {
     try
     {
@@ -323,7 +324,7 @@ bool ProfileManager<T>::DeleteProfile(const std::string& a_name)
 
         OnProfileDelete(it->second);
         ProfileManagerEvent<T> evn{
-            ProfileManagerEvent<T>::EventType::kProfileAdd,
+            ProfileManagerEvent<T>::EventType::kProfileDelete,
             nullptr,
             std::addressof(it->first),
             std::addressof(it->second)
@@ -343,7 +344,7 @@ bool ProfileManager<T>::DeleteProfile(const std::string& a_name)
 
 template <class T>
 bool ProfileManager<T>::RenameProfile(
-    const std::string& a_oldName,
+    const stl::fixed_string& a_oldName,
     const std::string& a_newName)
 {
     try
@@ -383,7 +384,7 @@ bool ProfileManager<T>::RenameProfile(
 
         OnProfileRename(r.first->second, a_oldName);
 
-        std::string oldName(a_oldName);
+        auto oldName(a_oldName);
 
         ProfileManagerEvent<T> evn{
             ProfileManagerEvent<T>::EventType::kProfileRename,
@@ -403,7 +404,7 @@ bool ProfileManager<T>::RenameProfile(
 }
 
 template <class T>
-bool ProfileManager<T>::SaveProfile(const std::string& a_name, const profile_type& a_in, bool a_store)
+bool ProfileManager<T>::SaveProfile(const stl::fixed_string& a_name, const profile_type& a_in, bool a_store)
 {
     try
     {
@@ -443,6 +444,6 @@ void ProfileManager<T>::OnProfileDelete(T&)
 }
 
 template <class T>
-void ProfileManager<T>::OnProfileRename(T&, const std::string&)
+void ProfileManager<T>::OnProfileRename(T&, const stl::fixed_string&)
 {
 }

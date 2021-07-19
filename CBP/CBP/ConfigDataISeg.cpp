@@ -20,6 +20,8 @@ namespace CBP
         vec.colExtentMin.setValue(1.0f, 1.0f, 1.0f);
         vec.colExtentMax.setValue(1.0f, 1.0f, 1.0f);
         vec.colRot.setZero();
+        vec.maxOffsetParamsSphere.setValue(0.1f, 5.0f, 0.0f, 1.0f);
+        vec.maxOffsetParamsBox.setValue(0.1f, 5.0f, 0.0f, 1.0f);
 
         f32.stiffness = 10.0f;
         f32.stiffness2 = 10.0f;
@@ -27,9 +29,6 @@ namespace CBP
         f32.springSlackMag = 0.0f;
         f32.damping = 0.95f;
         f32.maxOffsetSphereRadius = 20.0f;
-        f32.maxOffsetVelResponseScale = 0.1f;
-        f32.maxOffsetMaxBiasMag = 5.0f;
-        f32.maxOffsetRestitutionCoefficient = 0.0f;
         f32.gravityBias = 0.0f;
         f32.gravityCorrection = 0.0f;
         f32.rotGravityCorrection = 0.0f;

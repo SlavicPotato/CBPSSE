@@ -21,6 +21,16 @@ namespace CBP
             const keyDesc_t& a_dmap,
             UInt32 a_key);
 
+        struct
+        {
+            stl::fixed_string ui;
+            stl::fixed_string controls;
+            stl::fixed_string simulation;
+            stl::fixed_string debug_renderer;
+            stl::fixed_string debug_renderer_col;
+            stl::fixed_string general;
+        } m_strings;
+
         UIContext& m_parent;
     };
 

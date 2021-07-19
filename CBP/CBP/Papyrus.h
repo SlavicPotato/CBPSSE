@@ -15,12 +15,12 @@ namespace CBP
         virtual void Dispose();
 
         static ConfigUpdateTask* Create(ConfigGender a_gender, const BSFixedString& sect, const BSFixedString& key, float val);
-        static ConfigUpdateTask* Create(Game::ObjectHandle handle, ConfigGender a_gender, const BSFixedString& sect, const BSFixedString& key, float val);
+        static ConfigUpdateTask* Create(Game::VMHandle handle, ConfigGender a_gender, const BSFixedString& sect, const BSFixedString& key, float val);
     private:
-        std::string m_sect;
-        std::string m_key;
+        stl::fixed_string m_sect;
+        stl::fixed_string m_key;
         float m_val;
-        Game::ObjectHandle m_handle;
+        Game::VMHandle m_handle;
         ConfigGender m_gender;
     };
 

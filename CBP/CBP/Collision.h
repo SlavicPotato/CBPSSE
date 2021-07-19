@@ -106,7 +106,7 @@ namespace CBP
             return m_Instance.m_ptrs.bt_dispatcher;
         }
 
-#if BT_THREADSAFE
+#if 0
         SKMP_FORCEINLINE static int GetNumThreads() {
             return m_Instance.m_numThreads;
         }
@@ -118,7 +118,7 @@ namespace CBP
 
         static void PerformCollisionResponse(int a_low, int a_high, float a_timeStep);
 
-#if BT_THREADSAFE
+#if 0
         struct taskObject_t
         {
             using task_t = concurrency::task_handle<std::function<void()>>;
@@ -155,7 +155,7 @@ namespace CBP
 
         };
 
-        stl::vector<taskObject_t> m_responseTasks;
+        std::vector<taskObject_t> m_responseTasks;
         btSpinMutex m_mutex;
         int m_numThreads;
 #endif

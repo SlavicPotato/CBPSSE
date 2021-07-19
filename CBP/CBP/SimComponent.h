@@ -347,7 +347,7 @@ namespace CBP
         bool m_doRotationScaling;
         bool m_offsetParent;
 
-        std::string m_meshShape;
+        stl::fixed_string m_meshShape;
 
         SimComponent& m_parent;
     };
@@ -437,8 +437,8 @@ namespace CBP
             Actor * a_actor,
             NiAVObject * a_obj,
             NiNode * a_originalParentNode,
-            const std::string & a_nodeName,
-            const std::string & a_configBoneName,
+            const stl::fixed_string& a_nodeName,
+            const stl::fixed_string& a_configBoneName,
             const configComponent_t & config,
             const configNode_t & a_nodeConf,
             uint64_t a_groupId,
@@ -467,7 +467,7 @@ namespace CBP
         SKMP_FORCEINLINE void UpdateVelocity(float a_timeStep);
         SKMP_NOINLINE void Reset();
 
-        void ApplyForce(std::uint32_t a_steps, const NiPoint3 & a_force);
+        void ApplyForce(std::uint32_t a_steps, const btVector3 & a_force);
 
 #ifdef _CBP_ENABLE_DEBUG
         void UpdateDebugInfo();
@@ -689,12 +689,10 @@ namespace CBP
         NiPointer<NiNode> m_objParent;
         NiPointer<NiNode> m_objParentOriginal;
 
-        NiAVObject::ControllerUpdateContext m_updateCtx;
+        stl::fixed_string m_nodeName;
+        stl::fixed_string m_configGroupName;
 
-        std::string m_nodeName;
-        std::string m_configGroupName;
-
-        stl::queue<Force> m_applyForceQueue;
+        stl::queue_simd<Force> m_applyForceQueue;
 
 #ifdef _CBP_ENABLE_DEBUG
         SimDebugInfo m_debugInfo;
@@ -766,6 +764,7 @@ namespace CBP
             obj->m_localTransform.pos.x = m_ldObject.m_position.x();
             obj->m_localTransform.pos.y = m_ldObject.m_position.y();
             obj->m_localTransform.pos.z = m_ldObject.m_position.z();
+
         }
 
         //obj->UpdateWorldData(&m_updateCtx);

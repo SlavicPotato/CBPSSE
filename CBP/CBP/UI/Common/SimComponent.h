@@ -44,7 +44,7 @@ namespace CBP
             configComponentsValue_t& a_pair,
             const componentValueDescMap_t::vec_value_type& a_desc
         ) = 0;
-        
+
         virtual void OnMotionConstraintChange(
             T a_handle,
             configComponents_t& a_data,
@@ -73,23 +73,23 @@ namespace CBP
             const configComponentsValue_t& a_pair,
             propagateFunc_t a_func) const;
 
-        [[nodiscard]] virtual std::string GetGCSID(
-            const std::string& a_name) const;
-
-        [[nodiscard]] SKMP_FORCEINLINE std::string GetCSID(
-            const std::string& a_name) const
+        [[nodiscard]] virtual const stl::fixed_string& GetGCSID(
+            const stl::fixed_string& a_name) override
         {
-            std::ostringstream ss;
-            ss << "UISC#" << Enum::Underlying(ID) << "#" << a_name;
-            return ss.str();
+            return m_cicGUISC.Get(a_name);
         }
 
-        [[nodiscard]] SKMP_FORCEINLINE std::string GetCSSID(
-            const std::string& a_name, const char* a_group) const
+        [[nodiscard]] const stl::fixed_string& GetCSID(
+            const stl::fixed_string& a_name)
         {
-            std::ostringstream ss;
-            ss << "UISC#" << Enum::Underlying(ID) << "#" << a_name << "#" << a_group;
-            return ss.str();
+            return m_cicUISC.Get(a_name);
+        }
+
+        [[nodiscard]] const stl::fixed_string& GetCSSID(
+            const stl::fixed_string& a_name, 
+            const stl::fixed_string& a_group)
+        {
+            return m_cicCSSID.Get(a_name, a_group);
         }
 
         float GetActualSliderValue(const armorCacheValuePair_t& a_cacheval, float a_baseval) const;
@@ -106,13 +106,13 @@ namespace CBP
             float* a_val,
             bool a_sync,
             float a_mval = 0.0f) const;
-        
+
         void DoColliderShapeOnChangePropagation(
             configComponents_t& a_data,
             configComponents_t* a_dg,
             configComponentsValue_t& a_pair,
             const componentValueDescMap_t::vec_value_type& a_desc) const;
-        
+
         void DoMotionConstraintOnChangePropagation(
             configComponents_t& a_data,
             configComponents_t* a_dg,
@@ -149,7 +149,7 @@ namespace CBP
 
         virtual const armorCacheEntry_t::mapped_type* GetArmorOverrideSection(
             T a_handle,
-            const std::string& a_comp) const;
+            const stl::fixed_string& a_comp) const;
 
         virtual bool GetNodeConfig(
             const configNodes_t& a_nodeConf,
@@ -193,7 +193,7 @@ namespace CBP
             configComponentsValue_t& a_pair,
             const componentValueDescMap_t::vec_value_type& a_entry,
             const nodeConfigList_t& a_nodeList);
-        
+
         void DrawMotionConstraintSelectors(
             T a_handle,
             configComponents_t& a_data,
@@ -203,8 +203,12 @@ namespace CBP
         char m_scBuffer1[64 + std::numeric_limits<float>::digits];
         bool m_eraseCurrent;
 
-        std::string m_cscStr;
-        std::string m_csStr;
+        stl::fixed_string m_cscStr;
+        stl::fixed_string m_csStr;
+
+        UICommon::UICollapsibleIDCache<Enum::Underlying(ID)> m_cicUISC;
+        UICommon::UICollapsibleIDCache<Enum::Underlying(ID)> m_cicGUISC;
+        UICommon::UICollapsibleIDCache2<Enum::Underlying(ID)> m_cicCSSID;
 
     };
 

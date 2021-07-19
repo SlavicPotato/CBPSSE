@@ -34,15 +34,15 @@ namespace CBP
                 modInfo->lightIndex,
                 modInfo->name);
 
-            m_pluginNameMap.try_emplace(modInfo->name, r.first->second);
+            m_pluginNameMap.try_emplace(r.first->second.name, r.first->second);
         }
 
         return (m_populated = true);
     }
 
-    const pluginInfo_t* IPluginInfo::Lookup(const std::string& a_modName) const
+    const pluginInfo_t* IPluginInfo::Lookup(const stl::fixed_string& a_modName) const
     {
-        const auto it = m_pluginNameMap.find(a_modName);
+        auto it = m_pluginNameMap.find(a_modName);
         if (it != m_pluginNameMap.end()) {
             return std::addressof(it->second);
         }
@@ -51,11 +51,12 @@ namespace CBP
 
     const pluginInfo_t* IPluginInfo::Lookup(UInt32 const a_modID) const
     {
-        const auto it = m_pluginIndexMap.find(a_modID);
+        auto it = m_pluginIndexMap.find(a_modID);
         if (it != m_pluginIndexMap.end()) {
             return std::addressof(it->second);
         }
         return nullptr;
     }
+
 
 }

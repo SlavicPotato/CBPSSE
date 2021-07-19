@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Config.h"
+#include "Profile.h"
 
 namespace Serialization
 {
@@ -76,16 +77,16 @@ namespace CBP
         void LoadGlobalConfig();
         bool SaveGlobalConfig();
 
-        std::size_t LoadActorProfiles(SKSESerializationInterface* intfc, stl::stringstream& a_data);
+        std::size_t LoadActorProfiles(SKSESerializationInterface* intfc, std::stringstream& a_data);
         std::size_t SerializeActorProfiles(std::stringstream& a_out);
 
-        std::size_t LoadGlobalProfile(SKSESerializationInterface* intfc, stl::stringstream& a_data);
+        std::size_t LoadGlobalProfile(SKSESerializationInterface* intfc, std::stringstream& a_data);
         std::size_t SerializeGlobalProfile(std::stringstream& a_out);
 
         bool LoadDefaultProfile();
         bool SaveToDefaultGlobalProfile();
 
-        std::size_t LoadRaceProfiles(SKSESerializationInterface* intfc, stl::stringstream& a_data);
+        std::size_t LoadRaceProfiles(SKSESerializationInterface* intfc, std::stringstream& a_data);
         std::size_t SerializeRaceProfiles(std::stringstream& a_out);
 
         void LoadCollisionGroups();
@@ -107,7 +108,7 @@ namespace CBP
         bool SavePending();
 
         std::size_t BinSerializeSave(boost::archive::binary_oarchive& a_out);
-        std::size_t BinSerializeLoad(SKSESerializationInterface* intfc, stl::stringstream& a_in);
+        std::size_t BinSerializeLoad(SKSESerializationInterface* intfc, std::stringstream& a_in);
 
         const auto& GetStats() {
             return m_stats;
@@ -118,7 +119,7 @@ namespace CBP
 
         void ResolvePluginName(Game::FormID a_formid, Json::Value& a_out);
         bool ResolvePluginFormID(const Json::Value& a_root, Game::FormID a_in, Game::FormID& a_out);
-        bool ResolvePluginHandle(const Json::Value& a_root, Game::ObjectHandle a_in, Game::ObjectHandle& a_out);
+        bool ResolvePluginHandle(const Json::Value& a_root, Game::VMHandle a_in, Game::VMHandle& a_out);
 
         template <class T>
         void MoveActorConfig(SKSESerializationInterface* intfc, const T& a_in, T& a_out);
@@ -186,14 +187,14 @@ namespace CBP
 
         for (auto& e : a_in)
         {
-            Game::ObjectHandle newHandle;
+            Game::VMHandle newHandle;
 
             if (!SKSE::ResolveHandle(intfc, e.first, newHandle)) {
                 Error("0x%llX: Couldn't resolve handle, discarding", e.first);
                 continue;
             }
 
-            if (!newHandle.IsValid() || newHandle == Game::ObjectHandle(0)) {
+            if (!newHandle.IsValid() || newHandle == Game::VMHandle(0)) {
                 Error("Invalid handle");
                 continue;
             }

@@ -2,13 +2,14 @@
 
 #include "ArmorCache.h"
 #include "Config.h"
+#include "Common/Serialization.h"
 
 namespace CBP
 {
     IArmorCache IArmorCache::m_Instance;
 
     const armorCacheEntry_t* IArmorCache::GetEntry(
-        const std::string& a_path)
+        const stl::fixed_string& a_path)
     {
         auto it = m_Instance.m_armorCache.find(a_path);
         if (it != m_Instance.m_armorCache.end())
@@ -22,14 +23,14 @@ namespace CBP
     }
 
     bool IArmorCache::Load(
-        const std::string& a_path, 
+        const stl::fixed_string& a_path,
         const armorCacheEntry_t*& a_out)
     {
         try
         {
             Json::Value root;
 
-            Serialization::ReadData(a_path, root);
+            Serialization::ReadData(a_path.get(), root);
 
             if (root.isNull())
                 throw std::exception("root == null");
@@ -44,14 +45,12 @@ namespace CBP
                 if (!it1->isObject())
                     throw std::exception("Unexpected data");
 
-                std::string configGroup(it1.key().asString());
-
                 /*if (!IConfig::IsValidGroup(configGroup)) {
                     gLog.Warning("%s: Unknown config group '%s', discarding", __FUNCTION__, configGroup.c_str());
                     continue;
                 }*/
 
-                auto& e = entry[configGroup];
+                auto& e = entry[it1.key().asString()];
 
                 for (auto it2 = it1->begin(); it2 != it1->end(); ++it2)
                 {
@@ -75,10 +74,10 @@ namespace CBP
 
                     std::uint32_t m = type.asUInt();
 
-                    if (m > 1)
+                    if (m > 2)
                         throw std::exception("Value type out of range");
 
-                    std::string valName(it2.key().asString());
+                    stl::fixed_string valName(it2.key().asString());
 
                     if (!configComponent_t::descMap.contains(valName)) {
                         gLog.Warning("%s: Unknown value name: %s", __FUNCTION__, valName.c_str());
@@ -102,7 +101,7 @@ namespace CBP
     }
 
     bool IArmorCache::Save(
-        const std::string& a_path, 
+        const stl::fixed_string& a_path,
         const armorCacheEntry_t& a_in)
     {
         try
@@ -121,7 +120,7 @@ namespace CBP
     }
     
     bool IArmorCache::Save(
-        const std::string& a_path, 
+        const stl::fixed_string& a_path,
         armorCacheEntry_t&& a_in)
     {
         try

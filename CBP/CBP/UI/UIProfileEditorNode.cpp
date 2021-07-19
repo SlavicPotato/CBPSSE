@@ -31,7 +31,7 @@ namespace CBP
 
     void UIProfileEditorNode::UpdateNodeData(
         int,
-        const std::string&,
+        const stl::fixed_string&,
         const NodeProfile::base_type::mapped_type&,
         bool)
     {
@@ -39,7 +39,7 @@ namespace CBP
 
     void UIProfileEditorNode::RemoveNodeData(
         int a_handle,
-        const std::string& a_node)
+        const stl::fixed_string& a_node)
     {
     }
 

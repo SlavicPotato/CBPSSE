@@ -4,7 +4,6 @@
 #include "Input/Handlers.h"
 #include "ImGUI/MouseEventQueue.h"
 #include "Events/Events.h"
-#include "Tasks/Tasks.h"
 
 namespace CBP
 {
@@ -82,7 +81,9 @@ namespace CBP
         static void AddTask(uint32_t id, UIRenderTaskBase* a_task);
         static void RemoveTask(uint32_t id);
 
-        SKMP_FORCEINLINE static bool HasCallback(uint32_t id) {
+        SKMP_FORCEINLINE static bool HasCallback(uint32_t id) 
+        {
+            IScopedLock lock(m_Instance.m_lock);
             return m_Instance.m_drawTasks.find(id) !=
                 m_Instance.m_drawTasks.end();
         }
@@ -98,14 +99,12 @@ namespace CBP
             m_Instance.m_nextResetIO = true;
         }
 
-        SKMP_FORCEINLINE static void SetImGuiIni(const std::string& a_path) {
+        SKMP_FORCEINLINE static void SetImGuiIni(
+            const stl::fixed_string& a_path) 
+        {
             m_Instance.conf.imgui_ini = a_path;
         }
         
-        SKMP_FORCEINLINE static void SetImGuiIni(std::string&& a_path) {
-            m_Instance.conf.imgui_ini = std::move(a_path);
-        }
-
         SKMP_FORCEINLINE static auto GetPerf() {
             return m_Instance.m_uiRenderPerf.current;
         }
@@ -171,7 +170,7 @@ namespace CBP
         } info;
 
         struct {
-            std::string imgui_ini;
+            stl::fixed_string imgui_ini;
         } conf;
 
         struct
@@ -180,14 +179,14 @@ namespace CBP
             long long current = 0;
         } m_uiRenderPerf;
 
-        stl::map<uint32_t, UIRenderTaskBase*> m_drawTasks;
+        std::map<uint32_t, UIRenderTaskBase*> m_drawTasks;
 
         EvaluateTaskStateTask m_evalTaskState;
 
         KeyPressHandler m_inputEventHandler;
 
         bool m_imInitialized;
-        bool m_suspended;
+        std::atomic<bool> m_suspended;
         HWND m_WindowHandle;
 
         IOUserData m_ioUserData;
@@ -199,7 +198,7 @@ namespace CBP
 
         std::atomic<bool> m_nextResetIO;
 
-        ICriticalSection m_lock;
+        WCriticalSection m_lock;
 
         static DUI m_Instance;
     };

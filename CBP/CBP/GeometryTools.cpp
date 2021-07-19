@@ -58,7 +58,7 @@ namespace CBP
                 if (!bone)
                     continue;
 
-                if (a_nodeName.data != bone->m_name)
+                if (a_nodeName != bone->m_name)
                     continue;
 
                 auto& boneData = skinData->m_pkBoneData[i];

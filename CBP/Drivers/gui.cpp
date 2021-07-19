@@ -46,7 +46,7 @@ namespace CBP
         if (m_suspended)
             return;
 
-        IScopedCriticalSection _(std::addressof(m_lock));
+        IScopedLock _(m_Instance.m_lock);
 
         m_uiRenderPerf.timer.Begin();
 
@@ -306,29 +306,13 @@ namespace CBP
     void DUI::LockControls(bool a_switch)
     {
         state.controlsLocked = a_switch;
-        DTasks::AddTask([a_switch]()
-            {
-                auto im = InputManager::GetSingleton();
-
-                if (im)
-                    im->EnableControls(s_controlDisableFlags, !a_switch);
-
-                auto player = *g_thePlayer;
-                if (player)
-                {
-                    if (a_switch)
-                        player->byCharGenFlag |= s_byChargenDisableFlags;
-                    else
-                        player->byCharGenFlag &= ~s_byChargenDisableFlags;
-                }
-
-            });
+        DInput::SetInputBlocked(a_switch);
     }
 
     void DUI::FreezeTime(bool a_switch)
     {
         state.timeFrozen = a_switch;
-        DTasks::AddTask([a_switch]()
+        ITaskPool::AddTask([a_switch]()
             {
                 auto unk = Game::Unk00::GetSingleton();
                 unk->SetGlobalTimeMultiplier(a_switch ? 1e-006f : 1.0f, true);
@@ -337,7 +321,7 @@ namespace CBP
 
     void DUI::AddTask(uint32_t id, UIRenderTaskBase* a_task)
     {
-        IScopedCriticalSection _(std::addressof(m_Instance.m_lock));
+        IScopedLock _(m_Instance.m_lock);
 
         auto it = m_Instance.m_drawTasks.emplace(id, a_task);
         if (!it.second)
@@ -364,7 +348,7 @@ namespace CBP
 
     void DUI::RemoveTask(uint32_t id)
     {
-        IScopedCriticalSection _(std::addressof(m_Instance.m_lock));
+        IScopedLock _(m_Instance.m_lock);
 
         auto it = m_Instance.m_drawTasks.find(id);
         if (it == m_Instance.m_drawTasks.end())
@@ -380,7 +364,7 @@ namespace CBP
 
     void DUI::EvaluateTaskState()
     {
-        DTasks::AddTask(&m_Instance.m_evalTaskState);
+        ITaskPool::AddTask(&m_Instance.m_evalTaskState);
     }
 
     void DUI::EvaluateTaskStateTask::Run()
@@ -390,7 +374,7 @@ namespace CBP
 
     void DUI::EvaluateTaskStateImpl()
     {
-        IScopedCriticalSection _(std::addressof(m_lock));
+        IScopedLock _(m_Instance.m_lock);
 
         for (auto& e : m_drawTasks)
         {

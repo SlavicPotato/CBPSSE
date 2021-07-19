@@ -25,23 +25,23 @@ namespace CBP
 
         virtual void UpdateNodeData(
             T a_handle,
-            const std::string& a_node,
+            const stl::fixed_string& a_node,
             const configNode_t& a_data,
             bool a_reset) = 0;
 
         virtual void RemoveNodeData(
             T a_handle,
-            const std::string& a_node) = 0;
+            const stl::fixed_string& a_node) = 0;
 
         void DrawNodeItem(
             T a_handle,
-            const std::string& a_nodeName,
+            const stl::fixed_string& a_nodeName,
             configNode_t& a_conf
         );
 
         void DrawBoneCastButtonsImpl(
-            Game::ObjectHandle a_handle,
-            const std::string& a_nodeName,
+            Game::VMHandle a_handle,
+            const stl::fixed_string& a_nodeName,
             configNode_t& a_conf);
 
         SKMP_FORCEINLINE void MarkNodeChanged() {
@@ -51,29 +51,35 @@ namespace CBP
     private:
 
         void DrawSaveGeometryContextMenu(
-            Game::ObjectHandle a_handle,
-            const std::string& a_nodeName,
+            Game::VMHandle a_handle,
+            const stl::fixed_string& a_nodeName,
             configNode_t& a_conf);
 
         void SaveGeometry(
-            Game::ObjectHandle a_handle,
-            const std::string& a_nodeName,
+            Game::VMHandle a_handle,
+            const stl::fixed_string& a_nodeName,
             const std::shared_ptr<const ColliderData>& a_data,
-            const std::string& a_name);
+            const stl::fixed_string& a_name);
 
         bool DrawBoneCast(
             T a_handle,
-            const std::string& a_nodeName,
+            const stl::fixed_string& a_nodeName,
             configNode_t& a_conf
         );
 
         virtual void DrawBoneCastButtons(
             T a_handle,
-            const std::string& a_nodeName,
+            const stl::fixed_string& a_nodeName,
             configNode_t& a_conf);
 
-        char m_inputShape[MAX_PATH];
+        struct 
+        {
+            std::string inputShape;
+            std::string inputParentNode;
+        } m_buffers;
+
         bool m_nodeConfigChanged;
+
     };
 
 
@@ -115,16 +121,14 @@ namespace CBP
 
     protected:
 
-        [[nodiscard]] SKMP_FORCEINLINE std::string GetCSID(
-            const std::string& a_name) const
+        [[nodiscard]] SKMP_FORCEINLINE const stl::fixed_string& GetCSID(
+            const stl::fixed_string& a_name)
         {
-            std::ostringstream ss;
-            ss << "UIND#" << Enum::Underlying(ID) << "#" << a_name;
-            return ss.str();
+            return m_cicUIND.Get(a_name);
         }
 
-        [[nodiscard]] virtual std::string GetGCSID(
-            const std::string& a_name) const;
+        [[nodiscard]] virtual const stl::fixed_string& GetGCSID(
+            const stl::fixed_string& a_name) override;
         
     private:
 
@@ -134,6 +138,10 @@ namespace CBP
         
         void DrawNodeAddPopup(
             configNodes_t& a_data);
+
+
+        UICommon::UICollapsibleIDCache<Enum::Underlying(ID)> m_cicUIND;
+        UICommon::UICollapsibleIDCache<Enum::Underlying(ID)> m_cicGUIND;
 
     };
 

@@ -4,6 +4,8 @@
 
 #include "Drivers/cbp.h"
 
+#include "Data/StringHolder.h"
+
 namespace CBP
 {
     using namespace UICommon;
@@ -55,8 +57,10 @@ namespace CBP
 
             auto wcm = ImGui::GetWindowContentRegionMax();
 
-            ImGui::SameLine(wcm.x - GetNextTextOffset("New", true));
-            if (ButtonRight("New")) {
+            auto& sh = Common::StringHolder::GetSingleton();
+
+            ImGui::SameLine(wcm.x - GetNextTextOffset(sh.snew, true));
+            if (ButtonRight(sh.snew)) {
                 ImGui::OpenPopup("New group");
                 m_input = 0;
             }
@@ -73,8 +77,8 @@ namespace CBP
                 }
             }
 
-            ImGui::SameLine(wcm.x - GetNextTextOffset("Delete"));
-            if (ButtonRight("Delete")) {
+            ImGui::SameLine(wcm.x - GetNextTextOffset(sh.del));
+            if (ButtonRight(sh.del)) {
                 if (m_selected)
                     ImGui::OpenPopup("Delete");
             }

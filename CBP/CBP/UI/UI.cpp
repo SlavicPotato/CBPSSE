@@ -26,6 +26,7 @@
 #include "UISimComponentActor.h"
 
 #include "CBP/BoneCast.h"
+#include "Data/StringHolder.h"
 
 #include "Drivers/cbp.h"
 
@@ -55,7 +56,8 @@ namespace CBP
         m_debug(std::make_unique<UIDebugInfo>()),
 #endif
         m_state{ .menu {.openIEDialog = false} },
-        m_activeLoadInstance(0)
+        m_activeLoadInstance(0),
+        m_cicGUISC("GUISC")
     {
     }
 
@@ -248,7 +250,7 @@ namespace CBP
                         );
                     }
 
-                    if (a_entry->first != Game::ObjectHandle(0))
+                    if (a_entry->first != Game::VMHandle(0))
                     {
                         ImGui::Separator();
 
@@ -290,7 +292,7 @@ namespace CBP
                     ImGui::EndMenu();
                 }
 
-                if (a_entry->first != Game::ObjectHandle(0))
+                if (a_entry->first != Game::VMHandle(0))
                 {
                     ImGui::Separator();
 
@@ -352,7 +354,9 @@ namespace CBP
 
             auto wcm = ImGui::GetWindowContentRegionMax();
 
-            if (m_listCurrent != Game::ObjectHandle(0))
+            auto& sh = Common::StringHolder::GetSingleton();
+
+            if (m_listCurrent != Game::VMHandle(0))
             {
                 auto confClass = IConfig::GetActorPhysicsClass(m_listCurrent);
 
@@ -366,8 +370,8 @@ namespace CBP
                     ImGui::Text("Armor overrides active");
                     ImGui::PopStyleColor();
 
-                    ImGui::SameLine(wcm.x - GetNextTextOffset("Edit", true));
-                    if (ButtonRight("Edit"))
+                    ImGui::SameLine(wcm.x - GetNextTextOffset(sh.edit, true));
+                    if (ButtonRight(sh.edit))
                     {
                         m_armorOverride->SetCurrentOverrides(armorOverrides->first);
                         m_armorOverride->SetOpenState(true);
@@ -381,16 +385,16 @@ namespace CBP
 
             HelpMarker(MiscHelpText::showAllActors);
 
-            ImGui::SameLine(wcm.x - GetNextTextOffset("Rescan", true));
-            if (ButtonRight("Rescan"))
+            ImGui::SameLine(wcm.x - GetNextTextOffset(sh.rescan, true));
+            if (ButtonRight(sh.rescan))
                 DCBP::QueueActorCacheUpdate();
 
             ImGui::Spacing();
             Checkbox("Clamp values", &globalConfig.ui.actor.clampValues);
             HelpMarker(MiscHelpText::clampValues);
 
-            ImGui::SameLine(wcm.x - GetNextTextOffset("Reset", true));
-            if (ButtonRight("Reset"))
+            ImGui::SameLine(wcm.x - GetNextTextOffset(sh.reset, true));
+            if (ButtonRight(sh.reset))
                 ImGui::OpenPopup("Reset");
 
             ImGui::Spacing();
@@ -410,7 +414,7 @@ namespace CBP
 
             ImGui::Spacing();
 
-            if (m_listCurrent != Game::ObjectHandle(0)) {
+            if (m_listCurrent != Game::VMHandle(0)) {
                 m_scActor->DrawGenderSelector();
             }
             else {
@@ -427,7 +431,7 @@ namespace CBP
 
             ImGui::Separator();
 
-            if (m_listCurrent != Game::ObjectHandle(0)) {
+            if (m_listCurrent != Game::VMHandle(0)) {
                 m_scActor->DrawSimComponents(m_listCurrent, entry->second.second(globalConfig.ui.commonSettings.physics.actor.selectedGender));
             }
             else {
@@ -524,7 +528,7 @@ namespace CBP
     {
         auto& profileData = a_profile.Data();
 
-        if (a_data->first == Game::ObjectHandle(0))
+        if (a_data->first == Game::VMHandle(0))
         {
             IConfig::Copy(profileData, a_data->second.second);
             IConfig::SetGlobalPhysics(profileData);
@@ -541,12 +545,12 @@ namespace CBP
         }
     }
 
-    auto UIContext::GetData(Game::ObjectHandle a_handle) ->
+    auto UIContext::GetData(Game::VMHandle a_handle) ->
         const entryValue_t&
     {
         const auto& globalConfig = IConfig::GetGlobal();
 
-        return a_handle == Game::ObjectHandle(0) ?
+        return a_handle == Game::VMHandle(0) ?
             IConfig::GetGlobalPhysics() :
             IConfig::GetActorPhysics(a_handle);
     }
@@ -554,14 +558,14 @@ namespace CBP
     auto UIContext::GetData(const listValue_t* a_data) ->
         const entryValue_t&
     {
-        return a_data->first == Game::ObjectHandle(0) ?
+        return a_data->first == Game::VMHandle(0) ?
             IConfig::GetGlobalPhysics() :
             a_data->second.second;
     }
 
-    void UIContext::ListResetAllValues(Game::ObjectHandle a_handle)
+    void UIContext::ListResetAllValues(Game::VMHandle a_handle)
     {
-        if (a_handle == Game::ObjectHandle(0))
+        if (a_handle == Game::VMHandle(0))
         {
             IConfig::ClearGlobalPhysics();
 
@@ -582,7 +586,7 @@ namespace CBP
         }
     }
 
-    ConfigClass UIContext::GetActorClass(Game::ObjectHandle a_handle) const
+    ConfigClass UIContext::GetActorClass(Game::VMHandle a_handle) const
     {
         return IConfig::GetActorPhysicsClass(a_handle);
     }
@@ -592,22 +596,20 @@ namespace CBP
         return IConfig::GetGlobal().ui.actorPhysics;
     }
 
-    bool UIContext::HasArmorOverride(Game::ObjectHandle a_handle) const
+    bool UIContext::HasArmorOverride(Game::VMHandle a_handle) const
     {
         return IConfig::HasArmorOverride(a_handle);
     }
 
-    std::string UIContext::GetGCSID(
-        const std::string& a_name) const
+    const stl::fixed_string& UIContext::GetGCSID(
+        const stl::fixed_string& a_name)
     {
-        std::ostringstream ss;
-        ss << "GUISC#" << Enum::Underlying(UIEditorID::kMainEditor) << "#" << a_name;
-        return ss.str();
+        return m_cicGUISC.Get(a_name);
     }
 
     void UIContext::OnListChangeCurrentItem(
-        const SelectedItem<Game::ObjectHandle>& a_oldHandle,
-        Game::ObjectHandle a_newHandle)
+        const SelectedItem<Game::VMHandle>& a_oldHandle,
+        Game::VMHandle a_newHandle)
     {
         auto& globalConfig = IConfig::GetGlobal();
         if (globalConfig.ui.autoSelectGender) {
@@ -618,8 +620,8 @@ namespace CBP
     void UIContext::ApplyForce(
         listValue_t* a_data,
         std::uint32_t a_steps,
-        const std::string& a_component,
-        const NiPoint3& a_force) const
+        const stl::fixed_string& a_component,
+        const btVector3& a_force) const
     {
         if (a_steps == 0)
             return;

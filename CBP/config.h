@@ -26,10 +26,10 @@ public:
         return GetValue(key, default);
     }
 
-    template <typename T, typename = std::enable_if_t<!std::is_same_v<T, bool> && (std::is_integral_v<T> || std::is_enum_v<T>) && std::is_convertible_v<T, long>>>
+    template <typename T, typename = std::enable_if_t<!std::is_same_v<T, bool> && (std::is_integral_v<T> || std::is_enum_v<T>) && std::is_convertible_v<T, std::int64_t>>>
     T GetConfigValue(const std::string & key, T default) const
     {
-        return static_cast<T>(GetValue(key, static_cast<long>(default)));
+        return static_cast<T>(GetValue(key, static_cast<std::int64_t>(default)));
     }
 
     virtual const char* ModuleName() const noexcept = 0;

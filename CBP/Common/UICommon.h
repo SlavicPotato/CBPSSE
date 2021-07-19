@@ -5,19 +5,21 @@
 
 #include "Profile/Manager.h"
 
+#include "Data/StringHolder.h"
+
 namespace UICommon
 {
     class UIAlignment
     {
     protected:
 
-        float GetNextTextOffset(const char* a_text, bool a_clear = false);
+        float GetNextTextOffset(const stl::fixed_string& a_text, bool a_clear = false);
         void ClearTextOffset();
-        bool ButtonRight(const char* a_text, bool a_disabled = false);
+        bool ButtonRight(const stl::fixed_string& a_text, bool a_disabled = false);
 
     private:
         float m_posOffset = 0.0f;
-        stl::unordered_map<std::string, float> m_ctlPositions;
+        std::unordered_map<stl::fixed_string, float> m_ctlPositions;
 
     };
 
@@ -71,17 +73,98 @@ namespace UICommon
 
     };
 
+    template <int _ID>
+    class UICollapsibleIDCache
+    {
+
+    public:
+
+        UICollapsibleIDCache() = delete;
+        UICollapsibleIDCache(
+            const stl::fixed_string& a_prefix)
+            :
+            m_prefix(a_prefix)
+        {
+        }
+
+        const stl::fixed_string& Get(const stl::fixed_string& a_key)
+        {
+            auto it = m_data.find(a_key);
+            if (it == m_data.end())
+            {
+                std::string store(m_prefix);
+                store += "#";
+                store += std::to_string(_ID);
+                store += "#";
+                store += a_key;
+
+                return m_data.emplace(a_key, store).first->second;
+            }
+
+            return it->second;
+        }
+
+    private:
+
+        std::unordered_map<stl::fixed_string, stl::fixed_string> m_data;
+
+        stl::fixed_string m_prefix;
+    };
+
+    template <int _ID>
+    class UICollapsibleIDCache2 
+    {
+    public:
+
+        UICollapsibleIDCache2() = delete;
+        UICollapsibleIDCache2(
+            const stl::fixed_string& a_prefix)
+            :
+            m_prefix(a_prefix)
+        {
+        }
+
+        const stl::fixed_string& Get(
+            const stl::fixed_string& a_key,
+            const stl::fixed_string& a_key2)
+        {
+            auto& r = m_data.try_emplace(a_key).first->second;
+
+            auto it = r.find(a_key2);
+            if (it == r.end())
+            {
+                std::string store(m_prefix);
+                store += "#";
+                store += std::to_string(_ID);
+                store += "#";
+                store += a_key;
+                store += "#";
+                store += a_key2;
+
+                return r.emplace(a_key2, store).first->second;
+            }
+
+            return it->second;
+        }
+
+    private:
+
+        std::unordered_map<stl::fixed_string, std::unordered_map<stl::fixed_string, stl::fixed_string>> m_data;
+
+        stl::fixed_string m_prefix;
+    };
+
     class UICollapsibles
     {
     protected:
 
         bool CollapsingHeader(
-            const std::string& a_key,
+            const stl::fixed_string& a_key,
             const char* a_label,
             bool a_default = true) const;
 
         bool Tree(
-            const std::string& a_key,
+            const stl::fixed_string& a_key,
             const char* a_label,
             bool a_default = true,
             bool a_framed = false) const;
@@ -446,7 +529,7 @@ namespace UICommon
         }
 
     private:
-        stl::queue<UIPopupAction> m_queue;
+        std::queue<UIPopupAction> m_queue;
     };
 
     class UIWindowBase
@@ -508,16 +591,29 @@ namespace UICommon
         virtual bool InitializeProfile(T& a_profile);
         virtual bool AllowCreateNew() const;
         virtual bool AllowSave() const;
-        virtual void OnItemSelected(const std::string& a_item);
-        virtual void OnProfileSave(const std::string& a_item);
+        virtual void OnItemSelected(const stl::fixed_string& a_item);
+
+        virtual void OnProfileAdd(
+            const stl::fixed_string& a_name,
+            T &a_profile);
+
+        virtual void OnProfileSave(
+            const stl::fixed_string& a_name,
+            T& a_profile);
+
+        virtual void OnProfileDelete(const stl::fixed_string& a_item);
+
+        virtual void OnProfileRename(
+            const stl::fixed_string& a_oldName, 
+            const stl::fixed_string& a_newName);
 
         virtual void Receive(const ProfileManagerEvent<T>& a_evn) override;
 
-        void SetSelected(const std::string& a_item);
+        void SetSelected(const stl::fixed_string& a_item);
 
         struct {
             char new_input[60];
-            SelectedItem<std::string> selected;
+            SelectedItem<stl::fixed_string> selected;
             except::descriptor lastException;
         } m_state;
 
@@ -556,7 +652,7 @@ namespace UICommon
         if (UICommon::TextInputDialog("New profile", "Enter the profile name:",
             m_state.new_input, sizeof(m_state.new_input), a_fontScale))
         {
-            if (strlen(m_state.new_input))
+            if (StrHelpers::strlen(m_state.new_input))
             {
                 auto& pm = GetProfileManager();
 
@@ -568,10 +664,10 @@ namespace UICommon
                     {
                         if (profile.Save())
                         {
-                            std::string name(profile.Name());
+                            stl::fixed_string name(profile.Name());
                             if (pm.AddProfile(std::move(profile)))
                             {
-                                m_state.selected = std::move(name);
+                                m_state.selected = name;
                             }
                             else {
                                 m_state.lastException = pm.GetLastException();
@@ -620,13 +716,34 @@ namespace UICommon
 
     template <class T>
     void UIProfileBase<T>::OnItemSelected(
-        const std::string& a_item)
+        const stl::fixed_string& a_item)
     {
     }
 
     template <class T>
+    void UIProfileBase<T>::OnProfileAdd(
+        const stl::fixed_string& a_name,
+        T& a_profile)
+    {
+    }
+    
+    template <class T>
     void UIProfileBase<T>::OnProfileSave(
-        const std::string& a_item)
+        const stl::fixed_string& a_name,
+        T& a_profile)
+    {
+    }
+    
+    template <class T>
+    void UIProfileBase<T>::OnProfileDelete(
+        const stl::fixed_string& a_item)
+    {
+    }
+    
+    template <class T>
+    void UIProfileBase<T>::OnProfileRename(
+        const stl::fixed_string& a_oldName, 
+        const stl::fixed_string& a_newName)
     {
     }
 
@@ -636,16 +753,20 @@ namespace UICommon
         switch (a_evn.m_type)
         {
         case ProfileManagerEvent<T>::EventType::kProfileAdd:
-
+            OnProfileAdd(*a_evn.m_profile, *a_evn.m_data);
             break;
         case ProfileManagerEvent<T>::EventType::kProfileDelete:
-
+            OnProfileDelete(*a_evn.m_profile);
+            if (m_state.selected == *a_evn.m_profile) {
+                m_state.selected.Clear();
+            }            
             break;
         case ProfileManagerEvent<T>::EventType::kProfileSave:
-            OnProfileSave(*a_evn.m_profile);
+            OnProfileSave(*a_evn.m_profile, *a_evn.m_data);
             break;
         case ProfileManagerEvent<T>::EventType::kProfileRename:
-            if (m_state.selected && StrHelpers::iequal(*a_evn.m_oldProfile, *m_state.selected)) {
+            OnProfileRename(*a_evn.m_oldProfile, *a_evn.m_profile);
+            if (m_state.selected == *a_evn.m_oldProfile) {
                 m_state.selected = *a_evn.m_profile;
             }
             break;
@@ -654,7 +775,7 @@ namespace UICommon
 
     template <class T>
     void UIProfileBase<T>::SetSelected(
-        const std::string& a_item)
+        const stl::fixed_string& a_item)
     {
         m_state.selected = a_item;
         OnItemSelected(a_item);
@@ -667,7 +788,7 @@ namespace UICommon
         public UIProfileBase<P>
     {
     protected:
-        UIProfileSelectorBase() = default;
+        UIProfileSelectorBase();
         virtual ~UIProfileSelectorBase() noexcept = default;
 
         void DrawProfileSelector(T* a_data, float a_fontScale);
@@ -677,7 +798,15 @@ namespace UICommon
             const P& a_profile) = 0;
 
         virtual void DrawProfileSelectorOptions(T* a_data);
+
+
     };
+
+    template<class T, class P>
+    UIProfileSelectorBase<T, P>::UIProfileSelectorBase()        
+    {
+
+    }
 
     template<class T, class P>
     void UIProfileSelectorBase<T, P>::DrawProfileSelector(T* a_data, float a_fontScale)
@@ -701,12 +830,11 @@ namespace UICommon
             {
                 ImGui::PushID(static_cast<const void*>(std::addressof(e.second)));
 
-                bool selected = m_state.selected &&
-                    StrHelpers::iequal(e.first, *m_state.selected);
-
-                if (selected)
+                bool selected = m_state.selected == e.first;
+                if (selected) {
                     if (ImGui::IsWindowAppearing())
                         ImGui::SetScrollHereY();
+                }
 
                 if (ImGui::Selectable(e.second.Name().c_str(), selected)) {
                     m_state.selected = e.first;
@@ -719,8 +847,10 @@ namespace UICommon
 
         auto wcm = ImGui::GetWindowContentRegionMax();
 
-        ImGui::SameLine(wcm.x - GetNextTextOffset("New", true));
-        if (ButtonRight("New", !AllowCreateNew())) {
+        auto& sh = Common::StringHolder::GetSingleton();
+
+        ImGui::SameLine(wcm.x - GetNextTextOffset(sh.snew, true));
+        if (ButtonRight(sh.snew, !AllowCreateNew())) {
             ImGui::OpenPopup("New profile");
             m_state.new_input[0] = 0;
         }
@@ -731,8 +861,8 @@ namespace UICommon
         {
             auto& profile = data.at(*m_state.selected);
 
-            ImGui::SameLine(wcm.x - GetNextTextOffset("Apply"));
-            if (ButtonRight("Apply")) {
+            ImGui::SameLine(wcm.x - GetNextTextOffset(sh.apply));
+            if (ButtonRight(sh.apply)) {
                 ImGui::OpenPopup("Apply from profile");
             }
 
@@ -746,8 +876,8 @@ namespace UICommon
 
             if (AllowSave())
             {
-                ImGui::SameLine(wcm.x - GetNextTextOffset("Save"));
-                if (ButtonRight("Save")) {
+                ImGui::SameLine(wcm.x - GetNextTextOffset(sh.save));
+                if (ButtonRight(sh.save)) {
                     ImGui::OpenPopup("Save to profile");
                 }
             }
@@ -792,7 +922,7 @@ namespace UICommon
 
         void Draw(float a_scale);
 
-        SKMP_FORCEINLINE const char* GetName() const {
+        SKMP_FORCEINLINE const stl::fixed_string& GetName() const {
             return m_name;
         }
 
@@ -817,7 +947,7 @@ namespace UICommon
 
         UICommon::UIGenericFilter m_filter;
 
-        const char* m_name;
+        stl::fixed_string m_name;
         std::string m_currentDeleteWarningText;
     };
 
@@ -834,7 +964,7 @@ namespace UICommon
 
         ImGui::PushID(static_cast<const void*>(this));
 
-        if (ImGui::Begin(m_name, GetOpenState()))
+        if (ImGui::Begin(m_name.c_str(), GetOpenState()))
         {
             ImGui::SetWindowFontScale(a_scale);
 
@@ -883,7 +1013,7 @@ namespace UICommon
                     if (!m_filter.Test(e.first))
                         continue;
 
-                    ImGui::PushID(reinterpret_cast<const void*>(std::addressof(e.second)));
+                    ImGui::PushID(static_cast<const void*>(std::addressof(e.second)));
 
                     bool selected = e.first == *m_state.selected;
                     if (selected)
@@ -900,8 +1030,10 @@ namespace UICommon
             ImGui::SameLine();
             m_filter.DrawButton();
 
-            ImGui::SameLine(ImGui::GetWindowContentRegionMax().x - GetNextTextOffset("New", true));
-            if (ButtonRight("New", !AllowCreateNew())) {
+            auto& sh = Common::StringHolder::GetSingleton();
+
+            ImGui::SameLine(ImGui::GetWindowContentRegionMax().x - GetNextTextOffset(sh.snew, true));
+            if (ButtonRight(sh.snew, !AllowCreateNew())) {
                 ImGui::OpenPopup("New profile");
                 m_state.new_input[0] = 0;
             }
@@ -956,7 +1088,7 @@ namespace UICommon
                     }
                 }
 
-                ImGui::PushID("__options");
+                ImGui::PushID("__pe_options");
                 DrawOptions(profile);
                 ImGui::PopID();
 
@@ -1015,7 +1147,7 @@ namespace UICommon
     }
 
     template <class T>
-    WindowLayoutData UIProfileEditorBase<T>::GetWindowDimensions() const        
+    WindowLayoutData UIProfileEditorBase<T>::GetWindowDimensions() const
     {
         return WindowLayoutData(400.0f, -1.0f, -1.0f, false);
     }
@@ -1197,7 +1329,7 @@ namespace UICommon
             if (!ImGui::IsAnyItemActive())
                 ImGui::SetKeyboardFocusHere();
 
-            if (ImGui::InputText("##TextInputDialog2", a_buf, a_size, ImGuiInputTextFlags_EnterReturnsTrue)) {
+            if (ImGui::InputText("##TextInputDialog", a_buf, a_size, ImGuiInputTextFlags_EnterReturnsTrue)) {
                 ImGui::CloseCurrentPopup();
                 ret = true;
             }

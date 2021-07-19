@@ -11,19 +11,19 @@ namespace UIData
         void Parse(const Json::Value& a_in);
         void Create(Json::Value& a_out) const;
 
-        [[nodiscard]] SKMP_FORCEINLINE bool& Get(const std::string& a_key, bool a_default = true)
+        [[nodiscard]] SKMP_FORCEINLINE bool& Get(const stl::fixed_string& a_key, bool a_default = true)
         {
             return m_data.try_emplace(a_key, a_default).first->second;
         }
 
-        [[nodiscard]] SKMP_FORCEINLINE bool& operator[](const std::string& a_key)
+        [[nodiscard]] SKMP_FORCEINLINE bool& operator[](const stl::fixed_string& a_key)
         {
             return Get(a_key);
         }
 
     private:
 
-        stl::iunordered_map<std::string, bool> m_data;
+        std::unordered_map<stl::fixed_string, bool> m_data;
     };
 
 }

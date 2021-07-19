@@ -6,18 +6,19 @@
 
 #include "Common/Game.h"
 
+
 namespace CBP
 {
     IData::raceList_t IData::raceList;
     IData::actorRefMap_t IData::actorNpcMap;
     IData::actorCache_t IData::actorCache;
-    SelectedItem<Game::ObjectHandle> IData::crosshairRef;
-    uint64_t IData::actorCacheUpdateId(1);
+    SelectedItem<Game::VMHandle> IData::crosshairRef;
+    std::uint64_t IData::actorCacheUpdateId(1);
     nodeReferenceMap_t IData::nodeRefData;
 
     except::descriptor IData::lastException;
 
-    stl::unordered_set<Game::FormID> IData::ignoredRaces = {
+    std::unordered_set<Game::FormID> IData::ignoredRaces = {
         0x0002C65C,
         0x00108272,
         0x0002C659,
@@ -25,18 +26,23 @@ namespace CBP
         0x0002C65A
     };
 
-    void IData::UpdateActorMaps(Game::ObjectHandle a_handle, Actor* a_actor)
+    void IData::UpdateActorMaps(Game::VMHandle a_handle, Actor* a_actor)
     {
-        auto npc = RTTI<TESNPC>()(a_actor->baseForm);
+        auto baseForm = a_actor->baseForm;
+        if (!baseForm) {
+            return;
+        }
+
+        auto npc = a_actor->baseForm->As<TESNPC>();
         if (npc == nullptr)
             return;
 
         auto& e = actorNpcMap.try_emplace(a_handle);
 
-        if (a_actor->race != nullptr)
+        if (auto race = Game::GetActorRace(a_actor); race)
         {
             e.first->second.race.first = true;
-            e.first->second.race.second = a_actor->race->formID;
+            e.first->second.race.second = race->formID;
         }
         else
             e.first->second.race.first = false;
@@ -47,7 +53,7 @@ namespace CBP
         e.first->second.weight = Game::GetNPCWeight(npc);
     }
 
-    void IData::UpdateActorMaps(Game::ObjectHandle a_handle)
+    void IData::UpdateActorMaps(Game::VMHandle a_handle)
     {
         auto actor = a_handle.Resolve<Actor>();
         if (actor == nullptr)
@@ -61,7 +67,7 @@ namespace CBP
         actorNpcMap.swap(decltype(actorNpcMap)());
     }
 
-    void IData::FillActorCacheEntry(Game::ObjectHandle a_handle, actorCacheEntry_t& a_out)
+    void IData::FillActorCacheEntry(Game::VMHandle a_handle, actorCacheEntry_t& a_out)
     {
         std::ostringstream ss;
 
@@ -100,13 +106,20 @@ namespace CBP
 
         a_out.name = ss.str();
 
-        if (a_actor->race != nullptr)
-            a_out.race = a_actor->race->formID;
-        else
+        if (auto race = Game::GetActorRace(a_actor); race) {
+            a_out.race = race->formID;
+        }
+        else {
             a_out.race = Game::FormID(0);
+        }
 
-        auto npc = RTTI<TESNPC>()(a_actor->baseForm);
-        if (npc != nullptr)
+        auto baseForm = a_actor->baseForm;
+
+        auto npc = baseForm ?
+            baseForm->As<TESNPC>() :
+            nullptr;
+
+        if (npc)
         {
             a_out.base = npc->formID;
             a_out.female = npc->GetSex() == 1;
@@ -123,7 +136,7 @@ namespace CBP
     }
 
     void IData::AddExtraActorEntry(
-        Game::ObjectHandle a_handle)
+        Game::VMHandle a_handle)
     {
         if (actorCache.contains(a_handle))
             return;
@@ -166,9 +179,9 @@ namespace CBP
 
         Game::AIProcessVisitActors([](Actor* a_actor)
             {
-                Game::ObjectHandle handle;
+                Game::VMHandle handle;
                 if (handle.Get(a_actor))
-                    AddExtraActorEntry(handle);                
+                    AddExtraActorEntry(handle);
             });
 
         auto refHolder = CrosshairRefHandleHolder::GetSingleton();
@@ -180,10 +193,10 @@ namespace CBP
 
             if (handle.LookupREFR(ref))
             {
-                auto actor = RTTI<Actor>::Cast(ref);
+                auto actor = ref->As<Actor>();
                 if (actor)
                 {
-                    Game::ObjectHandle handle;
+                    Game::VMHandle handle;
                     if (handle.Get(actor))
                     {
                         auto it = actorCache.find(handle);
@@ -212,13 +225,12 @@ namespace CBP
         if (!dh)
             return false;
 
-        for (UInt32 i = 0; i < dh->races.count; i++)
+        for (auto race : dh->races)
         {
-            auto race = dh->races[i];
-            if (race == nullptr)
+            if (!race)
                 continue;
 
-            if (race->formID == 0)
+            if (race->flags & TESForm::kFlagIsDeleted)
                 continue;
 
             if (race->data.raceFlags & TESRace::kRace_Child)
@@ -227,23 +239,15 @@ namespace CBP
             if (IsIgnoredRace(race->formID))
                 continue;
 
-            const char* fullName = race->fullName.GetName();
-            if (!fullName)
-                fullName = "";
-
-            const char* edid = race->editorId.c_str();
-            if (!edid)
-                edid = "";
-
             bool playable = (race->data.raceFlags & TESRace::kRace_Playable) == TESRace::kRace_Playable;
 
-            raceList.try_emplace(race->formID, playable, fullName, edid, race->data.raceFlags);
+            raceList.try_emplace(race->formID, playable, race->fullName.GetName(), race->editorId, race->data.raceFlags);
         }
 
         return true;
     }
 
-    bool IData::GetActorName(Game::ObjectHandle a_handle, std::string& a_out)
+    bool IData::GetActorName(Game::VMHandle a_handle, stl::fixed_string& a_out)
     {
         auto it = actorCache.find(a_handle);
         if (it != actorCache.end()) {
@@ -255,15 +259,15 @@ namespace CBP
 
     static void FillNodeRefData(NiAVObject* parent, nodeRefEntry_t& a_entry)
     {
-        a_entry.m_name = parent->m_name ? parent->m_name : "";
+        a_entry.m_name = parent->m_name;
+        a_entry.m_localPos = parent->m_localTransform.pos;
 
         auto node = parent->GetAsNiNode();
         if (!node)
             return;
 
-        for (UInt16 i = 0; i < node->m_children.m_emptyRunStart; i++)
+        for (auto object : node->m_children)
         {
-            auto object = node->m_children.m_data[i];
             if (object)
             {
                 auto& entry = a_entry.m_children.emplace_back();
@@ -285,10 +289,11 @@ namespace CBP
 
             /*auto root = a_actor->GetNiRootNode(false);
             if (!root)
-                return;*/
+                return;
 
         if (!a_actor->loadedState)
             return;
+        */
 
         auto root = a_actor->GetNiRootNode(false);
         if (!root) {
@@ -299,7 +304,7 @@ namespace CBP
 
         nodeRefData.swap(decltype(nodeRefData)());
 
-        auto& entry = nodeRefData.emplace_back(root->m_name);
+        auto& entry = nodeRefData.emplace_back(root->m_name.c_str());
 
         FillNodeRefData(root, entry);
     }

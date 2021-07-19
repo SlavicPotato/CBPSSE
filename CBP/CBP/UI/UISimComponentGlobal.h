@@ -8,7 +8,7 @@ namespace CBP
     class UIContext;
 
     class UISimComponentGlobal :
-        public UISimComponent<Game::ObjectHandle, UIEditorID::kMainEditor>
+        public UISimComponent<Game::VMHandle, UIEditorID::kMainEditor>
     {
     public:
         UISimComponentGlobal(UIContext& a_parent);
@@ -17,37 +17,37 @@ namespace CBP
 
     private:
         virtual void DrawConfGroupNodeMenu(
-            Game::ObjectHandle a_handle,
+            Game::VMHandle a_handle,
             nodeConfigList_t& a_nodeList
         ) override;
 
         virtual void OnSimSliderChange(
-            Game::ObjectHandle a_handle,
+            Game::VMHandle a_handle,
             configComponents_t& a_data,
             configComponentsValue_t& a_pair,
             const componentValueDescMap_t::vec_value_type& a_desc,
             float* a_val) override;
 
         virtual void OnColliderShapeChange(
-            Game::ObjectHandle a_handle,
+            Game::VMHandle a_handle,
             configComponents_t& a_data,
             configComponentsValue_t& a_pair,
             const componentValueDescMap_t::vec_value_type& a_desc
         ) override;
 
         virtual void OnMotionConstraintChange(
-            Game::ObjectHandle a_handle,
+            Game::VMHandle a_handle,
             configComponents_t& a_data,
             configComponentsValue_t& a_pair,
             const componentValueDescMap_t::vec_value_type& a_desc) override;
 
         virtual void OnComponentUpdate(
-            Game::ObjectHandle a_handle,
+            Game::VMHandle a_handle,
             configComponents_t& a_data,
             configComponentsValue_t& a_pair) override;
 
         virtual bool ShouldDrawComponent(
-            Game::ObjectHandle a_handle,
+            Game::VMHandle a_handle,
             configComponents_t& a_data,
             const configGroupMap_t::value_type& a_cgdata,
             const nodeConfigList_t& a_nodeConfig) const override;
@@ -64,17 +64,17 @@ namespace CBP
             nodeConfigList_t& a_out) const override;
 
         virtual const configNodes_t& GetNodeData(
-            Game::ObjectHandle a_handle) const override;
+            Game::VMHandle a_handle) const override;
 
         virtual void UpdateNodeData(
-            Game::ObjectHandle a_handle,
-            const std::string& a_node,
+            Game::VMHandle a_handle,
+            const stl::fixed_string& a_node,
             const configNode_t& a_data,
             bool a_reset) override;
 
         virtual void RemoveNodeData(
-            Game::ObjectHandle a_handle,
-            const std::string& a_node) override;
+            Game::VMHandle a_handle,
+            const stl::fixed_string& a_node) override;
 
         virtual configGlobalSimComponent_t& GetSimComponentConfig() const override;
 

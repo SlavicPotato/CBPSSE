@@ -11,7 +11,7 @@ namespace CBP
     UIActorList<T, _MarkActor, _AddGlobal>::UIActorList(
         float a_itemWidthScalar)
         :
-        UIListBase<T, Game::ObjectHandle>(a_itemWidthScalar),
+        UIListBase<T, Game::VMHandle>(a_itemWidthScalar),
         m_lastCacheUpdateId(0)
     {
     }
@@ -41,7 +41,7 @@ namespace CBP
 
         if constexpr(_AddGlobal) {
             minEntries = T::size_type(1);
-            m_listData.try_emplace(0, "Global", GetData(Game::ObjectHandle(0)));
+            m_listData.try_emplace(0, "Global", GetData(Game::VMHandle(0)));
         }
         else {
             minEntries = T::size_type(0);
@@ -49,7 +49,7 @@ namespace CBP
 
         if (m_listData.size() == minEntries) {
             _snprintf_s(m_listBuf1, _TRUNCATE, "No actors");
-            ListSetCurrentItem(Game::ObjectHandle(0));
+            ListSetCurrentItem(Game::VMHandle(0));
             return;
         }
 
@@ -65,9 +65,9 @@ namespace CBP
             }
         }
 
-        if (m_listCurrent != Game::ObjectHandle(0)) {
+        if (m_listCurrent != Game::VMHandle(0)) {
             if (m_listData.find(m_listCurrent) == m_listData.end())
-                ListSetCurrentItem(Game::ObjectHandle(0));
+                ListSetCurrentItem(Game::VMHandle(0));
         }
         else {
             if (actorConf.lastActor &&
@@ -95,12 +95,12 @@ namespace CBP
     template <typename T, bool _MarkActor, bool _AddGlobal>
     void UIActorList<T, _MarkActor, _AddGlobal>::ListReset()
     {
-        UIListBase<T, Game::ObjectHandle>::ListReset();
+        UIListBase<T, Game::VMHandle>::ListReset();
         m_lastCacheUpdateId = IData::GetActorCacheUpdateId() - 1;
     }
 
     template <typename T, bool _MarkActor, bool _AddGlobal>
-    void UIActorList<T, _MarkActor, _AddGlobal>::ListSetCurrentItem(Game::ObjectHandle a_handle)
+    void UIActorList<T, _MarkActor, _AddGlobal>::ListSetCurrentItem(Game::VMHandle a_handle)
     {
         auto& globalConfig = IConfig::GetGlobal();
         auto& actorConf = GetActorConfig();
@@ -157,7 +157,7 @@ namespace CBP
 
                 bool hasArmorOverride;
 
-                if (e.first != Game::ObjectHandle(0))
+                if (e.first != Game::VMHandle(0))
                 {
                     switch (GetActorClass(e.first))
                     {
@@ -196,7 +196,7 @@ namespace CBP
             ImGui::EndCombo();
         }
 
-        if (a_entry->first != Game::ObjectHandle(0)) {
+        if (a_entry->first != Game::VMHandle(0)) {
             ListDrawInfo(a_entry);
         }
 
@@ -248,7 +248,7 @@ namespace CBP
 
             auto itr = raceCache.find(it->second.race);
             if (itr != raceCache.end())
-                ss << "Race:    " << itr->second.edid << " [" << sshex(8) << it->second.race << "]" << std::endl;
+                ss << "Race:    " << itr->second.edid.get() << " [" << sshex(8) << it->second.race << "]" << std::endl;
             else
                 ss << "Race:    " << sshex(8) << it->second.race << std::endl;
 
@@ -261,7 +261,7 @@ namespace CBP
         {
             auto itm = modList.find(modIndex);
             if (itm != modList.end())
-                ss << "Mod:     " << itm->second.name << " [" << sshex(2) << itm->second.GetPartialIndex() << "]" << std::endl;
+                ss << "Mod:     " << itm->second.name.get() << " [" << sshex(2) << itm->second.GetPartialIndex() << "]" << std::endl;
         }
 
         ss << std::endl << "Config:" << std::endl << std::endl;

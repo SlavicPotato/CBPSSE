@@ -9,30 +9,29 @@ namespace CBP
     class DInput :
         ILog
     {
-        class KeyPressHandler : public BSTEventSink <InputEvent>
-        {
-        public:
-            virtual EventResult	ReceiveEvent(InputEvent** evns, InputEventDispatcher* dispatcher) override;
-        };
-
     public:
         static void Initialize();
+
+        SKMP_FORCEINLINE static void SetInputBlocked(bool a_enabled) {
+            m_Instance.m_playerInputHandlingBlocked = a_enabled;
+        }
 
         static void RegisterForKeyEvents(KeyEventHandler* const handler);
 
         FN_NAMEPROC("Input")
     private:
-        DInput() = default;
+        DInput();
 
-        //virtual void Patch();
+        static bool PlayerControls_InputEvent_ProcessEvent_Hook(InputEvent** a_evns);
 
-        static void MessageHandler(Event m_code, void* args);
+        void DispatchKeyEvent(KeyEvent a_event, UInt32 a_keyCode);
 
-        void DispatchKeyEvent(KeyEvent ev, UInt32 key);
+        decltype(&PlayerControls_InputEvent_ProcessEvent_Hook) m_nextIEDCall{ nullptr };
 
-        stl::vector<KeyEventHandler*> callbacks;
+        std::vector<KeyEventHandler*> m_handlers;
+        std::atomic_bool m_playerInputHandlingBlocked;
 
-        KeyPressHandler m_inputEventHandler;
+        static inline auto m_unkIED_a = IAL::Address<std::uintptr_t>(67355, 0x11E);
 
         static DInput m_Instance;
     };

@@ -9,7 +9,7 @@
 
 namespace Serialization
 {
-    static const std::string s_keyMaxOffset("maxoffset");
+    static const stl::fixed_string s_keyMaxOffset("maxoffset");
 
     template <class T>
     struct parserDesc_t {
@@ -101,9 +101,9 @@ namespace Serialization
                                 return false;
                             }
 
-                            std::string valName(it2.key().asString());
+                            stl::fixed_string valName(it2.key().asString());
 
-                            if (version < 2 && StrHelpers::iequal(valName, s_keyMaxOffset))
+                            if (version < 2 && valName == s_keyMaxOffset)
                             {
                                 float v = it2->asFloat();
                                 float tv[3]{ v, v, v };
@@ -575,9 +575,9 @@ namespace CBP
                 data.ui.showKey = static_cast<UInt32>(ui.get("showKey", DIK_END).asUInt());
                 data.ui.comboKeyDR = static_cast<UInt32>(ui.get("comboKeyDR", DIK_LSHIFT).asUInt());
                 data.ui.showKeyDR = static_cast<UInt32>(ui.get("showKeyDR", DIK_PGDN).asUInt());
-                data.ui.actorPhysics.lastActor = static_cast<Game::ObjectHandle>(ui.get("lastActor", 0ULL).asUInt64());
-                data.ui.actorNode.lastActor = static_cast<Game::ObjectHandle>(ui.get("nodeLastActor", 0ULL).asUInt64());
-                data.ui.actorNodeMap.lastActor = static_cast<Game::ObjectHandle>(ui.get("nodeMapLastActor", 0ULL).asUInt64());
+                data.ui.actorPhysics.lastActor = static_cast<Game::VMHandle>(ui.get("lastActor", 0ULL).asUInt64());
+                data.ui.actorNode.lastActor = static_cast<Game::VMHandle>(ui.get("nodeLastActor", 0ULL).asUInt64());
+                data.ui.actorNodeMap.lastActor = static_cast<Game::VMHandle>(ui.get("nodeMapLastActor", 0ULL).asUInt64());
                 data.ui.fontScale = ui.get("fontScale", 1.0f).asFloat();
                 data.ui.backgroundAlpha = ui.get("backgroundAlpha", 0.9).asFloat();
                 data.ui.backlogLimit = ui.get("backlogLimit", 2000).asInt();
@@ -626,9 +626,11 @@ namespace CBP
 
                             auto& e = data.ui.forceActor[key];
 
-                            e.force.x = it->get("x", 0.0f).asFloat();
-                            e.force.y = it->get("y", 0.0f).asFloat();
-                            e.force.z = it->get("z", 0.0f).asFloat();
+                            e.force = btVector3(
+                                it->get("x", 0.0f).asFloat(), 
+                                it->get("y", 0.0f).asFloat(),
+                                it->get("z", 0.0f).asFloat());
+
                             e.steps = std::max(it->get("steps", 0).asInt(), 0);
                         }
                     }
@@ -865,9 +867,9 @@ namespace CBP
             {
                 auto& fe = force[e.first];
 
-                fe["x"] = e.second.force.x;
-                fe["y"] = e.second.force.y;
-                fe["z"] = e.second.force.z;
+                fe["x"] = e.second.force.x();
+                fe["y"] = e.second.force.y();
+                fe["z"] = e.second.force.z();
                 fe["steps"] = std::max(e.second.steps, 0);
             }
 
@@ -1086,7 +1088,7 @@ namespace CBP
         return 1;
     }
 
-    std::size_t ISerialization::LoadGlobalProfile(SKSESerializationInterface* intfc, stl::stringstream& a_data)
+    std::size_t ISerialization::LoadGlobalProfile(SKSESerializationInterface* intfc, std::stringstream& a_data)
     {
         try
         {
@@ -1146,10 +1148,10 @@ namespace CBP
                 continue;
             }
 
-            Game::ObjectHandle handle;
+            Game::VMHandle handle;
 
             try {
-                handle = static_cast<Game::ObjectHandle>(std::stoull(it.key().asString()));
+                handle = static_cast<Game::VMHandle>(std::stoull(it.key().asString()));
             }
             catch (...) {
                 Error("Exception while trying to convert handle");
@@ -1161,7 +1163,7 @@ namespace CBP
                 continue;
             }
 
-            Game::ObjectHandle newHandle = 0;
+            Game::VMHandle newHandle = 0;
 
             if (intfc != nullptr)
             {
@@ -1275,7 +1277,7 @@ namespace CBP
         return c;
     }
 
-    std::size_t ISerialization::LoadActorProfiles(SKSESerializationInterface* intfc, stl::stringstream& a_data)
+    std::size_t ISerialization::LoadActorProfiles(SKSESerializationInterface* intfc, std::stringstream& a_data)
     {
         try
         {
@@ -1489,7 +1491,7 @@ namespace CBP
         return true;
     }
 
-    bool ISerialization::ResolvePluginHandle(const Json::Value& a_root, Game::ObjectHandle a_in, Game::ObjectHandle& a_out)
+    bool ISerialization::ResolvePluginHandle(const Json::Value& a_root, Game::VMHandle a_in, Game::VMHandle& a_out)
     {
         Game::FormID formid;
         if (!ResolvePluginFormID(a_root, a_in.GetFormID(), formid))
@@ -1500,7 +1502,7 @@ namespace CBP
         return true;
     }
 
-    std::size_t ISerialization::LoadRaceProfiles(SKSESerializationInterface* intfc, stl::stringstream& a_data)
+    std::size_t ISerialization::LoadRaceProfiles(SKSESerializationInterface* intfc, std::stringstream& a_data)
     {
         try
         {
@@ -1939,7 +1941,7 @@ namespace CBP
         }
     }
 
-    std::size_t ISerialization::BinSerializeLoad(SKSESerializationInterface* intfc, stl::stringstream& a_in)
+    std::size_t ISerialization::BinSerializeLoad(SKSESerializationInterface* intfc, std::stringstream& a_in)
     {
         try
         {

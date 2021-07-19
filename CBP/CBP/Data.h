@@ -7,14 +7,27 @@ namespace CBP
     class SimObject;
     struct nodeRefEntry_t;
 
-    typedef stl::vectormap<Game::ObjectHandle, SimObject> simActorList_t;
+    typedef stl::vectormap<Game::VMHandle, SimObject, stl::unordered_map_simd<Game::VMHandle, SimObject>> simActorList_t;
 
     struct raceCacheEntry_t
     {
         raceCacheEntry_t(
             bool a_playable,
-            std::string&& a_fullname,
-            std::string&& a_edid,
+            const stl::fixed_string& a_fullname,
+            const stl::fixed_string& a_edid,
+            UInt32 a_flags
+        ) :
+            playable(a_playable),
+            fullname(a_fullname),
+            edid(a_edid),
+            flags(a_flags)
+        {
+        }
+
+        raceCacheEntry_t(
+            bool a_playable,
+            stl::fixed_string&& a_fullname,
+            stl::fixed_string&& a_edid,
             UInt32 a_flags
         ) :
             playable(a_playable),
@@ -23,43 +36,17 @@ namespace CBP
             flags(a_flags)
         {
         }
-        
-        raceCacheEntry_t(
-            bool a_playable,
-            const std::string& a_fullname,
-            const std::string& a_edid,
-            UInt32 a_flags
-        ) :
-            playable(a_playable),
-            fullname(a_fullname),
-            edid(a_edid),
-            flags(a_flags)
-        {
-        }
-
-        raceCacheEntry_t(
-            bool a_playable,
-            const char* a_fullname,
-            const char* a_edid,
-            UInt32 a_flags
-        ) :
-            playable(a_playable),
-            fullname(a_fullname),
-            edid(a_edid),
-            flags(a_flags)
-        {
-        }
 
         bool playable;
-        std::string fullname;
-        std::string edid;
+        stl::fixed_string fullname;
+        stl::fixed_string edid;
         UInt32 flags;
     };
 
     struct actorCacheEntry_t
     {
         bool active;
-        std::string name;
+        stl::fixed_string name;
         Game::FormID base;
         Game::FormID race;
         bool female;
@@ -69,7 +56,7 @@ namespace CBP
 
     struct activeCache_t
     {
-        Game::ObjectHandle crosshairRef;
+        Game::VMHandle crosshairRef;
     };
 
     struct actorRefData_t
@@ -81,30 +68,31 @@ namespace CBP
         float weight;
     };
 
-    typedef stl::vector<nodeRefEntry_t> nodeReferenceMap_t;
+    typedef std::vector<nodeRefEntry_t> nodeReferenceMap_t;
 
     struct nodeRefEntry_t
     {
-        std::string m_name;
+        stl::fixed_string m_name;
+        NiPoint3 m_localPos;
         nodeReferenceMap_t m_children;
     };
 
     class IData
     {
-        typedef stl::unordered_map<Game::FormID, raceCacheEntry_t> raceList_t;
-        typedef stl::unordered_map<Game::ObjectHandle, Game::FormID> handleFormIdMap_t;
-        typedef stl::unordered_map<Game::ObjectHandle, actorRefData_t> actorRefMap_t;
-        typedef stl::unordered_map<Game::ObjectHandle, actorCacheEntry_t> actorCache_t;
+        typedef std::unordered_map<Game::FormID, raceCacheEntry_t> raceList_t;
+        typedef std::unordered_map<Game::VMHandle, Game::FormID> handleFormIdMap_t;
+        typedef std::unordered_map<Game::VMHandle, actorRefData_t> actorRefMap_t;
+        typedef std::unordered_map<Game::VMHandle, actorCacheEntry_t> actorCache_t;
 
 
     public:
 
         [[nodiscard]] static bool PopulateRaceList();
-        static void UpdateActorMaps(Game::ObjectHandle a_handle, Actor* a_actor);
-        static void UpdateActorMaps(Game::ObjectHandle a_handle);
+        static void UpdateActorMaps(Game::VMHandle a_handle, Actor* a_actor);
+        static void UpdateActorMaps(Game::VMHandle a_handle);
         static void ReleaseActorMaps();
 
-        static SKMP_FORCEINLINE const actorRefData_t* GetActorRefInfo(Game::ObjectHandle a_handle) {
+        static SKMP_FORCEINLINE const actorRefData_t* GetActorRefInfo(Game::VMHandle a_handle) {
             auto it = actorNpcMap.find(a_handle);
             if (it != actorNpcMap.end()) {
                 return std::addressof(it->second);
@@ -123,7 +111,7 @@ namespace CBP
             return actorCacheUpdateId;
         }
 
-        [[nodiscard]] SKMP_FORCEINLINE static auto &GetCrosshairRef() {
+        [[nodiscard]] SKMP_FORCEINLINE static auto& GetCrosshairRef() {
             return crosshairRef;
         }
 
@@ -143,7 +131,7 @@ namespace CBP
             return ignoredRaces.contains(a_formid);
         }
 
-        static bool GetActorName(Game::ObjectHandle a_handle, std::string& a_out);
+        static bool GetActorName(Game::VMHandle a_handle, stl::fixed_string& a_out);
 
         [[nodiscard]] SKMP_FORCEINLINE static const auto& GetLastException() {
             return lastException;
@@ -157,20 +145,20 @@ namespace CBP
 
     private:
 
-        static void FillActorCacheEntry(Game::ObjectHandle a_handle, actorCacheEntry_t& a_out);
+        static void FillActorCacheEntry(Game::VMHandle a_handle, actorCacheEntry_t& a_out);
         static void FillActorCacheEntry(Actor* a_actor, actorCacheEntry_t& a_out);
-        static void AddExtraActorEntry(Game::ObjectHandle a_handle);
+        static void AddExtraActorEntry(Game::VMHandle a_handle);
 
         static raceList_t raceList;
         static actorRefMap_t actorNpcMap;
         static actorCache_t actorCache;
-        static SelectedItem<Game::ObjectHandle> crosshairRef;
+        static SelectedItem<Game::VMHandle> crosshairRef;
 
         static nodeReferenceMap_t nodeRefData;
 
-        static uint64_t actorCacheUpdateId;
+        static std::uint64_t actorCacheUpdateId;
 
-        static stl::unordered_set<Game::FormID> ignoredRaces;
+        static std::unordered_set<Game::FormID> ignoredRaces;
 
         static except::descriptor lastException;
     };

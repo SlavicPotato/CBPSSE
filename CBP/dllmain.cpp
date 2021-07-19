@@ -9,7 +9,7 @@
 #include "skse.h"
 #include "config.h"
 
-static bool Initialize(const SKSEInterface* skse)
+static bool Initialize(const SKSEInterface* a_skse)
 {
     if (!IAL::IsLoaded()) {
         gLog.FatalError("Could not load the address library");
@@ -32,15 +32,26 @@ static bool Initialize(const SKSEInterface* skse)
         return false;
     }
 
-    if (!SKSE::Initialize(skse)) {
+    auto& skse = ISKSE::GetSingleton();
+
+    if (!skse.QueryInterfaces(a_skse)) {
         return false;
     }
 
+    if (!skse.CreateTrampolines(a_skse)) {
+        return false;
+    }
+
+    ITaskPool::Install(
+        ISKSE::GetBranchTrampoline(), 
+        ISKSE::GetLocalTrampoline());
+
     CBP::IEvents::Initialize();
     CBP::DData::Initialize();
-    CBP::DInput::Initialize();
     dcbp.Initialize();
     ASSERT(CBP::DRender::Initialize());
+
+    CBP::DInput::Initialize();
 
     return true;
 }
@@ -50,7 +61,7 @@ extern "C"
     bool SKSEPlugin_Query(const SKSEInterface* skse, PluginInfo* info)
     {
         CBP::IEvents::AttachToLogger();
-        return SKSE::Query(skse, info);
+        return ISKSE::GetSingleton().Query(skse, info);
     }
 
     bool SKSEPlugin_Load(const SKSEInterface* skse)

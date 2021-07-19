@@ -6,6 +6,7 @@
 #include "Common/List.cpp"
 
 #include "CBP/UI/UI.h"
+#include "Data/StringHolder.h"
 
 #include "Drivers/cbp.h"
 
@@ -17,7 +18,8 @@ namespace CBP
         m_update(true),
         m_filter(false, "Node filter"),
         m_parent(a_parent),
-        UIActorList<actorListCache_t, false, false>(-15.0f)
+        UIActorList<actorListCache_t, false, false>(-15.0f),
+        m_cicUINM("UINM")
     {
     }
 
@@ -51,9 +53,15 @@ namespace CBP
             const float width = wcm.x - 8.0f;
             const auto w(ImVec2(width, 0.0f));
 
+            auto& sh = Common::StringHolder::GetSingleton();
+
             if (entry)
             {
-                if (CollapsingHeader(GetCSID("NodeTree"), "Reference node tree"))
+                if (ImGui::Button("Refresh")) {
+                    DCBP::UpdateNodeReferenceData(entry->first);
+                }
+
+                if (CollapsingHeader(GetCSID(sh.nodetree), "Reference node tree"))
                 {
                     const char* curSelName;
 
@@ -89,7 +97,7 @@ namespace CBP
                 }
             }
 
-            if (CollapsingHeader(GetCSID("ConfigGroups"), "Config groups"))
+            if (CollapsingHeader(GetCSID(sh.configgroups), "Config groups"))
             {
                 if (ImGui::BeginChild("cg_area", w, false, ImGuiWindowFlags_HorizontalScrollbar))
                 {
@@ -153,7 +161,15 @@ namespace CBP
                 flags |= ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_Bullet;
 
             ImGui::SameLine();
-            if (ImGui::TreeNodeEx(a_entry.m_name.c_str(), flags))
+
+            _snprintf_s(m_strbuf1, _TRUNCATE, "%s [x:%f y:%f z:%f]",
+                    a_entry.m_name.c_str(),
+                    a_entry.m_localPos.x,
+                    a_entry.m_localPos.y,
+                    a_entry.m_localPos.z
+                );
+
+            if (ImGui::TreeNodeEx(m_strbuf1, flags))
             {
                 for (const auto& e : a_entry.m_children)
                     DrawNodeTree(e);
@@ -285,19 +301,19 @@ namespace CBP
 
                 ImGui::Separator();
 
-                const std::string* add_cg(nullptr);
+                SelectedItem<stl::fixed_string> add_cg;
 
                 ImGui::PushID(static_cast<const void*>(std::addressof(data)));
 
                 for (const auto& e : data)
                 {
                     if (ImGui::MenuItem(e.first.c_str()))
-                        add_cg = std::addressof(e.first);
+                        add_cg = e.first;
                 }
 
                 ImGui::PopID();
 
-                if (add_cg != nullptr)
+                if (add_cg)
                     AddNode(a_entry.m_name, *add_cg);
 
                 ImGui::EndMenu();
@@ -307,7 +323,9 @@ namespace CBP
         }
     }
 
-    void UINodeMap::AddNode(const std::string& a_node, const std::string& a_confGroup)
+    void UINodeMap::AddNode(
+        const stl::fixed_string& a_node, 
+        const stl::fixed_string& a_confGroup)
     {
         if (IConfig::AddNode(a_node, a_confGroup))
         {
@@ -328,7 +346,7 @@ namespace CBP
         }
     }
 
-    void UINodeMap::AddNodeNewGroup(const std::string& a_node)
+    void UINodeMap::AddNodeNewGroup(const stl::fixed_string& a_node)
     {
         auto& popup = m_parent.GetPopupQueue();
 
@@ -337,14 +355,14 @@ namespace CBP
             "Add node",
             "Enter the config group name to add node '%s' to:",
             a_node.c_str()
-        ).call([&, nodeName = a_node](const auto& a_p)
+        ).call([&, a_node](const auto& a_p)
             {
                 auto& in = a_p.GetInput();
 
                 if (!StrHelpers::strlen(in))
                     return;
 
-                AddNode(nodeName, in);
+                AddNode(a_node, in);
             }
         );
     }
@@ -369,7 +387,7 @@ namespace CBP
         );
     }
 
-    void UINodeMap::RemoveNode(const std::string& a_node)
+    void UINodeMap::RemoveNode(const stl::fixed_string& a_node)
     {
         if (IConfig::RemoveNode(a_node))
         {
@@ -390,7 +408,7 @@ namespace CBP
         }
     }
 
-    ConfigClass UINodeMap::GetActorClass(Game::ObjectHandle a_handle) const
+    ConfigClass UINodeMap::GetActorClass(Game::VMHandle a_handle) const
     {
         return ConfigClass::kConfigGlobal;
     }
@@ -400,15 +418,15 @@ namespace CBP
         return IConfig::GetGlobal().ui.actorNodeMap;
     }
 
-    bool UINodeMap::HasArmorOverride(Game::ObjectHandle a_handle) const
+    bool UINodeMap::HasArmorOverride(Game::VMHandle a_handle) const
     {
         return false;
     }
 
-    auto UINodeMap::GetData(Game::ObjectHandle a_handle) ->
+    auto UINodeMap::GetData(Game::VMHandle a_handle) ->
         const entryValue_t&
     {
-        if (a_handle == Game::ObjectHandle(0))
+        if (a_handle == Game::VMHandle(0))
             return m_dummyEntry;
 
         const auto& actorCache = IData::GetActorCache();
@@ -426,7 +444,7 @@ namespace CBP
         return a_data == nullptr ? m_dummyEntry : a_data->second.second;
     }
 
-    void UINodeMap::ListSetCurrentItem(Game::ObjectHandle a_handle)
+    void UINodeMap::ListSetCurrentItem(Game::VMHandle a_handle)
     {
         UIActorList<actorListCache_t, false, false>::ListSetCurrentItem(a_handle);
         m_update = true;
@@ -450,15 +468,15 @@ namespace CBP
 
         if (!listSize) {
             _snprintf_s(m_listBuf1, _TRUNCATE, "No actors");
-            ListSetCurrentItem(Game::ObjectHandle(0));
+            ListSetCurrentItem(Game::VMHandle(0));
             return;
         }
 
         _snprintf_s(m_listBuf1, _TRUNCATE, "%zu actors", listSize);
 
-        if (m_listCurrent != Game::ObjectHandle(0)) {
+        if (m_listCurrent != Game::VMHandle(0)) {
             if (m_listData.find(m_listCurrent) == m_listData.end()) {
-                ListSetCurrentItem(Game::ObjectHandle(0));
+                ListSetCurrentItem(Game::VMHandle(0));
             }
         }
         else {
@@ -474,7 +492,7 @@ namespace CBP
     auto UINodeMap::ListGetSelected() ->
         listValue_t*
     {
-        if (m_listCurrent != Game::ObjectHandle(0)) {
+        if (m_listCurrent != Game::VMHandle(0)) {
             return std::addressof(*m_listData.find(m_listCurrent));
         }
 
@@ -487,7 +505,7 @@ namespace CBP
         return nullptr;
     }
 
-    void UINodeMap::ListResetAllValues(Game::ObjectHandle a_handle)
+    void UINodeMap::ListResetAllValues(Game::VMHandle a_handle)
     {
     }
 

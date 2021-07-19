@@ -11,6 +11,8 @@
 
 #include "Drivers/cbp.h"
 
+#include "Data/StringHolder.h"
+
 namespace CBP
 {
     using namespace UICommon;
@@ -64,14 +66,16 @@ namespace CBP
 
             auto wcmx = ImGui::GetWindowContentRegionMax().x;
 
-            ImGui::SameLine(wcmx - GetNextTextOffset("Rescan", true));
-            if (ButtonRight("Rescan"))
+            auto& sh = Common::StringHolder::GetSingleton();
+
+            ImGui::SameLine(wcmx - GetNextTextOffset(sh.rescan, true));
+            if (ButtonRight(sh.rescan))
                 DCBP::QueueActorCacheUpdate();
 
             if (entry)
             {
-                ImGui::SameLine(wcmx - GetNextTextOffset("Reset"));
-                if (ButtonRight("Reset"))
+                ImGui::SameLine(wcmx - GetNextTextOffset(sh.reset));
+                if (ButtonRight(sh.reset))
                     ImGui::OpenPopup("Reset Node");
 
                 if (UICommon::ConfirmDialog(
@@ -111,10 +115,10 @@ namespace CBP
         ImGui::PopID();
     }
 
-    auto UIActorEditorNode::GetData(Game::ObjectHandle a_handle) ->
+    auto UIActorEditorNode::GetData(Game::VMHandle a_handle) ->
         const entryValue_t&
     {
-        return a_handle == Game::ObjectHandle(0) ?
+        return a_handle == Game::VMHandle(0) ?
             IConfig::GetGlobalNode() :
             IConfig::GetActorNode(a_handle);
     }
@@ -122,7 +126,7 @@ namespace CBP
     auto UIActorEditorNode::GetData(const listValue_t* a_data) ->
         const entryValue_t&
     {
-        return a_data->first == Game::ObjectHandle(0) ?
+        return a_data->first == Game::VMHandle(0) ?
             IConfig::GetGlobalNode() :
             a_data->second.second;
     }
@@ -131,7 +135,7 @@ namespace CBP
     {
         auto& profileData = a_profile.Data();
 
-        if (a_data->first == Game::ObjectHandle(0))
+        if (a_data->first == Game::VMHandle(0))
         {
             IConfig::Copy(profileData, a_data->second.second);
             IConfig::SetGlobalNode(profileData);
@@ -144,7 +148,7 @@ namespace CBP
         DCBP::ResetActors();
     }
 
-    void UIActorEditorNode::ListResetAllValues(Game::ObjectHandle a_handle)
+    void UIActorEditorNode::ListResetAllValues(Game::VMHandle a_handle)
     {
         IConfig::EraseActorNode(a_handle);
 
@@ -156,15 +160,15 @@ namespace CBP
     }
 
     void UIActorEditorNode::UpdateNodeData(
-        Game::ObjectHandle a_handle,
-        const std::string& a_node,
+        Game::VMHandle a_handle,
+        const stl::fixed_string& a_node,
         const configNode_t& a_data,
         bool a_reset)
     {
 
         const auto& globalConfig = IConfig::GetGlobal();
 
-        if (a_handle != Game::ObjectHandle(0))
+        if (a_handle != Game::VMHandle(0))
         {
             auto& nodeConfig = IConfig::GetOrCreateActorNode(a_handle, globalConfig.ui.commonSettings.node.actor.selectedGender);
             nodeConfig.insert_or_assign(a_node, a_data);
@@ -193,12 +197,12 @@ namespace CBP
     }
 
     void UIActorEditorNode::RemoveNodeData(
-        Game::ObjectHandle a_handle,
-        const std::string& a_node)
+        Game::VMHandle a_handle,
+        const stl::fixed_string& a_node)
     {
         const auto& globalConfig = IConfig::GetGlobal();
 
-        if (a_handle != Game::ObjectHandle(0))
+        if (a_handle != Game::VMHandle(0))
         {
             if (IConfig::EraseEntry(
                 a_handle,
@@ -219,15 +223,15 @@ namespace CBP
     }
 
     void UIActorEditorNode::DrawBoneCastButtons(
-        Game::ObjectHandle a_handle,
-        const std::string& a_nodeName,
+        Game::VMHandle a_handle,
+        const stl::fixed_string& a_nodeName,
         configNode_t& a_conf
     )
     {
         return DrawBoneCastButtonsImpl(a_handle, a_nodeName, a_conf);
     }
 
-    ConfigClass UIActorEditorNode::GetActorClass(Game::ObjectHandle a_handle) const
+    ConfigClass UIActorEditorNode::GetActorClass(Game::VMHandle a_handle) const
     {
         return IConfig::GetActorNodeClass(a_handle);
     }
@@ -237,7 +241,7 @@ namespace CBP
         return IConfig::GetGlobal().ui.actorNode;
     }
 
-    bool UIActorEditorNode::HasArmorOverride(Game::ObjectHandle a_handle) const
+    bool UIActorEditorNode::HasArmorOverride(Game::VMHandle a_handle) const
     {
         return false;
     }
@@ -253,8 +257,8 @@ namespace CBP
     }
 
     void UIActorEditorNode::OnListChangeCurrentItem(
-        const SelectedItem<Game::ObjectHandle>& a_oldHandle,
-        Game::ObjectHandle a_newHandle)
+        const SelectedItem<Game::VMHandle>& a_oldHandle,
+        Game::VMHandle a_newHandle)
     {
         auto& globalConfig = IConfig::GetGlobal();
         if (globalConfig.ui.autoSelectGender) {

@@ -9,8 +9,6 @@
 #include "ControllerInstruction.h"
 #include "SimObject.h"
 
-#include "Tasks/Tasks.h"
-
 namespace Game
 {
     class BSMain;
@@ -24,7 +22,7 @@ namespace CBP
         public TaskQueueBase<ControllerInstruction>,
         protected ILog
     {
-        using handleSet_t = stl::unordered_set<Game::ObjectHandle>;
+        using handleSet_t = std::unordered_set<Game::VMHandle>;
 
     public:
         SKMP_DECLARE_ALIGNED_ALLOCATOR_AUTO();
@@ -48,10 +46,10 @@ namespace CBP
         SKMP_FORCEINLINE void UpdatePhase1(float a_timeStep);
         SKMP_FORCEINLINE void UpdateActorsPhase2(float a_timeStep);
 
-        SKMP_FORCEINLINE std::uint32_t UpdatePhysics(Game::BSMain * a_main, float a_interval);
+        SKMP_FORCEINLINE std::uint32_t UpdatePhysics(Game::BSMain* a_main, float a_interval);
 
 #ifdef _CBP_ENABLE_DEBUG
-        SKMP_FORCEINLINE void UpdatePhase3();
+        SKMP_FORCEINLINE void UpdateDebugInfo();
 #endif
 
         SKMP_FORCEINLINE std::uint32_t UpdatePhase2(
@@ -66,38 +64,38 @@ namespace CBP
 
         SKMP_FORCEINLINE void UpdatePhase3();
 
-        void AddActor(Game::ObjectHandle a_handle);
+        void AddActor(Game::VMHandle a_handle);
         simActorList_t::iterator RemoveActor(simActorList_t::iterator a_iterator);
         //bool ValidateActor(simActorList_t::value_type &a_entry);
         void UpdateConfigOnAllActors();
         //void UpdateGroupInfoOnAllActors();
-        void Reset(Game::ObjectHandle a_handle);
+        void Reset(Game::VMHandle a_handle);
         void PhysicsReset();
-        void NiNodeUpdate(Game::ObjectHandle a_handle);
-        void WeightUpdate(Game::ObjectHandle a_handle);
+        void NiNodeUpdate(Game::VMHandle a_handle);
+        void WeightUpdate(Game::VMHandle a_handle);
         void NiNodeUpdateAll();
         void WeightUpdateAll();
-        //void AddArmorOverrides(Game::ObjectHandle a_handle, Game::FormID a_formid);
-        void UpdateArmorOverrides(Game::ObjectHandle a_handle);
+        //void AddArmorOverrides(Game::VMHandle a_handle, Game::FormID a_formid);
+        void UpdateArmorOverrides(Game::VMHandle a_handle);
         void UpdateArmorOverridesAll();
         void ClearArmorOverrides();
-        void ValidateNodes(Game::ObjectHandle a_handle);
+        void ValidateNodes(Game::VMHandle a_handle);
 
     public:
-        void RemoveActor(Game::ObjectHandle a_handle);
-        void PhysicsTick(Game::BSMain * a_main, float a_interval);
+        void RemoveActor(Game::VMHandle a_handle);
+        void PhysicsTick(Game::BSMain* a_main, float a_interval);
 
-        void ClearActors(bool a_noNotify = false, bool a_release = false);
+        void ClearActors(bool a_noNotify = false, bool a_release = false, bool a_invalidateHandles = false);
         void ResetInstructionQueue();
 
         void ApplyForce(
-            Game::ObjectHandle a_handle,
+            Game::VMHandle a_handle,
             std::uint32_t a_steps,
-            const std::string & a_component,
-            const NiPoint3 & a_force);
+            const stl::fixed_string& a_component,
+            const btVector3& a_force);
 
-        void UpdateConfig(Game::ObjectHandle a_handle, bool a_addIfMissing = false);
-        void UpdateConfig(Game::ObjectHandle a_handle, Actor * a_actor, bool a_addIfMissing = false);
+        void UpdateConfig(Game::VMHandle a_handle, bool a_addIfMissing = false);
+        void UpdateConfig(Game::VMHandle a_handle, Actor* a_actor, bool a_addIfMissing = false);
 
         void UpdateDebugRenderer();
 
@@ -113,7 +111,7 @@ namespace CBP
             m_averageInterval = a_val;
         }
 
-        SKMP_FORCEINLINE void SetMarkedActor(Game::ObjectHandle a_handle) {
+        SKMP_FORCEINLINE void SetMarkedActor(Game::VMHandle a_handle) {
             m_markedActor = a_handle;
         }
 
@@ -126,27 +124,27 @@ namespace CBP
 
     private:
 
-        void GatherActors(handleSet_t & a_out);
+        void GatherActors(handleSet_t& a_out);
 
         bool ApplyArmorOverrides(
-            Game::ObjectHandle a_handle,
-            const armorOverrideResults_t & a_entry);
+            Game::VMHandle a_handle,
+            const armorOverrideResults_t& a_entry);
 
         bool BuildArmorOverride(
-            Game::ObjectHandle a_handle,
-            const armorOverrideResults_t & a_in,
-            armorOverrideDescriptor_t & a_out);
+            Game::VMHandle a_handle,
+            const armorOverrideResults_t& a_in,
+            armorOverrideDescriptor_t& a_out);
 
         void DoUpdateArmorOverrides(
-            simActorList_t::map_type::value_type & a_entry,
-            Actor * a_actor);
+            simActorList_t::map_type::value_type& a_entry,
+            Actor* a_actor);
 
         SKMP_FORCEINLINE void DoConfigUpdate(
-            Game::ObjectHandle a_handle,
-            Actor * a_actor,
+            Game::VMHandle a_handle,
+            Actor* a_actor,
             SimObject& a_obj);
 
-        SKMP_FORCEINLINE const char* GetActorName(Actor * a_actor) {
+        SKMP_FORCEINLINE const char* GetActorName(Actor* a_actor) {
             return a_actor ? a_actor->GetReferenceName() : "nullptr";
         }
 
@@ -155,11 +153,11 @@ namespace CBP
         {
             const auto& globalConfig = IConfig::GetGlobal();
             if (globalConfig.general.controllerStats)
-                Debug(a_fmt, std::forward<Args>(a_args)...);
+                Message(a_fmt, std::forward<Args>(a_args)...);
         }
 
         simActorList_t m_actors;
-        Game::ObjectHandle m_markedActor;
+        Game::VMHandle m_markedActor;
 
         float m_timeAccum;
         float m_averageInterval;

@@ -37,7 +37,7 @@ namespace CBP
         static const D3D11_INPUT_ELEMENT_DESC InputElements[InputElementCount];
     };
 
-    class SKMP_ALIGN(32) Renderer : 
+    class SKMP_ALIGN_AUTO Renderer :
         public btIDebugDraw
     {
         using VertexType = VertexPositionColorAV;
@@ -67,7 +67,7 @@ namespace CBP
         Renderer() = delete;
 
         void Draw();
-        void GenerateMovingNodes(const simActorList_t& a_actorList, float a_radius, bool a_moving, bool a_centerOfGravity, Game::ObjectHandle a_markedHandle);
+        void GenerateMovingNodes(const simActorList_t& a_actorList, float a_radius, bool a_moving, bool a_centerOfGravity, Game::VMHandle a_markedHandle);
         void GenerateMotionConstraints(const simActorList_t& a_actorList, float a_radius);
 
         void Clear();
@@ -96,8 +96,8 @@ namespace CBP
 
         D3D11StateBackupImpl m_backup;
 
-        stl::vector<ItemLine> m_lines;
-        stl::vector<ItemTri> m_tris;
+        stl::vector_simd<ItemLine> m_lines;
+        stl::vector_simd<ItemTri> m_tris;
 
         btScalar m_contactPointSphereRadius;
         btScalar m_contactNormalLength;

@@ -171,7 +171,7 @@ namespace CBP
     {
         //DTasks::AddTask<ITemplate::AddProfileRecordsTask<T>>(a_profile.Name());
 
-        DTasks::AddTask([name = a_profile.Name()]()
+        ITaskPool::AddTask([name = a_profile.Name()]()
         {
             IScopedLock _(DCBP::GetLock());
 

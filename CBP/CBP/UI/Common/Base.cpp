@@ -26,6 +26,11 @@ namespace CBP
         HelpMarker(GetHelpText(a_id));
     }
 
+    void UIBase::HelpMarker(const stl::fixed_string& a_text) const
+    {
+        HelpMarker(a_text.c_str());
+    }
+    
     void UIBase::HelpMarker(const std::string& a_text) const
     {
         HelpMarker(a_text.c_str());
@@ -58,9 +63,9 @@ namespace CBP
         ImGui::PopID();
     }
 
-    void UIEditorBase::AutoSelectGender(Game::ObjectHandle a_handle)
+    void UIEditorBase::AutoSelectGender(Game::VMHandle a_handle)
     {
-        if (a_handle == Game::ObjectHandle(0))
+        if (a_handle == Game::VMHandle(0))
             return;
 
         auto& actorCache = IData::GetActorCache();
@@ -71,7 +76,11 @@ namespace CBP
 
         auto& gcc = GetGlobalCommonConfig();
 
-        auto cgender = it->second.female ? ConfigGender::Female : ConfigGender::Male;
+        auto cgender = 
+            it->second.female ?
+            ConfigGender::Female : 
+            ConfigGender::Male;
+
         if (cgender != gcc.selectedGender) {
             SetGlobal(gcc.selectedGender, cgender);
         }
@@ -94,7 +103,7 @@ namespace CBP
 
     void UpdateRaceNodeData(
         Game::FormID a_formid,
-        const std::string& a_node,
+        const stl::fixed_string& a_node,
         const configNode_t& a_data,
         ConfigGender a_gender,
         bool a_reset)

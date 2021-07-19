@@ -26,30 +26,28 @@ namespace CBP
         void DrawConfigGroupMap();
         void DrawTreeContextMenu(const nodeRefEntry_t& a_entry);
 
-        void AddNode(const std::string& a_node, const std::string& a_confGroup);
-        void AddNodeNewGroup(const std::string& a_node);
+        void AddNode(const stl::fixed_string& a_node, const stl::fixed_string& a_confGroup);
+        void AddNodeNewGroup(const stl::fixed_string& a_node);
         void AddNodeNew();
-        void RemoveNode(const std::string& a_node);
+        void RemoveNode(const stl::fixed_string& a_node);
 
-        virtual ConfigClass GetActorClass(Game::ObjectHandle a_handle) const override;
+        virtual ConfigClass GetActorClass(Game::VMHandle a_handle) const override;
         virtual configGlobalActor_t& GetActorConfig() const override;
-        virtual bool HasArmorOverride(Game::ObjectHandle a_handle) const override;
+        virtual bool HasArmorOverride(Game::VMHandle a_handle) const override;
 
-        [[nodiscard]] virtual const entryValue_t& GetData(Game::ObjectHandle a_handle) override;
+        [[nodiscard]] virtual const entryValue_t& GetData(Game::VMHandle a_handle) override;
         [[nodiscard]] virtual const entryValue_t& GetData(const listValue_t* a_data) override;
 
-        virtual void ListResetAllValues(Game::ObjectHandle a_handle) override;
+        virtual void ListResetAllValues(Game::VMHandle a_handle) override;
 
         virtual void ListUpdate() override;
         virtual listValue_t* ListGetSelected() override;
-        virtual void ListSetCurrentItem(Game::ObjectHandle a_handle) override;
+        virtual void ListSetCurrentItem(Game::VMHandle a_handle) override;
 
-        [[nodiscard]] SKMP_FORCEINLINE std::string GetCSID(
-            const std::string& a_name) const
+        [[nodiscard]] const stl::fixed_string& GetCSID(
+            const stl::fixed_string& a_name)
         {
-            std::ostringstream ss;
-            ss << "UINM#" << a_name;
-            return ss.str();
+            return m_cicUINM.Get(a_name);
         }
 
         bool m_update;
@@ -57,5 +55,9 @@ namespace CBP
         UIContext& m_parent;
 
         entryValue_t m_dummyEntry;
+
+        UICommon::UICollapsibleIDCache<0> m_cicUINM;
+
+        char m_strbuf1[512];
     };
 }

@@ -3,6 +3,7 @@
 #include "Node.h"
 
 #include "CBP/BoneCast.h"
+#include "Data/StringHolder.h"
 
 namespace CBP
 {
@@ -10,25 +11,33 @@ namespace CBP
 
     template <class T>
     void UINodeCommon<T>::DrawBoneCastButtonsImpl(
-        Game::ObjectHandle a_handle,
-        const std::string& a_nodeName,
+        Game::VMHandle a_handle,
+        const stl::fixed_string& a_nodeName,
         configNode_t& a_conf)
     {
-        if (a_handle == Game::ObjectHandle(0))
+        if (a_handle == Game::VMHandle(0))
             return;
 
         const float width = ImGui::GetWindowContentRegionMax().x - 4.0f;
 
-        ImGui::SameLine(width - GetNextTextOffset("Sample", true));
-        if (ButtonRight("Sample")) {
-            DCBP::BoneCastSample(a_handle, a_nodeName);
+        auto& sh = Common::StringHolder::GetSingleton();
+
+        ImGui::SameLine(width - GetNextTextOffset(sh.sample, true));
+        if (ButtonRight(sh.sample)) 
+        {
+            if (a_conf.bl.b.bcSkin) {
+                DCBP::BoneCastSample2(a_handle, a_nodeName);
+            }
+            else {
+                DCBP::BoneCastSample(a_handle, a_nodeName);
+            }
         }
 
         BoneCastCache::const_iterator it;
         if (IBoneCast::Get(a_handle, a_nodeName, false, it))
         {
-            ImGui::SameLine(width - GetNextTextOffset("Save"));
-            if (ButtonRight("Save")) {
+            ImGui::SameLine(width - GetNextTextOffset(sh.save));
+            if (ButtonRight(sh.save)) {
                 ImGui::OpenPopup("__save_geom_popup");
             }
 
@@ -59,10 +68,10 @@ namespace CBP
 
     template <class T>
     void UINodeCommon<T>::SaveGeometry(
-        Game::ObjectHandle a_handle,
-        const std::string& a_nodeName,
+        Game::VMHandle a_handle,
+        const stl::fixed_string& a_nodeName,
         const std::shared_ptr<const ColliderData>& a_data,
-        const std::string& a_name)
+        const stl::fixed_string& a_name)
     {
         try
         {
@@ -123,8 +132,8 @@ namespace CBP
 
     template <class T>
     void UINodeCommon<T>::DrawSaveGeometryContextMenu(
-        Game::ObjectHandle a_handle,
-        const std::string& a_nodeName,
+        Game::VMHandle a_handle,
+        const stl::fixed_string& a_nodeName,
         configNode_t& a_conf)
     {
         if (ImGui::MenuItem("New"))
@@ -146,7 +155,7 @@ namespace CBP
                     if (!StrHelpers::strlen(in))
                         return;
 
-                    std::string name(in);
+                    stl::fixed_string name(in);
 
                     auto& pmc = CBP::GlobalProfileManager::GetSingleton<ColliderProfile>();
                     if (pmc.Find(name) != pmc.End())
@@ -218,7 +227,7 @@ namespace CBP
     template <class T>
     void UINodeCommon<T>::DrawBoneCastButtons(
         T a_handle,
-        const std::string& a_nodeName,
+        const stl::fixed_string& a_nodeName,
         configNode_t& a_conf
     )
     {
@@ -227,11 +236,11 @@ namespace CBP
     template <class T>
     bool UINodeCommon<T>::DrawBoneCast(
         T a_handle,
-        const std::string& a_nodeName,
+        const stl::fixed_string& a_nodeName,
         configNode_t& a_conf
     )
     {
-        /*if (a_handle == Game::ObjectHandle(0))
+        /*if (a_handle == Game::VMHandle(0))
             return false;*/
 
         bool changed(false);
@@ -253,7 +262,16 @@ namespace CBP
             changed |= ImGui::SliderFloat("Weight threshold", &a_conf.fp.f32.bcWeightThreshold, 0.0f, 1.0f, "%.4f");
             changed |= ImGui::SliderFloat("Simplify target", &a_conf.fp.f32.bcSimplifyTarget, 0.0f, 1.0f, "%.3f", ImGuiSliderFlags_AlwaysClamp);
             changed |= ImGui::SliderFloat("Simplify target error", &a_conf.fp.f32.bcSimplifyTargetError, 0.001f, 0.1f, "%.3f", ImGuiSliderFlags_AlwaysClamp);
-            changed |= ImGui::InputText("Shape name", std::addressof(a_conf.ex.bcShape));
+            changed |= ImGui::Checkbox("Use skin", &a_conf.bl.b.bcSkin);
+
+            if (a_conf.ex.bcShape.get() != m_buffers.inputShape) {
+                m_buffers.inputShape = a_conf.ex.bcShape;
+            }
+
+            if (ImGui::InputText("Shape name", std::addressof(m_buffers.inputShape))) {
+                a_conf.ex.bcShape = m_buffers.inputShape;
+                changed = true;
+            }
 
             //ImGui::Unindent();
 
@@ -274,7 +292,7 @@ namespace CBP
     template <class T>
     void UINodeCommon<T>::DrawNodeItem(
         T a_handle,
-        const std::string& a_nodeName,
+        const stl::fixed_string& a_nodeName,
         configNode_t& a_conf
     )
     {
@@ -335,9 +353,22 @@ namespace CBP
 
         ImGui::PopID();
 
+        if (ImGui::Checkbox("Create", &a_conf.bl.b.create))
+        {
+            changed = true;
+            reset = true;
+        }
+
         ImGui::Spacing();
 
-        changed |= ImGui::InputText("Parent node", std::addressof(a_conf.ex.forceParent), ImGuiInputTextFlags_EnterReturnsTrue);
+        if (a_conf.ex.forceParent.get() != m_buffers.inputParentNode) {
+            m_buffers.inputParentNode = a_conf.ex.forceParent;
+        }
+
+        if (ImGui::InputText("Parent node", std::addressof(m_buffers.inputParentNode), ImGuiInputTextFlags_EnterReturnsTrue)) {
+            changed = true;
+            a_conf.ex.forceParent = m_buffers.inputParentNode;
+        }
 
         if (ImGui::SliderFloat("Scale", &a_conf.fp.f32.nodeScale, 0.0f, 20.0f))
         {
@@ -413,7 +444,7 @@ namespace CBP
         T a_handle
     )
     {
-        if constexpr (std::is_same_v<T, Game::ObjectHandle>)
+        if constexpr (std::is_same_v<T, Game::VMHandle>)
         {
             auto confClass = IConfig::GetActorNodeClass(a_handle);
 
@@ -425,7 +456,9 @@ namespace CBP
 
     template <class T, UIEditorID ID>
     UINode<T, ID>::UINode() :
-        UIMainItemFilter<ID>(MiscHelpText::dataFilterNode)
+        UIMainItemFilter<ID>(MiscHelpText::dataFilterNode),
+        m_cicUIND("UIND"),
+        m_cicGUIND("GUIND")
     {
     }
 
@@ -550,7 +583,7 @@ namespace CBP
                 ImGui::PopID();
 
                 ImGui::SameLine();
-                std::string label(e.first + " - " + e.second);
+                std::string label(e.first.get() + " - " + e.second.get());
 
                 if (CollapsingHeader(GetCSID(e.first), label.c_str()))
                 {
@@ -572,12 +605,10 @@ namespace CBP
     }
 
     template <class T, UIEditorID ID>
-    std::string UINode<T, ID>::GetGCSID(
-        const std::string& a_name) const
+    const stl::fixed_string& UINode<T, ID>::GetGCSID(
+        const stl::fixed_string& a_name)
     {
-        std::ostringstream ss;
-        ss << "GUIND#" << Enum::Underlying(ID) << "#" << a_name;
-        return ss.str();
+        return m_cicGUIND.Get(a_name);
     }
 
 }

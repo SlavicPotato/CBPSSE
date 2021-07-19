@@ -43,8 +43,8 @@ namespace CBP
 
         static void OnLogWrite(const LoggerMessageEvent& a_event);
 
-        stl::unordered_map<Event, stl::vector<_EventTriggerDescriptor>> m_events;
-        stl::unordered_map<UInt32, LoadGameEventCallback> m_loadgame_events;
+        std::unordered_map<Event, std::vector<_EventTriggerDescriptor>> m_events;
+        std::unordered_map<UInt32, LoadGameEventCallback> m_loadgame_events;
 
         BackLog m_backLog;
 

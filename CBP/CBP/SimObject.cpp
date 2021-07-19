@@ -2,51 +2,112 @@
 
 #include "SimObject.h"
 #include "SimComponent.h"
+#include "StringHolder.h"
 
 namespace CBP
 {
-    static constexpr auto NODE_HEAD = "NPC Head [Head]";
-
     nodeDescList_t::size_type SimObject::CreateNodeDescriptorList(
-        Game::ObjectHandle a_handle,
+        Game::VMHandle a_handle,
         Actor* a_actor,
+        NiNode* a_rootNode,
         ConfigGender a_sex,
         const configComponents_t& a_config,
         const nodeMap_t& a_nodeMap,
         bool a_collisions,
         nodeDescList_t& a_out)
     {
+        struct nodeCandidate_t
+        {
+            const configNodes_t::value_type& config;
+            const stl::fixed_string& configGroup;
+            NiAVObject* object;
+            bool created;
+        };
+
+        std::vector<nodeCandidate_t> candidates;
+
         auto& nodeConfig = IConfig::GetActorNode(a_handle, a_sex);
 
-        a_out.reserve(nodeConfig.size());
+        candidates.reserve(nodeConfig.size());
 
-        for (auto& n : nodeConfig)
+        for (auto& e : nodeConfig)
         {
-            auto& nodeConf = n.second;
+            auto& nodeConf = e.second;
 
-            if (!nodeConf.Enabled())
+            if (!nodeConf.Enabled()) {
                 continue;
+            }
 
-            auto itcg = a_nodeMap.find(n.first);
-            if (itcg == a_nodeMap.end())
+            auto itcg = a_nodeMap.find(e.first);
+            if (itcg == a_nodeMap.end()) {
                 continue;
+            }
 
-            BSFixedString cs(n.first.c_str());
+            BSFixedString objectName(e.first.c_str());
 
-            auto rootNode = a_actor->loadedState->node;
+            if (auto object = a_rootNode->GetObjectByName(objectName); object)
+            {
+                if (!object->m_parent) {
+                    continue;
+                }
 
-            auto object = rootNode->GetObjectByName(&cs.data);
-            if (!object)
+                candidates.emplace_back(e, itcg->second, object, false);
+
                 continue;
+            }
 
-            if (!object->m_parent)
-                continue;
+            if (nodeConf.Create())
+            {
+                if (nodeConf.ex.forceParent.empty()) {
+                    continue;
+                }
 
-            auto parent = GetParentNode(rootNode, nodeConf);
-            if (!parent)
+                NiNode* parent = nullptr;
+
+                if (auto node = a_rootNode->GetObjectByName(
+                    nodeConf.ex.forceParent.c_str()); node)
+                {
+                    parent = node->GetAsNiNode();
+                }
+
+                if (!parent) {
+                    continue;
+                }
+
+                auto node = CreateNode(parent, objectName);
+
+                candidates.emplace_back(e, itcg->second, node, true);
+            }
+        }
+
+        a_out.reserve(candidates.size());
+
+        for (const auto& e : candidates)
+        {
+            auto& nodeConf = e.config.second;
+
+            auto object = e.object;
+
+            NiNode* parent;
+
+            if (e.created) {
                 parent = object->m_parent;
+                ASSERT(parent != nullptr);
+            }
+            else
+            {
+                parent = GetParentNode(a_rootNode, nodeConf);
 
-            auto it = a_config.find(itcg->second);
+                if (!parent) {
+                    parent = object->m_parent;
+                }
+
+                if (!parent) {
+                    continue;
+                }
+            }
+
+            auto it = a_config.find(e.configGroup);
 
             auto& physConf =
                 it != a_config.end() ?
@@ -54,10 +115,10 @@ namespace CBP
                 IConfig::GetDefaultPhysics();
 
             a_out.emplace_back(
-                n.first,
+                e.config.first,
+                e.configGroup,
                 object,
                 parent,
-                itcg->second,
                 a_collisions && nodeConf.bl.b.collision,
                 nodeConf.bl.b.motion,
                 physConf,
@@ -74,16 +135,43 @@ namespace CBP
     {
         if (!a_nodeConfig.ex.forceParent.empty())
         {
-            BSFixedString pn(a_nodeConfig.ex.forceParent.c_str());
+            auto pobj = a_root->GetObjectByName(
+                a_nodeConfig.ex.forceParent.c_str());
 
-            auto pobj = a_root->GetObjectByName(&pn.data);
-            if (pobj)
-            {
-                auto n = pobj->GetAsNiNode();
-                if (n) {
-                    return n;
-                }
+            if (pobj) {
+                return pobj->GetAsNiNode();
             }
+        }
+
+        return nullptr;
+    }
+
+    NiNode* SimObject::CreateNode(
+        NiNode* a_parent,
+        const BSFixedString& a_name)
+    {
+        auto node = NiNode::Create(1);
+        node->m_name.Set_ref(a_name);
+
+        a_parent->AttachChild(node, true);
+
+        NiAVObject::ControllerUpdateContext ctx{ 0, 0 };
+        node->UpdateDownwardPass(ctx, nullptr);
+
+        return node;
+    }
+
+    NiNode* SimObject::GetNPCRoot(Actor* a_actor, bool a_firstPerson)
+    {
+        auto rootNode = a_actor->GetNiRootNode(a_firstPerson);
+        if (!rootNode) {
+            return nullptr;
+        }
+
+        if (auto node = rootNode->GetObjectByName(
+            BSStringHolder::GetSingleton()->npcRoot); node)
+        {
+            return node->GetAsNiNode();
         }
 
         return nullptr;
@@ -113,30 +201,28 @@ namespace CBP
 
         if (oldParent != a_newParent)
         {
-            a_object->IncRef();
+            a_newParent->AttachChild(a_object, true);
 
-            oldParent->RemoveChild(a_object);
-            a_newParent->AttachChild(a_object, false);
-
-            a_object->DecRef();
+            NiAVObject::ControllerUpdateContext ctx{ 0, 0 };
+            a_object->UpdateDownwardPass(ctx, nullptr);
         }
 
         return oldParent;
     }
 
     SimObject::SimObject(
-        Game::ObjectHandle a_handle,
+        Game::VMHandle a_handle,
         Actor* a_actor,
+        NiNode* a_rootNode,
         ConfigGender a_sex,
         const nodeDescList_t& a_desc)
         :
         m_sex(a_sex),
-        m_rootNode(a_actor->loadedState->node),
         m_suspended(false),
         m_markedForDelete(false),
         m_actor(a_actor),
         m_handle(a_handle)
-#if BT_THREADSAFE
+#if 0
         , m_task(this)
 #endif
     {
@@ -189,31 +275,14 @@ namespace CBP
             }
         }
 
-        /*if (m_actor->formID == 0x14)
-        {
-            _DMESSAGE(">>");
-
-            for (auto& e : m_nodes)
-            {
-                _DMESSAGE("  %s", e->GetNode()->m_name);
-            }
-
-            _DMESSAGE("<<");
-        }*/
-
-        BSFixedString nh(NODE_HEAD);
-        m_objHead = a_actor->loadedState->node->GetObjectByName(&nh.data);
-
-        auto policy = (*g_skyrimVM)->GetClassRegistry()->GetHandlePolicy();
-        policy->AddRef(a_handle);
-    }
+        m_objHead = a_rootNode->GetObjectByName(
+            BSStringHolder::GetSingleton()->npcHead);
+}
 
     SimObject::~SimObject()
     {
-        // release node refs first
         m_nodes.clear();
         m_objHead = nullptr;
-        m_rootNode = nullptr;
 
         m_actor = nullptr;
 
@@ -224,6 +293,11 @@ namespace CBP
     {
         for (auto& e : m_nodes)
             e->Reset();
+    }
+
+    void SimObject::InvalidateHandle()
+    {
+        m_handle.invalidate();
     }
 
     void SimObject::ClearSimComponentParent(SimComponent* a_sc)
@@ -241,6 +315,11 @@ namespace CBP
         bool a_collisions,
         const configComponents_t& a_config)
     {
+        auto npcRoot = GetNPCRoot(a_actor, false);
+        if (!npcRoot) {
+            return;
+        }
+
         auto& nodeConfig = IConfig::GetActorNode(m_handle.get(), m_sex);
 
         auto it = m_nodes.begin();
@@ -265,7 +344,7 @@ namespace CBP
                 itc->second :
                 IConfig::GetDefaultPhysics();
 
-            auto parentNode = GetParentNode(m_rootNode, itn->second);
+            auto parentNode = GetParentNode(npcRoot, itn->second);
             if (!parentNode)
                 parentNode = e->GetOriginalParentNode();
 
@@ -302,6 +381,11 @@ namespace CBP
 
     bool SimObject::HasNewNode(Actor* a_actor, const nodeMap_t& a_nodeMap)
     {
+        auto npcRoot = GetNPCRoot(a_actor, false);
+        if (!npcRoot) {
+            return false;
+        }
+
         auto& nodeConfig = IConfig::GetActorNode(m_handle.get(), m_sex);
 
         for (auto& n : nodeConfig)
@@ -313,13 +397,14 @@ namespace CBP
             if (itcg == a_nodeMap.end())
                 continue;
 
-            BSFixedString cs(n.first.c_str());
-
-            auto rootNode = a_actor->loadedState->node;
-
-            auto object = rootNode->GetObjectByName(&cs.data);
+            auto object = npcRoot->GetObjectByName(n.first.c_str());
             if (!object)
+            {
+                if (n.second.Create()) {
+                    return true;
+                }
                 continue;
+            }
 
             if (!object->m_parent)
                 continue;
@@ -333,40 +418,43 @@ namespace CBP
 
         return false;
     }
-    
+
     void SimObject::RemoveInvalidNodes(Actor* a_actor)
     {
+        auto npcRoot = GetNPCRoot(a_actor, false);
+        if (!npcRoot) {
+            return;
+        }
+
         auto it = m_nodes.begin();
         while (it != m_nodes.end())
         {
             auto& e = *it;
 
-            auto rootNode = a_actor->loadedState->node;
+            auto object = npcRoot->GetObjectByName(
+                e->GetNodeName().c_str());
 
-            BSFixedString csn(e->GetNodeName().c_str());
-
-            auto object = rootNode->GetObjectByName(&csn.data);
-
-            if (!object || !object->m_parent) 
+            if (!object || !object->m_parent)
             {
                 ClearSimComponentParent(e.get());
                 it = m_nodes.erase(it);
-                continue;
             }
-
-            ++it;
+            else {
+                ++it;
+            }
         }
     }
 
     void SimObject::ApplyForce(
         std::uint32_t a_steps,
-        const std::string& a_component,
-        const NiPoint3& a_force)
+        const stl::fixed_string& a_component,
+        const btVector3& a_force)
     {
         for (auto& e : m_nodes)
         {
-            if (StrHelpers::iequal(e->GetConfigGroupName(), a_component))
+            if (e->GetConfigGroupName() == a_component) {
                 e->ApplyForce(a_steps, a_force);
+            }
         }
     }
 
@@ -375,7 +463,7 @@ namespace CBP
     {
         for (auto& e : m_nodes)
             e->UpdateDebugInfo();
-}
+    }
 #endif
 
     void SimObject::SetSuspended(bool a_switch)
@@ -388,6 +476,7 @@ namespace CBP
         if (!a_switch)
             Reset();
     }
+
     void SimObject::UpdateMotion(float a_timeStep)
     {
         if (m_suspended)
@@ -402,7 +491,7 @@ namespace CBP
         if (m_suspended)
             return;
 
-        for (auto& e : m_nodes) 
+        for (auto& e : m_nodes)
         {
             e->ReadTransforms();
             e->UpdateVelocity(a_timeStep);

@@ -14,13 +14,13 @@ namespace CBP
     using namespace UICommon;
 
     UISimComponentActor::UISimComponentActor(UIContext& a_parent) :
-        UISimComponent<Game::ObjectHandle, UIEditorID::kMainEditor>(a_parent.GetFilter()),
+        UISimComponent<Game::VMHandle, UIEditorID::kMainEditor>(a_parent.GetFilter()),
         m_ctxParent(a_parent)
     {
     }
 
     void UISimComponentActor::DrawConfGroupNodeMenu(
-        Game::ObjectHandle a_handle,
+        Game::VMHandle a_handle,
         nodeConfigList_t& a_nodeList
     )
     {
@@ -28,7 +28,7 @@ namespace CBP
     }
 
     void UISimComponentActor::OnSimSliderChange(
-        Game::ObjectHandle a_handle,
+        Game::VMHandle a_handle,
         configComponents_t& a_data,
         configComponentsValue_t& a_pair,
         const componentValueDescMap_t::vec_value_type& a_desc,
@@ -65,7 +65,7 @@ namespace CBP
     }
 
     void UISimComponentActor::OnColliderShapeChange(
-        Game::ObjectHandle a_handle,
+        Game::VMHandle a_handle,
         configComponents_t& a_data,
         configComponentsValue_t& a_pair,
         const componentValueDescMap_t::vec_value_type& a_desc)
@@ -85,7 +85,7 @@ namespace CBP
     }
 
     void UISimComponentActor::OnMotionConstraintChange(
-        Game::ObjectHandle a_handle,
+        Game::VMHandle a_handle,
         configComponents_t& a_data,
         configComponentsValue_t& a_pair,
         const componentValueDescMap_t::vec_value_type& a_desc)
@@ -104,7 +104,7 @@ namespace CBP
     }
 
     void UISimComponentActor::OnComponentUpdate(
-        Game::ObjectHandle a_handle,
+        Game::VMHandle a_handle,
         configComponents_t& a_data,
         configComponentsValue_t& a_pair)
     {
@@ -140,19 +140,19 @@ namespace CBP
     }
 
     const configNodes_t& UISimComponentActor::GetNodeData(
-        Game::ObjectHandle a_handle) const
+        Game::VMHandle a_handle) const
     {
         const auto& globalConfig = IConfig::GetGlobal();
         return IConfig::GetActorNode(a_handle, globalConfig.ui.commonSettings.physics.actor.selectedGender);
     }
 
     void UISimComponentActor::UpdateNodeData(
-        Game::ObjectHandle a_handle,
-        const std::string& a_node,
+        Game::VMHandle a_handle,
+        const stl::fixed_string& a_node,
         const configNode_t& a_data,
         bool a_reset)
     {
-        if (a_handle != Game::ObjectHandle(0))
+        if (a_handle != Game::VMHandle(0))
         {
             const auto& globalConfig = IConfig::GetGlobal();
 
@@ -173,10 +173,10 @@ namespace CBP
     }
 
     void UISimComponentActor::RemoveNodeData(
-        Game::ObjectHandle a_handle,
-        const std::string& a_node)
+        Game::VMHandle a_handle,
+        const stl::fixed_string& a_node)
     {
-        if (a_handle != Game::ObjectHandle(0))
+        if (a_handle != Game::VMHandle(0))
         {
             const auto& globalConfig = IConfig::GetGlobal();
 
@@ -192,8 +192,8 @@ namespace CBP
     }
 
     void UISimComponentActor::DrawBoneCastButtons(
-        Game::ObjectHandle a_handle,
-        const std::string& a_nodeName,
+        Game::VMHandle a_handle,
+        const stl::fixed_string& a_nodeName,
         configNode_t& a_conf
     )
     {
@@ -221,7 +221,7 @@ namespace CBP
     }
 
     bool UISimComponentActor::ShouldDrawComponent(
-        Game::ObjectHandle,
+        Game::VMHandle,
         configComponents_t&,
         const configGroupMap_t::value_type&,
         const nodeConfigList_t& a_nodeConfig) const
@@ -264,8 +264,8 @@ namespace CBP
     }
 
     const armorCacheEntry_t::mapped_type* UISimComponentActor::GetArmorOverrideSection(
-        Game::ObjectHandle a_handle,
-        const std::string& a_comp) const
+        Game::VMHandle a_handle,
+        const stl::fixed_string& a_comp) const
     {
         return IConfig::GetArmorOverrideSection(a_handle, a_comp);
     }

@@ -2,13 +2,16 @@
 
 #include "ArmorCache.h"
 #include "Common/UIData.h"
-#include "Profile/Profile.h"
+//#include "Profile/Profile.h"
 #include "ConfigValueTypes.h"
 
-#include "Common/Data.h"
+#include "common/Config.h"
+#include "common/Data.h"
 
 namespace CBP
 {
+    using namespace ConfigCommon;
+
     enum class UIEditorID : int
     {
         kProfileEditorPhys = 0,
@@ -19,28 +22,24 @@ namespace CBP
         kRaceNodeEditor
     };
 
-    enum class ConfigGender : char
+    struct SKMP_ALIGN(16) configForce_t
     {
-        Male = 0,
-        Female
-    };
+        SKMP_DECLARE_ALIGNED_ALLOCATOR(16);
 
-    struct configForce_t
-    {
-        NiPoint3 force;
+        btVector3 force{ 0.0f, 0.0f, 0.0f };
 
-        int steps = 1;
+        int steps{ 1 };
     };
 
     struct configPropagate_t
     {
-        typedef stl::vector<const std::string*> keyList_t;
+        using keyList_t = std::vector<const stl::fixed_string*>;
 
-        bool enabled = false;
-        stl::iunordered_set<std::string> mirror;
+        bool enabled{ false };
+        std::unordered_set<stl::fixed_string> mirror;
 
         [[nodiscard]] float ResolveValue(
-            const std::string& a_key,
+            const stl::fixed_string& a_key,
             const float a_value) const;
 
         [[nodiscard]] float ResolveValue(
@@ -50,36 +49,36 @@ namespace CBP
 
     struct configNodeEditorOptions_t
     {
-        bool showAll = false;
+        bool showAll{ false };
     };
 
-    typedef stl::imap<std::string, configPropagate_t> configPropagateEntry_t;
-    typedef stl::iunordered_map<std::string, configPropagateEntry_t> configPropagateMap_t;
-    typedef stl::iunordered_map<std::string, configForce_t> configForceMap_t;
-    typedef stl::iunordered_map<std::string, bool> collapsibleStates_t;
+    typedef std::map<stl::fixed_string, configPropagate_t> configPropagateEntry_t;
+    typedef std::unordered_map<stl::fixed_string, configPropagateEntry_t> configPropagateMap_t;
+    typedef stl::unordered_map_simd<stl::fixed_string, configForce_t> configForceMap_t;
+    typedef std::unordered_map<stl::fixed_string, bool> collapsibleStates_t;
 
     struct configGlobalRace_t
     {
-        bool playableOnly = true;
-        bool showEditorIDs = true;
+        bool playableOnly{ true };
+        bool showEditorIDs{ true };
     };
 
     struct configGlobalActor_t
     {
-        bool showAll = true;
-        Game::ObjectHandle lastActor{ 0 };
+        bool showAll{ true };
+        Game::VMHandle lastActor{ 0 };
     };
 
     struct configGlobalSimComponent_t
     {
-        bool showNodes = false;
-        bool syncWeightSliders = false;
-        bool clampValues = true;
+        bool showNodes{ false };
+        bool syncWeightSliders{ false };
+        bool clampValues{ true };
     };
 
     struct configGlobalCommon_t
     {
-        ConfigGender selectedGender = ConfigGender::Female;
+        ConfigGender selectedGender{ ConfigGender::Female };
     };
 
     class IConfig;
@@ -91,46 +90,48 @@ namespace CBP
         configGlobal_t() = default;
     private:
 
-        configGlobal_t(const configGlobal_t&) = default;
+        /*configGlobal_t(const configGlobal_t&) = default;
         configGlobal_t(configGlobal_t&&) = default;
         configGlobal_t& operator=(const configGlobal_t&) = default;
-        configGlobal_t& operator=(configGlobal_t&&) = default;
+        configGlobal_t& operator=(configGlobal_t&&) = default;*/
 
         SKMP_NOINLINE void Reset();
 
     public:
 
+        SKMP_DECLARE_ALIGNED_ALLOCATOR(16);
+
         struct
         {
-            bool femaleOnly = true;
-            bool armorOverrides = true;
-            bool controllerStats = false;
+            bool femaleOnly{ true };
+            bool armorOverrides{ true };
+            bool controllerStats{ false };
         } general;
 
         struct
         {
-            bool enableProfiling = false;
-            int profilingInterval = 1000;
-            bool enablePlot = true;
-            bool showAvg = true;
-            bool animatePlot = true;
-            int plotValues = 200;
-            float plotHeight = 30.0f;
+            bool enableProfiling{ false };
+            int profilingInterval{ 1000 };
+            bool enablePlot{ true };
+            bool showAvg{ true };
+            bool animatePlot{ true };
+            int plotValues{ 200 };
+            float plotHeight{ 30.0f };
         } profiling;
 
         struct
         {
-            float timeTick = 1.0f / 60.0f;
-            float maxSubSteps = 10.0f;
-            float maxDiff = 360.0f;
-            bool collision = true;
+            float timeTick{ 1.0f / 60.0f };
+            float maxSubSteps{ 10.0f };
+            float maxDiff{ 360.0f };
+            bool collision{ true };
         } phys;
 
         struct SKMP_ALIGN(16)
         {
-            bool lockControls = true;
-            bool freezeTime = false;
-            bool autoSelectGender = true;
+            bool lockControls{ true };
+            bool freezeTime{ false };
+            bool autoSelectGender{ true };
 
             configGlobalActor_t actorPhysics;
             configGlobalActor_t actorNode;
@@ -158,40 +159,40 @@ namespace CBP
 
             } commonSettings;
 
-            bool selectCrosshairActor = false;
+            bool selectCrosshairActor{ false };
 
-            float fontScale = 1.0f;
-            float backgroundAlpha = 0.9f;
+            float fontScale{ 1.0f };
+            float backgroundAlpha{ 0.9f };
 
-            UInt32 comboKey = DIK_LSHIFT;
-            UInt32 showKey = DIK_END;
+            UInt32 comboKey{ DIK_LSHIFT };
+            UInt32 showKey{ DIK_END };
 
-            UInt32 comboKeyDR = DIK_LSHIFT;
-            UInt32 showKeyDR = DIK_PGDN;
+            UInt32 comboKeyDR{ DIK_LSHIFT };
+            UInt32 showKeyDR{ DIK_PGDN };
 
             configForceMap_t forceActor;
-            stl::unordered_map<UIEditorID, configPropagateMap_t> propagate;
-            stl::unordered_map<UIEditorID, configNodeEditorOptions_t> nodeEditorOptions;
+            std::unordered_map<UIEditorID, configPropagateMap_t> propagate;
+            std::unordered_map<UIEditorID, configNodeEditorOptions_t> nodeEditorOptions;
             UIData::UICollapsibleStates colStates;
-            std::string forceActorSelected;
+            stl::fixed_string forceActorSelected;
 
             struct
             {
-                bool global = true;
-                bool actors = true;
-                bool races = true;
+                bool global{ true };
+                bool actors{ true };
+                bool races{ true };
             } import;
 
-            std::int32_t backlogLimit = 2000;
+            std::int32_t backlogLimit{ 2000 };
 
             struct SKMP_ALIGN(16)
             {
-                bool wireframe = false;
-                bool lighting = true;
-                float resolution = 2048.0f;
-                float fov = 75.0f;
-                DirectX::XMVECTOR color = DirectX::XMVectorSet(0.2f, 1.0f, 0.2f, 1.0f);
-                DirectX::XMVECTOR ambientLightColor = DirectX::XMVectorSet(0.05333332f, 0.09882354f, 0.1819608f, 0.0f);
+                bool wireframe{ false };
+                bool lighting{ true };
+                float resolution{ 2048.0f };
+                float fov{ 75.0f };
+                DirectX::XMVECTOR color{ DirectX::XMVectorSet(0.2f, 1.0f, 0.2f, 1.0f) };
+                DirectX::XMVECTOR ambientLightColor{ DirectX::XMVectorSet(0.05333332f, 0.09882354f, 0.1819608f, 0.0f) };
                 //DirectX::XMVECTOR specularLightColor = DirectX::XMVectorSet(1.0f, 1.0f, 1.0f, 1.0f);
                 //DirectX::XMVECTOR diffuseLightColor = DirectX::XMVectorSet(1.0f, 1.0f, 1.0f, 1.0f);
             } geometry;
@@ -210,28 +211,27 @@ namespace CBP
                 btColors.m_contactPoint.setW(1.0f);
             }
 
-
-            bool enabled = false;
-            bool wireframe = true;
-            float contactPointSphereRadius = 0.5f;
-            float contactNormalLength = 2.0f;
-            bool enableMovingNodes = false;
-            bool enableMotionConstraints = false;
-            bool movingNodesCenterOfGravity = false;
-            float movingNodesRadius = 0.75f;
-            bool drawAABB = false;
+            bool enabled{ false };
+            bool wireframe{ true };
+            float contactPointSphereRadius{ 0.5f };
+            float contactNormalLength{ 2.0f };
+            bool enableMovingNodes{ false };
+            bool enableMotionConstraints{ false };
+            bool movingNodesCenterOfGravity{ false };
+            float movingNodesRadius{ 0.75f };
+            bool drawAABB{ false };
 
             struct SKMP_ALIGN(16)
             {
-                DirectX::XMVECTOR movingNodes = DirectX::XMVectorSet(1.0f, 0.0f, 0.0f, 0.85f);
-                DirectX::XMVECTOR movingNodesCOG = DirectX::XMVectorSet(0.76f, 0.55f, 0.1f, 0.85f);
-                DirectX::XMVECTOR actorMarker = DirectX::XMVectorSet(0.921f, 0.596f, 0.203f, 0.85f);
+                DirectX::XMVECTOR movingNodes{ DirectX::XMVectorSet(1.0f, 0.0f, 0.0f, 0.85f) };
+                DirectX::XMVECTOR movingNodesCOG{ DirectX::XMVectorSet(0.76f, 0.55f, 0.1f, 0.85f) };
+                DirectX::XMVECTOR actorMarker{ DirectX::XMVectorSet(0.921f, 0.596f, 0.203f, 0.85f) };
 
-                DirectX::XMVECTOR constraintBox = DirectX::XMVectorSet(0.2f, 0.9f, 0.5f, 0.85f);
-                DirectX::XMVECTOR constraintSphere = DirectX::XMVectorSet(0.2f, 0.9f, 0.5f, 0.85f);
-                DirectX::XMVECTOR virtualPosition = DirectX::XMVectorSet(0.3f, 0.7f, 0.7f, 0.85f);
+                DirectX::XMVECTOR constraintBox{ DirectX::XMVectorSet(0.2f, 0.9f, 0.5f, 0.85f) };
+                DirectX::XMVECTOR constraintSphere{ DirectX::XMVectorSet(0.2f, 0.9f, 0.5f, 0.85f) };
+                DirectX::XMVECTOR virtualPosition{ DirectX::XMVectorSet(0.3f, 0.7f, 0.7f, 0.85f) };
 
-                DirectX::XMVECTOR contactNormal = DirectX::XMVectorSet(0.0f, 0.749f, 1.0f, 1.0f);
+                DirectX::XMVECTOR contactNormal{ DirectX::XMVectorSet(0.0f, 0.749f, 1.0f, 1.0f) };
 
             } colors;
 
@@ -260,6 +260,8 @@ namespace CBP
         Float3Mirror = 1U << 18,
         MotionConstraintBox = 1U << 19,
         MotionConstraintSphere = 1U << 20,
+        BeginSubGroup = 1U << 21,
+        EndSubGroup = 1U << 22,
 
         MotionConstraints = (MotionConstraintBox | MotionConstraintSphere)
     };
@@ -319,26 +321,26 @@ namespace CBP
     struct componentValueDesc_t
     {
         std::ptrdiff_t offset;
-        std::string counterpart;
+        stl::fixed_string counterpart;
         float min;
         float max;
-        std::string helpText;
-        std::string descTag;
-        DescUIFlags flags = DescUIFlags::None;
-        DescUIGroupType groupType = DescUIGroupType::None;
-        std::string groupName;
-        stl::vector<std::string> slider3Members;
+        stl::fixed_string helpText;
+        stl::fixed_string descTag;
+        DescUIFlags flags{ DescUIFlags::None };
+        DescUIGroupType groupType{ DescUIGroupType::None };
+        stl::fixed_string groupName;
+        stl::fixed_string subGroupName;
 
         [[nodiscard]] float GetCounterpartValue(const float* a_pvalue) const;
     };
 
     struct colliderDesc_t
     {
-        std::string name;
-        std::string desc;
+        stl::fixed_string name;
+        stl::fixed_string desc;
     };
 
-    typedef iKVStorage<std::string, const componentValueDesc_t> componentValueDescMap_t;
+    typedef KVStorage<stl::fixed_string, const componentValueDesc_t> componentValueDescMap_t;
     typedef KVStorage<ColliderShapeType, const colliderDesc_t> colliderDescMap_t;
 
     template <class T>
@@ -350,7 +352,7 @@ namespace CBP
     };
 
     template <class T>
-    using addrInfoMap_t = stl::iunordered_map<std::string, infoValueAddr_t<T>>;
+    using addrInfoMap_t = std::unordered_map<stl::fixed_string, infoValueAddr_t<T>>;
 
     struct configBase_t
     {
@@ -380,6 +382,8 @@ namespace CBP
         float colExtentMin[4];
         float colExtentMax[4];
         float colRot[4];
+        float maxOffsetParamsSphere[4];
+        float maxOffsetParamsBox[4];
 
         float stiffness;
         float stiffness2;
@@ -387,9 +391,6 @@ namespace CBP
         float springSlackMag;
         float damping;
         float maxOffsetSphereRadius;
-        float maxOffsetVelResponseScale;
-        float maxOffsetMaxBiasMag;
-        float maxOffsetRestitutionCoefficient;
         float gravityBias;
         float gravityCorrection;
         float rotGravityCorrection;
@@ -423,6 +424,8 @@ namespace CBP
         btVector3 colExtentMin;
         btVector3 colExtentMax;
         btVector3 colRot;
+        btVector4 maxOffsetParamsSphere;
+        btVector4 maxOffsetParamsBox;
 
         btVector3 v10;
         btVector3 v11;
@@ -430,6 +433,7 @@ namespace CBP
         btVector3 v13;
         btVector3 v14;
         btVector3 v15;
+        btVector3 v16;
     };
 
     /* MSVC will generate extra instructions when copying these structs to avoid (v)movups displacements
@@ -475,6 +479,7 @@ namespace CBP
         __m256 d6;
         __m256 d7;
         __m256 d8;
+        __m256 d9;
 
         SKMP_FORCEINLINE void __copy(const physicsDataMM256_t& a_rhs)
         {
@@ -487,6 +492,7 @@ namespace CBP
             d6 = a_rhs.d6;
             d7 = a_rhs.d7;
             d8 = a_rhs.d8;
+            d9 = a_rhs.d9;
         }
     };
 #endif
@@ -529,13 +535,14 @@ namespace CBP
         __m128 colExtentMin;
         __m128 colExtentMax;
         __m128 colRot;
-        __m128 d10;
-        __m128 d11;
+        __m128 maxOffsetParamsSphere;
+        __m128 maxOffsetParamsBox;
         __m128 d12;
         __m128 d13;
         __m128 d14;
         __m128 d15;
         __m128 d16;
+        __m128 d17;
 
     private:
 
@@ -552,13 +559,14 @@ namespace CBP
             colExtentMin = a_rhs.colExtentMin;
             colExtentMax = a_rhs.colExtentMax;
             colRot = a_rhs.colRot;
-            d10 = a_rhs.d10;
-            d11 = a_rhs.d11;
+            maxOffsetParamsSphere = a_rhs.maxOffsetParamsSphere;
+            maxOffsetParamsBox = a_rhs.maxOffsetParamsBox;
             d12 = a_rhs.d12;
             d13 = a_rhs.d13;
             d14 = a_rhs.d14;
             d15 = a_rhs.d15;
             d16 = a_rhs.d16;
+            d17 = a_rhs.d17;
         }
 
     };
@@ -698,7 +706,7 @@ namespace CBP
 
         ColliderShapeType colShape;
         MotionConstraints motionConstraints;
-        std::string colMesh;
+        stl::fixed_string colMesh;
     };
 
     struct SKMP_ALIGN_AUTO configComponent_t :
@@ -718,14 +726,15 @@ namespace CBP
             DataVersion6 = 6,
             DataVersion7 = 7,
             DataVersion8 = 8,
-            DataVersion9 = 9
+            DataVersion9 = 9,
+            DataVersion10 = 10
         };
 
         template <class T>
-        [[nodiscard]] const T* GetValue(const std::string& a_key) const
+        [[nodiscard]] const T* GetValue(const stl::fixed_string& a_key) const
         {
             const auto it = addrInfoMap.find(a_key);
-            if (it == addrInfoMap.end())
+            if (it == addrInfoMap.cend())
                 return nullptr;
 
             if (!CheckValue<T>(it->second))
@@ -742,7 +751,7 @@ namespace CBP
                 a_value = *GetAddress<float>(a_info);
                 break;
             case ConfigValueType::kString:
-                a_value = *GetAddress<std::string>(a_info);
+                a_value = GetAddress<stl::fixed_string>(a_info)->get();
                 break;
             case ConfigValueType::kBool:
                 a_value = *GetAddress<bool>(a_info);
@@ -760,10 +769,10 @@ namespace CBP
         }
 
         template <class T>
-        [[nodiscard]] bool SetValue(const std::string& a_key, const T& a_value)
+        [[nodiscard]] bool SetValue(const stl::fixed_string& a_key, const T& a_value)
         {
             const auto it = addrInfoMap.find(a_key);
-            if (it == addrInfoMap.end())
+            if (it == addrInfoMap.cend())
                 return false;
 
             return SetValue(it->second, a_value);
@@ -783,7 +792,7 @@ namespace CBP
                     *GetAddress<float>(a_info) = a_value.asFloat();
                     break;
                 case ConfigValueType::kString:
-                    *GetAddress<std::string>(a_info) = a_value.asString();
+                    *GetAddress<stl::fixed_string>(a_info) = a_value.asString();
                     break;
                 case ConfigValueType::kBool:
                     *GetAddress<bool>(a_info) = a_value.asBool();
@@ -819,7 +828,7 @@ namespace CBP
             }
         }
 
-        [[nodiscard]] SKMP_FORCEINLINE bool Get(const std::string& a_key, float& a_out) const
+        [[nodiscard]] SKMP_FORCEINLINE bool Get(const stl::fixed_string& a_key, float& a_out) const
         {
             const auto it = descMap.find(a_key);
             if (it == descMap.map_end())
@@ -830,7 +839,7 @@ namespace CBP
             return true;
         }
 
-        [[nodiscard]] SKMP_FORCEINLINE const float* Get(const std::string& a_key) const
+        [[nodiscard]] SKMP_FORCEINLINE const float* Get(stl::fixed_string& a_key) const
         {
             const auto it = descMap.find(a_key);
             if (it == descMap.map_end())
@@ -839,12 +848,12 @@ namespace CBP
             return GetAddress(it->second);
         }
 
-        [[nodiscard]] SKMP_FORCEINLINE auto Contains(const std::string& a_key) const
+        [[nodiscard]] SKMP_FORCEINLINE auto Contains(const stl::fixed_string& a_key) const
         {
             return descMap.contains(a_key);
         }
 
-        SKMP_FORCEINLINE bool Set(const std::string& a_key, float a_value)
+        SKMP_FORCEINLINE bool Set(const stl::fixed_string& a_key, float a_value)
         {
             const auto it = descMap.find(a_key);
             if (it == descMap.map_end())
@@ -865,7 +874,7 @@ namespace CBP
             *GetAddress(a_desc) = *a_pvalue;
         }
 
-        SKMP_FORCEINLINE bool Set(const std::string& a_key, float* a_value, std::size_t a_size)
+        SKMP_FORCEINLINE bool Set(const stl::fixed_string& a_key, float* a_value, std::size_t a_size)
         {
             const auto it = descMap.find(a_key);
             if (it == descMap.map_end())
@@ -884,7 +893,7 @@ namespace CBP
                 addr[i] = a_value[i];
         }
 
-        SKMP_FORCEINLINE bool Mul(const std::string& a_key, float a_multiplier)
+        SKMP_FORCEINLINE bool Mul(const stl::fixed_string& a_key, float a_multiplier)
         {
             const auto it = descMap.find(a_key);
             if (it == descMap.map_end())
@@ -894,13 +903,24 @@ namespace CBP
 
             return true;
         }
+        
+        SKMP_FORCEINLINE bool Add(const stl::fixed_string& a_key, float a_value)
+        {
+            const auto it = descMap.find(a_key);
+            if (it == descMap.map_end())
+                return false;
 
-        [[nodiscard]] SKMP_FORCEINLINE const float& operator[](const std::string& a_key) const
+            *GetAddress(it->second) += a_value;
+
+            return true;
+        }
+
+        [[nodiscard]] SKMP_FORCEINLINE const float& operator[](const stl::fixed_string& a_key) const
         {
             return *GetAddress(descMap.at(a_key));
         }
 
-        [[nodiscard]] SKMP_FORCEINLINE float& operator[](const std::string& a_key)
+        [[nodiscard]] SKMP_FORCEINLINE float& operator[](const stl::fixed_string& a_key)
         {
             return *GetAddress(descMap.at(a_key));
         }
@@ -917,7 +937,7 @@ namespace CBP
         static const componentValueDescMap_t descMap;
         static const colliderDescMap_t colDescMap;
         static const addrInfoMap_t<ComponentConfigSection> addrInfoMap;
-        static const stl::iunordered_map<std::string, std::string> oldKeyMap;
+        static const std::unordered_map<stl::fixed_string, stl::fixed_string> oldKeyMap;
 
     private:
 
@@ -951,7 +971,7 @@ namespace CBP
                 if (a_desc.type == ConfigValueType::kFloat)
                     return true;
             }
-            else if constexpr (std::is_same_v<T, std::string>)
+            else if constexpr (std::is_same_v<T, stl::fixed_string>)
             {
                 if (a_desc.type == ConfigValueType::kString)
                     return true;
@@ -1024,11 +1044,11 @@ namespace CBP
             ar& ex.colShape;
             ar& ex.colMesh;
 
-            ar& fp.f32.maxOffsetVelResponseScale;
+            ar& fp.f32.maxOffsetParamsSphere[0];
             ar& fp.f32.maxVelocity;
-            ar& fp.f32.maxOffsetMaxBiasMag;
+            ar& fp.f32.maxOffsetParamsSphere[1];
             ar& fp.f32.maxOffsetN;
-            ar& fp.f32.maxOffsetRestitutionCoefficient;
+            ar& fp.f32.maxOffsetParamsSphere[2];
 
             ar& fp.f32.colPositionScale;
             ar& fp.f32.colRotationScale;
@@ -1041,6 +1061,9 @@ namespace CBP
             ar& ex.motionConstraints;
 
             ar& fp.f32.colFriction;
+
+            ar& fp.f32.maxOffsetParamsSphere[3];
+            ar& fp.f32.maxOffsetParamsBox;
         }
 
         template<class Archive>
@@ -1079,7 +1102,7 @@ namespace CBP
 
                 if (version >= DataVersion3)
                 {
-                    ar& fp.f32.maxOffsetVelResponseScale;
+                    ar& fp.f32.maxOffsetParamsSphere[0];
 
                     if (version >= DataVersion4)
                     {
@@ -1087,9 +1110,9 @@ namespace CBP
 
                         if (version >= DataVersion5)
                         {
-                            ar& fp.f32.maxOffsetMaxBiasMag;
+                            ar& fp.f32.maxOffsetParamsSphere[1];
                             ar& fp.f32.maxOffsetN;
-                            ar& fp.f32.maxOffsetRestitutionCoefficient;
+                            ar& fp.f32.maxOffsetParamsSphere[2];
 
                             if (version >= DataVersion6)
                             {
@@ -1110,6 +1133,12 @@ namespace CBP
                                         if (version >= DataVersion9)
                                         {
                                             ar& fp.f32.colFriction;
+
+                                            if (version >= DataVersion10)
+                                            {
+                                                ar& fp.f32.maxOffsetParamsSphere[3];
+                                                ar& fp.f32.maxOffsetParamsBox;
+                                            }
                                         }
                                     }
                                 }
@@ -1123,74 +1152,22 @@ namespace CBP
         BOOST_SERIALIZATION_SPLIT_MEMBER()
     };
 
-    template <class T>
-    class configGenderRoot_t
-    {
-        friend class boost::serialization::access;
-
-    public:
-
-        using config_type = T;
-        using value_type = typename T::value_type;
-        using mapped_type = typename T::mapped_type;
-
-        enum Serialization : unsigned int
-        {
-            DataVersion1 = 1
-        };
-
-        configGenderRoot_t() = default;
-
-        [[nodiscard]] SKMP_FORCEINLINE auto& operator()() noexcept {
-            return m_configs;
-        }
-
-        [[nodiscard]] SKMP_FORCEINLINE const auto& operator()() const noexcept {
-            return m_configs;
-        }
-
-        [[nodiscard]] SKMP_FORCEINLINE auto& operator()(ConfigGender a_gender) noexcept {
-            return m_configs[Enum::Underlying(a_gender)];
-        }
-
-        [[nodiscard]] SKMP_FORCEINLINE const auto& operator()(ConfigGender a_gender) const noexcept {
-            return m_configs[Enum::Underlying(a_gender)];
-        }
-
-        SKMP_FORCEINLINE void clear() {
-            for (auto& e : m_configs) {
-                e.clear();
-            }
-        }
-
-    private:
-        T m_configs[2];
-
-        template<class Archive>
-        void serialize(Archive& ar, const unsigned int version)
-        {
-            for (auto& e : m_configs) {
-                ar& e;
-            }
-        }
-    };
-
-    typedef stl::iunordered_map<std::string, configComponent_t> configComponents_t;
+    typedef stl::unordered_map_simd<stl::fixed_string, configComponent_t> configComponents_t;
     typedef configComponents_t::value_type configComponentsValue_t;
     typedef configGenderRoot_t<configComponents_t> configComponentsGenderRoot_t;
-    typedef Profile<configComponentsGenderRoot_t> PhysicsProfile;
-    typedef stl::unordered_map<Game::ObjectHandle, configComponentsGenderRoot_t> actorConfigComponentsHolder_t;
-    typedef stl::unordered_map<Game::FormID, configComponentsGenderRoot_t> raceConfigComponentsHolder_t;
-    typedef stl::imap<std::string, std::string> nodeMap_t;
-    typedef stl::imap<std::string, stl::vector<std::string>> configGroupMap_t;
 
-    typedef stl::set<uint64_t> collisionGroups_t;
-    typedef stl::imap<std::string, uint64_t> nodeCollisionGroupMap_t;
+    typedef stl::unordered_map_simd<Game::VMHandle, configComponentsGenderRoot_t> actorConfigComponentsHolder_t;
+    typedef stl::unordered_map_simd<Game::FormID, configComponentsGenderRoot_t> raceConfigComponentsHolder_t;
+    typedef std::map<stl::fixed_string, stl::fixed_string> nodeMap_t;
+    typedef std::map<stl::fixed_string, std::vector<stl::fixed_string>> configGroupMap_t;
 
-    typedef std::pair<stl::iset<std::string>, armorCacheEntry_t> armorOverrideDescriptor_t;
-    typedef stl::unordered_map<Game::ObjectHandle, armorOverrideDescriptor_t> armorOverrides_t;
+    typedef std::set<uint64_t> collisionGroups_t;
+    typedef std::map<stl::fixed_string, uint64_t> nodeCollisionGroupMap_t;
 
-    typedef stl::unordered_map<Game::ObjectHandle, configComponents_t> mergedConfCache_t;
+    typedef std::pair<std::set<stl::fixed_string>, armorCacheEntry_t> armorOverrideDescriptor_t;
+    typedef std::unordered_map<Game::VMHandle, armorOverrideDescriptor_t> armorOverrides_t;
+
+    typedef stl::unordered_map_simd<Game::VMHandle, configComponents_t> mergedConfCache_t;
 
     struct SKMP_ALIGN_AUTO nodeDataF32_t
     {
@@ -1414,6 +1391,8 @@ namespace CBP
                 bool overrideScale;
                 bool offsetParent;
                 bool boneCast;
+                bool create;
+                bool bcSkin;
             } b;
 
             struct
@@ -1443,8 +1422,8 @@ namespace CBP
 
     struct nodeExtra_t
     {
-        std::string bcShape;
-        std::string forceParent;
+        stl::fixed_string bcShape;
+        stl::fixed_string forceParent;
     };
 
     static_assert(offsetof(nodeBools_t, b.overrideScale) == offsetof(nodeBools_t, u16.d1));
@@ -1461,7 +1440,9 @@ namespace CBP
             DataVersion2 = 2,
             DataVersion3 = 3,
             DataVersion4 = 4,
-            DataVersion5 = 5
+            DataVersion5 = 5,
+            DataVersion6 = 6,
+            DataVersion7 = 7
         };
 
         nodeData_t fp;
@@ -1479,9 +1460,13 @@ namespace CBP
         [[nodiscard]] SKMP_FORCEINLINE bool HasCollision() const noexcept {
             return bl.b.collision;
         }
+        
+        [[nodiscard]] SKMP_FORCEINLINE bool Create() const noexcept {
+            return bl.b.create;
+        }
 
         template <class T>
-        [[nodiscard]] const T* GetValue(const std::string& a_key) const
+        [[nodiscard]] const T* GetValue(const stl::fixed_string& a_key) const
         {
             const auto it = addrInfoMap.find(a_key);
             if (it == addrInfoMap.end())
@@ -1501,7 +1486,7 @@ namespace CBP
                 a_value = *GetAddress<float>(a_info);
                 break;
             case ConfigValueType::kString:
-                a_value = *GetAddress<std::string>(a_info);
+                a_value = GetAddress<stl::fixed_string>(a_info)->get();
                 break;
             case ConfigValueType::kBool:
                 a_value = *GetAddress<bool>(a_info);
@@ -1512,7 +1497,7 @@ namespace CBP
         }
 
         template <class T>
-        [[nodiscard]] bool SetValue(const std::string& a_key, const T& a_value)
+        [[nodiscard]] bool SetValue(const stl::fixed_string& a_key, const T& a_value)
         {
             const auto it = addrInfoMap.find(a_key);
             if (it == addrInfoMap.end())
@@ -1535,7 +1520,7 @@ namespace CBP
                     *GetAddress<float>(a_info) = a_value.asFloat();
                     break;
                 case ConfigValueType::kString:
-                    *GetAddress<std::string>(a_info) = a_value.asString();
+                    *GetAddress<stl::fixed_string>(a_info) = a_value.asString();
                     break;
                 case ConfigValueType::kBool:
                     *GetAddress<bool>(a_info) = a_value.asBool();
@@ -1583,7 +1568,7 @@ namespace CBP
                 if (a_desc.type == ConfigValueType::kFloat)
                     return true;
             }
-            else if constexpr (std::is_same_v<T, std::string>)
+            else if constexpr (std::is_same_v<T, stl::fixed_string>)
             {
                 if (a_desc.type == ConfigValueType::kString)
                     return true;
@@ -1616,6 +1601,8 @@ namespace CBP
             ar& fp.f32.nodeOffset;
             ar& fp.f32.nodeRot;
             ar& ex.forceParent;
+            ar& bl.b.create;
+            ar& bl.b.bcSkin;
         }
 
         template<class Archive>
@@ -1645,6 +1632,14 @@ namespace CBP
                             ar& fp.f32.nodeOffset;
                             ar& fp.f32.nodeRot;
                             ar& ex.forceParent;
+
+                            if (version >= DataVersion6) {
+                                ar& bl.b.create;
+
+                                if (version >= DataVersion7) {
+                                    ar& bl.b.bcSkin;
+                                }
+                            }
                         }
                     }
                 }
@@ -1654,12 +1649,11 @@ namespace CBP
         BOOST_SERIALIZATION_SPLIT_MEMBER()
     };
 
-    typedef stl::iunordered_map<std::string, configNode_t> configNodes_t;
+    typedef stl::unordered_map_simd<stl::fixed_string, configNode_t> configNodes_t;
     typedef configNodes_t::value_type configNodesValue_t;
     typedef configGenderRoot_t<configNodes_t> configNodesGenderRoot_t;
-    typedef Profile<configNodesGenderRoot_t> NodeProfile;
-    typedef stl::unordered_map<Game::ObjectHandle, configNodesGenderRoot_t> actorConfigNodesHolder_t;
-    typedef stl::unordered_map<Game::FormID, configNodesGenderRoot_t> raceConfigNodesHolder_t;
+    typedef stl::unordered_map_simd<Game::VMHandle, configNodesGenderRoot_t> actorConfigNodesHolder_t;
+    typedef stl::unordered_map_simd<Game::FormID, configNodesGenderRoot_t> raceConfigNodesHolder_t;
 
     enum class ConfigClass
     {
@@ -1687,26 +1681,26 @@ namespace CBP
         };
 
     public:
-        typedef stl::iunordered_set<std::string> vKey_t;
+        typedef std::unordered_set<stl::fixed_string> vKey_t;
 
         static void Initialize();
 
-        [[nodiscard]] static ConfigClass GetActorPhysicsClass(Game::ObjectHandle a_handle);
-        [[nodiscard]] static ConfigClass GetActorNodeClass(Game::ObjectHandle a_handle);
+        [[nodiscard]] static ConfigClass GetActorPhysicsClass(Game::VMHandle a_handle);
+        [[nodiscard]] static ConfigClass GetActorNodeClass(Game::VMHandle a_handle);
 
         // Not guaranteed to be actual actor conf storage
-        [[nodiscard]] static const configComponents_t& GetActorPhysics(Game::ObjectHandle handle, ConfigGender a_gender);
-        [[nodiscard]] static const configComponentsGenderRoot_t& GetActorPhysics(Game::ObjectHandle handle);
+        [[nodiscard]] static const configComponents_t& GetActorPhysics(Game::VMHandle handle, ConfigGender a_gender);
+        [[nodiscard]] static const configComponentsGenderRoot_t& GetActorPhysics(Game::VMHandle handle);
 
-        [[nodiscard]] static const configComponents_t& GetActorPhysicsAO(Game::ObjectHandle handle, ConfigGender a_gender);
-        [[nodiscard]] static configComponents_t& GetOrCreateActorPhysics(Game::ObjectHandle handle, ConfigGender a_gender);
-        [[nodiscard]] static configComponentsGenderRoot_t& GetOrCreateActorPhysics(Game::ObjectHandle handle);
-        static void SetActorPhysics(Game::ObjectHandle a_handle, ConfigGender a_gender, const configComponents_t& a_conf);
-        static void SetActorPhysics(Game::ObjectHandle a_handle, ConfigGender a_gender, configComponents_t&& a_conf);
-        static void SetActorPhysics(Game::ObjectHandle a_handle, const configComponentsGenderRoot_t& a_conf);
-        static void SetActorPhysics(Game::ObjectHandle a_handle, configComponentsGenderRoot_t&& a_conf);
+        [[nodiscard]] static const configComponents_t& GetActorPhysicsAO(Game::VMHandle handle, ConfigGender a_gender);
+        [[nodiscard]] static configComponents_t& GetOrCreateActorPhysics(Game::VMHandle handle, ConfigGender a_gender);
+        [[nodiscard]] static configComponentsGenderRoot_t& GetOrCreateActorPhysics(Game::VMHandle handle);
+        static void SetActorPhysics(Game::VMHandle a_handle, ConfigGender a_gender, const configComponents_t& a_conf);
+        static void SetActorPhysics(Game::VMHandle a_handle, ConfigGender a_gender, configComponents_t&& a_conf);
+        static void SetActorPhysics(Game::VMHandle a_handle, const configComponentsGenderRoot_t& a_conf);
+        static void SetActorPhysics(Game::VMHandle a_handle, configComponentsGenderRoot_t&& a_conf);
 
-        SKMP_FORCEINLINE static decltype(auto) EraseActorPhysics(Game::ObjectHandle handle) noexcept {
+        SKMP_FORCEINLINE static decltype(auto) EraseActorPhysics(Game::VMHandle handle) noexcept {
             return actorPhysicsConfigHolder.erase(handle);
         }
 
@@ -1804,11 +1798,11 @@ namespace CBP
             return nodeMap;
         }
 
-        [[nodiscard]] SKMP_FORCEINLINE static bool IsValidNode(const std::string& a_key) {
+        [[nodiscard]] SKMP_FORCEINLINE static bool IsValidNode(const stl::fixed_string& a_key) {
             return nodeMap.contains(a_key);
         }
 
-        [[nodiscard]] SKMP_FORCEINLINE static bool IsValidGroup(const std::string& a_key) {
+        [[nodiscard]] SKMP_FORCEINLINE static bool IsValidGroup(const stl::fixed_string& a_key) {
             return validConfGroups.contains(a_key);
         }
 
@@ -1844,7 +1838,7 @@ namespace CBP
             nodeCollisionGroupMap = std::move(a_rhs);
         }
 
-        [[nodiscard]] SKMP_FORCEINLINE static std::uint64_t GetNodeCollisionGroupId(const std::string& a_node)
+        [[nodiscard]] SKMP_FORCEINLINE static std::uint64_t GetNodeCollisionGroupId(const stl::fixed_string& a_node)
         {
             auto it = nodeCollisionGroupMap.find(a_node);
             if (it != nodeCollisionGroupMap.end())
@@ -1881,7 +1875,7 @@ namespace CBP
             nodeGlobalConfig.clear();
         }
 
-        static bool GetGlobalNode(const std::string& a_node, ConfigGender a_gender, configNode_t& a_out);
+        static bool GetGlobalNode(const stl::fixed_string& a_node, ConfigGender a_gender, configNode_t& a_out);
 
         [[nodiscard]] SKMP_FORCEINLINE static auto& GetActorNodeHolder() noexcept {
             return actorNodeConfigHolder;
@@ -1895,25 +1889,25 @@ namespace CBP
             actorNodeConfigHolder = std::move(a_rhs);
         }
 
-        static const configNodes_t& GetActorNode(Game::ObjectHandle a_handle, ConfigGender a_gender);
-        static const configNodesGenderRoot_t& GetActorNode(Game::ObjectHandle a_handle);
+        static const configNodes_t& GetActorNode(Game::VMHandle a_handle, ConfigGender a_gender);
+        static const configNodesGenderRoot_t& GetActorNode(Game::VMHandle a_handle);
         static const configNodes_t& GetRaceNode(Game::FormID a_formid, ConfigGender a_gender);
         static const configNodesGenderRoot_t& GetRaceNode(Game::FormID a_formid);
-        static configNodes_t& GetOrCreateActorNode(Game::ObjectHandle a_handle, ConfigGender a_gender);
-        static configNodesGenderRoot_t& GetOrCreateActorNode(Game::ObjectHandle a_handle);
+        static configNodes_t& GetOrCreateActorNode(Game::VMHandle a_handle, ConfigGender a_gender);
+        static configNodesGenderRoot_t& GetOrCreateActorNode(Game::VMHandle a_handle);
         static configNodes_t& GetOrCreateRaceNode(Game::FormID a_formid, ConfigGender a_gender);
         static configNodesGenderRoot_t& GetOrCreateRaceNode(Game::FormID a_formid);
-        static bool GetActorNode(Game::ObjectHandle a_handle, const std::string& a_node, ConfigGender a_gender, configNode_t& a_out);
-        static void SetActorNode(Game::ObjectHandle a_handle, ConfigGender a_gender, const configNodes_t& a_conf);
-        static void SetActorNode(Game::ObjectHandle a_handle, ConfigGender a_gender, configNodes_t&& a_conf);
-        static void SetActorNode(Game::ObjectHandle a_handle, const configNodesGenderRoot_t& a_conf);
-        static void SetActorNode(Game::ObjectHandle a_handle, configNodesGenderRoot_t&& a_conf);
+        static bool GetActorNode(Game::VMHandle a_handle, const stl::fixed_string& a_node, ConfigGender a_gender, configNode_t& a_out);
+        static void SetActorNode(Game::VMHandle a_handle, ConfigGender a_gender, const configNodes_t& a_conf);
+        static void SetActorNode(Game::VMHandle a_handle, ConfigGender a_gender, configNodes_t&& a_conf);
+        static void SetActorNode(Game::VMHandle a_handle, const configNodesGenderRoot_t& a_conf);
+        static void SetActorNode(Game::VMHandle a_handle, configNodesGenderRoot_t&& a_conf);
         static void SetRaceNode(Game::FormID a_handle, ConfigGender a_gender, const configNodes_t& a_conf);
         static void SetRaceNode(Game::FormID a_handle, ConfigGender a_gender, configNodes_t&& a_conf);
         static void SetRaceNode(Game::FormID a_handle, const configNodesGenderRoot_t& a_conf);
         static void SetRaceNode(Game::FormID a_handle, configNodesGenderRoot_t&& a_conf);
 
-        SKMP_FORCEINLINE static void EraseActorNode(Game::ObjectHandle a_formid) noexcept {
+        SKMP_FORCEINLINE static void EraseActorNode(Game::VMHandle a_formid) noexcept {
             actorNodeConfigHolder.erase(a_formid);
         }
 
@@ -1954,23 +1948,23 @@ namespace CBP
             return defaultProfileStorage;
         }
 
-        [[nodiscard]] SKMP_FORCEINLINE static bool HasArmorOverride(Game::ObjectHandle a_handle) {
+        [[nodiscard]] SKMP_FORCEINLINE static bool HasArmorOverride(Game::VMHandle a_handle) {
             return armorOverrides.contains(a_handle);
         }
 
-        [[nodiscard]] static const armorCacheEntry_t::mapped_type* GetArmorOverrideSection(Game::ObjectHandle a_handle, const std::string& a_sk);
+        [[nodiscard]] static const armorCacheEntry_t::mapped_type* GetArmorOverrideSection(Game::VMHandle a_handle, const stl::fixed_string& a_sk);
 
-        SKMP_FORCEINLINE static void SetArmorOverride(Game::ObjectHandle a_handle, const armorOverrideDescriptor_t& a_entry)
+        SKMP_FORCEINLINE static void SetArmorOverride(Game::VMHandle a_handle, const armorOverrideDescriptor_t& a_entry)
         {
             armorOverrides.insert_or_assign(a_handle, a_entry);
         }
 
-        SKMP_FORCEINLINE static void SetArmorOverride(Game::ObjectHandle a_handle, armorOverrideDescriptor_t&& a_entry)
+        SKMP_FORCEINLINE static void SetArmorOverride(Game::VMHandle a_handle, armorOverrideDescriptor_t&& a_entry)
         {
             armorOverrides.insert_or_assign(a_handle, std::move(a_entry));
         }
 
-        [[nodiscard]] static armorOverrideDescriptor_t* GetArmorOverrides(Game::ObjectHandle a_handle)
+        [[nodiscard]] static const armorOverrideDescriptor_t* GetArmorOverrides(Game::VMHandle a_handle)
         {
             auto it = armorOverrides.find(a_handle);
             if (it != armorOverrides.end())
@@ -1979,7 +1973,7 @@ namespace CBP
             return nullptr;
         }
 
-        SKMP_FORCEINLINE static bool RemoveArmorOverride(Game::ObjectHandle a_handle) noexcept {
+        SKMP_FORCEINLINE static bool RemoveArmorOverride(Game::VMHandle a_handle) noexcept {
             return armorOverrides.erase(a_handle) == armorOverrides_t::size_type(1);
         }
 
@@ -2024,7 +2018,7 @@ namespace CBP
             mergedConfCache.swap(decltype(mergedConfCache)());
         }
 
-        SKMP_FORCEINLINE static void RemoveMergedCacheEntry(Game::ObjectHandle a_handle) noexcept {
+        SKMP_FORCEINLINE static void RemoveMergedCacheEntry(Game::VMHandle a_handle) noexcept {
             mergedConfCache.erase(a_handle);
         }
 
@@ -2034,7 +2028,7 @@ namespace CBP
         }
 
         static std::size_t PruneAll();
-        static std::size_t PruneActorPhysics(Game::ObjectHandle a_handle);
+        static std::size_t PruneActorPhysics(Game::VMHandle a_handle);
         static std::size_t PruneInactiveActorPhysics();
         static std::size_t PruneInactiveRacePhysics();
 
@@ -2064,12 +2058,12 @@ namespace CBP
         }
 
         static std::size_t CountRefsToGeometry(
-            const std::string& a_name);
+            const stl::fixed_string& a_name);
 
         template <class T>
         static std::size_t CountRefsToGeometry(
             const T& a_data,
-            const std::string& a_name)
+            const stl::fixed_string& a_name)
         {
             std::size_t n(0);
 
@@ -2082,7 +2076,7 @@ namespace CBP
 
         static std::size_t CountRefsToGeometry(
             const configComponentsGenderRoot_t& a_data,
-            const std::string& a_name);
+            const stl::fixed_string& a_name);
 
 
         SKMP_FORCEINLINE static const auto& GetDefaultPhysics() {
@@ -2093,15 +2087,15 @@ namespace CBP
             return defaultNodeConfig;
         }
 
-        static bool AddNode(const std::string& a_node, const std::string& a_confGroup, bool a_save = true);
-        static bool RemoveNode(const std::string& a_node, bool a_save = true);
+        static bool AddNode(const stl::fixed_string& a_node, const stl::fixed_string& a_confGroup, bool a_save = true);
+        static bool RemoveNode(const stl::fixed_string& a_node, bool a_save = true);
 
         SKMP_FORCEINLINE static const auto& GetLastException() {
             return lastException;
         }
 
         template <class T, class N>
-        static bool EraseEntry(T a_handle, N& a_holder, const std::string& a_key, ConfigGender a_gender)
+        static bool EraseEntry(T a_handle, N& a_holder, const stl::fixed_string& a_key, ConfigGender a_gender)
         {
             auto it = a_holder.find(a_handle);
             if (it != a_holder.end())
@@ -2113,7 +2107,7 @@ namespace CBP
         }
 
         template <class T>
-        static bool EraseEntryFromRoot(T& a_root, const std::string& a_key, ConfigGender a_gender)
+        static bool EraseEntryFromRoot(T& a_root, const stl::fixed_string& a_key, ConfigGender a_gender)
         {
             return a_root(a_gender).erase(a_key) > 0;
         }
@@ -2155,7 +2149,7 @@ namespace CBP
     };
 }
 
-BOOST_CLASS_VERSION(CBP::configComponent_t, CBP::configComponent_t::Serialization::DataVersion9)
-BOOST_CLASS_VERSION(CBP::configNode_t, CBP::configNode_t::Serialization::DataVersion5)
+BOOST_CLASS_VERSION(CBP::configComponent_t, CBP::configComponent_t::Serialization::DataVersion10)
+BOOST_CLASS_VERSION(CBP::configNode_t, CBP::configNode_t::Serialization::DataVersion7)
 BOOST_CLASS_VERSION(CBP::configGenderRoot_t<CBP::configComponents_t>, CBP::configGenderRoot_t< CBP::configComponents_t>::Serialization::DataVersion1)
 BOOST_CLASS_VERSION(CBP::configGenderRoot_t<CBP::configNodes_t>, CBP::configGenderRoot_t< CBP::configNodes_t>::Serialization::DataVersion1)

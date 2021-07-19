@@ -4,7 +4,7 @@
 
 namespace UICommon
 {
-    float UIAlignment::GetNextTextOffset(const char* a_text, bool a_clear)
+    float UIAlignment::GetNextTextOffset(const stl::fixed_string& a_text, bool a_clear)
     {
         if (a_clear)
             ClearTextOffset();
@@ -13,14 +13,14 @@ namespace UICommon
         if (it != m_ctlPositions.end())
             return (m_posOffset += it->second + (m_posOffset == 0.0f ? 0.0f : 5.0f));
 
-        return (m_posOffset += ImGui::CalcTextSize(a_text).x + 5.0f);
+        return (m_posOffset += ImGui::CalcTextSize(a_text.c_str()).x + 5.0f);
     }
 
     void UIAlignment::ClearTextOffset() {
         m_posOffset = 0.0f;
     }
 
-    bool UIAlignment::ButtonRight(const char* a_text, bool a_disabled)
+    bool UIAlignment::ButtonRight(const stl::fixed_string& a_text, bool a_disabled)
     {
         if (a_disabled)
         {
@@ -28,7 +28,7 @@ namespace UICommon
             ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
         }
 
-        bool res = ImGui::Button(a_text);
+        bool res = ImGui::Button(a_text.c_str());
 
         if (a_disabled)
         {
@@ -87,7 +87,7 @@ namespace UICommon
     }
 
     bool UICollapsibles::CollapsingHeader(
-        const std::string& a_key,
+        const stl::fixed_string& a_key,
         const char* a_label,
         bool a_default) const
     {
@@ -106,7 +106,7 @@ namespace UICommon
     }
 
     bool UICollapsibles::Tree(
-        const std::string& a_key,
+        const stl::fixed_string& a_key,
         const char* a_label,
         bool a_default,
         bool a_framed) const
@@ -174,7 +174,7 @@ namespace UICommon
 
         if (ImGui::InputText(m_label, m_filterBuf, sizeof(m_filterBuf)))
         {
-            if (strlen(m_filterBuf))
+            if (StrHelpers::strlen(m_filterBuf))
                 m_filter = m_filterBuf;
             else
                 m_filter.Clear();
@@ -226,7 +226,7 @@ namespace UICommon
             sizeof(m_filterBuf),
             ImGuiInputTextFlags_EnterReturnsTrue))
         {
-            if (strlen(m_filterBuf))
+            if (StrHelpers::strlen(m_filterBuf))
             {
                 try
                 {

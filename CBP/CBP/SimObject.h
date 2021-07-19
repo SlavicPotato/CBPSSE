@@ -9,10 +9,10 @@ namespace CBP
     struct nodeDesc_t
     {
         nodeDesc_t(
-            const std::string& a_nodeName,
+            const stl::fixed_string& a_nodeName,
+            const stl::fixed_string& a_confGroup,
             NiAVObject* a_node,
             NiNode* a_parent,
-            const std::string& a_confGroup,
             bool a_collisions,
             bool a_movement,
             const configComponent_t& a_physConf,
@@ -29,25 +29,26 @@ namespace CBP
         {
         }
 
-        const std::string& nodeName;
+        const stl::fixed_string &nodeName;
+        const stl::fixed_string &confGroup;
         NiAVObject* object;
         NiNode* parent;
-        const std::string& confGroup;
         bool collision;
         bool movement;
         const configComponent_t& physConf;
         const configNode_t& nodeConf;
     };
 
-    typedef stl::vector<nodeDesc_t> nodeDescList_t;
+    typedef std::vector<nodeDesc_t> nodeDescList_t;
 
     class SimObject
     {
-        using nodeList_t = stl::vector<std::unique_ptr<SimComponent>>;
+        using nodeList_t = std::vector<std::unique_ptr<SimComponent>>;
     public:
         SimObject(
-            Game::ObjectHandle a_handle,
+            Game::VMHandle a_handle,
             Actor* actor,
+            NiNode* a_rootNode,
             ConfigGender a_sex,
             const nodeDescList_t& a_desc);
 
@@ -69,17 +70,19 @@ namespace CBP
         bool HasNewNode(Actor* a_actor, const nodeMap_t& a_nodeMap);
         void RemoveInvalidNodes(Actor* a_actor);
         void Reset();
+        void InvalidateHandle();
         //bool ValidateNodes(Actor* a_actor);
 
-        void ApplyForce(std::uint32_t a_steps, const std::string& a_component, const NiPoint3& a_force);
+        void ApplyForce(std::uint32_t a_steps, const stl::fixed_string& a_component, const btVector3& a_force);
 
 #ifdef _CBP_ENABLE_DEBUG
         void UpdateDebugInfo();
 #endif
 
         [[nodiscard]] static nodeDescList_t::size_type CreateNodeDescriptorList(
-            Game::ObjectHandle a_handle,
+            Game::VMHandle a_handle,
             Actor* a_actor,
+            NiNode* a_rootNode,
             ConfigGender a_sex,
             const configComponents_t& a_config,
             const nodeMap_t& a_nodeMap,
@@ -130,7 +133,7 @@ namespace CBP
             return m_nodes.empty();
         }
 
-#if BT_THREADSAFE
+#if 0
         SKMP_FORCEINLINE void SetTimeStep(float a_timeStep) {
             m_currentTimeStep = a_timeStep;
         }
@@ -153,14 +156,21 @@ namespace CBP
             NiAVObject* a_root,
             const configNode_t& a_nodeConfig);
 
+        static NiNode* CreateNode(
+            NiNode* a_parent,
+            const BSFixedString& a_name);
+
+        [[nodiscard]] static NiNode* GetNPCRoot(
+            Actor* a_actor, 
+            bool a_firstPerson = false);
+
         void ClearSimComponentParent(SimComponent* a_sc);
 
         nodeList_t m_nodes;
 
-        Game::ObjectHandleRef m_handle;
+        Game::VMHandleRef m_handle;
 
         NiPointer<Actor> m_actor;
-        NiPointer<NiNode> m_rootNode;
         NiPointer<NiAVObject> m_objHead;
 
         ConfigGender m_sex;
@@ -168,7 +178,7 @@ namespace CBP
         bool m_suspended;
         bool m_markedForDelete;
 
-#if BT_THREADSAFE
+#if 0
         float m_currentTimeStep;
 
         struct task_t

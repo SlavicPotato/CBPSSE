@@ -38,11 +38,11 @@ namespace CBP
 
     static const nodeMap_t defaultNodeMap
     {
-        {"NPC L Breast", "breast"},
-        {"NPC R Breast", "breast"},
-        {"NPC L Butt", "butt"},
-        {"NPC R Butt", "butt"},
-        {"HDT Belly", "belly"}
+        {"NPC L Breast", "Breast"},
+        {"NPC R Breast", "Breast"},
+        {"NPC L Butt", "Butt"},
+        {"NPC R Butt", "Butt"},
+        {"HDT Belly", "Belly"}
     };
 
     void configGlobal_t::Reset() {
@@ -50,7 +50,7 @@ namespace CBP
     }
 
     float configPropagate_t::ResolveValue(
-        const std::string& a_key,
+        const stl::fixed_string& a_key,
         const float a_value) const
     {
         if (mirror.contains(a_key))
@@ -181,8 +181,8 @@ namespace CBP
     }
 
     bool IConfig::AddNode(
-        const std::string& a_node,
-        const std::string& a_confGroup,
+        const stl::fixed_string& a_node,
+        const stl::fixed_string& a_confGroup,
         bool a_save)
     {
         if (nodeMap.contains(a_node))
@@ -205,7 +205,7 @@ namespace CBP
         return true;
     }
 
-    bool IConfig::RemoveNode(const std::string& a_node, bool a_save)
+    bool IConfig::RemoveNode(const stl::fixed_string& a_node, bool a_save)
     {
         auto itm = nodeMap.find(a_node);
         if (itm == nodeMap.end())
@@ -243,7 +243,7 @@ namespace CBP
         return true;
     }
 
-    ConfigClass IConfig::GetActorPhysicsClass(Game::ObjectHandle a_handle)
+    ConfigClass IConfig::GetActorPhysicsClass(Game::VMHandle a_handle)
     {
         if (actorPhysicsConfigHolder.contains(a_handle))
             return ConfigClass::kConfigActor;
@@ -265,7 +265,7 @@ namespace CBP
         return ConfigClass::kConfigGlobal;
     }
 
-    ConfigClass IConfig::GetActorNodeClass(Game::ObjectHandle a_handle)
+    ConfigClass IConfig::GetActorNodeClass(Game::VMHandle a_handle)
     {
         if (actorNodeConfigHolder.contains(a_handle))
             return ConfigClass::kConfigActor;
@@ -285,27 +285,27 @@ namespace CBP
         return ConfigClass::kConfigGlobal;
     }
 
-    void IConfig::SetActorPhysics(Game::ObjectHandle a_handle, ConfigGender a_gender, const configComponents_t& a_conf)
+    void IConfig::SetActorPhysics(Game::VMHandle a_handle, ConfigGender a_gender, const configComponents_t& a_conf)
     {
         actorPhysicsConfigHolder[a_handle](a_gender) = a_conf;
     }
 
-    void IConfig::SetActorPhysics(Game::ObjectHandle a_handle, ConfigGender a_gender, configComponents_t&& a_conf)
+    void IConfig::SetActorPhysics(Game::VMHandle a_handle, ConfigGender a_gender, configComponents_t&& a_conf)
     {
         actorPhysicsConfigHolder[a_handle](a_gender) = std::move(a_conf);
     }
 
-    void IConfig::SetActorPhysics(Game::ObjectHandle a_handle, const configComponentsGenderRoot_t& a_conf)
+    void IConfig::SetActorPhysics(Game::VMHandle a_handle, const configComponentsGenderRoot_t& a_conf)
     {
         actorPhysicsConfigHolder[a_handle] = a_conf;
     }
 
-    void IConfig::SetActorPhysics(Game::ObjectHandle a_handle, configComponentsGenderRoot_t&& a_conf)
+    void IConfig::SetActorPhysics(Game::VMHandle a_handle, configComponentsGenderRoot_t&& a_conf)
     {
         actorPhysicsConfigHolder[a_handle] = std::move(a_conf);
     }
 
-    bool IConfig::GetGlobalNode(const std::string& a_node, ConfigGender a_gender, configNode_t& a_out)
+    bool IConfig::GetGlobalNode(const stl::fixed_string& a_node, ConfigGender a_gender, configNode_t& a_out)
     {
         auto& nodeConfig = GetGlobalNode()(a_gender);
 
@@ -318,12 +318,12 @@ namespace CBP
         return false;
     }
 
-    const configNodes_t& IConfig::GetActorNode(Game::ObjectHandle a_handle, ConfigGender a_gender)
+    const configNodes_t& IConfig::GetActorNode(Game::VMHandle a_handle, ConfigGender a_gender)
     {
         return GetActorNode(a_handle)(a_gender);
     }
 
-    const configNodesGenderRoot_t& IConfig::GetActorNode(Game::ObjectHandle a_handle)
+    const configNodesGenderRoot_t& IConfig::GetActorNode(Game::VMHandle a_handle)
     {
         auto it = actorNodeConfigHolder.find(a_handle);
         if (it != actorNodeConfigHolder.end())
@@ -361,12 +361,12 @@ namespace CBP
         return IConfig::GetGlobalNode();
     }
 
-    configNodes_t& IConfig::GetOrCreateActorNode(Game::ObjectHandle a_handle, ConfigGender a_gender)
+    configNodes_t& IConfig::GetOrCreateActorNode(Game::VMHandle a_handle, ConfigGender a_gender)
     {
         return GetOrCreateActorNode(a_handle)(a_gender);
     }
 
-    configNodesGenderRoot_t& IConfig::GetOrCreateActorNode(Game::ObjectHandle a_handle)
+    configNodesGenderRoot_t& IConfig::GetOrCreateActorNode(Game::VMHandle a_handle)
     {
         auto it = actorNodeConfigHolder.find(a_handle);
         if (it != actorNodeConfigHolder.end())
@@ -405,7 +405,7 @@ namespace CBP
     }
 
 
-    bool IConfig::GetActorNode(Game::ObjectHandle a_handle, const std::string& a_node, ConfigGender a_gender, configNode_t& a_out)
+    bool IConfig::GetActorNode(Game::VMHandle a_handle, const stl::fixed_string& a_node, ConfigGender a_gender, configNode_t& a_out)
     {
         auto& nodeConfig = GetActorNode(a_handle, a_gender);
 
@@ -418,22 +418,22 @@ namespace CBP
         return false;
     }
 
-    void IConfig::SetActorNode(Game::ObjectHandle a_handle, ConfigGender a_gender, const configNodes_t& a_conf)
+    void IConfig::SetActorNode(Game::VMHandle a_handle, ConfigGender a_gender, const configNodes_t& a_conf)
     {
         actorNodeConfigHolder[a_handle](a_gender) = a_conf;
     }
 
-    void IConfig::SetActorNode(Game::ObjectHandle a_handle, ConfigGender a_gender, configNodes_t&& a_conf)
+    void IConfig::SetActorNode(Game::VMHandle a_handle, ConfigGender a_gender, configNodes_t&& a_conf)
     {
         actorNodeConfigHolder[a_handle](a_gender) = std::move(a_conf);
     }
 
-    void IConfig::SetActorNode(Game::ObjectHandle a_handle, const configNodesGenderRoot_t& a_conf)
+    void IConfig::SetActorNode(Game::VMHandle a_handle, const configNodesGenderRoot_t& a_conf)
     {
         actorNodeConfigHolder[a_handle] = a_conf;
     }
 
-    void IConfig::SetActorNode(Game::ObjectHandle a_handle, configNodesGenderRoot_t&& a_conf)
+    void IConfig::SetActorNode(Game::VMHandle a_handle, configNodesGenderRoot_t&& a_conf)
     {
         actorNodeConfigHolder[a_handle] = std::move(a_conf);
     }
@@ -458,12 +458,12 @@ namespace CBP
         raceNodeConfigHolder[a_handle] = std::move(a_conf);
     }
 
-    configComponents_t& IConfig::GetOrCreateActorPhysics(Game::ObjectHandle a_handle, ConfigGender a_gender)
+    configComponents_t& IConfig::GetOrCreateActorPhysics(Game::VMHandle a_handle, ConfigGender a_gender)
     {
         return GetOrCreateActorPhysics(a_handle)(a_gender);
     }
 
-    configComponentsGenderRoot_t& IConfig::GetOrCreateActorPhysics(Game::ObjectHandle a_handle)
+    configComponentsGenderRoot_t& IConfig::GetOrCreateActorPhysics(Game::VMHandle a_handle)
     {
         auto ita = actorPhysicsConfigHolder.find(a_handle);
         if (ita != actorPhysicsConfigHolder.end())
@@ -487,12 +487,12 @@ namespace CBP
         return (actorPhysicsConfigHolder[a_handle] = physicsGlobalConfig);
     }
 
-    const configComponents_t& IConfig::GetActorPhysics(Game::ObjectHandle a_handle, ConfigGender a_gender)
+    const configComponents_t& IConfig::GetActorPhysics(Game::VMHandle a_handle, ConfigGender a_gender)
     {
         return GetActorPhysics(a_handle)(a_gender);
     }
 
-    const configComponentsGenderRoot_t& IConfig::GetActorPhysics(Game::ObjectHandle a_handle)
+    const configComponentsGenderRoot_t& IConfig::GetActorPhysics(Game::VMHandle a_handle)
     {
         auto ita = actorPhysicsConfigHolder.find(a_handle);
         if (ita != actorPhysicsConfigHolder.end())
@@ -515,11 +515,11 @@ namespace CBP
         return physicsGlobalConfig;
     }
 
-    const configComponents_t& IConfig::GetActorPhysicsAO(Game::ObjectHandle handle, ConfigGender a_gender)
+    const configComponents_t& IConfig::GetActorPhysicsAO(Game::VMHandle handle, ConfigGender a_gender)
     {
         auto& conf = GetActorPhysics(handle, a_gender);
 
-        auto it = armorOverrides.find(handle);
+        const auto it = armorOverrides.find(handle);
         if (it == armorOverrides.end())
             return conf;
 
@@ -527,8 +527,8 @@ namespace CBP
 
         for (const auto& components : it->second.second)
         {
-            auto itc = me.find(components.first);
-            if (itc == me.end())
+            const auto itc = me.find(components.first);
+            if (itc == me.cend())
                 continue;
 
             for (const auto& values : components.second) 
@@ -542,6 +542,9 @@ namespace CBP
                         break;
                     case 1:
                         itc->second.Mul(values.first, values.second.second.vf);
+                        break;
+                    case 2:
+                        itc->second.Add(values.first, values.second.second.vf);
                         break;
                     }
                 }
@@ -611,8 +614,8 @@ namespace CBP
     }*/
 
     const armorCacheEntry_t::mapped_type* IConfig::GetArmorOverrideSection(
-        Game::ObjectHandle a_handle,
-        const std::string& a_sk)
+        Game::VMHandle a_handle,
+        const stl::fixed_string& a_sk)
     {
         auto entry = GetArmorOverrides(a_handle);
         if (!entry)
@@ -684,11 +687,11 @@ namespace CBP
         return n;
     }
 
-    std::size_t IConfig::PruneActorPhysics(Game::ObjectHandle a_handle)
+    std::size_t IConfig::PruneActorPhysics(Game::VMHandle a_handle)
     {
         std::size_t n(0);
 
-        if (a_handle == Game::ObjectHandle(0)) {
+        if (a_handle == Game::VMHandle(0)) {
             n += PruneComponent(GetGlobalNode()(ConfigGender::Male), GetGlobalPhysics()(ConfigGender::Male));
             n += PruneComponent(GetGlobalNode()(ConfigGender::Female), GetGlobalPhysics()(ConfigGender::Female));
         }
@@ -737,7 +740,7 @@ namespace CBP
         return n;
     }
 
-    std::size_t IConfig::CountRefsToGeometry(const std::string& a_name)
+    std::size_t IConfig::CountRefsToGeometry(const stl::fixed_string& a_name)
     {
         std::size_t n;
 
@@ -750,13 +753,13 @@ namespace CBP
 
     std::size_t IConfig::CountRefsToGeometry(
         const configComponentsGenderRoot_t& a_data,
-        const std::string& a_name)
+        const stl::fixed_string& a_name)
     {
         std::size_t n(0);
 
         for (auto& e : a_data()) {
             for (auto& f : e) {
-                n += static_cast<std::size_t>(StrHelpers::iequal(f.second.ex.colMesh, a_name));
+                n += static_cast<std::size_t>(f.second.ex.colMesh == a_name);
             }
         }
 

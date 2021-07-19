@@ -86,8 +86,8 @@ public:
 
 protected:
     std::filesystem::path m_path;
-    std::string m_pathStr;
-    std::string m_name;
+    stl::fixed_string m_pathStr;
+    stl::fixed_string m_name;
 
     std::uint64_t m_id;
     SelectedItem<std::string> m_desc;

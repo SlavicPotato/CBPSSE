@@ -25,6 +25,8 @@ namespace CBP
         UIPlot m_plotFramerate;
 
         long long m_lastVMIUpdate;
+
+        stl::fixed_string m_chKey;
     };
 
 

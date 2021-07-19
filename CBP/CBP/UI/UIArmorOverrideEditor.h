@@ -12,7 +12,7 @@ namespace CBP
         public UICommon::UIWindowBase,
         virtual UIBase
     {
-        using entry_type = std::pair<std::string, armorCacheEntrySorted_t>;
+        using entry_type = std::pair<stl::fixed_string, armorCacheEntrySorted_t>;
 
     public:
 
@@ -33,10 +33,10 @@ namespace CBP
         void DrawAddGroupContextMenu(entry_type& a_e);
         void DrawSliderOverrideModeSelector(entry_type::second_type::mapped_type::value_type& a_entry);
 
-        void SetCurrentEntry(const std::string& a_path, const armorCacheEntry_t& a_entry);
-        bool SetCurrentEntry(const std::string& a_path, bool a_fromDisk = false);
+        void SetCurrentEntry(const stl::fixed_string& a_path, const armorCacheEntry_t& a_entry);
+        bool SetCurrentEntry(const stl::fixed_string& a_path, bool a_fromDisk = false);
 
-        void RemoveGroup(const std::string& a_path, const std::string& a_group);
+        void RemoveGroup(const stl::fixed_string& a_path, const stl::fixed_string& a_group);
         void DoSave(const entry_type& a_entry);
 
         static const char* OverrideModeToDesc(std::uint32_t a_mode);

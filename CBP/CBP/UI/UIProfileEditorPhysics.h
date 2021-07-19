@@ -71,13 +71,13 @@ namespace CBP
 
         virtual void UpdateNodeData(
             int,
-            const std::string& a_node,
+            const stl::fixed_string& a_node,
             const configNode_t& a_data,
             bool a_reset) override;
 
         virtual void RemoveNodeData(
             int a_handle,
-            const std::string& a_node) override;
+            const stl::fixed_string& a_node) override;
 
         virtual configGlobalSimComponent_t& GetSimComponentConfig() const override;
         virtual configGlobalCommon_t& GetGlobalCommonConfig() const override;

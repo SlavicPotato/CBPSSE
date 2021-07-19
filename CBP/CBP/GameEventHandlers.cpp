@@ -10,11 +10,14 @@ namespace CBP
     auto EventHandler::ReceiveEvent(TESObjectLoadedEvent* evn, EventDispatcher<TESObjectLoadedEvent>*)
         -> EventResult
     {
-        if (evn) {
-            auto form = evn->formId.Lookup();
-            if (form && form->formType == Actor::kTypeID) {
+        if (evn) 
+        {
+            auto actor = evn->formId.As<Actor>();
+
+            if (actor)
+            {
                 DCBP::DispatchActorTask(
-                    RTTI<Actor>()(form),
+                    actor,
                     evn->loaded ?
                     ControllerInstruction::Action::AddActor :
                     ControllerInstruction::Action::RemoveActor);
@@ -32,7 +35,7 @@ namespace CBP
                 evn->reference->formType == Actor::kTypeID) 
             {
                 DCBP::DispatchActorTask(
-                    RTTI<Actor>()(evn->reference),
+                    static_cast<Actor*>(evn->reference),
                     ControllerInstruction::Action::AddActor);
             }
         }
@@ -50,15 +53,15 @@ namespace CBP
 
     SKMP_FORCEINLINE static void HandleEquipEvent(TESEquipEvent* evn)
     {
-        auto actor = RTTI<Actor>::Cast(evn->actor);
+        auto actor = evn->actor->As<Actor>();
         if (!actor)
             return;
 
-        Game::ObjectHandle handle;
+        Game::VMHandle handle;
         if (!handle.Get(actor))
             return;
 
-        auto form = evn->baseObject.Lookup<TESObjectARMO>();
+        auto form = evn->baseObject.As<TESObjectARMO>();
         if (!form)
             return;
 

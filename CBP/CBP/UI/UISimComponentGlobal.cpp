@@ -14,13 +14,13 @@ namespace CBP
     using namespace UICommon;
 
     UISimComponentGlobal::UISimComponentGlobal(UIContext& a_parent) :
-        UISimComponent<Game::ObjectHandle, UIEditorID::kMainEditor>(a_parent.GetFilter()),
+        UISimComponent<Game::VMHandle, UIEditorID::kMainEditor>(a_parent.GetFilter()),
         m_ctxParent(a_parent)
     {
     }
 
     void UISimComponentGlobal::DrawConfGroupNodeMenu(
-        Game::ObjectHandle a_handle,
+        Game::VMHandle a_handle,
         nodeConfigList_t& a_nodeList
     )
     {
@@ -28,7 +28,7 @@ namespace CBP
     }
 
     void UISimComponentGlobal::OnSimSliderChange(
-        Game::ObjectHandle a_handle,
+        Game::VMHandle a_handle,
         configComponents_t& a_data,
         configComponentsValue_t& a_pair,
         const componentValueDescMap_t::vec_value_type& a_desc,
@@ -64,7 +64,7 @@ namespace CBP
     }
 
     void UISimComponentGlobal::OnColliderShapeChange(
-        Game::ObjectHandle,
+        Game::VMHandle,
         configComponents_t& a_data,
         configComponentsValue_t& a_pair,
         const componentValueDescMap_t::vec_value_type& a_desc)
@@ -83,7 +83,7 @@ namespace CBP
     }
 
     void UISimComponentGlobal::OnMotionConstraintChange(
-        Game::ObjectHandle a_handle,
+        Game::VMHandle a_handle,
         configComponents_t& a_data,
         configComponentsValue_t& a_pair,
         const componentValueDescMap_t::vec_value_type& a_desc)
@@ -101,7 +101,7 @@ namespace CBP
     }
 
     void UISimComponentGlobal::OnComponentUpdate(
-        Game::ObjectHandle,
+        Game::VMHandle,
         configComponents_t& a_data,
         configComponentsValue_t& a_pair)
     {
@@ -136,19 +136,19 @@ namespace CBP
     }
 
     const configNodes_t& UISimComponentGlobal::GetNodeData(
-        Game::ObjectHandle) const
+        Game::VMHandle) const
     {
         const auto& globalConfig = IConfig::GetGlobal();
         return IConfig::GetGlobalNode()(globalConfig.ui.commonSettings.physics.global.selectedGender);
     }
 
     void UISimComponentGlobal::UpdateNodeData(
-        Game::ObjectHandle a_handle,
-        const std::string& a_node,
+        Game::VMHandle a_handle,
+        const stl::fixed_string& a_node,
         const configNode_t& a_data,
         bool a_reset)
     {
-        if (a_handle == Game::ObjectHandle(0))
+        if (a_handle == Game::VMHandle(0))
         {
             const auto& globalConfig = IConfig::GetGlobal();
 
@@ -163,10 +163,10 @@ namespace CBP
     }
 
     void UISimComponentGlobal::RemoveNodeData(
-        Game::ObjectHandle a_handle,
-        const std::string& a_node)
+        Game::VMHandle a_handle,
+        const stl::fixed_string& a_node)
     {
-        if (a_handle == Game::ObjectHandle(0))
+        if (a_handle == Game::VMHandle(0))
         {
             const auto& globalConfig = IConfig::GetGlobal();
 
@@ -181,7 +181,7 @@ namespace CBP
     }
 
     bool UISimComponentGlobal::ShouldDrawComponent(
-        Game::ObjectHandle,
+        Game::VMHandle,
         configComponents_t&,
         const configGroupMap_t::value_type&,
         const nodeConfigList_t& a_nodeConfig) const

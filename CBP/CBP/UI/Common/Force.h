@@ -20,15 +20,15 @@ namespace CBP
         virtual void ApplyForce(
             T* a_data,
             std::uint32_t a_steps,
-            const std::string& a_component,
-            const NiPoint3& a_force) const = 0;
+            const stl::fixed_string& a_component,
+            const btVector3& a_force) const = 0;
 
     private:
         struct {
-            SelectedItem<std::string> selected;
+            SelectedItem<stl::fixed_string> selected;
         } m_forceState;
 
-        static const std::string m_chKey;
+        static const stl::fixed_string m_chKey;
     };
 
 }

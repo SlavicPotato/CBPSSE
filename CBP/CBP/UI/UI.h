@@ -17,6 +17,8 @@
 #include "UIDebugInfo.h"
 #endif
 
+#include <ext/StringCache.h>
+
 namespace CBP
 {
     class UIProfileEditorPhysics;
@@ -88,21 +90,21 @@ namespace CBP
         virtual void ApplyForce(
             listValue_t* a_data,
             std::uint32_t a_steps,
-            const std::string& a_component,
-            const NiPoint3& a_force) const override;
+            const stl::fixed_string& a_component,
+            const btVector3& a_force) const override;
 
-        virtual void ListResetAllValues(Game::ObjectHandle a_handle) override;
+        virtual void ListResetAllValues(Game::VMHandle a_handle) override;
 
-        [[nodiscard]] virtual const entryValue_t& GetData(Game::ObjectHandle a_handle) override;
+        [[nodiscard]] virtual const entryValue_t& GetData(Game::VMHandle a_handle) override;
         [[nodiscard]] virtual const entryValue_t& GetData(const listValue_t* a_data) override;
 
-        [[nodiscard]] virtual ConfigClass GetActorClass(Game::ObjectHandle a_handle) const override;
+        [[nodiscard]] virtual ConfigClass GetActorClass(Game::VMHandle a_handle) const override;
         [[nodiscard]] virtual configGlobalActor_t& GetActorConfig() const override;
-        [[nodiscard]] virtual bool HasArmorOverride(Game::ObjectHandle a_handle) const override;
+        [[nodiscard]] virtual bool HasArmorOverride(Game::VMHandle a_handle) const override;
 
-        [[nodiscard]] virtual std::string GetGCSID(const std::string& a_name) const override;
+        [[nodiscard]] virtual const stl::fixed_string& GetGCSID(const stl::fixed_string& a_name) override;
 
-        virtual void OnListChangeCurrentItem(const SelectedItem<Game::ObjectHandle>& a_oldHandle, Game::ObjectHandle a_newHandle) override;
+        virtual void OnListChangeCurrentItem(const SelectedItem<Game::VMHandle>& a_oldHandle, Game::VMHandle a_newHandle) override;
 
         std::uint32_t m_activeLoadInstance;
 
@@ -136,6 +138,9 @@ namespace CBP
 
         std::unique_ptr<UISimComponentActor> m_scActor;
         std::unique_ptr<UISimComponentGlobal> m_scGlobal;
+
+        UICommon::UICollapsibleIDCache<Enum::Underlying(UIEditorID::kMainEditor)> m_cicGUISC;
+
     };
 
 }

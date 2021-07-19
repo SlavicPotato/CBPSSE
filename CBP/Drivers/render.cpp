@@ -19,11 +19,15 @@ namespace CBP
             return false;
         }
 
-        ASSERT(Hook::Call5(m_Instance.CreateD3D11,
+        ASSERT(Hook::Call5(
+            ISKSE::GetBranchTrampoline(),
+            m_Instance.CreateD3D11,
             reinterpret_cast<uintptr_t>(CreateD3D11_Hook),
             m_Instance.CreateD3D11_O));
 
-        ASSERT(Hook::Call5(m_Instance.UnkPresent,
+        ASSERT(Hook::Call5(
+            ISKSE::GetBranchTrampoline(),
+            m_Instance.UnkPresent,
             reinterpret_cast<uintptr_t>(Present_Pre),
             m_Instance.UnkPresent_O));
 
@@ -49,11 +53,17 @@ namespace CBP
         m_Instance.m_device = renderManager->forwarder;
         m_Instance.m_context = renderManager->context;
         m_Instance.m_swapChain = renderManager->swapChain;
+
         m_Instance.m_bufferSize.x = static_cast<float>(sd.BufferDesc.Width);
         m_Instance.m_bufferSize.y = static_cast<float>(sd.BufferDesc.Height);
         m_Instance.m_bufferSize.z = m_Instance.m_bufferSize.x / m_Instance.m_bufferSize.y;
 
-        D3D11CreateEventPost evd_post(std::addressof(sd), renderManager->forwarder, renderManager->context, renderManager->swapChain);
+        D3D11CreateEventPost evd_post(
+            std::addressof(sd), 
+            renderManager->forwarder, 
+            renderManager->context, 
+            renderManager->swapChain);
+
         IEvents::TriggerEvent(Event::OnD3D11PostCreate, static_cast<void*>(&evd_post));
     }
 

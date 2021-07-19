@@ -58,7 +58,7 @@ namespace CBP
             {
                 ImGui::PushID(static_cast<const void*>(std::addressof(e)));
 
-                bool selected = StrHelpers::iequal(e.first, m_selected->m_key);
+                bool selected = m_selected->m_key == e.first;
                 if (selected)
                     if (ImGui::IsWindowAppearing()) ImGui::SetScrollHereY();
 
@@ -134,6 +134,7 @@ namespace CBP
             }
 
             return true;
+
         }
         catch (const std::exception& e) {
             m_lastExcept = e;
@@ -160,7 +161,7 @@ namespace CBP
         }
         else
         {
-            if (m_selected && StrHelpers::iequal(m_selected->m_key, a_item.m_key))
+            if (m_selected->m_key == a_item.m_key)
             {
                 m_selected = SelectedFile(m_root, *m_files.begin());
                 m_selected->UpdateInfo();
@@ -188,7 +189,7 @@ namespace CBP
         m_files.erase(a_item.m_key);
         auto& r = m_files.emplace(newFile.stem().string(), newFile);
 
-        if (m_selected && StrHelpers::iequal(m_selected->m_key, a_item.m_key))
+        if (m_selected->m_key == a_item.m_key)
         {
             m_selected->m_fullpath = m_root / r.first->second;
             m_selected->m_filename = r.first->second;
@@ -198,7 +199,7 @@ namespace CBP
         return true;
     }
 
-    void UIFileSelector::SelectItem(const std::string& a_itemDesc)
+    void UIFileSelector::SelectItem(const stl::fixed_string& a_itemDesc)
     {
         auto& e = m_files.find(a_itemDesc);
         if (e != m_files.end()) {

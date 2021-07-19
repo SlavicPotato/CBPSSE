@@ -18,7 +18,11 @@ namespace CBP
 
         MeshPoint() = default;
 
-        SKMP_FORCEINLINE MeshPoint(float a_x, float a_y, float a_z) :
+        SKMP_FORCEINLINE MeshPoint(
+            float a_x, 
+            float a_y,
+            float a_z) 
+            :
             v(a_x, a_y, a_z)
         {
         }
@@ -26,9 +30,9 @@ namespace CBP
     public:
         btVector3 v;
 
-        SKMP_FORCEINLINE operator float* () { 
+        /*SKMP_FORCEINLINE operator float* () { 
             return v.mVec128.m128_f32; 
-        }
+        }*/
 
         SKMP_FORCEINLINE operator const float* () const {
             return v.mVec128.m128_f32; 
@@ -204,8 +208,8 @@ namespace CBP
         SKMP_FORCEINLINE void UpdateSize();
 
         std::shared_ptr<MeshPoint[]> m_vertices;
-        stl::vector<float> m_weights;
-        stl::vector<unsigned int> m_indices;
+        std::vector<float> m_weights;
+        std::vector<unsigned int> m_indices;
 
         int m_numTriangles;
         unsigned int m_numVertices;

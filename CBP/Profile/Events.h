@@ -12,7 +12,7 @@ struct ProfileManagerEvent
     };
 
     EventType m_type;
-    const std::string* m_oldProfile;
-    const std::string* m_profile;
+    const stl::fixed_string* m_oldProfile;
+    const stl::fixed_string* m_profile;
     T* m_data;
 };

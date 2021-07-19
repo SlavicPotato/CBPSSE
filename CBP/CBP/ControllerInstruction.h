@@ -26,6 +26,6 @@ namespace CBP
         };
 
         Action m_action;
-        Game::ObjectHandle m_handle;
+        Game::VMHandle m_handle;
     };
 };

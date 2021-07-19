@@ -79,12 +79,6 @@
     <Filter Include="Header Files\Render">
       <UniqueIdentifier>{524ddc87-b78c-44eb-b384-9b5b1389166b}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\Tasks">
-      <UniqueIdentifier>{46af003e-5788-4240-a2a9-f0662b44c66a}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\Tasks">
-      <UniqueIdentifier>{e469811f-7438-43a1-adc0-2b4a72b9f16e}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Header Files\Events">
       <UniqueIdentifier>{d5d73fb6-c6b6-420b-990d-155acd89f8c2}</UniqueIdentifier>
     </Filter>
@@ -136,9 +130,6 @@
       <Filter>Header Files\Drivers</Filter>
     </ClInclude>
     <ClInclude Include="Drivers\render.h">
-      <Filter>Header Files\Drivers</Filter>
-    </ClInclude>
-    <ClInclude Include="Drivers\tasks.h">
       <Filter>Header Files\Drivers</Filter>
     </ClInclude>
     <ClInclude Include="Drivers\events.h">
@@ -336,9 +327,6 @@
     <ClInclude Include="Render\Backup.h">
       <Filter>Header Files\Render</Filter>
     </ClInclude>
-    <ClInclude Include="Tasks\Tasks.h">
-      <Filter>Header Files\Tasks</Filter>
-    </ClInclude>
     <ClInclude Include="Events\Events.h">
       <Filter>Header Files\Events</Filter>
     </ClInclude>
@@ -350,6 +338,21 @@
     </ClInclude>
     <ClInclude Include="GUI\Tasks.h">
       <Filter>Header Files\GUI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\sse-build-resources\ext\StringCache.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Data\StringHolder.h">
+      <Filter>Header Files\Data</Filter>
+    </ClInclude>
+    <ClInclude Include="Common\Config.h">
+      <Filter>Header Files\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Drivers\tasks.h">
+      <Filter>Header Files\Drivers</Filter>
+    </ClInclude>
+    <ClInclude Include="CBP\StringHolder.h">
+      <Filter>Header Files\CBP</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -375,9 +378,6 @@
       <Filter>Source Files\Drivers</Filter>
     </ClCompile>
     <ClCompile Include="Drivers\render.cpp">
-      <Filter>Source Files\Drivers</Filter>
-    </ClCompile>
-    <ClCompile Include="Drivers\tasks.cpp">
       <Filter>Source Files\Drivers</Filter>
     </ClCompile>
     <ClCompile Include="Drivers\events.cpp">
@@ -551,9 +551,6 @@
     <ClCompile Include="ImGui\MouseEventQueue.cpp">
       <Filter>Source Files\ImGui</Filter>
     </ClCompile>
-    <ClCompile Include="Tasks\Tasks.cpp">
-      <Filter>Source Files\Tasks</Filter>
-    </ClCompile>
     <ClCompile Include="Data\PluginInfo.cpp">
       <Filter>Source Files\Data</Filter>
     </ClCompile>
@@ -562,6 +559,15 @@
     </ClCompile>
     <ClCompile Include="GUI\Tasks.cpp">
       <Filter>Source Files\GUI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\sse-build-resources\ext\StringCache.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Data\StringHolder.cpp">
+      <Filter>Source Files\Data</Filter>
+    </ClCompile>
+    <ClCompile Include="CBP\StringHolder.cpp">
+      <Filter>Source Files\CBP</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

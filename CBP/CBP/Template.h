@@ -2,13 +2,17 @@
 
 #include "Data.h"
 #include "Config.h"
+#include "Profile.h"
 
-#include "Profile/Manager.h"
+#include "Data/PluginInfo.h"
+
+namespace SKMP
+{
+    struct pluginInfo_t;
+}
 
 namespace CBP
 {
-    struct pluginInfo_t;
-
     enum class TRecType : std::uint32_t {
         Physics,
         Node
@@ -33,11 +37,11 @@ namespace CBP
         {
             TRecTargetType type;
             TRecTargetGender gender = TRecTargetGender::Any;
-            stl::vector<Game::FormID> formids;
+            std::vector<Game::FormID> formids;
         };
 
     public:
-        using entry_t = stl::iunordered_map<std::string, profileTargetDesc_t>;
+        using entry_t = std::unordered_map<stl::fixed_string, profileTargetDesc_t>;
 
         TRecPlugin(const fs::path& a_path);
 
@@ -61,9 +65,9 @@ namespace CBP
 
     private:
 
-        stl::unordered_map<TRecType, entry_t> m_data;
+        std::unordered_map<TRecType, entry_t> m_data;
 
-        std::string m_pluginName;
+        stl::fixed_string m_pluginName;
         fs::path m_path;
         except::descriptor m_lastExcept;
     };
@@ -109,8 +113,8 @@ namespace CBP
                 T* profile;
             };
 
-            using templateModMap_t = stl::unordered_map<UInt32, profileData_t>;
-            using templateFormMap_t = stl::unordered_map<UInt32, std::pair<stl::unordered_map<Game::FormID, profileData_t>, stl::unordered_map<Game::FormID, profileData_t>>>;
+            using templateModMap_t = std::unordered_map<UInt32, profileData_t>;
+            using templateFormMap_t = std::unordered_map<UInt32, std::pair<std::unordered_map<Game::FormID, profileData_t>, std::unordered_map<Game::FormID, profileData_t>>>;
 
             friend class ITemplate;
             friend class ProfileManagerTemplate<T>;
@@ -266,7 +270,7 @@ namespace CBP
         DataHolder<PhysicsProfile> m_dataPhysics;
         DataHolder<NodeProfile> m_dataNode;
 
-        stl::vector<TRecPlugin> m_pluginData;
+        std::vector<TRecPlugin> m_pluginData;
 
         except::descriptor m_lastExcept;
 

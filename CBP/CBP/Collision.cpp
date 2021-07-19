@@ -178,8 +178,8 @@ namespace CBP
 
             SetDescription(mesh->mName.C_Str());
 
-            Debug("%s (%s): vertices: %d, indices: %d, faces: %d",
-                m_name.c_str(), m_desc->c_str(), numVertices, numIndices, numFaces);
+            /*Debug("%s (%s): vertices: %d, indices: %d, faces: %d",
+                m_name.c_str(), m_desc->c_str(), numVertices, numIndices, numFaces);*/
 
             return true;
         }
@@ -237,20 +237,20 @@ namespace CBP
 
             ASSERT(ts->getNumThreads() > 0);
 
-            m_Instance.m_numThreads = ts->getNumThreads();
+            //m_Instance.m_numThreads = ts->getNumThreads();
 
             ptrs.bt_dispatcher = new btCollisionDispatcherMt(ptrs.bt_collision_configuration);
 
-            for (int i = 0; i < m_Instance.m_numThreads; i++) {
+            /*for (int i = 0; i < m_Instance.m_numThreads; i++) {
                 m_Instance.m_responseTasks.emplace_back();
-            }
+            }*/
         }
         else
         {
 #endif
             ptrs.bt_dispatcher = new btCollisionDispatcher(ptrs.bt_collision_configuration);
 #if BT_THREADSAFE
-            m_Instance.m_numThreads = 0;
+            //m_Instance.m_numThreads = 0;
         }
 #endif
 
@@ -284,39 +284,39 @@ namespace CBP
 
     void ICollision::CleanProxyFromPairs(btCollisionObject* a_collider)
     {
-#if BT_THREADSAFE
+#if 0
         m_Instance.m_mutex.lock();
 #endif
 
         GetWorld()->getPairCache()->cleanProxyFromPairs(
             a_collider->getBroadphaseHandle(), GetWorld()->getDispatcher());
 
-#if BT_THREADSAFE
+#if 0
         m_Instance.m_mutex.unlock();
 #endif
     }
 
     void ICollision::AddCollisionObject(btCollisionObject* a_collider)
     {
-#if BT_THREADSAFE
+#if 0
         m_Instance.m_mutex.lock();
 #endif
 
         GetWorld()->addCollisionObject(a_collider);
 
-#if BT_THREADSAFE
+#if 0
         m_Instance.m_mutex.unlock();
 #endif
     }
     void ICollision::RemoveCollisionObject(btCollisionObject* a_collider)
     {
-#if BT_THREADSAFE
+#if 0
         m_Instance.m_mutex.lock();
 #endif
 
         GetWorld()->removeCollisionObject(a_collider);
 
-#if BT_THREADSAFE
+#if 0
         m_Instance.m_mutex.unlock();
 #endif
     }
