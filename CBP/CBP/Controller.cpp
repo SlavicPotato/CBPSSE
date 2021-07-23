@@ -629,8 +629,8 @@ namespace CBP
 
             handleSet_t handles;
 
-            /*for (const auto& e : m_actors)
-                handles.emplace(e.first);*/
+            for (const auto& e : m_actors)
+                handles.emplace(e.first);
 
             GatherActors(handles);
 
